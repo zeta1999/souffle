@@ -31,8 +31,9 @@ class DisjointSet {
 
     /* store blocks of atomics */
     BlockList<std::atomic<block_t>> a_blocks;
+
 public:
-    DisjointSet() {};
+    DisjointSet(){};
 
     // Not a thread safe operation
     DisjointSet& operator=(const DisjointSet& old) {
@@ -67,10 +68,10 @@ public:
     parent_t findNode(parent_t x) {
         // while x's parent is not itself
         while (x != b2p(get(x))) {
-
-            //TODO: invalidate the map here (probably memory_order_acquire?)
-            //XXX: ...actually, it appears that we don't need to invalidate it here. We care only when the disjoint sets differ. I.e. on union.
-            //validMap.store(false, std::memory_order_acquire);
+            // TODO: invalidate the map here (probably memory_order_acquire?)
+            // XXX: ...actually, it appears that we don't need to invalidate it here. We care only when the
+            // disjoint sets differ. I.e. on union.
+            // validMap.store(false, std::memory_order_acquire);
 
             block_t xState = get(x);
             // yield x's parent's parent
@@ -80,8 +81,10 @@ public:
 
             this->get(x).compare_exchange_strong(xState, newState);
 
-            // TODO: also invalidate here..? I'd need both, my thinking is that if we invalidate up top, the generate an iterator, before we hit this point, then we end up with a corrupted map.
-            // However, with Souffle, I'm not sure that it is even necessary. Its usually inserts all at once, then reads, then inserts... TODO: Ask martin?
+            // TODO: also invalidate here..? I'd need both, my thinking is that if we invalidate up top, the
+            // generate an iterator, before we hit this point, then we end up with a corrupted map.
+            // However, with Souffle, I'm not sure that it is even necessary. Its usually inserts all at once,
+            // then reads, then inserts... TODO: Ask martin?
 
             x = newParent;
         }
@@ -111,8 +114,7 @@ private:
      * @return Whether the update succeeded (fails if another root update/union has been perfomed in the
      * interim)
      */
-    bool updateRoot(
-            const parent_t x, const rank_t oldrank, const parent_t y, const rank_t newrank) {
+    bool updateRoot(const parent_t x, const rank_t oldrank, const parent_t y, const rank_t newrank) {
         block_t oldState = get(x);
         parent_t nextN = b2p(oldState);
         rank_t rankN = b2r(oldState);
@@ -125,7 +127,6 @@ private:
     }
 
 public:
-
     /**
      * Clears the DisjointSet of all nodes
      * Invalidates all iterators
@@ -165,7 +166,7 @@ public:
 
             rank_t xrank = b2r(get(x));
             rank_t yrank = b2r(get(y));
-            
+
             // if x comes before y (better rank or earlier & equal node)
             if (xrank > yrank || ((xrank == yrank) && x > y)) {
                 std::swap(x, y);
@@ -185,7 +186,6 @@ public:
      * @return the newly created block
      */
     inline block_t makeNode() {
-
         // make node and find out where we've added it
         size_t nodeDetails = a_blocks.createNode();
 
@@ -243,17 +243,15 @@ private:
      * @return the corresponding dense value
      */
     parent_t toDense(const SparseDomain in) {
-
-        typename
-        SparseMap::accessor a;
+        typename SparseMap::accessor a;
         bool newItem = sparseToDenseMap.insert(a, in);
         // create mapping if doesn't exist
         if (newItem) {
-            //call b2p on this (makeNode returns a block_t, and we only care about its index)
+            // call b2p on this (makeNode returns a block_t, and we only care about its index)
             parent_t dense = ds.b2p(ds.makeNode());
             a->second = dense;
 
-            denseToSparseMap.insertAt(dense, in);            
+            denseToSparseMap.insertAt(dense, in);
         }
 
         return a->second;
@@ -290,8 +288,7 @@ public:
     inline SparseDomain readOnlyFindNode(SparseDomain x) {
         // replaced toDense to readonly vv
         // undefined if x does not exist.
-        typename
-        SparseMap::const_accessor a;
+        typename SparseMap::const_accessor a;
         sparseToDenseMap.find(a, x);
         return toSparse(ds.readOnlyFindNode(a->second));
     };

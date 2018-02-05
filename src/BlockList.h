@@ -2,13 +2,13 @@
 #pragma once
 
 // #include <exception>
-#include <iostream>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
 #include <atomic>
-#include <limits.h>
+#include <condition_variable>
 #include <cstring>
+#include <iostream>
+#include <mutex>
+#include <thread>
+#include <limits.h>
 // #include <vector>
 #include <list>
 
@@ -96,10 +96,13 @@ public:
 
 /* start https://stackoverflow.com/a/29195378 */
 class SpinLock {
-    std::atomic_flag locked = ATOMIC_FLAG_INIT ;
+    std::atomic_flag locked = ATOMIC_FLAG_INIT;
+
 public:
     void lock() {
-        while (locked.test_and_set(std::memory_order_acquire)) { ; }
+        while (locked.test_and_set(std::memory_order_acquire)) {
+            ;
+        }
     }
     void unlock() {
         locked.clear(std::memory_order_release);
@@ -112,7 +115,7 @@ public:
 /* end https://stackoverflow.com/a/29195378 */
 
 // number of elements within the first block container.
-//static constexpr size_t BLOCKSIZE = (1ul << 16ul);
+// static constexpr size_t BLOCKSIZE = (1ul << 16ul);
 
 // block_t stores parent in the upper half, rank in the lower half
 typedef uint64_t block_t;
@@ -131,12 +134,12 @@ class BlockList {
     std::list<T*> listData;
 
     std::atomic<size_t> m_size;
-    // how large each new allocation will be 
+    // how large each new allocation will be
     size_t allocsize = BLOCKSIZE;
     std::atomic<size_t> container_size;
 
     // TODO: restrict to smaller size
-    // supports 128 node long linked list & with doubling 
+    // supports 128 node long linked list & with doubling
     // each index points to the respective indexed linked list node
     // a length of 128 means this data structure can store >2^128 values.
     //      depending on how large we set the first block (for us, we set it to 2^BLOCKBITS)
@@ -151,7 +154,7 @@ class BlockList {
     void freeList() {
         auto it = listData.begin();
         while (it != listData.end()) {
-            delete[] *it;
+            delete[] * it;
             ++it;
         }
         listData.clear();
@@ -170,7 +173,6 @@ class BlockList {
 
 public:
     BlockList() : listData() {
-
         for (int i = 0; i < 128; ++i) blockLookupTable[i] = nullptr;
 
         m_size.store(0);
@@ -186,7 +188,6 @@ public:
 
     /** copy constructor */
     BlockList(const BlockList& other) {
-
         freeList();
         listData.clear();
         this->m_size.store(other.m_size);
@@ -212,11 +213,11 @@ public:
     BlockList(BlockList&& other) : BlockList() {
         std::swap(listData, other.listData);
         std::swap(allocsize, other.allocsize);
-        
+
         // move atomics
         size_t tempS = this->m_size.load();
         this->m_size.store(other.m_size.load());
-        other.m_size.store(tempS);  
+        other.m_size.store(tempS);
 
         size_t tempC = this->container_size.load();
         this->container_size.store(other.container_size.load());
@@ -232,7 +233,7 @@ public:
         // move atomics
         size_t temp = this->m_size.load();
         this->m_size.store(other.m_size.load());
-        other.m_size.store(temp);   
+        other.m_size.store(temp);
 
         size_t tempC = this->container_size.load();
         this->container_size.store(other.container_size.load());
@@ -256,11 +257,10 @@ public:
     inline size_t size() const {
         return m_size.load();
     };
-    
+
     inline size_t containerSize() const {
         return container_size.load();
     }
-
 
     inline T* getBlock(size_t blocknum) const {
         return this->blockLookupTable[blocknum];
@@ -271,31 +271,29 @@ public:
      * @return std::pair<New Node, Index of New Node>
      */
     size_t createNode() {
-
         size_t new_index = m_size.fetch_add(1, std::memory_order_relaxed);
 
         // spin and try and insert the node at the correct index (we may need to construct a new block)
 
         // if we don't have a valid index to store this element
-        if (container_size.load() < new_index + 1){
-
+        if (container_size.load() < new_index + 1) {
             sl.lock();
 
-            // double check & add as many blocks as necessary 
-            // (although, I do hope this never loops multiple times, as it means there's at least 
+            // double check & add as many blocks as necessary
+            // (although, I do hope this never loops multiple times, as it means there's at least
             //      BLOCKSIZE threads concurrently writing...)
             while (container_size.load() < new_index + 1) {
                 listData.push_back(new T[allocsize]);
-                //update lookup table
+                // update lookup table
                 this->blockLookupTable[listData.size() - 1] = listData.back();
                 container_size += allocsize;
                 // next time our linked list node will have twice the capacity
                 allocsize <<= 1;
             }
-            
-            sl.unlock(); 
+
+            sl.unlock();
         }
-        
+
         return new_index;
     }
 
@@ -328,10 +326,10 @@ public:
         size_t blockNum = (63 - __builtin_clzll(nindex));
         size_t blockInd = (nindex) & ((1 << blockNum) - 1);
         // store the value in its correct location
-        this->getBlock(blockNum-BLOCKBITS)[blockInd] = value;
+        this->getBlock(blockNum - BLOCKBITS)[blockInd] = value;
     }
 
-    /** 
+    /**
      * A function that you probably shouldn't be calling. (Used by the hashmap)
      * Adds another block to our underlying container
      * @return the size of the container that it at least is
@@ -346,7 +344,7 @@ public:
         allocsize <<= 1;
 
         sl.unlock();
-        
+
         return container_size.load();
     }
 
@@ -360,7 +358,7 @@ public:
         size_t nindex = index + BLOCKSIZE;
         size_t blockNum = (63 - __builtin_clzll(nindex));
         size_t blockInd = (nindex) & ((1 << blockNum) - 1);
-        return this->getBlock(blockNum-BLOCKBITS)[blockInd];
+        return this->getBlock(blockNum - BLOCKBITS)[blockInd];
     }
 
     /**

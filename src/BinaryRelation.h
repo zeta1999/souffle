@@ -1,11 +1,11 @@
 #pragma once
 
-#include <tbb/concurrent_hash_map.h>
 #include "UnionFind.h"
 #include "Util.h"
 #include <algorithm>
 #include <unordered_map>
 #include <utility>
+#include <tbb/concurrent_hash_map.h>
 
 namespace souffle {
 template <typename TupleType>
@@ -32,10 +32,9 @@ class BinaryRelation {
     mutable StatesMap orderedStates;
 
 public:
-    //TODO: what is this for, and is it correctly implemented?
+    // TODO: what is this for, and is it correctly implemented?
     BinaryRelation& operator=(const BinaryRelation& old) {
         if (this == &old) return *this;
-
 
         sds = old.sds;
         orderedStates.clear();
@@ -84,7 +83,6 @@ public:
      * @param other the binary relation from which to add nodes from
      */
     void insertAll(const BinaryRelation<TupleType>& other) {
-
         other.genAllDisjointSetLists();
         for (auto& keypair : other.orderedStates) {
             DomainInt rep = keypair.first;
@@ -94,7 +92,7 @@ public:
 #pragma omp parallel for
             for (size_t i = 0; i < ksize; ++i) {
                 // this messes up iterators
-                //this->insert(rep, sb->get(i));
+                // this->insert(rep, sb->get(i));
                 this->sds.unionNodes(rep, sb->get(i));
             }
         }
@@ -111,11 +109,10 @@ public:
      *  @param the other binaryrelation to read and insert from
      */
     void extend(const BinaryRelation<TupleType>& other) {
-
         other.genAllDisjointSetLists();
         // iterate over all elements for each dj set in this binrel
         for (auto& keypair : orderedStates) {
-            //DomainInt rep = keypair.first;
+            // DomainInt rep = keypair.first;
             StatesBucket& sb = keypair.second;
             const size_t ksize = sb->size();
 
@@ -172,7 +169,6 @@ public:
      * @return the sum of the number of pairs per disjoint set
      */
     size_t size() const {
-
         genAllDisjointSetLists();
 
         statesLock.lock_shared();
@@ -180,7 +176,7 @@ public:
         size_t retVal = 0;
         for (auto& x : orderedStates) {
             const size_t s = x.second->size();
-            retVal += s*s;
+            retVal += s * s;
         }
 
         statesLock.unlock_shared();
@@ -191,7 +187,8 @@ public:
 private:
     // TODO: documentation (i.e. that this lazily makes the rep lists)
     // also, warning: if this is called during insertion, this will break... probably
-    // all this function does, is insert each disjoint set into a separate key in a hashmap. We want this to be as lazy as possible too.
+    // all this function does, is insert each disjoint set into a separate key in a hashmap. We want this to
+    // be as lazy as possible too.
     void genAllDisjointSetLists() const {
         statesLock.lock();
 
@@ -206,18 +203,18 @@ private:
         orderedStates.clear();
 
         size_t dSetSize = sds.ds.a_blocks.size();
-        // go through the underlying djset, and try to insert into the hash map with key being
-        // the sparse representative
+// go through the underlying djset, and try to insert into the hash map with key being
+// the sparse representative
 #pragma omp parallel for
         for (size_t i = 0; i < dSetSize; ++i) {
-            typename TupleType::value_type sVal = 
-                sds.toSparse(i);
+            typename TupleType::value_type sVal = sds.toSparse(i);
 
             parent_t rep = sds.readOnlyFindNode(sVal);
 
-            // TODO: do some magic with intel's accessor to try and keep it const_, and instead 
-            // promote when neccessary.
-            // currently, #define doublechecked is way faster with all within one dj set (makes sense) & is roughly the same with n disjoint sets (surprising, but nice)
+// TODO: do some magic with intel's accessor to try and keep it const_, and instead
+// promote when neccessary.
+// currently, #define doublechecked is way faster with all within one dj set (makes sense) & is roughly the
+// same with n disjoint sets (surprising, but nice)
 #define doublechecked
 #ifdef doublechecked
             // whether the piggy list is already created or not
@@ -226,7 +223,8 @@ private:
             if (mayNeedCreation) {
                 typename StatesMap::accessor a;
                 bool needsCreation = orderedStates.insert(a, rep);
-                // need to make the piggylist here much smaller (consider the case there's one per element within the BR - memory bomb!)
+                // need to make the piggylist here much smaller (consider the case there's one per element
+                // within the BR - memory bomb!)
                 if (needsCreation) a->second = std::make_shared<StatesList>(1);
 
                 // then simply insert the sparse value
@@ -239,7 +237,6 @@ private:
                 // then simply insert the sparse value
                 size_t pos = a->second->createNode();
                 a->second->insertAt(pos, sVal);
-
             }
 #else
             typename StatesMap::accessor a;
@@ -249,7 +246,7 @@ private:
             a->second->insertAt(pos, sVal);
 #endif
         }
-        
+
         statesLock.unlock();
     }
 
@@ -267,17 +264,15 @@ private:
 
         // we don't need to generate it (as all are generated)
         if (!this->statesMapStale.load(std::memory_order_acquire)) {
-            typename 
-                StatesMap::const_accessor a;
+            typename StatesMap::const_accessor a;
             assert(orderedStates.find(a, rep) && "somehow doesn't exist despite being non-stale.");
             statesLock.unlock();
             return a->second;
         }
-        
+
         // otherwise we need to check if this one /has/ been generated by this fn already
 
-        typename 
-        StatesMap::accessor a;
+        typename StatesMap::accessor a;
         bool isNew = orderedStates.insert(a, rep);
 
         // map is already generated
@@ -294,12 +289,12 @@ private:
         const size_t dSetSize = sds.ds.a_blocks.size();
         auto& de = this->sds.ds;
         auto& dsblocks = de.a_blocks;
-        // go through direct access of the block list, and append those that are in
+// go through direct access of the block list, and append those that are in
 
 #pragma omp parallel for
         for (size_t i = 0; i < dSetSize; ++i) {
             // XXX: not necessary atm, as we findnode on i
-            //parent_t c = DisjointSet::b2p(dsblocks.get(i));
+            // parent_t c = DisjointSet::b2p(dsblocks.get(i));
 
             // c is a member of dVal's djset, so we insert it in this list
             if (de.readOnlyFindNode(i) == dVal) {
@@ -313,10 +308,9 @@ private:
         return a->second;
     }
 
-
 public:
-    // an almighty iterator for several types of iteration. 
-    // Unfortunately, subclassing isn't an option with souffle 
+    // an almighty iterator for several types of iteration.
+    // Unfortunately, subclassing isn't an option with souffle
     //   - we don't deal with pointers (so no virtual)
     //   - and a single iter type is expected (see Relation::iterator e.g.) (i think)
     class iterator : public std::iterator<std::forward_iterator_tag, TupleType> {
@@ -344,181 +338,185 @@ public:
         // used for ALL, and ANTERIOR (just a current index in the cList)
         size_t cPosteriorIndex = 0;
 
-        public:
-            // one iterator for signalling the end (simplifies)
-            explicit iterator(const BinaryRelation* br, bool /* signalIsEndIterator */) : br(br), isEndVal(true) {};
+    public:
+        // one iterator for signalling the end (simplifies)
+        explicit iterator(const BinaryRelation* br, bool /* signalIsEndIterator */)
+                : br(br), isEndVal(true){};
 
-            // ALL: iterator for iterating over everything (i.e. (_, _))
-            explicit iterator(const BinaryRelation* br) : 
-                br(br), djSetMapListIt(br->orderedStates.begin()), 
-                djSetMapListEnd(br->orderedStates.end()), ityp(IterType::ALL) {
-                    // we called begin on an empty dj set
-                    if (djSetMapListIt == djSetMapListEnd) {
-                        isEndVal = true;
-                        return;
-                    }
-                    djSetList = (*djSetMapListIt).second;
-                    assert(djSetList->size() != 0);
+        // ALL: iterator for iterating over everything (i.e. (_, _))
+        explicit iterator(const BinaryRelation* br)
+                : br(br), djSetMapListIt(br->orderedStates.begin()), djSetMapListEnd(br->orderedStates.end()),
+                  ityp(IterType::ALL) {
+            // we called begin on an empty dj set
+            if (djSetMapListIt == djSetMapListEnd) {
+                isEndVal = true;
+                return;
+            }
+            djSetList = (*djSetMapListIt).second;
+            assert(djSetList->size() != 0);
 
-                    updateAnterior();
-                    updatePosterior();
-                };
+            updateAnterior();
+            updatePosterior();
+        };
 
-            // WITHIN: iterator for everything within the same DJset (used for BinaryRelation.partition())
-            explicit iterator(const BinaryRelation* br, const StatesBucket within) :
-                br(br), ityp(IterType::WITHIN), djSetList(within) {
-                    // empty dj set
-                    if (djSetList->size() == 0) {
-                        isEndVal = true;
-                    }
-
-                    updateAnterior();
-                    updatePosterior();
-                }
-
-            // ANTERIOR: iterator that yields all (former, _) \in djset(former) (djset(former) === within)
-            explicit iterator(const BinaryRelation* br, const DomainInt former, const StatesBucket within) :
-                br(br), ityp(IterType::ANTERIOR), djSetList(within) {
-                    if (djSetList->size() == 0) {
-                        isEndVal = true;
-                    }
-
-                    setAnterior(former);
-                    updatePosterior();
-                }
-
-            // ANTPOST: iterator that yields all (former, latter) \in djset(former), (djset(former) == djset(latter) == within)
-            explicit iterator(const BinaryRelation* br, const DomainInt former, DomainInt latter, const StatesBucket within) :
-                br(br), ityp(IterType::ANTPOST), djSetList(within) {
-                    if (djSetList->size() == 0) {
-                        isEndVal = true;
-                    }
-
-                    setAnterior(former);
-                    setPosterior(latter);
-                }
-
-            /** explicit set first half of cPair */
-            inline void setAnterior(const DomainInt a) {
-                this->cPair[0] = a;
+        // WITHIN: iterator for everything within the same DJset (used for BinaryRelation.partition())
+        explicit iterator(const BinaryRelation* br, const StatesBucket within)
+                : br(br), ityp(IterType::WITHIN), djSetList(within) {
+            // empty dj set
+            if (djSetList->size() == 0) {
+                isEndVal = true;
             }
 
-            /** quick update to whatever the current index is pointing to */
-            inline void updateAnterior() {
-                this->cPair[0] = this->djSetList->get(this->cAnteriorIndex);
+            updateAnterior();
+            updatePosterior();
+        }
+
+        // ANTERIOR: iterator that yields all (former, _) \in djset(former) (djset(former) === within)
+        explicit iterator(const BinaryRelation* br, const DomainInt former, const StatesBucket within)
+                : br(br), ityp(IterType::ANTERIOR), djSetList(within) {
+            if (djSetList->size() == 0) {
+                isEndVal = true;
             }
 
-            /** explicit set second half of cPair */
-            inline void setPosterior(const DomainInt b) {
-                this->cPair[1] = b;
+            setAnterior(former);
+            updatePosterior();
+        }
+
+        // ANTPOST: iterator that yields all (former, latter) \in djset(former), (djset(former) ==
+        // djset(latter) == within)
+        explicit iterator(
+                const BinaryRelation* br, const DomainInt former, DomainInt latter, const StatesBucket within)
+                : br(br), ityp(IterType::ANTPOST), djSetList(within) {
+            if (djSetList->size() == 0) {
+                isEndVal = true;
             }
 
-            /** quick update to whatever the current index is pointing to */
-            inline void updatePosterior() {
-                this->cPair[1] = this->djSetList->get(this->cPosteriorIndex);
-            }
+            setAnterior(former);
+            setPosterior(latter);
+        }
 
-            // copy ctor
-            iterator(const iterator& other) = default;
-            // move ctor
-            iterator(iterator&& other) = default;
-            // assign iter
-            iterator& operator=(const iterator& other) = default;
+        /** explicit set first half of cPair */
+        inline void setAnterior(const DomainInt a) {
+            this->cPair[0] = a;
+        }
 
-            bool operator==(const iterator& other) const {
-                if (isEndVal && other.isEndVal) return br == other.br;
-                return isEndVal == other.isEndVal && cPair == other.cPair;
-            }
+        /** quick update to whatever the current index is pointing to */
+        inline void updateAnterior() {
+            this->cPair[0] = this->djSetList->get(this->cAnteriorIndex);
+        }
 
-            bool operator!=(const iterator& other) const {
-                return !((*this) == other);
-            }
+        /** explicit set second half of cPair */
+        inline void setPosterior(const DomainInt b) {
+            this->cPair[1] = b;
+        }
 
-            const TupleType& operator*() const {
-                return cPair;
-            }
+        /** quick update to whatever the current index is pointing to */
+        inline void updatePosterior() {
+            this->cPair[1] = this->djSetList->get(this->cPosteriorIndex);
+        }
 
-            const TupleType* operator->() const {
-                return &cPair;
-            }
+        // copy ctor
+        iterator(const iterator& other) = default;
+        // move ctor
+        iterator(iterator&& other) = default;
+        // assign iter
+        iterator& operator=(const iterator& other) = default;
 
-            /* pre-increment */
-            iterator& operator++() {
-                if (isEndVal) throw "error: incrementing an out of range iterator";
+        bool operator==(const iterator& other) const {
+            if (isEndVal && other.isEndVal) return br == other.br;
+            return isEndVal == other.isEndVal && cPair == other.cPair;
+        }
 
-                switch (ityp) {
-                    case IterType::ALL:     
-                        // move posterior along one
-                        // see if we can't move the posterior along
-                        if (++cPosteriorIndex == djSetList->size()) {
-                            // move anterior along one
-                            // see if we can't move the anterior along one
-                            if (++cAnteriorIndex == djSetList->size()) {
-                                // move the djset it along one
-                                // see if we can't move it along one (we're at the end)
-                                if (++djSetMapListIt == djSetMapListEnd) {
-                                    isEndVal = true;
-                                    return *this;
-                                }
+        bool operator!=(const iterator& other) const {
+            return !((*this) == other);
+        }
 
-                                // we can't iterate along this djset if it is empty
-                                djSetList = (*djSetMapListIt).second;
-                                if (djSetList->size() == 0) throw "error: encountered a zero size djset";
-                                
-                                // update our cAnterior and cPosterior
-                                cAnteriorIndex = 0;
-                                cPosteriorIndex = 0;
-                                updateAnterior();
-                                updatePosterior();
-                            }
+        const TupleType& operator*() const {
+            return cPair;
+        }
 
-                            // we moved our anterior along one
-                            updateAnterior();
+        const TupleType* operator->() const {
+            return &cPair;
+        }
 
-                            cPosteriorIndex = 0;
-                            updatePosterior();
-                        }
-                        // we just moved our posterior along one
-                        updatePosterior();
+        /* pre-increment */
+        iterator& operator++() {
+            if (isEndVal) throw "error: incrementing an out of range iterator";
 
-                        break;
-                    case IterType::ANTERIOR:
-                        // step posterior along one, and if we can't, then we're done.
-                        if (++cPosteriorIndex == djSetList->size()) {
-                            isEndVal = true;
-                            return *this;
-                        }
-                        updatePosterior();
-
-                        break;
-                    case IterType::ANTPOST:
-                        // fixed anterior and posterior literally only points to one, so if we increment, its the end
-                        isEndVal =  true;
-                        break;
-                    case IterType::WITHIN:
-                        // move posterior along one
-                        // see if we can't move the posterior along
-                        if (++cPosteriorIndex == djSetList->size()) {
-                            // move anterior along one
-                            // see if we can't move the anterior along one
-                            if (++cAnteriorIndex == djSetList->size()) {
+            switch (ityp) {
+                case IterType::ALL:
+                    // move posterior along one
+                    // see if we can't move the posterior along
+                    if (++cPosteriorIndex == djSetList->size()) {
+                        // move anterior along one
+                        // see if we can't move the anterior along one
+                        if (++cAnteriorIndex == djSetList->size()) {
+                            // move the djset it along one
+                            // see if we can't move it along one (we're at the end)
+                            if (++djSetMapListIt == djSetMapListEnd) {
                                 isEndVal = true;
                                 return *this;
                             }
 
-                            // we moved our anterior along one
-                            updateAnterior();
+                            // we can't iterate along this djset if it is empty
+                            djSetList = (*djSetMapListIt).second;
+                            if (djSetList->size() == 0) throw "error: encountered a zero size djset";
 
+                            // update our cAnterior and cPosterior
+                            cAnteriorIndex = 0;
                             cPosteriorIndex = 0;
+                            updateAnterior();
                             updatePosterior();
                         }
-                        // we just moved our posterior along one
-                        updatePosterior();
-                        break;
-                }
 
-                return *this;
+                        // we moved our anterior along one
+                        updateAnterior();
+
+                        cPosteriorIndex = 0;
+                        updatePosterior();
+                    }
+                    // we just moved our posterior along one
+                    updatePosterior();
+
+                    break;
+                case IterType::ANTERIOR:
+                    // step posterior along one, and if we can't, then we're done.
+                    if (++cPosteriorIndex == djSetList->size()) {
+                        isEndVal = true;
+                        return *this;
+                    }
+                    updatePosterior();
+
+                    break;
+                case IterType::ANTPOST:
+                    // fixed anterior and posterior literally only points to one, so if we increment, its the
+                    // end
+                    isEndVal = true;
+                    break;
+                case IterType::WITHIN:
+                    // move posterior along one
+                    // see if we can't move the posterior along
+                    if (++cPosteriorIndex == djSetList->size()) {
+                        // move anterior along one
+                        // see if we can't move the anterior along one
+                        if (++cAnteriorIndex == djSetList->size()) {
+                            isEndVal = true;
+                            return *this;
+                        }
+
+                        // we moved our anterior along one
+                        updateAnterior();
+
+                        cPosteriorIndex = 0;
+                        updatePosterior();
+                    }
+                    // we just moved our posterior along one
+                    updatePosterior();
+                    break;
             }
+
+            return *this;
+        }
     };
 
 public:
@@ -596,7 +594,6 @@ public:
         return make_range(end(), end());
     }
 
-
     /**
      * Creates an iterator that generates all pairs (A, X)
      * for a given A, and X are elements within A's disjoint set.
@@ -608,7 +605,7 @@ public:
 
         return iterator(this, anteriorVal, ll);
     }
-    
+
     /**
      * Creates an iterator that generates the pair (A, B)
      * for a given A and B. If A and B don't exist, or aren't in the same set,
@@ -623,7 +620,7 @@ public:
         auto ll = genDJSetList(anteriorVal);
 
         return iterator(this, anteriorVal, posteriorVal, ll);
-    }   
+    }
 
     /**
      * Begin an iterator over all pairs within a single disjoint set - This is used for partition().
@@ -646,13 +643,12 @@ public:
      * @return a list of the iterators as ranges
      */
     std::vector<souffle::range<iterator>> partition(size_t chunks) const {
-
         // generate all reps
         genAllDisjointSetLists();
 
         size_t numPairs = this->size();
-        
-        if (chunks <= 1 || numPairs <= 1) return { souffle::make_range(begin(), end()) };
+
+        if (chunks <= 1 || numPairs <= 1) return {souffle::make_range(begin(), end())};
 
         // if there's more dj sets than requested chunks, then just return an iter per dj set
         std::vector<souffle::range<iterator>> ret;
@@ -664,13 +660,16 @@ public:
             return ret;
         }
 
-        // go through in descending order, and make iterators for them 
+        // go through in descending order, and make iterators for them
         std::vector<std::pair<size_t, DomainInt>> orderedSizes;
-        // TODO: technically this is parellelisable? Dunno if O(dlogd) vs O(dlogd/T) is worth it. I guess it improves the worst case runtime scenario?
-        std::for_each(orderedStates.begin(), orderedStates.end(), [&](auto& a){ orderedSizes.push_back(std::make_pair(a.second->size(), a.first)); });
-        std::sort(orderedSizes.begin(), orderedSizes.end(), [](auto& a, auto&b) { return a.first > b.first; });
+        // TODO: technically this is parellelisable? Dunno if O(dlogd) vs O(dlogd/T) is worth it. I guess it
+        // improves the worst case runtime scenario?
+        std::for_each(orderedStates.begin(), orderedStates.end(),
+                [&](auto& a) { orderedSizes.push_back(std::make_pair(a.second->size(), a.first)); });
+        std::sort(
+                orderedSizes.begin(), orderedSizes.end(), [](auto& a, auto& b) { return a.first > b.first; });
 
-        auto shouldSplit = [](size_t djSize, size_t pairsRemaining, size_t remainingChunks) { 
+        auto shouldSplit = [](size_t djSize, size_t pairsRemaining, size_t remainingChunks) {
             return (djSize * djSize) > (pairsRemaining / remainingChunks);
         };
 
@@ -693,7 +692,5 @@ public:
 
         return ret;
     }
-
 };
 }  // namespace souffle
-

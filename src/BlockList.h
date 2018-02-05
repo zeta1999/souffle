@@ -1,222 +1,119 @@
-/*
-    Copyright (c) 2017 The Souffle Developers and/or its affiliates. All Rights reserved
-
-    The Universal Permissive License (UPL), Version 1.0
-
-    Subject to the condition set forth below, permission is hereby granted to any person obtaining a copy of
-   this software,
-    associated documentation and/or data (collectively the "Software"), free of charge and under any and all
-   copyright rights in the
-    Software, and any and all patent rights owned or freely licensable by each licensor hereunder covering
-   either (i) the unmodified
-    Software as contributed to or provided by such licensor, or (ii) the Larger Works (as defined below), to
-   deal in both
-
-    (a) the Software, and
-    (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if one is included with the
-   Software (each a “Larger
-    Work” to which the Software is contributed by such licensors),
-
-    without restriction, including without limitation the rights to copy, create derivative works of, display,
-   perform, and
-    distribute the Software and make, use, sell, offer for sale, import, export, have made, and have sold the
-   Software and the
-    Larger Work(s), and to sublicense the foregoing rights on either these or other terms.
-
-    This license is subject to the following condition:
-    The above copyright notice and either this complete permission notice or at a minimum a reference to the
-   UPL must be included in
-    all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-   LIMITED TO THE WARRANTIES
-    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-   COPYRIGHT HOLDERS BE
-    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-   ARISING FROM, OUT OF OR
-    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
 
 #pragma once
 
-#include <atomic>
-#include <exception>
+// #include <exception>
 #include <iostream>
+#include <thread>
 #include <mutex>
-#include <vector>
+#include <condition_variable>
+#include <atomic>
+#include <limits.h>
+#include <cstring>
+// #include <vector>
+#include <list>
 
 namespace souffle {
 
-/**
- * A concurrent list data structure, which is implemented through a chunked linked-list.
- * On their own, get/push_back are threadsafe, however clearing/destructing is undefined
- * behaviour if get/push_backs are in progress.
- */
-template <class T>
-class concurrent_list {
-    // how large each cv_data->m_data array is
-    const size_t chunk_size = 1000;
+/* begin reference implementation
+ * http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2406.html#shared_mutex */
+// This simply exists as we do not compile using C++17. If we change standard >=C++17,
+// souffle::shared_mutex should be exchanged with std::shared_mutex
+// Slight cosmetic adjustments have been made
+class shared_mutex {
+    std::mutex mut_;
+    std::condition_variable gate1_;
+    std::condition_variable gate2_;
+    unsigned state_;
 
-    struct cv_data {
-        // how many elements are currently in m_data
-        std::atomic<size_t> m_size;
-        T* m_data;
-        // ptr to the next cv_data
-        std::atomic<cv_data*> next;
-    };
-
-    // number of elements in total
-    std::atomic<size_t> container_size;
-
-    // only necessary for those that change vectors
-    mutable std::mutex writeMutex;
-
-    std::atomic<cv_data*> cData;
+    static const unsigned write_entered_ = 1U << (sizeof(unsigned) * CHAR_BIT - 1);
+    static const unsigned n_readers_ = ~write_entered_;
 
 public:
-    concurrent_list() {
-        cv_data* curr = new cv_data;
-        curr->m_size = 0;
-        curr->m_data = new T[chunk_size];
-        curr->next = nullptr;
-        cData = curr;
-        container_size = 0;
+    shared_mutex() : state_(0) {}
+
+    // Exclusive ownership
+    void lock() {
+        std::unique_lock<std::mutex> lk(mut_);
+        while (state_ & write_entered_) gate1_.wait(lk);
+        state_ |= write_entered_;
+        while (state_ & n_readers_) gate2_.wait(lk);
     }
 
-    concurrent_list(concurrent_list&& other) : concurrent_list() {
-        std::unique_lock<std::mutex> lk1(other.writeMutex);
-        std::unique_lock<std::mutex> lk2(writeMutex);
-
-        // no std::swap as atomics are unmoveable
-        size_t tmp = this->container_size.load();
-        this->container_size.store(other.container_size);
-        other.container_size.store(tmp);
-
-        // no std::swap as atomics are unmoveable
-        cv_data* tmpPtr = this->cData.load();
-        this->cData.store(other.cData);
-        other.cData.store(tmpPtr);
-    }
-
-    concurrent_list& operator=(concurrent_list other) {
-        size_t tmp = this->container_size.load();
-        this->container_size.store(other.container_size);
-        other.container_size.store(tmp);
-
-        cv_data* tmpPtr = this->cData.load();
-        this->cData.store(other.cData);
-        other.cData.store(tmpPtr);
-
-        return *this;
-    }
-
-    /* it goes without saying this is not threadsafe */
-    ~concurrent_list() {
-        // lock just to let writes finish
-        std::unique_lock<std::mutex> lk(writeMutex);
-
-        auto curr = cData.load();
-        while (curr != nullptr) {
-            cv_data* tmpnext = curr->next;
-            delete[] curr->m_data;
-            delete curr;
-
-            curr = tmpnext;
+    bool try_lock() {
+        std::unique_lock<std::mutex> lk(mut_, std::try_to_lock);
+        if (lk.owns_lock() && state_ == 0) {
+            state_ = write_entered_;
+            return true;
         }
+        return false;
     }
 
-    /**
-     * the concept of size() in a threaded environment is peculiar
-     * However, it is guaranteed that the size returned is a valid index+1
-     * if the data structure has not been concurrently reduced.
-     */
-    size_t size() const {
-        return container_size;
-    }
-
-    /*
-     * Append the value onto the end of the list, allocating more space if required.
-     * @param val the value to insert
-     * thread safe for many writers
-     */
-    void push_back(T val) {
-        std::unique_lock<std::mutex> lk(writeMutex);
-
-        cv_data* curr = cData.load();
-        // fast forward curr until non-null
-        while (curr->next.load() != nullptr) curr = curr->next.load();
-
-        cv_data* shadow = nullptr;
-        cv_data* front = curr;
-
-        // do we need to expand?
-        if (curr->m_size == chunk_size) {
-            shadow = new cv_data;
-            shadow->m_size = 0;
-            shadow->m_data = new T[chunk_size];
-            shadow->next = nullptr;
-
-            front = shadow;
+    void unlock() {
+        {
+            std::lock_guard<std::mutex> _(mut_);
+            state_ = 0;
         }
-
-        front->m_data[front->m_size] = val;
-        front->m_size += 1;
-        if (shadow != nullptr) curr->next = shadow;
-        container_size += 1;
+        gate1_.notify_all();
     }
 
-    /*
-     * Retrieve reference of the locally stored element
-     * @param index the index of the element to be returned
-     * Is thread safe for many readers
-     */
-    T& at(size_t index) const {
-        return this->operator[](index);
+    // Shared ownership
+    void lock_shared() {
+        std::unique_lock<std::mutex> lk(mut_);
+        while ((state_ & write_entered_) || (state_ & n_readers_) == n_readers_) gate1_.wait(lk);
+        unsigned num_readers = (state_ & n_readers_) + 1;
+        state_ &= ~n_readers_;
+        state_ |= num_readers;
     }
 
-    /* thread safe, if you treat T& as */
-    T& operator[](size_t index) const {
-        if (index >= container_size) throw "invalid index";
+    bool try_lock_shared() {
+        std::unique_lock<std::mutex> lk(mut_, std::try_to_lock);
+        unsigned num_readers = state_ & n_readers_;
 
-        auto curr = cData.load();
-        while (index >= chunk_size) {
-            curr = curr->next.load();
-            index -= chunk_size;
+        if (lk.owns_lock() && !(state_ & write_entered_) && num_readers != n_readers_) {
+            ++num_readers;
+            state_ &= ~n_readers_;
+            state_ |= num_readers;
+            return true;
         }
-
-        return curr->m_data[index];
+        return false;
     }
 
-    /*
-     * Delete all elements from the data structure
-     * Warning! This is not thread-safe in the event of reads occuring during call of this operation
-     */
-    void clear() {
-        std::unique_lock<std::mutex> lk(writeMutex);
+    void unlock_shared() {
+        std::lock_guard<std::mutex> _(mut_);
+        unsigned num_readers = (state_ & n_readers_) - 1;
+        state_ &= ~n_readers_;
+        state_ |= num_readers;
 
-        cv_data* curr = cData;
-        while (curr != nullptr) {
-            cv_data* tmpnext = curr->next;
-            delete[] curr->m_data;
-            delete curr;
-
-            curr = tmpnext;
+        if (state_ & write_entered_) {
+            if (num_readers == 0) gate2_.notify_one();
+        } else {
+            if (num_readers == n_readers_ - 1) gate1_.notify_one();
         }
-
-        curr = new cv_data;
-        curr->m_size = 0;
-        curr->m_data = new T[chunk_size];
-        curr->next = nullptr;
-
-        container_size = 0;
-
-        cData = curr;
     }
 };
 
-// number of elements in each array of the vector
-static constexpr uint8_t BLOCKBITS = 10u;
-static constexpr size_t BLOCKSIZE = (1u << BLOCKBITS);
+/* end */
+
+/* start https://stackoverflow.com/a/29195378 */
+class SpinLock {
+    std::atomic_flag locked = ATOMIC_FLAG_INIT ;
+public:
+    void lock() {
+        while (locked.test_and_set(std::memory_order_acquire)) { ; }
+    }
+    void unlock() {
+        locked.clear(std::memory_order_release);
+    }
+
+    bool try_lock() {
+        return locked.test_and_set(std::memory_order_acquire);
+    }
+};
+/* end https://stackoverflow.com/a/29195378 */
+
+// number of elements within the first block container.
+//static constexpr size_t BLOCKSIZE = (1ul << 16ul);
+
 // block_t stores parent in the upper half, rank in the lower half
 typedef uint64_t block_t;
 
@@ -229,67 +126,228 @@ typedef uint64_t block_t;
  */
 template <class T>
 class BlockList {
-    souffle::concurrent_list<T*> listData;
+    const size_t BLOCKBITS = 16ul;
+    const size_t BLOCKSIZE = (1ul << BLOCKBITS);
+    std::list<T*> listData;
 
-    mutable size_t m_size = 0;
+    std::atomic<size_t> m_size;
+    // how large each new allocation will be 
+    size_t allocsize = BLOCKSIZE;
+    std::atomic<size_t> container_size;
+
+    // TODO: restrict to smaller size
+    // supports 128 node long linked list & with doubling 
+    // each index points to the respective indexed linked list node
+    // a length of 128 means this data structure can store >2^128 values.
+    //      depending on how large we set the first block (for us, we set it to 2^BLOCKBITS)
+    T* blockLookupTable[128];
+
+    // for parallel node insertions
+    mutable SpinLock sl;
+
+    /**
+     * Free the arrays allocated within the linked list nodes
+     */
+    void freeList() {
+        auto it = listData.begin();
+        while (it != listData.end()) {
+            delete[] *it;
+            ++it;
+        }
+        listData.clear();
+    }
+
+    /**
+     * Update blockLookupTable to point to the correct parts of listData
+     * This should only be run once - usually in a copy or move ctor.
+     */
+    void initLookupTable() {
+        size_t index = 0;
+        for (T* block : listData) {
+            this->blockLookupTable[index] = block;
+        }
+    }
 
 public:
-    BlockList() : listData() {}
+    BlockList() : listData() {
+
+        for (int i = 0; i < 128; ++i) blockLookupTable[i] = nullptr;
+
+        m_size.store(0);
+        container_size.store(0);
+    }
+
+    BlockList(size_t initialbitsize) : BLOCKBITS(initialbitsize) {
+        for (int i = 0; i < 128; ++i) blockLookupTable[i] = nullptr;
+
+        m_size.store(0);
+        container_size.store(0);
+    }
 
     /** copy constructor */
     BlockList(const BlockList& other) {
-        size_t othblocks = other.listData.size();
-        for (size_t i = 0; i < othblocks; ++i) {
-            listData.push_back(new T[BLOCKSIZE]);
-            memcpy(listData.at(i), other.listData.at(i), BLOCKSIZE);
+
+        freeList();
+        listData.clear();
+        this->m_size.store(other.m_size);
+        this->container_size.store(other.container_size);
+
+        auto iterCopied = other.listData.begin();
+
+        // copy each linked node array into this list - be careful! the size doubles each node
+        size_t currAllocsize = BLOCKSIZE;
+        while (iterCopied != other.listData.end()) {
+            listData.push_back(new T[currAllocsize]);
+            memcpy(listData.back(), *iterCopied, currAllocsize);
+            // double the allocation size for the next block
+            currAllocsize <<= 1;
         }
-        this->m_size = other.m_size;
+
+        initLookupTable();
+
+        allocsize = currAllocsize;
     }
 
     /** move constructor */
     BlockList(BlockList&& other) : BlockList() {
         std::swap(listData, other.listData);
-        std::swap(m_size, other.m_size);
+        std::swap(allocsize, other.allocsize);
+        
+        // move atomics
+        size_t tempS = this->m_size.load();
+        this->m_size.store(other.m_size.load());
+        other.m_size.store(tempS);  
+
+        size_t tempC = this->container_size.load();
+        this->container_size.store(other.container_size.load());
+        other.container_size.store(tempC);
+
+        initLookupTable();
     }
 
     BlockList& operator=(BlockList other) {
         std::swap(this->listData, other.listData);
-        std::swap(this->m_size, other.m_size);
+        std::swap(allocsize, other.allocsize);
+
+        // move atomics
+        size_t temp = this->m_size.load();
+        this->m_size.store(other.m_size.load());
+        other.m_size.store(temp);   
+
+        size_t tempC = this->container_size.load();
+        this->container_size.store(other.container_size.load());
+        other.container_size.store(tempC);
+
+        initLookupTable();
+
         return *this;
     }
 
     ~BlockList() {
-        for (size_t i = 0; i < listData.size(); ++i) {
-            T* r = listData.at(i);
-            delete[] r;
-        }
+        freeList();
     }
 
     /**
-     * Size of List
-     * @return the number of elements currently stored
+     * Well, returns the number of nodes exist within the list + number of nodes queued to be inserted
+     *  The reason for this, is that there may be many nodes queued up
+     *  that haven't had time to had containers created and updated
+     * @return the number of nodes exist within the list + number of nodes queued to be inserted
      */
     inline size_t size() const {
-        return m_size;
+        return m_size.load();
     };
+    
+    inline size_t containerSize() const {
+        return container_size.load();
+    }
+
+
+    inline T* getBlock(size_t blocknum) const {
+        return this->blockLookupTable[blocknum];
+    }
 
     /**
-     * Add a value to the blocklist
-     * @param val : value to be added
+     * Create a value in the blocklist & return the new Node & its position.
+     * @return std::pair<New Node, Index of New Node>
      */
-    void add(const T& val) {
-        // store it in the vector
-        size_t blocknum = m_size >> BLOCKBITS;
-        size_t blockindex = m_size & (BLOCKSIZE - 1);
+    size_t createNode() {
 
-        // we need to add a new block
-        if (blockindex == 0) {
-            this->listData.push_back(new T[BLOCKSIZE]);
+        size_t new_index = m_size.fetch_add(1, std::memory_order_relaxed);
+
+        // spin and try and insert the node at the correct index (we may need to construct a new block)
+
+        // if we don't have a valid index to store this element
+        if (container_size.load() < new_index + 1){
+
+            sl.lock();
+
+            // double check & add as many blocks as necessary 
+            // (although, I do hope this never loops multiple times, as it means there's at least 
+            //      BLOCKSIZE threads concurrently writing...)
+            while (container_size.load() < new_index + 1) {
+                listData.push_back(new T[allocsize]);
+                //update lookup table
+                this->blockLookupTable[listData.size() - 1] = listData.back();
+                container_size += allocsize;
+                // next time our linked list node will have twice the capacity
+                allocsize <<= 1;
+            }
+            
+            sl.unlock(); 
+        }
+        
+        return new_index;
+    }
+
+    /**
+     * Insert a value at a specific index, expanding the data structure if necessary.
+     *  Warning: this will "waste" inbetween elements, if you do not know their index,
+     *      and do not set them with insertAt
+     * @param index  the index inside the blocklist
+     * @param value  the value to set inside that index
+     */
+    void insertAt(size_t index, T value) {
+        // exact same logic as createNode, but instead just cares about expanding til our index fits
+        // not if a newly added node will fit.
+        while (container_size.load() < index + 1) {
+            sl.lock();
+            // just in case
+            while (container_size.load() < index + 1) {
+                // create the new block
+                listData.push_back(new T[allocsize]);
+                this->blockLookupTable[listData.size() - 1] = listData.back();
+                container_size += allocsize;
+                // double the size of the next allocated block
+                allocsize <<= 1;
+            }
+
+            sl.unlock();
         }
 
-        this->listData[blocknum][blockindex] = T(val);
+        size_t nindex = index + BLOCKSIZE;
+        size_t blockNum = (63 - __builtin_clzll(nindex));
+        size_t blockInd = (nindex) & ((1 << blockNum) - 1);
+        // store the value in its correct location
+        this->getBlock(blockNum-BLOCKBITS)[blockInd] = value;
+    }
 
-        ++m_size;
+    /** 
+     * A function that you probably shouldn't be calling. (Used by the hashmap)
+     * Adds another block to our underlying container
+     * @return the size of the container that it at least is
+     */
+    size_t addBlock() {
+        sl.lock();
+
+        listData.push_back(new T[allocsize]());
+        this->blockLookupTable[listData.size() - 1] = listData.back();
+        container_size += allocsize;
+        // double the size of the next allocated block
+        allocsize <<= 1;
+
+        sl.unlock();
+        
+        return container_size.load();
     }
 
     /**
@@ -297,90 +355,21 @@ public:
      * @param index position to search
      * @return the value at index
      */
-    T& get(const size_t index) const {
-        if (index < 0 || index >= this->size()) throw std::runtime_error("out of bounds");
-
-        size_t blocknum = index >> BLOCKBITS;
-        size_t blockindex = index & (BLOCKSIZE - 1);
-
-        return listData[blocknum][blockindex];
+    inline T& get(size_t index) const {
+        // supa fast 2^16 size first block
+        size_t nindex = index + BLOCKSIZE;
+        size_t blockNum = (63 - __builtin_clzll(nindex));
+        size_t blockInd = (nindex) & ((1 << blockNum) - 1);
+        return this->getBlock(blockNum-BLOCKBITS)[blockInd];
     }
 
     /**
      * Clear all elements from the BlockList
      */
     void clear() {
-        for (size_t i = 0; i < listData.size(); ++i) {
-            delete[] listData.at(i);
-        }
-        listData.clear();
+        freeList();
         m_size = 0;
-    }
-
-    /**
-     * Remove the last element from the data
-     * and destroying the block if its the last one in it
-     * @return the copied value
-     */
-    T pop() {
-        if (m_size == 0) throw std::runtime_error("pop called on empty blocklist");
-
-        --m_size;
-        size_t blocknum = m_size >> BLOCKBITS;
-        size_t blockindex = m_size & (BLOCKSIZE - 1);
-
-        // we need to destroy the block - we're the last one standing
-        if (blockindex == 0) {
-            T retVal = listData[blocknum][blockindex];
-
-            delete[] listData[blocknum];
-
-            listData.pop_back();
-
-            return retVal;
-
-        } else {
-            return listData[blocknum][blockindex];
-        }
-    }
-
-    /**
-     * Move the other list's elements here
-     * REMOVING them from the other
-     * Similar to std::list.splice()
-     * @param other the other list
-     */
-    void niptuck(BlockList& other) {
-        if (other.size() == 0) return;
-
-        // fill up the remainder of this BLs last block with elements from the end of other's
-        size_t requiredEmpties = BLOCKSIZE - (m_size & (BLOCKSIZE - 1));
-        // we ignore the case of having to remove the entire block - its more efficient to do later
-        if (requiredEmpties != BLOCKSIZE) {
-            // pop and add
-            for (size_t rem = requiredEmpties; rem > 0 && other.size() > 0; --rem) {
-                this->add(other.pop());
-            }
-        }
-
-        // negative values mess up the shift
-        if (other.size() == 0) {
-            other.listData.clear();
-            other.m_size = 0;
-            return;
-        }
-
-        // if we have remainder, we've got to make sure that we simply plonk in the pointers
-        // size-1, because BLOCKSIZE >> BLOCKBITS should equal 1
-        size_t otherblocks = (other.m_size - 1) >> BLOCKBITS;
-        ++otherblocks;
-        for (size_t i = 0; i < otherblocks; ++i) {
-            listData.push_back(other.listData[i]);
-        }
-
-        this->m_size += other.m_size;
-        other.listData.clear();
-        other.m_size = 0;
+        container_size = 0;
     }
 
     class iterator : std::iterator<std::forward_iterator_tag, T> {
@@ -430,21 +419,4 @@ public:
         return iterator(this, size());
     };
 };
-
-/** this is necessary for atomics, as we cannot use the copy ctor */
-template <>
-inline void BlockList<std::atomic<block_t>>::add(const std::atomic<block_t>& val) {
-    // store it in the vector
-    size_t blocknum = m_size >> BLOCKBITS;
-    size_t blockindex = m_size & (BLOCKSIZE - 1);
-
-    // we need to add a new block
-    if (blockindex == 0) {
-        this->listData.push_back(new std::atomic<block_t>[BLOCKSIZE]);
-    }
-    // we need to assign inplace for atomics
-    this->listData[blocknum][blockindex] = val.load();
-
-    ++m_size;
 }
-}  // namespace souffle

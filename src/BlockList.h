@@ -1,7 +1,8 @@
 
 #pragma once
 
-// #include <exception>
+#include "ParallelUtils.h"
+
 #include <atomic>
 #include <condition_variable>
 #include <cstring>
@@ -9,113 +10,9 @@
 #include <mutex>
 #include <thread>
 #include <limits.h>
-// #include <vector>
 #include <list>
 
 namespace souffle {
-
-/* begin reference implementation
- * http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2406.html#shared_mutex */
-// This simply exists as we do not compile using C++17. If we change standard >=C++17,
-// souffle::shared_mutex should be exchanged with std::shared_mutex
-// Slight cosmetic adjustments have been made
-class shared_mutex {
-    std::mutex mut_;
-    std::condition_variable gate1_;
-    std::condition_variable gate2_;
-    unsigned state_;
-
-    static const unsigned write_entered_ = 1U << (sizeof(unsigned) * CHAR_BIT - 1);
-    static const unsigned n_readers_ = ~write_entered_;
-
-public:
-    shared_mutex() : state_(0) {}
-
-    // Exclusive ownership
-    void lock() {
-        std::unique_lock<std::mutex> lk(mut_);
-        while (state_ & write_entered_) gate1_.wait(lk);
-        state_ |= write_entered_;
-        while (state_ & n_readers_) gate2_.wait(lk);
-    }
-
-    bool try_lock() {
-        std::unique_lock<std::mutex> lk(mut_, std::try_to_lock);
-        if (lk.owns_lock() && state_ == 0) {
-            state_ = write_entered_;
-            return true;
-        }
-        return false;
-    }
-
-    void unlock() {
-        {
-            std::lock_guard<std::mutex> _(mut_);
-            state_ = 0;
-        }
-        gate1_.notify_all();
-    }
-
-    // Shared ownership
-    void lock_shared() {
-        std::unique_lock<std::mutex> lk(mut_);
-        while ((state_ & write_entered_) || (state_ & n_readers_) == n_readers_) gate1_.wait(lk);
-        unsigned num_readers = (state_ & n_readers_) + 1;
-        state_ &= ~n_readers_;
-        state_ |= num_readers;
-    }
-
-    bool try_lock_shared() {
-        std::unique_lock<std::mutex> lk(mut_, std::try_to_lock);
-        unsigned num_readers = state_ & n_readers_;
-
-        if (lk.owns_lock() && !(state_ & write_entered_) && num_readers != n_readers_) {
-            ++num_readers;
-            state_ &= ~n_readers_;
-            state_ |= num_readers;
-            return true;
-        }
-        return false;
-    }
-
-    void unlock_shared() {
-        std::lock_guard<std::mutex> _(mut_);
-        unsigned num_readers = (state_ & n_readers_) - 1;
-        state_ &= ~n_readers_;
-        state_ |= num_readers;
-
-        if (state_ & write_entered_) {
-            if (num_readers == 0) gate2_.notify_one();
-        } else {
-            if (num_readers == n_readers_ - 1) gate1_.notify_one();
-        }
-    }
-};
-
-/* end */
-
-/* start https://stackoverflow.com/a/29195378 */
-class SpinLock {
-    std::atomic_flag locked = ATOMIC_FLAG_INIT;
-
-public:
-    void lock() {
-        while (locked.test_and_set(std::memory_order_acquire)) {
-            ;
-        }
-    }
-    void unlock() {
-        locked.clear(std::memory_order_release);
-    }
-
-    bool try_lock() {
-        return locked.test_and_set(std::memory_order_acquire);
-    }
-};
-/* end https://stackoverflow.com/a/29195378 */
-
-// number of elements within the first block container.
-// static constexpr size_t BLOCKSIZE = (1ul << 16ul);
 
 // block_t stores parent in the upper half, rank in the lower half
 typedef uint64_t block_t;
@@ -129,8 +26,8 @@ typedef uint64_t block_t;
  */
 template <class T>
 class BlockList {
-    const size_t BLOCKBITS = 16ul;
-    const size_t BLOCKSIZE = (1ul << BLOCKBITS);
+    const size_t BLOCKBITS = size_t(16);
+    const size_t BLOCKSIZE = size_t(1) << BLOCKBITS;
     std::list<T*> listData;
 
     std::atomic<size_t> m_size;
@@ -138,12 +35,13 @@ class BlockList {
     size_t allocsize = BLOCKSIZE;
     std::atomic<size_t> container_size;
 
-    // TODO: restrict to smaller size
-    // supports 128 node long linked list & with doubling
+
+    static constexpr size_t MAXINDEXPOWER = 64;
+    // supports 64 node long linked list & with doubling
     // each index points to the respective indexed linked list node
-    // a length of 128 means this data structure can store >2^128 values.
-    //      depending on how large we set the first block (for us, we set it to 2^BLOCKBITS)
-    T* blockLookupTable[128];
+    // a length of 64 means this data structure can store >2^64 values.
+    // depending on the starting block size (default 2^16)
+    T* blockLookupTable[MAXINDEXPOWER];
 
     // for parallel node insertions
     mutable SpinLock sl;
@@ -173,14 +71,14 @@ class BlockList {
 
 public:
     BlockList() : listData() {
-        for (int i = 0; i < 128; ++i) blockLookupTable[i] = nullptr;
+        for (size_t i = 0; i < MAXINDEXPOWER; ++i) blockLookupTable[i] = nullptr;
 
         m_size.store(0);
         container_size.store(0);
     }
 
     BlockList(size_t initialbitsize) : BLOCKBITS(initialbitsize) {
-        for (int i = 0; i < 128; ++i) blockLookupTable[i] = nullptr;
+        for (size_t i = 0; i < MAXINDEXPOWER; ++i) blockLookupTable[i] = nullptr;
 
         m_size.store(0);
         container_size.store(0);

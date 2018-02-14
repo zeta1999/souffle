@@ -1144,18 +1144,6 @@ public:
         return ret;
     }
 
-    /**
-     * Find the requested tuple in the data structure, and generate an iterator that begins at that point
-     * @param key the tuple to search for
-     * @param ctxt the context hint to provide help in finding this position
-     * @return an iterator that begins at that position.. and I'm pretty sure if the tuple does not exist,
-     * then an iterator == this->end()
-     */
-    iterator find(const tuple_type& key, operation_hints& ctxt) const {
-        // TODO: utilise the ctxt for this
-        return iterator(data.find(orderIn(key)));
-    }
-
     template <typename SubIndex>
     range<iterator> equalRange(const tuple_type& tuple, operation_hints& ctxt) const {
         static_assert(is_compatible_with<SubIndex, Index>::value, "Invalid sub-index query!");

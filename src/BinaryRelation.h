@@ -311,7 +311,6 @@ private:
         }
 
         orderedStates.rehash(orderedStates.size() * 2);
-
         statesLock.unlock();
 
         return a->second;
@@ -656,9 +655,8 @@ public:
         genAllDisjointSetLists();
 
         size_t numPairs = this->size();
-
-        if (chunks <= 1 || numPairs <= 1) return {souffle::make_range(begin(), end())};
-
+        if (numPairs == 0) return {};
+        if (numPairs == 1 || chunks <= 1) return {souffle::make_range(begin(), end())};
 
         // if there's more dj sets than requested chunks, then just return an iter per dj set
         std::vector<souffle::range<iterator>> ret;

@@ -75,7 +75,7 @@ public:
      */
     bool insert(DomainInt x, DomainInt y, operation_hints) {
         this->statesMapStale.store(true, std::memory_order_relaxed);
-        orderedStates.clear();
+        //orderedStates.clear();
         bool retval = contains(x, y);
         sds.unionNodes(x, y);
         return retval;
@@ -100,7 +100,6 @@ public:
             }
         }
         // invalidate iterators unconditionally
-        this->orderedStates.clear();
         this->statesMapStale.store(true, std::memory_order_relaxed);
     }
 
@@ -138,7 +137,6 @@ public:
             }
         }
         // invalidate iterators unconditionally
-        this->orderedStates.clear();
         this->statesMapStale.store(true, std::memory_order_relaxed);
     }
 
@@ -609,9 +607,19 @@ public:
      * @return the iterator representing this.
      */
     iterator anteriorIt(DomainInt anteriorVal) const {
-        auto ll = genDJSetList(anteriorVal);
+        
+        genAllDisjointSetLists();
 
-        return iterator(this, anteriorVal, ll);
+        // locate the blocklist that the anterior val resides in
+        StatesBucket found;
+        {
+            typename StatesMap::const_accessor a;
+            bool f = orderedStates.find(a, anteriorVal);
+            assert(f && "uhh.... how did this happen");
+            found = a->second;
+        }
+
+        return iterator(this, anteriorVal, found);
     }
 
     /**
@@ -625,9 +633,20 @@ public:
     iterator antpostit(DomainInt anteriorVal, DomainInt posteriorVal) const {
         // obv if they're in diff sets, then iteration for this pair just ends.
         if (!sds.sameSet(anteriorVal, posteriorVal)) return end();
-        auto ll = genDJSetList(anteriorVal);
+        
+        genAllDisjointSetLists();
 
-        return iterator(this, anteriorVal, posteriorVal, ll);
+        // locate the blocklist that the val resides in
+        StatesBucket found;
+        {
+            typename StatesMap::const_accessor a;
+            bool f = orderedStates.find(a, posteriorVal);
+            assert(f && "uhh.... how did this happen");
+            found = a->second;
+        }
+
+
+        return iterator(this, anteriorVal, posteriorVal, found);
     }
 
     /**
@@ -636,10 +655,18 @@ public:
      * @return an iterator that will generate all pairs within the disjoint set
      */
     iterator closure(DomainInt rep) const {
-        // the list that contains this representative
-        auto ll = genDJSetList(rep);
+        genAllDisjointSetLists();
 
-        return iterator(this, ll);
+        // locate the blocklist that the val resides in
+        StatesBucket found;
+        {
+            typename StatesMap::const_accessor a;
+            bool f = orderedStates.find(a, rep);
+            assert(f && "uhh.... how did this happen");
+            found = a->second;
+        }
+
+        return iterator(this, found);
     }
 
     /**

@@ -614,7 +614,7 @@ public:
         StatesBucket found;
         {
             typename StatesMap::const_accessor a;
-            bool f = orderedStates.find(a, anteriorVal);
+            bool f = orderedStates.find(a, sds.readOnlyFindNode(anteriorVal));
             assert(f && "uhh.... how did this happen");
             found = a->second;
         }

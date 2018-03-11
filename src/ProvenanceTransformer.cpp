@@ -232,12 +232,6 @@ bool ProvenanceTransformer::transform(AstTranslationUnit& translationUnit) {
                         atom->addArgument(std::unique_ptr<AstArgument>(
                                 new AstVariable("@level_num_" + std::to_string(i))));
                         bodyLevels.push_back(new AstVariable("@level_num_" + std::to_string(i)));
-                        /*
-                    } else if (auto neg = dynamic_cast<AstNegation*>(lit)) {
-                        auto atom = neg->getAtom();
-                        atom->addArgument(std::make_unique<AstUnnamedVariable>());
-                        atom->addArgument(std::make_unique<AstUnnamedVariable>());
-                        */
                     }
                 }
 
@@ -252,10 +246,6 @@ bool ProvenanceTransformer::transform(AstTranslationUnit& translationUnit) {
             }
         }
     }
-
-    // program->print(std::cout);
-    // std::cout << std::endl;
-
     return true;
 }
 

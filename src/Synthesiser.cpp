@@ -177,9 +177,6 @@ std::set<RamRelation> Synthesiser::getReferencedRelations(const RamOperation& op
             res.insert(notExist->getRelation());
         } else if (auto project = dynamic_cast<const RamProject*>(&node)) {
             res.insert(project->getRelation());
-            if (project->hasFilter()) {
-                res.insert(project->getFilter());
-            }
         }
     });
     return res;
@@ -759,23 +756,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             } else {
                 out << "Tuple<RamDomain," << arity << "> tuple({{(RamDomain)("
                     << join(project.getValues(), "),(RamDomain)(", rec) << ")}});\n";
-
-                // check filter
-            }
-            if (project.hasFilter()) {
-                auto relFilter = synthesiser.getRelationName(project.getFilter());
-                auto ctxFilter = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(project.getFilter()) + ")";
-                out << "if (!" << relFilter << ".contains(tuple," << ctxFilter << ")) {";
             }
 
             // insert tuple
             out << relName << "->"
                 << "insert(tuple," << ctxName << ");\n";
-
-            // end filter
-            if (project.hasFilter()) {
-                out << "}";
-            }
 
             // end condition
             if (condition) {

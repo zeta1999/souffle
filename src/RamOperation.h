@@ -427,20 +427,12 @@ protected:
     /** Relation */
     std::unique_ptr<RamRelation> relation;
 
-    /** Relation to check whether does not exist */
-    // TODO (#541): rename
-    std::unique_ptr<RamRelation> filter;
-
     /* Values for projection */
     std::vector<std::unique_ptr<RamValue>> values;
 
 public:
     RamProject(std::unique_ptr<RamRelation> rel, size_t level)
-            : RamOperation(RN_Project, level), relation(std::move(rel)), filter(nullptr) {}
-
-    RamProject(std::unique_ptr<RamRelation> rel, const RamRelation& filter, size_t level)
-            : RamOperation(RN_Project, level), relation(std::move(rel)),
-              filter(std::make_unique<RamRelation>(filter)) {}
+            : RamOperation(RN_Project, level), relation(std::move(rel)) {}
 
     /** Add value for a column */
     void addArg(std::unique_ptr<RamValue> v) {
@@ -453,17 +445,6 @@ public:
     /** Get relation */
     const RamRelation& getRelation() const {
         return *relation;
-    }
-
-    /** Check filter */
-    bool hasFilter() const {
-        return (bool)filter;
-    }
-
-    /** Get filter */
-    const RamRelation& getFilter() const {
-        assert(hasFilter());
-        return *filter;
     }
 
     /** Get values */
@@ -492,9 +473,6 @@ public:
     /** Create clone */
     RamProject* clone() const override {
         RamProject* res = new RamProject(std::unique_ptr<RamRelation>(relation->clone()), level);
-        if (filter != nullptr) {
-            res->filter = std::make_unique<RamRelation>(*filter);
-        }
         for (auto& cur : values) {
             res->values.push_back(std::unique_ptr<RamValue>(cur->clone()));
         }
@@ -515,14 +493,8 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(dynamic_cast<const RamProject*>(&node));
         const RamProject& other = static_cast<const RamProject&>(node);
-        bool isFilterEqual = false;
-        if (filter == nullptr && other.filter == nullptr) {
-            isFilterEqual = true;
-        } else if (filter != nullptr && other.filter != nullptr) {
-            isFilterEqual = (*filter == *other.filter);
-        }
         return RamOperation::equal(other) && getRelation() == other.getRelation() &&
-               equal_targets(values, other.values) && isFilterEqual;
+               equal_targets(values, other.values);
     }
 };
 

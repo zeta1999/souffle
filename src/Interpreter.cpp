@@ -540,11 +540,6 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
                 tuple[i] = interpreter.evalVal(*values[i], ctxt);
             }
 
-            // check filter relation
-            if (project.hasFilter() && interpreter.getRelation(project.getFilter()).exists(tuple)) {
-                return;
-            }
-
             // insert in target relation
             InterpreterRelation& rel = interpreter.getRelation(project.getRelation());
             rel.insert(tuple);

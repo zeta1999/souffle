@@ -234,7 +234,7 @@ struct default_strategy<std::tuple<Ts...>> : public linear {};
  */
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
-        unsigned blockSize, typename SearchStrategy, bool isSet>
+        unsigned blockSize, typename SearchStrategy, bool isSet, typename WeakComparator = Comparator>
 class btree {
 public:
     class iterator;
@@ -258,6 +258,16 @@ private:
 
     bool equal(const Key& a, const Key& b) const {
         return comp.equal(a, b);
+    }
+
+    mutable WeakComparator weak_comp;
+
+    bool weak_less(const Key& a, const Key& b) const {
+        return weak_comp.less(a, b);
+    }
+
+    bool weak_equal(const Key& a, const Key& b) const {
+        return weak_comp.equal(a, b);
     }
 
     /* -------------- the node type ----------------- */
@@ -1218,7 +1228,7 @@ public:
     // -- ctors / dtors --
 
     // the default constructor creating an empty tree
-    btree(const Comparator& comp = Comparator()) : comp(comp), root(nullptr), leftmost(nullptr) {}
+    btree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : comp(comp), weak_comp(weak_comp), root(nullptr), leftmost(nullptr) {}
 
     // a constructor creating a tree from the given iterator range
     template <typename Iter>
@@ -1363,7 +1373,7 @@ public:
                 auto idx = pos - a;
 
                 // early exit for sets
-                if (isSet && pos != b && equal(*pos, k)) {
+                if (isSet && pos != b && weak_equal(*pos, k)) {
                     // validate results
                     if (!cur->lock.validate(cur_lease)) {
                         // start over again
@@ -1406,7 +1416,7 @@ public:
             auto idx = pos - a;
 
             // early exit for sets
-            if (isSet && pos != a && equal(*(pos - 1), k)) {
+            if (isSet && pos != a && weak_equal(*(pos - 1), k)) {
                 // validate result
                 if (!cur->lock.validate(cur_lease)) {
                     // start over again
@@ -1554,7 +1564,7 @@ public:
                 auto idx = pos - a;
 
                 // early exit for sets
-                if (isSet && pos != b && equal(*pos, k)) {
+                if (isSet && pos != b && weak_equal(*pos, k)) {
 #ifdef HAS_TSX
                     // end hardware transaction
                     TX_END;
@@ -1578,7 +1588,7 @@ public:
             auto idx = pos - a;
 
             // early exit for sets
-            if (isSet && pos != a && equal(*(pos - 1), k)) {
+            if (isSet && pos != a && weak_equal(*(pos - 1), k)) {
 #ifdef HAS_TSX
                 // end hardware transaction
                 TX_END;
@@ -2143,8 +2153,8 @@ private:
 
 // Instantiation of static member search.
 template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename SearchStrategy,
-        bool isSet>
-const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet>::search;
+        bool isSet, typename WeakComparator>
+const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator>::search;
 
 }  // end namespace detail
 
@@ -2159,17 +2169,17 @@ const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type>
-class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> {
-    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> super;
+        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type, typename WeakComparator = Comparator>
+class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator> {
+    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator> super;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true>;
+    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator>;
 
 public:
     /**
      * A default constructor creating an empty set.
      */
-    btree_set(const Comparator& comp = Comparator()) : super(comp) {}
+    btree_set(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : super(comp, weak_comp) {}
 
     /**
      * A constructor creating a set based on the given range.
@@ -2215,17 +2225,17 @@ public:
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type>
-class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false> {
-    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false> super;
+        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type, typename WeakComparator = Comparator>
+class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator> {
+    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator> super;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false>;
+    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator>;
 
 public:
     /**
      * A default constructor creating an empty set.
      */
-    btree_multiset(const Comparator& comp = Comparator()) : super(comp) {}
+    btree_multiset(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : super(comp, weak_comp) {}
 
     /**
      * A constructor creating a set based on the given range.

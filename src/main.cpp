@@ -251,15 +251,6 @@ int main(int argc, char** argv) {
         if (Global::config().has("dl-program")) {
             Global::config().set("compile");
         }
-
-        /* disable provenance with multithreading */
-        if (Global::config().has("provenance")) {
-            if (Global::config().has("jobs")) {
-                if (Global::config().get("jobs") != "1") {
-                    ERROR("provenance cannot be enabled with multiple jobs.");
-                }
-            }
-        }
     }
 
     // ------ start souffle -------------
@@ -345,15 +336,14 @@ int main(int argc, char** argv) {
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(), std::make_unique<AstSemanticChecker>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
-            std::make_unique<InlineRelationsTransformer>(), std::make_unique<ReduceExistentialsTransformer>(),
-            std::make_unique<ExtractDisconnectedLiteralsTransformer>(),
-            std::make_unique<ConditionalTransformer>(
-                    Global::config().get("bddbddb").empty(), std::make_unique<ResolveAliasesTransformer>()),
-            std::make_unique<RemoveRelationCopiesTransformer>(),
-            std::make_unique<MaterializeAggregationQueriesTransformer>(),
-            std::make_unique<RemoveEmptyRelationsTransformer>(),
-            std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
-            std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
+	    std::make_unique<InlineRelationsTransformer>(), std::make_unique<ReduceExistentialsTransformer>(),
+	    std::make_unique<ConditionalTransformer>(
+		    Global::config().get("bddbddb").empty(), std::make_unique<ResolveAliasesTransformer>()),
+	    std::make_unique<RemoveRelationCopiesTransformer>(),
+	    std::make_unique<MaterializeAggregationQueriesTransformer>(),
+	    std::make_unique<RemoveEmptyRelationsTransformer>(),
+	    std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
+	    std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
 
     // Set up the debug report if necessary
     if (!Global::config().get("debug-report").empty()) {

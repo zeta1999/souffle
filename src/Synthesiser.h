@@ -52,7 +52,13 @@ protected:
     const std::string getOpContextName(const RamRelation& rel);
 
     /** Get relation type */
-    std::string getRelationType(const RamRelation& rel, std::size_t arity, const IndexSet& indexes);
+    // std::string getRelationType(const RamRelation& rel, std::size_t arity, const IndexSet& indexes);
+
+    /** Get relation type name */
+    std::string getRelationTypeName(const RamRelation& rel);
+
+    /** Get relation struct definition */
+    std::string getRelationTypeStruct(const RamRelation& rel, std::size_t arity, const IndexSet& indexes);
 
     /* Convert SearchColums to a template index */
     std::string toIndex(SearchColumns key);

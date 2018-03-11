@@ -100,48 +100,245 @@ const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
     return getRelationName(rel) + "_op_ctxt";
 }
 
-/** Get relation type */
-std::string Synthesiser::getRelationType(const RamRelation& rel, std::size_t arity, const IndexSet& indexes) {
+/** Get relation type name */
+std::string Synthesiser::getRelationTypeName(const RamRelation& rel) {
+    return "t_" + getRelationName(rel);
+}
+
+/** Get relation type struct */
+std::string Synthesiser::getRelationTypeStruct(
+        const RamRelation& rel, std::size_t arity, const IndexSet& indexes) {
     std::stringstream res;
-    res << "ram::Relation";
-    res << "<";
+    auto inds = indexes.getAllOrders();
+    size_t numIndexes = inds.size();
 
-    if (rel.isBTree()) {
-        res << "BTree,";
-    } else if (rel.isRbtset()) {
-        res << "Rbtset,";
-    } else if (rel.isHashset()) {
-        res << "Hashset,";
-    } else if (rel.isBrie()) {
-        res << "Brie,";
-    } else if (rel.isEqRel()) {
-        res << "EqRel,";
+    // Preamble
+    if (arity == 0 && !Global::config().has("provenance")) {
+        res << "typedef t_nullaries " << getRelationTypeName(rel) << ";\n";
     } else {
-        auto data_structure = Global::config().get("data-structure");
-        if (data_structure == "btree") {
-            res << "BTree,";
-        } else if (data_structure == "rbtset") {
-            res << "Rbtset,";
-        } else if (data_structure == "hashset") {
-            res << "Hashset,";
-        } else if (data_structure == "brie") {
-            res << "Brie,";
-        } else if (data_structure == "eqrel") {
-            res << "Eqrel,";
-        } else {
-            res << "Auto,";
+        res << "struct " << getRelationTypeName(rel) << " {\n";
+        res << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+
+        // Define a btree type for each index
+        // TODO: support other data structures
+        size_t indNum = 0;
+        size_t masterIndex = -1;
+        std::map<std::vector<int>, int> indexToNumMap;
+        for (auto& cur : inds) {
+            indexToNumMap[cur] = indNum;
+
+            // if index is full, use btree_set
+            if (cur.size() == arity) {
+                if (Global::config().has("provenance")) {
+                    assert(cur.size() >= 2 && "provenance relation must have arity at least 2");
+
+                    std::vector<int> weakIndex(cur.begin(), cur.end() - 2);
+                    res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(cur)
+                        << ">, std::allocator<t_tuple>, 256, typename "
+                           "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
+                        << join(weakIndex) << ">> t_ind_" << indNum << ";\n";
+                } else {
+                    res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
+                        << indNum << ";\n";
+                }
+
+                // if this is the first full index, record it
+                if (masterIndex == -1) {
+                    masterIndex = indNum;
+                }
+                // otherwise, if not full index, use btree_multiset
+            } else {
+                res << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
+                    << indNum << ";\n";
+            }
+
+            res << "t_ind_" << indNum << " ind_" << indNum << ";\n";
+
+            indNum++;
         }
+
+
+        if (masterIndex == -1) {
+            // create a new full index
+            std::vector<int> fullInd;
+            for (size_t i = 0; i < arity; i++) {
+                fullInd.push_back(i);
+            }
+
+            inds.push_back(fullInd);
+            masterIndex = numIndexes;
+            numIndexes++;
+
+            if (Global::config().has("provenance")) {
+                assert(fullInd.size() >= 2 && "provenance relation must have arity at least 2");
+
+                std::vector<int> weakIndex(fullInd.begin(), fullInd.end() - 2);
+                res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd)
+                    << ">, std::allocator<t_tuple>, 256, typename "
+                       "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
+                    << join(weakIndex) << ">> t_ind_" << indNum << ";\n";
+            } else {
+                res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd) << ">> t_ind_"
+                    << masterIndex << ";\n";
+            }
+            res << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
+        }
+
+
+        // typedef master iterator
+        res << "typedef typename t_ind_" << masterIndex << "::iterator iterator;\n";
+
+        // Create a struct storing the context hints for each index
+        res << "struct context {\n";
+        for (size_t i = 0; i < numIndexes; i++) {
+            res << "t_ind_" << i << "::operation_hints hints_" << i << ";\n";
+        }
+        res << "};\n";
+        res << "context createContext() { return context(); }\n";
+        res << "context hints;\n";
+
+        // insert methods
+        res << "bool insert(const t_tuple& t) {\n";
+        res << "if (ind_" << masterIndex << ".insert(t)) {\n";
+        for (size_t i = 0; i < numIndexes; i++) {
+            if (i != masterIndex) {
+                res << "ind_" << i << ".insert(t);\n";
+            }
+            res << "return true;\n";
+        }
+        res << "} else return false;\n";
+        res << "}\n";
+
+        res << "bool insert(const t_tuple& t, context& h) {\n";
+        res << "if (ind_" << masterIndex << ".insert(t, h.hints_" << masterIndex << ")) {\n";
+        for (size_t i = 0; i < numIndexes; i++) {
+            if (i != masterIndex) {
+                res << "ind_" << i << ".insert(t, h.hints_" << i << ");\n";
+            }
+        }
+        res << "return true;\n";
+        res << "} else return false;\n";
+        res << "}\n";
+
+        res << "bool insert(const RamDomain* ramDomain) {\n";
+        res << "RamDomain data[" << arity << "];\n";
+        res << "std::copy(ramDomain, ramDomain + " << arity << ", data);\n";
+        res << "const t_tuple& tuple = reinterpret_cast<const t_tuple&>(data);\n";
+        res << "return this->insert(tuple, hints);\n";
+        res << "}\n";
+
+        // insertAll method
+        res << "template <typename T>\n";
+        res << "void insertAll(T& other) {\n";
+        res << "for (auto const& cur : other) {\n";
+        res << "insert(cur);\n";
+        res << "}\n";
+        res << "}\n";
+
+        // insert method
+        std::vector<std::string> decls, params;
+        for (int i = 0; i < arity; i++) {
+            decls.push_back("RamDomain a" + std::to_string(i));
+            params.push_back("a" + std::to_string(i));
+        }
+        res << " bool insert(" << join(decls, ",") << ") {\n RamDomain data[";
+        res << arity << "] = {" << join(params, ",") << "};\n";
+        res << "return insert(data);\n";
+        res << "}\n";
+
+        // contains methods
+        res << "bool contains(const t_tuple& t) {\n";
+        res << "return ind_" << masterIndex << ".contains(t);\n";
+        res << "}\n";
+
+        res << "bool contains(const t_tuple& t, context& h) {\n";
+        res << "return ind_" << masterIndex << ".contains(t, h.hints_" << masterIndex << ");\n";
+        res << "}\n";
+
+        // size method
+        res << "std::size_t size() {\n";
+        res << "return ind_" << masterIndex << ".size();\n";
+        res << "}\n";
+
+        // find methods
+        res << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t) const {\n";
+        res << "return ind_" << masterIndex << ".find(t);\n";
+        res << "}\n";
+
+        res << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t, context& h) const {\n";
+        res << "return ind_" << masterIndex << ".find(t, h.hints_" << masterIndex << ");\n";
+        res << "}\n";
+
+        // lowerUpperBound method for internal use
+        for (size_t i = 0; i < numIndexes; i++) {
+            res << "range<t_ind_" << i
+                << "::iterator> lowerUpperBound(const t_tuple& low, const t_tuple& high, t_ind_" << i
+                << "::operation_hints& h) const {\n";
+            res << "return range<t_ind_" << i << "::iterator>(ind_" << i << ".lower_bound(low, h), ind_" << i
+                << ".upper_bound(high, h));\n";
+            res << "}\n";
+        }
+
+        // only necessary for nullaries and provenance
+        res << "range<t_ind_" << masterIndex << "::iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
+        res << "return range<t_ind_" << masterIndex << "::iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
+        res << "}\n";
+
+        // for each pattern which is used to search this relation
+        for (int64_t search : indexes.getSearches()) {
+            auto lexOrder = indexes.getLexOrder(search);
+            size_t indNum = indexToNumMap[lexOrder];
+
+            res << "range<t_ind_" << indNum << "::iterator> equalRange_" << search
+                << "(const t_tuple& t, context& h) const {\n";
+            res << "t_tuple low(t); t_tuple high(t);\n";
+
+            // check which indices to pad out
+            for (size_t column : lexOrder) {
+                // if bit number column is set
+                if (!((search >> column) & 1)) {
+                    res << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
+                    res << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
+                }
+            }
+            res << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
+            res << "}\n";
+        }
+
+        // empty method
+        res << "bool empty() {\n";
+        res << "return ind_" << masterIndex << ".empty();\n";
+        res << "}\n";
+
+        // partition method
+        res << "std::vector<range<t_ind_" << masterIndex << "::iterator>> partition() const {\n";
+        res << "return ind_" << masterIndex << ".getChunks(400);\n";
+        res << "}\n";
+
+        // purge method
+        res << "void purge() {\n";
+        for (size_t i = 0; i < numIndexes; i++) {
+            res << "ind_" << i << ".clear();\n";
+        }
+        res << "}\n";
+
+        // begin and end iterators
+        res << "t_ind_" << masterIndex << "::iterator begin() const {\n";
+        res << "return ind_" << masterIndex << ".begin();\n";
+        res << "}\n";
+
+        res << "t_ind_" << masterIndex << "::iterator end() const {\n";
+        res << "return ind_" << masterIndex << ".end();\n";
+        res << "}\n";
+
+        // TODO: finish printHintStatistics method
+        res << "void printHintStatistics(std::ostream& o, std::string prefix) const {\n";
+        res << "}\n";
+
+        // end class
+        res << "};\n";
     }
 
-    res << arity;
-    if (!areIndexesDisabled()) {
-        for (auto& cur : indexes.getAllOrders()) {
-            res << ", ram::index<";
-            res << join(cur, ",");
-            res << ">";
-        }
-    }
-    res << ">";
     return res.str();
 }
 
@@ -558,8 +755,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "const Tuple<RamDomain," << arity << "> key({{";
             printKeyTuple();
             out << "}});\n";
-            out << "auto range = " << relName << "->"
-                << "equalRange" << index << "(key," << ctxName << ");\n";
+            out << "auto range = " << relName
+                << "->"
+                // << "equalRange" << index << "(key," << ctxName << ");\n";
+                << "equalRange_" << keys << "(key," << ctxName << ");\n";
             if (scan.isPureExistenceCheck()) {
                 out << "if(!range.empty()) {\n";
             } else {
@@ -663,8 +862,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "const " << tuple_type << " key({{";
                 printKeyTuple();
                 out << "}});\n";
-                out << "auto range = " << relName << "->"
-                    << "equalRange" << index << "(key," << ctxName << ");\n";
+                out << "auto range = " << relName
+                    << "->"
+                    // << "equalRange" << index << "(key," << ctxName << ");\n";
+                    << "equalRange_" << keys << "(key," << ctxName << ");\n";
             }
 
             // add existence check
@@ -756,6 +957,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             } else {
                 out << "Tuple<RamDomain," << arity << "> tuple({{(RamDomain)("
                     << join(project.getValues(), "),(RamDomain)(", rec) << ")}});\n";
+
             }
 
             // insert tuple
@@ -895,7 +1097,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // else we conduct a range query
             out << relName << "->"
                 << "equalRange";
-            out << synthesiser.toIndex(ne.getKey());
+            // out << synthesiser.toIndex(ne.getKey());
+            out << "_" << ne.getKey();
             out << "(Tuple<RamDomain," << arity << ">({{";
             out << join(ne.getValues(), ",", [&](std::ostream& out, RamValue* value) {
                 if (!value) {
@@ -1213,15 +1416,25 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         const std::string& raw_name = rel.getName();
         const std::string& name = getRelationName(rel);
 
+        // TODO: make this correct
         // ensure that the type of the new knowledge is the same as that of the delta knowledge
-        tempType = (rel.isTemp() && raw_name.find("@delta") != std::string::npos)
-                           ? getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel))
+        bool isDelta = rel.isTemp() && raw_name.find("@delta") != std::string::npos;
+        bool isNew = rel.isTemp() && raw_name.find("@new") != std::string::npos;
+        tempType = isDelta
+                           // ? getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel))
+                           ? getRelationTypeName(rel)
                            : tempType;
-        const std::string& type = (rel.isTemp()) ? tempType : getRelationType(rel, rel.getArity(),
-                                                                      idxAnalysis->getIndexes(rel));
+        const std::string& type = (rel.isTemp()) ? tempType :  // getRelationType(rel, rel.getArity(),
+                                                               //         idxAnalysis->getIndexes(rel));
+                                          getRelationTypeName(rel);
 
         // defining table
         os << "// -- Table: " << raw_name << "\n";
+
+        // print class definition for the type
+        if (!isNew) {
+            os << getRelationTypeStruct(rel, arity, idxAnalysis->getIndexes(rel)) << "\n";
+        }
         os << type << "* " << name << ";\n";
         if (initCons.size() > 0) {
             initCons += ",\n";
@@ -1286,7 +1499,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << "// -- initialize symbol table --\n";
         os << "static const char *symbols[]={\n";
         for (size_t i = 0; i < symTable.size(); i++) {
-            os << "\tR\"(" << symTable.resolve(i) << ")\",\n";
+            os << "\tR\"(" << stringify(symTable.resolve(i)) << ")\",\n";
         }
         os << "};\n";
         os << "symTable.insert(symbols," << symTable.size() << ");\n";
@@ -1346,12 +1559,13 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     // add methods to run with and without performing IO (mainly for the interface)
     os << "public:\nvoid run() override { runFunction<false>(); }\n";
-    os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\") override { "
+    os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\") "
+          "override { "
           "runFunction<true>(inputDirectory, outputDirectory); }\n";
 
     // issue printAll method
     os << "public:\n";
-    os << "void printAll(std::string outputDirectory = \".\") override {\n";
+    os << "void printAll(std::string outputDirectory = \".\") override  {\n";
     visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
             for (IODirectives ioDirectives : store->getIODirectives()) {
@@ -1467,8 +1681,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         for (auto& sub : prog.getSubroutines()) {
             // method header
             os << "void "
-               << "subproof_" << subroutineNum << "(const std::vector<RamDomain>& args, "
-                                                  "std::vector<RamDomain>& ret, std::vector<bool>& err) {\n";
+               << "subproof_" << subroutineNum
+               << "(const std::vector<RamDomain>& args, "
+                  "std::vector<RamDomain>& ret, std::vector<bool>& err) {\n";
 
             // generate code for body
             emitCode(os, *sub.second);

@@ -1499,7 +1499,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << "// -- initialize symbol table --\n";
         os << "static const char *symbols[]={\n";
         for (size_t i = 0; i < symTable.size(); i++) {
-            os << "\tR\"(" << stringify(symTable.resolve(i)) << ")\",\n";
+            os << "\tR\"foo(" << stringify(symTable.resolve(i)) << ")foo\",\n";
         }
         os << "};\n";
         os << "symTable.insert(symbols," << symTable.size() << ");\n";

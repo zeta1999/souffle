@@ -204,8 +204,8 @@ std::string Synthesiser::getRelationTypeStruct(
             if (i != masterIndex) {
                 res << "ind_" << i << ".insert(t);\n";
             }
-            res << "return true;\n";
         }
+        res << "return true;\n";
         res << "} else return false;\n";
         res << "}\n";
 

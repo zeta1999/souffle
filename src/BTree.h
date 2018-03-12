@@ -1326,7 +1326,7 @@ public:
             // get a read lease on indicated node
             auto hint_lease = hints.last_insert->lock.start_read();
             // check whether it covers the key
-            if (covers(hints.last_insert, k)) {
+            if (weak_covers(hints.last_insert, k)) {
                 // and if there was no concurrent modification
                 if (hints.last_insert->lock.validate(hint_lease)) {
                     // use hinted location
@@ -1369,7 +1369,7 @@ public:
                 auto a = &(cur->keys[0]);
                 auto b = &(cur->keys[cur->numElements]);
 
-                auto pos = search.lower_bound(k, a, b, comp);
+                auto pos = search.lower_bound(k, a, b, weak_comp);
                 auto idx = pos - a;
 
                 // early exit for sets
@@ -1412,7 +1412,7 @@ public:
             auto a = &(cur->keys[0]);
             auto b = &(cur->keys[cur->numElements]);
 
-            auto pos = search.upper_bound(k, a, b, comp);
+            auto pos = search.upper_bound(k, a, b, weak_comp);
             auto idx = pos - a;
 
             // early exit for sets
@@ -1547,7 +1547,7 @@ public:
         node* cur = root;
 
         // test last insert
-        if (hints.last_insert && covers(hints.last_insert, k)) {
+        if (hints.last_insert && weak_covers(hints.last_insert, k)) {
             cur = hints.last_insert;
             hint_stats.inserts.addHit();
         } else {
@@ -1560,7 +1560,7 @@ public:
                 auto a = &(cur->keys[0]);
                 auto b = &(cur->keys[cur->numElements]);
 
-                auto pos = search.lower_bound(k, a, b, comp);
+                auto pos = search.lower_bound(k, a, b, weak_comp);
                 auto idx = pos - a;
 
                 // early exit for sets
@@ -1584,7 +1584,7 @@ public:
             auto a = &(cur->keys[0]);
             auto b = &(cur->keys[cur->numElements]);
 
-            auto pos = search.upper_bound(k, a, b, comp);
+            auto pos = search.upper_bound(k, a, b, weak_comp);
             auto idx = pos - a;
 
             // early exit for sets
@@ -2081,6 +2081,19 @@ private:
         }
         // in multi-sets the ends may not be completely covered
         return !node->isEmpty() && less(node->keys[0], k) && less(k, node->keys[node->numElements - 1]);
+    }
+
+    /**
+     * Determines whether the range covered by the given node is also
+     * covering the given key value.
+     */
+    bool weak_covers(const node* node, const Key& k) const {
+        if (isSet) {
+            // in sets we can include the ends as covered elements
+            return !node->isEmpty() && !weak_less(k, node->keys[0]) && !weak_less(node->keys[node->numElements - 1], k);
+        }
+        // in multi-sets the ends may not be completely covered
+        return !node->isEmpty() && weak_less(node->keys[0], k) && weak_less(k, node->keys[node->numElements - 1]);
     }
 
     /**

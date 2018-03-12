@@ -17,13 +17,7 @@ namespace souffle {
 // block_t stores parent in the upper half, rank in the lower half
 typedef uint64_t block_t;
 
-/**
- * A class that is designed to mimic std::list, but with better destructor speed
- * It achieves this by allocating comparatively large chunks of memory as it needs
- * This is not thread safe, except, when there is guarantee of at most one writer AND
- *      the TBB data structure is in use.
- *
- */
+/* a blazin' fast concurrent vector. */
 template <class T>
 class BlockList {
     const size_t BLOCKBITS = size_t(16);

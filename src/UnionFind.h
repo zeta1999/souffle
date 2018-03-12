@@ -15,12 +15,14 @@
 
 namespace souffle {
 
-typedef uint32_t rank_t;
-typedef uint32_t parent_t;
+typedef uint8_t rank_t;
+/* technically uint56_t, but, doesn't exist. Just be careful about storing > 2^56 elements. */
+typedef uint64_t parent_t;
 
-// number of bits each are (sizeof(rank_t) == sizeof(parent_t))
-constexpr uint8_t split_size = 32u;
-constexpr block_t rank_mask = (2ul << split_size) - 1;
+// number of bits that the rank is
+constexpr uint8_t split_size = 8u;
+// block_t & rank_mask extracts the rank
+constexpr block_t rank_mask = (1ul << split_size) - 1;
 
 /**
  * Structure that emulates a Disjoint Set, i.e. a data structure that supports efficient union-find operations
@@ -68,11 +70,6 @@ public:
     parent_t findNode(parent_t x) {
         // while x's parent is not itself
         while (x != b2p(get(x))) {
-            // TODO: invalidate the map here (probably memory_order_acquire?)
-            // XXX: ...actually, it appears that we don't need to invalidate it here. We care only when the
-            // disjoint sets differ. I.e. on union.
-            // validMap.store(false, std::memory_order_acquire);
-
             block_t xState = get(x);
             // yield x's parent's parent
             parent_t newParent = b2p(get(b2p(xState)));
@@ -80,11 +77,6 @@ public:
             block_t newState = pr2b(newParent, b2r(xState));
 
             this->get(x).compare_exchange_strong(xState, newState);
-
-            // TODO: also invalidate here..? I'd need both, my thinking is that if we invalidate up top, the
-            // generate an iterator, before we hit this point, then we end up with a corrupted map.
-            // However, with Souffle, I'm not sure that it is even necessary. Its usually inserts all at once,
-            // then reads, then inserts... TODO: Ask martin?
 
             x = newParent;
         }

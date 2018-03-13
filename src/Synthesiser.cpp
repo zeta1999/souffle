@@ -204,8 +204,8 @@ std::string Synthesiser::getRelationTypeStruct(
             if (i != masterIndex) {
                 res << "ind_" << i << ".insert(t);\n";
             }
-            res << "return true;\n";
         }
+        res << "return true;\n";
         res << "} else return false;\n";
         res << "}\n";
 
@@ -294,7 +294,7 @@ std::string Synthesiser::getRelationTypeStruct(
             res << "t_tuple low(t); t_tuple high(t);\n";
 
             // check which indices to pad out
-            for (size_t column : lexOrder) {
+            for (size_t column = 0; column < arity; column++) {
                 // if bit number column is set
                 if (!((search >> column) & 1)) {
                     res << "low[" << column << "] = MIN_RAM_DOMAIN;\n";

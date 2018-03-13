@@ -56,7 +56,7 @@ protected:
     void writeNextTuple(const RamDomain* tuple) override {
         size_t arity = symbolMask.getArity();
         if (isProvenance) {
-            arity -= 2;
+            // arity -= 2;
         }
 
         if (arity == 0) {
@@ -105,7 +105,7 @@ protected:
 
         // do not print last two provenance columns if provenance
         if (isProvenance) {
-            arity -= 2;
+            // arity -= 2;
         }
 
         if (arity == 0) {
@@ -155,7 +155,7 @@ protected:
         size_t arity = symbolMask.getArity();
 
         if (isProvenance) {
-            arity -= 2;
+            // arity -= 2;
         }
 
         if (arity == 0) {

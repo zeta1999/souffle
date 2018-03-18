@@ -251,15 +251,6 @@ int main(int argc, char** argv) {
         if (Global::config().has("dl-program")) {
             Global::config().set("compile");
         }
-
-        /* disable provenance with multithreading */
-        if (Global::config().has("provenance")) {
-            if (Global::config().has("jobs")) {
-                if (Global::config().get("jobs") != "1") {
-                    ERROR("provenance cannot be enabled with multiple jobs.");
-                }
-            }
-        }
     }
 
     // ------ start souffle -------------

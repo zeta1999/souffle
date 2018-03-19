@@ -613,6 +613,36 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
             project->addArg(translateValue(arg, valueIndex));
         }
 
+        // check existence for original tuple if we have provenance
+        // only if we don't compile
+        if (Global::config().has("provenance") && 
+                ((!Global::config().has("compile") 
+                  && !Global::config().has("dl-program") && 
+                  !Global::config().has("generate")))) {
+            auto uniquenessEnforcement = std::make_unique<RamNotExists>(getRelation(&head));
+            auto arity = head.getArity() - 2;
+
+            bool isVolatile = true;
+            // add args for original tuple
+            for (size_t i = 0; i < arity; i++) {
+                auto arg = head.getArgument(i);
+
+                // don't add counters
+                visitDepthFirst(*arg, [&](const AstCounter& cur) {
+                       isVolatile = false; 
+                });
+                uniquenessEnforcement->addArg(translateValue(arg, valueIndex));
+            }
+
+            // add two unnamed args for provenance columns
+            uniquenessEnforcement->addArg(nullptr);
+            uniquenessEnforcement->addArg(nullptr);
+
+            if (isVolatile) {
+                project->addCondition(std::move(uniquenessEnforcement), *project);
+            }
+        }
+
         // build up insertion call
         op = std::move(project);  // start with innermost
     }

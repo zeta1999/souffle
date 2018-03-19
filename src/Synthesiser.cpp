@@ -112,6 +112,7 @@ std::string Synthesiser::getRelationTypeStruct(
     auto inds = indexes.getAllOrders();
     size_t numIndexes = inds.size();
 
+
     // Preamble
     if (arity == 0 && !Global::config().has("provenance")) {
         res << "typedef t_nullaries " << getRelationTypeName(rel) << ";\n";
@@ -119,37 +120,88 @@ std::string Synthesiser::getRelationTypeStruct(
         res << "struct " << getRelationTypeName(rel) << " {\n";
         res << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
 
+        // Create an updater class
+        if (Global::config().has("provenance")) {
+            res << "struct updater_" << getRelationTypeName(rel) << " {\n";
+            res << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
+            res << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
+            res << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
+            res << "}\n";
+            res << "};\n";
+        }
+
         // Define a btree type for each index
         // TODO: support other data structures
         size_t indNum = 0;
         size_t masterIndex = -1;
         std::map<std::vector<int>, int> indexToNumMap;
+        std::map<std::vector<int>, int> fullIndexToNumMap;
         for (auto& cur : inds) {
             indexToNumMap[cur] = indNum;
 
             // if index is full, use btree_set
-            if (cur.size() == arity) {
-                if (Global::config().has("provenance")) {
-                    assert(cur.size() >= 2 && "provenance relation must have arity at least 2");
+            if (Global::config().has("provenance")) {
+                if (cur.size() == arity - 2) {
+                    std::vector<int> strongIndex(cur.begin(), cur.end());
+                    strongIndex.push_back(arity - 1);
+                    strongIndex.push_back(arity - 2);
 
-                    std::vector<int> weakIndex(cur.begin(), cur.end() - 2);
-                    res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(cur)
+                    if (fullIndexToNumMap.count(strongIndex)) {
+                        indexToNumMap[cur] = fullIndexToNumMap[strongIndex];
+                        numIndexes--;
+                        continue;
+                    }
+
+                    res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
                         << ">, std::allocator<t_tuple>, 256, typename "
                            "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
-                        << join(weakIndex) << ">> t_ind_" << indNum << ";\n";
+                        << join(cur) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
+                    if (masterIndex == -1) {
+                        masterIndex = indNum;
+                    }
+
+                    fullIndexToNumMap[strongIndex] = indNum;
                 } else {
+                    std::set<int> curIndexElems(cur.begin(), cur.end());
+                    std::vector<int> fullWeakIndex(cur);
+                    for (int i = 0; i < arity - 2; i++) {
+                        if (curIndexElems.find(i) == curIndexElems.end()) {
+                            fullWeakIndex.push_back(i);
+                        }
+                    }
+
+                    std::vector<int> strongIndex(fullWeakIndex);
+                    strongIndex.push_back(arity - 1);
+                    strongIndex.push_back(arity - 2);
+
+                    if (fullIndexToNumMap.count(strongIndex)) {
+                        indexToNumMap[cur] = fullIndexToNumMap[strongIndex];
+                        numIndexes--;
+                        continue;
+                    }
+
+                    res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
+                        << ">, std::allocator<t_tuple>, 256, typename "
+                           "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
+                        << join(fullWeakIndex) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
+
+                    if (masterIndex == -1) {
+                        masterIndex = indNum;
+                    }
+
+                    fullIndexToNumMap[strongIndex] = indNum;
+                }
+            } else {
+                if (cur.size() == arity) {
                     res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
                         << indNum << ";\n";
+                    if (masterIndex == -1) {
+                        masterIndex = indNum;
+                    }
+                } else {
+                    res << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
+                        << indNum << ";\n";
                 }
-
-                // if this is the first full index, record it
-                if (masterIndex == -1) {
-                    masterIndex = indNum;
-                }
-                // otherwise, if not full index, use btree_multiset
-            } else {
-                res << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
-                    << indNum << ";\n";
             }
 
             res << "t_ind_" << indNum << " ind_" << indNum << ";\n";
@@ -161,9 +213,12 @@ std::string Synthesiser::getRelationTypeStruct(
         if (masterIndex == -1) {
             // create a new full index
             std::vector<int> fullInd;
-            for (size_t i = 0; i < arity; i++) {
+            for (size_t i = 0; i < arity - 2; i++) {
                 fullInd.push_back(i);
             }
+
+            fullInd.push_back(arity - 1);
+            fullInd.push_back(arity - 2);
 
             inds.push_back(fullInd);
             masterIndex = numIndexes;
@@ -176,7 +231,7 @@ std::string Synthesiser::getRelationTypeStruct(
                 res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd)
                     << ">, std::allocator<t_tuple>, 256, typename "
                        "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
-                    << join(weakIndex) << ">> t_ind_" << indNum << ";\n";
+                    << join(weakIndex) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
             } else {
                 res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd) << ">> t_ind_"
                     << masterIndex << ";\n";
@@ -294,7 +349,7 @@ std::string Synthesiser::getRelationTypeStruct(
             res << "t_tuple low(t); t_tuple high(t);\n";
 
             // check which indices to pad out
-            for (size_t column : lexOrder) {
+            for (size_t column = 0; column < arity; column++) {
                 // if bit number column is set
                 if (!((search >> column) & 1)) {
                     res << "low[" << column << "] = MIN_RAM_DOMAIN;\n";

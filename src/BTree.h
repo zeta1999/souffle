@@ -223,6 +223,14 @@ template <typename... Ts>
 struct default_strategy<std::tuple<Ts...>> : public linear {};
 
 /**
+ * The default non-updater
+ */
+template <typename T>
+struct updater {
+    void update(T& old_t, const T& new_t) {}
+};
+
+/**
  * The actual implementation of a b-tree data structure.
  *
  * @tparam Key             .. the element type to be stored in this tree
@@ -234,7 +242,8 @@ struct default_strategy<std::tuple<Ts...>> : public linear {};
  */
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
-        unsigned blockSize, typename SearchStrategy, bool isSet, typename WeakComparator = Comparator>
+        unsigned blockSize, typename SearchStrategy, bool isSet, typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+
 class btree {
 public:
     class iterator;
@@ -268,6 +277,13 @@ private:
 
     bool weak_equal(const Key& a, const Key& b) const {
         return weak_comp.equal(a, b);
+    }
+
+    /* -------------- updater utilities ------------- */
+
+    mutable Updater upd;
+    void update(Key& old_k, const Key& new_k) {
+        upd.update(old_k, new_k);
     }
 
     /* -------------- the node type ----------------- */
@@ -1379,6 +1395,11 @@ public:
                         // start over again
                         return insert(k, hints);
                     }
+                    // update provenance information
+                    if (less(k, *pos)) {
+                        update(*pos, k);
+                        return true;
+                    }
                     // we found the element => no check of lock necessary
                     return false;
                 }
@@ -1421,6 +1442,11 @@ public:
                 if (!cur->lock.validate(cur_lease)) {
                     // start over again
                     return insert(k, hints);
+                }
+                // update provenance information
+                if (less(k, *(pos - 1))) {
+                    update(*(pos - 1), k);
+                    return true;
                 }
                 // we found the element => done
                 return false;
@@ -1569,6 +1595,11 @@ public:
                     // end hardware transaction
                     TX_END;
 #endif
+                    // update provenance information
+                    if (less(k, *pos)) {
+                        update(*pos, k);
+                        return true;
+                    }
                     return false;
                 }
 
@@ -1593,6 +1624,10 @@ public:
                 // end hardware transaction
                 TX_END;
 #endif
+                if (less(k, *(pos - 1))) {
+                    update(*(pos - 1), k);
+                    return true;
+                }
                 return false;
             }
 
@@ -2166,8 +2201,8 @@ private:
 
 // Instantiation of static member search.
 template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename SearchStrategy,
-        bool isSet, typename WeakComparator>
-const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator>::search;
+        bool isSet, typename WeakComparator, typename Updater>
+const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator, Updater>::search;
 
 }  // end namespace detail
 
@@ -2182,11 +2217,11 @@ const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type, typename WeakComparator = Comparator>
-class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator> {
-    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator> super;
+        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type, typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator, Updater> {
+    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator, Updater> super;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator>;
+    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator, Updater>;
 
 public:
     /**
@@ -2238,11 +2273,11 @@ public:
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type, typename WeakComparator = Comparator>
-class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator> {
-    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator> super;
+        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type, typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator, Updater> {
+    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator, Updater> super;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator>;
+    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator, Updater>;
 
 public:
     /**

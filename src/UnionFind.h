@@ -83,18 +83,18 @@ public:
         return x;
     }
 
-    /**
-     * Read only version of findNode
-     * i.e. it doesn't compress the tree when searching - it only finds the top representative
-     * @param x the node to find the rep of
-     * @return the representative that is found
-     */
-    parent_t readOnlyFindNode(parent_t x) const {
-        block_t ii = get(x);
-        parent_t p = b2p(ii);
-        if (x == p) return x;
-        return readOnlyFindNode(p);
-    }
+    ///**
+    // * Read only version of findNode
+    // * i.e. it doesn't compress the tree when searching - it only finds the top representative
+    // * @param x the node to find the rep of
+    // * @return the representative that is found
+    // */
+    //parent_t readOnlyFindNode(parent_t x) const {
+    //    block_t ii = get(x);
+    //    parent_t p = b2p(ii);
+    //    if (x == p) return x;
+    //    return readOnlyFindNode(p);
+    //}
 
 private:
     /**
@@ -276,14 +276,14 @@ public:
     inline bool sameSet(SparseDomain x, SparseDomain y) {
         return ds.sameSet(toDense(x), toDense(y));
     };
-    /* simply a wrapper to findNode, that does not affect the structure of the disjoint set */
-    inline SparseDomain readOnlyFindNode(SparseDomain x) {
-        // replaced toDense to readonly vv
-        // undefined if x does not exist.
-        typename SparseMap::const_accessor a;
-        sparseToDenseMap.find(a, x);
-        return toSparse(ds.readOnlyFindNode(a->second));
-    };
+    ///* simply a wrapper to findNode, that does not affect the structure of the disjoint set */
+    //inline SparseDomain readOnlyFindNode(SparseDomain x) {
+    //    // replaced toDense to readonly vv
+    //    // undefined if x does not exist.
+    //    typename SparseMap::const_accessor a;
+    //    sparseToDenseMap.find(a, x);
+    //    return toSparse(ds.readOnlyFindNode(a->second));
+    //};
     /* finds the node in the underlying disjoint set, adding the node if non-existent */
     inline SparseDomain findNode(SparseDomain x) {
         return toSparse(ds.findNode(toDense(x)));

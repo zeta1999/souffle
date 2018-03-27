@@ -124,7 +124,7 @@ public:
                 DomainInt c = sb->get(i);
                 if (other.containsElement(c)) {
                     typename StatesMap::const_accessor a;
-                    other.orderedStates.find(a, other.sds.readOnlyFindNode(c));
+                    other.orderedStates.find(a, other.sds.findNode(c));
                     // union the two disjoint sets into this one
                     const StatesBucket& osb = a->second;
 #pragma omp parallel for
@@ -210,7 +210,7 @@ private:
         for (size_t i = 0; i < dSetSize; ++i) {
             typename TupleType::value_type sVal = sds.toSparse(i);
 
-            parent_t rep = sds.readOnlyFindNode(sVal);
+            parent_t rep = sds.findNode(sVal);
 
 // TODO: do some magic with intel's accessor to try and keep it const_, and instead
 // promote when necessary.
@@ -250,7 +250,7 @@ private:
 
         // needed to allow iteration & find concurrently
         // https://www.threadingbuildingblocks.org/docs/help/reference/containers_overview/concurrent_hash_map_cls/concurrent_operations_hash.html
-        orderedStates.rehash(orderedStates.size() * 2);
+        orderedStates.rehash(orderedStates.size());
 
         statesMapStale.store(false, std::memory_order_release);
 
@@ -267,7 +267,7 @@ private:
         statesLock.lock();
 
         // ensure that we have the highest rep
-        DomainInt rep = sds.readOnlyFindNode(val);
+        DomainInt rep = sds.findNode(val);
 
         // we don't need to generate it (as all are generated)
         if (!this->statesMapStale.load(std::memory_order_acquire)) {
@@ -302,7 +302,7 @@ private:
             // parent_t c = DisjointSet::b2p(dsblocks.get(i));
 
             // c is a member of dVal's djset, so we insert it in this list
-            if (de.readOnlyFindNode(i) == dVal) {
+            if (de.findNode(i) == dVal) {
                 size_t pos = sp->createNode();
                 sp->insertAt(pos, sds.toSparse(i));
             }
@@ -614,7 +614,7 @@ public:
         StatesBucket found;
         {
             typename StatesMap::const_accessor a;
-            bool f = orderedStates.find(a, sds.readOnlyFindNode(anteriorVal));
+            bool f = orderedStates.find(a, sds.findNode(anteriorVal));
             assert(f && "uhh.... how did this happen");
             found = a->second;
         }

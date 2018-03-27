@@ -132,7 +132,7 @@ protected:
             if (columnsFilled >= symbolMask.getArity() - 2 && columnsFilled <= symbolMask.getArity()) {
                 columnsFilled = symbolMask.getArity();
             }
-            columnsFilled += 2;
+            // columnsFilled += 2;
         }
 
         if (columnsFilled != symbolMask.getArity()) {

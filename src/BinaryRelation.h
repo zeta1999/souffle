@@ -5,7 +5,13 @@
 #include <algorithm>
 #include <unordered_map>
 #include <utility>
+
+#define BINRELTBB
+#ifdef BINRELTBB
 #include <tbb/concurrent_hash_map.h>
+#else
+#include <junction/ConcurrentMap_Leapfrog.>
+#endif
 
 namespace souffle {
 template <typename TupleType>
@@ -19,7 +25,7 @@ class BinaryRelation {
     // implicitly (causing writes)
     mutable souffle::SparseDisjointSet<DomainInt> sds;
 
-    // read/write lock on orderedStates
+    // read/write lock on equivalencePartition 
     mutable souffle::shared_mutex statesLock;
 
     mutable std::atomic<bool> statesMapStale;
@@ -27,23 +33,34 @@ class BinaryRelation {
     // the ordering of states per disjoint set (mapping from representative to trie)
     // just a cache
     typedef souffle::BlockList<DomainInt> StatesList;
+#ifdef BINRELTBB
     typedef std::shared_ptr<StatesList> StatesBucket;
     typedef tbb::concurrent_hash_map<DomainInt, StatesBucket> StatesMap;
-    mutable StatesMap orderedStates;
+#else
+    typedef StatesList* StatesBucket;
+    typedef junction::ConcurrentMap_Leapfrog<DomainInt, StatesBucket> StatesMap;
+    // as leapfrog does not support size, keep track of it ourselves
+    std::atomic<size_t> num_anteriors;
+#endif
+    mutable StatesMap equivalencePartition;
 
 public:
 
-    BinaryRelation() : statesMapStale(false) {};
+    BinaryRelation() : statesMapStale(false)
+#ifndef BINRELTBB
+                       , num_anteriors(0) 
+#endif
+    {};
 
-    // TODO: what is this for, and is it correctly implemented?
-    BinaryRelation& operator=(const BinaryRelation& old) {
-        if (this == &old) return *this;
+    //// TODO: what is this for, and is it correctly implemented?
+    //BinaryRelation& operator=(const BinaryRelation& old) {
+    //    if (this == &old) return *this;
 
-        sds = old.sds;
-        orderedStates.clear();
+    //    sds = old.sds;
+    //    orderedStates.clear();
 
-        return *this;
-    }
+    //    return *this;
+    //}
 
     /**
      * TODO: implement this operation_hint class
@@ -74,8 +91,8 @@ public:
      * @return true if the pair is new to the data structure
      */
     bool insert(DomainInt x, DomainInt y, operation_hints) {
+        // indicate that iterators will have to generate on request
         this->statesMapStale.store(true, std::memory_order_relaxed);
-        //orderedStates.clear();
         bool retval = contains(x, y);
         sds.unionNodes(x, y);
         return retval;
@@ -87,7 +104,8 @@ public:
      */
     void insertAll(const BinaryRelation<TupleType>& other) {
         other.genAllDisjointSetLists();
-        for (auto& keypair : other.orderedStates) {
+#ifdef BINRELTBB 
+        for (auto& keypair : other.equivalencePartition) {
             DomainInt rep = keypair.first;
             StatesBucket& sb = keypair.second;
             const size_t ksize = sb->size();
@@ -99,6 +117,18 @@ public:
                 this->sds.unionNodes(rep, sb->get(i));
             }
         }
+#else
+        auto it = StatesMap::Iterator(equivalencePartition);
+#pragma omp parallel for
+        for (; it.isValid(); it.next()) {
+            DomainInt rep = it.getKey();
+            StatesBucket pl = it.getValue();
+            const size_t ksize = pl->size();
+            for (size_t i = 0; i < ksize; ++i) {
+                this->sds.unionNodes(rep, pl->get(i));
+            }
+        }
+#endif
         // invalidate iterators unconditionally
         this->statesMapStale.store(true, std::memory_order_relaxed);
     }
@@ -113,8 +143,9 @@ public:
     void extend(const BinaryRelation<TupleType>& other) {
         this->genAllDisjointSetLists();
         other.genAllDisjointSetLists();
+#ifdef BINRELTBB
         // iterate over all elements for each dj set in this binrel
-        for (auto& keypair : orderedStates) {
+        for (auto& keypair : equivalencePartition) {
             // DomainInt rep = keypair.first;
             StatesBucket& sb = keypair.second;
             const size_t ksize = sb->size();
@@ -124,7 +155,7 @@ public:
                 DomainInt c = sb->get(i);
                 if (other.containsElement(c)) {
                     typename StatesMap::const_accessor a;
-                    other.orderedStates.find(a, other.sds.findNode(c));
+                    other.equivalencePartition.find(a, other.sds.findNode(c));
                     // union the two disjoint sets into this one
                     const StatesBucket& osb = a->second;
 #pragma omp parallel for
@@ -138,6 +169,30 @@ public:
         }
         // invalidate iterators unconditionally
         this->statesMapStale.store(true, std::memory_order_relaxed);
+#else 
+        auto it = StatesMap::Iterator(equivalencePartition);
+        for (; it.isValid(); it.next()) {
+            StatesBucket pl = it.getValue();
+            const size_t ksize = pl->size();
+
+            // parallelise outermost loop apparently
+#pragma omp parallel for
+            // if any of the elements within this dj set is contained in other, add all elements from that other djset
+            for (size_t i = 0; i < ksize; ++i) {
+                DomainInt c = pl->get(i);
+                if (other.containsElement(c)) {
+                    StatesBucket internalPl = other.equivalencePartition.get(other.sds.findNode(c));
+                    for (size_t internalI = 0; internalI < internalPl->size(); ++internalI) {
+                        this->sds.unionNodes(c, internalPl->get(internalI));
+                    }
+                    break;
+                }
+            }
+        }
+
+        // invalidate iterators (includes freeing ptrs..?)
+        this->statesMapStale.store(true, std::memory_order_relaxed);
+#endif
     }
 
 protected:
@@ -155,12 +210,33 @@ public:
         return sds.contains(x, y);
     }
 
+#ifndef BINRELTBB
+    /**
+     * Destroys elements and frees all within equivalence partition
+     *  and replaces the instance with an empty one (junction doesn't have clear)
+     */
+    void resetEquivalencePartition() {
+        auto it = StatesMap::Iterator(equivalencePartition);
+        for (; it.isValid(); it.next()) {
+            delete it.getValue();
+        }
+        StatesMap r;
+        std::swap(r, equivalencePartition);
+        num_anteriors.store(0, std::memory_order_acquire);
+    }
+#endif
+
     void clear() {
         statesLock.lock();
 
         // we should be able to clear this prior, as it requires a lock on its own
         sds.clear();
-        orderedStates.clear();
+#ifdef BINRELTBB
+        equivalencePartition.clear();
+#else
+        resetEquivalencePartition();
+        junction::QSBR::
+#endif
 
         statesLock.unlock();
     }
@@ -174,11 +250,20 @@ public:
 
         statesLock.lock_shared();
 
+#ifdef BINRELTBB
         size_t retVal = 0;
-        for (auto& x : orderedStates) {
+        for (auto& x : equivalencePartition) {
             const size_t s = x.second->size();
             retVal += s * s;
         }
+#else
+        size_t retVal = 0;
+        auto it = StatesMap::Iterator(equivalencePartition);
+        for(; it.isValid(); it.next()) {
+            const size_t s = it.getValue()->size();
+            retVal += s*s;
+        }
+#endif
 
         statesLock.unlock_shared();
 
@@ -198,10 +283,11 @@ private:
             statesLock.unlock();
             return;
         }
+#ifdef BINRELTBB
 
         // even though it might be partially stale (i.e. genDJSetList may have been
         // activated on one or more), we need to fully regen.
-        orderedStates.clear();
+        equivalencePartition.clear();
 
         size_t dSetSize = sds.ds.a_blocks.size();
 // go through the underlying djset, and try to insert into the hash map with key being
@@ -212,18 +298,12 @@ private:
 
             parent_t rep = sds.findNode(sVal);
 
-// TODO: do some magic with intel's accessor to try and keep it const_, and instead
-// promote when necessary.
-// currently, #define doublechecked is way faster with all within one dj set (makes sense) & is roughly the
-// same with n disjoint sets (surprising, but nice)
-#define doublechecked
-#ifdef doublechecked
             // whether the piggy list is already created or not
-            bool mayNeedCreation = !orderedStates.count(rep);
+            bool mayNeedCreation = !equivalencePartition.count(rep);
             // to filter false positives
             if (mayNeedCreation) {
                 typename StatesMap::accessor a;
-                bool needsCreation = orderedStates.insert(a, rep);
+                bool needsCreation = equivalencePartition.insert(a, rep);
                 // need to make the piggylist here much smaller (consider the case there's one per element
                 // within the BR - memory bomb!)
                 if (needsCreation) a->second = std::make_shared<StatesList>(1);
@@ -233,86 +313,112 @@ private:
                 a->second->insertAt(pos, sVal);
             } else {
                 typename StatesMap::const_accessor a;
-                orderedStates.find(a, rep);
+                equivalencePartition.find(a, rep);
 
                 // then simply insert the sparse value
                 size_t pos = a->second->createNode();
                 a->second->insertAt(pos, sVal);
             }
-#else
-            typename StatesMap::accessor a;
-            bool isNew = orderedStates.insert(a, rep);
-            if (isNew) a->second = std::make_shared<StatesList>(1);
-            size_t pos = a->second->createNode();
-            a->second->insertAt(pos, sVal);
-#endif
         }
 
         // needed to allow iteration & find concurrently
         // https://www.threadingbuildingblocks.org/docs/help/reference/containers_overview/concurrent_hash_map_cls/concurrent_operations_hash.html
-        orderedStates.rehash(orderedStates.size());
+        equivalencePartition.rehash(equivalencePartition.size());
+#else
+        // make sure to empty out the hashmap
+        resetEquivalencePartition();
+
+        size_t djSetSize = sds.ds.a_blocks.size();
+        // go through the disjoint set and insert into the hash map with the key being the sparse rep (i.e. find(c))        
+#pragma omp parallel for
+        for (size_t i = 0; i < djSetSize; ++djSetSize) {
+            typename TupleType::value_type sVal = sds.toSparse(i);
+            parent_t rep = sds.findNode(sVal);
+            
+            // whether we need to try/alloc
+            StatesBucket pl;
+            bool exists = equivalencePartition.getInline(rep, pl);
+            if (!exists) {
+                StatesBucket newPl = new StatesList(1);
+                pl = equivalencePartition.getsert(rep, newPl);
+                // failed! delete our attempt
+                if (pl != newPl) delete newPl;
+                else num_anteriors.fetch_add(1, std::memory_order_relaxed);
+            }
+            pl->append(sVal);
+        }
+
+        // TODO: junction stuff
+#endif
 
         statesMapStale.store(false, std::memory_order_release);
 
         statesLock.unlock();
     }
 
-    // warning: if this is called during insertion, this will break... probably
-    std::shared_ptr<souffle::BlockList<DomainInt>> genDJSetList(DomainInt val) const {
-        if (!sds.nodeExists(val)) {
-            std::cerr << "cannot generate for a non-existent value";
-            throw "cannot generate for a non-existent value";
-        }
-
-        statesLock.lock();
-
-        // ensure that we have the highest rep
-        DomainInt rep = sds.findNode(val);
-
-        // we don't need to generate it (as all are generated)
-        if (!this->statesMapStale.load(std::memory_order_acquire)) {
-            typename StatesMap::const_accessor a;
-            assert(orderedStates.find(a, rep) && "somehow doesn't exist despite being non-stale.");
-            statesLock.unlock();
-            return a->second;
-        }
-
-        // otherwise we need to check if this one /has/ been generated by this fn already
-        typename StatesMap::accessor a;
-        bool isNew = orderedStates.insert(a, rep);
-
-        // map is already generated
-        if (!isNew) {
-            statesLock.unlock();
-            return a->second;
-        }
-
-        // just get a ref
-        a->second = std::make_shared<StatesList>();
-        StatesBucket& sp = a->second;
-
-        const parent_t dVal = sds.toDense(val);
-        const size_t dSetSize = sds.ds.a_blocks.size();
-        const auto& de = this->sds.ds;
-        // go through direct access of the block list, and append those that are in
-
-#pragma omp parallel for
-        for (size_t i = 0; i < dSetSize; ++i) {
-            // XXX: not necessary atm, as we findnode on i
-            // parent_t c = DisjointSet::b2p(dsblocks.get(i));
-
-            // c is a member of dVal's djset, so we insert it in this list
-            if (de.findNode(i) == dVal) {
-                size_t pos = sp->createNode();
-                sp->insertAt(pos, sds.toSparse(i));
-            }
-        }
-
-        orderedStates.rehash(orderedStates.size() * 2);
-        statesLock.unlock();
-
-        return a->second;
-    }
+//    // warning: if this is called during insertion, this will break... probably
+//    std::shared_ptr<souffle::BlockList<DomainInt>> genDJSetList(DomainInt val) const {
+//        if (!sds.nodeExists(val)) {
+//            std::cerr << "cannot generate for a non-existent value";
+//            throw "cannot generate for a non-existent value";
+//        }
+//
+//        statesLock.lock();
+//
+//        // ensure that we have the highest rep
+//        DomainInt rep = sds.findNode(val);
+//
+//#ifdef BINRELTBB
+//
+//        // we don't need to generate it (as all are generated)
+//        if (!this->statesMapStale.load(std::memory_order_acquire)) {
+//            typename StatesMap::const_accessor a;
+//            assert(equivalencePartition.find(a, rep) && "somehow doesn't exist despite being non-stale.");
+//            statesLock.unlock();
+//            return a->second;
+//        }
+//
+//        // otherwise we need to check if this one /has/ been generated by this fn already
+//        typename StatesMap::accessor a;
+//        bool isNew = equivalencePartition.insert(a, rep);
+//
+//        // map is already generated
+//        if (!isNew) {
+//            statesLock.unlock();
+//            return a->second;
+//        }
+//
+//        // just get a ref
+//        a->second = std::make_shared<StatesList>();
+//        StatesBucket& sp = a->second;
+//
+//        const parent_t dVal = sds.toDense(val);
+//        const size_t dSetSize = sds.ds.a_blocks.size();
+//        const auto& de = this->sds.ds;
+//        // go through direct access of the block list, and append those that are in
+//
+//#pragma omp parallel for
+//        for (size_t i = 0; i < dSetSize; ++i) {
+//            // XXX: not necessary atm, as we findnode on i
+//            // parent_t c = DisjointSet::b2p(dsblocks.get(i));
+//
+//            // c is a member of dVal's djset, so we insert it in this list
+//            if (de.findNode(i) == dVal) {
+//                size_t pos = sp->createNode();
+//                sp->insertAt(pos, sds.toSparse(i));
+//            }
+//        }
+//
+//        equivalencePartition.rehash(equivalencePartition.size() * 2);
+//
+//#else
+//        // TODO: junction stuff
+//        
+//#endif
+//        statesLock.unlock();
+//
+//        return a->second;
+//    }
 
 public:
     // an almighty iterator for several types of iteration.
@@ -333,10 +439,15 @@ public:
         // the disjoint set that we're currently iterating through
         StatesBucket djSetList;
 
+#ifdef BINRELTBB 
         // all disjoint set lists that exist..?
         typename StatesMap::iterator djSetMapListIt;
         // just a cached value
         typename StatesMap::iterator djSetMapListEnd;
+#else
+        // all dj set lists that exist
+        StatesMap::Iterator djSetMapListIt;
+#endif
 
         // used for ALL, and POSTERIOR (just a current index in the cList)
         size_t cAnteriorIndex = 0;
@@ -348,10 +459,11 @@ public:
         explicit iterator(const BinaryRelation* br, bool /* signalIsEndIterator */)
                 : br(br), isEndVal(true){};
 
+#ifdef BINRELTBB
         // ALL: iterator for iterating over everything (i.e. (_, _))
         explicit iterator(const BinaryRelation* br)
                 : br(br), ityp(IterType::ALL), 
-                djSetMapListIt(br->orderedStates.begin()), djSetMapListEnd(br->orderedStates.end())
+                djSetMapListIt(br->equivalencePartition.begin()), djSetMapListEnd(br->equivalencePartition.end())
                    {
             // we called begin on an empty dj set
             if (djSetMapListIt == djSetMapListEnd) {
@@ -364,6 +476,24 @@ public:
             updateAnterior();
             updatePosterior();
         };
+#else
+        // ALL: iterator for iterating over everything (i.e. (_, _))
+        explicit iterator(const BinaryRelation* br)
+                : br(br), ityp(IterType::ALL), 
+                djSetMapListIt(br->equivalencePartition)
+                   {
+            // we called begin on an empty dj set
+            if (!djSetMapListIt.isValid()) {
+                isEndVal = true;
+                return;
+            }
+            djSetList = djSetMapListIt.getValue();
+            assert(djSetList->size() != 0);
+
+            updateAnterior();
+            updatePosterior();
+        };
+#endif
 
         // WITHIN: iterator for everything within the same DJset (used for BinaryRelation.partition())
         explicit iterator(const BinaryRelation* br, const StatesBucket within)
@@ -445,6 +575,7 @@ public:
             return &cPair;
         }
 
+#ifdef BINRELTBB
         /* pre-increment */
         iterator& operator++() {
             if (isEndVal) throw "error: incrementing an out of range iterator";
@@ -523,6 +654,88 @@ public:
 
             return *this;
         }
+#else
+        
+        /* pre-increment */
+        iterator& operator++() {
+            if (isEndVal) throw "error: incrementing an out of range iterator";
+
+            switch (ityp) {
+                case IterType::ALL:
+                    // move posterior along one
+                    // see if we can't move the posterior along
+                    if (++cPosteriorIndex == djSetList->size()) {
+                        // move anterior along one
+                        // see if we can't move the anterior along one
+                        if (++cAnteriorIndex == djSetList->size()) {
+                            // move the djset it along one
+                            // see if we can't move it along one (we're at the end)
+                            djSetMapListIt.next();
+                            if (!djSetMapListIt.isValid()) {
+                                isEndVal = true;
+                                return *this;
+                            }
+
+                            // we can't iterate along this djset if it is empty
+                            djSetList = djSetMapListIt.getValue();
+                            if (djSetList->size() == 0) throw "error: encountered a zero size djset";
+
+                            // update our cAnterior and cPosterior
+                            cAnteriorIndex = 0;
+                            cPosteriorIndex = 0;
+                            updateAnterior();
+                            updatePosterior();
+                        }
+
+                        // we moved our anterior along one
+                        updateAnterior();
+
+                        cPosteriorIndex = 0;
+                        updatePosterior();
+                    }
+                    // we just moved our posterior along one
+                    updatePosterior();
+
+                    break;
+                case IterType::ANTERIOR:
+                    // step posterior along one, and if we can't, then we're done.
+                    if (++cPosteriorIndex == djSetList->size()) {
+                        isEndVal = true;
+                        return *this;
+                    }
+                    updatePosterior();
+
+                    break;
+                case IterType::ANTPOST:
+                    // fixed anterior and posterior literally only points to one, so if we increment, its the
+                    // end
+                    isEndVal = true;
+                    break;
+                case IterType::WITHIN:
+                    // move posterior along one
+                    // see if we can't move the posterior along
+                    if (++cPosteriorIndex == djSetList->size()) {
+                        // move anterior along one
+                        // see if we can't move the anterior along one
+                        if (++cAnteriorIndex == djSetList->size()) {
+                            isEndVal = true;
+                            return *this;
+                        }
+
+                        // we moved our anterior along one
+                        updateAnterior();
+
+                        cPosteriorIndex = 0;
+                        updatePosterior();
+                    }
+                    // we just moved our posterior along one
+                    updatePosterior();
+                    break;
+            }
+
+            return *this;
+        }
+#endif
     };
 
 public:
@@ -612,12 +825,18 @@ public:
 
         // locate the blocklist that the anterior val resides in
         StatesBucket found;
+#ifdef BINRELTBB
         {
+
             typename StatesMap::const_accessor a;
-            bool f = orderedStates.find(a, sds.findNode(anteriorVal));
+            bool f = equivalencePartition.find(a, sds.findNode(anteriorVal));
             assert(f && "uhh.... how did this happen");
             found = a->second;
         }
+#else 
+        bool f = equivalencePartition.getInline(anteriorVal, found);
+        assert(f && "anterior not found");
+#endif
 
         return iterator(this, anteriorVal, found);
     }
@@ -638,12 +857,17 @@ public:
 
         // locate the blocklist that the val resides in
         StatesBucket found;
+#ifdef BINRELTBB
         {
             typename StatesMap::const_accessor a;
-            bool f = orderedStates.find(a, posteriorVal);
+            bool f = equivalencePartition.find(a, posteriorVal);
             assert(f && "uhh.... how did this happen");
             found = a->second;
         }
+#else
+        bool f = equivalencePartition.getInline(anteriorVal, found);
+        assert(f && "anterior not found");
+#endif
 
 
         return iterator(this, anteriorVal, posteriorVal, found);
@@ -659,12 +883,18 @@ public:
 
         // locate the blocklist that the val resides in
         StatesBucket found;
+#ifdef BINRELTBB
         {
             typename StatesMap::const_accessor a;
-            bool f = orderedStates.find(a, rep);
+            bool f = equivalencePartition.find(a, rep);
             assert(f && "uhh.... how did this happen");
             found = a->second;
         }
+#else
+        bool f = equivalencePartition.getInline(anteriorVal, found);
+        assert(f && "anterior not found");
+#endif
+
 
         return iterator(this, found);
     }
@@ -687,17 +917,28 @@ public:
 
         // if there's more dj sets than requested chunks, then just return an iter per dj set
         std::vector<souffle::range<iterator>> ret;
-        if (chunks <= orderedStates.size()) {
-            for (auto& p : orderedStates) {
+#ifdef BINRELTBB
+        if (chunks <= equivalencePartition.size()) {
+            for (auto& p : equivalencePartition) {
                 ret.push_back(souffle::make_range(closure(p.first), end()));
             }
             return ret;
         }
+#else
+        if (chunks <= num_anteriors) {
+            auto it = StatesMap::Iterator(equivalencePartition);
+            for (; it.isValid(); it.next()) {
+                ret.push_back(souffle::make_range(closure(it.getKey()), end()));
+            }
+            return ret;
+        }
+#endif
 
         // keep it simple stupid 
         // just go through and if the size of the binrel is > numpairs/chunks, then generate an anteriorIt for each
         const size_t perchunk = numPairs/chunks;
-        for (const auto& itp : orderedStates) {
+#ifdef BINRELTBB
+        for (const auto& itp : equivalencePartition) {
             const size_t s = itp.second->size();
             if (s*s > perchunk) {
                 for (const auto& i : *itp.second) {
@@ -707,6 +948,19 @@ public:
                 ret.push_back(souffle::make_range(closure(itp.first), end()));
             }
         }
+#else
+        auto it = StatesMap:Iterator(equivalencePartition);
+        for (; it.isValid(); is.next()) {
+            const size_t sz = it.getValue()->size();
+            if (s*s > perchunk) {
+                for (const auto& i : it.getValue()) {
+                    ret.push_back(souffle::make_range(anteriorIt(i), end()));
+                }
+            } else {
+                ret.push_back(souffle::make_range(closure(it.getKey()), end()));
+            }
+        }
+#endif
 
         //typedef std::pair<size_t, DomainInt> osizeBuck;
         //// go through in descending order, and make iterators for them

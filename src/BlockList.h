@@ -2,6 +2,7 @@
 #pragma once
 
 #include "ParallelUtils.h"
+#include "concurrentqueue.h"
 
 #include <atomic>
 #include <condition_variable>
@@ -189,6 +190,32 @@ public:
         return new_index;
     }
 
+    void append(T val) {
+        size_t new_index = m_size.fetch_add(1, std::memory_order_relaxed);
+
+        // spin and try and insert the node at the correct index (we may need to construct a new block)
+
+        // if we don't have a valid index to store this element
+        if (container_size.load() < new_index + 1) {
+            sl.lock();
+
+            // double check & add as many blocks as necessary
+            // (although, I do hope this never loops multiple times, as it means there's at least
+            //      BLOCKSIZE threads concurrently writing...)
+            while (container_size.load() < new_index + 1) {
+                listData.push_back(new T[allocsize]);
+                // update lookup table
+                this->blockLookupTable[listData.size() - 1] = listData.back();
+                container_size += allocsize;
+                // next time our linked list node will have twice the capacity
+                allocsize <<= 1;
+            }
+
+            sl.unlock();
+        }
+        this->get(new_index) = val;
+    }
+
     /**
      * Insert a value at a specific index, expanding the data structure if necessary.
      *  Warning: this will "waste" inbetween elements, if you do not know their index,
@@ -274,6 +301,186 @@ public:
         iterator(BlockList* bl) : bl(bl){};
         /* ender iterator for marking the end of the iteration */
         iterator(BlockList* bl, size_t beginInd) : cIndex(beginInd), bl(bl){};
+
+        T operator*() {
+            return bl->get(cIndex);
+        };
+        const T operator*() const {
+            return bl->get(cIndex);
+        };
+
+        iterator& operator++(int) {
+            ++cIndex;
+            return *this;
+        };
+
+        iterator operator++() {
+            iterator ret(*this);
+            ++cIndex;
+            return ret;
+        };
+
+        friend bool operator==(const iterator& x, const iterator& y) {
+            return x.cIndex == y.cIndex && x.bl == y.bl;
+        };
+
+        friend bool operator!=(const iterator& x, const iterator& y) {
+            return !(x == y);
+        };
+    };
+
+    iterator begin() {
+        return iterator(this);
+    };
+    iterator end() {
+        return iterator(this, size());
+    };
+};
+
+
+
+
+/* a blazin' fast concurrent vector - with deletion! */
+template <class T>
+class BlockListRemovable {
+    const size_t BLOCKBITS = size_t(16);
+    const size_t BLOCKSIZE = size_t(1) << BLOCKBITS;
+
+    std::atomic<size_t> m_size;
+    // how large each new allocation will be
+    std::atomic<size_t> container_size;
+    size_t num_containers = 0;
+
+    // when we delete, we store 'unused' indexes here
+    moodycamel::ConcurrentQueue<size_t> removedIndexes;
+
+    static constexpr size_t MAXINDEXPOWER = 64;
+    // supports 64 node long linked list & with doubling
+    // each index points to the respective indexed linked list node
+    // a length of 64 means this data structure can store >2^64 values.
+    // depending on the starting block size (default 2^16)
+    T* blockLookupTable[MAXINDEXPOWER];
+
+    // for parallel node insertions
+    mutable SpinLock sl;
+
+    /**
+     * Free the arrays allocated within the linked list nodes
+     */
+    void freeList() {
+        for (size_t i = 0; i < num_containers; ++i) delete[] blockLookupTable[i];
+    }
+
+public:
+    BlockListRemovable() {
+        for (size_t i = 0; i < MAXINDEXPOWER; ++i) blockLookupTable[i] = nullptr;
+
+        m_size.store(0);
+        container_size.store(0);
+    }
+
+    BlockListRemovable(size_t initialbitsize) : BLOCKBITS(initialbitsize) {
+        for (size_t i = 0; i < MAXINDEXPOWER; ++i) blockLookupTable[i] = nullptr;
+
+        m_size.store(0);
+        container_size.store(0);
+    }
+
+    ~BlockListRemovable() {
+        freeList();
+    }
+
+    /**
+     * Well, returns the number of nodes exist within the list + number of nodes queued to be inserted
+     *  The reason for this, is that there may be many nodes queued up
+     *  that haven't had time to had containers created and updated
+     * @return the number of nodes exist within the list + number of nodes queued to be inserted
+     */
+    inline size_t size() const {
+        return m_size.load();
+    };
+
+    inline size_t containerSize() const {
+        return container_size.load();
+    }
+
+    inline T* getBlock(size_t blocknum) const {
+        return this->blockLookupTable[blocknum];
+    }
+
+    /**
+     * Create a value in the blocklist & return the new Node & its position.
+     * @return std::pair<New Node, Index of New Node>
+     */
+    size_t createNode() {
+        // use if we can
+        size_t new_index;
+        if (removedIndexes.try_dequeue(new_index)) {
+            return new_index;
+        }
+
+        new_index = m_size.fetch_add(1, std::memory_order_relaxed);
+
+        // spin and try and insert the node at the correct index (we may need to construct a new block)
+
+        // if we don't have a valid index to store this element
+        if (container_size.load() < new_index + 1) {
+            sl.lock();
+
+            // double check & add as many blocks as necessary
+            // (although, I do hope this never loops multiple times, as it means there's at least
+            //      BLOCKSIZE threads concurrently writing...)
+            while (container_size.load() < new_index + 1) {
+                blockLookupTable[num_containers] = new T[1 << num_containers];
+                container_size += 1 << num_containers;
+                ++num_containers;
+            }
+
+            sl.unlock();
+        }
+
+        return new_index;
+    }
+
+    /* blindly delete the element - if you delete an element twice, you're up shit creek */
+    void delNode(size_t index) {
+        removedIndexes.enqueue(index);
+    }
+
+    /**
+     * Retrieve a reference to the stored value at index
+     * @param index position to search
+     * @return the value at index
+     */
+    inline T& get(size_t index) const {
+        // supa fast 2^16 size first block
+        size_t nindex = index + BLOCKSIZE;
+        size_t blockNum = (63 - __builtin_clzll(nindex));
+        size_t blockInd = (nindex) & ((1 << blockNum) - 1);
+        return this->getBlock(blockNum - BLOCKBITS)[blockInd];
+    }
+
+    /**
+     * Clear all elements from the BlockList
+     */
+    void clear() {
+        freeList();
+        m_size = 0;
+        container_size = 0;
+    }
+
+    class iterator : std::iterator<std::forward_iterator_tag, T> {
+        size_t cIndex = 0;
+        BlockListRemovable* bl;
+
+    public:
+        // default ctor, to silence
+        iterator(){};
+
+        /* begin iterator for iterating over all elements */
+        iterator(BlockListRemovable* bl) : bl(bl){};
+        /* ender iterator for marking the end of the iteration */
+        iterator(BlockListRemovable* bl, size_t beginInd) : cIndex(beginInd), bl(bl){};
 
         T operator*() {
             return bl->get(cIndex);

@@ -11,7 +11,16 @@
 #include <unordered_map>
 #include <vector>
 
+//#define SPARSETBB
+#ifdef SPARSETBB
 #include <tbb/concurrent_hash_map.h>
+#else
+#include <junction/ConcurrentMap_Leapfrog.h>
+#endif
+
+// branch predictor hacks
+#define unlikely(x) __builtin_expect((x), 0)
+#define likely(x) __builtin_expect((x), 1)
 
 namespace souffle {
 
@@ -24,6 +33,47 @@ constexpr uint8_t split_size = 8u;
 // block_t & rank_mask extracts the rank
 constexpr block_t rank_mask = (1ul << split_size) - 1;
 
+// mapping from souffle val to union-find dense value
+template <class T>
+struct KeyTraits {
+    typedef T Key;
+    typedef int64_t Hash;
+    static const Hash NullKey = -1;
+    static const Hash NullHash = -2;
+
+    // from code.google.com/p/smhasher/wiki/MurmurHash3
+    static inline uint64_t avalanche(uint64_t h) {
+        h ^= h >> 33;
+        h *= 0xff51afd7ed558ccd;
+        h ^= h >> 33;
+        h *= 0xc4ceb9fe1a85ec53;
+        h ^= h >> 33;
+        return h;
+    }
+    static Hash hash(T key) {
+        return avalanche(Hash(key));
+    }
+
+    static inline uint64_t deavalanche(uint64_t h) {
+        h ^= h >> 33;
+        h *= 0x9cb4b2f8129337db;
+        h ^= h >> 33;
+        h *= 0x4f74430c22a54005;
+        h ^= h >> 33;
+        return h;
+    }
+    static Key dehash(Hash h) {
+        return (T) deavalanche(h);
+    }
+};
+template <class T>
+struct ValTraits {
+    typedef T value;
+    typedef int64_t IntType;
+    static const IntType NullValue = -1;
+    static const IntType Redirect = -2;
+};
+
 /**
  * Structure that emulates a Disjoint Set, i.e. a data structure that supports efficient union-find operations
  */
@@ -31,20 +81,15 @@ class DisjointSet {
     template <typename TupleType>
     friend class BinaryRelation;
 
-    /* store blocks of atomics */
+#ifdef SPARSETBB
     BlockList<std::atomic<block_t>> a_blocks;
+#else
+    /* store blocks of atomics - needs removal for speculative inserts */
+    BlockListRemovable<std::atomic<block_t>> a_blocks;
+#endif
 
 public:
     DisjointSet(){};
-
-    // Not a thread safe operation
-    DisjointSet& operator=(const DisjointSet& old) {
-        if (this == &old) return *this;
-
-        a_blocks = old.a_blocks;
-
-        return *this;
-    }
 
     inline size_t size() const {
         auto sz = a_blocks.size();
@@ -82,19 +127,6 @@ public:
         }
         return x;
     }
-
-    ///**
-    // * Read only version of findNode
-    // * i.e. it doesn't compress the tree when searching - it only finds the top representative
-    // * @param x the node to find the rep of
-    // * @return the representative that is found
-    // */
-    //parent_t readOnlyFindNode(parent_t x) const {
-    //    block_t ii = get(x);
-    //    parent_t p = b2p(ii);
-    //    if (x == p) return x;
-    //    return readOnlyFindNode(p);
-    //}
 
 private:
     /**
@@ -186,6 +218,10 @@ public:
         return a_blocks.get(nodeDetails).load();
     };
 
+    inline void delNode(parent_t node) {
+        a_blocks.delNode(node);
+    }
+
     /**
      * Extract parent from block
      * @param inblock the block to be masked
@@ -222,8 +258,11 @@ class SparseDisjointSet {
     template <typename TupleType>
     friend class BinaryRelation;
 
-    // mapping from souffle val to union-find dense value
+#ifdef SPARSETBB
     typedef tbb::concurrent_hash_map<SparseDomain, parent_t> SparseMap;
+#else
+    typedef junction::ConcurrentMap_Leapfrog<SparseDomain, parent_t, KeyTraits<SparseDomain>, ValTraits<parent_t>> SparseMap;
+#endif
     SparseMap sparseToDenseMap;
     // mapping from union-find val to souffle, union-find encoded as index
     souffle::BlockList<SparseDomain> denseToSparseMap;
@@ -235,6 +274,9 @@ private:
      * @return the corresponding dense value
      */
     parent_t toDense(const SparseDomain in) {
+
+#ifdef SPARSETBB
+
         typename SparseMap::accessor a;
         bool newItem = sparseToDenseMap.insert(a, in);
         // create mapping if doesn't exist
@@ -247,6 +289,20 @@ private:
         }
 
         return a->second;
+#else
+        parent_t dense;
+        bool exists = sparseToDenseMap.getInline(in, dense);
+        if (unlikely(!exists)) {
+            // attempt to insert a new val
+            parent_t proposedDense = ds.b2p(ds.makeNode());
+            dense = sparseToDenseMap.getsert(in, proposedDense);
+            // we got beaten, lets cleanup.
+            if (dense != proposedDense) ds.delNode(proposedDense);
+            denseToSparseMap.insertAt(dense, in);
+        }
+        return dense;
+#endif
+
     }
 
 public:
@@ -276,14 +332,6 @@ public:
     inline bool sameSet(SparseDomain x, SparseDomain y) {
         return ds.sameSet(toDense(x), toDense(y));
     };
-    ///* simply a wrapper to findNode, that does not affect the structure of the disjoint set */
-    //inline SparseDomain readOnlyFindNode(SparseDomain x) {
-    //    // replaced toDense to readonly vv
-    //    // undefined if x does not exist.
-    //    typename SparseMap::const_accessor a;
-    //    sparseToDenseMap.find(a, x);
-    //    return toSparse(ds.readOnlyFindNode(a->second));
-    //};
     /* finds the node in the underlying disjoint set, adding the node if non-existent */
     inline SparseDomain findNode(SparseDomain x) {
         return toSparse(ds.findNode(toDense(x)));
@@ -300,7 +348,14 @@ public:
     // TODO: documentation
     void clear() {
         ds.clear();
-        sparseToDenseMap.clear();
+#ifdef SPARSETBB
+        sparseToDenseMap.clear()
+#else
+        // we can't clear the junction map.. so lets indiana jones it
+        SparseMap replacer;
+        std::swap(sparseToDenseMap, replacer);
+#endif
+        denseToSparseMap.clear();
     }
 
     /* wrapper for node creation */
@@ -311,7 +366,11 @@ public:
 
     /* whether we the supplied node exists */
     inline bool nodeExists(const SparseDomain val) const {
+#ifdef SPARSETBB
         return sparseToDenseMap.count(val);
+#else
+        return sparseToDenseMap.exists(val);
+#endif
     };
 
     inline bool contains(SparseDomain v1, SparseDomain v2) {

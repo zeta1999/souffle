@@ -139,8 +139,8 @@ std::string Synthesiser::getRelationTypeStruct(
         for (auto& cur : inds) {
             indexToNumMap[cur] = indNum;
 
-            // if index is full, use btree_set
             if (Global::config().has("provenance")) {
+                // If index is full, add two provenance columns
                 if (cur.size() == arity - 2) {
                     std::vector<int> strongIndex(cur.begin(), cur.end());
                     strongIndex.push_back(arity - 1);
@@ -161,6 +161,7 @@ std::string Synthesiser::getRelationTypeStruct(
                     }
 
                     fullIndexToNumMap[strongIndex] = indNum;
+                // Otherwise, expand to build a full index
                 } else {
                     std::set<int> curIndexElems(cur.begin(), cur.end());
                     std::vector<int> fullWeakIndex(cur);
@@ -213,18 +214,19 @@ std::string Synthesiser::getRelationTypeStruct(
         if (masterIndex == -1) {
             // create a new full index
             std::vector<int> fullInd;
-            for (size_t i = 0; i < arity - 2; i++) {
-                fullInd.push_back(i);
-            }
-
-            fullInd.push_back(arity - 1);
-            fullInd.push_back(arity - 2);
-
-            inds.push_back(fullInd);
-            masterIndex = numIndexes;
-            numIndexes++;
 
             if (Global::config().has("provenance")) {
+                for (size_t i = 0; i < arity - 2; i++) {
+                    fullInd.push_back(i);
+                }
+
+                fullInd.push_back(arity - 1);
+                fullInd.push_back(arity - 2);
+
+                inds.push_back(fullInd);
+                masterIndex = numIndexes;
+                numIndexes++;
+
                 assert(fullInd.size() >= 2 && "provenance relation must have arity at least 2");
 
                 std::vector<int> weakIndex(fullInd.begin(), fullInd.end() - 2);
@@ -233,6 +235,14 @@ std::string Synthesiser::getRelationTypeStruct(
                        "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
                     << join(weakIndex) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
             } else {
+                for (size_t i = 0; i < arity; i++) {
+                    fullInd.push_back(i);
+                }
+
+                inds.push_back(fullInd);
+                masterIndex = numIndexes;
+                numIndexes++;
+
                 res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd) << ">> t_ind_"
                     << masterIndex << ";\n";
             }

@@ -227,7 +227,7 @@ struct default_strategy<std::tuple<Ts...>> : public linear {};
  */
 template <typename T>
 struct updater {
-    bool update(T& old_t, const T& new_t, bool(*comp)(const T&, const T&)) { return false; }
+    bool update(T& old_t, const T& new_t) { return false; }
 };
 
 /**
@@ -282,8 +282,8 @@ private:
     /* -------------- updater utilities ------------- */
 
     mutable Updater upd;
-    bool update(Key& old_k, const Key& new_k, bool(*comp)(const Key&, const Key&)) {
-        upd.update(old_k, new_k, comp);
+    bool update(Key& old_k, const Key& new_k) {
+        upd.update(old_k, new_k);
     }
 
     /* -------------- the node type ----------------- */
@@ -1396,7 +1396,7 @@ public:
                         return insert(k, hints);
                     }
                     // update provenance information
-                    return update(*pos, k, comp.less);
+                    return update(*pos, k);
 
                     // we found the element => no check of lock necessary
                     // return false;
@@ -1442,7 +1442,7 @@ public:
                     return insert(k, hints);
                 }
                 // update provenance information
-                return update(*(pos - 1), k, comp.less);
+                return update(*(pos - 1), k);
 
                 // we found the element => done
                 // return false;
@@ -1592,7 +1592,7 @@ public:
                     TX_END;
 #endif
                     // update provenance information
-                    return update(*pos, k, comp.less);
+                    return update(*pos, k);
                     // return false;
                 }
 
@@ -1617,7 +1617,7 @@ public:
                 // end hardware transaction
                 TX_END;
 #endif
-                return update(*(pos - 1), k, comp.less);
+                return update(*(pos - 1), k);
                 // return false;
             }
 

@@ -120,16 +120,6 @@ std::string Synthesiser::getRelationTypeStruct(
         res << "struct " << getRelationTypeName(rel) << " {\n";
         res << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
 
-        // Create an updater class
-        if (Global::config().has("provenance")) {
-            res << "struct updater_" << getRelationTypeName(rel) << " {\n";
-            res << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
-            res << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
-            res << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
-            res << "}\n";
-            res << "};\n";
-        }
-
         // Define a btree type for each index
         // TODO: support other data structures
         size_t indNum = 0;
@@ -248,6 +238,21 @@ std::string Synthesiser::getRelationTypeStruct(
             }
             res << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
         }
+
+        // Create an updater class
+        if (Global::config().has("provenance")) {
+            res << "struct updater_" << getRelationTypeName(rel) << " {\n";
+            // TODO: Finish this!!
+            res << "index_utils::comparator<" << join(
+            res << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
+            res << "if (comp(old_t, new_t)) {\n";
+            res << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
+            res << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
+            res << "}\n";
+            res << "}\n";
+            res << "};\n";
+        }
+
 
 
         // typedef master iterator

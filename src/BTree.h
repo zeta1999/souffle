@@ -227,7 +227,7 @@ struct default_strategy<std::tuple<Ts...>> : public linear {};
  */
 template <typename T>
 struct updater {
-    void update(T& old_t, const T& new_t) {}
+    bool update(T& old_t, const T& new_t, bool(*comp)(const T&, const T&)) { return false; }
 };
 
 /**
@@ -282,8 +282,8 @@ private:
     /* -------------- updater utilities ------------- */
 
     mutable Updater upd;
-    void update(Key& old_k, const Key& new_k) {
-        upd.update(old_k, new_k);
+    bool update(Key& old_k, const Key& new_k, bool(*comp)(const Key&, const Key&)) {
+        upd.update(old_k, new_k, comp);
     }
 
     /* -------------- the node type ----------------- */
@@ -1396,12 +1396,10 @@ public:
                         return insert(k, hints);
                     }
                     // update provenance information
-                    if (less(k, *pos)) {
-                        update(*pos, k);
-                        return true;
-                    }
+                    return update(*pos, k, comp.less);
+
                     // we found the element => no check of lock necessary
-                    return false;
+                    // return false;
                 }
 
                 // get next pointer
@@ -1444,12 +1442,10 @@ public:
                     return insert(k, hints);
                 }
                 // update provenance information
-                if (less(k, *(pos - 1))) {
-                    update(*(pos - 1), k);
-                    return true;
-                }
+                return update(*(pos - 1), k, comp.less);
+
                 // we found the element => done
-                return false;
+                // return false;
             }
 
             // upgrade to write-permission
@@ -1596,11 +1592,8 @@ public:
                     TX_END;
 #endif
                     // update provenance information
-                    if (less(k, *pos)) {
-                        update(*pos, k);
-                        return true;
-                    }
-                    return false;
+                    return update(*pos, k, comp.less);
+                    // return false;
                 }
 
                 cur = cur->getChild(idx);
@@ -1624,11 +1617,8 @@ public:
                 // end hardware transaction
                 TX_END;
 #endif
-                if (less(k, *(pos - 1))) {
-                    update(*(pos - 1), k);
-                    return true;
-                }
-                return false;
+                return update(*(pos - 1), k, comp.less);
+                // return false;
             }
 
             if (cur->numElements >= node::maxKeys) {

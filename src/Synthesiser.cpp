@@ -112,6 +112,7 @@ std::string Synthesiser::getRelationTypeStruct(
     auto inds = indexes.getAllOrders();
     size_t numIndexes = inds.size();
 
+    std::vector<int> masterIndexColumns;
 
     // Preamble
     if (arity == 0 && !Global::config().has("provenance")) {
@@ -126,6 +127,7 @@ std::string Synthesiser::getRelationTypeStruct(
         size_t masterIndex = -1;
         std::map<std::vector<int>, int> indexToNumMap;
         std::map<std::vector<int>, int> fullIndexToNumMap;
+        std::stringstream indexTypes;
         for (auto& cur : inds) {
             indexToNumMap[cur] = indNum;
 
@@ -142,12 +144,13 @@ std::string Synthesiser::getRelationTypeStruct(
                         continue;
                     }
 
-                    res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
+                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
                         << ">, std::allocator<t_tuple>, 256, typename "
                            "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
                         << join(cur) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
                     if (masterIndex == -1) {
                         masterIndex = indNum;
+                        masterIndexColumns = strongIndex;
                     }
 
                     fullIndexToNumMap[strongIndex] = indNum;
@@ -171,31 +174,33 @@ std::string Synthesiser::getRelationTypeStruct(
                         continue;
                     }
 
-                    res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
+                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
                         << ">, std::allocator<t_tuple>, 256, typename "
                            "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
                         << join(fullWeakIndex) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
 
                     if (masterIndex == -1) {
                         masterIndex = indNum;
+                        masterIndexColumns = strongIndex;
                     }
 
                     fullIndexToNumMap[strongIndex] = indNum;
                 }
             } else {
                 if (cur.size() == arity) {
-                    res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
+                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
                         << indNum << ";\n";
                     if (masterIndex == -1) {
                         masterIndex = indNum;
+                        masterIndexColumns = cur;
                     }
                 } else {
-                    res << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
+                    indexTypes << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
                         << indNum << ";\n";
                 }
             }
 
-            res << "t_ind_" << indNum << " ind_" << indNum << ";\n";
+            indexTypes << "t_ind_" << indNum << " ind_" << indNum << ";\n";
 
             indNum++;
         }
@@ -215,12 +220,13 @@ std::string Synthesiser::getRelationTypeStruct(
 
                 inds.push_back(fullInd);
                 masterIndex = numIndexes;
+                masterIndexColumns = fullInd;
                 numIndexes++;
 
                 assert(fullInd.size() >= 2 && "provenance relation must have arity at least 2");
 
                 std::vector<int> weakIndex(fullInd.begin(), fullInd.end() - 2);
-                res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd)
+                indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd)
                     << ">, std::allocator<t_tuple>, 256, typename "
                        "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
                     << join(weakIndex) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
@@ -231,29 +237,45 @@ std::string Synthesiser::getRelationTypeStruct(
 
                 inds.push_back(fullInd);
                 masterIndex = numIndexes;
+                masterIndexColumns = fullInd;
                 numIndexes++;
 
-                res << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd) << ">> t_ind_"
+                indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd) << ">> t_ind_"
                     << masterIndex << ";\n";
             }
-            res << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
+            indexTypes << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
         }
 
         // Create an updater class
         if (Global::config().has("provenance")) {
             res << "struct updater_" << getRelationTypeName(rel) << " {\n";
-            // TODO: Finish this!!
-            res << "index_utils::comparator<" << join(
-            res << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
-            res << "if (comp(old_t, new_t)) {\n";
-            res << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
-            res << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
+            res << "index_utils::comparator<" << join(masterIndexColumns) << "> c;\n";
+            res << "bool update(t_tuple& old_t, const t_tuple& new_t) {\n";
+            res << "t_tuple old_copy = old_t;\n";
+            res << "uint64_t* old_prov = (uint64_t*) &old_copy[" << arity - 2 << "];\n";
+
+            // only swap if new tuple has smaller height number than old tuple
+            res << "if (c.less(new_t, old_t)) {\n";
+            res << "std::atomic<uint64_t*> old_atomic;\n";
+            res << "old_atomic.store((uint64_t*) &old_t[" << arity - 2 << "]);\n";
+            res << "uint64_t* new_ptr = (uint64_t*) &new_t[" << arity - 2 << "];\n";
+
+            // swap old and new if nothing has changed in between, otherwise do a spinlock
+            res << "while (!old_atomic.compare_exchange_weak(old_prov, new_ptr, std::memory_order_release, std::memory_order_relaxed)) {\n";
+            res << "    old_copy = old_t;\n";
+            res << "    old_prov = (uint64_t*) &old_copy[" << arity - 2 << "];\n";
+            res << "    if (!c.less(new_t, old_t)) {\n";
+            res << "        return false;\n";
+            res << "    }\n";
             res << "}\n";
+            res << "return true;\n"; // if swap succeeded
+            res << "}\n";
+            res << "return false;\n"; // if no swap was needed
             res << "}\n";
             res << "};\n";
         }
 
-
+        res << indexTypes.str();
 
         // typedef master iterator
         res << "typedef typename t_ind_" << masterIndex << "::iterator iterator;\n";

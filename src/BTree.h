@@ -227,7 +227,7 @@ struct default_strategy<std::tuple<Ts...>> : public linear {};
  */
 template <typename T>
 struct updater {
-    bool update(T& old_t, const T& new_t) { return false; }
+    void update(T& old_t, const T& new_t) {}
 };
 
 /**
@@ -282,7 +282,7 @@ private:
     /* -------------- updater utilities ------------- */
 
     mutable Updater upd;
-    bool update(Key& old_k, const Key& new_k) {
+    void update(Key& old_k, const Key& new_k) {
         upd.update(old_k, new_k);
     }
 
@@ -1395,11 +1395,20 @@ public:
                         // start over again
                         return insert(k, hints);
                     }
+
                     // update provenance information
-                    return update(*pos, k);
+                    if (less(k, *pos)) {
+                        if (!cur->lock.try_upgrade_to_write(cur_lease)) {
+                            // start again
+                            return insert(k, hints);
+                        }
+                        update(*pos, k);
+                        cur->lock.end_write();
+                        return true;
+                    }
 
                     // we found the element => no check of lock necessary
-                    // return false;
+                    return false;
                 }
 
                 // get next pointer
@@ -1442,10 +1451,18 @@ public:
                     return insert(k, hints);
                 }
                 // update provenance information
-                return update(*(pos - 1), k);
+                if (less(k, *(pos - 1))) {
+                    if (!cur->lock.try_upgrade_to_write(cur_lease)) {
+                        // start again
+                        return insert(k, hints);
+                    }
+                    update(*(pos - 1), k);
+                    cur->lock.end_write();
+                    return true;
+                }
 
                 // we found the element => done
-                // return false;
+                return false;
             }
 
             // upgrade to write-permission
@@ -1592,8 +1609,16 @@ public:
                     TX_END;
 #endif
                     // update provenance information
-                    return update(*pos, k);
-                    // return false;
+                    if (less(k, *pos)) {
+                        if (!cur->lock.try_upgrade_to_write(cur_lease)) {
+                            // start again
+                            return insert(k, hints);
+                        }
+                        update(*pos, k);
+                        cur->lock.end_write();
+                        return true;
+                    }
+                    return false;
                 }
 
                 cur = cur->getChild(idx);
@@ -1617,8 +1642,16 @@ public:
                 // end hardware transaction
                 TX_END;
 #endif
-                return update(*(pos - 1), k);
-                // return false;
+                if (less(k, *(pos - 1))) {
+                    if (!cur->lock.try_upgrade_to_write(cur_lease)) {
+                        // start again
+                        return insert(k, hints);
+                    }
+                    update(*(pos - 1), k);
+                    cur->lock.end_write();
+                    return true;
+                }
+                return false;
             }
 
             if (cur->numElements >= node::maxKeys) {

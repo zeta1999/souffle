@@ -249,8 +249,11 @@ std::string Synthesiser::getRelationTypeStruct(
         // Create an updater class
         if (Global::config().has("provenance")) {
             res << "struct updater_" << getRelationTypeName(rel) << " {\n";
-            res << "index_utils::comparator<" << join(masterIndexColumns) << "> c;\n";
+            // res << "index_utils::comparator<" << join(masterIndexColumns) << "> c;\n";
             res << "bool update(t_tuple& old_t, const t_tuple& new_t) {\n";
+            res << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
+            res << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
+            /*
             res << "t_tuple old_copy = old_t;\n";
             res << "uint64_t* old_prov = (uint64_t*) &old_copy[" << arity - 2 << "];\n";
 
@@ -271,6 +274,7 @@ std::string Synthesiser::getRelationTypeStruct(
             res << "return true;\n"; // if swap succeeded
             res << "}\n";
             res << "return false;\n"; // if no swap was needed
+            */
             res << "}\n";
             res << "};\n";
         }

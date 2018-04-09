@@ -250,7 +250,7 @@ std::string Synthesiser::getRelationTypeStruct(
         if (Global::config().has("provenance")) {
             res << "struct updater_" << getRelationTypeName(rel) << " {\n";
             // res << "index_utils::comparator<" << join(masterIndexColumns) << "> c;\n";
-            res << "bool update(t_tuple& old_t, const t_tuple& new_t) {\n";
+            res << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
             res << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
             res << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
             /*

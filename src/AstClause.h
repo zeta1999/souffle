@@ -255,6 +255,9 @@ protected:
     /** The negations in the body of this clause */
     std::vector<std::unique_ptr<AstNegation>> negations;
 
+    /** The provenance negations in the body of this clause */
+    std::vector<std::unique_ptr<AstProvenanceNegation>> provNegations;
+
     /** The constraints in the body of this clause */
     std::vector<std::unique_ptr<AstConstraint>> constraints;
 
@@ -398,6 +401,9 @@ public:
         for (const auto& cur : negations) {
             res->negations.push_back(std::unique_ptr<AstNegation>(cur->clone()));
         }
+        for (const auto& cur : provNegations) {
+            res->provNegations.push_back(std::unique_ptr<AstProvenanceNegation>(cur->clone()));
+        }
         for (const auto& cur : constraints) {
             res->constraints.push_back(std::unique_ptr<AstConstraint>(cur->clone()));
         }
@@ -413,6 +419,9 @@ public:
             lit = map(std::move(lit));
         }
         for (auto& lit : negations) {
+            lit = map(std::move(lit));
+        }
+        for (auto& lit : provNegations) {
             lit = map(std::move(lit));
         }
         for (auto& lit : constraints) {
@@ -439,6 +448,9 @@ public:
             res.push_back(cur.get());
         }
         for (auto& cur : negations) {
+            res.push_back(cur.get());
+        }
+        for (auto& cur : provNegations) {
             res.push_back(cur.get());
         }
         for (auto& cur : constraints) {

@@ -43,6 +43,7 @@ enum RamNodeType {
 
     // conditions
     RN_NotExists,
+    RN_ProvenanceNotExists,
     RN_Empty,
     RN_And,
     RN_BinaryRelation,

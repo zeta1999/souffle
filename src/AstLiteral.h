@@ -252,7 +252,7 @@ public:
 
     /** Output to a given stream */
     void print(std::ostream& os) const override {
-        os << "!";
+        os << "prov!";
         atom->print(os);
     }
 

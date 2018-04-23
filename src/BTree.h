@@ -19,9 +19,7 @@
 
 #include "ParallelUtils.h"
 #include "Util.h"
-#ifdef HAS_TSX
-#include "htmx86.h"
-#endif
+
 #include <cassert>
 #include <iostream>
 #include <iterator>
@@ -243,7 +241,6 @@ struct updater {
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
         unsigned blockSize, typename SearchStrategy, bool isSet, typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
-
 class btree {
 public:
     class iterator;
@@ -299,7 +296,7 @@ private:
      * book-keeping information.
      */
     struct base {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
 
         // the parent node
         node* volatile parent;
@@ -462,21 +459,6 @@ private:
         }
 
         /**
-         * Counts the number of entries contained in the sub-tree rooted
-         * by this node.
-         */
-        size_type countEntries() const {
-            if (this->isLeaf()) {
-                return this->numElements;
-            }
-            size_type sum = this->numElements;
-            for (unsigned i = 0; i <= this->numElements; ++i) {
-                sum += getChild(i)->countEntries();
-            }
-            return sum;
-        }
-
-        /**
          * Determines the amount of memory used by the sub-tree rooted
          * by this node.
          */
@@ -547,7 +529,7 @@ private:
          * @param idx  .. the position of the insert causing the split
          */
         void split(node** root, lock_type& root_lock, int idx) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             assert(this->lock.is_write_locked());
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
@@ -561,7 +543,7 @@ private:
             node* sibling = (this->inner) ? static_cast<node*>(new inner_node())
                                           : static_cast<node*>(new leaf_node());
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             // lock sibling
             sibling->lock.start_write();
 #endif
@@ -589,14 +571,14 @@ private:
             // update parent
             grow_parent(root, root_lock, sibling);
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             // unlock sibling
             sibling->lock.end_write();
 #endif
         }
 
         /**
-         * Moves keys from this node to one of its siblings or splits
+         * Moves keys from the this node to one of its siblings or splits
          * this node to make some space for the insertion of an element at
          * position idx.
          *
@@ -608,7 +590,7 @@ private:
          */
         // TODO: remove root_lock ... no longer needed
         int rebalance_or_split(node** root, lock_type& root_lock, int idx) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             assert(this->lock.is_write_locked());
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
@@ -625,7 +607,7 @@ private:
             if (parent && pos > 0) {
                 node* left = parent->getChild(pos - 1);
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                 // lock access to left sibling
                 if (!left->lock.try_start_write()) {
                     // left node is currently updated => skip balancing and split
@@ -685,7 +667,7 @@ private:
                     left->numElements += num;
                     this->numElements -= num;
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                     left->lock.end_write();
 #endif
 
@@ -693,7 +675,7 @@ private:
                     return num;
                 }
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                 left->lock.abort_write();
 #endif
             }
@@ -713,7 +695,7 @@ private:
          * @param sibling .. the new right-sibling to be add to the parent node
          */
         void grow_parent(node** root, lock_type& root_lock, node* sibling) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             assert(this->lock.is_write_locked());
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
@@ -757,13 +739,13 @@ private:
          */
         void insert_inner(node** root, lock_type& root_lock, unsigned pos, node* predecessor, const Key& key,
                 node* newNode) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             assert(this->lock.is_write_locked());
 #endif
 
             // check capacity
             if (this->numElements >= maxKeys) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                 assert(!this->parent || this->parent->lock.is_write_locked());
                 assert((this->parent) || root_lock.is_write_locked());
 #endif
@@ -779,7 +761,7 @@ private:
                     // get new sibling
                     auto other = this->parent->getChild(this->position + 1);
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                     // lock other side
                     other->lock.start_write();
 
@@ -791,7 +773,7 @@ private:
                     pos = (i > other->numElements) ? 0 : i;
 #endif
                     other->insert_inner(root, root_lock, pos, predecessor, key, newNode);
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                     other->lock.end_write();
 #endif
                     return;
@@ -849,7 +831,7 @@ private:
                 out << "]";
             }
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             // print the lock state
             if (this->lock.is_write_locked()) std::cout << " locked";
 #endif
@@ -1167,13 +1149,19 @@ public:
     };
 
 private:
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
+    // the total number of elements in this tree
+    volatile size_type numElements;
+
     // a pointer to the root node of this tree
     node* volatile root;
 
     // a lock to synchronize update operations on the root pointer
     lock_type root_lock;
 #else
+    // the total number of elements in this tree
+    size_type numElements;
+
     // a pointer to the root node of this tree
     node* root;
 
@@ -1183,37 +1171,6 @@ private:
 
     // a pointer to the left-most node of this tree (initial note for iteration)
     leaf_node* leftmost;
-
-    // an aggregation of statistical values for hardware transactions, if enabled
-    struct tdata_t {
-        // the counter for transaction operations
-        std::atomic<int> nb_transactions;
-
-        // the counter for total aborts
-        std::atomic<int> nb_aborts;
-
-        // the counter for aborts caused by thread conflicts
-        std::atomic<int> nb_aborts_conflict;
-
-        // the counter for aborts caused by exceeding capacity of hardware
-        std::atomic<int> nb_aborts_capacity;
-
-        // the counter for explicit aborts
-        std::atomic<int> nb_aborts_fallback_locked;
-
-        // the counter for aborts caused by other factors
-        std::atomic<int> nb_aborts_unknown;
-
-        // the counter for number of software fallbacks
-        std::atomic<int> nb_fallbacks;
-
-        tdata_t()
-                : nb_transactions(0), nb_aborts(0), nb_aborts_conflict(0), nb_aborts_capacity(0),
-                  nb_aborts_fallback_locked(0), nb_aborts_unknown(0), nb_fallbacks(0) {}
-    };
-
-    // the transaction statistic of this b-tree instance
-    tdata_t tdata;
 
     /* -------------- operator hint statistics ----------------- */
 
@@ -1244,22 +1201,24 @@ public:
     // -- ctors / dtors --
 
     // the default constructor creating an empty tree
-    btree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : comp(comp), weak_comp(weak_comp), root(nullptr), leftmost(nullptr) {}
+    btree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : comp(comp), weak_comp(weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {}
 
     // a constructor creating a tree from the given iterator range
     template <typename Iter>
-    btree(const Iter& a, const Iter& b) : root(nullptr), leftmost(nullptr) {
+    btree(const Iter& a, const Iter& b) : numElements(0), root(nullptr), leftmost(nullptr) {
         insert(a, b);
     }
 
     // a move constructor
-    btree(btree&& other) : comp(other.comp), root(other.root), leftmost(other.leftmost) {
+    btree(btree&& other)
+            : comp(other.comp), numElements(other.numElements), root(other.root), leftmost(other.leftmost) {
+        other.numElements = 0;
         other.root = nullptr;
         other.leftmost = nullptr;
     }
 
     // a copy constructor
-    btree(const btree& set) : comp(set.comp), root(nullptr), leftmost(nullptr) {
+    btree(const btree& set) : comp(set.comp), numElements(0), root(nullptr), leftmost(nullptr) {
         // use assignment operator for a deep copy
         *this = set;
     }
@@ -1269,7 +1228,8 @@ protected:
      * An internal constructor enabling the specific creation of a tree
      * based on internal parameters.
      */
-    btree(size_type size, node* root, leaf_node* leftmost) : root(root), leftmost(leftmost) {}
+    btree(size_type size, node* root, leaf_node* leftmost)
+            : numElements(size), root(root), leftmost(leftmost) {}
 
 public:
     // the destructor freeing all contained nodes
@@ -1281,12 +1241,12 @@ public:
 
     // emptiness check
     bool empty() const {
-        return root == nullptr;
+        return numElements == 0;
     }
 
     // determines the number of elements in this tree
     size_type size() const {
-        return (root) ? root->countEntries() : 0;
+        return numElements;
     }
 
     /**
@@ -1301,9 +1261,10 @@ public:
      * Inserts the given key into this tree.
      */
     bool insert(const Key& k, operation_hints& hints) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
+
         // special handling for inserting first element
-        while (root == nullptr) {
+        while (numElements == 0) {
             // try obtaining root-lock
             if (!root_lock.try_start_write()) {
                 // somebody else was faster => re-check
@@ -1311,7 +1272,7 @@ public:
             }
 
             // check loop condition again
-            if (root != nullptr) {
+            if (numElements != 0) {
                 // somebody else was faster => normal insert
                 root_lock.end_write();
                 break;
@@ -1322,6 +1283,9 @@ public:
             leftmost->numElements = 1;
             leftmost->keys[0] = k;
             root = leftmost;
+
+            // increment number of elements (atomically)
+            __sync_fetch_and_add(&numElements, 1);
 
             // operation complete => we can release the root lock
             root_lock.end_write();
@@ -1450,6 +1414,7 @@ public:
                     // start over again
                     return insert(k, hints);
                 }
+
                 // update provenance information
                 if (less(k, *(pos - 1))) {
                     if (!cur->lock.try_upgrade_to_write(cur_lease)) {
@@ -1550,21 +1515,15 @@ public:
             // release lock on current node
             cur->lock.end_write();
 
+            // new element has been inserted
+            __sync_fetch_and_add(&numElements, 1);
+
             // remember last insertion position
             hints.last_insert = cur;
             return true;
         }
+
 #else
-#ifdef HAS_TSX
-        // set retry parameter
-        TX_RETRIES(maxRetries());
-        // begin hardware transactionm, enabling transaction logging if enabled
-        if (isTransactionProfilingEnabled()) {
-            TX_START_INST(NL, (&tdata));
-        } else {
-            TX_START(NL);
-        }
-#endif
         // special handling for inserting first element
         if (empty()) {
             // create new node
@@ -1573,12 +1532,11 @@ public:
             leftmost->keys[0] = k;
             root = leftmost;
 
+            // increment number of elements
+            ++numElements;
+
             hints.last_insert = leftmost;
 
-#ifdef HAS_TSX
-            // end hardware transaction
-            TX_END;
-#endif
             return true;
         }
 
@@ -1604,10 +1562,7 @@ public:
 
                 // early exit for sets
                 if (isSet && pos != b && weak_equal(*pos, k)) {
-#ifdef HAS_TSX
-                    // end hardware transaction
-                    TX_END;
-#endif
+                    
                     // update provenance information
                     if (less(k, *pos)) {
                         if (!cur->lock.try_upgrade_to_write(cur_lease)) {
@@ -1618,6 +1573,7 @@ public:
                         cur->lock.end_write();
                         return true;
                     }
+
                     return false;
                 }
 
@@ -1638,10 +1594,8 @@ public:
 
             // early exit for sets
             if (isSet && pos != a && weak_equal(*(pos - 1), k)) {
-#ifdef HAS_TSX
-                // end hardware transaction
-                TX_END;
-#endif
+
+                // update provenance information
                 if (less(k, *(pos - 1))) {
                     if (!cur->lock.try_upgrade_to_write(cur_lease)) {
                         // start again
@@ -1651,6 +1605,7 @@ public:
                     cur->lock.end_write();
                     return true;
                 }
+
                 return false;
             }
 
@@ -1677,13 +1632,11 @@ public:
             cur->keys[idx] = k;
             cur->numElements++;
 
+            // new element has been inserted
+            ++numElements;
+
             // remember last insertion position
             hints.last_insert = cur;
-
-#ifdef HAS_TSX
-            // end hardware transaction
-            TX_END;
-#endif
             return true;
         }
 #endif
@@ -1931,6 +1884,7 @@ public:
      * Clears this tree.
      */
     void clear() {
+        numElements = 0;
         if (root) {
             delete root;
         }
@@ -1945,6 +1899,7 @@ public:
      */
     void swap(btree& other) {
         // swap the content
+        std::swap(numElements, other.numElements);
         std::swap(root, other.root);
         std::swap(leftmost, other.leftmost);
     }
@@ -1963,6 +1918,7 @@ public:
         }
 
         // clone content (deep copy)
+        numElements = other.size();
         root = other.root->clone();
 
         // update leftmost reference
@@ -2062,16 +2018,6 @@ public:
         out << "  avg keys / node:  " << (size() / (double)nodes) << "\n";
         out << "  avg filling rate: " << ((size() / (double)nodes) / node::maxKeys) << "\n";
         out << "---------------------------------\n";
-        if (isTransactionProfilingEnabled()) {
-            out << "  Transactions: " << tdata.nb_transactions << "\n";
-            out << "  Aborts:       " << tdata.nb_aborts << "\n";
-            out << "    Capacity:   " << tdata.nb_aborts_capacity << "\n";
-            out << "    Conflict:   " << tdata.nb_aborts_conflict << "\n";
-            out << "    Fallback:   " << tdata.nb_aborts_fallback_locked << "\n";
-            out << "    Unknown:    " << tdata.nb_aborts_unknown << "\n";
-            out << "  Fallback:     " << tdata.nb_fallbacks << "\n";
-            out << "---------------------------------\n";
-        }
         if (isHintsProfilingEnabled()) {
             out << "         insert hint hits: " << hint_stats.inserts.getHits() << "\n";
             out << "       insert hint misses: " << hint_stats.inserts.getMisses() << "\n";

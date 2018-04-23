@@ -601,6 +601,13 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
                 }
                 returnValue->addValue(std::make_unique<RamNumber>(-1));
                 returnValue->addValue(std::make_unique<RamNumber>(-1));
+            } else if (auto neg = dynamic_cast<AstProvenanceNegation*>(lit)) {
+                for (size_t i = 0; i < neg->getAtom()->getArguments().size() - 2; i++) {
+                    auto arg = neg->getAtom()->getArguments()[i];
+                    returnValue->addValue(translateValue(arg, valueIndex));
+                }
+                returnValue->addValue(std::make_unique<RamNumber>(-1));
+                returnValue->addValue(std::make_unique<RamNumber>(-1));
             }
         }
 
@@ -808,6 +815,25 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
                 notExists->addArg(nullptr);
             }
 
+            // add constraint
+            op->addCondition(std::unique_ptr<RamCondition>(notExists));
+            
+            // for provenance negation
+        } else if (auto neg = dynamic_cast<const AstProvenanceNegation*>(lit)) {
+            // get contained atom
+            const AstAtom* atom = neg->getAtom();
+
+            // create constraint
+            RamProvenanceNotExists* notExists = new RamProvenanceNotExists(getRelation(atom));
+
+            auto arity = atom->getArity();
+
+            for (size_t i = 0; i < arity; i++) {
+                const auto& arg = atom->getArgument(i);
+                // for (const auto& arg : atom->getArguments()) {
+                notExists->addArg(translateValue(*arg, valueIndex));
+            }
+            
             // add constraint
             op->addCondition(std::unique_ptr<RamCondition>(notExists));
         } else {
@@ -1044,8 +1070,13 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 std::unique_ptr<AstClause> r1(cl->clone());
                 r1->getHead()->setName(relNew[rel]->getName());
                 r1->getAtoms()[j]->setName(relDelta[atomRelation]->getName());
-                r1->addToBody(std::unique_ptr<AstLiteral>(
-                        new AstNegation(std::unique_ptr<AstAtom>(cl->getHead()->clone()))));
+                if (Global::config().has("provenance")) {
+                    r1->addToBody(std::unique_ptr<AstLiteral>(
+                            new AstProvenanceNegation(std::unique_ptr<AstAtom>(cl->getHead()->clone()))));
+                } else {
+                    r1->addToBody(std::unique_ptr<AstLiteral>(
+                            new AstNegation(std::unique_ptr<AstAtom>(cl->getHead()->clone()))));
+                }
 
                 // replace wildcards with variables (reduces indices when wildcards are used in recursive
                 // atoms)

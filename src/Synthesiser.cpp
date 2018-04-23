@@ -468,6 +468,8 @@ std::set<RamRelation> Synthesiser::getReferencedRelations(const RamOperation& op
             res.insert(agg->getRelation());
         } else if (auto notExist = dynamic_cast<const RamNotExists*>(&node)) {
             res.insert(notExist->getRelation());
+        } else if (auto provNotExist = dynamic_cast<const RamProvenanceNotExists*>(&node)) {
+            res.insert(provNotExist->getRelation());
         } else if (auto project = dynamic_cast<const RamProject*>(&node)) {
             res.insert(project->getRelation());
         }
@@ -1204,6 +1206,60 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
             });
             out << "}})," << ctxName << ").empty()";
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitProvenanceNotExists(const RamProvenanceNotExists& ne, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            // get some details
+            const auto& rel = ne.getRelation();
+            auto relName = synthesiser.getRelationName(rel);
+            auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
+            auto arity = rel.getArity();
+
+            /*
+            // if it is total we use the contains function
+            if (ne.isTotal()) {
+                out << "!" << relName << "->"
+                    << "contains(Tuple<RamDomain," << arity << ">({{" << join(ne.getValues(), ",", rec)
+                    << "}})," << ctxName << ")";
+                return;
+                PRINT_END_COMMENT(out);
+            }
+            */
+
+            // provenance not exists is never total, conduct a range query
+            out << "[&]() -> bool {\n";
+            out << "auto existenceCheck = " << relName << "->"
+                << "equalRange";
+            // out << synthesiser.toIndex(ne.getKey());
+            out << "_" << ne.getKey();
+            out << "(Tuple<RamDomain," << arity << ">({{";
+            for (size_t i = 0; i < ne.getValues().size() - 1; i++) {
+                RamValue* val = ne.getValues()[i];
+                if (!val) {
+                    out << "0";
+                } else {
+                    visit(*val, out);
+                }
+                out << ",";
+            }
+            // extra 0 for provenance height annotation
+            out << "0";
+
+            /*
+            out << join(ne.getValues(), ",", [&](std::ostream& out, RamValue* value) {
+                if (!value) {
+                    out << "0";
+                } else {
+                    visit(*value, out);
+                }
+            });
+            */
+            out << "}})," << ctxName << ");\n"; //.empty()";
+            out << "if (existenceCheck.empty()) return true; else return (*existenceCheck.begin())[" << arity - 1 << "] > ";
+            visit(*(ne.getValues()[arity - 1]), out);
+            out << ";}()\n";
             PRINT_END_COMMENT(out);
         }
 

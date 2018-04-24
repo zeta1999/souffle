@@ -293,7 +293,7 @@ public:
 
     /** Return the number of elements in the body of the Clause */
     size_t getBodySize() const {
-        return atoms.size() + negations.size() + constraints.size();
+        return atoms.size() + negations.size() + provNegations.size() + constraints.size();
     }
 
     /** Return the i-th Literal in body of the clause */

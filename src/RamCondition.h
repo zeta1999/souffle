@@ -329,7 +329,7 @@ protected:
     std::vector<std::unique_ptr<RamValue>> values;
 
 public:
-    RamProvenanceNotExists(std::unique_ptr<RamRelation> rel) : RamCondition(RN_NotExists), relation(std::move(rel)) {}
+    RamProvenanceNotExists(std::unique_ptr<RamRelation> rel) : RamCondition(RN_ProvenanceNotExists), relation(std::move(rel)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {

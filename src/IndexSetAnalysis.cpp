@@ -305,6 +305,9 @@ void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
         } else if (const RamNotExists* ne = dynamic_cast<const RamNotExists*>(&node)) {
             IndexSet& indexes = getIndexes(ne->getRelation());
             indexes.addSearch(ne->getKey());
+        } else if (const RamProvenanceNotExists* ne = dynamic_cast<const RamProvenanceNotExists*>(&node)) {
+            IndexSet& indexes = getIndexes(ne->getRelation());
+            indexes.addSearch(ne->getKey());
         }
     });
 

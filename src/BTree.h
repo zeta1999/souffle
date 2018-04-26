@@ -1218,7 +1218,7 @@ public:
     }
 
     // a copy constructor
-    btree(const btree& set) : comp(set.comp), weak_comp(other.weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {
+    btree(const btree& set) : comp(set.comp), weak_comp(set.weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {
         // use assignment operator for a deep copy
         *this = set;
     }

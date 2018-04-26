@@ -1211,14 +1211,14 @@ public:
 
     // a move constructor
     btree(btree&& other)
-            : comp(other.comp), numElements(other.numElements), root(other.root), leftmost(other.leftmost) {
+            : comp(other.comp), weak_comp(other.weak_comp), numElements(other.numElements), root(other.root), leftmost(other.leftmost) {
         other.numElements = 0;
         other.root = nullptr;
         other.leftmost = nullptr;
     }
 
     // a copy constructor
-    btree(const btree& set) : comp(set.comp), numElements(0), root(nullptr), leftmost(nullptr) {
+    btree(const btree& set) : comp(set.comp), weak_comp(other.weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {
         // use assignment operator for a deep copy
         *this = set;
     }

@@ -828,10 +828,22 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
 
             auto arity = atom->getArity();
 
+            // account for two extra provenance columns
+            if (Global::config().has("provenance")) {
+                arity -= 2;
+            }
+
             for (size_t i = 0; i < arity; i++) {
                 const auto& arg = atom->getArgument(i);
                 // for (const auto& arg : atom->getArguments()) {
                 notExists->addArg(translateValue(*arg, valueIndex));
+            }
+
+            // we don't care about the provenance columns when doing the existence check
+            if (Global::config().has("provenance")) {
+                notExists->addArg(nullptr);
+                // add the height annotation for provenanceNotExists
+                notExists->addArg(translateValue(*(atom->getArgument(arity + 1)), valueIndex));
             }
             
             // add constraint

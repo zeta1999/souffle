@@ -471,7 +471,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstProgram& program) 
 
     // search for relations only defined by a single rule ..
     for (AstRelation* rel : program.getRelations()) {
-        if (!rel->isComputed() && rel->getClauses().size() == 1u) {
+        if (!rel->isInput() && !rel->isComputed() && rel->getClauses().size() == 1u) {
             // .. of shape r(x,y,..) :- s(x,y,..)
             AstClause* cl = rel->getClause(0);
             if (!cl->isFact() && cl->getBodySize() == 1u && cl->getAtoms().size() == 1u) {

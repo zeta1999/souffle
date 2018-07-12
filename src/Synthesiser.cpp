@@ -239,21 +239,23 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
             // get some table details
-            out << "try {";
-            out << "std::map<std::string, std::string> directiveMap(";
-            out << load.getIODirectives() << ");\n";
-            out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-            out << "directiveMap[\"filename\"].front() != '/') {";
-            out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
-            out << "}\n";
-            out << "IODirectives ioDirectives(directiveMap);\n";
-            out << "IOSystem::getInstance().getReader(";
-            out << "SymbolMask({" << load.getRelation().getSymbolMask() << "})";
-            out << ", symTable, ioDirectives";
-            out << ", " << Global::config().has("provenance");
-            out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
-            out << ");\n";
-            out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+            for (IODirectives ioDirectives : load.getIODirectives()) {
+                out << "try {";
+                out << "std::map<std::string, std::string> directiveMap(";
+                out << ioDirectives << ");\n";
+                out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
+                out << "directiveMap[\"filename\"].front() != '/') {";
+                out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
+                out << "}\n";
+                out << "IODirectives ioDirectives(directiveMap);\n";
+                out << "IOSystem::getInstance().getReader(";
+                out << "SymbolMask({" << load.getRelation().getSymbolMask() << "})";
+                out << ", symTable, ioDirectives";
+                out << ", " << Global::config().has("provenance");
+                out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
+                out << ");\n";
+                out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+            }
             out << "}\n";
             PRINT_END_COMMENT(out);
         }
@@ -1511,21 +1513,23 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
     visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) {
         // get some table details
-        os << "try {";
-        os << "std::map<std::string, std::string> directiveMap(";
-        os << load.getIODirectives() << ");\n";
-        os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-        os << "directiveMap[\"filename\"].front() != '/') {";
-        os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
-        os << "}\n";
-        os << "IODirectives ioDirectives(directiveMap);\n";
-        os << "IOSystem::getInstance().getReader(";
-        os << "SymbolMask({" << load.getRelation().getSymbolMask() << "})";
-        os << ", symTable, ioDirectives";
-        os << ", " << Global::config().has("provenance");
-        os << ")->readAll(*" << getRelationName(load.getRelation());
-        os << ");\n";
-        os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+        for (IODirectives ioDirectives : load.getIODirectives()) {
+            os << "try {";
+            os << "std::map<std::string, std::string> directiveMap(";
+            os << ioDirectives << ");\n";
+            os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
+            os << "directiveMap[\"filename\"].front() != '/') {";
+            os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
+            os << "}\n";
+            os << "IODirectives ioDirectives(directiveMap);\n";
+            os << "IOSystem::getInstance().getReader(";
+            os << "SymbolMask({" << load.getRelation().getSymbolMask() << "})";
+            os << ", symTable, ioDirectives";
+            os << ", " << Global::config().has("provenance");
+            os << ")->readAll(*" << getRelationName(load.getRelation());
+            os << ");\n";
+            os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+        }
     });
     os << "}\n";  // end of loadAll() method
 

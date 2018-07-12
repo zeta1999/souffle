@@ -125,17 +125,20 @@ public:
  */
 class RamLoad : public RamRelationStatement {
 public:
-    RamLoad(std::unique_ptr<RamRelation> rel, IODirectives ioDirectives)
+    RamLoad(std::unique_ptr<RamRelation> rel, std::vector<IODirectives> ioDirectives)
             : RamRelationStatement(RN_Load, std::move(rel)), ioDirectives(std::move(ioDirectives)) {}
 
-    const IODirectives& getIODirectives() const {
+    const std::vector<IODirectives>& getIODirectives() const {
         return ioDirectives;
     }
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
-        os << "LOAD DATA FOR " << getRelation().getName() << " FROM {" << ioDirectives << "}";
+        os << "LOAD DATA FOR " << getRelation().getName() << " FROM {";
+        os << join(ioDirectives, "], [",
+                [](std::ostream& out, const IODirectives& directives) { out << directives; });
+        os << ioDirectives << "}";
     };
 
     /** Create clone */
@@ -145,7 +148,7 @@ public:
     }
 
 private:
-    const IODirectives ioDirectives;
+    const std::vector<IODirectives> ioDirectives;
 };
 
 /**

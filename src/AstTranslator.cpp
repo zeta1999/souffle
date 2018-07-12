@@ -82,7 +82,7 @@ std::string getRelationName(const AstRelationIdentifier& id) {
     return toString(join(id.getNames(), "-"));
 }
 
-IODirectives getInputIODirectives(const AstRelation* rel, std::string filePath = std::string(),
+std::vector<IODirectives> getInputIODirectives(const AstRelation* rel, std::string filePath = std::string(),
         const std::string& fileExt = std::string()) {
     const std::string inputFilePath = (filePath.empty()) ? Global::config().get("fact-dir") : filePath;
     const std::string inputFileExt = (fileExt.empty()) ? ".facts" : fileExt;
@@ -91,34 +91,43 @@ IODirectives getInputIODirectives(const AstRelation* rel, std::string filePath =
             (Global::config().has("engine") && inputFilePath == Global::config().get("output-dir") &&
                     inputFileExt == ".facts");
 
-    IODirectives directives;
+    std::vector<IODirectives> directives;
+
     for (const auto& current : rel->getIODirectives()) {
         if (current->isInput()) {
+            IODirectives ioDirectives;
             for (const auto& currentPair : current->getIODirectiveMap()) {
-                directives.set(currentPair.first, currentPair.second);
+                ioDirectives.set(currentPair.first, currentPair.second);
             }
+            directives.push_back(ioDirectives);
         }
     }
 
-    directives.setRelationName(getRelationName(rel->getName()));
-    // Set a default IO type of file and a default filename if not supplied.
-    if (!directives.has("IO")) {
-        directives.setIOType("file");
-    }
-    // load intermediate relations from correct files
-    if (directives.getIOType() == "file" && (!directives.has("filename") || isIntermediate)) {
-        directives.setFileName(directives.getRelationName() + inputFileExt);
-    }
-    // all intermediate relations are given the default delimiter and have no headers
-    if (isIntermediate) {
-        directives.set("delimiter", "\t");
-        directives.set("headers", "false");
-    }
-    // if filename is not an absolute path, concat with cmd line facts directory
-    if (directives.getIOType() == "file" && directives.getFileName().front() != '/') {
-        directives.setFileName(inputFilePath + "/" + directives.getFileName());
+    // If we're asked to provide input directives, then provide them even if they don't exist.
+    if (directives.empty()) {
+        directives.emplace_back();
     }
 
+    for (auto& ioDirective : directives) {
+        ioDirective.setRelationName(getRelationName(rel->getName()));
+        // Set a default IO type of file and a default filename if not supplied.
+        if (!ioDirective.has("IO")) {
+            ioDirective.setIOType("file");
+        }
+        // load intermediate relations from correct files
+        if (ioDirective.getIOType() == "file" && (!ioDirective.has("filename") || isIntermediate)) {
+            ioDirective.setFileName(ioDirective.getRelationName() + inputFileExt);
+        }
+        // if filename is not an absolute path, concat with cmd line facts directory
+        if (ioDirective.getIOType() == "file" && ioDirective.getFileName().front() != '/') {
+            ioDirective.setFileName(inputFilePath + "/" + ioDirective.getFileName());
+        }
+        // all intermediate relations are given the default delimiter and have no headers
+        if (isIntermediate) {
+            ioDirective.set("delimiter", "\t");
+            ioDirective.set("headers", "false");
+        }
+    }
     return directives;
 }
 

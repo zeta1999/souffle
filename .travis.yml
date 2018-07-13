@@ -150,13 +150,13 @@ jobs:
     script: docker run -v `pwd`:/souffle ubuntu:xenial /bin/sh -c "cd /souffle && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/linux/make_package.sh"
     env: "debian-package"
     before_deploy:
-      - .travis/bintray_json.sh
+      - .travis/bintray_json.sh debian
     # deploy to bintray if we're in the souffle-lang repo
     # https://docs.travis-ci.com/user/deployment/bintray
     deploy:
       - provider: bintray
         skip-cleanup: true
-        file: bintray-deb-unstable.json debian
+        file: bintray-deb-unstable.json
         user: souffle-lang
         key: $BINTRAY_KEY
         on:

@@ -168,7 +168,6 @@ jobs:
         user: souffle-lang
         key: $BINTRAY_KEY
         on:
-          branch: master
           repo: souffle-lang/souffle
           tags: true
       - provider: releases
@@ -178,7 +177,6 @@ jobs:
         file_glob: true
         file: deploy/*
         on:
-          branch: master
           repo: souffle-lang/souffle
           tags: true
   # Make the centos rpm packages and if successful upload to bintray
@@ -206,7 +204,6 @@ jobs:
         user: souffle-lang
         key: $BINTRAY_KEY
         on:
-          branch: master
           repo: souffle-lang/souffle
           tags: true
 
@@ -235,7 +232,6 @@ jobs:
         user: souffle-lang
         key: $BINTRAY_KEY
         on:
-          branch: master
           repo: souffle-lang/souffle
           tags: true
   # Make the OSX packages and if successful upload to github releases.

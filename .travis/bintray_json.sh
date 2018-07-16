@@ -89,5 +89,7 @@ elif [ "$1" = centos ];
 then
   print_json "rpm"  "`git describe --tags --always`" "bintray-rpm-stable.json" "centos"
   print_json "rpm-unstable"  "`git describe --tags --always`" "bintray-rpm-unstable.json" "centos"
+else
+  exit 1
 fi
 

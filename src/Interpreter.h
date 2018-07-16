@@ -107,10 +107,8 @@ protected:
 
     /** Create relation */
     void createRelation(const RamRelation& id) {
-        auto pos = environment.find(id.getName());
-        (void)pos;
         InterpreterRelation* res = nullptr;
-        assert(pos == environment.end());
+        assert(environment.find(id.getName()) == environment.end());
         if (!id.isEqRel()) {
             res = new InterpreterRelation(id.getArity());
         } else {

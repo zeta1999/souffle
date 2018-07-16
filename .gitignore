@@ -45,3 +45,4 @@ cmake-build-debug/
 .DS_Store
 
 stamp-h1
+CMakeLists.txt

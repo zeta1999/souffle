@@ -1033,13 +1033,13 @@ protected:
 
 class RamSend : public RamRelationStatement {
 private:
-    const std::set<int> destinationStrata;
+    const std::set<size_t> destinationStrata;
 
 public:
-    RamSend(std::unique_ptr<RamRelation> r, const std::set<int> s)
+    RamSend(std::unique_ptr<RamRelation> r, const std::set<size_t> s)
             : RamRelationStatement(RN_Send, std::move(r)), destinationStrata(s) {}
 
-    const std::set<int> getDestinationStrata() const {
+    const std::set<size_t> getDestinationStrata() const {
         return destinationStrata;
     }
 

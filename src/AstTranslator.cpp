@@ -1318,7 +1318,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
 #ifdef USE_MPI
     const auto& makeRamSend = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
-            const std::set<int> destinationStrata) {
+            const std::set<size_t> destinationStrata) {
         appendStmt(current, std::make_unique<RamSend>(
                                     getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
                                             relation->getArity(), false, relation->isHashset()),
@@ -1327,7 +1327,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
     };
 
     const auto& makeRamRecv = [&](
-            std::unique_ptr<RamStatement>& current, const AstRelation* relation, const int sourceStrata) {
+            std::unique_ptr<RamStatement>& current, const AstRelation* relation, const size_t sourceStrata) {
         appendStmt(current, std::make_unique<RamRecv>(
                                     getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
                                             relation->getArity(), false, relation->isHashset()),
@@ -1344,7 +1344,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 #endif
 
     // maintain the index of the SCC within the topological order
-    int indexOfScc = 0;
+    size_t indexOfScc = 0;
 
     // iterate over each SCC according to the topological order
     for (const auto& scc : sccOrder.order()) {
@@ -1384,7 +1384,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         if (Global::config().get("engine") == "mpi") {
             // first, recv all internal input relations from the master process
             for (const auto& relation : internIns) {
-                makeRamRecv(current, relation, -1);
+                makeRamRecv(current, relation, (size_t) -1);
             }
             // second, recv all predecessor relations from their source slave process
             for (const auto& relation : externPreds) {
@@ -1436,7 +1436,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
             makeRamNotify(current);
             // second, send all internal output relations to the master process
             for (const auto& relation : internOuts) {
-                makeRamSend(current, relation, std::set<int>({-1}));
+                makeRamSend(current, relation, std::set<size_t>({(size_t)-1}));
             }
         } else
 #endif
@@ -1508,7 +1508,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         for (const auto scc : sccOrder.order()) {
             for (const auto& relation : sccGraph.getInternalInputRelations(scc)) {
                 // note that the order of sends is first by relation then second destination
-                const auto destinations = std::set<int>({indexOfScc});
+                const auto destinations = std::set<size_t>({indexOfScc});
                 makeRamSend(current, relation, destinations);
                 makeRamDrop(current, relation);
             }

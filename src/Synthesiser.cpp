@@ -1185,27 +1185,25 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
 #ifdef USE_MPI
+
         // -- mpi statements --
 
         void visitRecv(const RamRecv& recv, std::ostream& os) override {
             os << "\n#ifdef USE_MPI\n";
             os << "{";
             os << "auto status = souffle::mpi::probe(";
-            {
-                // source
-                os << recv.getSourceStratum() + 1 << ", ";
-                // tag
-                os << "tag_" << synthesiser.getRelationName(recv.getRelation());
-            }
+            // source
+            os << recv.getSourceStratum() + 1 << ", ";
+            // tag
+            os << "tag_" << synthesiser.getRelationName(recv.getRelation());
             os << ");";
             os << "souffle::mpi::recv<RamDomain>(";
-            {
-                // data
-                os << "*" << synthesiser.getRelationName(recv.getRelation()) << ", ";
-                os << recv.getRelation().getArity() << ", ";
-                // status
-                os << "status";
-            }
+            // data
+            os << "*" << synthesiser.getRelationName(recv.getRelation()) << ", ";
+            // arity
+            os << recv.getRelation().getArity() << ", ";
+            // status
+            os << "status";
             os << ");";
             os << "}";
             os << "\n#endif\n";
@@ -1216,28 +1214,27 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             os << "{";
             os << "souffle::mpi::send<RamDomain>(";
             // data
-            { os << "*" << synthesiser.getRelationName(send.getRelation()) << ", "; }
-            { os << send.getRelation().getArity() << ", "; }
+            os << "*" << synthesiser.getRelationName(send.getRelation()) << ", ";
+            // arity
+            os << send.getRelation().getArity() << ", ";
             // destinations
-            {
-                const auto& destinationStrata = send.getDestinationStrata();
-                auto it = destinationStrata.begin();
-                os << "std::set<int>(";
-                if (it != destinationStrata.end()) {
-                    os << "{" << *it + 1;
+            const auto& destinationStrata = send.getDestinationStrata();
+            auto it = destinationStrata.begin();
+            os << "std::set<int>(";
+            if (it != destinationStrata.end()) {
+                os << "{" << *it + 1;
+                ++it;
+                while (it != destinationStrata.end()) {
+                    os << ", " << *it + 1;
                     ++it;
-                    while (it != destinationStrata.end()) {
-                        os << ", " << *it + 1;
-                        ++it;
-                    }
-                    os << "}";
-                } else {
-                    os << "0";
                 }
-                os << "), ";
+                os << "}";
+            } else {
+                os << "0";
             }
+            os << "), ";
             // tag
-            { os << "tag_" << synthesiser.getRelationName(send.getRelation()); }
+            os << "tag_" << synthesiser.getRelationName(send.getRelation());
             os << ");";
             os << "}";
             os << "\n#endif\n";

@@ -8,15 +8,18 @@
 
 #pragma once
 
-#include <fstream>
-#include <iostream>
-#include <string>
-
 #include "StringUtils.h"
-
-#ifndef MAKEDIR
-#define MAKEDIR "."
-#endif
+#include "htmlCssChartist.h"
+#include "htmlCssStyle.h"
+#include "htmlJsChartistMin.h"
+#include "htmlJsChartistPlugin.h"
+#include "htmlJsMain.h"
+#include "htmlJsTableSort.h"
+#include "htmlJsUtil.h"
+#include "htmlMain.h"
+#include <iostream>
+#include <sstream>
+#include <string>
 
 namespace souffle {
 namespace profile {
@@ -36,32 +39,9 @@ private:
 
 public:
     html_string() {
-        std::string current_dir = __FILE__;
-        std::string make_directory = MAKEDIR;  // Variable set as flag in src/Makefile.am
-
-        std::vector<std::string> profiler_dir = Tools::split(current_dir, "/");
-
-        if (profiler_dir.size() == 0) {
-            std::cerr << "Error loading source profiler directory, ensure makefile contains the lines:\n"
-                         "DIR := ${CURDIR}"
-                         "souffle_profile_CXXFLAGS = $(souffle_CPPFLAGS) -DMAKEDIR='\"$(DIR)\"'";
-        }
-
-        std::string gui_directory = make_directory;
-
-        for (size_t i = 0; i < profiler_dir.size() - 1; ++i) {
-            gui_directory += "/" + profiler_dir.at(i);
-        }
-
-        std::string GUI_DIR = "gui_src";  // TODO: change from hard coded string
-
-        gui_directory += "/" + GUI_DIR + "/";
-
-        std::cout << gui_directory << std::endl;
-
         bool adding_to_first = true;
 
-        std::ifstream infile(gui_directory + "main.html");
+        std::stringstream infile(html::htmlMain);
         std::string line;
         std::string output;
         while (std::getline(infile, line)) {
@@ -70,9 +50,11 @@ public:
                 std::vector<std::string> src = Tools::split(line, "href=\"");
                 if (src.size() > 1) {
                     output = "<style>\n";
-                    std::ifstream infile2(gui_directory + Tools::split(src.at(1), "\"").at(0));
-                    while (std::getline(infile2, line)) {
-                        output += line + "\n";
+                    std::string filename = Tools::split(src.at(1), "\"").at(0);
+                    if (filename == "style.css") {
+                        output += html::cssStyle;
+                    } else if (filename == "chartiststyle.css") {
+                        output += html::cssChartist;
                     }
                     output += "\n</style>\n";
                     std::cout << output;
@@ -84,18 +66,27 @@ public:
                 if (src.size() > 1) {
                     output = "<script>\n";
                     std::string filename = Tools::split(src.at(1), "\"").at(0);
-                    if (filename == "testtabledata.js") {  // TODO: another hard coded string
+                    if (filename == "testtabledata.js") {
                         this->first_half += output;
                         adding_to_first = false;
                         output = "\n</script>\n";
-                    } else {
-                        std::ifstream infile2(gui_directory + filename);
-                        while (std::getline(infile2, line)) {
-                            output += line + "\n";
-                        }
+                    } else if (filename == "main.js") {
+                        output += html::jsMain;
                         output += "\n</script>\n";
-                        std::cout << output;
+                    } else if (filename == "chartist.min.js") {
+                        output += html::jsChartistMin;
+                        output += "\n</script>\n";
+                    } else if (filename == "chartist-plugin-tooltip.js") {
+                        output += html::jsChartistPlugin;
+                        output += "\n</script>\n";
+                    } else if (filename == "tablesort.js") {
+                        output += html::jsTableSort;
+                        output += "\n</script>\n";
+                    } else if (filename == "util.js") {
+                        output += html::jsUtil;
+                        output += "\n</script>\n";
                     }
+                    std::cout << output;
                 } else {
                     output = line;
                 }

@@ -1,3 +1,9 @@
+#include <string>
+
+namespace souffle {
+namespace profile {
+namespace html {
+std::string jsUtil = R"___(
 /*
  * Souffle - A Datalog Compiler
  * Copyright (c) 2017, The Souffle Developers. All rights reserved
@@ -148,3 +154,8 @@ function minify_numbers(num) {
         return compareNumber(b, a);
     });
 }());
+
+)___";
+}
+}
+}

@@ -1,5 +1,9 @@
+#include <string>
 
-
+namespace souffle {
+namespace profile {
+namespace html {
+std::string cssChartist = R"___(
 /* TODO: consider removing unused classes */
 
 p {
@@ -841,4 +845,8 @@ th[role=columnheader]:not(.no-sort):hover:after {
     position: absolute;
     top: 0;
     left: 0
+}
+)___";
+}
+}
 }

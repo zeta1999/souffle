@@ -6,6 +6,12 @@
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
 */
 
+#include <string>
+
+namespace souffle {
+namespace profile {
+namespace html {
+std::string jsMain = R"___(
 function changeSelectedRel(id) {
     selected.rel = id;
     highlightRow();
@@ -507,3 +513,7 @@ function init() {
 }
 
 init();
+    )___";
+}
+}
+}

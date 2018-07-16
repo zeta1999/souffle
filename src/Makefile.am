@@ -11,8 +11,8 @@ bin_PROGRAMS = souffle souffle-profile souffle2bdd souffle2lb
 nodist_souffle_profile_SOURCES = $(BUILT_SOURCES)
 
 souffle_profile_sources = \
-                          ProfileDatabase.h                     \
-                          json11.h                              \
+                          ProfileDatabase.h                 \
+                          json11.h                          \
                           profile/Cell.h                    \
                           profile/CellInterface.h           \
                           profile/Cli.h                     \
@@ -28,6 +28,14 @@ souffle_profile_sources = \
                           profile/Table.h                   \
                           profile/Tui.h                     \
                           profile/UserInputReader.h         \
+                          profile/htmlCssChartist.h         \
+                          profile/htmlJsChartistMin.h       \
+                          profile/htmlJsMain.h              \
+                          profile/htmlJsUtil.h              \
+                          profile/htmlCssStyle.h            \
+                          profile/htmlJsChartistPlugin.h    \
+                          profile/htmlJsTableSort.h         \
+                          profile/htmlMain.h                \
                           profile/html_string.h
 
 DIR := ${CURDIR}

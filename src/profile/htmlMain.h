@@ -1,3 +1,9 @@
+#include <string>
+
+namespace souffle {
+namespace profile {
+namespace html {
+std::string htmlMain = R"___(
 <!--
 * Souffle - A Datalog Compiler
 * Copyright (c) 2017, The Souffle Developers. All rights reserved
@@ -5,15 +11,14 @@
 * - https://opensource.org/licenses/UPL
 * - <souffle root>/licenses/SOUFFLE-UPL.txt
 -->
-
-<!DOCTYPE>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Souffle Profiler</title>
-</head>
 <link rel="stylesheet" type="text/css" href="chartiststyle.css"/>
 <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
 <body>
 <div id="wrapper" style="width:100%;height:inherit;">
     <ul class="tab">
@@ -176,3 +181,8 @@
 <script src="util.js"></script>
 <script src="main.js"></script>
 </html>
+
+)___";
+}
+}
+}

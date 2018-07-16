@@ -220,7 +220,7 @@ public:
         for (auto& rel_pair : exec.getRelationMap()) {
             auto& name = rel_pair.first;
             auto& interpreterRel = *rel_pair.second;
-            ASSERT(map[name]);
+            assert(map[name]);
             const RamRelation& rel = *map[name];
 
             // construct types and names vectors
@@ -247,10 +247,10 @@ public:
     }
 
     /** Run program instance: not implemented */
-    void run(size_t) override {}
+    void run(int) override {}
 
     /** Load data, run program instance, store data: not implemented */
-    void runAll(std::string, std::string, size_t) override {}
+    void runAll(std::string, std::string, int) override {}
 
     /** Load input data: not implemented */
     void loadAll(std::string) override {}

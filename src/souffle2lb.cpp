@@ -38,7 +38,6 @@
 #include "DebugReport.h"
 #include "ErrorReport.h"
 #include "Global.h"
-#include "Macro.h"
 #include "ParserDriver.h"
 #include "SymbolTable.h"
 #include "Util.h"
@@ -53,6 +52,7 @@
 #include <iterator>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -348,7 +348,7 @@ int main(int argc, char** argv) {
 
         /* check that Datalog program exists */
         if (!existFile(Global::config().get(""))) {
-            ERROR("cannot open file " + std::string(Global::config().get("")));
+            throw std::runtime_error("cannot open file " + std::string(Global::config().get("")));
         }
 
         /* collect all input directories for the c pre-processor */
@@ -358,7 +358,7 @@ int main(int argc, char** argv) {
             for (const char& ch : Global::config().get("include-dir")) {
                 if (ch == ' ') {
                     if (!existDir(currentInclude)) {
-                        ERROR("include directory " + currentInclude + " does not exists");
+                        throw std::runtime_error("include directory " + currentInclude + " does not exists");
                     } else {
                         allIncludes += " -I";
                         allIncludes += currentInclude;
@@ -378,7 +378,7 @@ int main(int argc, char** argv) {
         std::string cmd = ::which("mcpp");
 
         if (!isExecutable(cmd)) {
-            ERROR("failed to locate mcpp pre-processor");
+            throw std::runtime_error("failed to locate mcpp pre-processor");
         }
 
         cmd += " -W0 " + Global::config().get("include-dir") + " " + Global::config().get("");
@@ -400,7 +400,7 @@ int main(int argc, char** argv) {
         int preprocessor_status = pclose(in);
         if (preprocessor_status == -1) {
             perror(nullptr);
-            ERROR("failed to close pre-processor pipe");
+            throw std::runtime_error("failed to close pre-processor pipe");
         }
 
         /* Report run-time of the parser if verbose flag is set */
@@ -479,8 +479,8 @@ int main(int argc, char** argv) {
                 toLogicblox(out, impOut, expOut, decOut, *astTranslationUnit);
             }
         } catch (const UnsupportedConstructException& uce) {
-            ERROR("failed to convert input specification into bddbddb syntax because " +
-                    std::string(uce.what()));
+            throw std::runtime_error("failed to convert input specification into bddbddb syntax because " +
+                                     std::string(uce.what()));
         }
         return 0;
     }

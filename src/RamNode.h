@@ -78,6 +78,15 @@ enum RamNodeType {
     RN_DebugInfo,
     RN_Stratum
 
+#ifdef USE_MPI
+    // mpi
+    ,
+    RN_Send,
+    RN_Recv,
+    RN_Notify,
+    RN_Wait,
+#endif
+
 };
 
 /**

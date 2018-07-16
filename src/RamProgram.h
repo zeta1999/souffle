@@ -61,7 +61,7 @@ public:
 
     /** Get main program */
     RamStatement* getMain() const {
-        ASSERT(main);
+        assert(main);
         return main.get();
     }
 

@@ -32,7 +32,6 @@
 #include "Global.h"
 #include "IODirectives.h"
 #include "LogStatement.h"
-#include "Macro.h"
 #include "PrecedenceGraph.h"
 #include "RamCondition.h"
 #include "RamNode.h"
@@ -55,6 +54,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <set>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -82,6 +82,33 @@ std::string getRelationName(const AstRelationIdentifier& id) {
     return toString(join(id.getNames(), "-"));
 }
 
+IODirectives& makeIODirectives(IODirectives& directives, const AstRelation* rel, const std::string& filePath,
+        const std::string& fileExt, const bool isIntermediate) {
+    directives.setRelationName(getRelationName(rel->getName()));
+
+    // set a default IO type of file and a default filename if not supplied
+    if (!directives.has("IO")) {
+        directives.setIOType("file");
+    }
+    // load intermediate relations from correct files
+    if (directives.getIOType() == "file") {
+        // all intermediate relations are given the default delimiter and have no headers
+        if (isIntermediate) {
+            directives.set("intermediate", "true");
+            directives.set("delimiter", "\t");
+            directives.set("headers", "false");
+        }
+        if (!directives.has("filename") || isIntermediate) {
+            directives.setFileName(directives.getRelationName() + fileExt);
+        }
+        // if filename is not an absolute path, concat with cmd line facts directory
+        if (directives.getIOType() == "file" && directives.getFileName().front() != '/') {
+            directives.setFileName(filePath + "/" + directives.getFileName());
+        }
+    }
+    return directives;
+}
+
 IODirectives getInputIODirectives(const AstRelation* rel, std::string filePath = std::string(),
         const std::string& fileExt = std::string()) {
     const std::string inputFilePath = (filePath.empty()) ? Global::config().get("fact-dir") : filePath;
@@ -100,24 +127,7 @@ IODirectives getInputIODirectives(const AstRelation* rel, std::string filePath =
         }
     }
 
-    directives.setRelationName(getRelationName(rel->getName()));
-    // Set a default IO type of file and a default filename if not supplied.
-    if (!directives.has("IO")) {
-        directives.setIOType("file");
-    }
-    // load intermediate relations from correct files
-    if (directives.getIOType() == "file" && (!directives.has("filename") || isIntermediate)) {
-        directives.setFileName(directives.getRelationName() + inputFileExt);
-    }
-    // all intermediate relations are given the default delimiter and have no headers
-    if (isIntermediate) {
-        directives.set("delimiter", "\t");
-        directives.set("headers", "false");
-    }
-    // if filename is not an absolute path, concat with cmd line facts directory
-    if (directives.getIOType() == "file" && directives.getFileName().front() != '/') {
-        directives.setFileName(inputFilePath + "/" + directives.getFileName());
-    }
+    makeIODirectives(directives, rel, inputFilePath, inputFileExt, isIntermediate);
 
     return directives;
 }
@@ -149,20 +159,15 @@ std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const Ty
     } else if (outputDirectives.empty()) {
         IODirectives ioDirectives;
         ioDirectives.setIOType("file");
-        ioDirectives.setFileName(getRelationName(rel->getName()) + outputFileExt);
         outputDirectives.push_back(ioDirectives);
     }
+    const bool isIntermediate =
+            (Global::config().has("engine") && outputFilePath == Global::config().get("output-dir") &&
+                    outputFileExt == ".facts");
+
     for (auto& ioDirectives : outputDirectives) {
-        ioDirectives.setRelationName(getRelationName(rel->getName()));
-        if (!ioDirectives.has("IO")) {
-            ioDirectives.setIOType("file");
-        }
-        if (ioDirectives.getIOType() == "file" && !ioDirectives.has("filename")) {
-            ioDirectives.setFileName(ioDirectives.getRelationName() + outputFileExt);
-        }
-        if (ioDirectives.getIOType() == "file" && ioDirectives.getFileName().front() != '/') {
-            ioDirectives.setFileName(outputFilePath + "/" + ioDirectives.get("filename"));
-        }
+        makeIODirectives(ioDirectives, rel, outputFilePath, outputFileExt, isIntermediate);
+
         if (!ioDirectives.has("attributeNames")) {
             std::string delimiter("\t");
             if (ioDirectives.has("delimiter")) {
@@ -416,7 +421,7 @@ std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueInde
     }
 
     if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
-        ASSERT(index.isDefined(*var) && "variable not grounded");
+        assert(index.isDefined(*var) && "variable not grounded");
         const Location& loc = index.getDefinitionPoint(*var);
         val = std::make_unique<RamElementAccess>(loc.level, loc.component, loc.name);
     } else if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
@@ -447,7 +452,7 @@ std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueInde
         val = std::make_unique<RamArgument>(subArg->getNumber());
     } else {
         std::cout << "Unsupported node type of " << arg << ": " << typeid(*arg).name() << "\n";
-        ASSERT(false && "unknown AST node type not permissible");
+        assert(false && "unknown AST node type not permissible");
     }
 
     return val;
@@ -1238,7 +1243,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
     const auto& sccGraph = *translationUnit.getAnalysis<SCCGraph>();
 
     // obtain some topological order over the nodes of the SCC graph
-    const auto& sccOrder = translationUnit.getAnalysis<TopologicallySortedSCCGraph>()->order();
+    const auto& sccOrder = *translationUnit.getAnalysis<TopologicallySortedSCCGraph>();
 
     // obtain the schedule of relations expired at each index of the topological order
     const auto& expirySchedule = translationUnit.getAnalysis<RelationSchedule>()->schedule();
@@ -1251,11 +1256,98 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         return std::make_unique<RamProgram>(std::move(res));
     }
 
+    // a function to create relations
+    const auto& makeRamCreate = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
+            const std::string relationNamePrefix) {
+
+        appendStmt(
+                current, std::make_unique<RamCreate>(std::unique_ptr<RamRelation>(getRamRelation(relation,
+                                 &typeEnv, relationNamePrefix + getRelationName(relation->getName()),
+                                 relation->getArity(), !relationNamePrefix.empty(), relation->isHashset()))));
+    };
+
+    // a function to load relations
+    const auto& makeRamLoad = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
+            const std::string& inputDirectory, const std::string& fileExtension) {
+
+        std::unique_ptr<RamStatement> statement =
+                std::make_unique<RamLoad>(std::unique_ptr<RamRelation>(getRamRelation(relation, &typeEnv,
+                                                  getRelationName(relation->getName()), relation->getArity(),
+                                                  false, relation->isHashset())),
+                        getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
+        if (Global::config().has("profile")) {
+            const std::string logTimerStatement = LogStatement::tRelationLoadTime(
+                    getRelationName(relation->getName()), relation->getSrcLoc());
+            statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement);
+        }
+        appendStmt(current, std::move(statement));
+    };
+
+    // a function to print the size of relations
+    const auto& makeRamPrintSize = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
+
+        appendStmt(current, std::make_unique<RamPrintSize>(std::unique_ptr<RamRelation>(
+                                    getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
+                                            relation->getArity(), false, relation->isHashset()))));
+    };
+
+    // a function to store relations
+    const auto& makeRamStore = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
+            const std::string& outputDirectory, const std::string& fileExtension) {
+
+        std::unique_ptr<RamStatement> statement =
+                std::make_unique<RamStore>(std::unique_ptr<RamRelation>(getRamRelation(relation, &typeEnv,
+                                                   getRelationName(relation->getName()), relation->getArity(),
+                                                   false, relation->isHashset())),
+                        getOutputIODirectives(
+                                relation, &typeEnv, Global::config().get(outputDirectory), fileExtension));
+        if (Global::config().has("profile")) {
+            const std::string logTimerStatement = LogStatement::tRelationSaveTime(
+                    getRelationName(relation->getName()), relation->getSrcLoc());
+            statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement);
+        }
+        appendStmt(current, std::move(statement));
+    };
+
+    // a function to drop relations
+    const auto& makeRamDrop = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
+        appendStmt(current, std::make_unique<RamDrop>(
+                                    getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
+                                            relation->getArity(), false, relation->isHashset())));
+    };
+
+#ifdef USE_MPI
+    const auto& makeRamSend = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
+            const std::set<int> destinationStrata) {
+        appendStmt(current, std::make_unique<RamSend>(
+                                    getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
+                                            relation->getArity(), false, relation->isHashset()),
+                                    destinationStrata));
+
+    };
+
+    const auto& makeRamRecv = [&](
+            std::unique_ptr<RamStatement>& current, const AstRelation* relation, const int sourceStrata) {
+        appendStmt(current, std::make_unique<RamRecv>(
+                                    getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
+                                            relation->getArity(), false, relation->isHashset()),
+                                    sourceStrata));
+
+    };
+
+    const auto& makeRamNotify = [&](
+            std::unique_ptr<RamStatement>& current) { appendStmt(current, std::make_unique<RamNotify>()); };
+
+    const auto& makeRamWait = [&](std::unique_ptr<RamStatement>& current, const size_t count) {
+        appendStmt(current, std::make_unique<RamWait>(count));
+    };
+#endif
+
     // maintain the index of the SCC within the topological order
-    unsigned index = 0;
+    int indexOfScc = 0;
 
     // iterate over each SCC according to the topological order
-    for (const auto& scc : sccOrder) {
+    for (const auto& scc : sccOrder.order()) {
         // make a new ram statement for the current SCC
         std::unique_ptr<RamStatement> current;
 
@@ -1269,94 +1361,55 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         const auto& internOuts = sccGraph.getInternalOutputRelations(scc);
         const auto& externOutPreds = sccGraph.getExternalOutputPredecessorRelations(scc);
         const auto& externNonOutPreds = sccGraph.getExternalNonOutputPredecessorRelations(scc);
+        const auto& externPreds = sccGraph.getExternalPredecessorRelations(scc);
+        const auto& internsWithExternSuccs = sccGraph.getInternalRelationsWithExternalSuccessors(scc);
         const auto& internNonOutsWithExternSuccs =
                 sccGraph.getInternalNonOutputRelationsWithExternalSuccessors(scc);
 
         // make a variable for all relations that are expired at the current SCC
-        const auto& internExps = expirySchedule.at(index).expired();
-
-        // a function to create relations
-        const auto& makeRamCreate = [&](const AstRelation* relation, const std::string relationNamePrefix) {
-            appendStmt(current,
-                    std::make_unique<RamCreate>(std::unique_ptr<RamRelation>(getRamRelation(relation,
-                            &typeEnv, relationNamePrefix + getRelationName(relation->getName()),
-                            relation->getArity(), !relationNamePrefix.empty(), relation->isHashset()))));
-        };
-
-        // a function to load relations
-        const auto& makeRamLoad = [&](const AstRelation* relation, const std::string& inputDirectory,
-                const std::string& fileExtension) {
-            std::unique_ptr<RamStatement> statement = std::make_unique<RamLoad>(
-                    std::unique_ptr<RamRelation>(
-                            getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
-                                    relation->getArity(), false, relation->isHashset())),
-                    getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
-            if (Global::config().has("profile")) {
-                const std::string logTimerStatement = LogStatement::tRelationLoadTime(
-                        getRelationName(relation->getName()), relation->getSrcLoc());
-                statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement);
-            }
-            appendStmt(current, std::move(statement));
-        };
-
-        // a function to print the size of relations
-        const auto& makeRamPrintSize = [&](const AstRelation* relation) {
-            appendStmt(current, std::make_unique<RamPrintSize>(std::unique_ptr<RamRelation>(getRamRelation(
-                                        relation, &typeEnv, getRelationName(relation->getName()),
-                                        relation->getArity(), false, relation->isHashset()))));
-        };
-
-        // a function to store relations
-        const auto& makeRamStore = [&](const AstRelation* relation, const std::string& outputDirectory,
-                const std::string& fileExtension) {
-            std::unique_ptr<RamStatement> statement =
-                    std::make_unique<RamStore>(std::unique_ptr<RamRelation>(getRamRelation(relation, &typeEnv,
-                                                       getRelationName(relation->getName()),
-                                                       relation->getArity(), false, relation->isHashset())),
-                            getOutputIODirectives(relation, &typeEnv, Global::config().get(outputDirectory),
-                                    fileExtension));
-            if (Global::config().has("profile")) {
-                const std::string logTimerStatement = LogStatement::tRelationSaveTime(
-                        getRelationName(relation->getName()), relation->getSrcLoc());
-                statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement);
-            }
-            appendStmt(current, std::move(statement));
-        };
-
-        // a function to drop relations
-        const auto& makeRamDrop = [&](const AstRelation* relation) {
-            appendStmt(current, std::make_unique<RamDrop>(getRamRelation(relation, &typeEnv,
-                                        getRelationName(relation->getName()), relation->getArity(), false,
-                                        relation->isHashset())));
-        };
+        const auto& internExps = expirySchedule.at(indexOfScc).expired();
 
         // create all internal relations of the current scc
         for (const auto& relation : allInterns) {
-            makeRamCreate(relation, "");
+            makeRamCreate(current, relation, "");
             // create new and delta relations if required
             if (isRecursive) {
-                makeRamCreate(relation, "delta_");
-                makeRamCreate(relation, "new_");
+                makeRamCreate(current, relation, "delta_");
+                makeRamCreate(current, relation, "new_");
             }
         }
 
-        // load all internal input relations from the facts dir with a .facts extension
-        for (const auto& relation : internIns) {
-            makeRamLoad(relation, "fact-dir", ".facts");
-        }
-
-        // if a communication engine has been specified...
-        if (Global::config().has("engine")) {
-            // load all external output predecessor relations from the output dir with a .csv extension
-            for (const auto& relation : externOutPreds) {
-                makeRamLoad(relation, "output-dir", ".csv");
+#ifdef USE_MPI
+        // note that the order of receives is first by relation then second destination
+        if (Global::config().get("engine") == "mpi") {
+            // first, recv all internal input relations from the master process
+            for (const auto& relation : internIns) {
+                makeRamRecv(current, relation, -1);
             }
-            // load all external output predecessor relations from the output dir with a .facts extension
-            for (const auto& relation : externNonOutPreds) {
-                makeRamLoad(relation, "output-dir", ".facts");
+            // second, recv all predecessor relations from their source slave process
+            for (const auto& relation : externPreds) {
+                makeRamRecv(current, relation, sccOrder.indexOfScc(sccGraph.getSCC(relation)));
+            }
+        } else
+#endif
+        {
+            // load all internal input relations from the facts dir with a .facts extension
+            for (const auto& relation : internIns) {
+                makeRamLoad(current, relation, "fact-dir", ".facts");
+            }
+
+            // if a communication engine has been specified...
+            if (Global::config().has("engine")) {
+                // load all external output predecessor relations from the output dir with a .csv extension
+                for (const auto& relation : externOutPreds) {
+                    makeRamLoad(current, relation, "output-dir", ".csv");
+                }
+                // load all external output predecessor relations from the output dir with a .facts extension
+                for (const auto& relation : externNonOutPreds) {
+                    makeRamLoad(current, relation, "output-dir", ".facts");
+                }
             }
         }
-
         // compute the relations themselves
         std::unique_ptr<RamStatement> bodyStatement =
                 (!isRecursive) ? translateNonRecursiveRelation(*((const AstRelation*)*allInterns.begin()),
@@ -1368,22 +1421,39 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         // print the size of all printsize relations in the current SCC
         for (const auto& relation : allInterns) {
             if (relation->isPrintSize()) {
-                makeRamPrintSize(relation);
+                makeRamPrintSize(current, relation);
             }
         }
-
-        // if a communication engine is enabled...
-        if (Global::config().has("engine")) {
-            // store all internal non-output relations with external successors to the output dir with a
-            // .facts extension
-            for (const auto& relation : internNonOutsWithExternSuccs) {
-                makeRamStore(relation, "output-dir", ".facts");
+#ifdef USE_MPI
+        // note that the order of sends is first by relation then second destination
+        if (Global::config().get("engine") == "mpi") {
+            // first, send all internal relations with external successors to their destination slave
+            // processes
+            for (const auto& relation : internsWithExternSuccs) {
+                makeRamSend(current, relation, sccOrder.indexOfScc(sccGraph.getSuccessorSCCs(relation)));
             }
-        }
+            // notify the master process
+            makeRamNotify(current);
+            // second, send all internal output relations to the master process
+            for (const auto& relation : internOuts) {
+                makeRamSend(current, relation, std::set<int>({-1}));
+            }
+        } else
+#endif
+        {
+            // if a communication engine is enabled...
+            if (Global::config().has("engine")) {
+                // store all internal non-output relations with external successors to the output dir with a
+                // .facts extension
+                for (const auto& relation : internNonOutsWithExternSuccs) {
+                    makeRamStore(current, relation, "output-dir", ".facts");
+                }
+            }
 
-        // store all internal output relations to the output dir with a .csv extension
-        for (const auto& relation : internOuts) {
-            makeRamStore(relation, "output-dir", ".csv");
+            // store all internal output relations to the output dir with a .csv extension
+            for (const auto& relation : internOuts) {
+                makeRamStore(current, relation, "output-dir", ".csv");
+            }
         }
 
         // if provenance is not enabled...
@@ -1392,31 +1462,86 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
             if (Global::config().has("engine")) {
                 // drop all internal relations
                 for (const auto& relation : allInterns) {
-                    makeRamDrop(relation);
+                    makeRamDrop(current, relation);
                 }
                 // drop external output predecessor relations
                 for (const auto& relation : externOutPreds) {
-                    makeRamDrop(relation);
+                    makeRamDrop(current, relation);
                 }
                 // drop external non-output predecessor relations
                 for (const auto& relation : externNonOutPreds) {
-                    makeRamDrop(relation);
+                    makeRamDrop(current, relation);
                 }
             } else {
                 // otherwise, drop all  relations expired as per the topological order
                 for (const auto& relation : internExps) {
-                    makeRamDrop(relation);
+                    makeRamDrop(current, relation);
                 }
             }
         }
 
         if (current) {
             // append the current SCC as a stratum to the sequence
-            appendStmt(res, std::make_unique<RamStratum>(std::move(current), index));
+            appendStmt(res, std::make_unique<RamStratum>(std::move(current), indexOfScc));
+
             // increment the index of the current SCC
-            index++;
+            indexOfScc++;
         }
     }
+
+#ifdef USE_MPI
+    if (Global::config().get("engine") == "mpi") {
+        // make a new ram statement for the master process
+        std::unique_ptr<RamStatement> current;
+
+        // load all internal input relations from fact-dir with a .facts extension
+        indexOfScc = 0;
+        for (const auto scc : sccOrder.order()) {
+            for (const auto& relation : sccGraph.getInternalInputRelations(scc)) {
+                makeRamLoad(current, relation, "fact-dir", ".facts");
+            }
+            ++indexOfScc;
+        }
+
+        // send all internal input relations to their slave processes
+        indexOfScc = 0;
+        for (const auto scc : sccOrder.order()) {
+            for (const auto& relation : sccGraph.getInternalInputRelations(scc)) {
+                // note that the order of sends is first by relation then second destination
+                const auto destinations = std::set<int>({indexOfScc});
+                makeRamSend(current, relation, destinations);
+                makeRamDrop(current, relation);
+            }
+            ++indexOfScc;
+        }
+
+        // wait for notifications from all slaves
+        makeRamWait(current, sccGraph.getNumberOfSCCs());
+
+        // recv all internal output relations from their slave processes
+        indexOfScc = 0;
+        for (const auto scc : sccOrder.order()) {
+            for (const auto& relation : sccGraph.getInternalOutputRelations(scc)) {
+                // note that the order of receives is first by relation then second destination
+                makeRamRecv(current, relation, indexOfScc);
+            }
+            ++indexOfScc;
+        }
+
+        // write to output-dir with .csv extension
+        indexOfScc = 0;
+        for (const auto scc : sccOrder.order()) {
+            for (const auto& relation : sccGraph.getInternalOutputRelations(scc)) {
+                makeRamStore(current, relation, "output-dir", ".csv");
+                makeRamDrop(current, relation);
+            }
+            ++indexOfScc;
+        }
+
+        // append the master process as a stratum with index of the max int
+        appendStmt(res, std::make_unique<RamStratum>(std::move(current), std::numeric_limits<int>::max()));
+    }
+#endif
 
     // add main timer if profiling
     if (res && Global::config().has("profile")) {

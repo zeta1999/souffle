@@ -40,6 +40,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -359,9 +360,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitDrop(const RamDrop& drop, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
+
             out << "if (!isHintsProfilingEnabled() && (performIO || " << drop.getRelation().isTemp() << ")) ";
             out << synthesiser.getRelationName(drop.getRelation()) << "->"
                 << "purge();\n";
+
             PRINT_END_COMMENT(out);
         }
 
@@ -1181,6 +1184,79 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
         }
 
+#ifdef USE_MPI
+        // -- mpi statements --
+
+        void visitRecv(const RamRecv& recv, std::ostream& os) override {
+            os << "\n#ifdef USE_MPI\n";
+            os << "{";
+            os << "auto status = souffle::mpi::probe(";
+            {
+                // source
+                os << recv.getSourceStratum() + 1 << ", ";
+                // tag
+                os << "tag_" << synthesiser.getRelationName(recv.getRelation());
+            }
+            os << ");";
+            os << "souffle::mpi::recv<RamDomain>(";
+            {
+                // data
+                os << "*" << synthesiser.getRelationName(recv.getRelation()) << ", ";
+                os << recv.getRelation().getArity() << ", ";
+                // status
+                os << "status";
+            }
+            os << ");";
+            os << "}";
+            os << "\n#endif\n";
+        }
+
+        void visitSend(const RamSend& send, std::ostream& os) override {
+            os << "\n#ifdef USE_MPI\n";
+            os << "{";
+            os << "souffle::mpi::send<RamDomain>(";
+            // data
+            { os << "*" << synthesiser.getRelationName(send.getRelation()) << ", "; }
+            { os << send.getRelation().getArity() << ", "; }
+            // destinations
+            {
+                const auto& destinationStrata = send.getDestinationStrata();
+                auto it = destinationStrata.begin();
+                os << "std::set<int>(";
+                if (it != destinationStrata.end()) {
+                    os << "{" << *it + 1;
+                    ++it;
+                    while (it != destinationStrata.end()) {
+                        os << ", " << *it + 1;
+                        ++it;
+                    }
+                    os << "}";
+                } else {
+                    os << "0";
+                }
+                os << "), ";
+            }
+            // tag
+            { os << "tag_" << synthesiser.getRelationName(send.getRelation()); }
+            os << ");";
+            os << "}";
+            os << "\n#endif\n";
+        }
+
+        void visitNotify(const RamNotify&, std::ostream& os) override {
+            os << "\n#ifdef USE_MPI\n";
+            os << "mpi::send(0, SymbolTable::exitTag());";
+            os << "mpi::recv(0, SymbolTable::exitTag());";
+            os << "\n#endif\n";
+        }
+
+        void visitWait(const RamWait& wait, std::ostream& os) override {
+            os << "\n#ifdef USE_MPI\n";
+            os << "symTable.handleMpiMessages(" << wait.getCount() << ");";
+            os << "\n#endif\n";
+        }
+
+#endif
         // -- safety net --
 
         void visitNode(const RamNode& node, std::ostream& /*out*/) override {
@@ -1207,22 +1283,31 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     std::string classname = "Sf_" + id;
 
+#ifdef USE_MPI
+    // turn off mpi support if not enabled as the execution engine
+    if (Global::config().get("engine") != "mpi") {
+        os << "#undef USE_MPI\n";
+    }
+#endif
+
     // generate C++ program
-    os << "#include \"souffle/CompiledSouffle.h\"\n";
+    os << "\n#include \"souffle/CompiledSouffle.h\"\n";
     if (Global::config().has("provenance")) {
-        os << "#include \"souffle/Explain.h\"\n";
+        os << "\n#include \"souffle/Explain.h\"\n";
     }
 
     if (Global::config().has("live-profile")) {
         os << "#include <thread>\n";
         os << "#include \"profile/Tui.h\"\n";
     }
+
     os << "\n";
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
 
-    // print wrapper for regex
     os << "class " << classname << " : public SouffleProgram {\n";
+
+    // regex wrapper
     os << "private:\n";
     os << "static inline bool regex_wrapper(const std::string& pattern, const std::string& text) {\n";
     os << "   bool result = false; \n";
@@ -1231,6 +1316,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
           "<< text << \"\\\").\\n\";\n}\n";
     os << "   return result;\n";
     os << "}\n";
+
+    // substring wrapper
+    os << "private:\n";
     os << "static inline std::string substr_wrapper(const std::string& str, size_t idx, size_t len) {\n";
     os << "   std::string result; \n";
     os << "   try { result = str.substr(idx,len); } catch(...) { \n";
@@ -1239,6 +1327,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
           "functor.\\n\";\n";
     os << "   } return result;\n";
     os << "}\n";
+
+    // to number wrapper
+    os << "private:\n";
     os << "static inline RamDomain wrapper_tonumber(const std::string& str) {\n";
     os << "   RamDomain result=0; \n";
     os << "   try { result = stord(str); } catch(...) { \n";
@@ -1249,6 +1340,31 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "   } return result;\n";
     os << "}\n";
 
+// if using mpi...
+#ifdef USE_MPI
+    if (Global::config().get("engine") == "mpi") {
+        os << "\n#ifdef USE_MPI\n";
+
+        // create an enum of message tags, one for each relation
+        {
+            os << "private:\n";
+            os << "enum {";
+            {
+                int tag = SymbolTable::numberOfTags();
+                visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+                    if (tag != SymbolTable::numberOfTags()) {
+                        os << ", ";
+                    }
+                    os << "tag_" << getRelationName(create.getRelation()) << " = " << tag;
+                    ++tag;
+                });
+            }
+            os << "};";
+        }
+        os << "\n#endif\n";
+    }
+#endif
+
     if (Global::config().has("profile")) {
         os << "std::string profiling_fname;\n";
     }
@@ -1257,15 +1373,18 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     // declare symbol table
     os << "// -- initialize symbol table --\n";
-    os << "SymbolTable symTable\n";
-    if (symTable.size() > 0) {
-        os << "{\n";
-        for (size_t i = 0; i < symTable.size(); i++) {
-            os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
+    {
+        os << "SymbolTable symTable\n";
+        if (symTable.size() > 0) {
+            os << "{\n";
+            for (size_t i = 0; i < symTable.size(); i++) {
+                os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
+            }
+            os << "}";
         }
-        os << "}";
+        os << ";";
     }
-    os << ";";
+
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
@@ -1363,7 +1482,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     // -- run function --
     os << "private:\ntemplate <bool performIO> void runFunction(std::string inputDirectory = \".\", "
-          "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1) {\n";
+          "std::string outputDirectory = \".\", int stratumIndex = -1) {\n";
 
     os << "SignalHandler::instance()->set();\n";
     if (Global::config().has("verbose")) {
@@ -1390,18 +1509,21 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
     }
 
-    // TODO (lyndonhenry): an array of addresses of the gotos may be more efficient than a switch statement
-    // here
     if (Global::config().has("engine")) {
         std::stringstream ss;
         bool hasAtLeastOneStrata = false;
         visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
             hasAtLeastOneStrata = true;
-            ss << "case " << stratum.getIndex() << ":\ngoto STRATUM_" << stratum.getIndex() << ";\nbreak;\n";
+            // go to stratum of index in switch
+            auto i = stratum.getIndex();
+            ss << "case " << i << ":\ngoto STRATUM_" << i << ";\nbreak;\n";
         });
         if (hasAtLeastOneStrata) {
             os << "switch (stratumIndex) {\n";
-            os << "case ((size_t) -1):\ngoto STRATUM_0;\nbreak;\n";
+            {
+                // otherwise use stratum 0 if index is -1
+                os << "case -1:\ngoto STRATUM_0;\nbreak;\n";
+            }
             os << ss.str();
             os << "}\n";
         }
@@ -1410,14 +1532,17 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
         os << "/* BEGIN STRATUM " << stratum.getIndex() << " */\n";
         if (Global::config().has("engine")) {
-            os << "STRATUM_" << stratum.getIndex() << ":\n";
+            // go to the stratum with the max value for int as a suffix if calling the master stratum
+            auto i = stratum.getIndex();
+            os << "STRATUM_" << i << ":\n";
         }
         os << "{\n";
         emitCode(os, stratum.getBody());
         os << "}\n";
         if (Global::config().has("engine")) {
-            os << "if (stratumIndex != (size_t) -1) goto EXIT;\n";
+            os << "if (stratumIndex != -1) goto EXIT;\n";
         }
+
         os << "/* END STRATUM " << stratum.getIndex() << " */\n";
     });
 
@@ -1450,15 +1575,15 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "}\n";  // end of runFunction() method
 
     // add methods to run with and without performing IO (mainly for the interface)
-    os << "public:\nvoid run(size_t stratumIndex = (size_t) -1) override { runFunction<false>(\".\", \".\", "
+    os << "public:\nvoid run(int stratumIndex = -1) override { runFunction<false>(\".\", \".\", "
           "stratumIndex); }\n";
     os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\", "
-          "size_t stratumIndex = (size_t) -1) "
+          "int stratumIndex = -1) "
           "override { ";
     if (Global::config().has("live-profile")) {
         os << "std::thread profiler([]() { profile::Tui().runProf(); });\n";
     }
-    os << "runFunction<true>(inputDirectory, outputDirectory);\n";
+    os << "runFunction<true>(inputDirectory, outputDirectory, stratumIndex);\n";
     if (Global::config().has("live-profile")) {
         os << "if (profiler.joinable()) { profiler.join(); }\n";
     }
@@ -1612,7 +1737,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "SymbolTable *getST_" << id << "(SouffleProgram *p){return &reinterpret_cast<" << classname
        << "*>(p)->symTable;}\n";
 
-    os << "#ifdef __EMBEDDED_SOUFFLE__\n";
+    os << "\n#ifdef __EMBEDDED_SOUFFLE__\n";
     os << "class factory_" << classname << ": public souffle::ProgramFactory {\n";
     os << "SouffleProgram *newInstance() {\n";
     os << "return new " << classname << "();\n";
@@ -1647,7 +1772,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     os << "#if defined(_OPENMP) \n";
     os << "omp_set_nested(true);\n";
-    os << "#endif\n";
+    os << "\n#endif\n";
 
     os << "souffle::";
     if (Global::config().has("profile")) {
@@ -1656,17 +1781,30 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << classname + " obj;\n";
     }
 
-    os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
+#ifdef USE_MPI
+    if (Global::config().get("engine") == "mpi") {
+        os << "\n#ifdef USE_MPI\n";
+        os << "souffle::mpi::init(argc, argv);";
+        os << "int rank = souffle::mpi::commRank();";
+        os << "int stratum = (rank == 0) ? " << std::numeric_limits<int>::max() << " : rank - 1;";
+        os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), stratum);\n";
+        os << "souffle::mpi::finalize();";
+        os << "\n#endif\n";
+    } else
+#endif
+    {
+        os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
+    }
+
     if (Global::config().get("provenance") == "1") {
         os << "explain(obj, true, false);\n";
     } else if (Global::config().get("provenance") == "2") {
         os << "explain(obj, true, true);\n";
     }
-
     os << "return 0;\n";
     os << "} catch(std::exception &e) { souffle::SignalHandler::instance()->error(e.what());}\n";
     os << "}\n";
-    os << "#endif\n";
+    os << "\n#endif\n";
 }
 
 }  // end of namespace souffle

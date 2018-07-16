@@ -7,7 +7,6 @@
 
 namespace souffle {
 
-// TODO: this is the wrong place for this class, find somewhere better to put it
 /* A simple table class, to be used as a base for others to extend from. */
 template <typename K, typename V>
 class BaseTable {

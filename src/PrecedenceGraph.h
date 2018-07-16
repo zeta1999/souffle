@@ -316,7 +316,7 @@ public:
     const size_t indexOfScc(const size_t scc) const {
         auto it = std::find(sccOrder.begin(), sccOrder.end(), scc);
         assert(it != sccOrder.end());
-        return (size_t) std::distance(sccOrder.begin(), it);
+        return (size_t)std::distance(sccOrder.begin(), it);
     }
 
     const std::set<size_t> indexOfScc(const std::set<size_t>& sccs) const {

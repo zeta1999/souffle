@@ -1479,7 +1479,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     // -- run function --
     os << "private:\ntemplate <bool performIO> void runFunction(std::string inputDirectory = \".\", "
-          "std::string outputDirectory = \".\", int stratumIndex = -1) {\n";
+          "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1) {\n";
 
     os << "SignalHandler::instance()->set();\n";
     if (Global::config().has("verbose")) {
@@ -1519,7 +1519,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             os << "switch (stratumIndex) {\n";
             {
                 // otherwise use stratum 0 if index is -1
-                os << "case -1:\ngoto STRATUM_0;\nbreak;\n";
+                os << "case (size_t) -1:\ngoto STRATUM_0;\nbreak;\n";
             }
             os << ss.str();
             os << "}\n";
@@ -1537,7 +1537,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         emitCode(os, stratum.getBody());
         os << "}\n";
         if (Global::config().has("engine")) {
-            os << "if (stratumIndex != -1) goto EXIT;\n";
+            os << "if (stratumIndex != (size_t) -1) goto EXIT;\n";
         }
 
         os << "/* END STRATUM " << stratum.getIndex() << " */\n";
@@ -1572,10 +1572,10 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "}\n";  // end of runFunction() method
 
     // add methods to run with and without performing IO (mainly for the interface)
-    os << "public:\nvoid run(int stratumIndex = -1) override { runFunction<false>(\".\", \".\", "
+    os << "public:\nvoid run(size_t stratumIndex = (size_t) -1) override { runFunction<false>(\".\", \".\", "
           "stratumIndex); }\n";
     os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\", "
-          "int stratumIndex = -1) "
+          "size_t stratumIndex = (size_t) -1) "
           "override { ";
     if (Global::config().has("live-profile")) {
         os << "std::thread profiler([]() { profile::Tui().runProf(); });\n";

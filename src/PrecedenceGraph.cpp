@@ -194,10 +194,10 @@ void SCCGraph::run(const AstTranslationUnit& translationUnit) {
     std::stack<const AstRelation*> S, P;
     std::map<const AstRelation*, size_t> preOrder;  // Pre-order number of a node (for Gabow's Algo)
     for (const AstRelation* relation : relations) {
-        relationToScc[relation] = preOrder[relation] = (size_t) -1;
+        relationToScc[relation] = preOrder[relation] = (size_t)-1;
     }
     for (const AstRelation* relation : relations) {
-        if (preOrder[relation] == (size_t) -1) {
+        if (preOrder[relation] == (size_t)-1) {
             scR(relation, preOrder, counter, S, P, numSCCs);
         }
     }
@@ -234,9 +234,9 @@ void SCCGraph::scR(const AstRelation* w, std::map<const AstRelation*, size_t>& p
     S.push(w);
     P.push(w);
     for (const AstRelation* t : precedenceGraph->graph().predecessors(w)) {
-        if (preOrder[t] == (size_t) -1) {
+        if (preOrder[t] == (size_t)-1) {
             scR(t, preOrder, counter, S, P, numSCCs);
-        } else if (relationToScc[t] == (size_t) -1) {
+        } else if (relationToScc[t] == (size_t)-1) {
             while (preOrder[P.top()] > preOrder[t]) {
                 P.pop();
             }

@@ -1384,7 +1384,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         if (Global::config().get("engine") == "mpi") {
             // first, recv all internal input relations from the master process
             for (const auto& relation : internIns) {
-                makeRamRecv(current, relation, (size_t) -1);
+                makeRamRecv(current, relation, (size_t)-1);
             }
             // second, recv all predecessor relations from their source slave process
             for (const auto& relation : externPreds) {

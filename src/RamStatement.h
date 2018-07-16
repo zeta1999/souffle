@@ -1098,9 +1098,6 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamNotify*>(&node));
-        const auto& other = static_cast<const RamNotify&>(node);
-        (void)other;
         return true;
     }
 };

@@ -3,7 +3,7 @@
 namespace souffle {
 namespace profile {
 namespace html {
-std::string htmlMain = R"___(
+std::string htmlHeadTop = R"___(
 <!--
 * Souffle - A Datalog Compiler
 * Copyright (c) 2017, The Souffle Developers. All rights reserved
@@ -16,9 +16,12 @@ std::string htmlMain = R"___(
 <head>
     <meta charset="UTF-8">
     <title>Souffle Profiler</title>
-<link rel="stylesheet" type="text/css" href="chartiststyle.css"/>
-<link rel="stylesheet" type="text/css" href="style.css"/>
+)___";
+std::string htmlHeadBottom = R"___(
 </head>
+)___";
+
+std::string htmlBodyTop = R"___(
 <body>
 <div id="wrapper" style="width:100%;height:inherit;">
     <ul class="tab">
@@ -173,13 +176,9 @@ std::string htmlMain = R"___(
     </div>
 </div>
 </div>
+)___";
+std::string htmlBodyBottom = R"___(
 </body>
-<script src="chartist.min.js"></script>
-<script src="chartist-plugin-tooltip.js"></script>
-<script src="tablesort.js"></script>
-<script src="testtabledata.js"></script>
-<script src="util.js"></script>
-<script src="main.js"></script>
 </html>
 
 )___";

@@ -3,7 +3,7 @@
 # Find the changed lines in the diff. Arguments 1 and 2 are appended to the
 #git diff command
 
-CLANGFORMAT=clang-format-4.0
+CLANGFORMAT=clang-format-6.0
 
 changedLines() {
   range_start=-1

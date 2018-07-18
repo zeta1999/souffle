@@ -14,52 +14,47 @@
  *
  ***********************************************************************/
 
-#include "AstAnalysis.h"
 #include "AstComponentChecker.h"
 #include "AstPragma.h"
-#include "AstProgram.h"
 #include "AstSemanticChecker.h"
-#include "AstTransformer.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstTranslator.h"
-#include "AstUtils.h"
-#include "BddbddbBackend.h"
 #include "ComponentModel.h"
+#include "DebugReport.h"
+#include "ErrorReport.h"
 #include "Global.h"
 #include "Interpreter.h"
 #include "InterpreterInterface.h"
+#include "Macro.h"
 #include "ParserDriver.h"
-#include "PrecedenceGraph.h"
+#include "RamProgram.h"
 #include "RamSemanticChecker.h"
-#include "RamStatement.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
 #include "SymbolTable.h"
 #include "Synthesiser.h"
 #include "Util.h"
+#include "config.h"
+#include "profile/Tui.h"
 
 #ifdef USE_PROVENANCE
 #include "Explain.h"
 #endif
 
+#include <cassert>
 #include <chrono>
+#include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <list>
+#include <iterator>
+#include <memory>
+#include <stdexcept>
 #include <string>
-
-#include "config.h"
-#include <ctype.h>
-#include <errno.h>
-#include <getopt.h>
-#include <libgen.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 
@@ -69,25 +64,23 @@ namespace souffle {
 void executeBinary(const std::string& binaryFilename) {
     assert(!binaryFilename.empty() && "binary filename cannot be blank");
 
-    // separate souffle output from executable output
-    if (Global::config().has("profile")) {
-        std::cout.flush();
-    }
-
     // check whether the executable exists
     if (!isExecutable(binaryFilename)) {
         throw std::invalid_argument("Generated executable <" + binaryFilename + "> could not be found");
     }
 
-    // run executable
-    int result = system(binaryFilename.c_str());
-    // Remove temp files
+    // run the executable
+    int exitCode = system(binaryFilename.c_str());
+
+    // remove temp files
     if (Global::config().get("dl-program").empty()) {
         remove(binaryFilename.c_str());
         remove((binaryFilename + ".cpp").c_str());
     }
-    if (result != 0) {
-        exit(result);
+
+    // exit with same code as executable
+    if (exitCode != 0) {
+        exit(exitCode);
     }
 }
 
@@ -103,11 +96,6 @@ void compileToBinary(std::string compileCmd, const std::string& sourceFilename) 
 
     // add source code
     compileCmd += sourceFilename;
-
-    // separate souffle output from executable output
-    if (Global::config().has("profile")) {
-        std::cout.flush();
-    }
 
     // run executable
     if (system(compileCmd.c_str()) != 0) {
@@ -174,9 +162,9 @@ int main(int argc, char** argv) {
                             {"dl-program", 'o', "FILE", "", false,
                                     "Generate C++ source code, written to <FILE>, and compile this to a "
                                     "binary executable (without executing it)."},
+                            {"live-profile", 'l', "", "", false, "Enable live profiling."},
                             {"profile", 'p', "FILE", "", false,
                                     "Enable profiling, and write profile data to <FILE>."},
-                            {"bddbddb", 'b', "FILE", "", false, "Convert input into bddbddb file format."},
                             {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
 #ifdef USE_PROVENANCE
                             {"provenance", 't', "EXPLAIN", "", false,
@@ -184,6 +172,8 @@ int main(int argc, char** argv) {
 #endif
                             {"data-structure", 'd', "type", "", false,
                                     "Specify data structure (brie/btree/eqrel/rbtset/hashset)."},
+                            {"engine", 'e', "[ file ]", "", false,
+                                    "Specify communication engine for distributed execution."},
                             {"verbose", 'v', "", "", false, "Verbose output."},
                             {"help", 'h', "", "", false, "Display this help message."}};
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
@@ -251,6 +241,22 @@ int main(int argc, char** argv) {
         if (Global::config().has("dl-program")) {
             Global::config().set("compile");
         }
+
+        /* ensure that souffle has been compiled with support for the execution engine, if specified */
+        if (Global::config().has("engine")) {
+            if (!(Global::config().has("compile") || Global::config().has("dl-program") ||
+                        Global::config().has("generate"))) {
+                throw std::invalid_argument("Error: Use of engine option not yet available for interpreter.");
+            }
+            const auto& engine = Global::config().get("engine");
+            if (engine != "file") {
+                throw std::invalid_argument("Error: Use of engine '" + engine + "' is not supported.");
+            }
+        }
+
+        if (Global::config().has("live-profile") && !Global::config().has("profile")) {
+            Global::config().set("profile");
+        }
     }
 
     // ------ start souffle -------------
@@ -316,9 +322,7 @@ int main(int argc, char** argv) {
     // Magic-Set pipeline
     auto magicPipeline = std::make_unique<ConditionalTransformer>(Global::config().has("magic-transform"),
             std::make_unique<PipelineTransformer>(std::make_unique<NormaliseConstraintsTransformer>(),
-                    std::make_unique<MagicSetTransformer>(),
-                    std::make_unique<ConditionalTransformer>(Global::config().get("bddbddb").empty(),
-                            std::make_unique<ResolveAliasesTransformer>()),
+                    std::make_unique<MagicSetTransformer>(), std::make_unique<ResolveAliasesTransformer>(),
                     std::make_unique<RemoveRelationCopiesTransformer>(),
                     std::make_unique<RemoveEmptyRelationsTransformer>(),
                     std::make_unique<RemoveRedundantRelationsTransformer>()));
@@ -336,14 +340,15 @@ int main(int argc, char** argv) {
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(), std::make_unique<AstSemanticChecker>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
-	    std::make_unique<InlineRelationsTransformer>(), std::make_unique<ReduceExistentialsTransformer>(),
-	    std::make_unique<ConditionalTransformer>(
-		    Global::config().get("bddbddb").empty(), std::make_unique<ResolveAliasesTransformer>()),
-	    std::make_unique<RemoveRelationCopiesTransformer>(),
-	    std::make_unique<MaterializeAggregationQueriesTransformer>(),
-	    std::make_unique<RemoveEmptyRelationsTransformer>(),
-	    std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
-	    std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
+            std::make_unique<ReplaceSingletonVariablesTransformer>(),
+            std::make_unique<InlineRelationsTransformer>(), std::make_unique<ReduceExistentialsTransformer>(),
+            std::make_unique<ExtractDisconnectedLiteralsTransformer>(),
+            std::make_unique<ResolveAliasesTransformer>(),
+            std::make_unique<RemoveRelationCopiesTransformer>(),
+            std::make_unique<MaterializeAggregationQueriesTransformer>(),
+            std::make_unique<RemoveEmptyRelationsTransformer>(),
+            std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
+            std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
 
     // Set up the debug report if necessary
     if (!Global::config().get("debug-report").empty()) {
@@ -361,26 +366,6 @@ int main(int argc, char** argv) {
     // Apply all the transformations
     pipeline->apply(*astTranslationUnit);
 
-    // ------- (optional) conversions -------------
-
-    // conduct the bddbddb file export
-    if (!Global::config().get("bddbddb").empty()) {
-        try {
-            if (Global::config().get("bddbddb") == "-") {
-                // use STD-OUT
-                toBddbddb(std::cout, *astTranslationUnit);
-            } else {
-                // create an output file
-                std::ofstream out(Global::config().get("bddbddb").c_str());
-                toBddbddb(out, *astTranslationUnit);
-            }
-        } catch (const UnsupportedConstructException& uce) {
-            ERROR("failed to convert input specification into bddbddb syntax because " +
-                    std::string(uce.what()));
-        }
-        return 0;
-    }
-
     // ------- execution -------------
 
     /* translate AST to RAM */
@@ -388,7 +373,7 @@ int main(int argc, char** argv) {
             AstTranslator().translateUnit(*astTranslationUnit);
 
     std::vector<std::unique_ptr<RamTransformer>> ramTransforms;
-    ramTransforms.push_back(std::unique_ptr<RamTransformer>(new RamSemanticChecker()));
+    ramTransforms.push_back(std::make_unique<RamSemanticChecker>());
 
     for (const auto& transform : ramTransforms) {
         transform->apply(*ramTranslationUnit);
@@ -417,8 +402,18 @@ int main(int argc, char** argv) {
         // configure interpreter
         std::unique_ptr<Interpreter> interpreter = std::make_unique<Interpreter>(*ramTranslationUnit);
 
+        std::thread profiler;
+        // Start up profiler if needed
+        if (Global::config().has("live-profile") && !Global::config().has("compile")) {
+            profiler = std::thread([]() { profile::Tui().runProf(); });
+        }
         // execute translation unit
         interpreter->executeMain();
+
+        // If the profiler was started, join back here once it exits.
+        if (profiler.joinable()) {
+            profiler.join();
+        }
 
 #ifdef USE_PROVENANCE
         // only run explain interface if interpreted
@@ -471,7 +466,14 @@ int main(int argc, char** argv) {
             os.close();
 
             if (Global::config().has("compile")) {
+                auto start = std::chrono::high_resolution_clock::now();
                 compileToBinary(compileCmd, sourceFilename);
+                /* Report overall run-time in verbose mode */
+                if (Global::config().has("verbose")) {
+                    auto end = std::chrono::high_resolution_clock::now();
+                    std::cout << "Compilation Time: " << std::chrono::duration<double>(end - start).count()
+                              << "sec\n";
+                }
                 // run compiled C++ program if requested.
                 if (!Global::config().has("dl-program")) {
                     executeBinary(baseFilename);
@@ -479,6 +481,7 @@ int main(int argc, char** argv) {
             }
         } catch (std::exception& e) {
             std::cerr << e.what() << std::endl;
+            std::exit(1);
         }
     }
 

@@ -18,17 +18,23 @@
 
 #include "InterpreterContext.h"
 #include "InterpreterRelation.h"
+#include "RamCondition.h"
+#include "RamRelation.h"
+#include "RamStatement.h"
 #include "RamTranslationUnit.h"
-#include "SymbolTable.h"
+#include "RamTypes.h"
 
+#include <cassert>
 #include <map>
-#include <memory>
-#include <ostream>
+#include <string>
 #include <vector>
 
 namespace souffle {
 
 class InterpreterProgInterface;
+class RamOperation;
+class RamValue;
+class SymbolTable;
 
 /**
  * Interpreter executing a RAM translation unit
@@ -42,13 +48,19 @@ private:
     RamTranslationUnit& translationUnit;
 
     /** relation environment type */
-    typedef std::map<std::string, InterpreterRelation*> relation_map;
+    using relation_map = std::map<std::string, InterpreterRelation*>;
 
     /** relation environment */
     relation_map environment;
 
+    /** counters for atom profiling */
+    std::map<std::string, std::map<size_t, size_t>> frequencies;
+
     /** counter for $ operator */
     int counter;
+
+    /** iteration number (in a fix-point calculation) */
+    size_t iteration;
 
 protected:
     /** Evaluate value */
@@ -61,7 +73,7 @@ protected:
     bool evalCond(const RamCondition& cond, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate statement */
-    void evalStmt(const RamStatement& stmt, std::ostream* profile = nullptr);
+    void evalStmt(const RamStatement& stmt);
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
@@ -73,9 +85,24 @@ protected:
         return counter;
     }
 
+    /** Get Iteration Number */
+    size_t getIterationNumber() const {
+        return iteration;
+    }
+
     /** Increment counter */
     int incCounter() {
         return counter++;
+    }
+
+    /** Increment iteration number */
+    void incIterationNumber() {
+        iteration++;
+    }
+
+    /** Reset iteration number */
+    void resetIterationNumber() {
+        iteration = 0;
     }
 
     /** Create relation */
@@ -125,7 +152,7 @@ protected:
     }
 
 public:
-    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0) {}
+    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0), iteration(0) {}
     virtual ~Interpreter() {
         for (auto& x : environment) {
             delete x.second;

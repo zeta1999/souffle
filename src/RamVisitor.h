@@ -20,12 +20,14 @@
 #include "RamCondition.h"
 #include "RamNode.h"
 #include "RamOperation.h"
+#include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamValue.h"
 
 #include <functional>
 #include <typeinfo>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -122,6 +124,7 @@ struct RamVisitor : public ram_visitor_tag {
             FORWARD(Exit);
             FORWARD(LogTimer);
             FORWARD(DebugInfo);
+            FORWARD(Stratum);
 
 #undef FORWARD
         }
@@ -165,6 +168,7 @@ protected:
     LINK(Exit, Statement);
     LINK(LogTimer, Statement);
     LINK(DebugInfo, Statement);
+    LINK(Stratum, Statement);
 
     LINK(Statement, Node);
 
@@ -275,9 +279,9 @@ namespace detail {
 template <typename R, typename N>
 struct LambdaRamVisitor : public RamVisitor<void> {
     std::function<R(const N&)> lambda;
-    LambdaRamVisitor(const std::function<R(const N&)>& lambda) : lambda(lambda) {}
+    LambdaRamVisitor(std::function<R(const N&)> lambda) : lambda(std::move(lambda)) {}
     void visit(const RamNode& node) override {
-        if (const N* n = dynamic_cast<const N*>(&node)) {
+        if (const auto* n = dynamic_cast<const N*>(&node)) {
             lambda(*n);
         }
     }

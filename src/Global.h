@@ -1,15 +1,9 @@
 #pragma once
 
-#include "Util.h"
-
 #include <iostream>
 #include <map>
-#include <sstream>
 #include <string>
 #include <vector>
-
-#include <ctype.h>
-#include <getopt.h>
 
 namespace souffle {
 
@@ -53,11 +47,11 @@ public:
         return (has(key)) ? _data.at(key) : value;
     }
     /* Check the table has the specified key. */
-    const bool has(const K& key) const {
+    bool has(const K& key) const {
         return _data.find(key) != _data.end();
     }
     /* Check the table has the specified key and the specified value for that key. */
-    const bool has(const K& key, const V& value) const {
+    bool has(const K& key, const V& value) const {
         return has(key) && _data.at(key) == value;
     }
     /* Set the entry in the table for the specified key to an object of the value class called with an empty
@@ -106,7 +100,7 @@ public:
     /* The argument processing method, this takes the arguments provided to main, a header, a footer, and a
        list of options.
        From these, we construct the help text and the global configuration. See Global.cpp for details. */
-    void processArgs(int argc, char** argv, const std::string header, const std::string footer,
+    void processArgs(int argc, char** argv, const std::string& header, const std::string& footer,
             const std::vector<MainOption> mainOptions);
     /* Obtain the help text as a string. Note that 'processArgs' must be called before this is used. */
     const std::string& help() const {

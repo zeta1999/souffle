@@ -16,15 +16,21 @@
 
 #pragma once
 
+#include "Macro.h"
 #include "RamAnalysis.h"
 #include "RamRelation.h"
 #include "RamTypes.h"
-#include "Util.h"
-
+#include <cassert>
+#include <cstdlib>
+#include <functional>
+#include <iosfwd>
+#include <limits>
+#include <map>
+#include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
-#include <string.h>
 
 #define NIL 0
 #define INF -1
@@ -34,19 +40,21 @@
 
 namespace souffle {
 
+class RamTranslationUnit;
+
 /**
  * Computes a maximum matching with Hopcroft-Karp algorithm
  * Source: http://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm#Pseudocode
  */
 class MaxMatching {
 public:
-    typedef std::map<SearchColumns, SearchColumns, std::greater<SearchColumns>> Matchings;
-    typedef std::set<SearchColumns, std::greater<SearchColumns>> Nodes;
+    using Matchings = std::map<SearchColumns, SearchColumns, std::greater<SearchColumns>>;
+    using Nodes = std::set<SearchColumns, std::greater<SearchColumns>>;
 
 private:
-    typedef std::set<SearchColumns> Edges;
-    typedef std::map<SearchColumns, Edges> Graph;
-    typedef std::map<SearchColumns, int> Distance;
+    using Edges = std::set<SearchColumns>;
+    using Graph = std::map<SearchColumns, Edges>;
+    using Distance = std::map<SearchColumns, int>;
 
 public:
     /** Solve */
@@ -92,13 +100,13 @@ private:
 
 class IndexSet {
 public:
-    typedef std::vector<int> LexicographicalOrder;
-    typedef std::vector<LexicographicalOrder> OrderCollection;
+    using LexicographicalOrder = std::vector<int>;
+    using OrderCollection = std::vector<LexicographicalOrder>;
 
 protected:
-    typedef std::set<SearchColumns> Chain;
-    typedef std::vector<Chain> ChainOrderMap;
-    typedef std::set<SearchColumns> SearchSet;
+    using Chain = std::set<SearchColumns>;
+    using ChainOrderMap = std::vector<Chain>;
+    using SearchSet = std::set<SearchColumns>;
 
     SearchSet searches;           // set of search patterns on table
     OrderCollection orders;       // collection of lexicographical orders
@@ -193,7 +201,7 @@ protected:
 
     /** determine if key a is a strict subset of key b*/
     static bool isStrictSubset(SearchColumns a, SearchColumns b) {
-        SearchColumns tt = static_cast<SearchColumns>(std::numeric_limits<SearchColumns>::max());
+        auto tt = static_cast<SearchColumns>(std::numeric_limits<SearchColumns>::max());
         return (~(a) | (b)) == tt && a != b;
     }
 
@@ -225,9 +233,9 @@ protected:
         SearchSet unmatched;
 
         // For all nodes n such that n is not in match
-        for (SearchSet::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if (match.find(*it) == match.end()) {
-                unmatched.insert(*it);
+        for (auto node : nodes) {
+            if (match.find(node) == match.end()) {
+                unmatched.insert(node);
             }
         }
         return unmatched;
@@ -239,8 +247,6 @@ protected:
  */
 class IndexSetAnalysis : public RamAnalysis {
 private:
-    typedef std::map<std::string, IndexSet> data_t;
-    typedef typename data_t::iterator iterator;
     std::map<std::string, IndexSet> data;
 
 public:

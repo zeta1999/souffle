@@ -20,34 +20,32 @@
 %define api.token.constructor
 %define api.value.type variant
 %define parse.assert
-%define api.location.type {AstSrcLocation}
+%define api.location.type {SrcLocation}
 
 %code requires {
     #include <config.h>
-    #include <stdlib.h>
-    #include <stdio.h>
-    #include <assert.h>
-    #include <unistd.h>
-    #include <stdarg.h>
-    #include <string>
+    #include <cassert>
+    #include <cstdarg>
+    #include <cstdio>
+    #include <cstdlib>
     #include <stack>
+    #include <string>
     #include <unistd.h>
 
-    #include "Util.h"
-    #include "AstProgram.h"
+    #include "AstArgument.h"
     #include "AstClause.h"
     #include "AstComponent.h"
-    #include "AstRelation.h"
     #include "AstIODirective.h"
-    #include "AstArgument.h"
     #include "AstNode.h"
-    #include "UnaryFunctorOps.h"
-    #include "BinaryFunctorOps.h"
-    #include "BinaryConstraintOps.h"
     #include "AstParserUtils.h"
-
-    #include "AstSrcLocation.h"
+    #include "AstProgram.h"
+    #include "AstRelation.h"
+    #include "SrcLocation.h"
     #include "AstTypes.h"
+    #include "BinaryConstraintOps.h"
+    #include "BinaryFunctorOps.h"
+    #include "UnaryFunctorOps.h"
+    #include "Util.h"
 
     using namespace souffle;
 
@@ -55,7 +53,7 @@
         class ParserDriver;
     }
 
-    typedef void* yyscan_t;
+    using yyscan_t = void*;
 
     #define YY_NULLPTR nullptr
 
@@ -127,6 +125,8 @@
 %token INSTANTIATE               "component instantiation"
 %token NUMBER_TYPE               "numeric type declaration"
 %token SYMBOL_TYPE               "symbolic type declaration"
+%token TONUMBER                  "convert string to number"
+%token TOSTRING                  "convert number to string"
 %token AS                        "type cast"
 %token NIL                       "nil reference"
 %token PIPE                      "|"
@@ -167,7 +167,8 @@
 %type <AstComponent *>                   component component_head component_body
 %type <AstComponentType *>               comp_type
 %type <AstComponentInit *>               comp_init
-%type <AstRelation *>                    attributes non_empty_attributes relation
+%type <AstRelation *>                    attributes non_empty_attributes relation_body
+%type <std::vector<AstRelation *>>       relation_list relation_head
 %type <AstArgument *>                    arg
 %type <AstAtom *>                        arg_list non_empty_arg_list atom
 %type <std::vector<AstAtom*>>            head
@@ -182,7 +183,8 @@
 %type <AstUnionType *>                   uniontype
 %type <std::vector<AstTypeIdentifier>>   type_params type_param_list
 %type <std::string>                      comp_override
-%type <AstIODirective *>                 key_value_pairs non_empty_key_value_pairs iodirective iodirective_body
+%type <AstIODirective *>                 key_value_pairs non_empty_key_value_pairs iodirective_body
+%type <std::vector<AstIODirective *>>    iodirective_head iodirective_list
 %printer { yyoutput << $$; } <*>;
 
 %precedence AS
@@ -209,11 +211,11 @@ unit
   : unit type {
         driver.addType(std::unique_ptr<AstType>($2));
     }
-  | unit relation {
-        driver.addRelation(std::unique_ptr<AstRelation>($2));
+  | unit relation_head {
+        for(const auto& cur : $2) driver.addRelation(std::unique_ptr<AstRelation>(cur));
     }
-  | unit iodirective {
-        driver.addIODirectiveChain(std::unique_ptr<AstIODirective>($2));
+  | unit iodirective_head {
+        for(const auto& cur : $2) driver.addIODirective(std::unique_ptr<AstIODirective>(cur));
     }
   | unit fact {
         driver.addClause(std::unique_ptr<AstClause>($2));
@@ -390,11 +392,28 @@ qualifiers
         $$ = 0;
     }
 
-relation
-  : DECL IDENT LPAREN attributes RPAREN qualifiers {
-        $$ = $4;
-        $4->setName($2);
-        $4->setQualifier($6);
+relation_head
+  : DECL relation_list {
+      $$.swap($2);
+    }
+
+relation_list
+  : relation_body {
+      $$.push_back($1);
+    }
+  | IDENT COMMA relation_list {
+      $$.swap($3);
+      auto tmp = $$.back()->clone();
+      tmp->setName($1);
+      tmp->setSrcLoc(@$);
+      $$.push_back(tmp);
+    }
+
+relation_body
+  : IDENT LPAREN attributes RPAREN qualifiers {
+        $$ = $3;
+        $$->setName($1);
+        $$->setQualifier($5);
         $$->setSrcLoc(@$);
     }
 
@@ -441,6 +460,32 @@ key_value_pairs
         $$->setSrcLoc(@$);
     }
 
+iodirective_head
+  : INPUT_DECL iodirective_list {
+      $$.swap($2);
+      for (auto& cur : $$) cur->setAsInput();
+    }
+  | OUTPUT_DECL iodirective_list {
+      $$.swap($2);
+      for (auto& cur : $$) cur->setAsOutput();
+    }
+  | PRINTSIZE_DECL iodirective_list {
+      $$.swap($2);
+      for (auto& cur : $$) cur->setAsPrintSize();
+    }
+
+iodirective_list
+  : iodirective_body {
+      $$.push_back($1);
+    }
+  | IDENT COMMA iodirective_list {
+      $$.swap($3);
+      auto tmp = $$.back()->clone();
+      tmp->setName($1);
+      tmp->setSrcLoc(@1);
+      $$.push_back(tmp);
+    }
+
 iodirective_body
   : rel_id LPAREN key_value_pairs RPAREN {
         $$ = $3;
@@ -454,34 +499,11 @@ iodirective_body
         $$->setSrcLoc(@1);
         delete $1;
     }
-  | rel_id COMMA iodirective_body {
-        $$ = $3;
-        $3->addName(*$1);
-        $3->setSrcLoc(@1);
-        delete $1;
-    }
-
-iodirective
-  : INPUT_DECL iodirective_body {
-        $$ = $2;
-        $$->setAsInput();
-        $$->setSrcLoc(@2);
-    }
-  | OUTPUT_DECL iodirective_body {
-        $$ = $2;
-        $$->setAsOutput();
-        $$->setSrcLoc(@2);
-    }
-  | PRINTSIZE_DECL iodirective_body {
-        $$ = $2;
-        $$->setAsPrintSize();
-        $$->setSrcLoc(@2);
-    }
 
 /* Atom */
 arg
   : STRING {
-        $$ = new AstStringConstant(driver.getSymbolTable(), $1.c_str());
+        $$ = new AstStringConstant(driver.getSymbolTable(), $1);
         $$->setSrcLoc(@$);
     }
   | UNDERSCORE {
@@ -565,6 +587,14 @@ arg
     }
   | STRLEN LPAREN arg RPAREN {
         $$ = new AstUnaryFunctor(UnaryOp::STRLEN, std::unique_ptr<AstArgument>($3));
+        $$->setSrcLoc(@$);
+    }
+  | TONUMBER LPAREN arg RPAREN {
+        $$ = new AstUnaryFunctor(UnaryOp::TONUMBER, std::unique_ptr<AstArgument>($3));
+        $$->setSrcLoc(@$);
+    }
+  | TOSTRING LPAREN arg RPAREN {
+        $$ = new AstUnaryFunctor(UnaryOp::TOSTRING, std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | SUBSTR LPAREN arg COMMA arg COMMA arg RPAREN {
@@ -964,13 +994,13 @@ component_body
         $$ = $1;
         $$->addType(std::unique_ptr<AstType>($2));
     }
-  | component_body relation {
+  | component_body relation_head {
         $$ = $1;
-        $$->addRelation(std::unique_ptr<AstRelation>($2));
+        for(const auto& cur : $2) $$->addRelation(std::unique_ptr<AstRelation>(cur));
     }
-  | component_body iodirective {
+  | component_body iodirective_head {
         $$ = $1;
-        $$->addIODirective(std::unique_ptr<AstIODirective>($2));
+        for(const auto& cur : $2) $$->addIODirective(std::unique_ptr<AstIODirective>(cur));
     }
   | component_body fact {
         $$ = $1;

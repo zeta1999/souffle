@@ -15,8 +15,8 @@
  ***********************************************************************/
 
 #include "TypeSystem.h"
+#include "Macro.h"
 #include "Util.h"
-
 #include <cassert>
 
 namespace souffle {
@@ -353,7 +353,7 @@ bool isRecursiveType(const Type& type) {
     };
 
     // record types are recursive if they contain themselves
-    if (const RecordType* r = dynamic_cast<const RecordType*>(&type)) {
+    if (const auto* r = dynamic_cast<const RecordType*>(&type)) {
         auto reachesOrigin = visitor(type);
         return any_of(r->getFields(),
                 [&](const RecordType::Field& field) -> bool { return reachesOrigin(field.type); });

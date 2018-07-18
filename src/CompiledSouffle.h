@@ -16,22 +16,38 @@
 
 #pragma once
 
-#include "AstTypes.h"
-#include "CompiledOptions.h"
-#include "CompiledRecord.h"
-#include "CompiledRelation.h"
-#include "CompiledTuple.h"
-#include "Logger.h"
-#include "ParallelUtils.h"
-#include "SignalHandler.h"
-#include "SouffleInterface.h"
-#include "SymbolTable.h"
-
+#include "souffle/AstTypes.h"
+#include "souffle/CompiledIndexUtils.h"
+#include "souffle/CompiledOptions.h"
+#include "souffle/CompiledRecord.h"
+#include "souffle/CompiledRelation.h"
+#include "souffle/CompiledTuple.h"
+#include "souffle/IODirectives.h"
+#include "souffle/IOSystem.h"
+#include "souffle/Logger.h"
+#include "souffle/ParallelUtils.h"
+#include "souffle/ProfileEvent.h"
+#include "souffle/RamTypes.h"
+#include "souffle/SignalHandler.h"
+#include "souffle/SouffleInterface.h"
+#include "souffle/SymbolMask.h"
+#include "souffle/SymbolTable.h"
+#include "souffle/Trie.h"
+#include "souffle/Util.h"
+#include "souffle/WriteStream.h"
 #include <array>
+#include <atomic>
+#include <cassert>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <exception>
 #include <iostream>
-#include <map>
+#include <memory>
 #include <regex>
+#include <string>
+#include <utility>
+#include <vector>
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -65,23 +81,23 @@ private:
     public:
         iterator_wrapper(uint32_t arg_id, const Relation* rel, const typename RelType::iterator& arg_it)
                 : iterator_base(arg_id), it(arg_it), relation(rel), t(rel) {}
-        void operator++() {
+        void operator++() override {
             ++it;
         }
-        tuple& operator*() {
+        tuple& operator*() override {
             t.rewind();
             for (size_t i = 0; i < Arity; i++) {
                 t[i] = (*it)[i];
             }
             return t;
         }
-        iterator_base* clone() const {
+        iterator_base* clone() const override {
             return new iterator_wrapper(*this);
         }
 
     protected:
-        bool equal(const iterator_base& o) const {
-            const iterator_wrapper& casted = static_cast<const iterator_wrapper&>(o);
+        bool equal(const iterator_base& o) const override {
+            const auto& casted = static_cast<const iterator_wrapper&>(o);
             return it == casted.it;
         }
     };
@@ -89,7 +105,7 @@ private:
 public:
     RelationWrapper(RelType& r, SymbolTable& s, std::string name, const std::array<const char*, Arity>& t,
             const std::array<const char*, Arity>& n)
-            : relation(r), symTable(s), name(name), tupleType(t), tupleName(n) {}
+            : relation(r), symTable(s), name(std::move(name)), tupleType(t), tupleName(n) {}
     iterator begin() const override {
         return iterator(new iterator_wrapper(id, this, relation.begin()));
     }
@@ -125,11 +141,11 @@ public:
         return name;
     }
     const char* getAttrType(size_t arg) const override {
-        assert(0 <= arg && arg < Arity && "attribute out of bound");
+        assert(false <= arg && arg < Arity && "attribute out of bound");
         return tupleType[arg];
     }
     const char* getAttrName(size_t arg) const override {
-        assert(0 <= arg && arg < Arity && "attribute out of bound");
+        assert(false <= arg && arg < Arity && "attribute out of bound");
         return tupleName[arg];
     }
     size_t getArity() const override {

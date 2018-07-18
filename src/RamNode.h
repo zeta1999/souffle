@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <typeinfo>
 #include <vector>
-#include <assert.h>
 
 namespace souffle {
 
@@ -76,7 +76,9 @@ enum RamNodeType {
     RN_Parallel,
     RN_Exit,
     RN_LogTimer,
-    RN_DebugInfo
+    RN_DebugInfo,
+    RN_Stratum
+
 };
 
 /**
@@ -153,7 +155,7 @@ public:
     std::unique_ptr<T> operator()(std::unique_ptr<T> node) const {
         std::unique_ptr<RamNode> resPtr =
                 (*this)(std::unique_ptr<RamNode>(static_cast<RamNode*>(node.release())));
-        assert(dynamic_cast<T*>(resPtr.get()) && "Invalid target node!");
+        assert(nullptr != dynamic_cast<T*>(resPtr.get()) && "Invalid target node!");
         return std::unique_ptr<T>(dynamic_cast<T*>(resPtr.release()));
     }
 };

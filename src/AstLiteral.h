@@ -27,6 +27,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -42,14 +43,14 @@ class AstAtom;
  */
 class AstLiteral : public AstNode {
 public:
-    AstLiteral() {}
+    AstLiteral() = default;
 
     ~AstLiteral() override = default;
 
     /** Obtains the atom referenced by this literal - if any */
     virtual const AstAtom* getAtom() const = 0;
 
-    /** Creates a clone if this AST sub-structure */
+    /** Creates a clone of this AST sub-structure */
     AstLiteral* clone() const override = 0;
 };
 
@@ -67,7 +68,7 @@ protected:
     std::vector<std::unique_ptr<AstArgument>> arguments;
 
 public:
-    AstAtom(const AstRelationIdentifier& name = AstRelationIdentifier()) : name(name) {}
+    AstAtom(AstRelationIdentifier name = AstRelationIdentifier()) : name(std::move(name)) {}
 
     ~AstAtom() override = default;
 
@@ -133,7 +134,7 @@ public:
         os << ")";
     }
 
-    /** Creates a clone if this AST sub-structure */
+    /** Creates a clone of this AST sub-structure */
     AstAtom* clone() const override {
         auto res = new AstAtom(name);
         res->setSrcLoc(getSrcLoc());
@@ -162,8 +163,8 @@ public:
 protected:
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
-        assert(dynamic_cast<const AstAtom*>(&node));
-        const AstAtom& other = static_cast<const AstAtom&>(node);
+        assert(nullptr != dynamic_cast<const AstAtom*>(&node));
+        const auto& other = static_cast<const AstAtom&>(node);
         return name == other.name && equal_targets(arguments, other.arguments);
     }
 };
@@ -198,7 +199,7 @@ public:
         atom->print(os);
     }
 
-    /** Creates a clone if this AST sub-structure */
+    /** Creates a clone of this AST sub-structure */
     AstNegation* clone() const override {
         AstNegation* res = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
         res->setSrcLoc(getSrcLoc());
@@ -218,8 +219,8 @@ public:
 protected:
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
-        assert(dynamic_cast<const AstNegation*>(&node));
-        const AstNegation& other = static_cast<const AstNegation&>(node);
+        assert(nullptr != dynamic_cast<const AstNegation*>(&node));
+        const auto& other = static_cast<const AstNegation&>(node);
         return *atom == *other.atom;
     }
 };
@@ -327,7 +328,7 @@ public:
     }
 
     AstBooleanConstraint* clone() const override {
-        AstBooleanConstraint* res = new AstBooleanConstraint(truthValue);
+        auto* res = new AstBooleanConstraint(truthValue);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -342,8 +343,8 @@ public:
 
 protected:
     bool equal(const AstNode& node) const override {
-        assert(dynamic_cast<const AstBooleanConstraint*>(&node));
-        const AstBooleanConstraint& other = static_cast<const AstBooleanConstraint&>(node);
+        assert(nullptr != dynamic_cast<const AstBooleanConstraint*>(&node));
+        const auto& other = static_cast<const AstBooleanConstraint&>(node);
         return truthValue == other.truthValue;
     }
 };
@@ -416,7 +417,7 @@ public:
         rhs->print(os);
     }
 
-    /** Creates a clone if this AST sub-structure */
+    /** Creates a clone of this AST sub-structure */
     AstBinaryConstraint* clone() const override {
         AstBinaryConstraint* res = new AstBinaryConstraint(operation,
                 std::unique_ptr<AstArgument>(lhs->clone()), std::unique_ptr<AstArgument>(rhs->clone()));
@@ -438,8 +439,8 @@ public:
 protected:
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
-        assert(dynamic_cast<const AstBinaryConstraint*>(&node));
-        const AstBinaryConstraint& other = static_cast<const AstBinaryConstraint&>(node);
+        assert(nullptr != dynamic_cast<const AstBinaryConstraint*>(&node));
+        const auto& other = static_cast<const AstBinaryConstraint&>(node);
         return operation == other.operation && *lhs == *other.lhs && *rhs == *other.rhs;
     }
 };

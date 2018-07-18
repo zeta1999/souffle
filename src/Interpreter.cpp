@@ -15,34 +15,40 @@
  ***********************************************************************/
 
 #include "Interpreter.h"
-#include "AstLogStatement.h"
-#include "AstRelation.h"
-#include "AstTranslator.h"
-#include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "BinaryFunctorOps.h"
 #include "Global.h"
+#include "IODirectives.h"
 #include "IOSystem.h"
+#include "InterpreterIndex.h"
 #include "InterpreterRecords.h"
+#include "LogStatement.h"
 #include "Logger.h"
 #include "Macro.h"
+#include "ParallelUtils.h"
+#include "ProfileEvent.h"
+#include "RamNode.h"
+#include "RamOperation.h"
+#include "RamValue.h"
 #include "RamVisitor.h"
+#include "ReadStream.h"
 #include "SignalHandler.h"
-#include "TypeSystem.h"
+#include "SymbolTable.h"
+#include "TernaryFunctorOps.h"
 #include "UnaryFunctorOps.h"
-
+#include "WriteStream.h"
 #include <algorithm>
-#include <chrono>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <exception>
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <regex>
+#include <stdexcept>
+#include <typeinfo>
 #include <utility>
-
-#include <unistd.h>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 namespace souffle {
 
@@ -81,9 +87,23 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                 case UnaryOp::ORD:
                     return arg;
                 case UnaryOp::STRLEN:
-                    return strlen(interpreter.getSymbolTable().resolve(arg));
+                    return interpreter.getSymbolTable().resolve(arg).size();
+                case UnaryOp::TONUMBER: {
+                    RamDomain result = 0;
+                    try {
+                        result = stord(interpreter.getSymbolTable().resolve(arg));
+                    } catch (...) {
+                        std::cerr << "error: wrong string provided by to_number(\"";
+                        std::cerr << interpreter.getSymbolTable().resolve(arg);
+                        std::cerr << "\") functor.\n";
+                        raise(SIGFPE);
+                    }
+                    return result;
+                }
+                case UnaryOp::TOSTRING:
+                    return interpreter.getSymbolTable().lookup(std::to_string(arg));
                 default:
-                    assert(0 && "unsupported operator");
+                    assert(false && "unsupported operator");
                     return 0;
             }
         }
@@ -133,13 +153,11 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                     return std::min(lhs, rhs);
                 }
                 case BinaryOp::CAT: {
-                    return interpreter.getSymbolTable().lookup((
-                            std::string(interpreter.getSymbolTable().resolve(lhs)) +
-                            std::string(interpreter.getSymbolTable().resolve(
-                                    rhs))).c_str());
+                    return interpreter.getSymbolTable().lookup(interpreter.getSymbolTable().resolve(lhs) +
+                                                               interpreter.getSymbolTable().resolve(rhs));
                 }
                 default:
-                    assert(0 && "unsupported operator");
+                    assert(false && "unsupported operator");
                     return 0;
             }
         }
@@ -149,7 +167,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             switch (op.getOperator()) {
                 case TernaryOp::SUBSTR: {
                     auto symbol = visit(op.getArg(0));
-                    std::string str = interpreter.getSymbolTable().resolve(symbol);
+                    const std::string& str = interpreter.getSymbolTable().resolve(symbol);
                     auto idx = visit(op.getArg(1));
                     auto len = visit(op.getArg(2));
                     std::string sub_str;
@@ -159,10 +177,10 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                         std::cerr << "warning: wrong index position provided by substr(\"";
                         std::cerr << str << "\"," << (int32_t)idx << "," << (int32_t)len << ") functor.\n";
                     }
-                    return interpreter.getSymbolTable().lookup(sub_str.c_str());
+                    return interpreter.getSymbolTable().lookup(sub_str);
                 }
                 default:
-                    assert(0 && "unsupported operator");
+                    assert(false && "unsupported operator");
                     return 0;
             }
         }
@@ -277,7 +295,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                         result = std::regex_match(text, std::regex(pattern));
                     } catch (...) {
                         std::cerr << "warning: wrong pattern provided for match(\"" << pattern << "\",\""
-                                  << text << "\")\n";
+                                  << text << "\").\n";
                     }
                     return result;
                 }
@@ -291,7 +309,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                         result = !std::regex_match(text, std::regex(pattern));
                     } catch (...) {
                         std::cerr << "warning: wrong pattern provided for !match(\"" << pattern << "\",\""
-                                  << text << "\")\n";
+                                  << text << "\").\n";
                     }
                     return result;
                 }
@@ -310,14 +328,14 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                     return text.find(pattern) == std::string::npos;
                 }
                 default:
-                    assert(0 && "unsupported operator");
-                    return 0;
+                    assert(false && "unsupported operator");
+                    return false;
             }
         }
         bool visitNode(const RamNode& node) override {
             std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
             assert(false && "Unsupported Node Type!");
-            return 0;
+            return false;
         }
     };
 
@@ -339,12 +357,14 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
         void visitSearch(const RamSearch& search) override {
             // check condition
             auto condition = search.getCondition();
-            if (condition && !interpreter.evalCond(*condition, ctxt)) {
-                return;  // condition not valid => skip nested
+            if (!condition || interpreter.evalCond(*condition, ctxt)) {
+                // process nested
+                visit(*search.getNestedOperation());
             }
 
-            // process nested
-            visit(*search.getNestedOperation());
+            if (Global::config().has("profile") && !search.getProfileText().empty()) {
+                interpreter.frequencies[search.getProfileText()][interpreter.getIterationNumber()]++;
+            }
         }
 
         void visitScan(const RamScan& scan) override {
@@ -392,6 +412,9 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             if (scan.isPureExistenceCheck()) {
                 if (range.first != range.second) {
                     visitSearch(scan);
+                }
+                if (Global::config().has("profile") && !scan.getProfileText().empty()) {
+                    interpreter.frequencies[scan.getProfileText()][interpreter.getIterationNumber()]++;
                 }
                 return;
             }
@@ -572,14 +595,12 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
 }
 
 /** Evaluate RAM statement */
-void Interpreter::evalStmt(const RamStatement& stmt, std::ostream* profile) {
+void Interpreter::evalStmt(const RamStatement& stmt) {
     class StatementEvaluator : public RamVisitor<bool> {
         Interpreter& interpreter;
-        std::ostream* profile;
 
     public:
-        StatementEvaluator(Interpreter& interp, std::ostream* profile)
-                : interpreter(interp), profile(profile) {}
+        StatementEvaluator(Interpreter& interp) : interpreter(interp) {}
 
         // -- Statements -----------------------------
 
@@ -619,8 +640,11 @@ void Interpreter::evalStmt(const RamStatement& stmt, std::ostream* profile) {
         }
 
         bool visitLoop(const RamLoop& loop) override {
+            interpreter.resetIterationNumber();
             while (visit(loop.getBody())) {
+                interpreter.incIterationNumber();
             }
+            interpreter.resetIterationNumber();
             return true;
         }
 
@@ -629,14 +653,18 @@ void Interpreter::evalStmt(const RamStatement& stmt, std::ostream* profile) {
         }
 
         bool visitLogTimer(const RamLogTimer& timer) override {
-            Logger logger(
-                    timer.getMessage().c_str(), *profile, fileExtension(Global::config().get("profile")));
+            Logger logger(timer.getMessage().c_str(), interpreter.getIterationNumber());
             return visit(timer.getStatement());
         }
 
         bool visitDebugInfo(const RamDebugInfo& dbg) override {
             SignalHandler::instance()->setMsg(dbg.getMessage().c_str());
             return visit(dbg.getStatement());
+        }
+
+        bool visitStratum(const RamStratum& stratum) override {
+            // TODO (lyndonhenry): should enable strata as subprograms for interpreter here
+            return visit(stratum.getBody());
         }
 
         bool visitCreate(const RamCreate& create) override {
@@ -664,32 +692,27 @@ void Interpreter::evalStmt(const RamStatement& stmt, std::ostream* profile) {
         }
 
         bool visitLogSize(const RamLogSize& print) override {
-            auto lease = getOutputLock().acquire();
-            (void)lease;
             const InterpreterRelation& rel = interpreter.getRelation(print.getRelation());
-            *profile << print.getMessage() << rel.size();
-            const std::string ext = fileExtension(Global::config().get("profile"));
-            if (ext == "json") {
-                *profile << "},";
-            }
-            *profile << "\n";
+            ProfileEventSingleton::instance().makeQuantityEvent(
+                    print.getMessage(), rel.size(), interpreter.getIterationNumber());
             return true;
         }
 
         bool visitLoad(const RamLoad& load) override {
-            try {
-                InterpreterRelation& relation = interpreter.getRelation(load.getRelation());
-                std::unique_ptr<ReadStream> reader = IOSystem::getInstance().getReader(
-                        load.getRelation().getSymbolMask(), interpreter.getSymbolTable(),
-                        load.getIODirectives(), Global::config().has("provenance"));
-                reader->readAll(relation);
-            } catch (std::exception& e) {
-                std::cerr << e.what();
-                return false;
+            for (IODirectives ioDirectives : load.getIODirectives()) {
+                try {
+                    InterpreterRelation& relation = interpreter.getRelation(load.getRelation());
+                    IOSystem::getInstance()
+                            .getReader(load.getRelation().getSymbolMask(), interpreter.getSymbolTable(),
+                                    ioDirectives, Global::config().has("provenance"))
+                            ->readAll(relation);
+                } catch (std::exception& e) {
+                    std::cerr << e.what();
+                    return false;
+                }
             }
             return true;
         }
-
         bool visitStore(const RamStore& store) override {
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 try {
@@ -757,25 +780,45 @@ void Interpreter::evalStmt(const RamStatement& stmt, std::ostream* profile) {
     };
 
     // create and run interpreter for statements
-    StatementEvaluator(*this, profile).visit(stmt);
+    StatementEvaluator(*this).visit(stmt);
 }
 
 /** Execute main program of a translation unit */
 void Interpreter::executeMain() {
     SignalHandler::instance()->set();
+    if (Global::config().has("verbose")) {
+        SignalHandler::instance()->enableLogging();
+    }
     const RamStatement& main = *translationUnit.getP().getMain();
 
-    if (Global::config().has("profile")) {
-        std::string fname = Global::config().get("profile");
-        // open output stream
-        std::ofstream os(fname);
-        if (!os.is_open()) {
-            throw std::invalid_argument("Cannot open profile log file <" + fname + ">");
-        }
-        os << AstLogStatement::startDebug() << std::endl;
-        evalStmt(main, &os);
-    } else {
+    if (!Global::config().has("profile")) {
         evalStmt(main);
+    } else {
+        // Prepare the frequency table for threaded use
+        visitDepthFirst(main, [&](const RamSearch& node) {
+            if (!node.getProfileText().empty()) {
+                frequencies.emplace(node.getProfileText(), std::map<size_t, size_t>());
+            }
+        });
+        // Enable profiling for execution of main
+        ProfileEventSingleton::instance().startTimer();
+        ProfileEventSingleton::instance().makeTimeEvent("@time;starttime");
+        evalStmt(main);
+        ProfileEventSingleton::instance().stopTimer();
+        for (auto const& cur : frequencies) {
+            for (auto const& iter : cur.second) {
+                ProfileEventSingleton::instance().makeQuantityEvent(cur.first, iter.second, iter.first);
+            }
+        }
+        // open output stream if we're logging the profile data to file
+        if (!Global::config().get("profile").empty()) {
+            std::string fname = Global::config().get("profile");
+            std::ofstream os(fname);
+            if (!os.is_open()) {
+                throw std::invalid_argument("Cannot open profile log file <" + fname + ">");
+            }
+            ProfileEventSingleton::instance().dump(os);
+        }
     }
     SignalHandler::instance()->reset();
 }

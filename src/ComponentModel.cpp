@@ -13,12 +13,24 @@
  ***********************************************************************/
 
 #include "ComponentModel.h"
+#include "AstAttribute.h"
+#include "AstClause.h"
 #include "AstComponent.h"
+#include "AstIODirective.h"
+#include "AstLiteral.h"
 #include "AstProgram.h"
+#include "AstRelation.h"
+#include "AstRelationIdentifier.h"
+#include "AstTranslationUnit.h"
 #include "AstVisitor.h"
 #include "ErrorReport.h"
+#include "Util.h"
+#include <algorithm>
+#include <memory>
 
 namespace souffle {
+
+class AstNode;
 
 void ComponentLookup::run(const AstTranslationUnit& translationUnit) {
     const AstProgram* program = translationUnit.getProgram();
@@ -148,7 +160,7 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
  */
 void collectContent(const AstComponent& component, const TypeBinding& binding,
         const AstComponent* enclosingComponent, const ComponentLookup& componentLookup, ComponentContent& res,
-        std::vector<std::unique_ptr<AstClause>>& orphans, std::set<std::string> overridden,
+        std::vector<std::unique_ptr<AstClause>>& orphans, const std::set<std::string>& overridden,
         ErrorReport& report, unsigned int maxInstantiationDepth) {
     // start with relations and clauses of the base components
     for (const auto& base : component.getBaseComponents()) {
@@ -347,7 +359,6 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
 
     // create a helper function fixing type and relation references
     auto fixNames = [&](const AstNode& node) {
-
         // rename attribute types in headers
         visitDepthFirst(node, [&](const AstAttribute& attr) {
             auto pos = typeNameMapping.find(attr.getTypeName());
@@ -401,7 +412,7 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
 
     AstProgram& program = *translationUnit.getProgram();
 
-    ComponentLookup* componentLookup = translationUnit.getAnalysis<ComponentLookup>();
+    auto* componentLookup = translationUnit.getAnalysis<ComponentLookup>();
 
     for (const auto& cur : program.instantiations) {
         std::vector<std::unique_ptr<AstClause>> orphans;

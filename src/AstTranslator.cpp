@@ -15,25 +15,54 @@
  ***********************************************************************/
 
 #include "AstTranslator.h"
+#include "AstArgument.h"
+#include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstIODirective.h"
-#include "AstLogStatement.h"
+#include "AstLiteral.h"
+#include "AstNode.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
+#include "AstTranslationUnit.h"
 #include "AstTypeAnalysis.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
+#include "DebugReport.h"
 #include "Global.h"
+#include "IODirectives.h"
+#include "LogStatement.h"
+#include "Macro.h"
 #include "PrecedenceGraph.h"
+#include "RamCondition.h"
+#include "RamNode.h"
+#include "RamOperation.h"
+#include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
-#include "RamVisitor.h"
-
+#include "RamTranslationUnit.h"
+#include "RamValue.h"
+#include "SrcLocation.h"
+#include "SymbolMask.h"
+#include "TypeSystem.h"
+#include "Util.h"
+#include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <map>
+#include <memory>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 
 namespace souffle {
+
+class ErrorReport;
+class SymbolTable;
 
 namespace {
 
@@ -53,44 +82,60 @@ std::string getRelationName(const AstRelationIdentifier& id) {
     return toString(join(id.getNames(), "-"));
 }
 
-IODirectives getInputIODirectives(
-        const AstRelation* rel, std::string filePath = std::string(), std::string fileExt = std::string()) {
+std::vector<IODirectives> getInputIODirectives(const AstRelation* rel, std::string filePath = std::string(),
+        const std::string& fileExt = std::string()) {
     const std::string inputFilePath = (filePath.empty()) ? Global::config().get("fact-dir") : filePath;
     const std::string inputFileExt = (fileExt.empty()) ? ".facts" : fileExt;
 
-    IODirectives directives;
+    const bool isIntermediate =
+            (Global::config().has("engine") && inputFilePath == Global::config().get("output-dir") &&
+                    inputFileExt == ".facts");
+
+    std::vector<IODirectives> directives;
+
     for (const auto& current : rel->getIODirectives()) {
         if (current->isInput()) {
+            IODirectives ioDirectives;
             for (const auto& currentPair : current->getIODirectiveMap()) {
-                directives.set(currentPair.first, currentPair.second);
+                ioDirectives.set(currentPair.first, currentPair.second);
             }
+            directives.push_back(ioDirectives);
         }
     }
 
-    if (rel->isInput()) {
-        directives.setRelationName(getRelationName(rel->getName()));
+    // If we're asked to provide input directives, then provide them even if they don't exist.
+    if (directives.empty()) {
+        directives.emplace_back();
+    }
+
+    for (auto& ioDirective : directives) {
+        ioDirective.setRelationName(getRelationName(rel->getName()));
         // Set a default IO type of file and a default filename if not supplied.
-        if (!directives.has("IO")) {
-            directives.setIOType("file");
+        if (!ioDirective.has("IO")) {
+            ioDirective.setIOType("file");
         }
         // load intermediate relations from correct files
-        if (directives.getIOType() == "file" &&
-                (!directives.has("filename") || directives.has("intermediate"))) {
-            directives.setFileName(directives.getRelationName() + inputFileExt);
+        if (ioDirective.getIOType() == "file" && (!ioDirective.has("filename") || isIntermediate)) {
+            ioDirective.setFileName(ioDirective.getRelationName() + inputFileExt);
         }
-        // all intermediate relations are given the default delimiter
-        if (directives.has("intermediate")) directives.set("delimiter", "\t");
         // if filename is not an absolute path, concat with cmd line facts directory
-        if (directives.getIOType() == "file" && directives.getFileName().front() != '/') {
-            directives.setFileName(inputFilePath + "/" + directives.getFileName());
+        if (ioDirective.getIOType() == "file" && ioDirective.getFileName().front() != '/') {
+            ioDirective.setFileName(inputFilePath + "/" + ioDirective.getFileName());
+        }
+        // all intermediate relations are given the default delimiter and have no headers
+        if (isIntermediate) {
+            ioDirective.set("delimiter", "\t");
+            ioDirective.set("headers", "false");
         }
     }
-
     return directives;
 }
 
 std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const TypeEnvironment* typeEnv,
-        std::string filePath = std::string(), std::string fileExt = std::string()) {
+        std::string filePath = std::string(), const std::string& fileExt = std::string()) {
+    const std::string outputFilePath = (filePath.empty()) ? Global::config().get("output-dir") : filePath;
+    const std::string outputFileExt = (fileExt.empty()) ? ".csv" : fileExt;
+
     std::vector<IODirectives> outputDirectives;
     // If IO directives have been specified then set them up
     for (const auto& current : rel->getIODirectives()) {
@@ -102,50 +147,47 @@ std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const Ty
             outputDirectives.push_back(ioDirectives);
         }
     }
-    if (rel->isOutput()) {
-        const std::string outputFilePath = (filePath.empty()) ? Global::config().get("output-dir") : filePath;
-        const std::string outputFileExt = (fileExt.empty()) ? ".csv" : fileExt;
-        if (Global::config().get("output-dir") == "-") {
-            // If stdout is requested then remove all directives from the datalog file.
-            outputDirectives.clear();
-            IODirectives ioDirectives;
-            ioDirectives.setIOType("stdout");
-            ioDirectives.set("headers", "true");
-            outputDirectives.push_back(ioDirectives);
-        } else if (outputDirectives.empty()) {
-            IODirectives ioDirectives;
-            ioDirectives.setIOType("file");
-            ioDirectives.setFileName(getRelationName(rel->getName()) + outputFileExt);
-            outputDirectives.push_back(ioDirectives);
-        }
-        for (auto& ioDirectives : outputDirectives) {
-            ioDirectives.setRelationName(getRelationName(rel->getName()));
-            if (!ioDirectives.has("IO")) {
-                ioDirectives.setIOType("file");
-            }
-            if (ioDirectives.getIOType() == "file" && !ioDirectives.has("filename")) {
-                ioDirectives.setFileName(ioDirectives.getRelationName() + outputFileExt);
-            }
-            if (ioDirectives.getIOType() == "file" && ioDirectives.getFileName().front() != '/') {
-                ioDirectives.setFileName(outputFilePath + "/" + ioDirectives.get("filename"));
-            }
-            if (!ioDirectives.has("attributeNames")) {
-                std::string delimiter("\t");
-                if (ioDirectives.has("delimiter")) {
-                    delimiter = ioDirectives.get("delimiter");
-                }
-                std::vector<std::string> attributeNames;
-                for (unsigned int i = 0; i < rel->getArity(); i++) {
-                    attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
-                }
 
-                if (Global::config().has("provenance")) {
-                    std::vector<std::string> originalAttributeNames(
-                            attributeNames.begin(), attributeNames.end() - 2);
-                    ioDirectives.set("attributeNames", toString(join(originalAttributeNames, delimiter)));
-                } else {
-                    ioDirectives.set("attributeNames", toString(join(attributeNames, delimiter)));
-                }
+    if (Global::config().get("output-dir") == "-") {
+        // If stdout is requested then remove all directives from the datalog file.
+        outputDirectives.clear();
+        IODirectives ioDirectives;
+        ioDirectives.setIOType("stdout");
+        ioDirectives.set("headers", "true");
+        outputDirectives.push_back(ioDirectives);
+    } else if (outputDirectives.empty()) {
+        IODirectives ioDirectives;
+        ioDirectives.setIOType("file");
+        ioDirectives.setFileName(getRelationName(rel->getName()) + outputFileExt);
+        outputDirectives.push_back(ioDirectives);
+    }
+    for (auto& ioDirectives : outputDirectives) {
+        ioDirectives.setRelationName(getRelationName(rel->getName()));
+        if (!ioDirectives.has("IO")) {
+            ioDirectives.setIOType("file");
+        }
+        if (ioDirectives.getIOType() == "file" && !ioDirectives.has("filename")) {
+            ioDirectives.setFileName(ioDirectives.getRelationName() + outputFileExt);
+        }
+        if (ioDirectives.getIOType() == "file" && ioDirectives.getFileName().front() != '/') {
+            ioDirectives.setFileName(outputFilePath + "/" + ioDirectives.get("filename"));
+        }
+        if (!ioDirectives.has("attributeNames")) {
+            std::string delimiter("\t");
+            if (ioDirectives.has("delimiter")) {
+                delimiter = ioDirectives.get("delimiter");
+            }
+            std::vector<std::string> attributeNames;
+            for (unsigned int i = 0; i < rel->getArity(); i++) {
+                attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
+            }
+
+            if (Global::config().has("provenance")) {
+                std::vector<std::string> originalAttributeNames(
+                        attributeNames.begin(), attributeNames.end() - 2);
+                ioDirectives.set("attributeNames", toString(join(originalAttributeNames, delimiter)));
+            } else {
+                ioDirectives.set("attributeNames", toString(join(attributeNames, delimiter)));
             }
         }
     }
@@ -153,8 +195,7 @@ std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const Ty
 }
 
 std::unique_ptr<RamRelation> getRamRelation(const AstRelation* rel, const TypeEnvironment* typeEnv,
-        std::string name, size_t arity, const bool istemp = false, const bool hashset = false,
-        std::string filePath = std::string(), std::string fileExt = std::string()) {
+        std::string name, size_t arity, const bool istemp = false, const bool hashset = false) {
     // avoid name conflicts for temporary identifiers
     if (istemp) {
         name.insert(0, "@");
@@ -175,9 +216,9 @@ std::unique_ptr<RamRelation> getRamRelation(const AstRelation* rel, const TypeEn
         }
     }
 
-    return std::unique_ptr<RamRelation>(new RamRelation(name, arity, attributeNames, attributeTypeQualifiers,
+    return std::make_unique<RamRelation>(name, arity, attributeNames, attributeTypeQualifiers,
             getSymbolMask(*rel, *typeEnv), rel->isInput(), rel->isComputed(), rel->isOutput(), rel->isBTree(),
-            rel->isRbtset(), rel->isHashset(), rel->isBrie(), rel->isEqRel(), istemp));
+            rel->isRbtset(), rel->isHashset(), rel->isBrie(), rel->isEqRel(), istemp);
 }
 
 }  // namespace
@@ -228,26 +269,26 @@ class ValueIndex {
      * The type mapping variables (referenced by their names) to the
      * locations where they are used.
      */
-    typedef std::map<std::string, std::set<Location>> variable_reference_map;
+    using variable_reference_map = std::map<std::string, std::set<Location>>;
 
     /**
      * The type mapping record init expressions to their definition points,
      * hence the point where they get grounded/bound.
      */
-    typedef std::map<const AstRecordInit*, Location> record_definition_map;
+    using record_definition_map = std::map<const AstRecordInit*, Location>;
 
     /**
      * The type mapping record init expressions to the loop level where
      * they get unpacked.
      */
-    typedef std::map<const AstRecordInit*, int> record_unpack_map;
+    using record_unpack_map = std::map<const AstRecordInit*, int>;
 
     /**
      * A map from AstAggregators to storage locations. Note, since in this case
      * AstAggregators are indexed by their values (not their address) no standard
      * map can be utilized.
      */
-    typedef std::vector<std::pair<const AstAggregator*, Location>> aggregator_location_map;
+    using aggregator_location_map = std::vector<std::pair<const AstAggregator*, Location>>;
 
     /** The index of variable accesses */
     variable_reference_map var_references;
@@ -296,7 +337,7 @@ public:
     }
 
     void setRecordDefinition(const AstRecordInit& init, int level, int pos, std::string name = "") {
-        setRecordDefinition(init, Location({level, pos, name}));
+        setRecordDefinition(init, Location({level, pos, std::move(name)}));
     }
 
     const Location& getDefinitionPoint(const AstRecordInit& init) const {
@@ -383,37 +424,35 @@ std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueInde
         return val;
     }
 
-    if (const AstVariable* var = dynamic_cast<const AstVariable*>(arg)) {
+    if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
         ASSERT(index.isDefined(*var) && "variable not grounded");
         const Location& loc = index.getDefinitionPoint(*var);
         val = std::make_unique<RamElementAccess>(loc.level, loc.component, loc.name);
     } else if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
         return nullptr;  // utilised to identify _ values
-    } else if (const AstConstant* c = dynamic_cast<const AstConstant*>(arg)) {
+    } else if (const auto* c = dynamic_cast<const AstConstant*>(arg)) {
         val = std::make_unique<RamNumber>(c->getIndex());
-    } else if (const AstUnaryFunctor* uf = dynamic_cast<const AstUnaryFunctor*>(arg)) {
-        val = std::unique_ptr<RamValue>(
-                new RamUnaryOperator(uf->getFunction(), translateValue(uf->getOperand(), index)));
-    } else if (const AstBinaryFunctor* bf = dynamic_cast<const AstBinaryFunctor*>(arg)) {
+    } else if (const auto* uf = dynamic_cast<const AstUnaryFunctor*>(arg)) {
+        val = std::make_unique<RamUnaryOperator>(uf->getFunction(), translateValue(uf->getOperand(), index));
+    } else if (const auto* bf = dynamic_cast<const AstBinaryFunctor*>(arg)) {
         val = std::make_unique<RamBinaryOperator>(
                 bf->getFunction(), translateValue(bf->getLHS(), index), translateValue(bf->getRHS(), index));
-    } else if (const AstTernaryFunctor* tf = dynamic_cast<const AstTernaryFunctor*>(arg)) {
-        val = std::unique_ptr<RamValue>(
-                new RamTernaryOperator(tf->getFunction(), translateValue(tf->getArg(0), index),
-                        translateValue(tf->getArg(1), index), translateValue(tf->getArg(2), index)));
+    } else if (const auto* tf = dynamic_cast<const AstTernaryFunctor*>(arg)) {
+        val = std::make_unique<RamTernaryOperator>(tf->getFunction(), translateValue(tf->getArg(0), index),
+                translateValue(tf->getArg(1), index), translateValue(tf->getArg(2), index));
     } else if (dynamic_cast<const AstCounter*>(arg)) {
         val = std::make_unique<RamAutoIncrement>();
-    } else if (const AstRecordInit* init = dynamic_cast<const AstRecordInit*>(arg)) {
+    } else if (const auto* init = dynamic_cast<const AstRecordInit*>(arg)) {
         std::vector<std::unique_ptr<RamValue>> values;
         for (const auto& cur : init->getArguments()) {
             values.push_back(translateValue(cur, index));
         }
         val = std::make_unique<RamPack>(std::move(values));
-    } else if (const AstAggregator* agg = dynamic_cast<const AstAggregator*>(arg)) {
+    } else if (const auto* agg = dynamic_cast<const AstAggregator*>(arg)) {
         // here we look up the location the aggregation result gets bound
         auto loc = index.getAggregatorLocation(*agg);
         val = std::make_unique<RamElementAccess>(loc.level, loc.component, loc.name);
-    } else if (const AstSubroutineArgument* subArg = dynamic_cast<const AstSubroutineArgument*>(arg)) {
+    } else if (const auto* subArg = dynamic_cast<const AstSubroutineArgument*>(arg)) {
         val = std::make_unique<RamArgument>(subArg->getNumber());
     } else {
         std::cout << "Unsupported node type of " << arg << ": " << typeid(*arg).name() << "\n";
@@ -430,7 +469,8 @@ std::unique_ptr<RamValue> translateValue(const AstArgument& arg, const ValueInde
 
 /** generate RAM code for a clause */
 std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& clause,
-        const AstProgram* program, const TypeEnvironment* typeEnv, int version, bool ret, bool hashset) {
+        const AstProgram* program, const TypeEnvironment* typeEnv, const AstClause& originalClause,
+        int version, bool ret, bool hashset) {
     // check whether there is an imposed order constraint
     if (clause.getExecutionPlan() && clause.getExecutionPlan()->hasOrderFor(version)) {
         // get the imposed order
@@ -452,7 +492,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
         copy->setFixedExecutionPlan();
 
         // translate reordered clause
-        return translateClause(*copy, program, typeEnv, version, false, hashset);
+        return translateClause(*copy, program, typeEnv, originalClause, version, false, hashset);
     }
 
     // get extract some details
@@ -490,7 +530,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
     int level = 0;
     for (AstAtom* atom : clause.getAtoms()) {
         // index nested variables and records
-        typedef std::vector<AstArgument*> arg_list;
+        using arg_list = std::vector<AstArgument*>;
         // std::map<const arg_list*, int> arg_level;
         std::map<const AstNode*, std::unique_ptr<arg_list>> nodeArgs;
 
@@ -559,7 +599,6 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
     // add aggregation functions
     std::vector<const AstAggregator*> aggregators;
     visitDepthFirstPostOrder(clause, [&](const AstAggregator& cur) {
-
         // add each aggregator expression only once
         if (any_of(aggregators, [&](const AstAggregator* agg) { return *agg == cur; })) {
             return;
@@ -569,10 +608,10 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
         valueIndex.setAggregatorLocation(cur, Location({aggLoc, 0}));
 
         // bind aggregator variables to locations
-        assert(dynamic_cast<const AstAtom*>(cur.getBodyLiterals()[0]));
+        assert(nullptr != dynamic_cast<const AstAtom*>(cur.getBodyLiterals()[0]));
         const AstAtom& atom = static_cast<const AstAtom&>(*cur.getBodyLiterals()[0]);
         for (size_t pos = 0; pos < atom.getArguments().size(); ++pos) {
-            if (const AstVariable* var = dynamic_cast<const AstVariable*>(atom.getArgument(pos))) {
+            if (const auto* var = dynamic_cast<const AstVariable*>(atom.getArgument(pos))) {
                 valueIndex.addVarReference(*var, aggLoc, (int)pos, getRelation(&atom)->getArg(pos));
             }
         };
@@ -586,7 +625,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
     // begin with projection
     std::unique_ptr<RamOperation> op;
     if (ret) {
-        RamReturn* returnValue = new RamReturn(level);
+        auto* returnValue = new RamReturn(level);
 
         // get all values in the body
         for (AstLiteral* lit : clause.getBodyLiterals()) {
@@ -613,8 +652,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
 
         op = std::unique_ptr<RamOperation>(returnValue);
     } else {
-        std::unique_ptr<RamProject> project =
-                std::unique_ptr<RamProject>(new RamProject(getRelation(&head), level));
+        std::unique_ptr<RamProject> project = std::make_unique<RamProject>(getRelation(&head), level);
 
         for (AstArgument* arg : head.getArguments()) {
             project->addArg(translateValue(arg, valueIndex));
@@ -685,16 +723,14 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
         assert(atom && "Unsupported complex aggregation body encountered!");
 
         // add Ram-Aggregation layer
-        op = std::unique_ptr<RamOperation>(
-                new RamAggregate(std::move(op), fun, std::move(value), getRelation(atom)));
+        op = std::make_unique<RamAggregate>(std::move(op), fun, std::move(value), getRelation(atom));
 
         // add constant constraints
         for (size_t pos = 0; pos < atom->argSize(); ++pos) {
-            if (AstConstant* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
-                op->addCondition(std::unique_ptr<RamCondition>(new RamBinaryRelation(BinaryConstraintOp::EQ,
-                        std::unique_ptr<RamValue>(
-                                new RamElementAccess(level, pos, getRelation(atom)->getArg(pos))),
-                        std::make_unique<RamNumber>(c->getIndex()))));
+            if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
+                op->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                        std::make_unique<RamElementAccess>(level, pos, getRelation(atom)->getArg(pos)),
+                        std::make_unique<RamNumber>(c->getIndex())));
             }
         }
     }
@@ -708,7 +744,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
         // get current nesting level
         auto level = op_nesting.size();
 
-        if (const AstAtom* atom = dynamic_cast<const AstAtom*>(cur)) {
+        if (const auto* atom = dynamic_cast<const AstAtom*>(cur)) {
             // find out whether a "search" or "if" should be issued
             bool isExistCheck = !valueIndex.isSomethingDefinedOn(level);
             for (size_t pos = 0; pos < atom->argSize(); ++pos) {
@@ -718,38 +754,55 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
             }
 
             // add a scan level
-            op = std::make_unique<RamScan>(getRelation(atom), std::move(op), isExistCheck);
+            if (Global::config().has("profile")) {
+                std::stringstream ss;
+                ss << clause.getHead()->getName();
+                std::string relName = ss.str();
+                ss.str("");
+
+                if (modifiedIdMap.find(relName) != modifiedIdMap.end()) {
+                    relName = modifiedIdMap[relName];
+                }
+
+                ss << "@frequency-atom" << ';';
+                ss << relName << ';';
+                ss << version << ';';
+                ss << stringify(toString(clause)) << ';';
+                ss << stringify(toString(*atom)) << ';';
+                ss << stringify(toString(originalClause)) << ';';
+                ss << level << ';';
+                op = std::make_unique<RamScan>(getRelation(atom), std::move(op), isExistCheck, ss.str());
+            } else {
+                op = std::make_unique<RamScan>(getRelation(atom), std::move(op), isExistCheck);
+            }
 
             // add constraints
             for (size_t pos = 0; pos < atom->argSize(); ++pos) {
-                if (AstConstant* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
-                    op->addCondition(std::unique_ptr<RamCondition>(new RamBinaryRelation(
-                            BinaryConstraintOp::EQ, std::unique_ptr<RamValue>(new RamElementAccess(
-                                                            level, pos, getRelation(atom)->getArg(pos))),
-                            std::make_unique<RamNumber>(c->getIndex()))));
-                } else if (AstAggregator* agg = dynamic_cast<AstAggregator*>(atom->getArgument(pos))) {
+                if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
+                    op->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                            std::make_unique<RamElementAccess>(level, pos, getRelation(atom)->getArg(pos)),
+                            std::make_unique<RamNumber>(c->getIndex())));
+                } else if (auto* agg = dynamic_cast<AstAggregator*>(atom->getArgument(pos))) {
                     auto loc = valueIndex.getAggregatorLocation(*agg);
-                    op->addCondition(std::unique_ptr<RamCondition>(new RamBinaryRelation(
-                            BinaryConstraintOp::EQ, std::unique_ptr<RamValue>(new RamElementAccess(
-                                                            level, pos, getRelation(atom)->getArg(pos))),
-                            std::unique_ptr<RamValue>(
-                                    new RamElementAccess(loc.level, loc.component, loc.name)))));
+                    op->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                            std::make_unique<RamElementAccess>(level, pos, getRelation(atom)->getArg(pos)),
+                            std::make_unique<RamElementAccess>(loc.level, loc.component, loc.name)));
                 }
             }
 
             // TODO: support constants in nested records!
-        } else if (const AstRecordInit* rec = dynamic_cast<const AstRecordInit*>(cur)) {
+        } else if (const auto* rec = dynamic_cast<const AstRecordInit*>(cur)) {
             // add an unpack level
             const Location& loc = valueIndex.getDefinitionPoint(*rec);
-            op = std::unique_ptr<RamOperation>(
-                    new RamLookup(std::move(op), loc.level, loc.component, rec->getArguments().size()));
+            op = std::make_unique<RamLookup>(
+                    std::move(op), loc.level, loc.component, rec->getArguments().size());
 
             // add constant constraints
             for (size_t pos = 0; pos < rec->getArguments().size(); ++pos) {
                 if (AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
-                    op->addCondition(std::unique_ptr<RamCondition>(new RamBinaryRelation(
-                            BinaryConstraintOp::EQ, std::make_unique<RamElementAccess>(level, pos),
-                            std::make_unique<RamNumber>(c->getIndex()))));
+                    op->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                            std::make_unique<RamElementAccess>(level, pos),
+                            std::make_unique<RamNumber>(c->getIndex())));
                 }
             }
         } else {
@@ -765,11 +818,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
         // all other appearances
         for (const Location& loc : cur.second) {
             if (first != loc) {
-                op->addCondition(std::unique_ptr<RamCondition>(new RamBinaryRelation(BinaryConstraintOp::EQ,
-                        std::unique_ptr<RamValue>(
-                                new RamElementAccess(first.level, first.component, first.name)),
-                        std::unique_ptr<RamValue>(
-                                new RamElementAccess(loc.level, loc.component, loc.name)))));
+                op->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                        std::make_unique<RamElementAccess>(first.level, first.component, first.name),
+                        std::make_unique<RamElementAccess>(loc.level, loc.component, loc.name)));
             }
         }
     }
@@ -784,9 +835,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
         } else if (auto binRel = dynamic_cast<const AstBinaryConstraint*>(lit)) {
             std::unique_ptr<RamValue> valLHS = translateValue(binRel->getLHS(), valueIndex);
             std::unique_ptr<RamValue> valRHS = translateValue(binRel->getRHS(), valueIndex);
-            op->addCondition(std::unique_ptr<RamCondition>(
-                    new RamBinaryRelation(binRel->getOperator(), translateValue(binRel->getLHS(), valueIndex),
-                            translateValue(binRel->getRHS(), valueIndex))));
+            op->addCondition(std::make_unique<RamBinaryRelation>(binRel->getOperator(),
+                    translateValue(binRel->getLHS(), valueIndex),
+                    translateValue(binRel->getRHS(), valueIndex)));
 
             // for negations
         } else if (auto neg = dynamic_cast<const AstNegation*>(lit)) {
@@ -892,21 +943,21 @@ std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(const
         }
 
         // translate clause
-        std::unique_ptr<RamStatement> rule = translateClause(*clause, program, &typeEnv);
+        std::unique_ptr<RamStatement> rule = translateClause(*clause, program, &typeEnv, *clause);
 
         // add logging
         if (Global::config().has("profile")) {
             const std::string& relationName = toString(rel.getName());
-            const AstSrcLocation& srcLocation = clause->getSrcLoc();
+            const SrcLocation& srcLocation = clause->getSrcLoc();
             const std::string clauseText = stringify(toString(*clause));
             const std::string logTimerStatement =
-                    AstLogStatement::tNonrecursiveRule(relationName, srcLocation, clauseText);
+                    LogStatement::tNonrecursiveRule(relationName, srcLocation, clauseText);
             const std::string logSizeStatement =
-                    AstLogStatement::nNonrecursiveRule(relationName, srcLocation, clauseText);
-            rule = std::unique_ptr<RamStatement>(new RamSequence(
-                    std::unique_ptr<RamStatement>(new RamLogTimer(std::move(rule), logTimerStatement)),
+                    LogStatement::nNonrecursiveRule(relationName, srcLocation, clauseText);
+            rule = std::make_unique<RamSequence>(
+                    std::make_unique<RamLogTimer>(std::move(rule), logTimerStatement),
                     std::make_unique<RamLogSize>(
-                            std::unique_ptr<RamRelation>(rrel->clone()), logSizeStatement)));
+                            std::unique_ptr<RamRelation>(rrel->clone()), logSizeStatement));
         }
 
         // add debug info
@@ -927,11 +978,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(const
     // add logging for entire relation
     if (Global::config().has("profile")) {
         const std::string& relationName = toString(rel.getName());
-        const AstSrcLocation& srcLocation = rel.getSrcLoc();
-        const std::string logTimerStatement =
-                AstLogStatement::tNonrecursiveRelation(relationName, srcLocation);
-        const std::string logSizeStatement =
-                AstLogStatement::nNonrecursiveRelation(relationName, srcLocation);
+        const SrcLocation& srcLocation = rel.getSrcLoc();
+        const std::string logTimerStatement = LogStatement::tNonrecursiveRelation(relationName, srcLocation);
+        const std::string logSizeStatement = LogStatement::nNonrecursiveRelation(relationName, srcLocation);
 
         // add timer
         res = std::make_unique<RamLogTimer>(std::move(res), logTimerStatement);
@@ -954,9 +1003,9 @@ namespace {
 void nameUnnamedVariables(AstClause* clause) {
     // the node mapper conducting the actual renaming
     struct Instantiator : public AstNodeMapper {
-        mutable int counter;
+        mutable int counter = 0;
 
-        Instantiator() : counter(0) {}
+        Instantiator() = default;
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // apply recursive
@@ -1009,37 +1058,38 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 getRamRelation(rel, &typeEnv, "delta_" + relName, rel->getArity(), true, rel->isHashset());
         relNew[rel] =
                 getRamRelation(rel, &typeEnv, "new_" + relName, rel->getArity(), true, rel->isHashset());
+
+        modifiedIdMap[relName] = relName;
+        modifiedIdMap[relDelta[rel]->getName()] = relName;
+        modifiedIdMap[relNew[rel]->getName()] = relName;
+
         /* create update statements for fixpoint (even iteration) */
         appendStmt(updateRelTable,
-                std::unique_ptr<RamStatement>(new RamSequence(
-                        std::unique_ptr<RamStatement>(
-                                new RamMerge(std::unique_ptr<RamRelation>(rrel[rel]->clone()),
-                                        std::unique_ptr<RamRelation>(relNew[rel]->clone()))),
-                        std::unique_ptr<RamStatement>(
-                                new RamSwap(std::unique_ptr<RamRelation>(relDelta[rel]->clone()),
-                                        std::unique_ptr<RamRelation>(relNew[rel]->clone()))),
-                        std::make_unique<RamClear>(std::unique_ptr<RamRelation>(relNew[rel]->clone())))));
+                std::make_unique<RamSequence>(
+                        std::make_unique<RamMerge>(std::unique_ptr<RamRelation>(rrel[rel]->clone()),
+                                std::unique_ptr<RamRelation>(relNew[rel]->clone())),
+                        std::make_unique<RamSwap>(std::unique_ptr<RamRelation>(relDelta[rel]->clone()),
+                                std::unique_ptr<RamRelation>(relNew[rel]->clone())),
+                        std::make_unique<RamClear>(std::unique_ptr<RamRelation>(relNew[rel]->clone()))));
 
         /* measure update time for each relation */
         if (Global::config().has("profile")) {
             updateRelTable = std::make_unique<RamLogTimer>(std::move(updateRelTable),
-                    AstLogStatement::cRecursiveRelation(toString(rel->getName()), rel->getSrcLoc()));
+                    LogStatement::cRecursiveRelation(toString(rel->getName()), rel->getSrcLoc()));
         }
 
         /* drop temporary tables after recursion */
-        appendStmt(postamble, std::unique_ptr<RamStatement>(new RamSequence(
-                                      std::unique_ptr<RamStatement>(new RamDrop(
-                                              std::unique_ptr<RamRelation>(relDelta[rel]->clone()))),
-                                      std::unique_ptr<RamStatement>(new RamDrop(
-                                              std::unique_ptr<RamRelation>(relNew[rel]->clone()))))));
+        appendStmt(postamble,
+                std::make_unique<RamSequence>(
+                        std::make_unique<RamDrop>(std::unique_ptr<RamRelation>(relDelta[rel]->clone())),
+                        std::make_unique<RamDrop>(std::unique_ptr<RamRelation>(relNew[rel]->clone()))));
 
         /* Generate code for non-recursive part of relation */
         appendStmt(preamble, translateNonRecursiveRelation(*rel, program, recursiveClauses, typeEnv));
 
         /* Generate merge operation for temp tables */
-        appendStmt(preamble, std::unique_ptr<RamStatement>(
-                                     new RamMerge(std::unique_ptr<RamRelation>(relDelta[rel]->clone()),
-                                             std::unique_ptr<RamRelation>(rrel[rel]->clone()))));
+        appendStmt(preamble, std::make_unique<RamMerge>(std::unique_ptr<RamRelation>(relDelta[rel]->clone()),
+                                     std::unique_ptr<RamRelation>(rrel[rel]->clone())));
 
         /* Add update operations of relations to parallel statements */
         updateTable->add(std::move(updateRelTable));
@@ -1104,22 +1154,21 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 }
 
                 std::unique_ptr<RamStatement> rule =
-                        translateClause(*r1, program, &typeEnv, version, false, rel->isHashset());
+                        translateClause(*r1, program, &typeEnv, *cl, version, false, rel->isHashset());
 
                 /* add logging */
                 if (Global::config().has("profile")) {
                     const std::string& relationName = toString(rel->getName());
-                    const AstSrcLocation& srcLocation = cl->getSrcLoc();
+                    const SrcLocation& srcLocation = cl->getSrcLoc();
                     const std::string clauseText = stringify(toString(*cl));
                     const std::string logTimerStatement =
-                            AstLogStatement::tRecursiveRule(relationName, version, srcLocation, clauseText);
+                            LogStatement::tRecursiveRule(relationName, version, srcLocation, clauseText);
                     const std::string logSizeStatement =
-                            AstLogStatement::nRecursiveRule(relationName, version, srcLocation, clauseText);
-                    rule = std::unique_ptr<RamStatement>(new RamSequence(
-                            std::unique_ptr<RamStatement>(
-                                    new RamLogTimer(std::move(rule), logTimerStatement)),
-                            std::unique_ptr<RamLogSize>(new RamLogSize(
-                                    std::unique_ptr<RamRelation>(relNew[rel]->clone()), logSizeStatement))));
+                            LogStatement::nRecursiveRule(relationName, version, srcLocation, clauseText);
+                    rule = std::make_unique<RamSequence>(
+                            std::make_unique<RamLogTimer>(std::move(rule), logTimerStatement),
+                            std::make_unique<RamLogSize>(
+                                    std::unique_ptr<RamRelation>(relNew[rel]->clone()), logSizeStatement));
                 }
 
                 // add debug info
@@ -1145,11 +1194,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         // label all versions
         if (Global::config().has("profile")) {
             const std::string& relationName = toString(rel->getName());
-            const AstSrcLocation& srcLocation = rel->getSrcLoc();
-            const std::string logTimerStatement =
-                    AstLogStatement::tRecursiveRelation(relationName, srcLocation);
-            const std::string logSizeStatement =
-                    AstLogStatement::nRecursiveRelation(relationName, srcLocation);
+            const SrcLocation& srcLocation = rel->getSrcLoc();
+            const std::string logTimerStatement = LogStatement::tRecursiveRelation(relationName, srcLocation);
+            const std::string logSizeStatement = LogStatement::nRecursiveRelation(relationName, srcLocation);
             loopRelSeq = std::make_unique<RamLogTimer>(std::move(loopRelSeq), logTimerStatement);
             appendStmt(loopRelSeq,
                     std::make_unique<RamLogSize>(
@@ -1162,22 +1209,21 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     /* construct exit conditions for odd and even iteration */
     auto addCondition = [](std::unique_ptr<RamCondition>& cond, std::unique_ptr<RamCondition> clause) {
-        cond = ((cond) ? std::unique_ptr<RamCondition>(new RamAnd(std::move(cond), std::move(clause)))
-                       : std::move(clause));
+        cond = ((cond) ? std::make_unique<RamAnd>(std::move(cond), std::move(clause)) : std::move(clause));
     };
 
     std::unique_ptr<RamCondition> exitCond;
     for (const AstRelation* rel : scc) {
-        addCondition(exitCond, std::unique_ptr<RamCondition>(
-                                       new RamEmpty(std::unique_ptr<RamRelation>(relNew[rel]->clone()))));
+        addCondition(
+                exitCond, std::make_unique<RamEmpty>(std::unique_ptr<RamRelation>(relNew[rel]->clone())));
     }
 
     /* construct fixpoint loop  */
     std::unique_ptr<RamStatement> res;
     if (preamble) appendStmt(res, std::move(preamble));
     if (!loopSeq->getStatements().empty() && exitCond && updateTable) {
-        appendStmt(res, std::unique_ptr<RamStatement>(new RamLoop(std::move(loopSeq),
-                                std::make_unique<RamExit>(std::move(exitCond)), std::move(updateTable))));
+        appendStmt(res, std::make_unique<RamLoop>(std::move(loopSeq),
+                                std::make_unique<RamExit>(std::move(exitCond)), std::move(updateTable)));
     }
     if (postamble) {
         appendStmt(res, std::move(postamble));
@@ -1186,64 +1232,6 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     assert(false && "Not Implemented");
     return nullptr;
-}
-
-void createAndLoad(std::unique_ptr<RamStatement>& current, const AstRelation* rel,
-        const TypeEnvironment& typeEnv, const bool isComputed, const bool isRecursive,
-        const bool loadInputOnly) {
-    const auto dir = Global::config().get((rel->isInput() && isComputed) ? "facts-dir" : "output-dir");
-    const auto ext = (!rel->isOutput() || (rel->isInput() && isComputed)) ? ".facts" : ".csv";
-    AstRelation* mrel = const_cast<AstRelation*>(rel)->clone();
-    if ((!rel->isInput() && !loadInputOnly) ||
-            (!isComputed && !isRecursive && !loadInputOnly && rel->isInput())) {
-        std::unique_ptr<AstIODirective> directive = std::make_unique<AstIODirective>();
-        directive->setAsInput();
-        directive->addKVP("intermediate", "true");
-        mrel->addIODirectives(std::move(directive));
-    }
-    std::unique_ptr<RamRelation> rrel = getRamRelation(mrel, &typeEnv, getRelationName(mrel->getName()),
-            mrel->getArity(), false, mrel->isHashset(), dir, ext);
-    // create and load the relation at the start
-    appendStmt(current, std::make_unique<RamCreate>(std::unique_ptr<RamRelation>(rrel->clone())));
-
-    if (rel->isInput() || !loadInputOnly) {
-        appendStmt(current, std::make_unique<RamLoad>(std::unique_ptr<RamRelation>(rrel->clone()),
-                                    getInputIODirectives(mrel, dir, ext)));
-    }
-
-    // create delta and new relations for recursive relations at the start
-    if (isRecursive) {
-        appendStmt(current, std::make_unique<RamCreate>(
-                                    getRamRelation(rel, &typeEnv, "delta_" + getRelationName(rel->getName()),
-                                            rel->getArity(), true, rel->isHashset())));
-        appendStmt(current,
-                std::make_unique<RamCreate>(getRamRelation(rel, &typeEnv,
-                        "new_" + getRelationName(rel->getName()), rel->getArity(), true, rel->isHashset())));
-    }
-    delete mrel;
-}
-
-void printSizeStore(std::unique_ptr<RamStatement>& current, const AstRelation* rel,
-        const TypeEnvironment& typeEnv, const bool storeOutputOnly) {
-    const auto dir = Global::config().get("output-dir");
-    const auto ext = (!rel->isOutput()) ? ".facts" : ".csv";
-    AstRelation* mrel = const_cast<AstRelation*>(rel)->clone();
-    if (!rel->isOutput() && !storeOutputOnly) {
-        std::unique_ptr<AstIODirective> directive = std::make_unique<AstIODirective>();
-        directive->setAsOutput();
-        mrel->addIODirectives(std::move(directive));
-    }
-    std::unique_ptr<RamRelation> rrel = getRamRelation(mrel, &typeEnv, getRelationName(mrel->getName()),
-            mrel->getArity(), false, mrel->isHashset(), dir, ext);
-    if (rel->isPrintSize()) {
-        appendStmt(current, std::make_unique<RamPrintSize>(std::unique_ptr<RamRelation>(rrel->clone())));
-    }
-
-    if (rel->isOutput() || !storeOutputOnly) {
-        appendStmt(current, std::make_unique<RamStore>(std::unique_ptr<RamRelation>(rrel->clone()),
-                                    getOutputIODirectives(mrel, &typeEnv, dir, ext)));
-    }
-    delete mrel;
 }
 
 /** make a subroutine to search for subproofs */
@@ -1288,77 +1276,205 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(
         }
     }
 
-    return translateClause(*intermediateClause, program, &typeEnv, 0, true);
+    return translateClause(*intermediateClause, program, &typeEnv, clause, 0, true);
 }
 
 /** translates the given datalog program into an equivalent RAM program  */
 std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) {
+    // obtain type environment from analysis
     const TypeEnvironment& typeEnv =
             translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
 
-    RecursiveClauses* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
+    // obtain recursive clauses from analysis
+    const auto* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
 
-    /* start with an empty sequence */
+    // obtain strongly connected component (SCC) graph from analysis
+    const auto& sccGraph = *translationUnit.getAnalysis<SCCGraph>();
+
+    // obtain some topological order over the nodes of the SCC graph
+    const auto& sccOrder = translationUnit.getAnalysis<TopologicallySortedSCCGraph>()->order();
+
+    // obtain the schedule of relations expired at each index of the topological order
+    const auto& expirySchedule = translationUnit.getAnalysis<RelationSchedule>()->schedule();
+
+    // start with an empty sequence of ram statements
     std::unique_ptr<RamStatement> res = std::make_unique<RamSequence>();
 
-    /* Compute SCCs of program */
-    const auto& sccGraph = *translationUnit.getAnalysis<SCCGraph>();
-    const auto& schedule = translationUnit.getAnalysis<RelationSchedule>()->schedule();
-
-    /** Do nothing for empty schedules */
-    if (schedule.empty()) {
+    // handle the case of an empty SCC graph
+    if (sccGraph.getNumberOfSCCs() == 0) {
         return std::make_unique<RamProgram>(std::move(res));
     }
 
-    /* proceed over each step, in stratification these become subprograms */
+    // maintain the index of the SCC within the topological order
     unsigned index = 0;
-    for (const RelationScheduleStep& step : schedule) {
+
+    // iterate over each SCC according to the topological order
+    for (const auto& scc : sccOrder) {
+        // make a new ram statement for the current SCC
         std::unique_ptr<RamStatement> current;
 
-        /* during stratification, create and load all predecessor relations in another scc */
+        // find out if the current SCC is recursive
+        const auto& isRecursive = sccGraph.isRecursive(scc);
 
-        for (const AstRelation* rel : step.computed()) {
-            createAndLoad(current, rel, typeEnv, true, sccGraph.isRecursive(rel), true);
-        }
+        // make variables for particular sets of relations contained within the current SCC, and, predecessors
+        // and successor SCCs thereof
+        const auto& allInterns = sccGraph.getInternalRelations(scc);
+        const auto& internIns = sccGraph.getInternalInputRelations(scc);
+        const auto& internOuts = sccGraph.getInternalOutputRelations(scc);
+        const auto& externOutPreds = sccGraph.getExternalOutputPredecessorRelations(scc);
+        const auto& externNonOutPreds = sccGraph.getExternalNonOutputPredecessorRelations(scc);
+        const auto& internNonOutsWithExternSuccs =
+                sccGraph.getInternalNonOutputRelationsWithExternalSuccessors(scc);
 
-        /* translate the body, this is where actual computation happens */
-        std::unique_ptr<RamStatement> stmt;
-        if (!step.recursive()) {
-            ASSERT(step.computed().size() == 1 && "SCC contains more than one relation");
-            const AstRelation* rel = *step.computed().begin();
-            /* Run non-recursive evaluation */
-            stmt = translateNonRecursiveRelation(
-                    *rel, translationUnit.getProgram(), recursiveClauses, typeEnv);
-        } else {
-            stmt = translateRecursiveRelation(
-                    step.computed(), translationUnit.getProgram(), recursiveClauses, typeEnv);
-        }
-        appendStmt(current, std::move(stmt));
+        // make a variable for all relations that are expired at the current SCC
+        const auto& internExps = expirySchedule.at(index).expired();
 
-        /* store all relations with fault tolerance, and output relations without */
-        for (const AstRelation* rel : step.computed()) {
-            printSizeStore(current, rel, typeEnv, true);
-        }
+        // a function to create relations
+        const auto& makeRamCreate = [&](const AstRelation* relation, const std::string relationNamePrefix) {
+            appendStmt(current,
+                    std::make_unique<RamCreate>(std::unique_ptr<RamRelation>(getRamRelation(relation,
+                            &typeEnv, relationNamePrefix + getRelationName(relation->getName()),
+                            relation->getArity(), !relationNamePrefix.empty(), relation->isHashset()))));
+        };
 
-        /* drop expired relations, or all relations for stratification */
-        if (!Global::config().has("provenance")) {
-            for (const AstRelation* rel : step.expired()) {
-                appendStmt(current,
-                        std::make_unique<RamDrop>(getRamRelation(rel, &typeEnv,
-                                getRelationName(rel->getName()), rel->getArity(), false, rel->isHashset())));
+        // a function to load relations
+        const auto& makeRamLoad = [&](const AstRelation* relation, const std::string& inputDirectory,
+                const std::string& fileExtension) {
+            std::unique_ptr<RamStatement> statement = std::make_unique<RamLoad>(
+                    std::unique_ptr<RamRelation>(
+                            getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
+                                    relation->getArity(), false, relation->isHashset())),
+                    getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
+            if (Global::config().has("profile")) {
+                const std::string logTimerStatement = LogStatement::tRelationLoadTime(
+                        getRelationName(relation->getName()), relation->getSrcLoc());
+                statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement);
+            }
+            appendStmt(current, std::move(statement));
+        };
+
+        // a function to print the size of relations
+        const auto& makeRamPrintSize = [&](const AstRelation* relation) {
+            appendStmt(current, std::make_unique<RamPrintSize>(std::unique_ptr<RamRelation>(getRamRelation(
+                                        relation, &typeEnv, getRelationName(relation->getName()),
+                                        relation->getArity(), false, relation->isHashset()))));
+        };
+
+        // a function to store relations
+        const auto& makeRamStore = [&](const AstRelation* relation, const std::string& outputDirectory,
+                const std::string& fileExtension) {
+            std::unique_ptr<RamStatement> statement =
+                    std::make_unique<RamStore>(std::unique_ptr<RamRelation>(getRamRelation(relation, &typeEnv,
+                                                       getRelationName(relation->getName()),
+                                                       relation->getArity(), false, relation->isHashset())),
+                            getOutputIODirectives(relation, &typeEnv, Global::config().get(outputDirectory),
+                                    fileExtension));
+            if (Global::config().has("profile")) {
+                const std::string logTimerStatement = LogStatement::tRelationSaveTime(
+                        getRelationName(relation->getName()), relation->getSrcLoc());
+                statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement);
+            }
+            appendStmt(current, std::move(statement));
+        };
+
+        // a function to drop relations
+        const auto& makeRamDrop = [&](const AstRelation* relation) {
+            appendStmt(current, std::make_unique<RamDrop>(getRamRelation(relation, &typeEnv,
+                                        getRelationName(relation->getName()), relation->getArity(), false,
+                                        relation->isHashset())));
+        };
+
+        // create all internal relations of the current scc
+        for (const auto& relation : allInterns) {
+            makeRamCreate(relation, "");
+            // create new and delta relations if required
+            if (isRecursive) {
+                makeRamCreate(relation, "delta_");
+                makeRamCreate(relation, "new_");
             }
         }
 
-        // append the current step to the result
+        // load all internal input relations from the facts dir with a .facts extension
+        for (const auto& relation : internIns) {
+            makeRamLoad(relation, "fact-dir", ".facts");
+        }
+
+        // if a communication engine has been specified...
+        if (Global::config().has("engine")) {
+            // load all external output predecessor relations from the output dir with a .csv extension
+            for (const auto& relation : externOutPreds) {
+                makeRamLoad(relation, "output-dir", ".csv");
+            }
+            // load all external output predecessor relations from the output dir with a .facts extension
+            for (const auto& relation : externNonOutPreds) {
+                makeRamLoad(relation, "output-dir", ".facts");
+            }
+        }
+
+        // compute the relations themselves
+        std::unique_ptr<RamStatement> bodyStatement =
+                (!isRecursive) ? translateNonRecursiveRelation(*((const AstRelation*)*allInterns.begin()),
+                                         translationUnit.getProgram(), recursiveClauses, typeEnv)
+                               : translateRecursiveRelation(
+                                         allInterns, translationUnit.getProgram(), recursiveClauses, typeEnv);
+        appendStmt(current, std::move(bodyStatement));
+
+        // print the size of all printsize relations in the current SCC
+        for (const auto& relation : allInterns) {
+            if (relation->isPrintSize()) {
+                makeRamPrintSize(relation);
+            }
+        }
+
+        // if a communication engine is enabled...
+        if (Global::config().has("engine")) {
+            // store all internal non-output relations with external successors to the output dir with a
+            // .facts extension
+            for (const auto& relation : internNonOutsWithExternSuccs) {
+                makeRamStore(relation, "output-dir", ".facts");
+            }
+        }
+
+        // store all internal output relations to the output dir with a .csv extension
+        for (const auto& relation : internOuts) {
+            makeRamStore(relation, "output-dir", ".csv");
+        }
+
+        // if provenance is not enabled...
+        if (!Global::config().has("provenance")) {
+            // if a communication engine is enabled...
+            if (Global::config().has("engine")) {
+                // drop all internal relations
+                for (const auto& relation : allInterns) {
+                    makeRamDrop(relation);
+                }
+                // drop external output predecessor relations
+                for (const auto& relation : externOutPreds) {
+                    makeRamDrop(relation);
+                }
+                // drop external non-output predecessor relations
+                for (const auto& relation : externNonOutPreds) {
+                    makeRamDrop(relation);
+                }
+            } else {
+                // otherwise, drop all  relations expired as per the topological order
+                for (const auto& relation : internExps) {
+                    makeRamDrop(relation);
+                }
+            }
+        }
+
         if (current) {
-            appendStmt(res, std::move(current));
-            // increment the index
+            // append the current SCC as a stratum to the sequence
+            appendStmt(res, std::make_unique<RamStratum>(std::move(current), index));
+            // increment the index of the current SCC
             index++;
         }
     }
 
+    // add main timer if profiling
     if (res && Global::config().has("profile")) {
-        res = std::make_unique<RamLogTimer>(std::move(res), AstLogStatement::runtime());
+        res = std::make_unique<RamLogTimer>(std::move(res), LogStatement::runtime());
     }
 
     // done for main prog
@@ -1370,7 +1486,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
             std::stringstream relName;
             relName << clause.getHead()->getName();
 
-            if (relName.str().find("@info") != std::string::npos || clause.getBodyLiterals().size() == 0) {
+            if (relName.str().find("@info") != std::string::npos || clause.getBodyLiterals().empty()) {
                 return;
             }
 

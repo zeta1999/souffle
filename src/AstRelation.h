@@ -112,7 +112,7 @@ public:
 
     /** Add a new used type to this relation */
     void addAttribute(std::unique_ptr<AstAttribute> attr) {
-        ASSERT(attr && "Undefined attribute");
+        assert(attr && "Undefined attribute");
         attributes.push_back(std::move(attr));
     }
 
@@ -306,9 +306,9 @@ public:
 
     /** Add a clause to the relation */
     void addClause(std::unique_ptr<AstClause> clause) {
-        ASSERT(clause && "Undefined clause");
-        ASSERT(clause->getHead() && "Undefined head of the clause");
-        ASSERT(clause->getHead()->getName() == name &&
+        assert(clause && "Undefined clause");
+        assert(clause->getHead() && "Undefined head of the clause");
+        assert(clause->getHead()->getName() == name &&
                 "Name of the atom in the head of the clause and the relation do not match");
         clauses.push_back(std::move(clause));
     }
@@ -345,7 +345,7 @@ public:
     }
 
     void addIODirectives(std::unique_ptr<AstIODirective> directive) {
-        ASSERT(directive && "Undefined directive");
+        assert(directive && "Undefined directive");
         // Make sure the old style qualifiers still work.
         if (directive->isInput()) {
             qualifier |= INPUT_RELATION;

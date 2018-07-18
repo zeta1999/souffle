@@ -35,6 +35,10 @@
 #include "souffle/Trie.h"
 #include "souffle/Util.h"
 #include "souffle/WriteStream.h"
+#ifdef USE_MPI
+#include "souffle/Mpi.h"
+#endif
+
 #include <array>
 #include <atomic>
 #include <cassert>

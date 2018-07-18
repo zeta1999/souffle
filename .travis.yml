@@ -3,15 +3,15 @@ dist: trusty
 
 aliases:
   -  &linux_deps
-    - build-essential
     - automake
     - autoconf
     - bison
-    - mcpp
+    - build-essential
     - flex
-    - lsb-release
     - libncurses5-dev
     - libtool
+    - lsb-release
+    - mcpp
   - &linuxgcc
     stage: Testing
     sudo: false
@@ -45,11 +45,17 @@ aliases:
     before_script: ".travis/init_test.sh"
     script: ".travis/run_test.sh"
     after_failure: ".travis/after_failure.sh"
-  - &linuxpackage
-    stage: Packaging
+  - &docker
     os: linux
-    sudo: false
     services: docker
+    sudo: false
+  - &linuxmpi
+    <<: *docker
+    stage: Testing
+    script: ".travis/run_docker.sh"
+  - &linuxpackage
+    <<: *docker
+    stage: Packaging
   - &osxgcc
     stage: Testing
     os: osx
@@ -122,6 +128,18 @@ jobs:
     - "gcc-efile"
     - *gcc_environment
     - SOUFFLE_CATEGORY=FastEvaluation,Interface,Profile,Provenance SOUFFLE_CONFS="-c -j8 -efile"
+
+# Testing stage with mpi (-c -j8 -empi, FastEvaluation and select others)
+  - <<: *linuxmpi
+    env:
+    - "gcc-empi"
+    - *gcc_environment
+    - SOUFFLE_DOCKER_BASE_IMAGE="souffle/ubuntu:bionic-base"
+    # TODO (lyndonhenry): should get this working with Interface, Profile, and Provenance (it does work already with Syntactic and Semantic)
+    - SOUFFLE_CATEGORY="Unit,FastEvaluation"
+    - SOUFFLE_CONFIGURE_OPTIONS="--enable-mpi"
+    - SOUFFLE_CONFS="-c -j8 -empi"
+    - SOUFFLE_MAKE_JOBS="2"
 
 # Testing stage (-j8,-c -j8)
   - <<: *linuxgcc
@@ -260,4 +278,3 @@ jobs:
       on:
         branch: master
         condition: -v $GHPAGES_TOKEN
-

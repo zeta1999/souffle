@@ -83,7 +83,7 @@ public:
             return;
         }
 
-        ASSERT(tuple);
+        assert(tuple);
 
         // make existence check
         if (exists(tuple)) {

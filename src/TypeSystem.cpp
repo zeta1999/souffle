@@ -15,7 +15,6 @@
  ***********************************************************************/
 
 #include "TypeSystem.h"
-#include "Macro.h"
 #include "Util.h"
 #include <cassert>
 
@@ -298,7 +297,7 @@ std::string getTypeQualifier(const Type& type) {
             } else if (isRecordType(type)) {
                 str = "r:" + toString(type.getName());
             } else {
-                ASSERT(false && "unknown type class");
+                assert(false && "unknown type class");
             }
             seen[&type] = str;
             return str;

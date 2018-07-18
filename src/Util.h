@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "Macro.h"
 #include "RamTypes.h"
 
 #include <algorithm>
@@ -1293,17 +1292,17 @@ public:
     }
 
     std::size_t getHits() const {
-        ASSERT(active);
+        assert(active);
         return hits;
     }
 
     std::size_t getMisses() const {
-        ASSERT(active);
+        assert(active);
         return misses;
     }
 
     std::size_t getAccesses() const {
-        ASSERT(active);
+        assert(active);
         return getHits() + getMisses();
     }
 

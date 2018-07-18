@@ -63,13 +63,13 @@ public:
 
     /** Get left-hand side of conjunction */
     const RamCondition& getLHS() const {
-        ASSERT(lhs);
+        assert(lhs);
         return *lhs;
     }
 
     /** Get right-hand side of conjunction */
     const RamCondition& getRHS() const {
-        ASSERT(rhs);
+        assert(rhs);
         return *rhs;
     }
 

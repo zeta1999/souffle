@@ -170,7 +170,7 @@ public:
         return lhsArgument.get();
     }
     const RamValue& getLHSArgument() const {
-        ASSERT(lhsArgument);
+        assert(lhsArgument);
         return *lhsArgument;
     }
 
@@ -180,7 +180,7 @@ public:
         return rhsArgument.get();
     }
     const RamValue& getRHSArgument() const {
-        ASSERT(rhsArgument);
+        assert(rhsArgument);
         return *rhsArgument;
     }
 
@@ -260,7 +260,7 @@ public:
         return arguments[i].get();
     }
     const RamValue& getArgument(int i) const {
-        ASSERT(arguments[i]);
+        assert(arguments[i]);
         return *arguments[i];
     }
 

@@ -24,7 +24,6 @@
 #include "InterpreterRecords.h"
 #include "LogStatement.h"
 #include "Logger.h"
-#include "Macro.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
 #include "RamNode.h"
@@ -559,7 +558,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             const auto& values = project.getValues();
             RamDomain tuple[arity];
             for (size_t i = 0; i < arity; i++) {
-                ASSERT(values[i]);
+                assert(values[i]);
                 tuple[i] = interpreter.evalVal(*values[i], ctxt);
             }
 

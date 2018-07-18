@@ -26,8 +26,8 @@
 #include "Global.h"
 #include "Interpreter.h"
 #include "InterpreterInterface.h"
-#include "Macro.h"
 #include "ParserDriver.h"
+#include "PrecedenceGraph.h"
 #include "RamProgram.h"
 #include "RamSemanticChecker.h"
 #include "RamTransformer.h"
@@ -40,6 +40,10 @@
 
 #ifdef USE_PROVENANCE
 #include "Explain.h"
+#endif
+
+#ifdef USE_MPI
+#include "Mpi.h"
 #endif
 
 #include <cassert>
@@ -61,7 +65,12 @@ namespace souffle {
 /**
  * Executes a binary file.
  */
-void executeBinary(const std::string& binaryFilename) {
+void executeBinary(const std::string& binaryFilename
+#ifdef USE_MPI
+        ,
+        const int numberOfProcesses
+#endif
+        ) {
     assert(!binaryFilename.empty() && "binary filename cannot be blank");
 
     // check whether the executable exists
@@ -70,13 +79,23 @@ void executeBinary(const std::string& binaryFilename) {
     }
 
     // run the executable
-    int exitCode = system(binaryFilename.c_str());
+    int exitCode;
+#ifdef USE_MPI
+    if (Global::config().get("engine") == "mpi") {
+        exitCode = system(("mpiexec -n " + std::to_string(numberOfProcesses) + " " + binaryFilename).c_str());
+    } else
+#endif
+    {
+        exitCode = system(binaryFilename.c_str());
+    }
 
-    // remove temp files
+// only remove temp files if we are not configuring with --enable-debug
+#ifndef NDEBUG
     if (Global::config().get("dl-program").empty()) {
         remove(binaryFilename.c_str());
         remove((binaryFilename + ".cpp").c_str());
     }
+#endif
 
     // exit with same code as executable
     if (exitCode != 0) {
@@ -106,6 +125,13 @@ void compileToBinary(std::string compileCmd, const std::string& sourceFilename) 
 int main(int argc, char** argv) {
     /* Time taking for overall runtime */
     auto souffle_start = std::chrono::high_resolution_clock::now();
+
+#ifdef USE_MPI
+    mpi::init(argc, argv);
+    if (mpi::commRank() != 0) {
+        throw std::runtime_error("Error: Souffle can only be run with one MPI process.");
+    }
+#endif
 
     /* have all to do with command line arguments in its own scope, as these are accessible through the global
      * configuration only */
@@ -172,7 +198,7 @@ int main(int argc, char** argv) {
 #endif
                             {"data-structure", 'd', "type", "", false,
                                     "Specify data structure (brie/btree/eqrel/rbtset/hashset)."},
-                            {"engine", 'e', "[ file ]", "", false,
+                            {"engine", 'e', "[ file | mpi ]", "", false,
                                     "Specify communication engine for distributed execution."},
                             {"verbose", 'v', "", "", false, "Verbose output."},
                             {"help", 'h', "", "", false, "Display this help message."}};
@@ -189,23 +215,26 @@ int main(int argc, char** argv) {
 
         /* check that datalog program exists */
         if (!existFile(Global::config().get(""))) {
-            ERROR("cannot open file " + std::string(Global::config().get("")));
+            throw std::runtime_error("cannot open file " + std::string(Global::config().get("")));
         }
 
         /* for the jobs option, to determine the number of threads used */
         if (Global::config().has("jobs")) {
             if (isNumber(Global::config().get("jobs").c_str())) {
                 if (std::stoi(Global::config().get("jobs")) < 1) {
-                    ERROR("Number of jobs in the -j/--jobs options must be greater than zero!");
+                    throw std::runtime_error(
+                            "Number of jobs in the -j/--jobs options must be greater than zero!");
                 }
             } else {
                 if (!Global::config().has("jobs", "auto")) {
-                    ERROR("Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
+                    throw std::runtime_error(
+                            "Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
                 }
                 Global::config().set("jobs", "0");
             }
         } else {
-            ERROR("Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
+            throw std::runtime_error(
+                    "Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
         }
 
         /* if an output directory is given, check it exists */
@@ -213,7 +242,8 @@ int main(int argc, char** argv) {
                 !existDir(Global::config().get("output-dir")) &&
                 !(Global::config().has("generate") ||
                         (Global::config().has("dl-program") && !Global::config().has("compile")))) {
-            ERROR("output directory " + Global::config().get("output-dir") + " does not exists");
+            throw std::runtime_error(
+                    "output directory " + Global::config().get("output-dir") + " does not exists");
         }
 
         /* collect all input directories for the c pre-processor */
@@ -223,7 +253,7 @@ int main(int argc, char** argv) {
             for (const char& ch : Global::config().get("include-dir")) {
                 if (ch == ' ') {
                     if (!existDir(currentInclude)) {
-                        ERROR("include directory " + currentInclude + " does not exists");
+                        throw std::runtime_error("include directory " + currentInclude + " does not exists");
                     } else {
                         allIncludes += " -I";
                         allIncludes += currentInclude;
@@ -246,7 +276,7 @@ int main(int argc, char** argv) {
         if (Global::config().has("provenance")) {
             if (Global::config().has("jobs")) {
                 if (Global::config().get("jobs") != "1") {
-                    ERROR("provenance cannot be enabled with multiple jobs.");
+                    throw std::runtime_error("provenance cannot be enabled with multiple jobs.");
                 }
             }
         }
@@ -258,9 +288,23 @@ int main(int argc, char** argv) {
                 throw std::invalid_argument("Error: Use of engine option not yet available for interpreter.");
             }
             const auto& engine = Global::config().get("engine");
-            if (engine != "file") {
+            if (engine != "file" && engine != "mpi") {
                 throw std::invalid_argument("Error: Use of engine '" + engine + "' is not supported.");
             }
+#ifndef USE_MPI
+            if (engine == "mpi") {
+                throw std::invalid_argument(
+                        "Error: Use of engine '" + engine + "' requires configure option '--enable-mpi'.");
+            }
+#endif
+        }
+
+        if (Global::config().has("live-profile") && !Global::config().has("profile")) {
+            Global::config().set("profile");
+        }
+
+        if (Global::config().has("live-profile") && !Global::config().has("profile")) {
+            Global::config().set("profile");
         }
 
         if (Global::config().has("live-profile") && !Global::config().has("profile")) {
@@ -273,14 +317,14 @@ int main(int argc, char** argv) {
     std::string souffleExecutable = which(argv[0]);
 
     if (souffleExecutable.empty()) {
-        ERROR("failed to determine souffle executable path");
+        throw std::runtime_error("failed to determine souffle executable path");
     }
 
     /* Create the pipe to establish a communication between cpp and souffle */
     std::string cmd = ::which("mcpp");
 
     if (!isExecutable(cmd)) {
-        ERROR("failed to locate mcpp pre-processor");
+        throw std::runtime_error("failed to locate mcpp pre-processor");
     }
 
     cmd += " -W0 " + Global::config().get("include-dir") + " " + Global::config().get("");
@@ -302,7 +346,7 @@ int main(int argc, char** argv) {
     int preprocessor_status = pclose(in);
     if (preprocessor_status == -1) {
         perror(nullptr);
-        ERROR("failed to close pre-processor pipe");
+        throw std::runtime_error("failed to close pre-processor pipe");
     }
 
     /* Report run-time of the parser if verbose flag is set */
@@ -443,7 +487,7 @@ int main(int argc, char** argv) {
         std::string compileCmd = ::findTool("souffle-compile", souffleExecutable, ".");
         /* Fail if a souffle-compile executable is not found */
         if (!isExecutable(compileCmd)) {
-            ERROR("failed to locate souffle-compile");
+            throw std::runtime_error("failed to locate souffle-compile");
         }
         compileCmd += " ";
 
@@ -485,7 +529,12 @@ int main(int argc, char** argv) {
                 }
                 // run compiled C++ program if requested.
                 if (!Global::config().has("dl-program")) {
-                    executeBinary(baseFilename);
+                    executeBinary(baseFilename
+#ifdef USE_MPI
+                            ,
+                            ((int)astTranslationUnit->getAnalysis<SCCGraph>()->getNumberOfSCCs()) + 1
+#endif
+                            );
                 }
             }
         } catch (std::exception& e) {
@@ -493,6 +542,11 @@ int main(int argc, char** argv) {
             std::exit(1);
         }
     }
+
+// finalize mpi, this is necessary for the symbol table
+#ifdef USE_MPI
+    mpi::finalize();
+#endif
 
     /* Report overall run-time in verbose mode */
     if (Global::config().has("verbose")) {

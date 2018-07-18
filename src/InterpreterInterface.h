@@ -220,7 +220,7 @@ public:
         for (auto& rel_pair : exec.getRelationMap()) {
             auto& name = rel_pair.first;
             auto& interpreterRel = *rel_pair.second;
-            ASSERT(map[name]);
+            assert(map[name]);
             const RamRelation& rel = *map[name];
 
             // construct types and names vectors

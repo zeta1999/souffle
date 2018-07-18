@@ -35,7 +35,7 @@
 namespace souffle {
 
 /**
- * SymbolTable
+ * @class SymbolTable
  *
  * Global pool of re-usable strings
  *

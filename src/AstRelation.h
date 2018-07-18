@@ -354,10 +354,7 @@ public:
         } else if (directive->isPrintSize()) {
             qualifier |= PRINTSIZE_RELATION;
         }
-        // Fall back on default behaviour for empty directives.
-        if (!directive->getIODirectiveMap().empty()) {
-            ioDirectives.push_back(std::move(directive));
-        }
+        ioDirectives.push_back(std::move(directive));
     }
 
     std::vector<AstIODirective*> getIODirectives() const {

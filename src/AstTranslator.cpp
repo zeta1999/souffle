@@ -82,63 +82,78 @@ std::string getRelationName(const AstRelationIdentifier& id) {
     return toString(join(id.getNames(), "-"));
 }
 
-IODirectives& makeIODirectives(IODirectives& directives, const AstRelation* rel, const std::string& filePath,
+void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,
         const std::string& fileExt, const bool isIntermediate) {
-    directives.setRelationName(getRelationName(rel->getName()));
+
+    // set relation name correctly
+    ioDirective.setRelationName(getRelationName(rel->getName()));
 
     // set a default IO type of file and a default filename if not supplied
-    if (!directives.has("IO")) {
-        directives.setIOType("file");
+    if (!ioDirective.has("IO")) {
+        ioDirective.setIOType("file");
     }
+
     // load intermediate relations from correct files
-    if (directives.getIOType() == "file") {
+    if (ioDirective.getIOType() == "file") {
+
         // all intermediate relations are given the default delimiter and have no headers
         if (isIntermediate) {
-            directives.set("intermediate", "true");
-            directives.set("delimiter", "\t");
-            directives.set("headers", "false");
+            ioDirective.set("intermediate", "true");
+            ioDirective.set("delimiter", "\t");
+            ioDirective.set("headers", "false");
         }
-        if (!directives.has("filename") || isIntermediate) {
-            directives.setFileName(directives.getRelationName() + fileExt);
+
+        // set filename by relation if not given, or if relation is intermediate
+        if (!ioDirective.has("filename") || isIntermediate) {
+            ioDirective.setFileName(ioDirective.getRelationName() + fileExt);
         }
+
         // if filename is not an absolute path, concat with cmd line facts directory
-        if (directives.getIOType() == "file" && directives.getFileName().front() != '/') {
-            directives.setFileName(filePath + "/" + directives.getFileName());
+        if (ioDirective.getIOType() == "file" && ioDirective.getFileName().front() != '/') {
+            ioDirective.setFileName(filePath + "/" + ioDirective.getFileName());
         }
+
     }
-    return directives;
 }
 
-IODirectives getInputIODirectives(const AstRelation* rel, std::string filePath = std::string(),
+std::vector<IODirectives> getInputIODirectives(const AstRelation* rel, std::string filePath = std::string(),
         const std::string& fileExt = std::string()) {
+
+    std::vector<IODirectives> inputDirectives;
+
+    for (const auto& current : rel->getIODirectives()) {
+        if (current->isInput()) {
+            IODirectives ioDirectives;
+            for (const auto& currentPair : current->getIODirectiveMap()) {
+                ioDirectives.set(currentPair.first, currentPair.second);
+            }
+            inputDirectives.push_back(ioDirectives);
+        }
+    }
+
+    if (inputDirectives.empty()) {
+        inputDirectives.emplace_back();
+    }
+
     const std::string inputFilePath = (filePath.empty()) ? Global::config().get("fact-dir") : filePath;
     const std::string inputFileExt = (fileExt.empty()) ? ".facts" : fileExt;
 
     const bool isIntermediate =
             (Global::config().has("engine") && inputFilePath == Global::config().get("output-dir") &&
-                    inputFileExt == ".facts");
+             inputFileExt == ".facts");
 
-    IODirectives directives;
-    for (const auto& current : rel->getIODirectives()) {
-        if (current->isInput()) {
-            for (const auto& currentPair : current->getIODirectiveMap()) {
-                directives.set(currentPair.first, currentPair.second);
-            }
-        }
+    for (auto& ioDirective : inputDirectives) {
+        makeIODirective(ioDirective, rel, inputFilePath, inputFileExt, isIntermediate);
     }
 
-    makeIODirectives(directives, rel, inputFilePath, inputFileExt, isIntermediate);
-
-    return directives;
+    return inputDirectives;
 }
 
 std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const TypeEnvironment* typeEnv,
         std::string filePath = std::string(), const std::string& fileExt = std::string()) {
-    const std::string outputFilePath = (filePath.empty()) ? Global::config().get("output-dir") : filePath;
-    const std::string outputFileExt = (fileExt.empty()) ? ".csv" : fileExt;
 
     std::vector<IODirectives> outputDirectives;
-    // If IO directives have been specified then set them up
+
     for (const auto& current : rel->getIODirectives()) {
         if (current->isOutput()) {
             IODirectives ioDirectives;
@@ -149,29 +164,34 @@ std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const Ty
         }
     }
 
+    // If stdout is requested then remove all directives from the datalog file.
     if (Global::config().get("output-dir") == "-") {
-        // If stdout is requested then remove all directives from the datalog file.
         outputDirectives.clear();
         IODirectives ioDirectives;
         ioDirectives.setIOType("stdout");
         ioDirectives.set("headers", "true");
         outputDirectives.push_back(ioDirectives);
-    } else if (outputDirectives.empty()) {
-        IODirectives ioDirectives;
-        ioDirectives.setIOType("file");
-        outputDirectives.push_back(ioDirectives);
     }
+
+    if (outputDirectives.empty()) {
+        outputDirectives.emplace_back();
+    }
+
+    const std::string outputFilePath = (filePath.empty()) ? Global::config().get("output-dir") : filePath;
+    const std::string outputFileExt = (fileExt.empty()) ? ".csv" : fileExt;
+
     const bool isIntermediate =
             (Global::config().has("engine") && outputFilePath == Global::config().get("output-dir") &&
                     outputFileExt == ".facts");
 
-    for (auto& ioDirectives : outputDirectives) {
-        makeIODirectives(ioDirectives, rel, outputFilePath, outputFileExt, isIntermediate);
+    for (auto& ioDirective : outputDirectives) {
 
-        if (!ioDirectives.has("attributeNames")) {
+        makeIODirective(ioDirective, rel, outputFilePath, outputFileExt, isIntermediate);
+
+        if (!ioDirective.has("attributeNames")) {
             std::string delimiter("\t");
-            if (ioDirectives.has("delimiter")) {
-                delimiter = ioDirectives.get("delimiter");
+            if (ioDirective.has("delimiter")) {
+                delimiter = ioDirective.get("delimiter");
             }
             std::vector<std::string> attributeNames;
             for (unsigned int i = 0; i < rel->getArity(); i++) {
@@ -181,12 +201,14 @@ std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const Ty
             if (Global::config().has("provenance")) {
                 std::vector<std::string> originalAttributeNames(
                         attributeNames.begin(), attributeNames.end() - 2);
-                ioDirectives.set("attributeNames", toString(join(originalAttributeNames, delimiter)));
+                ioDirective.set("attributeNames", toString(join(originalAttributeNames, delimiter)));
             } else {
-                ioDirectives.set("attributeNames", toString(join(attributeNames, delimiter)));
+                ioDirective.set("attributeNames", toString(join(attributeNames, delimiter)));
             }
         }
+
     }
+
     return outputDirectives;
 }
 

@@ -703,19 +703,20 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
         }
 
         bool visitLoad(const RamLoad& load) override {
-            try {
-                InterpreterRelation& relation = interpreter.getRelation(load.getRelation());
-                std::unique_ptr<ReadStream> reader = IOSystem::getInstance().getReader(
-                        load.getRelation().getSymbolMask(), interpreter.getSymbolTable(),
-                        load.getIODirectives(), Global::config().has("provenance"));
-                reader->readAll(relation);
-            } catch (std::exception& e) {
-                std::cerr << e.what();
-                return false;
+            for (IODirectives ioDirectives : load.getIODirectives()) {
+                try {
+                    InterpreterRelation& relation = interpreter.getRelation(load.getRelation());
+                    IOSystem::getInstance()
+                            .getReader(load.getRelation().getSymbolMask(), interpreter.getSymbolTable(),
+                                    ioDirectives, Global::config().has("provenance"))
+                            ->readAll(relation);
+                } catch (std::exception& e) {
+                    std::cerr << e.what();
+                    return false;
+                }
             }
             return true;
         }
-
         bool visitStore(const RamStore& store) override {
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 try {

@@ -135,7 +135,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // all null constants are used as records
     visitDepthFirst(nodes, [&](const AstNullConstant& cnst) {
-
         // TODO (#467) remove the next line to enable subprogram compilation for record types
         Global::config().unset("engine");
         TypeSet types = typeAnalysis.getTypes(&cnst);
@@ -1129,27 +1128,27 @@ void AstSemanticChecker::checkInlining(
     // Returns the pair (isValid, lastSrcLoc) where:
     //  - isValid is true if and only if the node contains an invalid underscore, and
     //  - lastSrcLoc is the source location of the last visited node
-    std::function<std::pair<bool, SrcLocation>(const AstNode*)> checkInvalidUnderscore = [&](
-            const AstNode* node) {
-        if (dynamic_cast<const AstUnnamedVariable*>(node)) {
-            // Found an invalid underscore
-            return std::make_pair(true, node->getSrcLoc());
-        } else if (dynamic_cast<const AstAggregator*>(node)) {
-            // Don't care about underscores within aggregators
-            return std::make_pair(false, node->getSrcLoc());
-        }
+    std::function<std::pair<bool, SrcLocation>(const AstNode*)> checkInvalidUnderscore =
+            [&](const AstNode* node) {
+                if (dynamic_cast<const AstUnnamedVariable*>(node)) {
+                    // Found an invalid underscore
+                    return std::make_pair(true, node->getSrcLoc());
+                } else if (dynamic_cast<const AstAggregator*>(node)) {
+                    // Don't care about underscores within aggregators
+                    return std::make_pair(false, node->getSrcLoc());
+                }
 
-        // Check if any children nodes use invalid underscores
-        for (const AstNode* child : node->getChildNodes()) {
-            std::pair<bool, SrcLocation> childStatus = checkInvalidUnderscore(child);
-            if (childStatus.first) {
-                // Found an invalid underscore
-                return childStatus;
-            }
-        }
+                // Check if any children nodes use invalid underscores
+                for (const AstNode* child : node->getChildNodes()) {
+                    std::pair<bool, SrcLocation> childStatus = checkInvalidUnderscore(child);
+                    if (childStatus.first) {
+                        // Found an invalid underscore
+                        return childStatus;
+                    }
+                }
 
-        return std::make_pair(false, node->getSrcLoc());
-    };
+                return std::make_pair(false, node->getSrcLoc());
+            };
 
     // Perform the check
     visitDepthFirst(program, [&](const AstNegation& negation) {

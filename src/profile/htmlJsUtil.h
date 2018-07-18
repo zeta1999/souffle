@@ -157,5 +157,5 @@ function minify_numbers(num) {
 
 )___";
 }
-}
-}
+}  // namespace profile
+}  // namespace souffle

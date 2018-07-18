@@ -31,5 +31,5 @@ TEST(mpi, mpi) {
         EXPECT_EQ(mpi::commSize(), 1);
     }
 }
-}
-}
+}  // namespace test
+}  // namespace souffle

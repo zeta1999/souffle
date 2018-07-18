@@ -207,10 +207,10 @@ void SCCGraph::run(const AstTranslationUnit& translationUnit) {
     predecessors.resize(numSCCs);
     for (const AstRelation* u : relations) {
         for (const AstRelation* v : precedenceGraph->graph().predecessors(u)) {
-            size_t scc_u = relationToScc[u];
-            size_t scc_v = relationToScc[v];
-            assert(scc_u >= 0 && scc_u < size_t(numSCCs) && "Wrong range");
-            assert(scc_v >= 0 && scc_v < size_t(numSCCs) && "Wrong range");
+            auto scc_u = relationToScc[u];
+            auto scc_v = relationToScc[v];
+            assert(scc_u < numSCCs && "Wrong range");
+            assert(scc_v < numSCCs && "Wrong range");
             if (scc_u != scc_v) {
                 predecessors[scc_u].insert(scc_v);
                 successors[scc_v].insert(scc_u);

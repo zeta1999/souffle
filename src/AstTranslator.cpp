@@ -84,7 +84,6 @@ std::string getRelationName(const AstRelationIdentifier& id) {
 
 void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,
         const std::string& fileExt, const bool isIntermediate) {
-
     // set relation name correctly
     ioDirective.setRelationName(getRelationName(rel->getName()));
 
@@ -95,7 +94,6 @@ void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const st
 
     // load intermediate relations from correct files
     if (ioDirective.getIOType() == "file") {
-
         // all intermediate relations are given the default delimiter and have no headers
         if (isIntermediate) {
             ioDirective.set("intermediate", "true");
@@ -112,13 +110,11 @@ void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const st
         if (ioDirective.getIOType() == "file" && ioDirective.getFileName().front() != '/') {
             ioDirective.setFileName(filePath + "/" + ioDirective.getFileName());
         }
-
     }
 }
 
 std::vector<IODirectives> getInputIODirectives(const AstRelation* rel, std::string filePath = std::string(),
         const std::string& fileExt = std::string()) {
-
     std::vector<IODirectives> inputDirectives;
 
     for (const auto& current : rel->getIODirectives()) {
@@ -140,7 +136,7 @@ std::vector<IODirectives> getInputIODirectives(const AstRelation* rel, std::stri
 
     const bool isIntermediate =
             (Global::config().has("engine") && inputFilePath == Global::config().get("output-dir") &&
-             inputFileExt == ".facts");
+                    inputFileExt == ".facts");
 
     for (auto& ioDirective : inputDirectives) {
         makeIODirective(ioDirective, rel, inputFilePath, inputFileExt, isIntermediate);
@@ -151,7 +147,6 @@ std::vector<IODirectives> getInputIODirectives(const AstRelation* rel, std::stri
 
 std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const TypeEnvironment* typeEnv,
         std::string filePath = std::string(), const std::string& fileExt = std::string()) {
-
     std::vector<IODirectives> outputDirectives;
 
     for (const auto& current : rel->getIODirectives()) {
@@ -185,7 +180,6 @@ std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const Ty
                     outputFileExt == ".facts");
 
     for (auto& ioDirective : outputDirectives) {
-
         makeIODirective(ioDirective, rel, outputFilePath, outputFileExt, isIntermediate);
 
         if (!ioDirective.has("attributeNames")) {
@@ -206,7 +200,6 @@ std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, const Ty
                 ioDirective.set("attributeNames", toString(join(attributeNames, delimiter)));
             }
         }
-
     }
 
     return outputDirectives;

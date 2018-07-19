@@ -8,11 +8,11 @@
 
 #pragma once
 
+#include "profile/HtmlString.h"
 #include "profile/OutputProcessor.h"
 #include "profile/Reader.h"
 #include "profile/Table.h"
 #include "profile/UserInputReader.h"
-#include "profile/html_string.h"
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -250,7 +250,7 @@ public:
         FILE* outfile;
         outfile = std::fopen(new_file.c_str(), "w");
 
-        html_string html;
+        HtmlString html;
 
         std::fprintf(outfile, "%s", html.get_first_half().c_str());
 

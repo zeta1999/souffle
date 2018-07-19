@@ -36,7 +36,7 @@ souffle_profile_sources = \
                           profile/htmlJsChartistPlugin.h    \
                           profile/htmlJsTableSort.h         \
                           profile/htmlMain.h                \
-                          profile/html_string.h
+                          profile/HtmlString.h
 
 DIR := ${CURDIR}
 

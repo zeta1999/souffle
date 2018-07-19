@@ -27,7 +27,7 @@ namespace profile {
  * so that a data variable can be inserted in the middle of the two strings and written to a file.
  *
  */
-class html_string {
+class HtmlString {
 public:
     inline std::string get_first_half() {
         std::stringstream ss;

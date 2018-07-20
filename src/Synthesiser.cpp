@@ -112,15 +112,46 @@ const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
 }
 
 /** Get relation type name */
-std::string Synthesiser::getRelationTypeName(const RamRelation& rel) {
+const std::string Synthesiser::getRelationTypeName(const RamRelation& rel) {
     return "t_" + getRelationName(rel);
 }
 
+const std::string Synthesiser::getTypeName(const RamRelation& rel, const IndexSet& indices) {
+    std::stringstream res;
+    res << "t_";
+
+    // a type name is identified by:
+    // (1) the data structure
+    // (2) the arity
+    // (3) the set of indices
+
+    if (rel.isBTree()) {
+        res << "btree";
+    } else if (rel.isRbtset()) {
+        res << "rbtset";
+    } else if (rel.isHashset()) {
+        res << "hashset";
+    } else if (rel.isBrie()) {
+        res << "brie";
+    } else if (rel.isEqRel()) {
+        res << "eqrel";
+    }
+
+    res << "_" << rel.getArity();
+
+    for (auto& ind : indices.getAllOrders()) {
+        res << "__" << join(ind, "_");
+    }
+
+    return res.str();
+}
+
+
 /** Get relation type struct */
 std::string Synthesiser::getRelationTypeStruct(
-        const RamRelation& rel, std::size_t arity, const IndexSet& indexes) {
+        const RamRelation& rel, std::size_t arity, const IndexSet& indices) {
     std::stringstream res;
-    auto inds = indexes.getAllOrders();
+    auto inds = indices.getAllOrders();
     size_t numIndexes = inds.size();
 
     std::vector<int> masterIndexColumns;
@@ -392,8 +423,8 @@ std::string Synthesiser::getRelationTypeStruct(
         res << "}\n";
 
         // for each pattern which is used to search this relation
-        for (int64_t search : indexes.getSearches()) {
-            auto lexOrder = indexes.getLexOrder(search);
+        for (int64_t search : indices.getSearches()) {
+            auto lexOrder = indices.getLexOrder(search);
             size_t indNum = indexToNumMap[lexOrder];
 
             res << "range<t_ind_" << indNum << "::iterator> equalRange_" << search

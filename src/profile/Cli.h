@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "profile/StringUtils.h"
-#include "profile/Tui.h"
+#include "StringUtils.h"
+#include "Tui.h"
 
 #include <iostream>
 #include <map>

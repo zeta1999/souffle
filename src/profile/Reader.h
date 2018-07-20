@@ -8,13 +8,13 @@
 
 #pragma once
 
+#include "Iteration.h"
 #include "ProfileDatabase.h"
 #include "ProfileEvent.h"
-#include "profile/Iteration.h"
-#include "profile/ProgramRun.h"
-#include "profile/Relation.h"
-#include "profile/Rule.h"
-#include "profile/StringUtils.h"
+#include "ProgramRun.h"
+#include "Relation.h"
+#include "Rule.h"
+#include "StringUtils.h"
 #include <cassert>
 #include <chrono>
 #include <cstdlib>

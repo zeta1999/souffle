@@ -8,14 +8,14 @@
 
 #pragma once
 
-#include "profile/htmlCssChartist.h"
-#include "profile/htmlCssStyle.h"
-#include "profile/htmlJsChartistMin.h"
-#include "profile/htmlJsChartistPlugin.h"
-#include "profile/htmlJsMain.h"
-#include "profile/htmlJsTableSort.h"
-#include "profile/htmlJsUtil.h"
-#include "profile/htmlMain.h"
+#include "htmlCssChartist.h"
+#include "htmlCssStyle.h"
+#include "htmlJsChartistMin.h"
+#include "htmlJsChartistPlugin.h"
+#include "htmlJsMain.h"
+#include "htmlJsTableSort.h"
+#include "htmlJsUtil.h"
+#include "htmlMain.h"
 #include <sstream>
 #include <string>
 

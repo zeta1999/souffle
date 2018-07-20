@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "profile/HtmlString.h"
-#include "profile/OutputProcessor.h"
-#include "profile/Reader.h"
-#include "profile/Table.h"
-#include "profile/UserInputReader.h"
+#include "HtmlString.h"
+#include "OutputProcessor.h"
+#include "Reader.h"
+#include "Table.h"
+#include "UserInputReader.h"
 #include <algorithm>
 #include <iostream>
 #include <memory>

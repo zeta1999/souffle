@@ -53,7 +53,7 @@ public:
 
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
 
-        this->reader = std::make_shared<Reader>(filename, run, false, live);
+        this->reader = std::make_shared<Reader>(filename, run);
 
         this->alive = false;
         updateDB();
@@ -70,7 +70,7 @@ public:
             do {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 runCommand({});
-            } while (!linereader.hasReceivedInput());
+            } while (reader->isLive() && !linereader.hasReceivedInput());
         });
     }
 
@@ -184,12 +184,12 @@ public:
             if (c[0] == "q" || c[0] == "quit") {
                 quit();
                 break;
-            } else if (c[0] == "load" || c[0] == "open") {
-                if (c.size() == 2) {
-                    load(c[0], c[1]);
-                } else {
-                    loadMenu();
-                }
+                //            } else if (c[0] == "load" || c[0] == "open") {
+                //                if (c.size() == 2) {
+                //                    load(c[0], c[1]);
+                //                } else {
+                //                    loadMenu();
+                //                }
                 //        } else if (c[0] == "save") {
                 //            if (c.size() == 1) {
                 //                std::cout << "Enter file name to save.\n";
@@ -431,31 +431,13 @@ public:
 
     void save(std::string save_name) {
         if (loaded) {
-            std::shared_ptr<ProgramRun>& run = out.getProgramRun();
-            Reader saver(this->f_name, run, false, false);
+            // std::shared_ptr<ProgramRun>& run = out.getProgramRun();
+            // Reader saver(this->f_name, run, false, false);
             // saver.save(save_name);
-            std::cout << "Save success.\n";
+            std::cout << "Save not implemented.\n";
+            // std::cout << "Save success.\n";
         } else {
             std::cout << "Save failed.\n";
-        }
-    }
-
-    void load(std::string method, std::string load_file) {
-        std::shared_ptr<ProgramRun> new_run = std::make_shared<ProgramRun>(ProgramRun());
-        std::string f_name = load_file;
-        // if load, should be a valid filepath
-        if (method.compare("open") == 0) {
-            f_name = Tools::getworkingdir() + "/old_runs/" + load_file;
-        }
-        Reader loader(f_name, new_run, false, false);
-        loader.processFile();
-        if (loader.isLoaded()) {
-            std::cout << "Load success\n";
-            this->loaded = true;
-            this->f_name = f_name;
-            //            top();
-        } else {
-            std::cout << "Error: File not found\n";
         }
     }
 

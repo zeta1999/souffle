@@ -8,9 +8,9 @@
 
 #pragma once
 
+#include "../ProfileDatabase.h"
+#include "../ProfileEvent.h"
 #include "Iteration.h"
-#include "ProfileDatabase.h"
-#include "ProfileEvent.h"
 #include "ProgramRun.h"
 #include "Relation.h"
 #include "Rule.h"
@@ -256,7 +256,7 @@ private:
     std::streampos gpos;
     const ProfileDatabase& db = ProfileEventSingleton::instance().getDB();
     bool loaded = false;
-    bool online;
+    bool online{true};
 
     double runtime{0};
     std::unordered_map<std::string, std::shared_ptr<Relation>> relation_map{};
@@ -265,8 +265,7 @@ private:
 public:
     std::shared_ptr<ProgramRun> run;
 
-    Reader(std::string filename, std::shared_ptr<ProgramRun> run, bool vFlag, bool online)
-            : file_loc(std::move(filename)), online(online), run(run) {
+    Reader(std::string filename, std::shared_ptr<ProgramRun> run) : file_loc(std::move(filename)), run(run) {
         ProfileEventSingleton::instance().setDBFromFile(file_loc);
     }
 
@@ -279,7 +278,6 @@ public:
         relation_map.clear();
         auto programDuration = dynamic_cast<DurationEntry*>(db.lookupEntry({"program", "runtime"}));
         if (programDuration == nullptr) {
-            std::cout << "souffle is still executing" << std::endl;
             auto startTimeEntry = dynamic_cast<TimeEntry*>(db.lookupEntry({"program", "starttime"}));
             if (startTimeEntry != nullptr) {
                 auto time = startTimeEntry->getTime();
@@ -287,6 +285,7 @@ public:
             }
         } else {
             runtime = (programDuration->getEnd() - programDuration->getStart()).count() / 1000.0;
+            online = false;
         }
 
         auto relations = dynamic_cast<DirectoryEntry*>(db.lookupEntry({"program", "relation"}));
@@ -381,9 +380,6 @@ public:
     std::string createId() {
         return "R" + std::to_string(++rel_id);
     }
-
-    void livereadinit();
-    void liveread();
 };
 
 }  // namespace profile

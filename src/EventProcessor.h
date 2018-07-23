@@ -58,6 +58,30 @@ class EventProcessorSingleton {
 
     EventProcessorSingleton() = default;
 
+    /**
+     * Escape escape characters.
+     *
+     * Remove all escapes, then escape double quotes.
+     */
+    std::string escape(const std::string& text) {
+        std::string str(text);
+        size_t start_pos = 0;
+        // replace backslashes with double backslash
+        while ((start_pos = str.find('\\', start_pos)) != std::string::npos) {
+            if (start_pos == str.size()) {
+                break;
+            }
+            ++start_pos;
+            if (str[start_pos] == 't' || str[start_pos] == '"' || str[start_pos] == '\\' ||
+                    str[start_pos] == 'n') {
+                continue;
+            }
+            str.replace(start_pos - 1, 1, "\\\\");
+            ++start_pos;
+        }
+        return str;
+    }
+
     /** split string */
     static std::vector<std::string> split(std::string str, std::string split_str) {
         // repeat value when splitting so "a   b" -> ["a","b"] not ["a","","","","b"]
@@ -140,8 +164,10 @@ public:
         va_list args;
         va_start(args, txt);
 
+        // escape signature
+        std::string escapedText = escape(txt);
         // obtain event signature by splitting event text
-        std::vector<std::string> eventSignature = splitSignature(txt);
+        std::vector<std::string> eventSignature = splitSignature(escapedText);
 
         // invoke the event processor of the event
         const std::string& keyword = eventSignature[0];

@@ -31,6 +31,7 @@
 #include "RamVisitor.h"
 #include "SymbolMask.h"
 #include "SymbolTable.h"
+#include "SynthesiserRelation.h"
 #include "TernaryFunctorOps.h"
 #include "UnaryFunctorOps.h"
 #include "Util.h"
@@ -111,12 +112,16 @@ const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
     return getRelationName(rel) + "_op_ctxt";
 }
 
-/** Get relation type name */
-const std::string Synthesiser::getRelationTypeName(const RamRelation& rel) {
-    return "t_" + getRelationName(rel);
-}
+// /** Get relation type name */
+// const std::string Synthesiser::getRelationTypeName(const RamRelation& rel) {
+//     return "t_" + getRelationName(rel);
+// }
 
-const std::string Synthesiser::getTypeName(const RamRelation& rel, const IndexSet& indices) {
+const std::string Synthesiser::getRelationTypeName(const RamRelation& rel, const IndexSet& indices) {
+    if (rel.getArity() == 0) {
+        return "t_nullaries";
+    }
+
     std::stringstream res;
     res << "t_";
 
@@ -146,11 +151,16 @@ const std::string Synthesiser::getTypeName(const RamRelation& rel, const IndexSe
     return res.str();
 }
 
-
 /** Get relation type struct */
-std::string Synthesiser::getRelationTypeStruct(
+void Synthesiser::generateRelationTypeStruct(std::ostream& out,
         const RamRelation& rel, std::size_t arity, const IndexSet& indices) {
-    std::stringstream res;
+    // If this type has been generated already, use the cached version
+    if (typeCache.find(getRelationTypeName(rel, indices)) != typeCache.end()) {
+        return;
+    }
+
+    typeCache.insert(getRelationTypeName(rel, indices));
+
     auto inds = indices.getAllOrders();
     size_t numIndexes = inds.size();
 
@@ -158,10 +168,10 @@ std::string Synthesiser::getRelationTypeStruct(
 
     // Preamble
     if (arity == 0 && !Global::config().has("provenance")) {
-        res << "typedef t_nullaries " << getRelationTypeName(rel) << ";\n";
+        out << "typedef t_nullaries " << getRelationTypeName(rel, indices) << ";\n";
     } else {
-        res << "struct " << getRelationTypeName(rel) << " {\n";
-        res << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+        out << "struct " << getRelationTypeName(rel, indices) << " {\n";
+        out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
 
         // Define a btree type for each index
         // TODO: support other data structures
@@ -189,7 +199,7 @@ std::string Synthesiser::getRelationTypeStruct(
                     indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
                         << ">, std::allocator<t_tuple>, 256, typename "
                            "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
-                        << join(cur) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
+                        << join(cur) << ">, updater_" << getRelationTypeName(rel, indices) << "> t_ind_" << indNum << ";\n";
                     if (masterIndex == -1) {
                         masterIndex = indNum;
                         masterIndexColumns = strongIndex;
@@ -219,7 +229,7 @@ std::string Synthesiser::getRelationTypeStruct(
                     indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
                         << ">, std::allocator<t_tuple>, 256, typename "
                            "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
-                        << join(fullWeakIndex) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
+                        << join(fullWeakIndex) << ">, updater_" << getRelationTypeName(rel, indices) << "> t_ind_" << indNum << ";\n";
 
                     if (masterIndex == -1) {
                         masterIndex = indNum;
@@ -271,7 +281,7 @@ std::string Synthesiser::getRelationTypeStruct(
                 indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd)
                     << ">, std::allocator<t_tuple>, 256, typename "
                        "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
-                    << join(weakIndex) << ">, updater_" << getRelationTypeName(rel) << "> t_ind_" << indNum << ";\n";
+                    << join(weakIndex) << ">, updater_" << getRelationTypeName(rel, indices) << "> t_ind_" << indNum << ";\n";
             } else {
                 for (size_t i = 0; i < arity; i++) {
                     fullInd.push_back(i);
@@ -290,88 +300,88 @@ std::string Synthesiser::getRelationTypeStruct(
 
         // Create an updater class
         if (Global::config().has("provenance")) {
-            res << "struct updater_" << getRelationTypeName(rel) << " {\n";
-            // res << "index_utils::comparator<" << join(masterIndexColumns) << "> c;\n";
-            res << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
-            res << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
-            res << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
+            out << "struct updater_" << getRelationTypeName(rel, indices) << " {\n";
+            // out << "index_utils::comparator<" << join(masterIndexColumns) << "> c;\n";
+            out << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
+            out << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
+            out << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
             /*
-            res << "t_tuple old_copy = old_t;\n";
-            res << "uint64_t* old_prov = (uint64_t*) &old_copy[" << arity - 2 << "];\n";
+            out << "t_tuple old_copy = old_t;\n";
+            out << "uint64_t* old_prov = (uint64_t*) &old_copy[" << arity - 2 << "];\n";
 
             // only swap if new tuple has smaller height number than old tuple
-            res << "if (c.less(new_t, old_t)) {\n";
-            res << "std::atomic<uint64_t*> old_atomic;\n";
-            res << "old_atomic.store((uint64_t*) &old_t[" << arity - 2 << "]);\n";
-            res << "uint64_t* new_ptr = (uint64_t*) &new_t[" << arity - 2 << "];\n";
+            out << "if (c.less(new_t, old_t)) {\n";
+            out << "std::atomic<uint64_t*> old_atomic;\n";
+            out << "old_atomic.store((uint64_t*) &old_t[" << arity - 2 << "]);\n";
+            out << "uint64_t* new_ptr = (uint64_t*) &new_t[" << arity - 2 << "];\n";
 
             // swap old and new if nothing has changed in between, otherwise do a spinlock
-            res << "while (!old_atomic.compare_exchange_weak(old_prov, new_ptr, std::memory_order_release, std::memory_order_relaxed)) {\n";
-            res << "    old_copy = old_t;\n";
-            res << "    old_prov = (uint64_t*) &old_copy[" << arity - 2 << "];\n";
-            res << "    if (!c.less(new_t, old_t)) {\n";
-            res << "        return false;\n";
-            res << "    }\n";
-            res << "}\n";
-            res << "return true;\n"; // if swap succeeded
-            res << "}\n";
-            res << "return false;\n"; // if no swap was needed
+            out << "while (!old_atomic.compare_exchange_weak(old_prov, new_ptr, std::memory_order_release, std::memory_order_relaxed)) {\n";
+            out << "    old_copy = old_t;\n";
+            out << "    old_prov = (uint64_t*) &old_copy[" << arity - 2 << "];\n";
+            out << "    if (!c.less(new_t, old_t)) {\n";
+            out << "        return false;\n";
+            out << "    }\n";
+            out << "}\n";
+            out << "return true;\n"; // if swap succeeded
+            out << "}\n";
+            out << "return false;\n"; // if no swap was needed
             */
-            res << "}\n";
-            res << "};\n";
+            out << "}\n";
+            out << "};\n";
         }
 
-        res << indexTypes.str();
+        out << indexTypes.str();
 
         // typedef master iterator
-        res << "typedef typename t_ind_" << masterIndex << "::iterator iterator;\n";
+        out << "typedef typename t_ind_" << masterIndex << "::iterator iterator;\n";
 
         // Create a struct storing the context hints for each index
-        res << "struct context {\n";
+        out << "struct context {\n";
         for (size_t i = 0; i < numIndexes; i++) {
-            res << "t_ind_" << i << "::operation_hints hints_" << i << ";\n";
+            out << "t_ind_" << i << "::operation_hints hints_" << i << ";\n";
         }
-        res << "};\n";
-        res << "context createContext() { return context(); }\n";
-        res << "context hints;\n";
+        out << "};\n";
+        out << "context createContext() { return context(); }\n";
+        out << "context hints;\n";
 
         // insert methods
-        res << "bool insert(const t_tuple& t) {\n";
-        res << "if (ind_" << masterIndex << ".insert(t)) {\n";
+        out << "bool insert(const t_tuple& t) {\n";
+        out << "if (ind_" << masterIndex << ".insert(t)) {\n";
         for (size_t i = 0; i < numIndexes; i++) {
             if (i != masterIndex) {
-                res << "ind_" << i << ".insert(t);\n";
+                out << "ind_" << i << ".insert(t);\n";
             }
         }
-        res << "return true;\n";
-        res << "} else return false;\n";
-        res << "}\n";
+        out << "return true;\n";
+        out << "} else return false;\n";
+        out << "}\n";
 
-        res << "bool insert(const t_tuple& t, context& h) {\n";
-        res << "if (ind_" << masterIndex << ".insert(t, h.hints_" << masterIndex << ")) {\n";
+        out << "bool insert(const t_tuple& t, context& h) {\n";
+        out << "if (ind_" << masterIndex << ".insert(t, h.hints_" << masterIndex << ")) {\n";
         for (size_t i = 0; i < numIndexes; i++) {
             if (i != masterIndex) {
-                res << "ind_" << i << ".insert(t, h.hints_" << i << ");\n";
+                out << "ind_" << i << ".insert(t, h.hints_" << i << ");\n";
             }
         }
-        res << "return true;\n";
-        res << "} else return false;\n";
-        res << "}\n";
+        out << "return true;\n";
+        out << "} else return false;\n";
+        out << "}\n";
 
-        res << "bool insert(const RamDomain* ramDomain) {\n";
-        res << "RamDomain data[" << arity << "];\n";
-        res << "std::copy(ramDomain, ramDomain + " << arity << ", data);\n";
-        res << "const t_tuple& tuple = reinterpret_cast<const t_tuple&>(data);\n";
-        res << "return this->insert(tuple, hints);\n";
-        res << "}\n";
+        out << "bool insert(const RamDomain* ramDomain) {\n";
+        out << "RamDomain data[" << arity << "];\n";
+        out << "std::copy(ramDomain, ramDomain + " << arity << ", data);\n";
+        out << "const t_tuple& tuple = reinterpret_cast<const t_tuple&>(data);\n";
+        out << "return this->insert(tuple, hints);\n";
+        out << "}\n";
 
         // insertAll method
-        res << "template <typename T>\n";
-        res << "void insertAll(T& other) {\n";
-        res << "for (auto const& cur : other) {\n";
-        res << "insert(cur);\n";
-        res << "}\n";
-        res << "}\n";
+        out << "template <typename T>\n";
+        out << "void insertAll(T& other) {\n";
+        out << "for (auto const& cur : other) {\n";
+        out << "insert(cur);\n";
+        out << "}\n";
+        out << "}\n";
 
         // insert method
         std::vector<std::string> decls, params;
@@ -379,105 +389,103 @@ std::string Synthesiser::getRelationTypeStruct(
             decls.push_back("RamDomain a" + std::to_string(i));
             params.push_back("a" + std::to_string(i));
         }
-        res << " bool insert(" << join(decls, ",") << ") {\n RamDomain data[";
-        res << arity << "] = {" << join(params, ",") << "};\n";
-        res << "return insert(data);\n";
-        res << "}\n";
+        out << " bool insert(" << join(decls, ",") << ") {\n RamDomain data[";
+        out << arity << "] = {" << join(params, ",") << "};\n";
+        out << "return insert(data);\n";
+        out << "}\n";
 
         // contains methods
-        res << "bool contains(const t_tuple& t) {\n";
-        res << "return ind_" << masterIndex << ".contains(t);\n";
-        res << "}\n";
+        out << "bool contains(const t_tuple& t) {\n";
+        out << "return ind_" << masterIndex << ".contains(t);\n";
+        out << "}\n";
 
-        res << "bool contains(const t_tuple& t, context& h) {\n";
-        res << "return ind_" << masterIndex << ".contains(t, h.hints_" << masterIndex << ");\n";
-        res << "}\n";
+        out << "bool contains(const t_tuple& t, context& h) {\n";
+        out << "return ind_" << masterIndex << ".contains(t, h.hints_" << masterIndex << ");\n";
+        out << "}\n";
 
         // size method
-        res << "std::size_t size() {\n";
-        res << "return ind_" << masterIndex << ".size();\n";
-        res << "}\n";
+        out << "std::size_t size() {\n";
+        out << "return ind_" << masterIndex << ".size();\n";
+        out << "}\n";
 
         // find methods
-        res << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t) const {\n";
-        res << "return ind_" << masterIndex << ".find(t);\n";
-        res << "}\n";
+        out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t) const {\n";
+        out << "return ind_" << masterIndex << ".find(t);\n";
+        out << "}\n";
 
-        res << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t, context& h) const {\n";
-        res << "return ind_" << masterIndex << ".find(t, h.hints_" << masterIndex << ");\n";
-        res << "}\n";
+        out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t, context& h) const {\n";
+        out << "return ind_" << masterIndex << ".find(t, h.hints_" << masterIndex << ");\n";
+        out << "}\n";
 
         // lowerUpperBound method for internal use
         for (size_t i = 0; i < numIndexes; i++) {
-            res << "range<t_ind_" << i
+            out << "range<t_ind_" << i
                 << "::iterator> lowerUpperBound(const t_tuple& low, const t_tuple& high, t_ind_" << i
                 << "::operation_hints& h) const {\n";
-            res << "return range<t_ind_" << i << "::iterator>(ind_" << i << ".lower_bound(low, h), ind_" << i
+            out << "return range<t_ind_" << i << "::iterator>(ind_" << i << ".lower_bound(low, h), ind_" << i
                 << ".upper_bound(high, h));\n";
-            res << "}\n";
+            out << "}\n";
         }
 
         // only necessary for nullaries and provenance
-        res << "range<t_ind_" << masterIndex << "::iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
-        res << "return range<t_ind_" << masterIndex << "::iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
-        res << "}\n";
+        out << "range<t_ind_" << masterIndex << "::iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
+        out << "return range<t_ind_" << masterIndex << "::iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
+        out << "}\n";
 
         // for each pattern which is used to search this relation
         for (int64_t search : indices.getSearches()) {
             auto lexOrder = indices.getLexOrder(search);
             size_t indNum = indexToNumMap[lexOrder];
 
-            res << "range<t_ind_" << indNum << "::iterator> equalRange_" << search
+            out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search
                 << "(const t_tuple& t, context& h) const {\n";
-            res << "t_tuple low(t); t_tuple high(t);\n";
+            out << "t_tuple low(t); t_tuple high(t);\n";
 
             // check which indices to pad out
             for (size_t column = 0; column < arity; column++) {
                 // if bit number column is set
                 if (!((search >> column) & 1)) {
-                    res << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
-                    res << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
+                    out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
+                    out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
                 }
             }
-            res << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
-            res << "}\n";
+            out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
+            out << "}\n";
         }
 
         // empty method
-        res << "bool empty() {\n";
-        res << "return ind_" << masterIndex << ".empty();\n";
-        res << "}\n";
+        out << "bool empty() {\n";
+        out << "return ind_" << masterIndex << ".empty();\n";
+        out << "}\n";
 
         // partition method
-        res << "std::vector<range<t_ind_" << masterIndex << "::iterator>> partition() const {\n";
-        res << "return ind_" << masterIndex << ".getChunks(400);\n";
-        res << "}\n";
+        out << "std::vector<range<t_ind_" << masterIndex << "::iterator>> partition() const {\n";
+        out << "return ind_" << masterIndex << ".getChunks(400);\n";
+        out << "}\n";
 
         // purge method
-        res << "void purge() {\n";
+        out << "void purge() {\n";
         for (size_t i = 0; i < numIndexes; i++) {
-            res << "ind_" << i << ".clear();\n";
+            out << "ind_" << i << ".clear();\n";
         }
-        res << "}\n";
+        out << "}\n";
 
         // begin and end iterators
-        res << "t_ind_" << masterIndex << "::iterator begin() const {\n";
-        res << "return ind_" << masterIndex << ".begin();\n";
-        res << "}\n";
+        out << "t_ind_" << masterIndex << "::iterator begin() const {\n";
+        out << "return ind_" << masterIndex << ".begin();\n";
+        out << "}\n";
 
-        res << "t_ind_" << masterIndex << "::iterator end() const {\n";
-        res << "return ind_" << masterIndex << ".end();\n";
-        res << "}\n";
+        out << "t_ind_" << masterIndex << "::iterator end() const {\n";
+        out << "return ind_" << masterIndex << ".end();\n";
+        out << "}\n";
 
         // TODO: finish printHintStatistics method
-        res << "void printHintStatistics(std::ostream& o, std::string prefix) const {\n";
-        res << "}\n";
+        out << "void printHintStatistics(std::ostream& o, std::string prefix) const {\n";
+        out << "}\n";
 
         // end class
-        res << "};\n";
+        out << "};\n";
     }
-
-    return res.str();
 }
 
 /* Convert SearchColums to a template index */
@@ -1665,18 +1673,19 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         bool isNew = rel.isTemp() && raw_name.find("@new") != std::string::npos;
         tempType = isDelta
                            // ? getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel))
-                           ? getRelationTypeName(rel)
+                           ? getRelationTypeName(rel, idxAnalysis->getIndexes(rel))
                            : tempType;
         const std::string& type = (rel.isTemp()) ? tempType :  // getRelationType(rel, rel.getArity(),
                                                                //         idxAnalysis->getIndexes(rel));
-                                          getRelationTypeName(rel);
+                                          getRelationTypeName(rel, idxAnalysis->getIndexes(rel));
 
         // defining table
         os << "// -- Table: " << raw_name << "\n";
 
         // print class definition for the type
         if (!isNew) {
-            os << getRelationTypeStruct(rel, arity, idxAnalysis->getIndexes(rel)) << "\n";
+            generateRelationTypeStruct(os, rel, arity, idxAnalysis->getIndexes(rel));
+            os << "\n";
         }
         os << type << "* " << name << ";\n";
         if (!initCons.empty()) {

@@ -41,6 +41,9 @@ private:
     /** Frequency profiling of searches */
     std::map<std::string, unsigned> idxMap;
 
+    /** Cache for generated types for relations */
+    std::set<std::string> typeCache;
+
 protected:
     /** Convert RAM identifier */
     const std::string convertRamIdent(const std::string& name);
@@ -58,13 +61,13 @@ protected:
     // std::string getRelationType(const RamRelation& rel, std::size_t arity, const IndexSet& indexes);
 
     /** Get relation type name */
-    const std::string getRelationTypeName(const RamRelation& rel);
+    // const std::string getRelationTypeName(const RamRelation& rel);
 
     /** Get relation type */
-    const std::string getTypeName(const RamRelation& rel, const IndexSet& indices);
+    const std::string getRelationTypeName(const RamRelation& rel, const IndexSet& indices);
 
     /** Get relation struct definition */
-    std::string getRelationTypeStruct(const RamRelation& rel, std::size_t arity, const IndexSet& indices);
+    void generateRelationTypeStruct(std::ostream& out, const RamRelation& rel, std::size_t arity, const IndexSet& indices);
 
     /* Convert SearchColums to a template index */
     std::string toIndex(SearchColumns key);

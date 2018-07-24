@@ -281,7 +281,7 @@ public:
             auto startTimeEntry = dynamic_cast<TimeEntry*>(db.lookupEntry({"program", "starttime"}));
             if (startTimeEntry != nullptr) {
                 auto time = startTimeEntry->getTime();
-                runtime = time.count() / 1000.0;
+                runtime = (now().time_since_epoch().count() - time.count()) / 1000.0;
             }
         } else {
             runtime = (programDuration->getEnd() - programDuration->getStart()).count() / 1000.0;

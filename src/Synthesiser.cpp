@@ -1504,6 +1504,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "// -- query evaluation --\n";
     if (Global::config().has("profile")) {
         os << "ProfileEventSingleton::instance().startTimer();\n";
+        os << R"_(ProfileEventSingleton::instance().makeTimeEvent("@time;starttime");)_" << '\n';
         os << "{\n"
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
     }

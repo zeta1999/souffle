@@ -234,7 +234,10 @@ int main(int argc, char** argv) {
                 Global::config().set("jobs", "0");
             }
 #else
-            std::cerr << "\nWarning: OpenMP is not enabled\n";
+            // Check that -j option has not been changed from the default
+            if (Global::config().get("jobs") != "1") {
+                std::cerr << "\nWarning: OpenMP is not enabled\n";
+            }
 #endif
         } else {
             throw std::runtime_error(

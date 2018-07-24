@@ -68,7 +68,7 @@ public:
         updateDB();
         updater = std::thread([this]() {
             do {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(30000));
                 runCommand({});
             } while (reader->isLive() && !linereader.hasReceivedInput());
         });

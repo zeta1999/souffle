@@ -1,3 +1,9 @@
+#include <string>
+
+namespace souffle {
+namespace profile {
+namespace html {
+std::string jsTableSort = R"___(
 /*!
  * tablesort v4.1.0 (2016-12-29)
  * http://tristen.ca/tablesort/demo/
@@ -257,3 +263,8 @@
         window.Tablesort = Tablesort;
     }
 })();
+
+)___";
+}
+}
+}

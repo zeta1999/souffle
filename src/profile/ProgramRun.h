@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "profile/Relation.h"
-#include "profile/StringUtils.h"
-#include "profile/Table.h"
+#include "Relation.h"
+#include "StringUtils.h"
+#include "Table.h"
 #include <memory>
 #include <sstream>
 #include <string>

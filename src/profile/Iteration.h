@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "profile/Rule.h"
+#include "Rule.h"
 #include <memory>
 #include <sstream>
 #include <string>

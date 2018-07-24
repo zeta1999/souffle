@@ -1,3 +1,9 @@
+#include <string>
+
+namespace souffle {
+namespace profile {
+namespace html {
+std::string jsChartistPlugin = R"___(
 /**
  * Chartist.js plugin to display a data label on top of the points in a line chart.
  * The MIT License (MIT)
@@ -212,3 +218,8 @@
     }
 
 } (window, document, Chartist));
+
+)___";
+}
+}
+}

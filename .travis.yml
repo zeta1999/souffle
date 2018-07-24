@@ -99,20 +99,22 @@ jobs:
     - "gcc-setup"
     - *gcc_environment
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
-  - <<: *linuxclang
-    env:
-    - "clang-setup"
-    - *clang_environment
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
-  - <<: *osxclang
-    env:
-    - "clang-setup"
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
   - <<: *osxgcc
     env:
     - "gcc-setup"
     - *gcc_environment
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
+
+# Testing stage for clang without OpenMP (,-c)
+  - <<: *linuxclang
+    env:
+    - "clang-setup"
+    - *clang_environment
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
+  - <<: *osxclang
+    env:
+    - "clang-setup"
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
 
 # Testing stage with 64bit RamDomains (-j8,-c -j8, skipping the 32bit Semantic tests)
   - <<: *linuxgcc
@@ -147,11 +149,13 @@ jobs:
     - "gcc-evaluation"
     - *gcc_environment
     - SOUFFLE_CATEGORY=Evaluation SOUFFLE_CONFS="-j8,-c -j8"
+
+# Testing stage for clang without OpenMP (,-c)
   - <<: *linuxclang
     env:
     - "clang-evaluation"
     - *clang_environment
-    - SOUFFLE_CATEGORY=Evaluation SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Evaluation SOUFFLE_CONFS=",-c"
   - <<: *osxclang
     env:
     - "clang-evaluation"

@@ -44,7 +44,7 @@ public:
     }
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000.0;
+            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setRuntime(runtime);
         }
     }
@@ -174,10 +174,10 @@ public:
     IterationVisitor(Iteration& iteration, Relation& relation) : DSNVisitor(iteration), relation(relation) {}
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000.0;
+            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setRuntime(runtime);
         } else if (duration.getKey() == "copytime") {
-            auto copytime = (duration.getEnd() - duration.getStart()).count() / 1000.0;
+            auto copytime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setCopy_time(copytime);
         }
     }
@@ -227,7 +227,7 @@ public:
     RelationVisitor(Relation& relation) : DSNVisitor(relation) {}
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000.0;
+            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setRuntime(runtime);
         }
     }
@@ -281,10 +281,10 @@ public:
             auto startTimeEntry = dynamic_cast<TimeEntry*>(db.lookupEntry({"program", "starttime"}));
             if (startTimeEntry != nullptr) {
                 auto time = startTimeEntry->getTime();
-                runtime = (now().time_since_epoch().count() - time.count()) / 1000.0;
+                runtime = (now().time_since_epoch().count() - time.count()) / 1000000.0;
             }
         } else {
-            runtime = (programDuration->getEnd() - programDuration->getStart()).count() / 1000.0;
+            runtime = (programDuration->getEnd() - programDuration->getStart()).count() / 1000000.0;
             online = false;
         }
 

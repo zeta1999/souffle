@@ -60,7 +60,8 @@ public:
 
     /** create time event */
     void makeTimeEvent(const std::string& txt) {
-        profile::EventProcessorSingleton::instance().process(database, txt.c_str(), now().time_since_epoch());
+        profile::EventProcessorSingleton::instance().process(
+                database, txt.c_str(), std::chrono::duration_cast<microseconds>(now().time_since_epoch()));
     }
 
     /** create an event for recording start and end times */

@@ -321,7 +321,15 @@ AC_CONFIG_LINKS([include/souffle/profile/StringUtils.h:src/profile/StringUtils.h
 AC_CONFIG_LINKS([include/souffle/profile/Table.h:src/profile/Table.h])
 AC_CONFIG_LINKS([include/souffle/profile/Tui.h:src/profile/Tui.h])
 AC_CONFIG_LINKS([include/souffle/profile/UserInputReader.h:src/profile/UserInputReader.h])
-AC_CONFIG_LINKS([include/souffle/profile/html_string.h:src/profile/html_string.h])
+AC_CONFIG_LINKS([include/souffle/profile/HtmlString.h:src/profile/HtmlString.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlCssChartist.h:src/profile/htmlCssChartist.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsChartistMin.h:src/profile/htmlJsChartistMin.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsMain.h:src/profile/htmlJsMain.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsUtil.h:src/profile/htmlJsUtil.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlCssStyle.h:src/profile/htmlCssStyle.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsChartistPlugin.h:src/profile/htmlJsChartistPlugin.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsTableSort.h:src/profile/htmlJsTableSort.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlMain.h:src/profile/htmlMain.h])
 
 AM_MISSING_PROG([AUTOM4TE], [autom4te])
 

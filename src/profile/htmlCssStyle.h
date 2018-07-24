@@ -1,4 +1,11 @@
 
+
+#include <string>
+
+namespace souffle {
+namespace profile {
+namespace html {
+std::string cssStyle = R"___(
 a, abbr, acronym, address,
 applet, article, aside, audio, b, big, blockquote, body, canvas, caption,
 center, cite, code, dd, del, details, dfn, dl, dt, em, embed, fieldset,
@@ -641,4 +648,8 @@ button {
     counter-increment: item;
     list-style:decimal;
     width: 60px;
+}
+)___";
+}
+}
 }

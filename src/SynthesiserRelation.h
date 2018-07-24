@@ -87,7 +87,9 @@ public:
     }
 
     /** Print type name */
-    void printTypeName(std::ostream& out) const {
+    std::string getTypeName() const {
+        std::stringstream out;
+
         out << "t";
         out << "_" << getDataStructure();
         out << "_" << getArity();
@@ -95,6 +97,8 @@ public:
         for (auto& ind : getIndices()) {
             out << "__" << join(ind, "_");
         }
+
+        return out.str();
     }
 };
 

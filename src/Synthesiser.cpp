@@ -153,13 +153,15 @@ const std::string Synthesiser::getRelationTypeName(const RamRelation& rel, const
 
 /** Get relation type struct */
 void Synthesiser::generateRelationTypeStruct(std::ostream& out,
-        const RamRelation& rel, std::size_t arity, const IndexSet& indices) {
+        const RamRelation& rel, const IndexSet& indices) {
+    auto arity = rel.getArity();
+    SynthesiserRelation relationType(rel, indices, Global::config().has("provenance"));
+
     // If this type has been generated already, use the cached version
-    if (typeCache.find(getRelationTypeName(rel, indices)) != typeCache.end()) {
+    if (typeCache.find(relationType.getTypeName()) != typeCache.end()) {
         return;
     }
-
-    typeCache.insert(getRelationTypeName(rel, indices));
+    typeCache.insert(relationType.getTypeName());
 
     auto inds = indices.getAllOrders();
     size_t numIndexes = inds.size();
@@ -167,10 +169,10 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out,
     std::vector<int> masterIndexColumns;
 
     // Preamble
-    if (arity == 0 && !Global::config().has("provenance")) {
-        out << "typedef t_nullaries " << getRelationTypeName(rel, indices) << ";\n";
+    if (arity == 0) {
+        // out << "typedef t_nullaries " << getRelationTypeName(rel, indices) << ";\n";
     } else {
-        out << "struct " << getRelationTypeName(rel, indices) << " {\n";
+        out << "struct " << relationType.getTypeName() << " {\n";
         out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
 
         // Define a btree type for each index
@@ -1684,7 +1686,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
         // print class definition for the type
         if (!isNew) {
-            generateRelationTypeStruct(os, rel, arity, idxAnalysis->getIndexes(rel));
+            generateRelationTypeStruct(os, rel, idxAnalysis->getIndexes(rel));
             os << "\n";
         }
         os << type << "* " << name << ";\n";

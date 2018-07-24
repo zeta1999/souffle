@@ -220,6 +220,7 @@ int main(int argc, char** argv) {
 
         /* for the jobs option, to determine the number of threads used */
         if (Global::config().has("jobs")) {
+#ifdef _OPENMP
             if (isNumber(Global::config().get("jobs").c_str())) {
                 if (std::stoi(Global::config().get("jobs")) < 1) {
                     throw std::runtime_error(
@@ -232,6 +233,9 @@ int main(int argc, char** argv) {
                 }
                 Global::config().set("jobs", "0");
             }
+#else
+            std::cerr << "\nWarning: OpenMP is not enabled\n";
+#endif
         } else {
             throw std::runtime_error(
                     "Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");

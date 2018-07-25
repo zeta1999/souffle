@@ -149,11 +149,7 @@ public:
 #pragma GCC diagnostic ignored "-Wwrite-strings"
         // long options
         option longOptions[] = {{"facts", true, nullptr, 'F'}, {"output", true, nullptr, 'D'},
-                {"profile", true, nullptr, 'p'},
-#ifdef _OPENMP
-                {"jobs", true, nullptr, 'j'},
-#endif
-                {"index", true, nullptr, 'i'},
+                {"profile", true, nullptr, 'p'}, {"jobs", true, nullptr, 'j'}, {"index", true, nullptr, 'i'},
                 // the terminal option -- needs to be null
                 {nullptr, false, nullptr, 0}};
 #pragma GCC diagnostic pop
@@ -182,14 +178,14 @@ public:
                     break;
                 case 'p':
                     if (!profiling) {
-                        std::cerr << "\nerror: profiling was not enabled in compilation\n\n";
+                        std::cerr << "\nError: profiling was not enabled in compilation\n\n";
                         printHelpPage(exec_name);
                         exit(1);
                     }
                     profile_name = optarg;
                     break;
-#ifdef _OPENMP
                 case 'j':
+#ifdef _OPENMP
                     if (std::string(optarg) == "auto") {
                         num_jobs = 0;
                     } else {
@@ -201,8 +197,10 @@ public:
                             ok = false;
                         }
                     }
-                    break;
+#else
+                    std::cerr << "\nWarning: OpenMP was not enabled in compilation\n\n";
 #endif
+                    break;
                 case 'i':
                     stratumIndex = (size_t)std::stoull(optarg);
                     break;

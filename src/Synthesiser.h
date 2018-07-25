@@ -19,6 +19,7 @@
 #include "IndexSetAnalysis.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
+#include "SynthesiserRelation.h"
 #include <map>
 #include <ostream>
 #include <set>
@@ -67,7 +68,7 @@ protected:
     const std::string getRelationTypeName(const RamRelation& rel, const IndexSet& indices);
 
     /** Get relation struct definition */
-    void generateRelationTypeStruct(std::ostream& out, const RamRelation& rel, const IndexSet& indices);
+    void generateRelationTypeStruct(std::ostream& out, SynthesiserRelation& relationType);
 
     /* Convert SearchColums to a template index */
     std::string toIndex(SearchColumns key);

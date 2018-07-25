@@ -15,36 +15,33 @@ private:
     /** Indices used for this relation */
     const IndexSet& indices;
 
+    /** The data structure used for the relation */
+    std::string dataStructure;
+
+    /** The final list of indices used */
+    std::vector<std::vector<int>> computedIndices;
+
     /** Is this relation used with provenance */
     const bool isProvenance;
 
 public:
-    SynthesiserRelation(const RamRelation& rel, const IndexSet& inds, const bool isProvenance = false) : relation(rel), indices(inds), isProvenance(isProvenance) {}
-
-    /** Get arity of relation */
-    size_t getArity() const {
-        return relation.getArity();
-    }
-
-    /** Get data structure of relation */
-    std::string getDataStructure() const {
+    SynthesiserRelation(const RamRelation& rel, const IndexSet& indices, const bool isProvenance = false) : relation(rel), indices(indices), isProvenance(isProvenance) {
+        // Set data structure
         if (relation.isBTree()) {
-            return "btree";
+            dataStructure = "btree";
         } else if (relation.isRbtset()) {
-            return "rbtset";
+            dataStructure = "rbtset";
         } else if (relation.isHashset()) {
-            return "hashset";
+            dataStructure = "hashset";
         } else if (relation.isBrie()) {
-            return "brie";
+            dataStructure = "brie";
         } else if (relation.isEqRel()) {
-            return "eqrel";
+            dataStructure = "eqrel";
         } else {
-            return "auto";
+            dataStructure = "auto";
         }
-    }
 
-    /** Get list of indices used for relation */
-    std::vector<std::vector<int>> getIndices() const {
+        // Generate and set indices
         std::vector<std::vector<int>> inds = indices.getAllOrders();
 
         // Add a full index if it does not exist
@@ -56,9 +53,10 @@ public:
             }
         }
         // generate full ind if it does not exist
-        if (!fullExists) {
+        if (!fullExists && !isProvenance) {
             std::vector<int> fullInd(getArity());
             std::iota(fullInd.begin(), fullInd.end(), 0);
+            inds.push_back(fullInd);
         }
 
         // If this relation is used with provenance,
@@ -66,8 +64,14 @@ public:
         // since weak/strong comparators and updaters need this,
         // and also add provenance annotations to the indices
         if (isProvenance) {
+            // If there is no index, add one
+            if (inds.empty()) {
+                std::vector<int> fullInd(getArity() - 2);
+                std::iota(fullInd.begin(), fullInd.end(), 0);
+                inds.push_back(fullInd);
+            }
             for (auto& ind : inds) {
-                if (ind.size() < getArity() - 2) {
+                if (ind.size() != getArity() - 2) {
                     // use a set as a cache for fast lookup
                     std::set<int> curIndexElems(ind.begin(), ind.end());
 
@@ -77,13 +81,41 @@ public:
                             ind.push_back(i);
                         }
                     }
-                }
+                } /* else {
+                    while (ind.size() > getArity() - 2) {
+                        ind.pop_back();
+                    }
+                }*/
                 
                 // add provenance annotations to the index
                 ind.push_back(getArity() - 1);
                 ind.push_back(getArity() - 2);
+
+                assert(ind.size() == getArity());
             }
         }
+
+        computedIndices = inds;
+    }
+
+    /** Get arity of relation */
+    size_t getArity() const {
+        return relation.getArity();
+    }
+
+    /** Get data structure of relation */
+    std::string getDataStructure() const {
+        return dataStructure;
+    }
+
+    /** Get list of indices used for relation */
+    std::vector<std::vector<int>> getIndices() const {
+        return computedIndices;
+    }
+
+    /** Get stored IndexSet */
+    const IndexSet& getIndexSet() const {
+        return indices;
     }
 
     /** Print type name */
@@ -96,6 +128,10 @@ public:
 
         for (auto& ind : getIndices()) {
             out << "__" << join(ind, "_");
+        }
+
+        for (auto& search : getIndexSet().getSearches()) {
+            out << "__" << search;
         }
 
         return out.str();

@@ -152,10 +152,8 @@ const std::string Synthesiser::getRelationTypeName(const RamRelation& rel, const
 }
 
 /** Get relation type struct */
-void Synthesiser::generateRelationTypeStruct(std::ostream& out,
-        const RamRelation& rel, const IndexSet& indices) {
-    auto arity = rel.getArity();
-    SynthesiserRelation relationType(rel, indices, Global::config().has("provenance"));
+void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelation& relationType) {
+    auto arity = relationType.getArity();
 
     // If this type has been generated already, use the cached version
     if (typeCache.find(relationType.getTypeName()) != typeCache.end()) {
@@ -163,7 +161,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out,
     }
     typeCache.insert(relationType.getTypeName());
 
-    auto inds = indices.getAllOrders();
+    auto inds = relationType.getIndices();
     size_t numIndexes = inds.size();
 
     std::vector<int> masterIndexColumns;
@@ -177,11 +175,40 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out,
 
         // Define a btree type for each index
         // TODO: support other data structures
-        size_t indNum = 0;
         size_t masterIndex = -1;
         std::map<std::vector<int>, int> indexToNumMap;
-        std::map<std::vector<int>, int> fullIndexToNumMap;
+        // std::map<std::vector<int>, int> fullIndexToNumMap;
         std::stringstream indexTypes;
+
+        auto inds = relationType.getIndices();
+        for (size_t i = 0; i < inds.size(); i++) {
+            auto ind = inds[i];
+            if (ind.size() == arity) {
+                if (masterIndex == -1) {
+                    masterIndex = i;
+                }
+            }
+
+            indexToNumMap[ind] = i;
+
+            if (Global::config().has("provenance")) {
+                assert(arity >= 2);
+
+                indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind);
+                indexTypes << ">, std::allocator<t_tuple>, 256, typename souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
+                indexTypes << join(ind.begin(), ind.end() - 2) << ">, updater_" << relationType.getTypeName() << "> t_ind_" << i << ";\n";
+            } else {
+                if (ind.size() == arity) {
+                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_" << i << ";\n";
+                } else {
+                    indexTypes << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_" << i << ";\n";
+                }
+            }
+
+            indexTypes << "t_ind_" << i << " ind_" << i << ";\n";
+        }
+
+        /*
         for (auto& cur : inds) {
             indexToNumMap[cur] = indNum;
 
@@ -259,7 +286,6 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out,
             indNum++;
         }
 
-
         if (masterIndex == -1) {
             // create a new full index
             std::vector<int> fullInd;
@@ -299,10 +325,11 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out,
             }
             indexTypes << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
         }
+        */
 
         // Create an updater class
         if (Global::config().has("provenance")) {
-            out << "struct updater_" << getRelationTypeName(rel, indices) << " {\n";
+            out << "struct updater_" << relationType.getTypeName() << " {\n";
             // out << "index_utils::comparator<" << join(masterIndexColumns) << "> c;\n";
             out << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
             out << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
@@ -435,8 +462,8 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out,
         out << "}\n";
 
         // for each pattern which is used to search this relation
-        for (int64_t search : indices.getSearches()) {
-            auto lexOrder = indices.getLexOrder(search);
+        for (int64_t search : relationType.getIndexSet().getSearches()) {
+            auto lexOrder = relationType.getIndexSet().getLexOrder(search);
             size_t indNum = indexToNumMap[lexOrder];
 
             out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search
@@ -1673,20 +1700,22 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         // ensure that the type of the new knowledge is the same as that of the delta knowledge
         bool isDelta = rel.isTemp() && raw_name.find("@delta") != std::string::npos;
         bool isNew = rel.isTemp() && raw_name.find("@new") != std::string::npos;
+        bool isProvInfo = raw_name.find("@info") != std::string::npos;
+        SynthesiserRelation relationType(rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
         tempType = isDelta
                            // ? getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel))
-                           ? getRelationTypeName(rel, idxAnalysis->getIndexes(rel))
+                           ? relationType.getTypeName()
                            : tempType;
         const std::string& type = (rel.isTemp()) ? tempType :  // getRelationType(rel, rel.getArity(),
                                                                //         idxAnalysis->getIndexes(rel));
-                                          getRelationTypeName(rel, idxAnalysis->getIndexes(rel));
+                                          relationType.getTypeName();
 
         // defining table
         os << "// -- Table: " << raw_name << "\n";
 
         // print class definition for the type
         if (!isNew) {
-            generateRelationTypeStruct(os, rel, idxAnalysis->getIndexes(rel));
+            generateRelationTypeStruct(os, relationType);
             os << "\n";
         }
         os << type << "* " << name << ";\n";

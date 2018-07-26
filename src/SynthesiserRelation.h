@@ -108,7 +108,9 @@ public:
         return dataStructure;
     }
 
-    /** Get list of indices used for relation */
+    /** Get list of indices used for relation,
+     * guaranteed that original indices in IndexSet
+     * come before any generated indices */
     std::vector<std::vector<int>> getIndices() const {
         return computedIndices;
     }
@@ -120,6 +122,10 @@ public:
 
     /** Print type name */
     std::string getTypeName() const {
+        if (getArity() == 0) {
+            return "t_nullaries";
+        }
+
         std::stringstream out;
 
         out << "t";

@@ -189,7 +189,9 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 }
             }
 
-            indexToNumMap[ind] = i;
+            if (i < relationType.getIndexSet().getAllOrders().size()) {
+                indexToNumMap[relationType.getIndexSet().getAllOrders()[i]] = i;
+            }
 
             if (Global::config().has("provenance")) {
                 assert(arity >= 2);

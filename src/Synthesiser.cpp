@@ -171,193 +171,72 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         // out << "typedef t_nullaries " << getRelationTypeName(rel, indices) << ";\n";
     } else {
         out << "struct " << relationType.getTypeName() << " {\n";
-        out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
 
-        // Define a btree type for each index
+        // Define a data type for each index
         // TODO: support other data structures
         size_t masterIndex = -1;
         std::map<std::vector<int>, int> indexToNumMap;
-        // std::map<std::vector<int>, int> fullIndexToNumMap;
+        std::string contextTypeName = "";
         std::stringstream indexTypes;
-
-        auto inds = relationType.getIndices();
-        for (size_t i = 0; i < inds.size(); i++) {
-            auto ind = inds[i];
-            if (ind.size() == arity) {
-                if (masterIndex == -1) {
-                    masterIndex = i;
-                }
-            }
-
-            if (i < relationType.getIndexSet().getAllOrders().size()) {
-                indexToNumMap[relationType.getIndexSet().getAllOrders()[i]] = i;
-            }
-
-            if (Global::config().has("provenance")) {
-                assert(arity >= 2);
-
-                indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind);
-                indexTypes << ">, std::allocator<t_tuple>, 256, typename souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
-                indexTypes << join(ind.begin(), ind.end() - 2) << ">, updater_" << relationType.getTypeName() << "> t_ind_" << i << ";\n";
-            } else {
+        if (relationType.getDataStructure() == "btree") {
+            // Type of stored tuples
+            indexTypes << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+            auto inds = relationType.getIndices();
+            for (size_t i = 0; i < inds.size(); i++) {
+                auto ind = inds[i];
                 if (ind.size() == arity) {
-                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_" << i << ";\n";
-                } else {
-                    indexTypes << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_" << i << ";\n";
-                }
-            }
-
-            indexTypes << "t_ind_" << i << " ind_" << i << ";\n";
-        }
-
-        /*
-        for (auto& cur : inds) {
-            indexToNumMap[cur] = indNum;
-
-            if (Global::config().has("provenance")) {
-                // If index is full, add two provenance columns
-                if (cur.size() == arity - 2) {
-                    std::vector<int> strongIndex(cur.begin(), cur.end());
-                    strongIndex.push_back(arity - 1);
-                    strongIndex.push_back(arity - 2);
-
-                    if (fullIndexToNumMap.count(strongIndex)) {
-                        indexToNumMap[cur] = fullIndexToNumMap[strongIndex];
-                        numIndexes--;
-                        continue;
-                    }
-
-                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
-                        << ">, std::allocator<t_tuple>, 256, typename "
-                           "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
-                        << join(cur) << ">, updater_" << getRelationTypeName(rel, indices) << "> t_ind_" << indNum << ";\n";
                     if (masterIndex == -1) {
-                        masterIndex = indNum;
-                        masterIndexColumns = strongIndex;
+                        masterIndex = i;
                     }
+                }
 
-                    fullIndexToNumMap[strongIndex] = indNum;
-                // Otherwise, expand to build a full index
+                if (i < relationType.getIndexSet().getAllOrders().size()) {
+                    indexToNumMap[relationType.getIndexSet().getAllOrders()[i]] = i;
+                }
+
+                // Provenance requires direct-indexed BTrees
+                if (Global::config().has("provenance")) {
+                    assert(arity >= 2);
+
+                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind);
+                    indexTypes << ">, std::allocator<t_tuple>, 256, typename souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
+                    indexTypes << join(ind.begin(), ind.end() - 2) << ">, updater_" << relationType.getTypeName() << "> t_ind_" << i << ";\n";
                 } else {
-                    std::set<int> curIndexElems(cur.begin(), cur.end());
-                    std::vector<int> fullWeakIndex(cur);
-                    for (int i = 0; i < arity - 2; i++) {
-                        if (curIndexElems.find(i) == curIndexElems.end()) {
-                            fullWeakIndex.push_back(i);
-                        }
+                    if (ind.size() == arity) {
+                        indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_" << i << ";\n";
+                    } else {
+                        indexTypes << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_" << i << ";\n";
                     }
-
-                    std::vector<int> strongIndex(fullWeakIndex);
-                    strongIndex.push_back(arity - 1);
-                    strongIndex.push_back(arity - 2);
-
-                    if (fullIndexToNumMap.count(strongIndex)) {
-                        indexToNumMap[cur] = fullIndexToNumMap[strongIndex];
-                        numIndexes--;
-                        continue;
-                    }
-
-                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(strongIndex)
-                        << ">, std::allocator<t_tuple>, 256, typename "
-                           "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
-                        << join(fullWeakIndex) << ">, updater_" << getRelationTypeName(rel, indices) << "> t_ind_" << indNum << ";\n";
-
-                    if (masterIndex == -1) {
-                        masterIndex = indNum;
-                        masterIndexColumns = strongIndex;
-                    }
-
-                    fullIndexToNumMap[strongIndex] = indNum;
                 }
-            } else {
-                if (cur.size() == arity) {
-                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
-                        << indNum << ";\n";
-                    if (masterIndex == -1) {
-                        masterIndex = indNum;
-                        masterIndexColumns = cur;
-                    }
-                } else {
-                    indexTypes << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(cur) << ">> t_ind_"
-                        << indNum << ";\n";
-                }
+
+                indexTypes << "t_ind_" << i << " ind_" << i << ";\n";
             }
-
-            indexTypes << "t_ind_" << indNum << " ind_" << indNum << ";\n";
-
-            indNum++;
-        }
-
-        if (masterIndex == -1) {
-            // create a new full index
-            std::vector<int> fullInd;
-
-            if (Global::config().has("provenance")) {
-                for (size_t i = 0; i < arity - 2; i++) {
-                    fullInd.push_back(i);
+            contextTypeName = "operation_hints";
+        } else if (relationType.getDataStructure() == "brie") {
+            for (size_t i = 0; i < inds.size(); i++) {
+                if (inds[i].size() == arity) {
+                    if (masterIndex == -1) {
+                        masterIndex = i;
+                    }
                 }
 
-                fullInd.push_back(arity - 1);
-                fullInd.push_back(arity - 2);
-
-                inds.push_back(fullInd);
-                masterIndex = numIndexes;
-                masterIndexColumns = fullInd;
-                numIndexes++;
-
-                assert(fullInd.size() >= 2 && "provenance relation must have arity at least 2");
-
-                std::vector<int> weakIndex(fullInd.begin(), fullInd.end() - 2);
-                indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd)
-                    << ">, std::allocator<t_tuple>, 256, typename "
-                       "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<"
-                    << join(weakIndex) << ">, updater_" << getRelationTypeName(rel, indices) << "> t_ind_" << indNum << ";\n";
-            } else {
-                for (size_t i = 0; i < arity; i++) {
-                    fullInd.push_back(i);
+                if (i < relationType.getIndexSet().getAllOrders().size()) {
+                    indexToNumMap[relationType.getIndexSet().getAllOrders()[i]] = i;
                 }
-
-                inds.push_back(fullInd);
-                masterIndex = numIndexes;
-                masterIndexColumns = fullInd;
-                numIndexes++;
-
-                indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(fullInd) << ">> t_ind_"
-                    << masterIndex << ";\n";
+                indexTypes << "typedef Trie<" << inds[i].size() << ">::entry_type t_tuple_" << i << ";\n";
+                indexTypes << "typedef Trie<" << inds[i].size() << "> t_ind_" << i << ";\n";
+                indexTypes << "t_ind_" << i << " ind_" << i << ";\n";
             }
-            indexTypes << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
+            indexTypes << "typedef t_tuple_" << masterIndex << " t_tuple;\n";
+            contextTypeName = "op_context";
         }
-        */
 
         // Create an updater class
         if (Global::config().has("provenance")) {
             out << "struct updater_" << relationType.getTypeName() << " {\n";
-            // out << "index_utils::comparator<" << join(masterIndexColumns) << "> c;\n";
             out << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
             out << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
             out << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
-            /*
-            out << "t_tuple old_copy = old_t;\n";
-            out << "uint64_t* old_prov = (uint64_t*) &old_copy[" << arity - 2 << "];\n";
-
-            // only swap if new tuple has smaller height number than old tuple
-            out << "if (c.less(new_t, old_t)) {\n";
-            out << "std::atomic<uint64_t*> old_atomic;\n";
-            out << "old_atomic.store((uint64_t*) &old_t[" << arity - 2 << "]);\n";
-            out << "uint64_t* new_ptr = (uint64_t*) &new_t[" << arity - 2 << "];\n";
-
-            // swap old and new if nothing has changed in between, otherwise do a spinlock
-            out << "while (!old_atomic.compare_exchange_weak(old_prov, new_ptr, std::memory_order_release, std::memory_order_relaxed)) {\n";
-            out << "    old_copy = old_t;\n";
-            out << "    old_prov = (uint64_t*) &old_copy[" << arity - 2 << "];\n";
-            out << "    if (!c.less(new_t, old_t)) {\n";
-            out << "        return false;\n";
-            out << "    }\n";
-            out << "}\n";
-            out << "return true;\n"; // if swap succeeded
-            out << "}\n";
-            out << "return false;\n"; // if no swap was needed
-            */
             out << "}\n";
             out << "};\n";
         }
@@ -370,7 +249,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         // Create a struct storing the context hints for each index
         out << "struct context {\n";
         for (size_t i = 0; i < numIndexes; i++) {
-            out << "t_ind_" << i << "::operation_hints hints_" << i << ";\n";
+            out << "t_ind_" << i << "::" << contextTypeName << " hints_" << i << ";\n";
         }
         out << "};\n";
         out << "context createContext() { return context(); }\n";
@@ -414,6 +293,13 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << "}\n";
         out << "}\n";
 
+        // insertAll using the index method
+        out << "void insertAll(" << relationType.getTypeName() << "& other) {\n";
+        for (size_t i = 0; i < numIndexes; i++) {
+            out << "ind_" << i << ".insertAll(other.ind_" << i << ");\n";
+        }
+        out << "}\n";
+
         // insert method
         std::vector<std::string> decls, params;
         for (int i = 0; i < arity; i++) {
@@ -452,9 +338,13 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         for (size_t i = 0; i < numIndexes; i++) {
             out << "range<t_ind_" << i
                 << "::iterator> lowerUpperBound(const t_tuple& low, const t_tuple& high, t_ind_" << i
-                << "::operation_hints& h) const {\n";
-            out << "return range<t_ind_" << i << "::iterator>(ind_" << i << ".lower_bound(low, h), ind_" << i
-                << ".upper_bound(high, h));\n";
+                << "::" << contextTypeName << "& h) const {\n";
+            if (relationType.getDataStructure() == "btree") {
+                out << "return range<t_ind_" << i << "::iterator>(ind_" << i << ".lower_bound(low, h), ind_" << i
+                    << ".upper_bound(high, h));\n";
+            } else {
+                // TODO: Finish this for bries, we will need to consider the size of the sub-index and getBoundaries<size> and make_range
+            }
             out << "}\n";
         }
 

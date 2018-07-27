@@ -120,6 +120,11 @@ public:
         return indices;
     }
 
+    /** Get stored RamRelation */
+    const RamRelation& getRamRelation() const {
+        return relation;
+    }
+
     /** Print type name */
     std::string getTypeName() const {
         if (getArity() == 0) {

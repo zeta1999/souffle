@@ -245,14 +245,15 @@ public:
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << "(" << join(values, ",",
-                             [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
-                                 if (!value) {
-                                     out << "_";
-                                 } else {
-                                     out << *value;
-                                 }
-                             })
+        os << "("
+           << join(values, ",",
+                      [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
+                          if (!value) {
+                              out << "_";
+                          } else {
+                              out << *value;
+                          }
+                      })
            << ") ∉ " << relation->getName();
     }
 
@@ -329,7 +330,8 @@ protected:
     std::vector<std::unique_ptr<RamValue>> values;
 
 public:
-    RamProvenanceNotExists(std::unique_ptr<RamRelation> rel) : RamCondition(RN_ProvenanceNotExists), relation(std::move(rel)) {}
+    RamProvenanceNotExists(std::unique_ptr<RamRelation> rel)
+            : RamCondition(RN_ProvenanceNotExists), relation(std::move(rel)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {
@@ -359,14 +361,15 @@ public:
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << "(" << join(values, ",",
-                             [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
-                                 if (!value) {
-                                     out << "_";
-                                 } else {
-                                     out << *value;
-                                 }
-                             })
+        os << "("
+           << join(values, ",",
+                      [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
+                          if (!value) {
+                              out << "_";
+                          } else {
+                              out << *value;
+                          }
+                      })
            << ") prov∉ " << relation->getName();
     }
 
@@ -403,7 +406,8 @@ public:
 
     /** Create clone */
     RamProvenanceNotExists* clone() const override {
-        RamProvenanceNotExists* res = new RamProvenanceNotExists(std::unique_ptr<RamRelation>(relation->clone()));
+        RamProvenanceNotExists* res =
+                new RamProvenanceNotExists(std::unique_ptr<RamRelation>(relation->clone()));
         for (auto& cur : values) {
             RamValue* val = nullptr;
             if (cur != nullptr) {

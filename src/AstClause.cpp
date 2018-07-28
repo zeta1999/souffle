@@ -36,7 +36,8 @@ void AstClause::addToBody(std::unique_ptr<AstLiteral> l) {
     } else if (dynamic_cast<AstNegation*>(l.get())) {
         negations.push_back(std::unique_ptr<AstNegation>(static_cast<AstNegation*>(l.release())));
     } else if (dynamic_cast<AstProvenanceNegation*>(l.get())) {
-        provNegations.push_back(std::unique_ptr<AstProvenanceNegation>(static_cast<AstProvenanceNegation*>(l.release())));
+        provNegations.push_back(
+                std::unique_ptr<AstProvenanceNegation>(static_cast<AstProvenanceNegation*>(l.release())));
     } else if (dynamic_cast<AstConstraint*>(l.get())) {
         constraints.push_back(std::unique_ptr<AstConstraint>(static_cast<AstConstraint*>(l.release())));
     } else {

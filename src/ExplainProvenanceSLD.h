@@ -19,12 +19,12 @@
 #include "ExplainProvenance.h"
 #include "Util.h"
 
+#include <chrono>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <chrono>
 
 namespace souffle {
 
@@ -197,7 +197,8 @@ public:
                 internalNode->add_child(std::make_unique<LeafNode>(bodyRel + "(" + joinedTupleStr + ")"));
                 internalNode->setSize(internalNode->getSize() + 1);
             } else {
-                auto child = explain(bodyRel, subproofTuple, subproofRuleNum, subproofLevelNum, depthLimit - 1);
+                auto child =
+                        explain(bodyRel, subproofTuple, subproofRuleNum, subproofLevelNum, depthLimit - 1);
                 internalNode->setSize(internalNode->getSize() + child->getSize());
                 internalNode->add_child(std::move(child));
             }
@@ -298,12 +299,14 @@ public:
             RamDomain levelNum;
             tuple >> levelNum;
 
-            std::cout << "Tuples expanded: " << explain(relName, currentTuple, ruleNum, levelNum, 20)->getSize();
+            std::cout << "Tuples expanded: "
+                      << explain(relName, currentTuple, ruleNum, levelNum, 20)->getSize();
             numTuples++;
             proc++;
-            
+
             auto tupleEnd = std::chrono::high_resolution_clock::now();
-            auto tupleDuration = std::chrono::duration_cast<std::chrono::duration<double>>(tupleEnd - tupleStart);
+            auto tupleDuration =
+                    std::chrono::duration_cast<std::chrono::duration<double>>(tupleEnd - tupleStart);
 
             std::cout << ", Time: " << tupleDuration.count() << std::endl;
         }

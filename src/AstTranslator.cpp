@@ -660,10 +660,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
 
         // check existence for original tuple if we have provenance
         // only if we don't compile
-        if (Global::config().has("provenance") && 
-                ((!Global::config().has("compile") 
-                  && !Global::config().has("dl-program") && 
-                  !Global::config().has("generate")))) {
+        if (Global::config().has("provenance") &&
+                ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
+                        !Global::config().has("generate")))) {
             auto uniquenessEnforcement = std::make_unique<RamNotExists>(getRelation(&head));
             auto arity = head.getArity() - 2;
 
@@ -673,9 +672,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
                 auto arg = head.getArgument(i);
 
                 // don't add counters
-                visitDepthFirst(*arg, [&](const AstCounter& cur) {
-                       isVolatile = false; 
-                });
+                visitDepthFirst(*arg, [&](const AstCounter& cur) { isVolatile = false; });
                 uniquenessEnforcement->addArg(translateValue(arg, valueIndex));
             }
 
@@ -868,7 +865,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
 
             // add constraint
             op->addCondition(std::unique_ptr<RamCondition>(notExists));
-            
+
             // for provenance negation
         } else if (auto neg = dynamic_cast<const AstProvenanceNegation*>(lit)) {
             // get contained atom
@@ -896,7 +893,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
                 // add the height annotation for provenanceNotExists
                 notExists->addArg(translateValue(*(atom->getArgument(arity + 1)), valueIndex));
             }
-            
+
             // add constraint
             op->addCondition(std::unique_ptr<RamCondition>(notExists));
         } else {
@@ -1100,8 +1097,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
     std::unique_ptr<RamParallel> loopSeq(new RamParallel());
 
     // create a utility to check SCC membership
-    auto isInSameSCC = [&](
-            const AstRelation* rel) { return std::find(scc.begin(), scc.end(), rel) != scc.end(); };
+    auto isInSameSCC = [&](const AstRelation* rel) {
+        return std::find(scc.begin(), scc.end(), rel) != scc.end();
+    };
 
     /* Compute temp for the current tables */
     for (const AstRelation* rel : scc) {
@@ -1339,7 +1337,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
         // a function to load relations
         const auto& makeRamLoad = [&](const AstRelation* relation, const std::string& inputDirectory,
-                const std::string& fileExtension) {
+                                          const std::string& fileExtension) {
             std::unique_ptr<RamStatement> statement = std::make_unique<RamLoad>(
                     std::unique_ptr<RamRelation>(
                             getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
@@ -1362,7 +1360,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
         // a function to store relations
         const auto& makeRamStore = [&](const AstRelation* relation, const std::string& outputDirectory,
-                const std::string& fileExtension) {
+                                           const std::string& fileExtension) {
             std::unique_ptr<RamStatement> statement =
                     std::make_unique<RamStore>(std::unique_ptr<RamRelation>(getRamRelation(relation, &typeEnv,
                                                        getRelationName(relation->getName()),

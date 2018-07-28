@@ -240,7 +240,8 @@ struct updater {
  */
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
-        unsigned blockSize, typename SearchStrategy, bool isSet, typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+        unsigned blockSize, typename SearchStrategy, bool isSet, typename WeakComparator = Comparator,
+        typename Updater = detail::updater<Key>>
 class btree {
 public:
     class iterator;
@@ -1201,7 +1202,8 @@ public:
     // -- ctors / dtors --
 
     // the default constructor creating an empty tree
-    btree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : comp(comp), weak_comp(weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {}
+    btree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator())
+            : comp(comp), weak_comp(weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {}
 
     // a constructor creating a tree from the given iterator range
     template <typename Iter>
@@ -1211,14 +1213,16 @@ public:
 
     // a move constructor
     btree(btree&& other)
-            : comp(other.comp), weak_comp(other.weak_comp), numElements(other.numElements), root(other.root), leftmost(other.leftmost) {
+            : comp(other.comp), weak_comp(other.weak_comp), numElements(other.numElements), root(other.root),
+              leftmost(other.leftmost) {
         other.numElements = 0;
         other.root = nullptr;
         other.leftmost = nullptr;
     }
 
     // a copy constructor
-    btree(const btree& set) : comp(set.comp), weak_comp(set.weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {
+    btree(const btree& set)
+            : comp(set.comp), weak_comp(set.weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {
         // use assignment operator for a deep copy
         *this = set;
     }
@@ -1562,7 +1566,6 @@ public:
 
                 // early exit for sets
                 if (isSet && pos != b && weak_equal(*pos, k)) {
-                    
                     // update provenance information
                     if (less(k, *pos)) {
                         if (!cur->lock.try_upgrade_to_write(cur_lease)) {
@@ -1594,7 +1597,6 @@ public:
 
             // early exit for sets
             if (isSet && pos != a && weak_equal(*(pos - 1), k)) {
-
                 // update provenance information
                 if (less(k, *(pos - 1))) {
                     if (!cur->lock.try_upgrade_to_write(cur_lease)) {
@@ -2094,10 +2096,12 @@ private:
     bool weak_covers(const node* node, const Key& k) const {
         if (isSet) {
             // in sets we can include the ends as covered elements
-            return !node->isEmpty() && !weak_less(k, node->keys[0]) && !weak_less(node->keys[node->numElements - 1], k);
+            return !node->isEmpty() && !weak_less(k, node->keys[0]) &&
+                   !weak_less(node->keys[node->numElements - 1], k);
         }
         // in multi-sets the ends may not be completely covered
-        return !node->isEmpty() && weak_less(node->keys[0], k) && weak_less(k, node->keys[node->numElements - 1]);
+        return !node->isEmpty() && weak_less(node->keys[0], k) &&
+               weak_less(k, node->keys[node->numElements - 1]);
     }
 
     /**
@@ -2171,7 +2175,8 @@ private:
 // Instantiation of static member search.
 template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename SearchStrategy,
         bool isSet, typename WeakComparator, typename Updater>
-const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator, Updater>::search;
+const SearchStrategy
+        btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator, Updater>::search;
 
 }  // end namespace detail
 
@@ -2186,17 +2191,22 @@ const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type, typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
-class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator, Updater> {
-    using super = detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator, Updater>;
+        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type,
+        typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true,
+                          WeakComparator, Updater> {
+    using super = detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator,
+            Updater>;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator, Updater>;
+    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator,
+            Updater>;
 
 public:
     /**
      * A default constructor creating an empty set.
      */
-    btree_set(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : super(comp, weak_comp) {}
+    btree_set(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator())
+            : super(comp, weak_comp) {}
 
     /**
      * A constructor creating a set based on the given range.
@@ -2242,17 +2252,22 @@ public:
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type, typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
-class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator, Updater> {
-    using super = detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator, Updater>;
+        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type,
+        typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false,
+                               WeakComparator, Updater> {
+    using super = detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator,
+            Updater>;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator, Updater>;
+    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator,
+            Updater>;
 
 public:
     /**
      * A default constructor creating an empty set.
      */
-    btree_multiset(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : super(comp, weak_comp) {}
+    btree_multiset(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator())
+            : super(comp, weak_comp) {}
 
     /**
      * A constructor creating a set based on the given range.

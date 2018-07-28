@@ -199,13 +199,18 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                     assert(arity >= 2);
 
                     indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind);
-                    indexTypes << ">, std::allocator<t_tuple>, 256, typename souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
-                    indexTypes << join(ind.begin(), ind.end() - 2) << ">, updater_" << relationType.getTypeName() << "> t_ind_" << i << ";\n";
+                    indexTypes
+                            << ">, std::allocator<t_tuple>, 256, typename "
+                               "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
+                    indexTypes << join(ind.begin(), ind.end() - 2) << ">, updater_"
+                               << relationType.getTypeName() << "> t_ind_" << i << ";\n";
                 } else {
                     if (ind.size() == arity) {
-                        indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_" << i << ";\n";
+                        indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind)
+                                   << ">> t_ind_" << i << ";\n";
                     } else {
-                        indexTypes << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_" << i << ";\n";
+                        indexTypes << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(ind)
+                                   << ">> t_ind_" << i << ";\n";
                     }
                 }
 
@@ -231,6 +236,8 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             contextTypeName = "op_context";
         }
 
+        out << indexTypes.str();
+
         // Create an updater class
         if (Global::config().has("provenance")) {
             out << "struct updater_" << relationType.getTypeName() << " {\n";
@@ -240,8 +247,6 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "}\n";
             out << "};\n";
         }
-
-        out << indexTypes.str();
 
         // typedef master iterator
         out << "typedef typename t_ind_" << masterIndex << "::iterator iterator;\n";
@@ -335,22 +340,24 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << "}\n";
 
         // lowerUpperBound method for internal use
-        for (size_t i = 0; i < numIndexes; i++) {
-            out << "range<t_ind_" << i
-                << "::iterator> lowerUpperBound(const t_tuple& low, const t_tuple& high, t_ind_" << i
-                << "::" << contextTypeName << "& h) const {\n";
-            if (relationType.getDataStructure() == "btree") {
-                out << "return range<t_ind_" << i << "::iterator>(ind_" << i << ".lower_bound(low, h), ind_" << i
-                    << ".upper_bound(high, h));\n";
-            } else {
-                // TODO: Finish this for bries, we will need to consider the size of the sub-index and getBoundaries<size> and make_range
+        if (relationType.getDataStructure() == "btree") {
+            for (size_t i = 0; i < numIndexes; i++) {
+                out << "range<t_ind_" << i
+                    << "::iterator> lowerUpperBound(const t_tuple& low, const t_tuple& high, t_ind_" << i
+                    << "::" << contextTypeName << "& h) const {\n";
+                out << "return range<t_ind_" << i << "::iterator>(ind_" << i << ".lower_bound(low, h), ind_"
+                    << i << ".upper_bound(high, h));\n";
+                // TODO: Finish this for bries, we will need to consider the size of the sub-index and
+                // getBoundaries<size> and make_range
+                out << "}\n";
             }
-            out << "}\n";
         }
 
         // only necessary for nullaries and provenance
-        out << "range<t_ind_" << masterIndex << "::iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
-        out << "return range<t_ind_" << masterIndex << "::iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
+        out << "range<t_ind_" << masterIndex
+            << "::iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
+        out << "return range<t_ind_" << masterIndex << "::iterator>(ind_" << masterIndex << ".begin(),ind_"
+            << masterIndex << ".end());\n";
         out << "}\n";
 
         // for each pattern which is used to search this relation
@@ -370,7 +377,20 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                     out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
                 }
             }
-            out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
+            if (relationType.getDataStructure() == "btree") {
+                out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
+            } else {
+                // compute size of sub-index
+                size_t indSize = 0;
+                while (search > 0) {
+                    if (search & 1) {
+                        indSize++;
+                    }
+                    search >> 1;
+                }
+                out << "auto r = data.template getBoundaries<" << indSize << ">(t, h);\n";
+                out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
+            }
             out << "}\n";
         }
 
@@ -381,7 +401,15 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
 
         // partition method
         out << "std::vector<range<t_ind_" << masterIndex << "::iterator>> partition() const {\n";
-        out << "return ind_" << masterIndex << ".getChunks(400);\n";
+        if (relationType.getDataStructure() == "btree") {
+            out << "return ind_" << masterIndex << ".getChunks(400);\n";
+        } else {
+            out << "std::vector<range<iterator>> res;\n";
+            out << "for (const auto& cur : ind_" << masterIndex << ".partition(10000)) {\n";
+            out << "    res.push_back(make_range(iterator(cur.begin()), iterator(cur.end())));\n";
+            out << "}\n";
+            out << "return res;\n";
+        }
         out << "}\n";
 
         // purge method
@@ -1035,7 +1063,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             } else {
                 out << "Tuple<RamDomain," << arity << "> tuple({{(RamDomain)("
                     << join(project.getValues(), "),(RamDomain)(", rec) << ")}});\n";
-
             }
 
             // insert tuple
@@ -1236,8 +1263,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
             });
             */
-            out << "}})," << ctxName << ");\n"; //.empty()";
-            out << "if (existenceCheck.empty()) return true; else return (*existenceCheck.begin())[" << arity - 1 << "] > ";
+            out << "}})," << ctxName << ");\n";  //.empty()";
+            out << "if (existenceCheck.empty()) return true; else return (*existenceCheck.begin())["
+                << arity - 1 << "] > ";
             visit(*(ne.getValues()[arity - 1]), out);
             out << ";}()\n";
             PRINT_END_COMMENT(out);
@@ -1593,7 +1621,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         bool isDelta = rel.isTemp() && raw_name.find("@delta") != std::string::npos;
         bool isNew = rel.isTemp() && raw_name.find("@new") != std::string::npos;
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
-        SynthesiserRelation relationType(rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+        SynthesiserRelation relationType(
+                rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
         tempType = isDelta
                            // ? getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel))
                            ? relationType.getTypeName()

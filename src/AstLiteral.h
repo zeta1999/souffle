@@ -283,7 +283,6 @@ protected:
     }
 };
 
-
 /**
  * Subclass of Literal that represents a logical constraint
  */

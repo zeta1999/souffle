@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RamRelation.h"
 #include "IndexSetAnalysis.h"
+#include "RamRelation.h"
 
 #include <numeric>
 
@@ -25,7 +25,8 @@ private:
     const bool isProvenance;
 
 public:
-    SynthesiserRelation(const RamRelation& rel, const IndexSet& indices, const bool isProvenance = false) : relation(rel), indices(indices), isProvenance(isProvenance) {
+    SynthesiserRelation(const RamRelation& rel, const IndexSet& indices, const bool isProvenance = false)
+            : relation(rel), indices(indices), isProvenance(isProvenance) {
         // Set data structure
         if (relation.isBTree()) {
             dataStructure = "btree";
@@ -38,7 +39,8 @@ public:
         } else if (relation.isEqRel()) {
             dataStructure = "eqrel";
         } else {
-            dataStructure = "auto";
+            // TODO: automatically selects btree for now, need to restore correct behaviour
+            dataStructure = "btree";
         }
 
         // Generate and set indices
@@ -86,7 +88,7 @@ public:
                         ind.pop_back();
                     }
                 }*/
-                
+
                 // add provenance annotations to the index
                 ind.push_back(getArity() - 1);
                 ind.push_back(getArity() - 2);
@@ -149,4 +151,4 @@ public:
     }
 };
 
-} // end of namespace souffle
+}  // end of namespace souffle

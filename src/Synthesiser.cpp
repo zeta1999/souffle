@@ -180,7 +180,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         std::stringstream indexTypes;
         if (relationType.getDataStructure() == "btree") {
             // Type of stored tuples
-            indexTypes << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+            out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
             if (arity > 6) {
                 indexTypes << "Table<t_tuple> data;\n";
                 indexTypes << "Lock insert_lock;\n";
@@ -232,15 +232,13 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 if (i < relationType.getIndexSet().getAllOrders().size()) {
                     indexToNumMap[relationType.getIndexSet().getAllOrders()[i]] = i;
                 }
-                indexTypes << "typedef Trie<" << inds[i].size() << ">::entry_type t_tuple_" << i << ";\n";
-                indexTypes << "typedef Trie<" << inds[i].size() << "> t_ind_" << i << ";\n";
+                out << "typedef Trie<" << inds[i].size() << ">::entry_type t_tuple_" << i << ";\n";
+                out << "typedef Trie<" << inds[i].size() << "> t_ind_" << i << ";\n";
                 indexTypes << "t_ind_" << i << " ind_" << i << ";\n";
             }
             indexTypes << "typedef t_tuple_" << masterIndex << " t_tuple;\n";
             contextTypeName = "op_context";
         }
-
-        out << indexTypes.str();
 
         // Create an updater class
         if (Global::config().has("provenance")) {
@@ -251,6 +249,8 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "}\n";
             out << "};\n";
         }
+
+        out << indexTypes.str();
 
         // typedef master iterator
         out << "typedef typename t_ind_" << masterIndex << "::iterator iterator;\n";

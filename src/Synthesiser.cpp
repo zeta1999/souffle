@@ -181,6 +181,10 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         if (relationType.getDataStructure() == "btree") {
             // Type of stored tuples
             indexTypes << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+            if (arity > 6) {
+                indexTypes << "Table<t_tuple> data;\n";
+                indexTypes << "Lock insert_lock;\n";
+            }
             auto inds = relationType.getIndices();
             for (size_t i = 0; i < inds.size(); i++) {
                 auto ind = inds[i];
@@ -273,14 +277,30 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << "}\n";
 
         out << "bool insert(const t_tuple& t, context& h) {\n";
-        out << "if (ind_" << masterIndex << ".insert(t, h.hints_" << masterIndex << ")) {\n";
-        for (size_t i = 0; i < numIndexes; i++) {
-            if (i != masterIndex) {
-                out << "ind_" << i << ".insert(t, h.hints_" << i << ");\n";
+        if (arity > 6 && relationType.getDataStructure() == "btree") {
+            out << "const t_tuple* masterCopy = nullptr;\n";
+            out << "{\n";
+            out << "auto lease = insert_lock.acquire();\n";
+            out << "if (contains(t, h)) return false;\n";
+            out << "masterCopy = &data.insert(t);\n";
+            out << "ind_" << masterIndex << ".insert(*masterCopy, h.hints_" << masterIndex << ");\n";
+            out << "}\n";
+            for (size_t i = 0; i < numIndexes; i++) {
+                if (i != masterIndex) {
+                    out << "ind_" << i << ".insert(*masterCopy, h.hints_" << i << ");\n";
+                }
             }
+            out << "return true;\n";
+        } else {
+            out << "if (ind_" << masterIndex << ".insert(t, h.hints_" << masterIndex << ")) {\n";
+            for (size_t i = 0; i < numIndexes; i++) {
+                if (i != masterIndex) {
+                    out << "ind_" << i << ".insert(t, h.hints_" << i << ");\n";
+                }
+            }
+            out << "return true;\n";
+            out << "} else return false;\n";
         }
-        out << "return true;\n";
-        out << "} else return false;\n";
         out << "}\n";
 
         out << "bool insert(const RamDomain* ramDomain) {\n";
@@ -386,9 +406,11 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                     if (search & 1) {
                         indSize++;
                     }
-                    search >> 1;
+                    search = search >> 1;
                 }
-                out << "auto r = data.template getBoundaries<" << indSize << ">(t, h);\n";
+                // TODO: the template library has something about reordering, not sure if it's necessary
+                out << "auto r = ind_" << indNum << ".template getBoundaries<" << indSize << ">(t, h.hints_"
+                    << indNum << ");\n";
                 out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
             }
             out << "}\n";

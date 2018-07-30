@@ -255,7 +255,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ", " << Global::config().has("provenance");
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
                 out << ");\n";
-                out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what();}\n";
+                out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                       "'\\n';}\n";
             }
             out << "}\n";
             PRINT_END_COMMENT(out);
@@ -1408,9 +1409,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         tempType = (rel.isTemp() && raw_name.find("@delta") != std::string::npos)
                            ? getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel))
                            : tempType;
-        const std::string& type =
-                (rel.isTemp()) ? tempType
-                               : getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel));
+        const std::string& type = (rel.isTemp()) ? tempType : getRelationType(rel, rel.getArity(),
+                                                                      idxAnalysis->getIndexes(rel));
 
         // defining table
         os << "// -- Table: " << raw_name << "\n";
@@ -1652,7 +1652,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             os << ", " << Global::config().has("provenance");
             os << ")->readAll(*" << getRelationName(load.getRelation());
             os << ");\n";
-            os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what();}\n";
+            os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                  "'\\n';}\n";
         }
     });
     os << "}\n";  // end of loadAll() method
@@ -1721,9 +1722,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         for (auto& sub : prog.getSubroutines()) {
             // method header
             os << "void "
-               << "subproof_" << subroutineNum
-               << "(const std::vector<RamDomain>& args, "
-                  "std::vector<RamDomain>& ret, std::vector<bool>& err) {\n";
+               << "subproof_" << subroutineNum << "(const std::vector<RamDomain>& args, "
+                                                  "std::vector<RamDomain>& ret, std::vector<bool>& err) {\n";
 
             // generate code for body
             emitCode(os, *sub.second);

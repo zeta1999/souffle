@@ -4,7 +4,6 @@
 # - https://opensource.org/licenses/UPL
 # - <souffle root>/licenses/SOUFFLE-UPL.txt
 
-
 SUFFIXES = .cpp .h .yy .ll .cc .hh .h
 
 bin_PROGRAMS = souffle souffle-profile souffle2bdd souffle2lb
@@ -12,9 +11,8 @@ bin_PROGRAMS = souffle souffle-profile souffle2bdd souffle2lb
 nodist_souffle_profile_SOURCES = $(BUILT_SOURCES)
 
 souffle_profile_sources = \
-                          FileFormatConverter.h                 \
-                          ProfileDatabase.h                     \
-                          json11.h                              \
+                          ProfileDatabase.h                 \
+                          json11.h                          \
                           profile/Cell.h                    \
                           profile/CellInterface.h           \
                           profile/Cli.h                     \
@@ -30,11 +28,17 @@ souffle_profile_sources = \
                           profile/Table.h                   \
                           profile/Tui.h                     \
                           profile/UserInputReader.h         \
-                          profile/html_string.h
+                          profile/htmlCssChartist.h         \
+                          profile/htmlJsChartistMin.h       \
+                          profile/htmlJsMain.h              \
+                          profile/htmlJsUtil.h              \
+                          profile/htmlCssStyle.h            \
+                          profile/htmlJsChartistPlugin.h    \
+                          profile/htmlJsTableSort.h         \
+                          profile/htmlMain.h                \
+                          profile/HtmlString.h
 
 DIR := ${CURDIR}
-
-
 
 # ... which should no go to distribution
 nodist_souffle_SOURCES = $(BUILT_SOURCES)
@@ -45,6 +49,10 @@ endif
 
 if SQLITE
 sqlite_sources = ReadStreamSQLite.h WriteStreamSQLite.h
+endif
+
+if MPI
+mpi_sources = Mpi.h
 endif
 
 souffle_sources = \
@@ -125,7 +133,8 @@ souffle_sources = \
               scanner.cc            stack.hh            \
               $(sqlite_sources)                         \
               $(libz_sources)                           \
-              $(souffle_profile_sources)
+              $(souffle_profile_sources)                \
+              $(mpi_sources)
 
 # -- build souffle as a library so it can be reused in testing
 noinst_LTLIBRARIES = libsouffle.la
@@ -144,7 +153,6 @@ souffle2bdd_LDADD = libsouffle.la
 
 souffle2lb_SOURCES = souffle2lb.cpp
 souffle2lb_LDADD = libsouffle.la
-
 
 dist_bin_SCRIPTS = souffle-compile souffle-config
 
@@ -172,7 +180,6 @@ soufflepublic_HEADERS = \
                         IOSystem.h              \
                         IterUtils.h             \
                         Logger.h                \
-                        Macro.h                 \
                         ParallelUtils.h         \
                         ProfileDatabase.h       \
                         ProfileEvent.h          \
@@ -192,7 +199,8 @@ soufflepublic_HEADERS = \
                         htmx86.h                \
                         json11.h                \
                         $(libz_sources)         \
-                        $(sqlite_sources)
+                        $(sqlite_sources)       \
+                        $(mpi_sources)
 
 souffleprofiledir = $(soufflepublicdir)/profile
 
@@ -330,11 +338,13 @@ test_parallel_utils_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/
 test_parallel_utils_test_SOURCES = test/parallel_utils_test.cpp
 test_parallel_utils_test_LDADD = libsouffle.la
 
-# file format converter
-check_PROGRAMS += test/file_format_converter_test
-test_file_format_converter_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
-test_file_format_converter_test_SOURCES = test/file_format_converter_test.cpp
-test_file_format_converter_test_LDADD = libsouffle.la
+if MPI
+# mpi interface
+check_PROGRAMS += test/mpi_test
+test_mpi_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_mpi_test_SOURCES = test/mpi_test.cpp
+test_mpi_test_LDADD = libsouffle.la
+endif
 
 # make all check-programs tests
 TESTS = $(check_PROGRAMS)

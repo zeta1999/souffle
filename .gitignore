@@ -43,3 +43,6 @@ cmake-build-debug/
 *.deb
 #macosx
 .DS_Store
+
+stamp-h1
+/CMakeLists.txt

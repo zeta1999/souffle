@@ -58,7 +58,7 @@ AC_ARG_ENABLE(
 )
 
 AS_IF([test "x$enable_debug" = "xyes"], [CXXFLAGS="$CXXFLAGS -O0 -g3"],
-  [test "x$enable_debug" != "xyes"], [CXXFLAGS="$CXXFLAGS -O3"]
+  [test "x$enable_debug" != "xyes"], [CXXFLAGS="$CXXFLAGS -O3 -DNDEBUG"]
 )
 
 if test "$BUILD_TYPE" == "Debug" ; then
@@ -66,6 +66,18 @@ if test "$BUILD_TYPE" == "Debug" ; then
   # set up debug mode
   CXXFLAGS="$CXXFLAGS -O0 -g3"
 fi
+
+# Enable MPI
+AC_ARG_ENABLE(
+  [mpi],
+  [AS_HELP_STRING([--enable-mpi], [Enable MPI])]
+)
+AS_IF([test "x$enable_mpi" = "xyes"], [
+    AS_VAR_APPEND(CXXFLAGS, [" -DUSE_MPI "])
+    AS_VAR_APPEND(CXXFLAGS, [" $(mpiCC --showme:compile) "])
+    AS_VAR_APPEND(LDFLAGS, [" $(mpiCC --showme:link) "])
+])
+AM_CONDITIONAL([MPI], [test "x$enable_mpi" = "xyes"])
 
 AC_ISC_POSIX
 AC_PROG_CPP
@@ -272,7 +284,6 @@ AC_CONFIG_LINKS([include/souffle/IODirectives.h:src/IODirectives.h])
 AC_CONFIG_LINKS([include/souffle/IOSystem.h:src/IOSystem.h])
 AC_CONFIG_LINKS([include/souffle/IterUtils.h:src/IterUtils.h])
 AC_CONFIG_LINKS([include/souffle/Logger.h:src/Logger.h])
-AC_CONFIG_LINKS([include/souffle/Macro.h:src/Macro.h])
 AC_CONFIG_LINKS([include/souffle/ParallelUtils.h:src/ParallelUtils.h])
 AC_CONFIG_LINKS([include/souffle/ProfileDatabase.h:src/ProfileDatabase.h])
 AC_CONFIG_LINKS([include/souffle/ProfileEvent.h:src/ProfileEvent.h])
@@ -291,6 +302,7 @@ AC_CONFIG_LINKS([include/souffle/Util.h:src/Util.h])
 AC_CONFIG_LINKS([include/souffle/WriteStream.h:src/WriteStream.h])
 AC_CONFIG_LINKS([include/souffle/WriteStreamCSV.h:src/WriteStreamCSV.h])
 AC_CONFIG_LINKS([include/souffle/WriteStreamSQLite.h:src/WriteStreamSQLite.h])
+AC_CONFIG_LINKS([include/souffle/Mpi.h:src/Mpi.h])
 AC_CONFIG_LINKS([include/souffle/gzfstream.h:src/gzfstream.h])
 AC_CONFIG_LINKS([include/souffle/htmx86.h:src/htmx86.h])
 AC_CONFIG_LINKS([include/souffle/json11.h:src/json11.h])
@@ -309,7 +321,15 @@ AC_CONFIG_LINKS([include/souffle/profile/StringUtils.h:src/profile/StringUtils.h
 AC_CONFIG_LINKS([include/souffle/profile/Table.h:src/profile/Table.h])
 AC_CONFIG_LINKS([include/souffle/profile/Tui.h:src/profile/Tui.h])
 AC_CONFIG_LINKS([include/souffle/profile/UserInputReader.h:src/profile/UserInputReader.h])
-AC_CONFIG_LINKS([include/souffle/profile/html_string.h:src/profile/html_string.h])
+AC_CONFIG_LINKS([include/souffle/profile/HtmlString.h:src/profile/HtmlString.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlCssChartist.h:src/profile/htmlCssChartist.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsChartistMin.h:src/profile/htmlJsChartistMin.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsMain.h:src/profile/htmlJsMain.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsUtil.h:src/profile/htmlJsUtil.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlCssStyle.h:src/profile/htmlCssStyle.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsChartistPlugin.h:src/profile/htmlJsChartistPlugin.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlJsTableSort.h:src/profile/htmlJsTableSort.h])
+AC_CONFIG_LINKS([include/souffle/profile/htmlMain.h:src/profile/htmlMain.h])
 
 AM_MISSING_PROG([AUTOM4TE], [autom4te])
 

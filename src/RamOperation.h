@@ -135,7 +135,7 @@ public:
     }
     /** get nested operation */
     const RamOperation& getOperation() const {
-        ASSERT(nestedOperation);
+        assert(nestedOperation);
         return *nestedOperation;
     }
 
@@ -376,7 +376,7 @@ public:
     /** Get target expression */
     // TODO (#541): rename to getExpression
     const RamValue* getTargetExpression() const {
-        ASSERT(value);
+        assert(value);
         return value.get();
     }
 

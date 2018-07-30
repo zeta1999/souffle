@@ -330,6 +330,7 @@ AstLiteral* negateLiteral(AstLiteral* lit) {
         return newCons;
     } else {
         assert(false && "Unsupported literal type!");
+        return nullptr;
     }
 }
 

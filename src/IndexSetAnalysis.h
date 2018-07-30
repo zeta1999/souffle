@@ -188,11 +188,11 @@ protected:
 
     /** maps search columns to an lexicographical order (labeled by a number) */
     int map(SearchColumns cols) const {
-        ASSERT(orders.size() == chainToOrder.size() && "Order and Chain Sizes do not match!!");
+        assert(orders.size() == chainToOrder.size() && "Order and Chain Sizes do not match!!");
         int i = 0;
         for (auto it = chainToOrder.begin(); it != chainToOrder.end(); ++it, ++i) {
             if (it->find(cols) != it->end()) {
-                ASSERT((size_t)i < orders.size());
+                assert((size_t)i < orders.size());
                 return i;
             }
         }
@@ -229,7 +229,7 @@ protected:
 
     /** get all nodes which are unmated from A-> B */
     const SearchSet getUnmatchedKeys(const MaxMatching::Matchings& match, const SearchSet& nodes) {
-        ASSERT(!nodes.empty());
+        assert(!nodes.empty());
         SearchSet unmatched;
 
         // For all nodes n such that n is not in match

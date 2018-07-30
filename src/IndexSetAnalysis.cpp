@@ -83,7 +83,7 @@ bool MaxMatching::bfSearch() {
     while (!bfQueue.empty()) {
         u = bfQueue.front();
         bfQueue.pop();
-        ASSERT(u != NIL);
+        assert(u != NIL);
         const Edges& children = graph[u];
         for (auto it : children) {
             SearchColumns mv = getMatch(it);
@@ -201,14 +201,14 @@ void IndexSet::solve() {
 
     // Perform the Hopcroft-Karp on the graph and receive matchings (mapped A->B and B->A)
     // Assume: alg.calculate is not called on an empty graph
-    ASSERT(!searches.empty());
+    assert(!searches.empty());
     const MaxMatching::Matchings& matchings = matching.solve();
 
     // Extract the chains given the nodes and matchings
     const ChainOrderMap chains = getChainsFromMatching(matchings, searches);
 
     // Should never get no chains back as we never call calculate on an empty graph
-    ASSERT(!chains.empty());
+    assert(!chains.empty());
 
     for (const auto& chain : chains) {
         std::vector<int> ids;
@@ -220,7 +220,7 @@ void IndexSet::solve() {
             insertIndex(ids, delta);
         }
 
-        ASSERT(!ids.empty());
+        assert(!ids.empty());
 
         orders.push_back(ids);
     }
@@ -233,7 +233,7 @@ void IndexSet::solve() {
         for (size_t i = 0; i < l; i++) {
             k = k + (1 << (orders[idx][i]));
         }
-        ASSERT(k == search && "incorrect lexicographical order");
+        assert(k == search && "incorrect lexicographical order");
     }
 }
 
@@ -261,7 +261,7 @@ IndexSet::Chain IndexSet::getChain(const SearchColumns umn, const MaxMatching::M
 /** get all chains from the matching */
 const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
         const MaxMatching::Matchings& match, const SearchSet& nodes) {
-    ASSERT(!nodes.empty());
+    assert(!nodes.empty());
 
     // Get all unmatched nodes from A
     const SearchSet& umKeys = getUnmatchedKeys(match, nodes);
@@ -276,7 +276,7 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
         }
     }
 
-    ASSERT(!umKeys.empty());
+    assert(!umKeys.empty());
 
     // A worklist of used nodes
     SearchSet usedKeys;
@@ -284,11 +284,11 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
     // Case: nodes < umKeys or if nodes == umKeys then anti chain - this is handled by this loop
     for (auto umKey : umKeys) {
         Chain c = getChain(umKey, match);
-        ASSERT(!c.empty());
+        assert(!c.empty());
         chainToOrder.push_back(c);
     }
 
-    ASSERT(!chainToOrder.empty());
+    assert(!chainToOrder.empty());
 
     return chainToOrder;
 }

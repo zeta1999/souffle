@@ -350,7 +350,9 @@ public:
         std::string jsonString((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
         std::string error;
         json11::Json json = json11::Json::parse(jsonString, error);
-
+        if (!error.empty()) {
+            std::cerr << "Parse error: " << error << std::endl;
+        }
         parseJson(json["root"], root);
     }
 

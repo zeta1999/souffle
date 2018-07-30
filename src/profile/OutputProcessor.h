@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "profile/ProgramRun.h"
-#include "profile/StringUtils.h"
-#include "profile/Table.h"
+#include "ProgramRun.h"
+#include "StringUtils.h"
+#include "Table.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -69,14 +69,14 @@ public:
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
  */
 
-#include "profile/Cell.h"
-#include "profile/CellInterface.h"
-#include "profile/Iteration.h"
-#include "profile/ProgramRun.h"
-#include "profile/Relation.h"
-#include "profile/Row.h"
-#include "profile/Rule.h"
-#include "profile/Table.h"
+#include "Cell.h"
+#include "CellInterface.h"
+#include "Iteration.h"
+#include "ProgramRun.h"
+#include "Relation.h"
+#include "Row.h"
+#include "Rule.h"
+#include "Table.h"
 #include <memory>
 #include <unordered_map>
 

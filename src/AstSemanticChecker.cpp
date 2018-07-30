@@ -136,20 +136,21 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // all null constants are used as records
     visitDepthFirst(nodes, [&](const AstNullConstant& cnst) {
+
+        // TODO (#467) remove the next line to enable subprogram compilation for record types
+        Global::config().unset("engine");
         TypeSet types = typeAnalysis.getTypes(&cnst);
         if (!isRecordType(types)) {
-            // TODO (#467) remove the next line to enable subprogram compilation for record types
-            Global::config().unset("engine");
             report.addError("Null constant used as a non-record", cnst.getSrcLoc());
         }
     });
 
     // record initializations have the same size as their types
     visitDepthFirst(nodes, [&](const AstRecordInit& cnst) {
+        // TODO (#467) remove the next line to enable subprogram compilation for record types
+        Global::config().unset("engine");
         TypeSet types = typeAnalysis.getTypes(&cnst);
         if (isRecordType(types)) {
-            // TODO (#467) remove the next line to enable subprogram compilation for record types
-            Global::config().unset("engine");
             for (const Type& type : types) {
                 if (cnst.getArguments().size() !=
                         dynamic_cast<const RecordType*>(&type)->getFields().size()) {
@@ -360,7 +361,7 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
         return false;
     }
     std::cout << "Unsupported Argument type: " << typeid(*arg).name() << "\n";
-    ASSERT(false && "Unsupported Argument Type!");
+    assert(false && "Unsupported Argument Type!");
     return false;
 }
 
@@ -380,7 +381,7 @@ static bool hasUnnamedVariable(const AstLiteral* lit) {
         }
     }
     std::cout << "Unsupported Literal type: " << typeid(lit).name() << "\n";
-    ASSERT(false && "Unsupported Argument Type!");
+    assert(false && "Unsupported Argument Type!");
     return false;
 }
 
@@ -406,7 +407,7 @@ void AstSemanticChecker::checkLiteral(
             report.addError("Underscore in binary relation", literal.getSrcLoc());
         } else {
             std::cout << "Unsupported Literal type: " << typeid(literal).name() << "\n";
-            ASSERT(false && "Unsupported Argument Type!");
+            assert(false && "Unsupported Argument Type!");
         }
     }
 }
@@ -479,7 +480,7 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         }
     } else {
         std::cout << "Unsupported Argument: " << typeid(argument).name() << "\n";
-        ASSERT(false && "Unknown case");
+        assert(false && "Unknown case");
     }
 }
 
@@ -590,6 +591,9 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
         if (typeEnv.isType(typeName)) {
             const Type& type = typeEnv.getType(typeName);
             if (isRecordType(type)) {
+                // TODO (#467) remove the next line to enable subprogram compilation for record types
+                Global::config().unset("engine");
+
                 if (relation.isInput()) {
                     report.addError(
                             "Input relations must not have record types. "
@@ -708,6 +712,13 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
 
 void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram& program) {
     for (const auto& directive : program.getIODirectives()) {
+#ifdef USE_MPI
+        // TODO (lyndonhenry): should permit sqlite as an io directive for use with mpi
+        auto it = directive->getIODirectiveMap().find("IO");
+        if (it != directive->getIODirectiveMap().end() && it->second == "sqlite") {
+            Global::config().unset("engine");
+        }
+#endif
         auto* r = program.getRelation(directive->getName());
         if (r == nullptr) {
             report.addError("Undefined relation " + toString(directive->getName()), directive->getSrcLoc());
@@ -1119,15 +1130,24 @@ void AstSemanticChecker::checkInlining(
     // Returns the pair (isValid, lastSrcLoc) where:
     //  - isValid is true if and only if the node contains an invalid underscore, and
     //  - lastSrcLoc is the source location of the last visited node
-    std::function<std::pair<bool, SrcLocation>(const AstNode*)> checkInvalidUnderscore =
-            [&](const AstNode* node) {
-                if (dynamic_cast<const AstUnnamedVariable*>(node)) {
-                    // Found an invalid underscore
-                    return std::make_pair(true, node->getSrcLoc());
-                } else if (dynamic_cast<const AstAggregator*>(node)) {
-                    // Don't care about underscores within aggregators
-                    return std::make_pair(false, node->getSrcLoc());
-                }
+    std::function<std::pair<bool, SrcLocation>(const AstNode*)> checkInvalidUnderscore = [&](
+            const AstNode* node) {
+        if (dynamic_cast<const AstUnnamedVariable*>(node)) {
+            // Found an invalid underscore
+            return std::make_pair(true, node->getSrcLoc());
+        } else if (dynamic_cast<const AstAggregator*>(node)) {
+            // Don't care about underscores within aggregators
+            return std::make_pair(false, node->getSrcLoc());
+        }
+
+        // Check if any children nodes use invalid underscores
+        for (const AstNode* child : node->getChildNodes()) {
+            std::pair<bool, SrcLocation> childStatus = checkInvalidUnderscore(child);
+            if (childStatus.first) {
+                // Found an invalid underscore
+                return childStatus;
+            }
+        }
 
                 // Check if any children nodes use invalid underscores
                 for (const AstNode* child : node->getChildNodes()) {

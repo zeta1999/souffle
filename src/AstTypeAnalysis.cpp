@@ -743,7 +743,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
             env.createRecordType(cur->getName());
         } else {
             std::cout << "Unsupported type construct: " << typeid(cur).name() << "\n";
-            ASSERT(false && "Unsupported Type Construct!");
+            assert(false && "Unsupported Type Construct!");
         }
     }
 
@@ -782,7 +782,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
             }
         } else {
             std::cout << "Unsupported type construct: " << typeid(cur).name() << "\n";
-            ASSERT(false && "Unsupported Type Construct!");
+            assert(false && "Unsupported Type Construct!");
         }
     }
 }

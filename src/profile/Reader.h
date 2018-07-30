@@ -8,13 +8,13 @@
 
 #pragma once
 
-#include "ProfileDatabase.h"
-#include "ProfileEvent.h"
-#include "profile/Iteration.h"
-#include "profile/ProgramRun.h"
-#include "profile/Relation.h"
-#include "profile/Rule.h"
-#include "profile/StringUtils.h"
+#include "../ProfileDatabase.h"
+#include "../ProfileEvent.h"
+#include "Iteration.h"
+#include "ProgramRun.h"
+#include "Relation.h"
+#include "Rule.h"
+#include "StringUtils.h"
 #include <cassert>
 #include <chrono>
 #include <cstdlib>
@@ -44,7 +44,7 @@ public:
     }
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000.0;
+            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setRuntime(runtime);
         }
     }
@@ -174,10 +174,10 @@ public:
     IterationVisitor(Iteration& iteration, Relation& relation) : DSNVisitor(iteration), relation(relation) {}
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000.0;
+            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setRuntime(runtime);
         } else if (duration.getKey() == "copytime") {
-            auto copytime = (duration.getEnd() - duration.getStart()).count() / 1000.0;
+            auto copytime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setCopy_time(copytime);
         }
     }
@@ -227,7 +227,7 @@ public:
     RelationVisitor(Relation& relation) : DSNVisitor(relation) {}
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000.0;
+            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setRuntime(runtime);
         }
     }
@@ -256,7 +256,7 @@ private:
     std::streampos gpos;
     const ProfileDatabase& db = ProfileEventSingleton::instance().getDB();
     bool loaded = false;
-    bool online;
+    bool online{true};
 
     double runtime{0};
     std::unordered_map<std::string, std::shared_ptr<Relation>> relation_map{};
@@ -265,8 +265,7 @@ private:
 public:
     std::shared_ptr<ProgramRun> run;
 
-    Reader(std::string filename, std::shared_ptr<ProgramRun> run, bool vFlag, bool online)
-            : file_loc(std::move(filename)), online(online), run(run) {
+    Reader(std::string filename, std::shared_ptr<ProgramRun> run) : file_loc(std::move(filename)), run(run) {
         ProfileEventSingleton::instance().setDBFromFile(file_loc);
     }
 
@@ -279,14 +278,14 @@ public:
         relation_map.clear();
         auto programDuration = dynamic_cast<DurationEntry*>(db.lookupEntry({"program", "runtime"}));
         if (programDuration == nullptr) {
-            std::cout << "souffle is still executing" << std::endl;
             auto startTimeEntry = dynamic_cast<TimeEntry*>(db.lookupEntry({"program", "starttime"}));
             if (startTimeEntry != nullptr) {
                 auto time = startTimeEntry->getTime();
-                runtime = time.count() / 1000.0;
+                runtime = (now().time_since_epoch().count() - time.count()) / 1000000.0;
             }
         } else {
-            runtime = (programDuration->getEnd() - programDuration->getStart()).count() / 1000.0;
+            runtime = (programDuration->getEnd() - programDuration->getStart()).count() / 1000000.0;
+            online = false;
         }
 
         auto relations = dynamic_cast<DirectoryEntry*>(db.lookupEntry({"program", "relation"}));
@@ -381,9 +380,6 @@ public:
     std::string createId() {
         return "R" + std::to_string(++rel_id);
     }
-
-    void livereadinit();
-    void liveread();
 };
 
 }  // namespace profile

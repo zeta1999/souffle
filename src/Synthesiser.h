@@ -61,11 +61,8 @@ protected:
     /** Get relation type */
     // std::string getRelationType(const RamRelation& rel, std::size_t arity, const IndexSet& indexes);
 
-    /** Get relation type name */
-    // const std::string getRelationTypeName(const RamRelation& rel);
-
     /** Get relation type */
-    const std::string getRelationTypeName(const RamRelation& rel, const IndexSet& indices);
+    // const std::string getRelationTypeName(const RamRelation& rel, const IndexSet& indices);
 
     /** Get relation struct definition */
     void generateRelationTypeStruct(std::ostream& out, SynthesiserRelation& relationType);

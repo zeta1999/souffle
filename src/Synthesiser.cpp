@@ -117,40 +117,6 @@ const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
 //     return "t_" + getRelationName(rel);
 // }
 
-const std::string Synthesiser::getRelationTypeName(const RamRelation& rel, const IndexSet& indices) {
-    if (rel.getArity() == 0) {
-        return "t_nullaries";
-    }
-
-    std::stringstream res;
-    res << "t_";
-
-    // a type name is identified by:
-    // (1) the data structure
-    // (2) the arity
-    // (3) the set of indices
-
-    if (rel.isBTree()) {
-        res << "btree";
-    } else if (rel.isRbtset()) {
-        res << "rbtset";
-    } else if (rel.isHashset()) {
-        res << "hashset";
-    } else if (rel.isBrie()) {
-        res << "brie";
-    } else if (rel.isEqRel()) {
-        res << "eqrel";
-    }
-
-    res << "_" << rel.getArity();
-
-    for (auto& ind : indices.getAllOrders()) {
-        res << "__" << join(ind, "_");
-    }
-
-    return res.str();
-}
-
 /** Get relation type struct */
 void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelation& relationType) {
     auto arity = relationType.getArity();
@@ -181,9 +147,11 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         if (relationType.getDataStructure() == "btree") {
             // Type of stored tuples
             out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+            std::string storedType = "t_tuple";
             if (arity > 6) {
                 indexTypes << "Table<t_tuple> data;\n";
                 indexTypes << "Lock insert_lock;\n";
+                storedType = "t_tuple*";
             }
             auto inds = relationType.getIndices();
             for (size_t i = 0; i < inds.size(); i++) {
@@ -202,18 +170,18 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 if (Global::config().has("provenance")) {
                     assert(arity >= 2);
 
-                    indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind);
+                    indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<" << join(ind);
                     indexTypes
-                            << ">, std::allocator<t_tuple>, 256, typename "
-                               "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
+                            << ">, std::allocator<" << storedType << ">, 256, typename "
+                               "souffle::detail::default_strategy<" << storedType << ">::type, index_utils::comparator<";
                     indexTypes << join(ind.begin(), ind.end() - 2) << ">, updater_"
                                << relationType.getTypeName() << "> t_ind_" << i << ";\n";
                 } else {
                     if (ind.size() == arity) {
-                        indexTypes << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind)
+                        indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<" << join(ind)
                                    << ">> t_ind_" << i << ";\n";
                     } else {
-                        indexTypes << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(ind)
+                        indexTypes << "typedef btree_multiset<" << storedType << ", index_utils::comparator<" << join(ind)
                                    << ">> t_ind_" << i << ";\n";
                     }
                 }
@@ -238,6 +206,10 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             }
             indexTypes << "typedef t_tuple_" << masterIndex << " t_tuple;\n";
             contextTypeName = "op_context";
+        } else if (relationType.getDataStructure() == "eqrel") {
+            // eqrel is only for binary relations
+            out << "typedef ram::Tuple<RamDomain, 2> t_tuple;\n";
+            indexTypes << "typedef BinaryRelation<tuple_tupe> t_ind_0;\n";
         }
 
         // Create an updater class

@@ -1062,9 +1062,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     << join(project.getValues(), "),(RamDomain)(", rec) << ")}});\n";
             }
 
+            // check filter
+            if (project.hasFilter()) {
+                auto relFilter = synthesiser.getRelationName(project.getFilter());
+                auto ctxFilter = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(project.getFilter()) + ")";
+                out << "if (!" << relFilter << ".contains(tuple," << ctxFilter << ")) {";
+            }
+
             // insert tuple
             out << relName << "->"
                 << "insert(tuple," << ctxName << ");\n";
+
+            // end filter
+            if (project.hasFilter()) {
+                out << "}";
+            }
 
             // end condition
             if (condition) {

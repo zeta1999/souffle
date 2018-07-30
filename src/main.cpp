@@ -26,7 +26,6 @@
 #include "Global.h"
 #include "Interpreter.h"
 #include "InterpreterInterface.h"
-#include "Macro.h"
 #include "ParserDriver.h"
 #include "PrecedenceGraph.h"
 #include "RamProgram.h"

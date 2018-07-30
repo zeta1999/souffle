@@ -34,7 +34,6 @@
 #include "ErrorReport.h"
 #include "Global.h"
 #include "GraphUtils.h"
-#include "Macro.h"
 #include "PrecedenceGraph.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"

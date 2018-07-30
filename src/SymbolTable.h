@@ -276,7 +276,6 @@ public:
             }
             return static_cast<RamDomain>(result->second);
         }
-        return static_cast<RamDomain>(result->second);
     }
 
     /** Find the index of a symbol in the table, inserting a new symbol if it does not exist there

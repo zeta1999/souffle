@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "Macro.h"
 #include "RamCondition.h"
 #include "RamNode.h"
 #include "RamRelation.h"

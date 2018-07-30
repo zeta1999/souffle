@@ -239,14 +239,30 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
 
         // insert methods
         out << "bool insert(const t_tuple& t) {\n";
-        out << "if (ind_" << masterIndex << ".insert(t)) {\n";
-        for (size_t i = 0; i < numIndexes; i++) {
-            if (i != masterIndex) {
-                out << "ind_" << i << ".insert(t);\n";
+        if (arity > 6 && relationType.getDataStructure() == "btree") {
+            out << "const t_tuple* masterCopy = nullptr;\n";
+            out << "{\n";
+            out << "auto lease = insert_lock.acquire();\n";
+            out << "if (contains(t)) return false;\n";
+            out << "masterCopy = &data.insert(t);\n";
+            out << "ind_" << masterIndex << ".insert(*masterCopy);\n";
+            out << "}\n";
+            for (size_t i = 0; i < numIndexes; i++) {
+                if (i != masterIndex) {
+                    out << "ind_" << i << ".insert(*masterCopy);\n";
+                }
             }
+            out << "return true;\n";
+        } else {
+            out << "if (ind_" << masterIndex << ".insert(t)) {\n";
+            for (size_t i = 0; i < numIndexes; i++) {
+                if (i != masterIndex) {
+                    out << "ind_" << i << ".insert(t);\n";
+                }
+            }
+            out << "return true;\n";
+            out << "} else return false;\n";
         }
-        out << "return true;\n";
-        out << "} else return false;\n";
         out << "}\n";
 
         out << "bool insert(const t_tuple& t, context& h) {\n";
@@ -304,7 +320,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             decls.push_back("RamDomain a" + std::to_string(i));
             params.push_back("a" + std::to_string(i));
         }
-        out << " bool insert(" << join(decls, ",") << ") {\n RamDomain data[";
+        out << "bool insert(" << join(decls, ",") << ") {\nRamDomain data[";
         out << arity << "] = {" << join(params, ",") << "};\n";
         out << "return insert(data);\n";
         out << "}\n";
@@ -323,14 +339,16 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << "return ind_" << masterIndex << ".size();\n";
         out << "}\n";
 
-        // find methods
-        out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t) const {\n";
-        out << "return ind_" << masterIndex << ".find(t);\n";
-        out << "}\n";
+        if (relationType.getDataStructure() != "brie" || relationType.getArity() > 1) {
+            // find methods
+            out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t) const {\n";
+            out << "return ind_" << masterIndex << ".find(t);\n";
+            out << "}\n";
 
-        out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t, context& h) const {\n";
-        out << "return ind_" << masterIndex << ".find(t, h.hints_" << masterIndex << ");\n";
-        out << "}\n";
+            out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t, context& h) const {\n";
+            out << "return ind_" << masterIndex << ".find(t, h.hints_" << masterIndex << ");\n";
+            out << "}\n";
+        }
 
         // lowerUpperBound method for internal use
         if (relationType.getDataStructure() == "btree") {
@@ -1662,15 +1680,6 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "     std::cerr << \"warning: wrong index position provided by substr(\\\"\";\n";
     os << "     std::cerr << str << \"\\\",\" << (int32_t)idx << \",\" << (int32_t)len << \") "
           "functor.\\n\";\n";
-    os << "   } return result;\n";
-    os << "}\n";
-    os << "static inline RamDomain wrapper_tonumber(const std::string& str) {\n";
-    os << "   RamDomain result=0; \n";
-    os << "   try { result = stord(str); } catch(...) { \n";
-    os << "     std::cerr << \"error: wrong string provided by to_number(\\\"\";\n";
-    os << "     std::cerr << str << \"\\\") ";
-    os << "functor.\\n\";\n";
-    os << "     raise(SIGFPE);\n";
     os << "   } return result;\n";
     os << "}\n";
 

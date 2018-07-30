@@ -28,7 +28,6 @@
 #include "BinaryConstraintOps.h"
 #include "Constraints.h"
 #include "Global.h"
-#include "Macro.h"
 #include "Util.h"
 #include <cstddef>
 #include <iostream>

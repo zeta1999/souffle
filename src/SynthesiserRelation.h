@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Global.h"
 #include "IndexSetAnalysis.h"
 #include "RamRelation.h"
 
@@ -39,8 +40,22 @@ public:
         } else if (relation.isEqRel()) {
             dataStructure = "eqrel";
         } else {
-            // TODO: automatically selects btree for now, need to restore correct behaviour
-            dataStructure = "btree";
+            if (Global::config().has("data-structure")) {
+                if (Global::config().get("data-structure") == "btree") {
+                    dataStructure = "btree";
+                } else if (Global::config().get("data-structure") == "brie") {
+                    dataStructure = "brie";
+                } else if (Global::config().get("data-structure") == "rbtset") {
+                    dataStructure = "rbtset";
+                } else if (Global::config().get("data-structure") == "hashset") {
+                    dataStructure = "hashset";
+                } else if (Global::config().get("data-structure") == "eqrel") {
+                    dataStructure = "eqrel";
+                }
+            } else {
+                // TODO: automatically selects btree for now, need to restore correct behaviour
+                dataStructure = "btree";
+            }
         }
 
         // Generate and set indices

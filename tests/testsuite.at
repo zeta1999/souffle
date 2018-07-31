@@ -35,7 +35,7 @@ dnl $2 -- expected file
 m4_define([SORTED_SAME_FILE],[
     sort "$1" > "$(basename $1).sorted.generated"
     sort "$2" > "$(basename $2).sorted.expected"
-    SAME_FILE(["$i.sorted.generated"], ["$i.sorted.expected"])
+    SAME_FILE(["$(basename $1).sorted.generated"], ["$(basename $2).sorted.expected"])
 ])
 
 dnl Check whether all files matching a regex have identical sorted contents

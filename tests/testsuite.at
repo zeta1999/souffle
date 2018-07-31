@@ -97,11 +97,13 @@ m4_define([TEST_EVAL],[
   # is equal to the number of expected CSV files.
   ls *.csv|wc -l >"num.generated"
   ls EXPECTEDDIR/*.csv|wc -l >"num.expected"
+
   # remove mpi messages
   cat TESTNAME.out | \
   tr '\n' '\r' | \
-  sed 's/--*\r.*\r--*\r//g' | \
+  perl -pi -e 's/--*\x0D.*\x0D--*\x0D//g' | \
   tr '\r' '\n' > TESTNAME.nompi.out
+
   # sort output files as printsize statements are non-deterministically ordered
   SORTED_SAME_FILE([TESTNAME.nompi.out],[EXPECTEDDIR/TESTNAME.out])
   SAME_FILE([TESTNAME.err],[EXPECTEDDIR/TESTNAME.err])
@@ -128,13 +130,15 @@ m4_define([TEST_EVAL_IN],[
   # is equal to the number of expected CSV files.
   ls *.csv|wc -l >"num.generated"
   ls EXPECTEDDIR/*.csv|wc -l >"num.expected"
+
   # remove non-deterministic record numbering and mpi error messages
   cat TESTNAME.out | \
   sed 's/subproof \(@<:@a-zA-Z0-9?_@:>@*\)(@<:@0-9@:>@*)/subproof \1()/g' | \
   sed -e '$a\' | \
   tr '\n' '\r' | \
-  sed 's/--*\r.*\r--*\r//g' | \
+  perl -pi -e 's/--*\x0D.*\x0D--*\x0D//g' | \
   tr '\r' '\n' > TESTNAME.nompi.out
+
   # sort output files as printsize statements are non-deterministically ordered
   SORTED_SAME_FILE([TESTNAME.nompi.out],[EXPECTEDDIR/TESTNAME.out])
   SAME_FILE([TESTNAME.err],[EXPECTEDDIR/TESTNAME.err])

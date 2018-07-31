@@ -253,6 +253,8 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 }
             }
             out << "return true;\n";
+        } else if (relationType.getDataStructure() == "eqrel") {
+            out << "return ind_0.insert(t[0], t[1]);\n";
         } else {
             out << "if (ind_" << masterIndex << ".insert(t)) {\n";
             for (size_t i = 0; i < numIndexes; i++) {
@@ -280,6 +282,8 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 }
             }
             out << "return true;\n";
+        } else if (relationType.getDataStructure() == "eqrel") {
+            out << "return ind_0.insert(t[0], t[1], h.hints_0);\n";
         } else {
             out << "if (ind_" << masterIndex << ".insert(t, h.hints_" << masterIndex << ")) {\n";
             for (size_t i = 0; i < numIndexes; i++) {
@@ -324,6 +328,16 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << arity << "] = {" << join(params, ",") << "};\n";
         out << "return insert(data);\n";
         out << "}\n";
+
+        // extends method for eqrel
+        // performs a delta extension, where we union the sets that share elements between this and other.
+        //      i.e. if a in this, and a in other, union(set(this->a), set(other->a))
+        if (relationType.getDataStructure() == "eqrel") {
+            out << "void extend(const " << relationType.getTypeName() << "& other) {\n";
+            out << "ind_0.extend(other.ind_0);\n";
+            out << "}\n";
+        }
+
 
         // contains methods
         out << "bool contains(const t_tuple& t) {\n";

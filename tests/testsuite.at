@@ -101,9 +101,9 @@ m4_define([TEST_EVAL],[
   cat TESTNAME.out | \
   tr '\n' '\r' | \
   sed 's/--*\r.*\r--*\r//g' | \
-  tr '\r' '\n' > TESTNAME.out
+  tr '\r' '\n' > TESTNAME.nompi.out
   # sort output files as printsize statements are non-deterministically ordered
-  SORTED_SAME_FILE([TESTNAME.out],[EXPECTEDDIR/TESTNAME.out])
+  SORTED_SAME_FILE([TESTNAME.nompi.out],[EXPECTEDDIR/TESTNAME.out])
   SAME_FILE([TESTNAME.err],[EXPECTEDDIR/TESTNAME.err])
   SAME_FILE([num.generated],[num.expected])
 ])
@@ -134,9 +134,9 @@ m4_define([TEST_EVAL_IN],[
   sed -e '$a\' | \
   tr '\n' '\r' | \
   sed 's/--*\r.*\r--*\r//g' | \
-  tr '\r' '\n' > TESTNAME.out
+  tr '\r' '\n' > TESTNAME.nompi.out
   # sort output files as printsize statements are non-deterministically ordered
-  SORTED_SAME_FILE([TESTNAME.out],[EXPECTEDDIR/TESTNAME.out])
+  SORTED_SAME_FILE([TESTNAME.nompi.out],[EXPECTEDDIR/TESTNAME.out])
   SAME_FILE([TESTNAME.err],[EXPECTEDDIR/TESTNAME.err])
   SAME_FILE([num.generated],[num.expected])
 ])

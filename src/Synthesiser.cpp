@@ -255,7 +255,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ", " << Global::config().has("provenance");
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
                 out << ");\n";
-                out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+                out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                       "'\\n';}\n";
             }
             out << "}\n";
             PRINT_END_COMMENT(out);
@@ -1651,7 +1652,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             os << ", " << Global::config().has("provenance");
             os << ")->readAll(*" << getRelationName(load.getRelation());
             os << ");\n";
-            os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+            os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                  "'\\n';}\n";
         }
     });
     os << "}\n";  // end of loadAll() method

@@ -154,7 +154,6 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 indexTypes << "Lock insert_lock;\n";
                 storedType = "t_tuple*";
             }
-            auto inds = relationType.getIndices();
             for (size_t i = 0; i < inds.size(); i++) {
                 auto ind = inds[i];
                 if (ind.size() == arity) {
@@ -209,8 +208,12 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             contextTypeName = "op_context";
         } else if (relationType.getDataStructure() == "eqrel") {
             // eqrel is only for binary relations
-            out << "typedef ram::Tuple<RamDomain, 2> t_tuple;\n";
-            indexTypes << "typedef BinaryRelation<tuple_tupe> t_ind_0;\n";
+            out << "typedef ram::Tuple<RamDomain, 2> t_tuple_0;\n";
+            out << "typedef t_tuple_0 t_tuple;\n";
+            indexTypes << "typedef BinaryRelation<t_tuple> t_ind_0;\n";
+            indexTypes << "t_ind_0 ind_0;\n";
+            masterIndex = 0;
+            contextTypeName = "operation_hints";
         }
 
         // Create an updater class
@@ -255,6 +258,15 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "return true;\n";
         } else if (relationType.getDataStructure() == "eqrel") {
             out << "return ind_0.insert(t[0], t[1]);\n";
+        } else if (relationType.getDataStructure() == "brie") {
+            out << "if (ind_" << masterIndex << ".insert(orderIn_" << masterIndex << "(t))) {\n";
+            for (size_t i = 0; i < numIndexes; i++) {
+                if (i != masterIndex) {
+                    out << "ind_" << i << ".insert(orderIn_" << i << "(t));\n";
+                }
+            }
+            out << "return true;\n";
+            out << "} else return false;\n";
         } else {
             out << "if (ind_" << masterIndex << ".insert(t)) {\n";
             for (size_t i = 0; i < numIndexes; i++) {
@@ -284,6 +296,15 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "return true;\n";
         } else if (relationType.getDataStructure() == "eqrel") {
             out << "return ind_0.insert(t[0], t[1], h.hints_0);\n";
+        } else if (relationType.getDataStructure() == "brie") {
+            out << "if (ind_" << masterIndex << ".insert(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex << ")) {\n";
+            for (size_t i = 0; i < numIndexes; i++) {
+                if (i != masterIndex) {
+                    out << "ind_" << i << ".insert(orderIn_" << i << "(t), h.hints_" << i << ");\n";
+                }
+            }
+            out << "return true;\n";
+            out << "} else return false;\n";
         } else {
             out << "if (ind_" << masterIndex << ".insert(t, h.hints_" << masterIndex << ")) {\n";
             for (size_t i = 0; i < numIndexes; i++) {
@@ -338,14 +359,25 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "}\n";
         }
 
-
         // contains methods
         out << "bool contains(const t_tuple& t) {\n";
-        out << "return ind_" << masterIndex << ".contains(t);\n";
+        if (relationType.getDataStructure() == "brie") {
+            out << "return ind_" << masterIndex << ".contains(orderIn_" << masterIndex << "(t));\n";
+        } else if (relationType.getDataStructure() == "eqrel") {
+            out << "return ind_" << masterIndex << ".contains(t[0], t[1]);\n";
+        } else {
+            out << "return ind_" << masterIndex << ".contains(t);\n";
+        }
         out << "}\n";
 
         out << "bool contains(const t_tuple& t, context& h) {\n";
-        out << "return ind_" << masterIndex << ".contains(t, h.hints_" << masterIndex << ");\n";
+        if (relationType.getDataStructure() == "brie") {
+            out << "return ind_" << masterIndex << ".contains(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
+        } else if (relationType.getDataStructure() == "eqrel") {
+            out << "return ind_" << masterIndex << ".contains(t[0], t[1]);\n";
+        } else {
+            out << "return ind_" << masterIndex << ".contains(t, h.hints_" << masterIndex << ");\n";
+        }
         out << "}\n";
 
         // size method
@@ -356,11 +388,21 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         if (relationType.getDataStructure() != "brie" || relationType.getArity() > 1) {
             // find methods
             out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t) const {\n";
-            out << "return ind_" << masterIndex << ".find(t);\n";
+            if (relationType.getDataStructure() == "brie") {
+                out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t));\n";
+            } else {
+                out << "return ind_" << masterIndex << ".find(t);\n";
+            }
             out << "}\n";
 
             out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t, context& h) const {\n";
-            out << "return ind_" << masterIndex << ".find(t, h.hints_" << masterIndex << ");\n";
+            if (relationType.getDataStructure() == "brie") {
+                out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
+            } else if (relationType.getDataStructure() == "eqrel") {
+                out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t));\n";
+            } else {
+                out << "return ind_" << masterIndex << ".find(t, h.hints_" << masterIndex << ");\n";
+            }
             out << "}\n";
         }
 
@@ -390,21 +432,22 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             auto lexOrder = relationType.getIndexSet().getLexOrder(search);
             size_t indNum = indexToNumMap[lexOrder];
 
-            out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search
-                << "(const t_tuple& t, context& h) const {\n";
-            out << "t_tuple low(t); t_tuple high(t);\n";
-
-            // check which indices to pad out
-            for (size_t column = 0; column < arity; column++) {
-                // if bit number column is set
-                if (!((search >> column) & 1)) {
-                    out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
-                    out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
-                }
-            }
             if (relationType.getDataStructure() == "btree") {
+                out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
+                out << "(const t_tuple& t, context& h) const {\n";
+                out << "t_tuple low(t); t_tuple high(t);\n";
+                // check which indices to pad out
+                for (size_t column = 0; column < arity; column++) {
+                    // if bit number column is set
+                    if (!((search >> column) & 1)) {
+                        out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
+                        out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
+                    }
+                }
                 out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
             } else {
+                out << "range<t_ind_" << masterIndex << "::iterator> equalRange_" << search;
+                out << "(const t_tuple& t, context& h) const {\n";
                 // compute size of sub-index
                 size_t indSize = 0;
                 while (search > 0) {
@@ -414,16 +457,20 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                     search = search >> 1;
                 }
                 // TODO: the template library has something about reordering, not sure if it's necessary
-                out << "auto r = ind_" << indNum << ".template getBoundaries<" << indSize << ">(t, h.hints_"
-                    << indNum << ");\n";
-                out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
+                out << "auto r = ind_" << masterIndex << ".template getBoundaries<" << indSize << ">(orderIn_" << masterIndex << "(t), h.hints_"
+                    << masterIndex << ");\n";
+                out << "return make_range(t_ind_" << masterIndex << "::iterator(r.begin()), t_ind_" << masterIndex << "::iterator(r.end()));\n";
             }
             out << "}\n";
         }
 
         // empty method
         out << "bool empty() {\n";
-        out << "return ind_" << masterIndex << ".empty();\n";
+        if (relationType.getDataStructure() == "eqrel") {
+            out << "return ind_0.size() == 0;\n";
+        } else {
+            out << "return ind_" << masterIndex << ".empty();\n";
+        }
         out << "}\n";
 
         // partition method
@@ -458,6 +505,31 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         // TODO: finish printHintStatistics method
         out << "void printHintStatistics(std::ostream& o, std::string prefix) const {\n";
         out << "}\n";
+
+        if (relationType.getDataStructure() == "btree") {
+        } else {
+            // generate orderIn and orderOut methods which reorder tuples
+            // according to index orders
+            for (size_t i = 0; i < numIndexes; i++) {
+                auto ind = inds[i];
+
+                out << "static t_tuple_" << i << " orderIn_" << i << "(const t_tuple& t) {\n";
+                out << "t_tuple_" << i << " res;\n";
+                for (size_t j = 0; j < ind.size(); j++) {
+                    out << "res[" << j << "] = t[" << ind[j] << "];\n";
+                }
+                out << "return res;\n";
+                out << "}\n";
+
+                out << "static t_tuple_" << i << " orderOut_" << i << "(const t_tuple& t) {\n";
+                out << "t_tuple_" << i << " res;\n";
+                for (size_t j = 0; j < ind.size(); j++) {
+                    out << "res[" << ind[j] << "] = t[" << j << "];\n";
+                }
+                out << "return res;\n";
+                out << "}\n";
+            }
+        }
 
         // end class
         out << "};\n";

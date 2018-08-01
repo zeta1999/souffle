@@ -138,22 +138,22 @@ inline std::string formatTime(double number) {
         }
         return std::to_string(min) + "m";
     } else if (sec >= 10) {
-        return std::to_string(sec);
+        return std::to_string(sec) + "s";
     } else if (number >= 1.0) {
         std::string temp = std::to_string(std::lrint(number * 100));
-        return temp.substr(0, 1) + "." + temp.substr(1, 2);
+        return temp.substr(0, 1) + "." + temp.substr(1, 2) + "s";
     } else if (std::lrint(number * 1000) >= 100.0) {
         std::string temp = std::to_string(std::round(number * 1000));
-        return "." + temp.substr(0, 3);
+        return "." + temp.substr(0, 3) + "s";
     } else if (std::lrint(number * 1000) >= 10.0) {
         std::string temp = std::to_string(std::round(number * 1000));
-        return ".0" + temp.substr(0, 2);
+        return ".0" + temp.substr(0, 2) + "s";
     } else if (number >= .001) {
         std::string temp = std::to_string(std::round(number * 1000));
-        return ".00" + temp.substr(0, 1);
+        return ".00" + temp.substr(0, 1) + "s";
     }
 
-    return ".000";
+    return ".000s";
 }
 
 inline std::vector<std::vector<std::string>> formatTable(Table table, int precision) {

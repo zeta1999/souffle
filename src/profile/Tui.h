@@ -492,11 +492,12 @@ public:
     void top() {
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
         if (alive) run->update();
-        std::string runtime = run->getRuntime();
-        std::cout << "\n Total runtime: " << runtime << "\n";
+        std::printf("%11s%10s%10s%20s\n\n", "runtime", "loadtime", "savetime", "tuples generated");
 
-        std::cout << "\n Total number of new tuples: " << run->formatNum(precision, run->getTotNumTuples())
-                  << std::endl;
+        std::printf("%10s%10s%10s%14s\n", run->getRuntime().c_str(),
+                run->formatTime(run->getTotLoadtime()).c_str(),
+                run->formatTime(run->getTotSavetime()).c_str(),
+                run->formatNum(precision, run->getTotNumTuples()).c_str());
     }
 
     void rel() {

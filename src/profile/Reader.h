@@ -229,6 +229,12 @@ public:
         if (duration.getKey() == "runtime") {
             auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setRuntime(runtime);
+        } else if (duration.getKey() == "loadtime") {
+            auto loadtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            base.setLoadtime(loadtime);
+        } else if (duration.getKey() == "savetime") {
+            auto savetime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            base.setSavetime(savetime);
         }
     }
     void visit(DirectoryEntry& directory) override {

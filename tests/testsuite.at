@@ -35,7 +35,7 @@ dnl $2 -- expected file
 m4_define([SORTED_SAME_FILE],[
     sort "$1" > "$(basename $1).sorted.generated"
     sort "$2" > "$(basename $2).sorted.expected"
-    SAME_FILE(["$i.sorted.generated"], ["$i.sorted.expected"])
+    SAME_FILE(["$(basename $1).sorted.generated"], ["$(basename $2).sorted.expected"])
 ])
 
 dnl Check whether all files matching a regex have identical sorted contents
@@ -97,13 +97,15 @@ m4_define([TEST_EVAL],[
   # is equal to the number of expected CSV files.
   ls *.csv|wc -l >"num.generated"
   ls EXPECTEDDIR/*.csv|wc -l >"num.expected"
+
   # remove mpi messages
   cat TESTNAME.out | \
   tr '\n' '\r' | \
-  sed 's/--*\r.*\r--*\r//g' | \
-  tr '\r' '\n' > TESTNAME.out
+  perl -pi -e 's/--*\x0D.*\x0D--*\x0D//g' | \
+  tr '\r' '\n' > TESTNAME.nompi.out
+
   # sort output files as printsize statements are non-deterministically ordered
-  SORTED_SAME_FILE([TESTNAME.out],[EXPECTEDDIR/TESTNAME.out])
+  SORTED_SAME_FILE([TESTNAME.nompi.out],[EXPECTEDDIR/TESTNAME.out])
   SAME_FILE([TESTNAME.err],[EXPECTEDDIR/TESTNAME.err])
   SAME_FILE([num.generated],[num.expected])
 ])
@@ -128,15 +130,17 @@ m4_define([TEST_EVAL_IN],[
   # is equal to the number of expected CSV files.
   ls *.csv|wc -l >"num.generated"
   ls EXPECTEDDIR/*.csv|wc -l >"num.expected"
+
   # remove non-deterministic record numbering and mpi error messages
   cat TESTNAME.out | \
   sed 's/subproof \(@<:@a-zA-Z0-9?_@:>@*\)(@<:@0-9@:>@*)/subproof \1()/g' | \
   sed -e '$a\' | \
   tr '\n' '\r' | \
-  sed 's/--*\r.*\r--*\r//g' | \
-  tr '\r' '\n' > TESTNAME.out
+  perl -pi -e 's/--*\x0D.*\x0D--*\x0D//g' | \
+  tr '\r' '\n' > TESTNAME.nompi.out
+
   # sort output files as printsize statements are non-deterministically ordered
-  SORTED_SAME_FILE([TESTNAME.out],[EXPECTEDDIR/TESTNAME.out])
+  SORTED_SAME_FILE([TESTNAME.nompi.out],[EXPECTEDDIR/TESTNAME.out])
   SAME_FILE([TESTNAME.err],[EXPECTEDDIR/TESTNAME.err])
   SAME_FILE([num.generated],[num.expected])
 ])

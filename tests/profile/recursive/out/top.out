@@ -1,5 +1,4 @@
+    runtime  loadtime  savetime    tuples generated
 
- Total runtime: .200
-
- Total number of new tuples: 10002
+      .045      .000      .000           102
 

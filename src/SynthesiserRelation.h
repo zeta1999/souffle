@@ -61,19 +61,46 @@ public:
         // Generate and set indices
         std::vector<std::vector<int>> inds = indices.getAllOrders();
 
-        // Add a full index if it does not exist
-        bool fullExists = false;
-        // check for full ind
-        for (auto& ind : inds) {
-            if (ind.size() == getArity()) {
-                fullExists = true;
+        // Non-btree data structures should have all indices expanded
+        if (dataStructure == "btree") {
+            // Add a full index if it does not exist
+            bool fullExists = false;
+            // check for full ind
+            for (auto& ind : inds) {
+                if (ind.size() == getArity()) {
+                    fullExists = true;
+                }
             }
-        }
-        // generate full ind if it does not exist
-        if (!fullExists && !isProvenance) {
-            std::vector<int> fullInd(getArity());
-            std::iota(fullInd.begin(), fullInd.end(), 0);
-            inds.push_back(fullInd);
+            // generate full ind if it does not exist
+            if (!fullExists && !isProvenance) {
+                std::vector<int> fullInd(getArity());
+                std::iota(fullInd.begin(), fullInd.end(), 0);
+                inds.push_back(fullInd);
+            }
+        } else {
+            // generate a full index if it doesn't exist
+            if (inds.empty()) {
+                std::vector<int> fullInd(getArity());
+                std::iota(fullInd.begin(), fullInd.end(), 0);
+                inds.push_back(fullInd);
+            }
+
+            // expand all indexes to be full
+            for (auto& ind : inds) {
+                if (ind.size() != getArity()) {
+                    // use a set as a cache for fast lookup
+                    std::set<int> curIndexElems(ind.begin(), ind.end());
+
+                    // expand index to be full
+                    for (int i = 0; i < getArity(); i++) {
+                        if (curIndexElems.find(i) == curIndexElems.end()) {
+                            ind.push_back(i);
+                        }
+                    }
+                }
+
+                assert(ind.size() == getArity());
+            }
         }
 
         // If this relation is used with provenance,

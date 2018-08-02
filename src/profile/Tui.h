@@ -67,9 +67,15 @@ public:
         this->alive = true;
         updateDB();
         updater = std::thread([this]() {
+            // Update the display every 30s. Check for input every 0.5s
+            std::chrono::milliseconds interval(30000);
+            auto nextUpdateTime = std::chrono::high_resolution_clock::now();
             do {
-                std::this_thread::sleep_for(std::chrono::milliseconds(30000));
-                runCommand({});
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                if (nextUpdateTime < std::chrono::high_resolution_clock::now()) {
+                    runCommand({});
+                    nextUpdateTime = std::chrono::high_resolution_clock::now() + interval;
+                }
             } while (reader->isLive() && !linereader.hasReceivedInput());
         });
     }
@@ -101,9 +107,9 @@ public:
 
         // If we have not received any input yet in live mode then run top.
         if ((!linereader.hasReceivedInput() && c.empty()) || c[0].compare("top") == 0) {
-            // Move up 4 lines and overwrite the previous top output.
+            // Move up 3 lines and overwrite the previous top output.
             if (!firstRun && !linereader.hasReceivedInput()) {
-                std::cout << "\x1b[A\x1b[A\x1b[A\x1b[A";
+                std::cout << "\x1b[A\x1b[A\x1b[A";
             } else if (firstRun) {
                 firstRun = false;
             }
@@ -423,9 +429,8 @@ public:
     }
 
     void quit() {
-        if (alive && loaded) {
-            // std::cerr << "Liver reader not implemented\n";
-            // live_reader.stopRead();
+        if (updater.joinable()) {
+            updater.join();
         }
     }
 
@@ -492,21 +497,23 @@ public:
     void top() {
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
         if (alive) run->update();
-        std::string runtime = run->getRuntime();
-        std::cout << "\n Total runtime: " << runtime << "\n";
+        std::printf("%11s%10s%10s%20s\n\n", "runtime", "loadtime", "savetime", "tuples generated");
 
-        std::cout << "\n Total number of new tuples: " << run->formatNum(precision, run->getTotNumTuples())
-                  << std::endl;
+        std::printf("%10s%10s%10s%14s\n", run->getRuntime().c_str(),
+                run->formatTime(run->getTotLoadtime()).c_str(),
+                run->formatTime(run->getTotSavetime()).c_str(),
+                run->formatNum(precision, run->getTotNumTuples()).c_str());
     }
 
     void rel() {
         rel_table_state.sort(sort_col);
         std::cout << " ----- Relation Table -----\n";
-        std::printf("%8s%8s%8s%8s%15s%6s%1s%s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "TUPLES", "ID", "",
-                "NAME");
+        std::printf("%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
+                "SAVE_T", "TUPLES", "ID", "", "NAME");
         for (auto& row : out.formatTable(rel_table_state, precision)) {
-            std::printf("%8s%8s%8s%8s%15s%6s%1s%s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                    row[3].c_str(), row[4].c_str(), row[6].c_str(), "", row[5].c_str());
+            std::printf("%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                    row[3].c_str(), row[9].c_str(), row[10].c_str(), row[4].c_str(), row[6].c_str(), "",
+                    row[5].c_str());
         }
     }
 

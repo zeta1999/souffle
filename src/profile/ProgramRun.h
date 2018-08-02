@@ -71,6 +71,22 @@ public:
         return runtime;
     }
 
+    double getTotLoadtime() {
+        double result = 0;
+        for (auto& item : relation_map) {
+            result += item.second->getLoadtime();
+        }
+        return result;
+    }
+
+    double getTotSavetime() {
+        double result = 0;
+        for (auto& item : relation_map) {
+            result += item.second->getSavetime();
+        }
+        return result;
+    }
+
     long getTotNumTuples() {
         long result = 0;
         for (auto& item : relation_map) {

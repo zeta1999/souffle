@@ -27,6 +27,8 @@ class Relation {
 private:
     std::string name;
     double runtime = 0;
+    double loadtime = 0;
+    double savetime = 0;
     long prev_num_tuples = 0;
     long num_tuples = 0;
     std::string id;
@@ -59,6 +61,14 @@ public:
             }
         }
         return "C" + id.substr(1) + "." + std::to_string(++rec_id);
+    }
+
+    inline double getLoadtime() {
+        return loadtime;
+    }
+
+    inline double getSavetime() {
+        return savetime;
     }
 
     inline double getNonRecTime() {
@@ -118,6 +128,14 @@ public:
 
     inline void setRuntime(double runtime) {
         this->runtime = runtime;
+    }
+
+    inline void setLoadtime(double loadtime) {
+        this->loadtime = loadtime;
+    }
+
+    inline void setSavetime(double savetime) {
+        this->savetime = savetime;
     }
 
     inline void setNum_tuples(long num_tuples) {

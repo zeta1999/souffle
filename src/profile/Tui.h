@@ -67,9 +67,15 @@ public:
         this->alive = true;
         updateDB();
         updater = std::thread([this]() {
+            // Update the display every 30s. Check for input every 0.5s
+            std::chrono::milliseconds interval(30000);
+            auto nextUpdateTime = std::chrono::high_resolution_clock::now();
             do {
-                std::this_thread::sleep_for(std::chrono::milliseconds(30000));
-                runCommand({});
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                if (nextUpdateTime < std::chrono::high_resolution_clock::now()) {
+                    runCommand({});
+                    nextUpdateTime = std::chrono::high_resolution_clock::now() + interval;
+                }
             } while (reader->isLive() && !linereader.hasReceivedInput());
         });
     }
@@ -423,9 +429,8 @@ public:
     }
 
     void quit() {
-        if (alive && loaded) {
-            // std::cerr << "Liver reader not implemented\n";
-            // live_reader.stopRead();
+        if (updater.joinable()) {
+            updater.join();
         }
     }
 

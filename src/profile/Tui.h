@@ -101,9 +101,9 @@ public:
 
         // If we have not received any input yet in live mode then run top.
         if ((!linereader.hasReceivedInput() && c.empty()) || c[0].compare("top") == 0) {
-            // Move up 4 lines and overwrite the previous top output.
+            // Move up 3 lines and overwrite the previous top output.
             if (!firstRun && !linereader.hasReceivedInput()) {
-                std::cout << "\x1b[A\x1b[A\x1b[A\x1b[A";
+                std::cout << "\x1b[A\x1b[A\x1b[A";
             } else if (firstRun) {
                 firstRun = false;
             }

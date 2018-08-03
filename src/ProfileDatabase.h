@@ -329,7 +329,7 @@ protected:
             } else if (cur.second.is_string()) {
                 node->writeEntry(std::make_unique<TextEntry>(cur.first, cur.second.string_value()));
             } else if (cur.second.is_number()) {
-                node->writeEntry(std::make_unique<SizeEntry>(cur.first, cur.second.int_value()));
+                node->writeEntry(std::make_unique<SizeEntry>(cur.first, cur.second.long_value()));
             } else {
                 std::string err;
                 cur.second.dump(err);

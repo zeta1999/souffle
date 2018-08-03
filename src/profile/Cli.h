@@ -48,7 +48,7 @@ public:
             case '-':
                 switch (args.at(1).at(args.at(1).length() - 1)) {
                     case 'h':
-                        std::cout << "Souffle Profiler v4.0.0" << std::endl
+                        std::cout << "Souffle Profiler" << std::endl
                                   << "Usage: souffle-profile -v | -h | <log-file> [ -c <command> [options] |"
                                      "-j | -l ]"
                                   << std::endl

@@ -175,6 +175,10 @@ public:
             return "t_nullaries";
         }
 
+        if (getDataStructure() == "eqrel") {
+            return "t_eqrel";
+        }
+
         std::stringstream out;
 
         out << "t";

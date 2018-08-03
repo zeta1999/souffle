@@ -208,21 +208,11 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             contextTypeName = "op_context";
         } else if (relationType.getDataStructure() == "eqrel") {
             // eqrel is only for binary relations
-            for (size_t i = 0; i < inds.size(); i++) {
-                if (inds[i].size() == arity) {
-                    if (masterIndex == -1) {
-                        masterIndex = i;
-                    }
-                }
-
-                if (i < relationType.getIndexSet().getAllOrders().size()) {
-                    indexToNumMap[relationType.getIndexSet().getAllOrders()[i]] = i;
-                }
-                out << "typedef ram::Tuple<RamDomain, " << inds[i].size() << "> t_tuple_" << i << ";\n";
-                out << "typedef BinaryRelation<t_tuple_" << i << "> t_ind_" << i << ";\n";
-                indexTypes << "t_ind_" << i << " ind_" << i << ";\n";
-            }
-            out << "typedef t_tuple_" << masterIndex << " t_tuple;\n";
+            out << "typedef ram::Tuple<RamDomain, 2> t_tuple_0;\n";
+            out << "typedef t_tuple_0 t_tuple;\n";
+            out << "typedef BinaryRelation<t_tuple> t_ind_0;\n";
+            indexTypes << "t_ind_0 ind_0;\n";
+            masterIndex = 0;
             contextTypeName = "operation_hints";
         }
 
@@ -238,8 +228,52 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
 
         out << indexTypes.str();
 
+        if (relationType.getDataStructure() == "btree") {
+        } else {
+            for (size_t i = 0; i < numIndexes; i++) {
+                // generate auxiliary iterators which orderOut 
+                out << "class iterator_" << i << " : public std::iterator<std::forward_iterator_tag, t_tuple_" << i << "> {\n";
+                out << "    using nested_iterator = typename t_ind_" << i << "::iterator;\n";
+                out << "    nested_iterator nested;\n";
+                out << "    t_tuple_" << i << " value;\n";
+
+                out << "public:\n";
+                out << "    iterator_" << i << "() = default;\n";
+                out << "    iterator_" << i << "(const nested_iterator& iter) : nested(iter), value(orderOut_" << i << "(*iter)) {}\n";
+                out << "    iterator_" << i << "(const iterator_" << i << "& other) = default;\n";
+                out << "    iterator_" << i << "& operator=(const iterator_" << i << "& other) = default;\n";
+
+                out << "    bool operator==(const iterator_" << i << "& other) const {\n";
+                out << "        return nested == other.nested;\n";
+                out << "    }\n";
+
+                out << "    bool operator!=(const iterator_" << i << "& other) const {\n";
+                out << "        return !(*this == other);\n";
+                out << "    }\n";
+
+                out << "    const t_tuple_" << i << "& operator*() const {\n";
+                out << "        return value;\n";
+                out << "    }\n";
+
+                out << "    const t_tuple_" << i << "* operator->() const {\n";
+                out << "        return &value;\n";
+                out << "    }\n";
+
+                out << "    iterator_" << i << "& operator++() {\n";
+                out << "        ++nested;\n";
+                out << "        value = orderOut_" << i << "(*nested);\n";
+                out << "        return *this;\n";
+                out << "    }\n";
+                out << "};\n";
+            }
+        }
+
         // typedef master iterator
-        out << "typedef typename t_ind_" << masterIndex << "::iterator iterator;\n";
+        if (relationType.getDataStructure() == "btree") {
+            out << "typedef typename t_ind_" << masterIndex << "::iterator iterator;\n";
+        } else {
+            out << "typedef iterator_" << masterIndex << " iterator;\n";
+        }
 
         // Create a struct storing the context hints for each index
         out << "struct context {\n";
@@ -276,14 +310,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "return true;\n";
             out << "} else return false;\n";
         } else if (relationType.getDataStructure() == "eqrel") {
-            out << "if (ind_" << masterIndex << ".insert(t[0], t[1])) {\n";
-            for (size_t i = 0; i < numIndexes; i++) {
-                if (i != masterIndex) {
-                    out << "ind_" << i << ".insert(t[0], t[1]);\n";
-                }
-            }
-            out << "return true;\n";
-            out << "} else return false;\n";
+            out << "return ind_0.insert(t[0], t[1]);\n";
         } else {
             out << "if (ind_" << masterIndex << ".insert(t)) {\n";
             for (size_t i = 0; i < numIndexes; i++) {
@@ -321,14 +348,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "return true;\n";
             out << "} else return false;\n";
         } else if (relationType.getDataStructure() == "eqrel") {
-            out << "if (ind_" << masterIndex << ".insert(t[0], t[1], h.hints_" << masterIndex << ")) {\n";
-            for (size_t i = 0; i < numIndexes; i++) {
-                if (i != masterIndex) {
-                    out << "ind_" << i << ".insert(t[0], t[1], h.hints_" << i << ");\n";
-                }
-            }
-            out << "return true;\n";
-            out << "} else return false;\n";
+            out << "return ind_0.insert(t[0], t[1], h.hints_" << masterIndex << ");\n";
         } else {
             out << "if (ind_" << masterIndex << ".insert(t, h.hints_" << masterIndex << ")) {\n";
             for (size_t i = 0; i < numIndexes; i++) {
@@ -411,7 +431,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
 
         if (relationType.getDataStructure() != "brie" || relationType.getArity() > 1) {
             // find methods
-            out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t) const {\n";
+            out << "iterator find(const t_tuple& t) const {\n";
             if (relationType.getDataStructure() == "brie") {
                 out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t));\n";
             } else {
@@ -419,7 +439,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             }
             out << "}\n";
 
-            out << "t_ind_" << masterIndex << "::iterator find(const t_tuple& t, context& h) const {\n";
+            out << "iterator find(const t_tuple& t, context& h) const {\n";
             if (relationType.getDataStructure() == "brie") {
                 out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
             } else if (relationType.getDataStructure() == "eqrel") {
@@ -445,47 +465,65 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         }
 
         // only necessary for nullaries and provenance
-        out << "range<t_ind_" << masterIndex
-            << "::iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
-        out << "return range<t_ind_" << masterIndex << "::iterator>(ind_" << masterIndex << ".begin(),ind_"
+        out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
+        out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_"
             << masterIndex << ".end());\n";
         out << "}\n";
 
         // for each pattern which is used to search this relation
-        for (int64_t search : relationType.getIndexSet().getSearches()) {
-            auto lexOrder = relationType.getIndexSet().getLexOrder(search);
-            size_t indNum = indexToNumMap[lexOrder];
-
-            if (relationType.getDataStructure() == "btree") {
-                out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
-                out << "(const t_tuple& t, context& h) const {\n";
-                out << "t_tuple low(t); t_tuple high(t);\n";
-                // check which indices to pad out
-                for (size_t column = 0; column < arity; column++) {
-                    // if bit number column is set
-                    if (!((search >> column) & 1)) {
-                        out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
-                        out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
-                    }
-                }
-                out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
-            } else {
-                out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
+        if (relationType.getDataStructure() == "eqrel") {
+            for (int i = 1; i < 4; i++) {
+                out << "range<iterator> equalRange_" << i;
                 out << "(const t_tuple& t, context& h) const {\n";
                 // compute size of sub-index
                 size_t indSize = 0;
+                int search = i;
                 while (search > 0) {
                     if (search & 1) {
                         indSize++;
                     }
                     search = search >> 1;
                 }
-                // TODO: the template library has something about reordering, not sure if it's necessary
-                out << "auto r = ind_" << indNum << ".template getBoundaries<" << indSize << ">(orderIn_" << indNum << "(t), h.hints_"
-                    << indNum << ");\n";
-                out << "return make_range(t_ind_" << indNum << "::iterator(r.begin()), t_ind_" << indNum << "::iterator(r.end()));\n";
+                out << "auto r = ind_0.template getBoundaries<" << indSize << ">(orderIn_0(t), h.hints_0);\n";
+                out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
+                out << "}\n";
             }
-            out << "}\n";
+        } else {
+            for (int64_t search : relationType.getIndexSet().getSearches()) {
+                auto lexOrder = relationType.getIndexSet().getLexOrder(search);
+                size_t indNum = indexToNumMap[lexOrder];
+
+                if (relationType.getDataStructure() == "btree") {
+                    out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
+                    out << "(const t_tuple& t, context& h) const {\n";
+                    out << "t_tuple low(t); t_tuple high(t);\n";
+                    // check which indices to pad out
+                    for (size_t column = 0; column < arity; column++) {
+                        // if bit number column is set
+                        if (!((search >> column) & 1)) {
+                            out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
+                            out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
+                        }
+                    }
+                    out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
+                } else {
+                    out << "range<iterator_" << indNum << "> equalRange_" << search;
+                    out << "(const t_tuple& t, context& h) const {\n";
+                    // compute size of sub-index
+                    size_t indSize = 0;
+                    while (search > 0) {
+                        if (search & 1) {
+                            indSize++;
+                        }
+                        search = search >> 1;
+                    }
+                    // TODO: the template library has something about reordering, not sure if it's necessary
+                    out << "auto r = ind_" << indNum << ".template getBoundaries<" << indSize << ">(orderIn_" << indNum << "(t), h.hints_"
+                        << indNum << ");\n";
+                    out << "return make_range(iterator_" << indNum << "(r.begin()), iterator_" << indNum << "(r.end()));\n";
+                }
+                out << "}\n";
+            }
         }
 
         // empty method
@@ -498,13 +536,13 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << "}\n";
 
         // partition method
-        out << "std::vector<range<t_ind_" << masterIndex << "::iterator>> partition() const {\n";
+        out << "std::vector<range<iterator>> partition() const {\n";
         if (relationType.getDataStructure() == "btree") {
             out << "return ind_" << masterIndex << ".getChunks(400);\n";
         } else {
             out << "std::vector<range<iterator>> res;\n";
             out << "for (const auto& cur : ind_" << masterIndex << ".partition(10000)) {\n";
-            out << "    res.push_back(make_range(iterator(cur.begin()), iterator(cur.end())));\n";
+            out << "    res.push_back(make_range(" << "iterator(cur.begin()), " << "iterator(cur.end())));\n";
             out << "}\n";
             out << "return res;\n";
         }
@@ -518,11 +556,11 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << "}\n";
 
         // begin and end iterators
-        out << "t_ind_" << masterIndex << "::iterator begin() const {\n";
+        out << "iterator begin() const {\n";
         out << "return ind_" << masterIndex << ".begin();\n";
         out << "}\n";
 
-        out << "t_ind_" << masterIndex << "::iterator end() const {\n";
+        out << "iterator end() const {\n";
         out << "return ind_" << masterIndex << ".end();\n";
         out << "}\n";
 
@@ -532,11 +570,10 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
 
         if (relationType.getDataStructure() == "btree") {
         } else {
-            // generate orderIn and orderOut methods which reorder tuples
-            // according to index orders
             for (size_t i = 0; i < numIndexes; i++) {
+                // generate orderIn and orderOut methods which reorder tuples
+                // according to index orders
                 auto ind = inds[i];
-
                 out << "static t_tuple_" << i << " orderIn_" << i << "(const t_tuple& t) {\n";
                 out << "t_tuple_" << i << " res;\n";
                 for (size_t j = 0; j < ind.size(); j++) {

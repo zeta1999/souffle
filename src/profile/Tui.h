@@ -160,7 +160,7 @@ public:
             return;
         }
         if (loaded) {
-            std::cout << "SouffleProf v3.0.1\n";
+            std::cout << "SouffleProf\n";
             top();
         }
 
@@ -215,7 +215,7 @@ public:
     }
 
     void outputJson() {
-        std::cout << "SouffleProf v4.0.1\n";
+        std::cout << "SouffleProf\n";
         std::cout << "Generating JSON files...\n";
 
         std::string workingdir = Tools::getworkingdir();

@@ -152,7 +152,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             if (arity > 6) {
                 indexTypes << "Table<t_tuple> data;\n";
                 indexTypes << "Lock insert_lock;\n";
-                storedType = "t_tuple*";
+                storedType = "const t_tuple*";
             }
             for (size_t i = 0; i < inds.size(); i++) {
                 auto ind = inds[i];
@@ -170,19 +170,21 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 if (Global::config().has("provenance")) {
                     assert(arity >= 2);
 
-                    indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<" << join(ind);
-                    indexTypes
-                            << ">, std::allocator<" << storedType << ">, 256, typename "
-                               "souffle::detail::default_strategy<" << storedType << ">::type, index_utils::comparator<";
+                    indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<"
+                               << join(ind);
+                    indexTypes << ">, std::allocator<" << storedType
+                               << ">, 256, typename "
+                                  "souffle::detail::default_strategy<"
+                               << storedType << ">::type, index_utils::comparator<";
                     indexTypes << join(ind.begin(), ind.end() - 2) << ">, updater_"
                                << relationType.getTypeName() << "> t_ind_" << i << ";\n";
                 } else {
                     if (ind.size() == arity) {
-                        indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<" << join(ind)
-                                   << ">> t_ind_" << i << ";\n";
+                        indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<"
+                                   << join(ind) << ">> t_ind_" << i << ";\n";
                     } else {
-                        indexTypes << "typedef btree_multiset<" << storedType << ", index_utils::comparator<" << join(ind)
-                                   << ">> t_ind_" << i << ";\n";
+                        indexTypes << "typedef btree_multiset<" << storedType << ", index_utils::comparator<"
+                                   << join(ind) << ">> t_ind_" << i << ";\n";
                     }
                 }
 
@@ -231,15 +233,17 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         if (relationType.getDataStructure() == "btree") {
         } else {
             for (size_t i = 0; i < numIndexes; i++) {
-                // generate auxiliary iterators which orderOut 
-                out << "class iterator_" << i << " : public std::iterator<std::forward_iterator_tag, t_tuple_" << i << "> {\n";
+                // generate auxiliary iterators which orderOut
+                out << "class iterator_" << i << " : public std::iterator<std::forward_iterator_tag, t_tuple_"
+                    << i << "> {\n";
                 out << "    using nested_iterator = typename t_ind_" << i << "::iterator;\n";
                 out << "    nested_iterator nested;\n";
                 out << "    t_tuple_" << i << " value;\n";
 
                 out << "public:\n";
                 out << "    iterator_" << i << "() = default;\n";
-                out << "    iterator_" << i << "(const nested_iterator& iter) : nested(iter), value(orderOut_" << i << "(*iter)) {}\n";
+                out << "    iterator_" << i << "(const nested_iterator& iter) : nested(iter), value(orderOut_"
+                    << i << "(*iter)) {}\n";
                 out << "    iterator_" << i << "(const iterator_" << i << "& other) = default;\n";
                 out << "    iterator_" << i << "& operator=(const iterator_" << i << "& other) = default;\n";
 
@@ -270,7 +274,18 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
 
         // typedef master iterator
         if (relationType.getDataStructure() == "btree") {
-            out << "typedef typename t_ind_" << masterIndex << "::iterator iterator;\n";
+            if (arity > 6) {
+                for (size_t i = 0; i < numIndexes; i++) {
+                    out << "using iterator_" << i << " = IterDerefWrapper<typename t_ind_" << i
+                        << "::iterator>;\n";
+                }
+                out << "typedef iterator_" << masterIndex << " iterator;\n";
+            } else {
+                for (size_t i = 0; i < numIndexes; i++) {
+                    out << "typedef typename t_ind_" << i << "::iterator iterator_" << i << ";\n";
+                }
+                out << "typedef iterator_" << masterIndex << " iterator;\n";
+            }
         } else {
             out << "typedef iterator_" << masterIndex << " iterator;\n";
         }
@@ -287,19 +302,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         // insert methods
         out << "bool insert(const t_tuple& t) {\n";
         if (arity > 6 && relationType.getDataStructure() == "btree") {
-            out << "const t_tuple* masterCopy = nullptr;\n";
-            out << "{\n";
-            out << "auto lease = insert_lock.acquire();\n";
-            out << "if (contains(t)) return false;\n";
-            out << "masterCopy = &data.insert(t);\n";
-            out << "ind_" << masterIndex << ".insert(*masterCopy);\n";
-            out << "}\n";
-            for (size_t i = 0; i < numIndexes; i++) {
-                if (i != masterIndex) {
-                    out << "ind_" << i << ".insert(*masterCopy);\n";
-                }
-            }
-            out << "return true;\n";
+            out << "return insert(t, hints);\n";
         } else if (relationType.getDataStructure() == "brie") {
             out << "if (ind_" << masterIndex << ".insert(orderIn_" << masterIndex << "(t))) {\n";
             for (size_t i = 0; i < numIndexes; i++) {
@@ -330,16 +333,17 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "auto lease = insert_lock.acquire();\n";
             out << "if (contains(t, h)) return false;\n";
             out << "masterCopy = &data.insert(t);\n";
-            out << "ind_" << masterIndex << ".insert(*masterCopy, h.hints_" << masterIndex << ");\n";
+            out << "ind_" << masterIndex << ".insert(masterCopy, h.hints_" << masterIndex << ");\n";
             out << "}\n";
             for (size_t i = 0; i < numIndexes; i++) {
                 if (i != masterIndex) {
-                    out << "ind_" << i << ".insert(*masterCopy, h.hints_" << i << ");\n";
+                    out << "ind_" << i << ".insert(masterCopy, h.hints_" << i << ");\n";
                 }
             }
             out << "return true;\n";
         } else if (relationType.getDataStructure() == "brie") {
-            out << "if (ind_" << masterIndex << ".insert(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex << ")) {\n";
+            out << "if (ind_" << masterIndex << ".insert(orderIn_" << masterIndex << "(t), h.hints_"
+                << masterIndex << ")) {\n";
             for (size_t i = 0; i < numIndexes; i++) {
                 if (i != masterIndex) {
                     out << "ind_" << i << ".insert(orderIn_" << i << "(t), h.hints_" << i << ");\n";
@@ -409,6 +413,8 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "return ind_" << masterIndex << ".contains(orderIn_" << masterIndex << "(t));\n";
         } else if (relationType.getDataStructure() == "eqrel") {
             out << "return ind_" << masterIndex << ".contains(t[0], t[1]);\n";
+        } else if (relationType.getDataStructure() == "btree" && arity > 6) {
+            out << "return ind_" << masterIndex << ".contains(&t);\n";
         } else {
             out << "return ind_" << masterIndex << ".contains(t);\n";
         }
@@ -416,9 +422,12 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
 
         out << "bool contains(const t_tuple& t, context& h) {\n";
         if (relationType.getDataStructure() == "brie") {
-            out << "return ind_" << masterIndex << ".contains(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
+            out << "return ind_" << masterIndex << ".contains(orderIn_" << masterIndex << "(t), h.hints_"
+                << masterIndex << ");\n";
         } else if (relationType.getDataStructure() == "eqrel") {
             out << "return ind_" << masterIndex << ".contains(t[0], t[1]);\n";
+        } else if (relationType.getDataStructure() == "btree" && arity > 6) {
+            out << "return ind_" << masterIndex << ".contains(&t, h.hints_" << masterIndex << ");\n";
         } else {
             out << "return ind_" << masterIndex << ".contains(t, h.hints_" << masterIndex << ");\n";
         }
@@ -434,6 +443,8 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "iterator find(const t_tuple& t) const {\n";
             if (relationType.getDataStructure() == "brie") {
                 out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t));\n";
+            } else if (relationType.getDataStructure() == "btree" && arity > 6) {
+                out << "return ind_" << masterIndex << ".find(&t);\n";
             } else {
                 out << "return ind_" << masterIndex << ".find(t);\n";
             }
@@ -441,9 +452,12 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
 
             out << "iterator find(const t_tuple& t, context& h) const {\n";
             if (relationType.getDataStructure() == "brie") {
-                out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
+                out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t), h.hints_"
+                    << masterIndex << ");\n";
             } else if (relationType.getDataStructure() == "eqrel") {
                 out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t));\n";
+            } else if (relationType.getDataStructure() == "btree" && arity > 6) {
+                out << "return ind_" << masterIndex << ".find(&t, h.hints_" << masterIndex << ");\n";
             } else {
                 out << "return ind_" << masterIndex << ".find(t, h.hints_" << masterIndex << ");\n";
             }
@@ -453,11 +467,16 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         // lowerUpperBound method for internal use
         if (relationType.getDataStructure() == "btree") {
             for (size_t i = 0; i < numIndexes; i++) {
-                out << "range<t_ind_" << i
-                    << "::iterator> lowerUpperBound(const t_tuple& low, const t_tuple& high, t_ind_" << i
+                out << "range<iterator_" << i
+                    << "> lowerUpperBound(const t_tuple& low, const t_tuple& high, t_ind_" << i
                     << "::" << contextTypeName << "& h) const {\n";
-                out << "return range<t_ind_" << i << "::iterator>(ind_" << i << ".lower_bound(low, h), ind_"
-                    << i << ".upper_bound(high, h));\n";
+                if (arity > 6) {
+                    out << "return range<iterator_" << i << ">(ind_" << i << ".lower_bound(&low, h), ind_"
+                        << i << ".upper_bound(&high, h));\n";
+                } else {
+                    out << "return range<iterator_" << i << ">(ind_" << i << ".lower_bound(low, h), ind_" << i
+                        << ".upper_bound(high, h));\n";
+                }
                 // TODO: Finish this for bries, we will need to consider the size of the sub-index and
                 // getBoundaries<size> and make_range
                 out << "}\n";
@@ -466,8 +485,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
 
         // only necessary for nullaries and provenance
         out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
-        out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_"
-            << masterIndex << ".end());\n";
+        out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
         out << "}\n";
 
         // for each pattern which is used to search this relation
@@ -493,8 +511,8 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 auto lexOrder = relationType.getIndexSet().getLexOrder(search);
                 size_t indNum = indexToNumMap[lexOrder];
 
+                out << "range<iterator_" << indNum << "> equalRange_" << search;
                 if (relationType.getDataStructure() == "btree") {
-                    out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
                     out << "(const t_tuple& t, context& h) const {\n";
                     out << "t_tuple low(t); t_tuple high(t);\n";
                     // check which indices to pad out
@@ -507,7 +525,6 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                     }
                     out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
                 } else {
-                    out << "range<iterator_" << indNum << "> equalRange_" << search;
                     out << "(const t_tuple& t, context& h) const {\n";
                     // compute size of sub-index
                     size_t indSize = 0;
@@ -518,9 +535,10 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                         search = search >> 1;
                     }
                     // TODO: the template library has something about reordering, not sure if it's necessary
-                    out << "auto r = ind_" << indNum << ".template getBoundaries<" << indSize << ">(orderIn_" << indNum << "(t), h.hints_"
-                        << indNum << ");\n";
-                    out << "return make_range(iterator_" << indNum << "(r.begin()), iterator_" << indNum << "(r.end()));\n";
+                    out << "auto r = ind_" << indNum << ".template getBoundaries<" << indSize << ">(orderIn_"
+                        << indNum << "(t), h.hints_" << indNum << ");\n";
+                    out << "return make_range(iterator_" << indNum << "(r.begin()), iterator_" << indNum
+                        << "(r.end()));\n";
                 }
                 out << "}\n";
             }
@@ -538,11 +556,19 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         // partition method
         out << "std::vector<range<iterator>> partition() const {\n";
         if (relationType.getDataStructure() == "btree") {
-            out << "return ind_" << masterIndex << ".getChunks(400);\n";
+            if (arity > 6) {
+                out << "std::vector<range<iterator>> res;\n";
+                out << "for (const auto& cur : ind_" << masterIndex << ".getChunks(400)) {\n";
+                out << "    res.push_back(make_range(derefIter(cur.begin()), derefIter(cur.end())));\n";
+                out << "}\n";
+                out << "return res;\n";
+            } else {
+                out << "return ind_" << masterIndex << ".getChunks(400);\n";
+            }
         } else {
             out << "std::vector<range<iterator>> res;\n";
             out << "for (const auto& cur : ind_" << masterIndex << ".partition(10000)) {\n";
-            out << "    res.push_back(make_range(" << "iterator(cur.begin()), " << "iterator(cur.end())));\n";
+            out << "    res.push_back(make_range(iterator(cur.begin()), iterator(cur.end())));\n";
             out << "}\n";
             out << "return res;\n";
         }

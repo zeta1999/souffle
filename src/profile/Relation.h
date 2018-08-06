@@ -31,6 +31,7 @@ private:
     double savetime = 0;
     long prev_num_tuples = 0;
     long num_tuples = 0;
+    long maxRSSDiff = 0;
     std::string id;
     std::string locator;
     int rul_id = 0;
@@ -116,6 +117,10 @@ public:
         return getNum_tuplesRel();
     }
 
+    inline long getMaxRSSDiff() {
+        return maxRSSDiff;
+    }
+
     long getTotNumRec_tuples() {
         long result = 0L;
         for (auto& iter : iterations) {
@@ -140,6 +145,10 @@ public:
 
     inline void setNum_tuples(long num_tuples) {
         this->num_tuples = num_tuples;
+    }
+
+    inline void setMaxRSSDiff(long maxRSSDiff) {
+        this->maxRSSDiff = maxRSSDiff;
     }
 
     std::string toString() {

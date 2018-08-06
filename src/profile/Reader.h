@@ -247,6 +247,10 @@ public:
             for (const auto& key : directory.getKeys()) {
                 directory.readEntry(key)->accept(rulesVisitor);
             }
+        } else if (directory.getKey() == "maxRSS") {
+            auto* maxRSSStart = dynamic_cast<SizeEntry*>(directory.readEntry("start"));
+            auto* maxRSSEnd = dynamic_cast<SizeEntry*>(directory.readEntry("end"));
+            base.setMaxRSSDiff(maxRSSEnd->getSize() - maxRSSStart->getSize());
         }
     }
 };

@@ -1334,40 +1334,6 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
     return changed;
 }
 
-bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
-    return false;
-}
-
-bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) {
-    AstProgram& program = *translationUnit.getProgram();
-
-    for (AstRelation* rel : program.getRelations()) {
-        std::vector<std::vector<AstClause*>> equivalenceClasses;
-        for (AstClause* clause : rel->getClauses()) {
-            bool added = false;
-
-            for (std::vector<AstClause*> eqClass : equivalenceClasses) {
-                AstClause* representative = eqClass[0];
-                if (areBijectivelyEquivalent(representative, clause)) {
-                    eqClass.push_back(representative);
-                    added = true;
-                    break;
-                }
-            }
-
-            if (!added) {
-                std::vector<AstClause*> clauseToAdd;
-                clauseToAdd.push_back(clause);
-                equivalenceClasses.push_back(clauseToAdd);
-            }
-        }
-
-        std::cout << rel << std::endl << equivalenceClasses << std::endl;
-    }
-
-    return true;
-}
-
 bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
 

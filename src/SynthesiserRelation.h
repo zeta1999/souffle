@@ -29,7 +29,7 @@ public:
     SynthesiserRelation(const RamRelation& rel, const IndexSet& indices, const bool isProvenance = false)
             : relation(rel), indices(indices), isProvenance(isProvenance) {
         // Set data structure
-        if (relation.isBTree()) {
+        if (relation.isBTree() || isProvenance) {
             dataStructure = "btree";
         } else if (relation.isRbtset()) {
             dataStructure = "rbtset";
@@ -53,13 +53,23 @@ public:
                     dataStructure = "eqrel";
                 }
             } else {
-                // TODO: automatically selects btree for now, need to restore correct behaviour
-                dataStructure = "btree";
+                if (getArity() > 2) {
+                    dataStructure = "btree";
+                } else {
+                    dataStructure = "brie";
+                }
             }
         }
 
         // Generate and set indices
         std::vector<std::vector<int>> inds = indices.getAllOrders();
+
+        // generate a full index if it doesn't exist
+        if (inds.empty()) {
+            std::vector<int> fullInd(getArity());
+            std::iota(fullInd.begin(), fullInd.end(), 0);
+            inds.push_back(fullInd);
+        }
 
         // Non-btree data structures should have all indices expanded
         if (dataStructure == "btree") {
@@ -71,20 +81,18 @@ public:
                     fullExists = true;
                 }
             }
-            // generate full ind if it does not exist
+            // expand the first ind to be full, it is guaranteed that at least one index exists
             if (!fullExists && !isProvenance) {
-                std::vector<int> fullInd(getArity());
-                std::iota(fullInd.begin(), fullInd.end(), 0);
-                inds.push_back(fullInd);
+                std::set<int> curIndexElems(inds[0].begin(), inds[0].end());
+
+                // expand index to be full
+                for (int i = 0; i < getArity(); i++) {
+                    if (curIndexElems.find(i) == curIndexElems.end()) {
+                        inds[0].push_back(i);
+                    }
+                }
             }
         } else {
-            // generate a full index if it doesn't exist
-            if (inds.empty()) {
-                std::vector<int> fullInd(getArity());
-                std::iota(fullInd.begin(), fullInd.end(), 0);
-                inds.push_back(fullInd);
-            }
-
             // expand all indexes to be full
             for (auto& ind : inds) {
                 if (ind.size() != getArity()) {
@@ -108,14 +116,8 @@ public:
         // since weak/strong comparators and updaters need this,
         // and also add provenance annotations to the indices
         if (isProvenance) {
-            // If there is no index, add one
-            if (inds.empty()) {
-                std::vector<int> fullInd(getArity() - 2);
-                std::iota(fullInd.begin(), fullInd.end(), 0);
-                inds.push_back(fullInd);
-            }
             for (auto& ind : inds) {
-                if (ind.size() != getArity() - 2) {
+                if (ind.size() < getArity() - 2) {
                     // use a set as a cache for fast lookup
                     std::set<int> curIndexElems(ind.begin(), ind.end());
 
@@ -125,11 +127,11 @@ public:
                             ind.push_back(i);
                         }
                     }
-                } /* else {
+                } else {
                     while (ind.size() > getArity() - 2) {
                         ind.pop_back();
                     }
-                }*/
+                }
 
                 // add provenance annotations to the index
                 ind.push_back(getArity() - 1);

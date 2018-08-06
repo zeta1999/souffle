@@ -297,12 +297,12 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         }
         out << "};\n";
         out << "context createContext() { return context(); }\n";
-        out << "context hints;\n";
 
         // insert methods
         out << "bool insert(const t_tuple& t) {\n";
         if (arity > 6 && relationType.getDataStructure() == "btree") {
-            out << "return insert(t, hints);\n";
+            out << "context h;\n";
+            out << "return insert(t, h);\n";
         } else if (relationType.getDataStructure() == "brie") {
             out << "if (ind_" << masterIndex << ".insert(orderIn_" << masterIndex << "(t))) {\n";
             for (size_t i = 0; i < numIndexes; i++) {
@@ -369,7 +369,8 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << "RamDomain data[" << arity << "];\n";
         out << "std::copy(ramDomain, ramDomain + " << arity << ", data);\n";
         out << "const t_tuple& tuple = reinterpret_cast<const t_tuple&>(data);\n";
-        out << "return this->insert(tuple, hints);\n";
+        out << "context h;\n";
+        out << "return this->insert(tuple, h);\n";
         out << "}\n";
 
         // insertAll method

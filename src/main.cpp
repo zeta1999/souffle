@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
 
     /* have all to do with command line arguments in its own scope, as these are accessible through the global
      * configuration only */
-    {
+    try {
         Global::config().processArgs(argc, argv,
                 []() {
                     std::stringstream header;
@@ -317,6 +317,9 @@ int main(int argc, char** argv) {
         if (Global::config().has("live-profile") && !Global::config().has("profile")) {
             Global::config().set("profile");
         }
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        exit(1);
     }
 
     // ------ start souffle -------------

@@ -169,22 +169,47 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 // Provenance requires direct-indexed BTrees
                 if (Global::config().has("provenance")) {
                     assert(arity >= 2);
-
-                    indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<"
-                               << join(ind);
-                    indexTypes << ">, std::allocator<" << storedType
-                               << ">, 256, typename "
-                                  "souffle::detail::default_strategy<"
-                               << storedType << ">::type, index_utils::comparator<";
-                    indexTypes << join(ind.begin(), ind.end() - 2) << ">, updater_"
-                               << relationType.getTypeName() << "> t_ind_" << i << ";\n";
+                    if (arity > 6) {
+                        indexTypes << "typedef btree_set<" << storedType
+                                   << ", index_utils::deref_compare<typename index_utils::comparator<"
+                                   << join(ind);
+                        indexTypes << ">>, std::allocator<" << storedType
+                                   << ">, 256, typename "
+                                      "souffle::detail::default_strategy<"
+                                   << storedType
+                                   << ">::type, index_utils::deref_compare<typename index_utils::comparator<";
+                        indexTypes << join(ind.begin(), ind.end() - 2) << ">>, updater_"
+                                   << relationType.getTypeName() << "> t_ind_" << i << ";\n";
+                    } else {
+                        indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<"
+                                   << join(ind);
+                        indexTypes << ">, std::allocator<" << storedType
+                                   << ">, 256, typename "
+                                      "souffle::detail::default_strategy<"
+                                   << storedType << ">::type, index_utils::comparator<";
+                        indexTypes << join(ind.begin(), ind.end() - 2) << ">, updater_"
+                                   << relationType.getTypeName() << "> t_ind_" << i << ";\n";
+                    }
                 } else {
                     if (ind.size() == arity) {
-                        indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<"
-                                   << join(ind) << ">> t_ind_" << i << ";\n";
+                        if (arity > 6) {
+                            indexTypes << "typedef btree_set<" << storedType
+                                       << ", index_utils::deref_compare<typename index_utils::comparator<"
+                                       << join(ind) << ">>> t_ind_" << i << ";\n";
+                        } else {
+                            indexTypes << "typedef btree_set<" << storedType << ", index_utils::comparator<"
+                                       << join(ind) << ">> t_ind_" << i << ";\n";
+                        }
                     } else {
-                        indexTypes << "typedef btree_multiset<" << storedType << ", index_utils::comparator<"
-                                   << join(ind) << ">> t_ind_" << i << ";\n";
+                        if (arity > 6) {
+                            indexTypes << "typedef btree_multiset<" << storedType
+                                       << ", index_utils::deref_compare<typename index_utils::comparator<"
+                                       << join(ind) << ">>> t_ind_" << i << ";\n";
+                        } else {
+                            indexTypes << "typedef btree_multiset<" << storedType
+                                       << ", index_utils::comparator<" << join(ind) << ">> t_ind_" << i
+                                       << ";\n";
+                        }
                     }
                 }
 

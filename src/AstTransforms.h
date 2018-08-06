@@ -191,6 +191,19 @@ public:
 };
 
 /**
+ * Transformation pass to remove equivalent rules.
+ */
+class MinimiseProgramTransformer : public AstTransformer {
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+
+public:
+    std::string getName() const override {
+        return "MinimiseProgramTransformer";
+    }
+};
+
+/**
  * Transformation pass to add provenance information via guided SLD
  */
 class ProvenanceTransformer : public AstTransformer {

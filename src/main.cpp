@@ -405,6 +405,7 @@ int main(int argc, char** argv) {
             std::make_unique<ExtractDisconnectedLiteralsTransformer>(),
             std::make_unique<ResolveAliasesTransformer>(),
             std::make_unique<RemoveRelationCopiesTransformer>(),
+            std::make_unique<MinimiseProgramTransformer>(),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),

@@ -82,7 +82,14 @@ void executeBinary(const std::string& binaryFilename
     int exitCode;
 #ifdef USE_MPI
     if (Global::config().get("engine") == "mpi") {
-        exitCode = system(("mpiexec -n " + std::to_string(numberOfProcesses) + " " + binaryFilename).c_str());
+        std::stringstream ss;
+        ss << "mpiexec";
+        if (Global::config().has("hostfile")) {
+            ss << " --hostfile " << Global::config().get("hostfile");
+        }
+        ss << " -n " << std::to_string(numberOfProcesses);
+        ss << " " << binaryFilename;
+        exitCode = system(ss.str().c_str());
     } else
 #endif
     {
@@ -200,6 +207,11 @@ int main(int argc, char** argv) {
                                     "Specify data structure (brie/btree/eqrel/rbtset/hashset)."},
                             {"engine", 'e', "[ file | mpi ]", "", false,
                                     "Specify communication engine for distributed execution."},
+#ifdef USE_MPI
+                            {"hostfile", '\0', "FILE", "", false,
+                                    "Specify --hostfile option for call to mpiexec when using mpi as "
+                                    "execution engine."},
+#endif
                             {"verbose", 'v', "", "", false, "Verbose output."},
                             {"help", 'h', "", "", false, "Display this help message."}};
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));

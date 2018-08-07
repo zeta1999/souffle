@@ -207,11 +207,9 @@ int main(int argc, char** argv) {
                                     "Specify data structure (brie/btree/eqrel/rbtset/hashset)."},
                             {"engine", 'e', "[ file | mpi ]", "", false,
                                     "Specify communication engine for distributed execution."},
-#ifdef USE_MPI
                             {"hostfile", '\0', "FILE", "", false,
                                     "Specify --hostfile option for call to mpiexec when using mpi as "
                                     "execution engine."},
-#endif
                             {"verbose", 'v', "", "", false, "Verbose output."},
                             {"help", 'h', "", "", false, "Display this help message."}};
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
@@ -312,8 +310,17 @@ int main(int argc, char** argv) {
             }
 #ifndef USE_MPI
             if (engine == "mpi") {
+                throw std::invalid_argument("Error: Use of engine '" + engine +
+                                            "' requires configure option '--enable-" + engine + "'.");
+            }
+            if (Global::config().has("hostfile")) {
                 throw std::invalid_argument(
-                        "Error: Use of engine '" + engine + "' requires configure option '--enable-mpi'.");
+                        "Error: Use of hostfile option requires configure option '--enable-" + engine + "'.");
+            }
+#else
+            if (engine != "mpi" && Global::config().has("hostfile")) {
+                throw std::invalid_argument(
+                        "Error: Use of hostfile option requires execution engine '" + engine + "'.");
             }
 #endif
         }

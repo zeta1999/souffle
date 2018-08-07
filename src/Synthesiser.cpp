@@ -620,7 +620,23 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << "}\n";
 
         // TODO: finish printHintStatistics method
-        out << "void printHintStatistics(std::ostream& o, std::string prefix) const {\n";
+        out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+        if (relationType.getDataStructure() == "eqrel") {
+            out << "o << \"eqrel index: no hint statistics supported\\n\";\n";
+        } else {
+            for (size_t i = 0; i < numIndexes; i++) {
+                out << "const auto& stats_" << i << " = ind_" << i << ".getHintStatistics();\n";
+                out << "o << prefix << \"arity " << relationType.getArity() << " " << relationType.getDataStructure() << " index " << inds[i] << ": (hits/misses/total)\\n\";\n";
+                out << "o << prefix << \"Insert: \" << stats_" << i << ".inserts.getHits() << \"/\" << stats_" << i << ".inserts.getMisses() << \"/\" << stats_" << i << ".inserts.getAccesses() << \"\\n\";\n";
+                out << "o << prefix << \"Contains: \" << stats_" << i << ".contains.getHits() << \"/\" << stats_" << i << ".contains.getMisses() << \"/\" << stats_" << i << ".contains.getAccesses() << \"\\n\";\n";
+                if (relationType.getDataStructure() == "btree") {
+                    out << "o << prefix << \"Lower-bound: \" << stats_" << i << ".lower_bound.getHits() << \"/\" << stats_" << i << ".lower_bound.getMisses() << \"/\" << stats_" << i << ".lower_bound.getAccesses() << \"\\n\";\n";
+                    out << "o << prefix << \"Upper-bound: \" << stats_" << i << ".upper_bound.getHits() << \"/\" << stats_" << i << ".upper_bound.getMisses() << \"/\" << stats_" << i << ".upper_bound.getAccesses() << \"\\n\";\n";
+                } else if (relationType.getDataStructure() == "brie") {
+                    out << "o << prefix << \"Range-query: \" << stats_" << i << ".get_boundaries.getHits() << \"/\" << stats_" << i << ".get_boundaries.getMisses() << \"/\" << stats_" << i << ".get_boundaries.getAccesses() << \"\\n\";\n";
+                }
+            }
+        }
         out << "}\n";
 
         if (relationType.getDataStructure() == "btree") {

@@ -150,7 +150,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
             std::string storedType = "t_tuple";
             if (arity > 6) {
-                indexTypes << "Table<t_tuple> data;\n";
+                indexTypes << "Table<t_tuple> dataTable;\n";
                 indexTypes << "Lock insert_lock;\n";
                 storedType = "const t_tuple*";
             }
@@ -357,7 +357,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
             out << "{\n";
             out << "auto lease = insert_lock.acquire();\n";
             out << "if (contains(t, h)) return false;\n";
-            out << "masterCopy = &data.insert(t);\n";
+            out << "masterCopy = &dataTable.insert(t);\n";
             out << "ind_" << masterIndex << ".insert(masterCopy, h.hints_" << masterIndex << ");\n";
             out << "}\n";
             for (size_t i = 0; i < numIndexes; i++) {
@@ -604,6 +604,9 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         out << "void purge() {\n";
         for (size_t i = 0; i < numIndexes; i++) {
             out << "ind_" << i << ".clear();\n";
+        }
+        if (relationType.getDataStructure() == "btree" && arity > 6) {
+            out << "dataTable.clear();\n";
         }
         out << "}\n";
 

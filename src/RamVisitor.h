@@ -20,6 +20,7 @@
 #include "RamCondition.h"
 #include "RamNode.h"
 #include "RamOperation.h"
+#include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamValue.h"
@@ -124,6 +125,14 @@ struct RamVisitor : public ram_visitor_tag {
             FORWARD(DebugInfo);
             FORWARD(Stratum);
 
+#ifdef USE_MPI
+            // mpi
+            FORWARD(Send);
+            FORWARD(Recv);
+            FORWARD(Notify);
+            FORWARD(Wait);
+#endif
+
 #undef FORWARD
         }
 
@@ -206,6 +215,13 @@ protected:
     // -- relation
     LINK(Relation, Node)
     LINK(RelationRef, Node)
+
+#ifdef USE_MPI
+    LINK(Send, RelationStatement);
+    LINK(Recv, RelationStatement);
+    LINK(Notify, Statement);
+    LINK(Wait, Statement);
+#endif
 
 #undef LINK
 

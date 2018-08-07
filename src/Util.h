@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "Macro.h"
+#include "RamTypes.h"
 
 #include <algorithm>
 #include <atomic>
@@ -44,6 +44,18 @@
 #include <libgen.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+/**
+ * Converts a string to a number
+ */
+
+#if RAM_DOMAIN_SIZE == 64
+#define stord(a) std::stoll(a)
+#elif RAM_DOMAIN_SIZE == 32
+#define stord(a) std::stoi(a)
+#else
+#error RAM Domain is neither 32bit nor 64bit
+#endif
 
 #if __cplusplus == 201103L
 // make_unique implementation for C++11
@@ -907,6 +919,7 @@ bool none_of(const Container& c, UnaryPredicate p) {
 
 // a type def for a time point
 using time_point = std::chrono::high_resolution_clock::time_point;
+using std::chrono::microseconds;
 
 // a shortcut for taking the current time
 inline time_point now() {
@@ -914,8 +927,8 @@ inline time_point now() {
 }
 
 // a shortcut for obtaining the time difference in milliseconds
-inline long duration_in_ms(const time_point& start, const time_point& end) {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+inline long duration_in_us(const time_point& start, const time_point& end) {
+    return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 }
 
 // a shortcut for obtaining the time difference in nanoseconds
@@ -1279,17 +1292,17 @@ public:
     }
 
     std::size_t getHits() const {
-        ASSERT(active);
+        assert(active);
         return hits;
     }
 
     std::size_t getMisses() const {
-        ASSERT(active);
+        assert(active);
         return misses;
     }
 
     std::size_t getAccesses() const {
-        ASSERT(active);
+        assert(active);
         return getHits() + getMisses();
     }
 

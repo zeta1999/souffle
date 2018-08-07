@@ -330,6 +330,7 @@ AstLiteral* negateLiteral(AstLiteral* lit) {
         return newCons;
     } else {
         assert(false && "Unsupported literal type!");
+        return nullptr;
     }
 }
 
@@ -371,7 +372,7 @@ std::vector<std::vector<AstLiteral*>> combineNegatedLiterals(
             newVec.push_back(negateLiteral(lhsLit));
 
             for (AstLiteral* lit : rhsVec) {
-                newVec.push_back(lit->clone());
+                newVec.push_back(lit);
             }
 
             negation.push_back(newVec);
@@ -831,6 +832,11 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
                 // Essentially, produce every combination (m_1 ^ m_2 ^ ...) where m_i is a
                 // negated literal in the ith rule of a.
                 addedBodyLiterals = formNegatedLiterals(program, atom);
+            }
+        }
+        for (const auto& curVec : atomVersions.getVector()) {
+            for (auto* cur : curVec) {
+                delete cur;
             }
         }
     } else if (auto* constraint = dynamic_cast<AstBinaryConstraint*>(lit)) {

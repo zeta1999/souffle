@@ -4,46 +4,41 @@
 # - https://opensource.org/licenses/UPL
 # - <souffle root>/licenses/SOUFFLE-UPL.txt
 
-
 SUFFIXES = .cpp .h .yy .ll .cc .hh .h
 
 bin_PROGRAMS = souffle souffle-profile souffle2bdd souffle2lb
 
 nodist_souffle_profile_SOURCES = $(BUILT_SOURCES)
 
-souffle_profile_SOURCES = souffle_prof.cpp profilerlib/Cell.h   \
-                          profilerlib/CellInterface.h           \
-                          profilerlib/Cli.cpp                   \
-                          profilerlib/Cli.h                     \
-                          profilerlib/DataComparator.h          \
-                          profilerlib/Iteration.cpp             \
-                          profilerlib/Iteration.h               \
-                          profilerlib/OutputProcessor.cpp       \
-                          profilerlib/OutputProcessor.h         \
-                          profilerlib/ProgramRun.cpp            \
-                          profilerlib/ProgramRun.h              \
-                          profilerlib/Reader.cpp                \
-                          profilerlib/Reader.h                  \
-                          profilerlib/Relation.cpp              \
-                          profilerlib/Relation.h                \
-                          profilerlib/Row.h                     \
-                          profilerlib/Rule.cpp                  \
-                          profilerlib/Rule.h                    \
-                          profilerlib/StringUtils.cpp           \
-                          profilerlib/StringUtils.h             \
-                          profilerlib/Table.cpp                 \
-                          profilerlib/Table.h                   \
-                          profilerlib/Tui.cpp                   \
-                          profilerlib/Tui.h                     \
-                          profilerlib/html_string.h             \
-                          profilerlib/UserInputReader.cpp       \
-                          profilerlib/UserInputReader.h         \
-                          FileFormatConverter.h  
+souffle_profile_sources = \
+                          ProfileDatabase.h                 \
+                          json11.h                          \
+                          profile/Cell.h                    \
+                          profile/CellInterface.h           \
+                          profile/Cli.h                     \
+                          profile/DataComparator.h          \
+                          profile/Iteration.h               \
+                          profile/OutputProcessor.h         \
+                          profile/ProgramRun.h              \
+                          profile/Reader.h                  \
+                          profile/Relation.h                \
+                          profile/Row.h                     \
+                          profile/Rule.h                    \
+                          profile/StringUtils.h             \
+                          profile/Table.h                   \
+                          profile/Tui.h                     \
+                          profile/UserInputReader.h         \
+                          profile/htmlCssChartist.h         \
+                          profile/htmlJsChartistMin.h       \
+                          profile/htmlJsMain.h              \
+                          profile/htmlJsUtil.h              \
+                          profile/htmlCssStyle.h            \
+                          profile/htmlJsChartistPlugin.h    \
+                          profile/htmlJsTableSort.h         \
+                          profile/htmlMain.h                \
+                          profile/HtmlString.h
 
 DIR := ${CURDIR}
-
-souffle_profile_CXXFLAGS = $(souffle_CPPFLAGS) -DMAKEDIR='"$(DIR)"'
-
 
 # ... which should no go to distribution
 nodist_souffle_SOURCES = $(BUILT_SOURCES)
@@ -56,45 +51,60 @@ if SQLITE
 sqlite_sources = ReadStreamSQLite.h WriteStreamSQLite.h
 endif
 
+if MPI
+mpi_sources = Mpi.h
+endif
+
 souffle_sources = \
-              parser.cc             parser.hh           \
-              scanner.cc            stack.hh            \
-              ParserDriver.cpp      ParserDriver.h      \
+              AstAnalysis.h                             \
               AstArgument.cpp       AstArgument.h       \
               AstAttribute.h                            \
               AstClause.cpp         AstClause.h         \
               AstComponent.h                            \
-              AstPragma.cpp         AstPragma.h         \
+              AstComponentChecker.cpp                   \
+              AstComponentChecker.h                     \
               AstIODirective.h                          \
               AstLiteral.h                              \
               AstNode.h                                 \
               AstParserUtils.cpp    AstParserUtils.h    \
+              AstPragma.cpp         AstPragma.h         \
               AstProgram.cpp        AstProgram.h        \
               AstRelation.h                             \
               AstRelationIdentifier.h                   \
-              SrcLocation.cpp    SrcLocation.h    \
-              AstTypeAnalysis.cpp   AstTypeAnalysis.h   \
-              AstType.h                                 \
-              AstUtils.cpp          AstUtils.h          \
-              AstVisitor.h                              \
-              AstAnalysis.h                             \
-              AstTransformer.cpp    AstTransformer.h    \
-              AstTranslationUnit.h  ErrorReport.h       \
-              DebugReport.cpp       DebugReport.h       \
-              ComponentModel.cpp    ComponentModel.h    \
               AstSemanticChecker.cpp                    \
               AstSemanticChecker.h                      \
-              AstComponentChecker.cpp                   \
-              AstComponentChecker.h                     \
+              AstTransformer.cpp    AstTransformer.h    \
               AstTransforms.cpp     AstTransforms.h     \
-              UnaryFunctorOps.h                         \
-              BinaryFunctorOps.h                        \
-              TernaryFunctorOps.h                       \
-              BinaryConstraintOps.h                     \
-              Constraints.h                             \
-              GraphUtils.h                              \
+              AstTranslationUnit.h  ErrorReport.h       \
               AstTranslator.cpp     AstTranslator.h     \
-              Synthesiser.cpp       Synthesiser.h       \
+              AstType.h                                 \
+              AstTypeAnalysis.cpp   AstTypeAnalysis.h   \
+              AstUtils.cpp          AstUtils.h          \
+              AstVisitor.h                              \
+              BinaryConstraintOps.h                     \
+              BinaryFunctorOps.h                        \
+              ComponentModel.cpp    ComponentModel.h    \
+              Constraints.h                             \
+              DebugReport.cpp       DebugReport.h       \
+              EventProcessor.h                          \
+              Global.cpp            Global.h            \
+              GraphUtils.h                              \
+              IODirectives.h                            \
+              IOSystem.h                                \
+              IndexSetAnalysis.cpp   IndexSetAnalysis.h \
+              InlineRelationsTransformer.cpp            \
+              Interpreter.cpp       Interpreter.h       \
+              InterpreterContext.h                      \
+              InterpreterIndex.h                        \
+              InterpreterInterface.h                    \
+              InterpreterRecords.cpp InterpreterRecords.h \
+              InterpreterRelation.h                     \
+              LogStatement.h                            \
+              MagicSet.cpp          MagicSet.h          \
+              ParserDriver.cpp      ParserDriver.h      \
+              PrecedenceGraph.cpp   PrecedenceGraph.h   \
+              ProfileEvent.h                            \
+              ProvenanceTransformer.cpp                 \
               RamAnalysis.h                             \
               RamCondition.h                            \
               RamNode.h                                 \
@@ -107,30 +117,23 @@ souffle_sources = \
               RamTranslationUnit.h                      \
               RamValue.h                                \
               RamVisitor.h                              \
-              SignalHandler.h                           \
-              StringPool.h                              \
-              TypeSystem.cpp        TypeSystem.h        \
-              PrecedenceGraph.cpp   PrecedenceGraph.h   \
-              MagicSet.cpp          MagicSet.h          \
-              InlineRelationsTransformer.cpp            \
-              $(sqlite_sources)     $(libz_sources)     \
               ReadStream.h                              \
               ReadStreamCSV.h                           \
+              SignalHandler.h                           \
+              SrcLocation.cpp    SrcLocation.h          \
+              StringPool.h                              \
+              Synthesiser.cpp       Synthesiser.h       \
+              TernaryFunctorOps.h                       \
+              TypeSystem.cpp        TypeSystem.h        \
+              UnaryFunctorOps.h                         \
               WriteStream.h                             \
-              IODirectives.h                            \
               WriteStreamCSV.h                          \
-              IOSystem.h                                \
-              Interpreter.cpp       Interpreter.h       \
-              InterpreterContext.h                      \
-              InterpreterRelation.h                     \
-              InterpreterInterface.h                    \
-              InterpreterIndex.h                        \
-              InterpreterRecords.cpp InterpreterRecords.h \
-              IndexSetAnalysis.cpp   IndexSetAnalysis.h \
-              ProvenanceTransformer.cpp                 \
-              Global.cpp            Global.h            \
-              LogStatement.h                         \
-              ProfileEvent.h
+              parser.cc             parser.hh           \
+              scanner.cc            stack.hh            \
+              $(sqlite_sources)                         \
+              $(libz_sources)                           \
+              $(souffle_profile_sources)                \
+              $(mpi_sources)
 
 # -- build souffle as a library so it can be reused in testing
 noinst_LTLIBRARIES = libsouffle.la
@@ -141,12 +144,14 @@ libsouffle_la_LDFLAGS = --static --dlopen --pic
 souffle_SOURCES = main.cpp
 souffle_LDADD = libsouffle.la
 
+souffle_profile_SOURCES = souffle_prof.cpp
+souffle_profile_CXXFLAGS = $(souffle_CPPFLAGS) -DMAKEDIR='"$(DIR)"'
+
 souffle2bdd_SOURCES = souffle2bdd.cpp
 souffle2bdd_LDADD = libsouffle.la
 
 souffle2lb_SOURCES = souffle2lb.cpp
 souffle2lb_LDADD = libsouffle.la
-
 
 dist_bin_SCRIPTS = souffle-compile souffle-config
 
@@ -154,43 +159,51 @@ EXTRA_DIST = parser.yy scanner.ll  test/test.h
 
 soufflepublicdir = $(includedir)/souffle
 
-soufflepublic_HEADERS = CompiledOptions.h       \
-                        CompiledIndexUtils.h    \
-                        CompiledRelation.h      \
-                        CompiledTuple.h         \
-                        CompiledRecord.h        \
-                        CompiledSouffle.h       \
-                        SignalHandler.h         \
-                        SouffleInterface.h      \
-                        ParallelUtils.h         \
+soufflepublic_HEADERS = \
+						CompiledOptions.h       \
+                        AstTypes.h              \
                         BTree.h                 \
-                        htmx86.h                \
-                        Trie.h                  \
-                        UnionFind.h             \
                         BinaryRelation.h        \
                         BlockList.h             \
-                        Table.h                 \
-                        Util.h                  \
-                        Macro.h                 \
-                        RamTypes.h              \
-                        AstTypes.h              \
-                        IterUtils.h             \
-                        SymbolTable.h           \
-                        Logger.h                \
-                        $(sqlite_sources)       \
-                        $(libz_sources)         \
-                        IODirectives.h          \
-                        IOSystem.h              \
-                        ReadStream.h            \
-                        ReadStreamCSV.h         \
-                        SymbolMask.h            \
-                        WriteStream.h           \
-                        WriteStreamCSV.h        \
+                        CompiledIndexUtils.h    \
+                        CompiledRecord.h        \
+                        CompiledRelation.h      \
+                        CompiledSouffle.h       \
+                        CompiledTuple.h         \
+                        EventProcessor.h        \
                         Explain.h               \
-                        ExplainTree.h           \
                         ExplainProvenance.h     \
                         ExplainProvenanceSLD.h  \
-                        ProfileEvent.h
+                        ExplainTree.h           \
+                        IODirectives.h          \
+                        IOSystem.h              \
+                        IterUtils.h             \
+                        Logger.h                \
+                        ParallelUtils.h         \
+                        ProfileDatabase.h       \
+                        ProfileEvent.h          \
+                        RamTypes.h              \
+                        ReadStream.h            \
+                        ReadStreamCSV.h         \
+                        SignalHandler.h         \
+                        SouffleInterface.h      \
+                        SymbolMask.h            \
+                        SymbolTable.h           \
+                        Table.h                 \
+                        Trie.h                  \
+                        UnionFind.h             \
+                        Util.h                  \
+                        WriteStream.h           \
+                        WriteStreamCSV.h        \
+                        htmx86.h                \
+                        json11.h                \
+                        $(libz_sources)         \
+                        $(sqlite_sources)       \
+                        $(mpi_sources)
+
+souffleprofiledir = $(soufflepublicdir)/profile
+
+souffleprofile_HEADERS = $(souffle_profile_sources)
 
 # files to clean
 CLEANFILES = $(BUILT_SOURCES)  parser.cc scanner.cc parser.hh stack.hh
@@ -205,7 +218,8 @@ $(builddir)/scanner.cc: $(srcdir)/scanner.ll
 
 # driver depends on the generated header
 $(builddir)/parser.cc $(builddir)/stack.hh $(builddir)/scanner.cc \
-        $(builddir)/main.cpp $(builddir)/ParserDriver.cpp: $(builddir)/parser.hh
+    $(builddir)/souffle2bdd.cpp $(builddir)/souffle2lb.cpp \
+    $(builddir)/main.cpp $(builddir)/ParserDriver.cpp: $(builddir)/parser.hh
 
 ########## Unit Tests
 
@@ -324,11 +338,13 @@ test_parallel_utils_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/
 test_parallel_utils_test_SOURCES = test/parallel_utils_test.cpp
 test_parallel_utils_test_LDADD = libsouffle.la
 
-# file format converter
-check_PROGRAMS += test/file_format_converter_test
-test_file_format_converter_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
-test_file_format_converter_test_SOURCES = test/file_format_converter_test.cpp
-test_file_format_converter_test_LDADD = libsouffle.la
+if MPI
+# mpi interface
+check_PROGRAMS += test/mpi_test
+test_mpi_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_mpi_test_SOURCES = test/mpi_test.cpp
+test_mpi_test_LDADD = libsouffle.la
+endif
 
 # make all check-programs tests
 TESTS = $(check_PROGRAMS)

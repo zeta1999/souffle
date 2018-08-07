@@ -40,6 +40,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -239,21 +240,24 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
             // get some table details
-            out << "try {";
-            out << "std::map<std::string, std::string> directiveMap(";
-            out << load.getIODirectives() << ");\n";
-            out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-            out << "directiveMap[\"filename\"].front() != '/') {";
-            out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
-            out << "}\n";
-            out << "IODirectives ioDirectives(directiveMap);\n";
-            out << "IOSystem::getInstance().getReader(";
-            out << "SymbolMask({" << load.getRelation().getSymbolMask() << "})";
-            out << ", symTable, ioDirectives";
-            out << ", " << Global::config().has("provenance");
-            out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
-            out << ");\n";
-            out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+            for (IODirectives ioDirectives : load.getIODirectives()) {
+                out << "try {";
+                out << "std::map<std::string, std::string> directiveMap(";
+                out << ioDirectives << ");\n";
+                out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
+                out << "directiveMap[\"filename\"].front() != '/') {";
+                out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
+                out << "}\n";
+                out << "IODirectives ioDirectives(directiveMap);\n";
+                out << "IOSystem::getInstance().getReader(";
+                out << "SymbolMask({" << load.getRelation().getSymbolMask() << "})";
+                out << ", symTable, ioDirectives";
+                out << ", " << Global::config().has("provenance");
+                out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
+                out << ");\n";
+                out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                       "'\\n';}\n";
+            }
             out << "}\n";
             PRINT_END_COMMENT(out);
         }
@@ -359,9 +363,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitDrop(const RamDrop& drop, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
+
             out << "if (!isHintsProfilingEnabled() && (performIO || " << drop.getRelation().isTemp() << ")) ";
             out << synthesiser.getRelationName(drop.getRelation()) << "->"
                 << "purge();\n";
+
             PRINT_END_COMMENT(out);
         }
 
@@ -382,7 +388,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "ProfileEventSingleton::instance().makeQuantityEvent( R\"(";
             out << print.getMessage() << ")\",";
-            out << synthesiser.getRelationName(print.getRelation()) << "->size());";
+            out << synthesiser.getRelationName(print.getRelation()) << "->size(),iter);";
             PRINT_END_COMMENT(out);
         }
 
@@ -432,9 +438,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitLoop(const RamLoop& loop, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
+            out << "iter = 0;\n";
             out << "for(;;) {\n";
             visit(loop.getBody(), out);
+            out << "iter++;\n";
             out << "}\n";
+            out << "iter = 0;\n";
             PRINT_END_COMMENT(out);
         }
 
@@ -468,7 +477,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const std::string ext = fileExtension(Global::config().get("profile"));
 
             // create local timer
-            out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\");\n";
+            out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter);\n";
 
             // insert statement to be measured
             visit(timer.getStatement(), out);
@@ -504,13 +513,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 visit(condition, out);
                 out << ") {\n";
                 visit(search.getNestedOperation(), out);
-                if (Global::config().has("profile")) {
+                if (Global::config().has("profile") && !search.getProfileText().empty()) {
                     out << "freqs[" << synthesiser.lookupFreqIdx(search.getProfileText()) << "]++;\n";
                 }
                 out << "}\n";
             } else {
                 visit(search.getNestedOperation(), out);
-                if (Global::config().has("profile")) {
+                if (Global::config().has("profile") && !search.getProfileText().empty()) {
                     out << "freqs[" << synthesiser.lookupFreqIdx(search.getProfileText()) << "]++;\n";
                 }
             }
@@ -983,6 +992,17 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(op.getValue(), out);
                     out << "))";
                     break;
+                case UnaryOp::TOSTRING:
+                    out << "symTable.lookup(std::to_string(";
+                    visit(op.getValue(), out);
+                    out << "))";
+                    break;
+                case UnaryOp::TONUMBER:
+                    out << "(wrapper_tonumber(symTable.resolve((size_t)";
+                    visit(op.getValue(), out);
+                    out << ")))";
+                    break;
+
                 default:
                     assert(false && "Unsupported Operation!");
                     break;
@@ -1167,6 +1187,76 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
         }
 
+#ifdef USE_MPI
+
+        // -- mpi statements --
+
+        void visitRecv(const RamRecv& recv, std::ostream& os) override {
+            os << "\n#ifdef USE_MPI\n";
+            os << "{";
+            os << "auto status = souffle::mpi::probe(";
+            // source
+            os << recv.getSourceStratum() + 1 << ", ";
+            // tag
+            os << "tag_" << synthesiser.getRelationName(recv.getRelation());
+            os << ");";
+            os << "souffle::mpi::recv<RamDomain>(";
+            // data
+            os << "*" << synthesiser.getRelationName(recv.getRelation()) << ", ";
+            // arity
+            os << recv.getRelation().getArity() << ", ";
+            // status
+            os << "status";
+            os << ");";
+            os << "}";
+            os << "\n#endif\n";
+        }
+
+        void visitSend(const RamSend& send, std::ostream& os) override {
+            os << "\n#ifdef USE_MPI\n";
+            os << "{";
+            os << "souffle::mpi::send<RamDomain>(";
+            // data
+            os << "*" << synthesiser.getRelationName(send.getRelation()) << ", ";
+            // arity
+            os << send.getRelation().getArity() << ", ";
+            // destinations
+            const auto& destinationStrata = send.getDestinationStrata();
+            auto it = destinationStrata.begin();
+            os << "std::set<int>(";
+            if (it != destinationStrata.end()) {
+                os << "{" << *it + 1;
+                ++it;
+                while (it != destinationStrata.end()) {
+                    os << ", " << *it + 1;
+                    ++it;
+                }
+                os << "}";
+            } else {
+                os << "0";
+            }
+            os << "), ";
+            // tag
+            os << "tag_" << synthesiser.getRelationName(send.getRelation());
+            os << ");";
+            os << "}";
+            os << "\n#endif\n";
+        }
+
+        void visitNotify(const RamNotify&, std::ostream& os) override {
+            os << "\n#ifdef USE_MPI\n";
+            os << "mpi::send(0, SymbolTable::exitTag());";
+            os << "mpi::recv(0, SymbolTable::exitTag());";
+            os << "\n#endif\n";
+        }
+
+        void visitWait(const RamWait& wait, std::ostream& os) override {
+            os << "\n#ifdef USE_MPI\n";
+            os << "symTable.handleMpiMessages(" << wait.getCount() << ");";
+            os << "\n#endif\n";
+        }
+
+#endif
         // -- safety net --
 
         void visitNode(const RamNode& node, std::ostream& /*out*/) override {
@@ -1193,17 +1283,31 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     std::string classname = "Sf_" + id;
 
-    // generate C++ program
-    os << "#include \"souffle/CompiledSouffle.h\"\n";
-    if (Global::config().has("provenance")) {
-        os << "#include \"souffle/Explain.h\"\n";
+#ifdef USE_MPI
+    // turn off mpi support if not enabled as the execution engine
+    if (Global::config().get("engine") != "mpi") {
+        os << "#undef USE_MPI\n";
     }
+#endif
+
+    // generate C++ program
+    os << "\n#include \"souffle/CompiledSouffle.h\"\n";
+    if (Global::config().has("provenance")) {
+        os << "\n#include \"souffle/Explain.h\"\n";
+    }
+
+    if (Global::config().has("live-profile")) {
+        os << "#include <thread>\n";
+        os << "#include \"souffle/profile/Tui.h\"\n";
+    }
+
     os << "\n";
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
 
-    // print wrapper for regex
     os << "class " << classname << " : public SouffleProgram {\n";
+
+    // regex wrapper
     os << "private:\n";
     os << "static inline bool regex_wrapper(const std::string& pattern, const std::string& text) {\n";
     os << "   bool result = false; \n";
@@ -1212,6 +1316,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
           "<< text << \"\\\").\\n\";\n}\n";
     os << "   return result;\n";
     os << "}\n";
+
+    // substring wrapper
+    os << "private:\n";
     os << "static inline std::string substr_wrapper(const std::string& str, size_t idx, size_t len) {\n";
     os << "   std::string result; \n";
     os << "   try { result = str.substr(idx,len); } catch(...) { \n";
@@ -1221,6 +1328,43 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "   } return result;\n";
     os << "}\n";
 
+    // to number wrapper
+    os << "private:\n";
+    os << "static inline RamDomain wrapper_tonumber(const std::string& str) {\n";
+    os << "   RamDomain result=0; \n";
+    os << "   try { result = stord(str); } catch(...) { \n";
+    os << "     std::cerr << \"error: wrong string provided by to_number(\\\"\";\n";
+    os << "     std::cerr << str << \"\\\") ";
+    os << "functor.\\n\";\n";
+    os << "     raise(SIGFPE);\n";
+    os << "   } return result;\n";
+    os << "}\n";
+
+// if using mpi...
+#ifdef USE_MPI
+    if (Global::config().get("engine") == "mpi") {
+        os << "\n#ifdef USE_MPI\n";
+
+        // create an enum of message tags, one for each relation
+        {
+            os << "private:\n";
+            os << "enum {";
+            {
+                int tag = SymbolTable::numberOfTags();
+                visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+                    if (tag != SymbolTable::numberOfTags()) {
+                        os << ", ";
+                    }
+                    os << "tag_" << getRelationName(create.getRelation()) << " = " << tag;
+                    ++tag;
+                });
+            }
+            os << "};";
+        }
+        os << "\n#endif\n";
+    }
+#endif
+
     if (Global::config().has("profile")) {
         os << "std::string profiling_fname;\n";
     }
@@ -1229,15 +1373,18 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     // declare symbol table
     os << "// -- initialize symbol table --\n";
-    os << "SymbolTable symTable\n";
-    if (symTable.size() > 0) {
-        os << "{\n";
-        for (size_t i = 0; i < symTable.size(); i++) {
-            os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
+    {
+        os << "SymbolTable symTable\n";
+        if (symTable.size() > 0) {
+            os << "{\n";
+            for (size_t i = 0; i < symTable.size(); i++) {
+                os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
+            }
+            os << "}";
         }
-        os << "}";
+        os << ";";
     }
-    os << ";";
+
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
@@ -1338,10 +1485,14 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
           "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1) {\n";
 
     os << "SignalHandler::instance()->set();\n";
+    if (Global::config().has("verbose")) {
+        os << "SignalHandler::instance()->enableLogging();\n";
+    }
 
     // initialize counter
     os << "// -- initialize counter --\n";
     os << "std::atomic<RamDomain> ctr(0);\n\n";
+    os << "std::atomic<size_t> iter(0);\n\n";
 
     // set default threads (in embedded mode)
     if (std::stoi(Global::config().get("jobs")) > 0) {
@@ -1353,24 +1504,27 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     // add actual program body
     os << "// -- query evaluation --\n";
     if (Global::config().has("profile")) {
-        os << "std::ofstream profile(profiling_fname);\n";
-        os << "profile << \"" << LogStatement::startDebug() << "\" << std::endl;\n";
         os << "ProfileEventSingleton::instance().startTimer();\n";
-        os << "ProfileEventSingleton::instance().setLog(&profile);\n";
+        os << R"_(ProfileEventSingleton::instance().makeTimeEvent("@time;starttime");)_" << '\n';
+        os << "{\n"
+           << R"_(Logger logger("@runtime;", 0);)_" << '\n';
     }
 
-    // TODO (lyndonhenry): an array of addresses of the gotos may be more efficient than a switch statement
-    // here
     if (Global::config().has("engine")) {
         std::stringstream ss;
         bool hasAtLeastOneStrata = false;
         visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
             hasAtLeastOneStrata = true;
-            ss << "case " << stratum.getIndex() << ":\ngoto STRATUM_" << stratum.getIndex() << ";\nbreak;\n";
+            // go to stratum of index in switch
+            auto i = stratum.getIndex();
+            ss << "case " << i << ":\ngoto STRATUM_" << i << ";\nbreak;\n";
         });
         if (hasAtLeastOneStrata) {
             os << "switch (stratumIndex) {\n";
-            os << "case ((size_t) -1):\ngoto STRATUM_0;\nbreak;\n";
+            {
+                // otherwise use stratum 0 if index is -1
+                os << "case (size_t) -1:\ngoto STRATUM_0;\nbreak;\n";
+            }
             os << ss.str();
             os << "}\n";
         }
@@ -1379,7 +1533,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
         os << "/* BEGIN STRATUM " << stratum.getIndex() << " */\n";
         if (Global::config().has("engine")) {
-            os << "STRATUM_" << stratum.getIndex() << ":\n";
+            // go to the stratum with the max value for int as a suffix if calling the master stratum
+            auto i = stratum.getIndex();
+            os << "STRATUM_" << i << ":\n";
         }
         os << "{\n";
         emitCode(os, stratum.getBody());
@@ -1387,17 +1543,22 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         if (Global::config().has("engine")) {
             os << "if (stratumIndex != (size_t) -1) goto EXIT;\n";
         }
+
         os << "/* END STRATUM " << stratum.getIndex() << " */\n";
     });
 
     if (Global::config().has("engine")) {
-        os << "EXIT:";
+        os << "EXIT:{}";
     }
 
     if (Global::config().has("profile")) {
-        os << "ProfileEventSingleton::instance().stopTimer();\n";
+        os << "}\n";
         os << "dumpFreqs();\n";
+        os << "ProfileEventSingleton::instance().stopTimer();\n";
+        os << "std::ofstream profile(profiling_fname);\n";
+        os << "ProfileEventSingleton::instance().dump(profile);\n";
     }
+
     // add code printing hint statistics
     os << "\n// -- relation hint statistics --\n";
     os << "if(isHintsProfilingEnabled()) {\n";
@@ -1419,8 +1580,15 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
           "stratumIndex); }\n";
     os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\", "
           "size_t stratumIndex = (size_t) -1) "
-          "override { "
-          "runFunction<true>(inputDirectory, outputDirectory); }\n";
+          "override { ";
+    if (Global::config().has("live-profile")) {
+        os << "std::thread profiler([]() { profile::Tui().runProf(); });\n";
+    }
+    os << "runFunction<true>(inputDirectory, outputDirectory, stratumIndex);\n";
+    if (Global::config().has("live-profile")) {
+        os << "if (profiler.joinable()) { profiler.join(); }\n";
+    }
+    os << "}\n";
 
     // issue printAll method
     os << "public:\n";
@@ -1459,7 +1627,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << "void dumpFreqs() {\n";
         for (auto const& cur : idxMap) {
             os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(" << cur.first << ")_\", freqs["
-               << cur.second << "]);\n";
+               << cur.second << "],0);\n";
         }
         os << "}\n";  // end of dumpFreqs() method
     }
@@ -1469,21 +1637,24 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
     visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) {
         // get some table details
-        os << "try {";
-        os << "std::map<std::string, std::string> directiveMap(";
-        os << load.getIODirectives() << ");\n";
-        os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-        os << "directiveMap[\"filename\"].front() != '/') {";
-        os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
-        os << "}\n";
-        os << "IODirectives ioDirectives(directiveMap);\n";
-        os << "IOSystem::getInstance().getReader(";
-        os << "SymbolMask({" << load.getRelation().getSymbolMask() << "})";
-        os << ", symTable, ioDirectives";
-        os << ", " << Global::config().has("provenance");
-        os << ")->readAll(*" << getRelationName(load.getRelation());
-        os << ");\n";
-        os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+        for (IODirectives ioDirectives : load.getIODirectives()) {
+            os << "try {";
+            os << "std::map<std::string, std::string> directiveMap(";
+            os << ioDirectives << ");\n";
+            os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
+            os << "directiveMap[\"filename\"].front() != '/') {";
+            os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
+            os << "}\n";
+            os << "IODirectives ioDirectives(directiveMap);\n";
+            os << "IOSystem::getInstance().getReader(";
+            os << "SymbolMask({" << load.getRelation().getSymbolMask() << "})";
+            os << ", symTable, ioDirectives";
+            os << ", " << Global::config().has("provenance");
+            os << ")->readAll(*" << getRelationName(load.getRelation());
+            os << ");\n";
+            os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                  "'\\n';}\n";
+        }
     });
     os << "}\n";  // end of loadAll() method
 
@@ -1570,7 +1741,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "SymbolTable *getST_" << id << "(SouffleProgram *p){return &reinterpret_cast<" << classname
        << "*>(p)->symTable;}\n";
 
-    os << "#ifdef __EMBEDDED_SOUFFLE__\n";
+    os << "\n#ifdef __EMBEDDED_SOUFFLE__\n";
     os << "class factory_" << classname << ": public souffle::ProgramFactory {\n";
     os << "SouffleProgram *newInstance() {\n";
     os << "return new " << classname << "();\n";
@@ -1605,7 +1776,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     os << "#if defined(_OPENMP) \n";
     os << "omp_set_nested(true);\n";
-    os << "#endif\n";
+    os << "\n#endif\n";
 
     os << "souffle::";
     if (Global::config().has("profile")) {
@@ -1614,17 +1785,30 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << classname + " obj;\n";
     }
 
-    os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
+#ifdef USE_MPI
+    if (Global::config().get("engine") == "mpi") {
+        os << "\n#ifdef USE_MPI\n";
+        os << "souffle::mpi::init(argc, argv);";
+        os << "int rank = souffle::mpi::commRank();";
+        os << "int stratum = (rank == 0) ? " << std::numeric_limits<int>::max() << " : rank - 1;";
+        os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), stratum);\n";
+        os << "souffle::mpi::finalize();";
+        os << "\n#endif\n";
+    } else
+#endif
+    {
+        os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
+    }
+
     if (Global::config().get("provenance") == "1") {
         os << "explain(obj, true, false);\n";
     } else if (Global::config().get("provenance") == "2") {
         os << "explain(obj, true, true);\n";
     }
-
     os << "return 0;\n";
     os << "} catch(std::exception &e) { souffle::SignalHandler::instance()->error(e.what());}\n";
     os << "}\n";
-    os << "#endif\n";
+    os << "\n#endif\n";
 }
 
 }  // end of namespace souffle

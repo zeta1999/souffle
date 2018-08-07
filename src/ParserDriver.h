@@ -18,9 +18,9 @@
 
 #include "SrcLocation.h"
 #include "parser.hh"
+#include <cstdio>
 #include <memory>
 #include <string>
-#include <stdio.h>
 
 namespace souffle {
 
@@ -54,7 +54,6 @@ public:
 
     void addRelation(std::unique_ptr<AstRelation> r);
     void addIODirective(std::unique_ptr<AstIODirective> d);
-    void addIODirectiveChain(std::unique_ptr<AstIODirective> d);
     void addType(std::unique_ptr<AstType> type);
     void addClause(std::unique_ptr<AstClause> c);
     void addComponent(std::unique_ptr<AstComponent> c);

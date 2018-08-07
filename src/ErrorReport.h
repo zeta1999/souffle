@@ -13,6 +13,7 @@
  * Defines a class for error reporting.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include "SrcLocation.h"

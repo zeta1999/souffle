@@ -13,6 +13,7 @@
  * A collection of type analyses operating on AST constructs.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include "AstAnalysis.h"

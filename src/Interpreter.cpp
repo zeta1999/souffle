@@ -10,7 +10,7 @@
  *
  * @file Interpreter.cpp
  *
- * Implementation of the RAM interpreter.
+ * Implementation of Souffle's interpreter.
  *
  ***********************************************************************/
 

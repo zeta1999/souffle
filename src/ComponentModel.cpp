@@ -10,6 +10,8 @@
  *
  * @file ComponentModel.cpp
  *
+ * Implements the component model 
+ *
  ***********************************************************************/
 
 #include "ComponentModel.h"

@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file SringPool.h
+ * @file StringPool.h
  *
  * Defines a string pool
  *

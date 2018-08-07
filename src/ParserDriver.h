@@ -13,6 +13,7 @@
  * Defines the parser driver.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include "SrcLocation.h"

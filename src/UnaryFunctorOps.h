@@ -13,6 +13,7 @@
  * Defines unary operators and relational operators.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include <cassert>

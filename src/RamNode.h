@@ -5,6 +5,7 @@
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
  */
+
 /************************************************************************
  *
  * @file RamNode.h

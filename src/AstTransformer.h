@@ -13,6 +13,7 @@
  * Defines the interface for AST transformation passes.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include <string>

@@ -10,7 +10,7 @@
  *
  * @file ComponentModel.cpp
  *
- * Implements the component model 
+ * Implements the component model
  *
  ***********************************************************************/
 

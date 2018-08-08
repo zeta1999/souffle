@@ -540,6 +540,23 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
                 out << "range<iterator_" << indNum << "> equalRange_" << search;
                 if (relationType.getDataStructure() == "btree") {
                     out << "(const t_tuple& t, context& h) const {\n";
+                    // count size of search pattern
+                    size_t indSize = 0;
+                    for (size_t column = 0; column < arity; column++) {
+                        if ((search >> column) & 1) {
+                            indSize++;
+                        }
+                    }
+
+                    if (indSize == arity) {
+                        out << "auto pos = find(t, h);\n";
+                        out << "auto fin = end();\n";
+                        out << "if (pos != fin) {fin = pos; ++fin;}\n";
+                        out << "return make_range(pos, fin);\n";
+                        out << "}\n";
+                        continue;
+                    }
+
                     out << "t_tuple low(t); t_tuple high(t);\n";
                     // check which indices to pad out
                     for (size_t column = 0; column < arity; column++) {

@@ -18,6 +18,7 @@ public:
     bool isValid() {
         return valid;
     }
+    // TODO ABDUL BTW THEres something weird goign on with the disconnected literals thing so check that out
 
     VariableDecomposition(const AstClause& clause) {
         // decomposition = std::vector<std::vector<std::pair<int,int>>>();
@@ -241,16 +242,17 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
         leftBodyLiterals.push_back(leftHead);
         rightBodyLiterals.push_back(rightHead);
 
+        auto singletonThing = [&](const AstArgument& arg) { return (dynamic_cast<const AstVariable*>(&arg) || dynamic_cast<const AstConstant*>(&arg)); };
+        auto isVariable = [&](const AstArgument* arg) { return (dynamic_cast<const AstVariable*>(arg) || 0); };
+        auto isConstant = [&](const AstArgument* arg) { return (dynamic_cast<const AstConstant*>(arg) || 0); };
+
+
         bool bad = false;
         visitDepthFirst(*left, [&](const AstArgument& arg) {
-            if (!dynamic_cast<const AstVariable*>(&arg)) {
-                bad = true;
-            }
+            if (!singletonThing(arg)) { bad = true; }
         });
         visitDepthFirst(*right, [&](const AstArgument& arg) {
-            if (!dynamic_cast<const AstVariable*>(&arg)) {
-                bad = true;
-            }
+            if (!singletonThing(arg)) { bad = true; }
         });
         if (bad) { std::cout << "THESE WERE BAD: " << *left << " " << *right << std::endl; return false; }
 
@@ -260,15 +262,26 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
             std::vector<AstArgument*> leftArgs = leftBodyLiterals[i]->getAtom()->getArguments();
             std::vector<AstArgument*> rightArgs = rightBodyLiterals[i]->getAtom()->getArguments();
             for (int j = 0; j < leftArgs.size(); j++) {
-                auto leftVar = dynamic_cast<AstVariable*>(leftArgs[j])->getName();
-                auto rightVar = dynamic_cast<AstVariable*>(rightArgs[j])->getName();
-                std::cout << leftVar << " VS " << rightVar << std::endl;
-                std::cout << "in " << *leftBodyLiterals[i] << " vs " << *rightBodyLiterals[i] << "...." << std::endl;
-                std::string currSymbol = variableMap[leftVar];
-                if(currSymbol == "") {
-                    variableMap[leftVar] = rightVar;
-                } else if (currSymbol != rightVar) {
-                    std::cout << "bad: " << leftVar << " " << currSymbol << " " << rightVar << std::endl;
+                if (isVariable(leftArgs[j]) && isVariable(rightArgs[j])) {
+                    auto leftVar = dynamic_cast<AstVariable*>(leftArgs[j])->getName();
+                    auto rightVar = dynamic_cast<AstVariable*>(rightArgs[j])->getName();
+                    std::cout << leftVar << " VS " << rightVar << std::endl;
+                    std::cout << "in " << *leftBodyLiterals[i] << " vs " << *rightBodyLiterals[i] << "...." << std::endl;
+                    std::string currSymbol = variableMap[leftVar];
+                    if(currSymbol == "") {
+                        variableMap[leftVar] = rightVar;
+                    } else if (currSymbol != rightVar) {
+                        std::cout << "bad: " << leftVar << " " << currSymbol << " " << rightVar << std::endl;
+                        equiv = false;
+                        break;
+                    }
+                } else if (isConstant(leftArgs[j]) && isConstant(rightArgs[j])) {
+                    auto leftVar = dynamic_cast<AstConstant*>(leftArgs[j])->getIndex();
+                    auto rightVar = dynamic_cast<AstConstant*>(rightArgs[j])->getIndex();
+                    if (leftVar != rightVar) {
+                        equiv = false;
+                    }
+                } else {
                     equiv = false;
                     break;
                 }

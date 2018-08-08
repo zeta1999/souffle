@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file Argument.h
+ * @file AstArgument.h
  *
  * Define the classes Argument, Variable, and Constant to represent
  * variables and constants in literals. Variable and Constant are

@@ -26,11 +26,6 @@ public:
         // check validity
         valid = true;
 
-        // TODO ABDUL get rid of later
-        if (clause.isFact()) {
-            valid = false;
-        }
-
         // TODO ABDUL add constraints and negtations later
         for (AstLiteral* lit : clause.getBodyLiterals()) {
             if (!dynamic_cast<AstAtom*>(lit)) {

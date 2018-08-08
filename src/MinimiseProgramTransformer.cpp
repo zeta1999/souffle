@@ -156,12 +156,15 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
         stack.push(std::vector<int>(sparseAdj[0])); // TODO necessary?
         int currPos = 0;
         while (!stack.empty()) {
+            std::cout << "JUMPING IN?!?!" << std::endl;
             std::cout << currentPermutation << std::endl;
             if (currPos == adj.size()) {
+                std::cout << "we here" << std::endl;
                 permutations.push_back(currentPermutation);
                 currPos -= 1;
                 seen[currentPermutation[currPos]] = 0;
                 currentPermutation.pop_back();
+                std::cout << "continuing..." << std::endl;
                 continue;
             }
 
@@ -169,15 +172,21 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
             std::cout << "position: " << currPos << " ; values: " << possibilities << std::endl;
             stack.pop();
             if (possibilities.size() == 0) {
+                std::cout << "we there" << std::endl;
+                std::cout << "absolutely broken? btw the size is " << currentPermutation.size() << "adn curr pos is " << currPos << std::endl;
+                seen[currentPermutation[currPos]] = 0;
                 currPos -= 1;
-                seen[currentPermutation[currentPermutation.size()-1]] = 0;
+                std::cout << "not absolutely broken?" << std::endl;
                 currentPermutation.pop_back();
+                std::cout << "continuing..." << std::endl;
                 continue;
             }
             int currNum = possibilities[0];
             possibilities.erase(possibilities.begin());
             stack.push(possibilities);
+            std::cout << "we finalising stuff?" << std::endl;
             if (seen[currNum]) {
+                std::cout << "continuing..." << std::endl;
                 continue;
             } else {
                 seen[currNum] = 1;
@@ -188,6 +197,8 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
                 }
             }
         }
+
+        std::cout << "absolute beauty" << std::endl;
 
         std::cout << permutations << std::endl;
 

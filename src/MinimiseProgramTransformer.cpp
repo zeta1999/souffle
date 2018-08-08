@@ -5,89 +5,91 @@
 
 namespace souffle {
 
+/**
+ * Holds the variable decomposition of a given clause.
+ * A variable decomposition is a representation of the variables in a clause,
+ * but with variable names abstracted away.
+ */
+// TODO: use a nullable vector + function instead of a class
 class VariableDecomposition {
 private:
-    bool valid;
+    bool decomposable;
+    // TODO ABDUL: change to set of pairs instead of vector of pairs
     std::vector<std::vector<std::pair<int,int>>> decomposition;
 
 public:
     const std::vector<std::vector<std::pair<int,int>>>& getDecomposition() const {
-        return this->decomposition;
+        return decomposition;
     }
 
-    bool isValid() {
-        return valid;
+    bool isDecomposable() const {
+        return decomposable;
     }
-    // TODO ABDUL BTW THEres something weird goign on with the disconnected literals thing so check that out
 
     VariableDecomposition(const AstClause& clause) {
-        // decomposition = std::vector<std::vector<std::pair<int,int>>>();
+        decomposable = true;
 
-        // check validity
-        valid = true;
-
-        // TODO ABDUL add constraints and negtations later
+        // check that all body literals are atoms
         for (AstLiteral* lit : clause.getBodyLiterals()) {
             if (!dynamic_cast<AstAtom*>(lit)) {
-                valid = false;
-                break;
+                decomposable = false;
+                return;
             }
         }
 
+        // check that all arguments are either constants or variables
         visitDepthFirst(clause, [&](const AstArgument& arg) {
             if (!dynamic_cast<const AstVariable*>(&arg) && !dynamic_cast<const AstConstant*>(&arg)) {
-                valid = false;
+                decomposable = false;
+                return;
             }
         });
 
-        if (valid) {
-            std::map<std::string, std::vector<std::pair<int,int>>> positions;
+        // still here, so we can decompose under the assumption that all
+        // arguments are constants or variables, and all literals are atoms
 
-            visitDepthFirst(clause, [&](const AstVariable& var) {
-                positions[var.getName()] = std::vector<std::pair<int,int>>();
-            });
+        // --- decomposition ---
+        // keep track of the positions of all variables
+        // coordinate (x,y) means the variable can be found at atom x, argument y
+        // the clause head has given index 0, the first body literal has index 1
+        std::map<std::string, std::vector<std::pair<int, int>>> variableCoordinates;
 
-            AstAtom* head = clause.getHead();
-            std::vector<AstArgument*> headargs = head->getArguments();
-            for (int i = 0; i < headargs.size(); i++) {
-                AstArgument* curr = headargs[i];
-                if (const AstVariable* var = dynamic_cast<const AstVariable*>(curr)) {
-                    positions[var->getName()].push_back(std::make_pair(0,i));
-                } else {
-                    std::cout << "not a var? " << *curr << std::endl;
+        // give every variable an empty position list in the map
+        visitDepthFirst(clause, [&](const AstVariable& var) {
+            variableCoordinates[var.getName()] = std::vector<std::pair<int,int>>();
+        });
+
+        std::vector<AstLiteral*> bodyLiterals = clause.getBodyLiterals();
+        bodyLiterals.insert(bodyLiterals.begin(), clause.getHead());
+
+        for (int i = 0; i < bodyLiterals.size(); i++) {
+            const AstAtom* currAtom = dynamic_cast<const AstAtom*>(bodyLiterals[i]);
+            std::vector<AstArgument*> arguments = currAtom->getArguments();
+
+            for (int j = 0; j < arguments.size(); j++) {
+                AstArgument* currArg = arguments[j];
+                if (const AstVariable* var = dynamic_cast<const AstVariable*>(currArg)) {
+                    // found a variable, so add this position to its list of coordinates
+                    variableCoordinates[var->getName()].push_back(std::make_pair(i,j));
                 }
             }
-
-            std::vector<AstLiteral*> bodylits = clause.getBodyLiterals();
-            for (int i = 0; i < bodylits.size(); i++) {
-                const AstAtom* curr = dynamic_cast<const AstAtom*>(bodylits[i]);
-                std::vector<AstArgument*> args = curr->getArguments();
-                for (int j = 0; j < args.size(); j++) {
-                    AstArgument* carg = args[j];
-                    if (const AstVariable* var = dynamic_cast<const AstVariable*>(carg)) {
-                        positions[var->getName()].push_back(std::make_pair(i+1,j));
-                    } else {
-                        std::cout << "not a var? " << *carg << std::endl;
-                    }
-                }
-            }
-
-            for (auto el = positions.begin(); el != positions.end(); el++) {
-                decomposition.push_back(el->second);
-            }
-
-            // std::cout << decomposition << std::endl;
         }
 
-        // std::cout << clause << " valid? " << valid << std::endl;
+        // add the variable coordinate vectors to the decomposition list
+        // abstracts away the actual variable names used
+        for (auto kvp = variableCoordinates.begin(); kvp != variableCoordinates.end(); kvp++) {
+            decomposition.push_back(kvp->second);
+        }
     }
 };
+
+// TODO ABDUL: something weird going on with extractdisconecneojtoejododj transformer so fix that at some point maybe
 
 bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
     VariableDecomposition leftDec = VariableDecomposition(*left);
     VariableDecomposition rightDec = VariableDecomposition(*right);
 
-    if (!leftDec.isValid() || !rightDec.isValid()) {
+    if (!leftDec.isDecomposable() || !rightDec.isDecomposable()) {
         return false;
     }
 
@@ -305,7 +307,6 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
 bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
 
-    bool changed = false;
     std::vector<AstClause*> clausesToDelete;
     for (AstRelation* rel : program.getRelations()) {
         std::vector<std::vector<AstClause*>> equivalenceClasses;

@@ -297,15 +297,19 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
 bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
 
+    bool changed = false;
+    std::vector<AstClause*> clausesToDelete;
     for (AstRelation* rel : program.getRelations()) {
         std::vector<std::vector<AstClause*>> equivalenceClasses;
         for (AstClause* clause : rel->getClauses()) {
             bool added = false;
 
-            for (std::vector<AstClause*> eqClass : equivalenceClasses) {
+            for (std::vector<AstClause*>& eqClass : equivalenceClasses) {
                 AstClause* representative = eqClass[0];
                 if (areBijectivelyEquivalent(representative, clause)) {
-                    eqClass.push_back(representative);
+                    eqClass.push_back(clause);
+                    clausesToDelete.push_back(clause);
+                    std::cout << "found equivalent rules :))))" << std::endl;
                     added = true;
                     break;
                 }
@@ -322,13 +326,17 @@ bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) 
         for (auto eqclass : equivalenceClasses) {
             std::cout << "EQUIVALENCE CLASS:" << std::endl;
             for (auto clause : eqclass) {
-                std::cout << *clause << std::endl;
+                std::cout << "?:::"  << *clause << std::endl;
             }
             std::cout << "                        " << std::endl;
         }
     }
 
-    return true;
+    for (auto clause : clausesToDelete) {
+        program.removeClause(clause);
+    }
+
+    return clausesToDelete.size() > 0;
 }
 
 }  // namespace souffle

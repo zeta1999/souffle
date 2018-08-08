@@ -169,12 +169,14 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
             }
 
             std::vector<int> possibilities = stack.top();
-            std::cout << "position: " << currPos << " ; values: " << possibilities << std::endl;
+            std::cout << "position: " << currPos << " ; values: " << possibilities << " with seen result: " << seen <<  std::endl;
             stack.pop();
             if (possibilities.size() == 0) {
                 std::cout << "we there" << std::endl;
                 std::cout << "absolutely broken? btw the size is " << currentPermutation.size() << "adn curr pos is " << currPos << std::endl;
-                seen[currentPermutation[currPos]] = 0;
+                if (currPos >= 1) {
+                    seen[currentPermutation[currPos-1]] = 0;
+                }
                 currPos -= 1;
                 std::cout << "not absolutely broken?" << std::endl;
                 currentPermutation.pop_back();
@@ -219,6 +221,7 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
         std::cout << newOrdering << std::endl;
         std::cout << "before: " << *clone << std::endl;
         clone->reorderAtoms(newOrdering);
+        left = clone;
         std::cout << "after: " << *clone << std::endl;
         std::map<std::string, std::string> variableMap;
         visitDepthFirst(*left, [&](const AstVariable& var) {
@@ -227,14 +230,65 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
 
         // TODO ABDUL
         std::cout << "checking: " << *clone << " " << *right << " " << std::endl;
+
+        // match the head
+        AstAtom* leftHead = left->getHead();
+        AstAtom* rightHead = right->getHead();
+
+        // match the body literals
+        std::vector<AstLiteral*> leftBodyLiterals = left->getBodyLiterals();
+        std::vector<AstLiteral*> rightBodyLiterals = right->getBodyLiterals();
+        leftBodyLiterals.push_back(leftHead);
+        rightBodyLiterals.push_back(rightHead);
+
+        bool bad = false;
+        visitDepthFirst(*left, [&](const AstArgument& arg) {
+            if (!dynamic_cast<const AstVariable*>(&arg)) {
+                bad = true;
+            }
+        });
+        visitDepthFirst(*right, [&](const AstArgument& arg) {
+            if (!dynamic_cast<const AstVariable*>(&arg)) {
+                bad = true;
+            }
+        });
+        if (bad) { std::cout << "THESE WERE BAD: " << *left << " " << *right << std::endl; return false; }
+
+        bool equiv = true;
+        for (int i = 0; i < leftBodyLiterals.size() && equiv; i++) {
+            std::cout << "getting: " << std::endl;
+            std::vector<AstArgument*> leftArgs = leftBodyLiterals[i]->getAtom()->getArguments();
+            std::vector<AstArgument*> rightArgs = rightBodyLiterals[i]->getAtom()->getArguments();
+            for (int j = 0; j < leftArgs.size(); j++) {
+                auto leftVar = dynamic_cast<AstVariable*>(leftArgs[j])->getName();
+                auto rightVar = dynamic_cast<AstVariable*>(rightArgs[j])->getName();
+                std::cout << leftVar << " VS " << rightVar << std::endl;
+                std::cout << "in " << *leftBodyLiterals[i] << " vs " << *rightBodyLiterals[i] << "...." << std::endl;
+                std::string currSymbol = variableMap[leftVar];
+                if(currSymbol == "") {
+                    variableMap[leftVar] = rightVar;
+                } else if (currSymbol != rightVar) {
+                    std::cout << "bad: " << leftVar << " " << currSymbol << " " << rightVar << std::endl;
+                    equiv = false;
+                    break;
+                }
+            }
+        }
+        std::cout << variableMap << std::endl;
+        std::cout << "equiv? " << equiv << std::endl;
+
+        return equiv;
     };
 
     std::vector<std::vector<int>> permutations = getValidPermutations(adj);
 
     for (auto permutation : permutations) {
+        std::cout << "testing " << permutation << " ... " << std::endl;
         if (validPermutation(left, right, permutation)) {
+            std::cout << "THEYRE EQUIVALENT!!!" << std::endl;
             return true;
         }
+        std::cout << permutation << " failed " << std::endl;
     }
 
     return false;

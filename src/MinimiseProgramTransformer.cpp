@@ -196,16 +196,26 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
 
     auto validPermutation = [&](AstClause* left, AstClause* right, std::vector<int> permutation) {
         AstClause* clone = left->clone();
-        std::vector<unsigned int> unsignedVersion(permutation.begin(), permutation.end());
-        clone->reorderAtoms(unsignedVersion);
+        std::vector<unsigned int> unsignedVersion(permutation.begin()+1, permutation.end());
+        for (int i = 0; i < unsignedVersion.size(); i++) {
+            unsignedVersion[i] -= 1;
+        }
+        std::vector<unsigned int> newOrdering(unsignedVersion.size());
+        for (int i = 0; i < unsignedVersion.size(); i++) {
+            newOrdering[unsignedVersion[i]] = i;
+        }
+        std::cout << "we here " << std::endl;
+        std::cout << newOrdering << std::endl;
+        std::cout << "before: " << *clone << std::endl;
+        clone->reorderAtoms(newOrdering);
+        std::cout << "after: " << *clone << std::endl;
         std::map<std::string, std::string> variableMap;
         visitDepthFirst(*left, [&](const AstVariable& var) {
             variableMap[var.getName()] = "";
         });
 
         // TODO ABDUL
-        std::cout << *clone << " " << right << " " << std::endl;
-        return false;
+        std::cout << "checking: " << *clone << " " << *right << " " << std::endl;
     };
 
     std::vector<std::vector<int>> permutations = getValidPermutations(adj);

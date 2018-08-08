@@ -31,7 +31,8 @@ private:
     double savetime = 0;
     long prev_num_tuples = 0;
     long num_tuples = 0;
-    long maxRSSDiff = 0;
+    long preMaxRSS = 0;
+    long postMaxRSS = 0;
     std::string id;
     std::string locator;
     int rul_id = 0;
@@ -118,7 +119,7 @@ public:
     }
 
     inline long getMaxRSSDiff() {
-        return maxRSSDiff;
+        return postMaxRSS - preMaxRSS;
     }
 
     long getTotNumRec_tuples() {
@@ -147,8 +148,16 @@ public:
         this->num_tuples = num_tuples;
     }
 
-    inline void setMaxRSSDiff(long maxRSSDiff) {
-        this->maxRSSDiff = maxRSSDiff;
+    inline void setPostMaxRSS(size_t maxRSS) {
+        this->postMaxRSS = maxRSS > postMaxRSS ? maxRSS : postMaxRSS;
+    }
+
+    inline void setPreMaxRSS(size_t maxRSS) {
+        if (preMaxRSS == 0) {
+            preMaxRSS = maxRSS;
+            return;
+        }
+        this->preMaxRSS = maxRSS < preMaxRSS ? maxRSS : postMaxRSS;
     }
 
     std::string toString() {

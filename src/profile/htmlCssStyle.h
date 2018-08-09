@@ -651,5 +651,5 @@ button {
 }
 )___";
 }
-}
-}
+}  // namespace profile
+}  // namespace souffle

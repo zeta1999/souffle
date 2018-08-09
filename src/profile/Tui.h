@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "../ProfileEvent.h"
 #include "HtmlString.h"
 #include "OutputProcessor.h"
 #include "Reader.h"
@@ -147,6 +148,8 @@ public:
             } else {
                 std::cout << "Invalid parameters to graph command.\n";
             }
+        } else if (c[0].compare("usage") == 0) {
+            usage();
         } else if (c[0].compare("help") == 0) {
             help();
         } else {
@@ -473,6 +476,116 @@ public:
         //                "stop the current live run.");
         std::printf("  %-30s%-5s %s\n", "sort <col number>", "-", "sort tables by given column number.");
         std::printf("  %-30s%-5s %s\n", "q", "-", "exit program.");
+    }
+
+    void usage() {
+        DirectoryEntry* usageStats = dynamic_cast<DirectoryEntry*>(
+                ProfileEventSingleton::instance().getDB().lookupEntry({"program", "usage", "timepoint"}));
+        if (usageStats == nullptr) {
+            std::cout << "No usage statistics recorded." << std::endl;
+            return;
+        }
+
+        int width = 80;
+        int height = 20;
+        double maxUsage = 0;
+        char grid[height][width];
+
+        struct Usage {
+            uint64_t time;
+            uint32_t maxRSS;
+            uint64_t systemtime;
+            uint64_t usertime;
+            bool operator<(const Usage& other) const {
+                return time < other.time;
+            }
+            bool operator==(const Usage& other) const {
+                return time == other.time;
+            }
+        };
+        Usage curUsage;
+        Usage previousUsage{0, 0, 0, 0};
+        uint64_t startTime = 0;
+        uint64_t endTime = 0;
+        uint64_t timeStep = 0;
+
+        std::set<Usage> usages;
+        {
+            // Translate the string ordered text usage stats to a time ordered binary form.
+            std::set<Usage> allUsages;
+            for (auto& currentKey : usageStats->getKeys()) {
+                curUsage.time = std::stol(currentKey);
+                curUsage.systemtime = dynamic_cast<SizeEntry*>(
+                        usageStats->readDirectoryEntry(currentKey)->readEntry("systemtime"))
+                                              ->getSize();
+                curUsage.usertime = dynamic_cast<SizeEntry*>(
+                        usageStats->readDirectoryEntry(currentKey)->readEntry("usertime"))
+                                            ->getSize();
+                curUsage.maxRSS = dynamic_cast<SizeEntry*>(
+                        usageStats->readDirectoryEntry(currentKey)->readEntry("maxRSS"))
+                                          ->getSize();
+
+                allUsages.insert(curUsage);
+            }
+            // Extract our overall stats
+            startTime = allUsages.begin()->time;
+            endTime = allUsages.rbegin()->time;
+            timeStep = (endTime - startTime) / width;
+
+            // Store the timepoints we need for the graph
+            for (uint32_t i = 1; i <= width; ++i) {
+                auto it = allUsages.upper_bound(Usage{startTime + timeStep * i});
+                if (it != allUsages.begin()) {
+                    --it;
+                }
+                usages.insert(*it);
+            }
+        }
+
+        std::cout << "Total cpu time = " << usages.rbegin()->usertime << "μs" << std::endl;
+        uint64_t curHeight = 0;
+        uint64_t curSystemHeight = 0;
+
+        // Find maximum so we can normalise the graph
+        for (auto& curUsage : usages) {
+            long usageDiff = curUsage.systemtime - previousUsage.systemtime + curUsage.usertime -
+                             previousUsage.usertime;
+            if (usageDiff > maxUsage) {
+                maxUsage = usageDiff;
+            }
+            previousUsage = curUsage;
+        }
+
+        // Add columns to the graph
+        previousUsage = {0, 0, 0, 0};
+        uint32_t i = 0;
+        for (uint32_t i = 0; i < height; ++i) {
+            for (uint32_t j = 0; j < width; ++j) {
+                grid[i][j] = '-';
+            }
+        }
+        for (const Usage& curUsage : usages) {
+            curHeight = (curUsage.systemtime - previousUsage.systemtime + curUsage.usertime -
+                                previousUsage.usertime) *
+                        height / maxUsage;
+            curSystemHeight = (curUsage.systemtime - previousUsage.systemtime) / (maxUsage * height);
+            for (uint32_t j = 0; j < curHeight; ++j) {
+                grid[j][i] = '*';
+            }
+            for (uint32_t j = curHeight - curSystemHeight; j < curHeight; ++j) {
+                grid[j][i] = '+';
+            }
+            previousUsage = curUsage;
+            ++i;
+        }
+
+        // Print array
+        for (int32_t i = height - 1; i >= 0; --i) {
+            for (uint32_t j = 0; j < width; ++j) {
+                std::cout << grid[i][j];
+            }
+            std::cout << std::endl;
+        }
     }
 
     void setupTabCompletion() {

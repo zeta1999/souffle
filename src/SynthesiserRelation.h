@@ -29,37 +29,6 @@ public:
     SynthesiserRelation(const RamRelation& rel, const IndexSet& indices, const bool isProvenance = false)
             : relation(rel), indices(indices), isProvenance(isProvenance) {
         // Set data structure
-        if (relation.isBTree() || isProvenance) {
-            dataStructure = "btree";
-        } else if (relation.isRbtset()) {
-            dataStructure = "rbtset";
-        } else if (relation.isHashset()) {
-            dataStructure = "hashset";
-        } else if (relation.isBrie()) {
-            dataStructure = "brie";
-        } else if (relation.isEqRel()) {
-            dataStructure = "eqrel";
-        } else {
-            if (Global::config().has("data-structure")) {
-                if (Global::config().get("data-structure") == "btree") {
-                    dataStructure = "btree";
-                } else if (Global::config().get("data-structure") == "brie") {
-                    dataStructure = "brie";
-                } else if (Global::config().get("data-structure") == "rbtset") {
-                    dataStructure = "rbtset";
-                } else if (Global::config().get("data-structure") == "hashset") {
-                    dataStructure = "hashset";
-                } else if (Global::config().get("data-structure") == "eqrel") {
-                    dataStructure = "eqrel";
-                }
-            } else {
-                if (getArity() > 2) {
-                    dataStructure = "btree";
-                } else {
-                    dataStructure = "brie";
-                }
-            }
-        }
 
         // Generate and set indices
         std::vector<std::vector<int>> inds = indices.getAllOrders();
@@ -197,6 +166,68 @@ public:
 
         return out.str();
     }
+
+    static std::unique_ptr<SynthesiserRelation> getSynthesiserRelation(const RamRelation& ramRel, const IndexSet& indexSet) {
+        SynthesiserRelation* rel;
+        if (arity == 0) {
+            rel = new SynthesiserNullaryRelation(ramRel, indexSet);
+        } else if (ramRel.isBTree() || isProvenance) {
+            if (ramRel.getArity() > 6) {
+                rel = new SynthesiserIndirectRelation(ramRel, indexSet);
+            } else {
+                rel = new SynthesiserDirectRelation(ramRel, indexSet);
+            }
+        } else if (ramRel.isBrie()) {
+            rel = new SynthesiserBrieRelation(ramRel, indexSet);
+        } else if (ramRel.isEqRel()) {
+            rel = new SynthesiserEqrelRelation(ramRel, indexSet);
+        } else {
+            if (Global::config().has("data-structure")) {
+                if (Global::config().get("data-structure") == "btree") {
+                    if (ramRel.getArity() > 6) {
+                        rel = new SynthesiserIndirectRelation(ramRel, indexSet);
+                    } else {
+                        rel = new SynthesiserDirectRelation(ramRel, indexSet);
+                    }
+                } else if (Global::config().get("data-structure") == "brie") {
+                    rel = new SynthesiserBrieRelation(ramRel, indexSet);
+                } else if (Global::config().get("data-structure") == "eqrel") {
+            rel = new SynthesiserEqrelRelation(ramRel, indexSet);
+                }
+            } else {
+                if (getArity() > 6) {
+                    rel = new SynthesiserIndirectRelation(ramRel, indexSet);
+                } else if (ramRel.getArity() > 2) {
+                    rel = new SynthesiserDirectRelation(ramRel, indexSet);
+                } else {
+                    rel = new SynthesiserBrieRelation(ramRel, indexSet);
+                }
+            }
+        }
+
+        // generate index set
+        rel->generateIndexSet();
+
+        // set data structure
+        rel->generateDataStructure();
+
+        return std::unique_ptr<SynthesiserRelation>(rel);
+    }
+};
+
+class SynthesiserNullaryRelation : public SynthesiserRelation {
+};
+
+class SynthesiserDirectRelation : public SynthesiserRelation {
+};
+
+class SynthesiserIndirectRelation : public SynthesiserRelation {
+};
+
+class SynthesiserBrieRelation : public SynthesiserRelation {
+};
+
+class SynthesiserEqrelRelation : public SynthesiserRelation {
 };
 
 }  // end of namespace souffle

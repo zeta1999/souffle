@@ -5,31 +5,6 @@
 
 CLANGFORMAT=clang-format-6.0
 
-changedLines() {
-  range_start=-1
-  
-  for m in $(git diff -U0 $1 $2|grep '^@@'|sed -r 's/^@@.* \+([0-9][0-9]*),?([0-9]*) .*$/_\1 _\2/'); do
-    n=${m:1};
-    if (( range_start > -1 )) ; then
-      if [[ "$n" == "" ]]
-      then
-        echo -n " -lines=$range_start:$range_start"
-      else
-        if (( n > 0 )) ; then
-            echo -n " -lines=$range_start:$((n + range_start - 1))"
-        fi
-      fi
-      range_start=-1
-    else
-      range_start=$n
-    fi
-  done
-  
-  if (( range_start > -1 )) ; then
-    echo -n " -lines=$range_start:$range_start"
-  fi
-}
-
 # Move to the root of the repo if we aren't there already so the paths returned
 # by git are correct.
 cd "$(git rev-parse --show-toplevel)"

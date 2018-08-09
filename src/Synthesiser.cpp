@@ -119,15 +119,19 @@ const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
 // }
 
 /** Get relation type struct */
-void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelation& relationType) {
-    auto arity = relationType.getArity();
+void Synthesiser::generateRelationTypeStruct(
+        std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType) {
+    // auto arity = relationType.getArity();
 
     // If this type has been generated already, use the cached version
-    if (typeCache.find(relationType.getTypeName()) != typeCache.end()) {
+    if (typeCache.find(relationType->getTypeName()) != typeCache.end()) {
         return;
     }
-    typeCache.insert(relationType.getTypeName());
+    typeCache.insert(relationType->getTypeName());
 
+    relationType->generateTypeStruct(out);
+
+    /*
     auto inds = relationType.getIndices();
     size_t numIndexes = inds.size();
 
@@ -643,14 +647,19 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         } else {
             for (size_t i = 0; i < numIndexes; i++) {
                 out << "const auto& stats_" << i << " = ind_" << i << ".getHintStatistics();\n";
-                out << "o << prefix << \"arity " << relationType.getArity() << " " << relationType.getDataStructure() << " index " << inds[i] << ": (hits/misses/total)\\n\";\n";
-                out << "o << prefix << \"Insert: \" << stats_" << i << ".inserts.getHits() << \"/\" << stats_" << i << ".inserts.getMisses() << \"/\" << stats_" << i << ".inserts.getAccesses() << \"\\n\";\n";
-                out << "o << prefix << \"Contains: \" << stats_" << i << ".contains.getHits() << \"/\" << stats_" << i << ".contains.getMisses() << \"/\" << stats_" << i << ".contains.getAccesses() << \"\\n\";\n";
-                if (relationType.getDataStructure() == "btree") {
-                    out << "o << prefix << \"Lower-bound: \" << stats_" << i << ".lower_bound.getHits() << \"/\" << stats_" << i << ".lower_bound.getMisses() << \"/\" << stats_" << i << ".lower_bound.getAccesses() << \"\\n\";\n";
-                    out << "o << prefix << \"Upper-bound: \" << stats_" << i << ".upper_bound.getHits() << \"/\" << stats_" << i << ".upper_bound.getMisses() << \"/\" << stats_" << i << ".upper_bound.getAccesses() << \"\\n\";\n";
-                } else if (relationType.getDataStructure() == "brie") {
-                    out << "o << prefix << \"Range-query: \" << stats_" << i << ".get_boundaries.getHits() << \"/\" << stats_" << i << ".get_boundaries.getMisses() << \"/\" << stats_" << i << ".get_boundaries.getAccesses() << \"\\n\";\n";
+                out << "o << prefix << \"arity " << relationType.getArity() << " " <<
+    relationType.getDataStructure() << " index " << inds[i] << ": (hits/misses/total)\\n\";\n"; out << "o <<
+    prefix << \"Insert: \" << stats_" << i << ".inserts.getHits() << \"/\" << stats_" << i <<
+    ".inserts.getMisses() << \"/\" << stats_" << i << ".inserts.getAccesses() << \"\\n\";\n"; out << "o <<
+    prefix << \"Contains: \" << stats_" << i << ".contains.getHits() << \"/\" << stats_" << i <<
+    ".contains.getMisses() << \"/\" << stats_" << i << ".contains.getAccesses() << \"\\n\";\n"; if
+    (relationType.getDataStructure() == "btree") { out << "o << prefix << \"Lower-bound: \" << stats_" << i <<
+    ".lower_bound.getHits() << \"/\" << stats_" << i << ".lower_bound.getMisses() << \"/\" << stats_" << i <<
+    ".lower_bound.getAccesses() << \"\\n\";\n"; out << "o << prefix << \"Upper-bound: \" << stats_" << i <<
+    ".upper_bound.getHits() << \"/\" << stats_" << i << ".upper_bound.getMisses() << \"/\" << stats_" << i <<
+    ".upper_bound.getAccesses() << \"\\n\";\n"; } else if (relationType.getDataStructure() == "brie") { out <<
+    "o << prefix << \"Range-query: \" << stats_" << i << ".get_boundaries.getHits() << \"/\" << stats_" << i
+    << ".get_boundaries.getMisses() << \"/\" << stats_" << i << ".get_boundaries.getAccesses() << \"\\n\";\n";
                 }
             }
         }
@@ -683,6 +692,7 @@ void Synthesiser::generateRelationTypeStruct(std::ostream& out, SynthesiserRelat
         // end class
         out << "};\n";
     }
+    */
 }
 
 /* Convert SearchColums to a template index */
@@ -1999,22 +2009,22 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         bool isDelta = rel.isTemp() && raw_name.find("@delta") != std::string::npos;
         bool isNew = rel.isTemp() && raw_name.find("@new") != std::string::npos;
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
-        SynthesiserRelation relationType(
+        auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
         tempType = isDelta
                            // ? getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel))
-                           ? relationType.getTypeName()
+                           ? relationType->getTypeName()
                            : tempType;
         const std::string& type = (rel.isTemp()) ? tempType :  // getRelationType(rel, rel.getArity(),
                                                                //         idxAnalysis->getIndexes(rel));
-                                          relationType.getTypeName();
+                                          relationType->getTypeName();
 
         // defining table
         os << "// -- Table: " << raw_name << "\n";
 
         // print class definition for the type
         if (!isNew) {
-            generateRelationTypeStruct(os, relationType);
+            generateRelationTypeStruct(os, std::move(relationType));
             os << "\n";
         }
         os << type << "* " << name << ";\n";

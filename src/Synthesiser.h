@@ -65,7 +65,7 @@ protected:
     // const std::string getRelationTypeName(const RamRelation& rel, const IndexSet& indices);
 
     /** Get relation struct definition */
-    void generateRelationTypeStruct(std::ostream& out, SynthesiserRelation& relationType);
+    void generateRelationTypeStruct(std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType);
 
     /* Convert SearchColums to a template index */
     std::string toIndex(SearchColumns key);

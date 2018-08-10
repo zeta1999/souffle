@@ -430,8 +430,8 @@ public:
     void process(ProfileDatabase& db, const std::vector<std::string>& signature, va_list& args) override {
         microseconds time = va_arg(args, microseconds);
         auto path = signature;
-        path.insert(path.begin(), "program");
-        db.addTimeEntry(signature, time);
+        path[0] = "program";
+        db.addTimeEntry(path, time);
     }
 } programTimepointProcessor;
 

@@ -267,6 +267,32 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             return range.first == range.second;  // if there are none => done
         }
 
+        bool visitProvenanceNotExists(const RamProvenanceNotExists& ne) override {
+            const InterpreterRelation& rel = interpreter.getRelation(ne.getRelation());
+
+            // construct the pattern tuple
+            auto arity = rel.getArity();
+            auto values = ne.getValues();
+
+            // for partial we search for lower and upper boundaries
+            RamDomain low[arity];
+            RamDomain high[arity];
+            for (size_t i = 0; i < arity - 2; i++) {
+                low[i] = (values[i]) ? interpreter.evalVal(*values[i], ctxt) : MIN_RAM_DOMAIN;
+                high[i] = (values[i]) ? low[i] : MAX_RAM_DOMAIN;
+            }
+
+            low[arity - 2] = MIN_RAM_DOMAIN;
+            low[arity - 1] = MIN_RAM_DOMAIN;
+            high[arity - 2] = MAX_RAM_DOMAIN;
+            high[arity - 1] = MAX_RAM_DOMAIN;
+
+            // obtain index
+            auto idx = rel.getIndex(ne.getKey());
+            auto range = idx->lowerUpperBound(low, high);
+            return range.first == range.second;  // if there are none => done
+        }
+
         // -- comparison operators --
         bool visitBinaryRelation(const RamBinaryRelation& relOp) override {
             RamDomain lhs = interpreter.evalVal(*relOp.getLHS(), ctxt);

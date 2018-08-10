@@ -1133,8 +1133,8 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
 
         out << "public:\n";
         out << "    iterator_" << i << "() = default;\n";
-        out << "    iterator_" << i << "(const nested_iterator& iter) : nested(iter), value(orderOut_"
-            << i << "(*iter)) {}\n";
+        out << "    iterator_" << i << "(const nested_iterator& iter) : nested(iter), value(orderOut_" << i
+            << "(*iter)) {}\n";
         out << "    iterator_" << i << "(const iterator_" << i << "& other) = default;\n";
         out << "    iterator_" << i << "& operator=(const iterator_" << i << "& other) = default;\n";
 
@@ -1246,7 +1246,8 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
                 indSize++;
             }
         }
-        out << "auto r = ind_" << masterIndex << ".template getBoundaries<" << indSize << ">(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
+        out << "auto r = ind_" << masterIndex << ".template getBoundaries<" << indSize << ">(orderIn_"
+            << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
         out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
         out << "}\n";
     }

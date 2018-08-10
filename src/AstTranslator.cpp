@@ -645,12 +645,10 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
                     returnValue->addValue(translateValue(arg, valueIndex));
                 }
             } else if (auto neg = dynamic_cast<AstNegation*>(lit)) {
-                for (size_t i = 0; i < neg->getAtom()->getArguments().size() - 2; i++) {
+                for (size_t i = 0; i < neg->getAtom()->getArguments().size(); i++) {
                     auto arg = neg->getAtom()->getArguments()[i];
                     returnValue->addValue(translateValue(arg, valueIndex));
                 }
-                returnValue->addValue(std::make_unique<RamNumber>(-1));
-                returnValue->addValue(std::make_unique<RamNumber>(-1));
             } else if (auto neg = dynamic_cast<AstProvenanceNegation*>(lit)) {
                 for (size_t i = 0; i < neg->getAtom()->getArguments().size() - 2; i++) {
                     auto arg = neg->getAtom()->getArguments()[i];
@@ -1316,8 +1314,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
     // a function to create relations
     const auto& makeRamCreate = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
-            const std::string relationNamePrefix) {
-
+                                        const std::string relationNamePrefix) {
         appendStmt(
                 current, std::make_unique<RamCreate>(std::unique_ptr<RamRelation>(getRamRelation(relation,
                                  &typeEnv, relationNamePrefix + getRelationName(relation->getName()),
@@ -1326,8 +1323,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
     // a function to load relations
     const auto& makeRamLoad = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
-            const std::string& inputDirectory, const std::string& fileExtension) {
-
+                                      const std::string& inputDirectory, const std::string& fileExtension) {
         std::unique_ptr<RamStatement> statement =
                 std::make_unique<RamLoad>(std::unique_ptr<RamRelation>(getRamRelation(relation, &typeEnv,
                                                   getRelationName(relation->getName()), relation->getArity(),
@@ -1343,7 +1339,6 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
     // a function to print the size of relations
     const auto& makeRamPrintSize = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
-
         appendStmt(current, std::make_unique<RamPrintSize>(std::unique_ptr<RamRelation>(
                                     getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
                                             relation->getArity(), false, relation->isHashset()))));
@@ -1351,8 +1346,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
     // a function to store relations
     const auto& makeRamStore = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
-            const std::string& outputDirectory, const std::string& fileExtension) {
-
+                                       const std::string& outputDirectory, const std::string& fileExtension) {
         std::unique_ptr<RamStatement> statement =
                 std::make_unique<RamStore>(std::unique_ptr<RamRelation>(getRamRelation(relation, &typeEnv,
                                                    getRelationName(relation->getName()), relation->getArity(),
@@ -1376,25 +1370,24 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
 #ifdef USE_MPI
     const auto& makeRamSend = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
-            const std::set<size_t> destinationStrata) {
+                                      const std::set<size_t> destinationStrata) {
         appendStmt(current, std::make_unique<RamSend>(
                                     getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
                                             relation->getArity(), false, relation->isHashset()),
                                     destinationStrata));
-
     };
 
-    const auto& makeRamRecv = [&](
-            std::unique_ptr<RamStatement>& current, const AstRelation* relation, const size_t sourceStrata) {
+    const auto& makeRamRecv = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
+                                      const size_t sourceStrata) {
         appendStmt(current, std::make_unique<RamRecv>(
                                     getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
                                             relation->getArity(), false, relation->isHashset()),
                                     sourceStrata));
-
     };
 
-    const auto& makeRamNotify = [&](
-            std::unique_ptr<RamStatement>& current) { appendStmt(current, std::make_unique<RamNotify>()); };
+    const auto& makeRamNotify = [&](std::unique_ptr<RamStatement>& current) {
+        appendStmt(current, std::make_unique<RamNotify>());
+    };
 
     const auto& makeRamWait = [&](std::unique_ptr<RamStatement>& current, const size_t count) {
         appendStmt(current, std::make_unique<RamWait>(count));

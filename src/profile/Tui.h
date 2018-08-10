@@ -15,6 +15,7 @@
 #include "Table.h"
 #include "UserInputReader.h"
 #include <algorithm>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -491,7 +492,8 @@ public:
         ioctl(0, TIOCGWINSZ, &w);
         uint32_t width = w.ws_col;
         uint32_t height = 20;
-        double maxUsage = 0;
+        double maxIntervalUsage = 0;
+        double peakUsagePercent = 0;
         char grid[height][width];
 
         struct Usage {
@@ -529,6 +531,14 @@ public:
                                           ->getSize();
 
                 allUsages.insert(curUsage);
+                double currentUsage = 100.0 *
+                                      (curUsage.systemtime + curUsage.usertime - previousUsage.systemtime -
+                                              previousUsage.usertime) /
+                                      (curUsage.time - previousUsage.time);
+                if (currentUsage > peakUsagePercent) {
+                    peakUsagePercent = currentUsage;
+                }
+                previousUsage = curUsage;
             }
             // Extract our overall stats
             startTime = allUsages.begin()->time;
@@ -545,20 +555,25 @@ public:
             }
         }
 
-        std::cout << "Total cpu time = " << Tools::formatTime(usages.rbegin()->usertime / 1000000.0)
-                  << std::endl;
         uint64_t curHeight = 0;
         uint64_t curSystemHeight = 0;
 
         // Find maximum so we can normalise the graph
+        previousUsage = {0, 0, 0, 0};
         for (auto& curUsage : usages) {
             long usageDiff = curUsage.systemtime - previousUsage.systemtime + curUsage.usertime -
                              previousUsage.usertime;
-            if (usageDiff > maxUsage) {
-                maxUsage = usageDiff;
+            if (usageDiff > maxIntervalUsage) {
+                maxIntervalUsage = usageDiff;
             }
             previousUsage = curUsage;
         }
+
+        double intervalUsagePercent = 100.0 * maxIntervalUsage / timeStep;
+        std::cout << "Total cpu time = " << Tools::formatTime(usages.rbegin()->usertime / 1000000.0)
+                  << std::endl;
+        std::cout << "Peak cpu utilisation = " << peakUsagePercent << '%' << std::endl;
+        std::cout << "Peak interval cpu utilisation = " << intervalUsagePercent << '%' << std::endl;
 
         // Add columns to the graph
         previousUsage = {0, 0, 0, 0};
@@ -571,8 +586,8 @@ public:
         for (const Usage& curUsage : usages) {
             curHeight = (curUsage.systemtime - previousUsage.systemtime + curUsage.usertime -
                                 previousUsage.usertime) *
-                        height / maxUsage;
-            curSystemHeight = (curUsage.systemtime - previousUsage.systemtime) / (maxUsage * height);
+                        height / maxIntervalUsage;
+            curSystemHeight = (curUsage.systemtime - previousUsage.systemtime) / (maxIntervalUsage * height);
             for (uint32_t j = 0; j < curHeight; ++j) {
                 grid[j][i] = '*';
             }

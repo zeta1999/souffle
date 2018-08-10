@@ -21,6 +21,7 @@
 #include <thread>
 #include <vector>
 #include <dirent.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 
 namespace souffle {
@@ -486,7 +487,9 @@ public:
             return;
         }
 
-        uint32_t width = 80;
+        struct winsize w;
+        ioctl(0, TIOCGWINSZ, &w);
+        uint32_t width = w.ws_col;
         uint32_t height = 20;
         double maxUsage = 0;
         char grid[height][width];
@@ -587,6 +590,10 @@ public:
             }
             std::cout << std::endl;
         }
+        for (uint32_t j = 0; j < width; ++j) {
+            std::cout << '-';
+        }
+        std::cout << std::endl;
     }
 
     void setupTabCompletion() {

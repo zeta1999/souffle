@@ -562,7 +562,7 @@ public:
         uint32_t i = 0;
         for (uint32_t i = 0; i < height; ++i) {
             for (uint32_t j = 0; j < width; ++j) {
-                grid[i][j] = '-';
+                grid[i][j] = ' ';
             }
         }
         for (const Usage& curUsage : usages) {

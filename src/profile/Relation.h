@@ -31,8 +31,8 @@ private:
     double savetime = 0;
     long prev_num_tuples = 0;
     long num_tuples = 0;
-    long preMaxRSS = 0;
-    long postMaxRSS = 0;
+    size_t preMaxRSS = 0;
+    size_t postMaxRSS = 0;
     std::string id;
     std::string locator;
     int rul_id = 0;

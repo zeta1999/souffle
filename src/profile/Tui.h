@@ -486,8 +486,8 @@ public:
             return;
         }
 
-        int width = 80;
-        int height = 20;
+        uint32_t width = 80;
+        uint32_t height = 20;
         double maxUsage = 0;
         char grid[height][width];
 

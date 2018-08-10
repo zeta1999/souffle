@@ -540,18 +540,32 @@ public:
                 }
                 previousUsage = curUsage;
             }
+
+            if (allUsages.size() <= 2) {
+                for (uint8_t i = 0; i < height + 3; ++i) {
+                    std::cout << std::endl;
+                }
+                return;
+            }
             // Extract our overall stats
             startTime = allUsages.begin()->time;
             endTime = allUsages.rbegin()->time;
-            timeStep = (endTime - startTime) / width;
 
-            // Store the timepoints we need for the graph
-            for (uint32_t i = 1; i <= width; ++i) {
-                auto it = allUsages.upper_bound(Usage{startTime + timeStep * i});
-                if (it != allUsages.begin()) {
-                    --it;
+            if (allUsages.size() < width) {
+                width = allUsages.size();
+                usages = allUsages;
+                timeStep = (endTime - startTime) / width;
+            } else {
+                timeStep = (endTime - startTime) / width;
+
+                // Store the timepoints we need for the graph
+                for (uint32_t i = 1; i <= width; ++i) {
+                    auto it = allUsages.upper_bound(Usage{startTime + timeStep * i});
+                    if (it != allUsages.begin()) {
+                        --it;
+                    }
+                    usages.insert(*it);
                 }
-                usages.insert(*it);
             }
         }
 

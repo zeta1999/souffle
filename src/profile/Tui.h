@@ -481,20 +481,23 @@ public:
     }
 
     void usage() {
-        DirectoryEntry* usageStats = dynamic_cast<DirectoryEntry*>(
-                ProfileEventSingleton::instance().getDB().lookupEntry({"program", "usage", "timepoint"}));
-        if (usageStats == nullptr) {
-            std::cout << "No usage statistics recorded." << std::endl;
-            return;
-        }
-
         struct winsize w;
         ioctl(0, TIOCGWINSZ, &w);
         uint32_t width = w.ws_col;
         uint32_t height = 20;
+
+        DirectoryEntry* usageStats = dynamic_cast<DirectoryEntry*>(
+                ProfileEventSingleton::instance().getDB().lookupEntry({"program", "usage", "timepoint"}));
+        if (usageStats == nullptr || usageStats->getKeys().size() < 2) {
+            for (uint8_t i = 0; i < height + 2; ++i) {
+                std::cout << std::endl;
+            }
+            std::cout << "Insufficient data for usage statistics." << std::endl;
+            return;
+        }
+
         double maxIntervalUsage = 0;
         double peakUsagePercent = 0;
-        char grid[height][width];
 
         struct Usage {
             uint64_t time;
@@ -541,12 +544,6 @@ public:
                 previousUsage = curUsage;
             }
 
-            if (allUsages.size() <= 2) {
-                for (uint8_t i = 0; i < height + 3; ++i) {
-                    std::cout << std::endl;
-                }
-                return;
-            }
             // Extract our overall stats
             startTime = allUsages.begin()->time;
             endTime = allUsages.rbegin()->time;
@@ -590,13 +587,15 @@ public:
                 Tools::formatNum(2, intervalUsagePercent).c_str());
 
         // Add columns to the graph
-        previousUsage = {0, 0, 0, 0};
+        char grid[height][width];
         uint32_t i = 0;
         for (uint32_t i = 0; i < height; ++i) {
             for (uint32_t j = 0; j < width; ++j) {
                 grid[i][j] = ' ';
             }
         }
+
+        previousUsage = {0, 0, 0, 0};
         for (const Usage& curUsage : usages) {
             curHeight = (curUsage.systemtime - previousUsage.systemtime + curUsage.usertime -
                                 previousUsage.usertime) *

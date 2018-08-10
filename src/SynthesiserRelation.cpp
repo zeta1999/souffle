@@ -1,3 +1,11 @@
+/*
+ * Souffle - A Datalog Compiler
+ * Copyright (c) 2018, The Souffle Developers. All rights reserved
+ * Licensed under the Universal Permissive License v 1.0 as shown at:
+ * - https://opensource.org/licenses/UPL
+ * - <souffle root>/licenses/SOUFFLE-UPL.txt
+ */
+
 #include "SynthesiserRelation.h"
 
 namespace souffle {
@@ -1010,11 +1018,11 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
 
     // begin and end iterators
     out << "iterator begin() const {\n";
-    out << "return ind_" << masterIndex << ".begin();\n";
+    out << "return iterator_" << masterIndex << "(ind_" << masterIndex << ".begin());\n";
     out << "}\n";
 
     out << "iterator end() const {\n";
-    out << "return ind_" << masterIndex << ".end();\n";
+    out << "return iterator_" << masterIndex << "(ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
     // TODO: finish printHintStatistics method
@@ -1064,7 +1072,6 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
 void SynthesiserEqrelRelation::computeIndices() {
     assert(!isProvenance && "eqrel cannot be used with provenance");
 
-    /* maybe this is not necessary for eqrel????
     // Generate and set indices
     std::vector<std::vector<int>> inds = indices.getAllOrders();
 
@@ -1092,8 +1099,8 @@ void SynthesiserEqrelRelation::computeIndices() {
         assert(ind.size() == getArity());
     }
 
+    masterIndex = 0;
     computedIndices = inds;
-    */
 }
 
 /** Generate type name of a direct indexed relation */
@@ -1103,7 +1110,205 @@ std::string SynthesiserEqrelRelation::getTypeName() {
 
 /** Generate type struct of a direct indexed relation */
 void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
-    // TODO: complete this
+    size_t arity = getArity();
+    const auto& inds = getIndices();
+    size_t numIndexes = inds.size();
+    std::map<std::vector<int>, int> indexToNumMap;
+
+    // struct definition
+    out << "struct " << getTypeName() << " {\n";
+
+    // eqrel is only for binary relations
+    out << "typedef ram::Tuple<RamDomain, 2> t_tuple;\n";
+    out << "typedef BinaryRelation<t_tuple> t_ind_" << masterIndex << ";\n";
+    out << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
+
+    // generate auxiliary iterators that reorder tuples according to index orders
+    for (size_t i = 0; i < numIndexes; i++) {
+        // generate auxiliary iterators which orderOut
+        out << "class iterator_" << i << " : public std::iterator<std::forward_iterator_tag, t_tuple> {\n";
+        out << "    using nested_iterator = typename t_ind_0::iterator;\n";
+        out << "    nested_iterator nested;\n";
+        out << "    t_tuple value;\n";
+
+        out << "public:\n";
+        out << "    iterator_" << i << "() = default;\n";
+        out << "    iterator_" << i << "(const nested_iterator& iter) : nested(iter), value(orderOut_"
+            << i << "(*iter)) {}\n";
+        out << "    iterator_" << i << "(const iterator_" << i << "& other) = default;\n";
+        out << "    iterator_" << i << "& operator=(const iterator_" << i << "& other) = default;\n";
+
+        out << "    bool operator==(const iterator_" << i << "& other) const {\n";
+        out << "        return nested == other.nested;\n";
+        out << "    }\n";
+
+        out << "    bool operator!=(const iterator_" << i << "& other) const {\n";
+        out << "        return !(*this == other);\n";
+        out << "    }\n";
+
+        out << "    const t_tuple& operator*() const {\n";
+        out << "        return value;\n";
+        out << "    }\n";
+
+        out << "    const t_tuple* operator->() const {\n";
+        out << "        return &value;\n";
+        out << "    }\n";
+
+        out << "    iterator_" << i << "& operator++() {\n";
+        out << "        ++nested;\n";
+        out << "        value = orderOut_" << i << "(*nested);\n";
+        out << "        return *this;\n";
+        out << "    }\n";
+        out << "};\n";
+    }
+
+    out << "typedef iterator_" << masterIndex << " iterator;\n";
+
+    // Create a struct storing the context hints for each index
+    out << "struct context {\n";
+    out << "t_ind_" << masterIndex << "::operation_hints hints_" << masterIndex << ";\n";
+    out << "};\n";
+    out << "context createContext() { return context(); }\n";
+
+    // insert methods
+    out << "bool insert(const t_tuple& t) {\n";
+    out << "return ind_" << masterIndex << ".insert(t[0], t[1]);\n";
+    out << "}\n";
+
+    out << "bool insert(const t_tuple& t, context& h) {\n";
+    out << "return ind_" << masterIndex << ".insert(t[0], t[1], h.hints_" << masterIndex << ");\n";
+    out << "}\n";
+
+    out << "bool insert(const RamDomain* ramDomain) {\n";
+    out << "RamDomain data[2];\n";
+    out << "std::copy(ramDomain, ramDomain + 2, data);\n";
+    out << "const t_tuple& tuple = reinterpret_cast<const t_tuple&>(data);\n";
+    out << "context h;\n";
+    out << "return insert(tuple, h);\n";
+    out << "}\n";
+
+    out << "bool insert(RamDomain a1, RamDomain a2) {\n";
+    out << "RamDomain data[2] = {a1, a2};\n";
+    out << "return insert(data);\n";
+    out << "}\n";
+
+    // extends method for eqrel
+    // performs a delta extension, where we union the sets that share elements between this and other.
+    //      i.e. if a in this, and a in other, union(set(this->a), set(other->a))
+    out << "void extend(const " << getTypeName() << "& other) {\n";
+    out << "ind_" << masterIndex << ".extend(other.ind_" << masterIndex << ");\n";
+    out << "}\n";
+
+    // insertAll method
+    out << "template <typename T>\n";
+    out << "void insertAll(T& other) {\n";
+    out << "for (auto const& cur : other) {\n";
+    out << "insert(cur);\n";
+    out << "}\n";
+    out << "}\n";
+
+    // insertAll using the index method
+    out << "void insertAll(" << getTypeName() << "& other) {\n";
+    out << "ind_" << masterIndex << ".insertAll(other.ind_" << masterIndex << ");\n";
+    out << "}\n";
+
+    // contains methods
+    out << "bool contains(const t_tuple& t) {\n";
+    out << "return ind_" << masterIndex << ".contains(t[0], t[1]);\n";
+    out << "}\n";
+
+    out << "bool contains(const t_tuple& t, context& h) {\n";
+    out << "return ind_" << masterIndex << ".contains(t[0], t[1]);\n";
+    out << "}\n";
+
+    // size method
+    out << "std::size_t size() {\n";
+    out << "return ind_" << masterIndex << ".size();\n";
+    out << "}\n";
+
+    // find methods
+    out << "iterator find(const t_tuple& t) const {\n";
+    out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t));\n";
+    out << "}\n";
+
+    out << "iterator find(const t_tuple& t, context& h) const {\n";
+    out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t));\n";
+    out << "}\n";
+
+    // equalRange methods, one for each of the 4 possible search patterns
+    for (int i = 1; i < 4; i++) {
+        out << "range<iterator> equalRange_" << i;
+        out << "(const t_tuple& t, context& h) const {\n";
+        // compute size of sub-index
+        size_t indSize = 0;
+        for (size_t column = 0; column < 2; column++) {
+            if ((i >> column) & 1) {
+                indSize++;
+            }
+        }
+        out << "auto r = ind_" << masterIndex << ".template getBoundaries<" << indSize << ">(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
+        out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
+        out << "}\n";
+    }
+
+    // empty method
+    out << "bool empty() {\n";
+    out << "return ind_" << masterIndex << ".size() == 0;\n";
+    out << "}\n";
+
+    // partition method
+    out << "std::vector<range<iterator>> partition() const {\n";
+    out << "std::vector<range<iterator>> res;\n";
+    out << "for (const auto& cur : ind_" << masterIndex << ".partition(10000)) {\n";
+    out << "    res.push_back(make_range(iterator(cur.begin()), iterator(cur.end())));\n";
+    out << "}\n";
+    out << "return res;\n";
+    out << "}\n";
+
+    // purge method
+    out << "void purge() {\n";
+    for (size_t i = 0; i < numIndexes; i++) {
+        out << "ind_" << i << ".clear();\n";
+    }
+    out << "}\n";
+
+    // begin and end iterators
+    out << "iterator begin() const {\n";
+    out << "return iterator_" << masterIndex << "(ind_" << masterIndex << ".begin());\n";
+    out << "}\n";
+
+    out << "iterator end() const {\n";
+    out << "return iterator_" << masterIndex << "(ind_" << masterIndex << ".end());\n";
+    out << "}\n";
+
+    // printHintStatistics method
+    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+    out << "o << \"eqrel index: no hint statistics supported\\n\";\n";
+    out << "}\n";
+
+    // generate orderIn and orderOut methods which reorder tuples
+    // according to index orders
+    for (size_t i = 0; i < numIndexes; i++) {
+        auto ind = inds[i];
+        out << "static t_tuple orderIn_" << i << "(const t_tuple& t) {\n";
+        out << "t_tuple res;\n";
+        for (size_t j = 0; j < ind.size(); j++) {
+            out << "res[" << j << "] = t[" << ind[j] << "];\n";
+        }
+        out << "return res;\n";
+        out << "}\n";
+
+        out << "static t_tuple orderOut_" << i << "(const t_tuple& t) {\n";
+        out << "t_tuple res;\n";
+        for (size_t j = 0; j < ind.size(); j++) {
+            out << "res[" << ind[j] << "] = t[" << j << "];\n";
+        }
+        out << "return res;\n";
+        out << "}\n";
+    }
+
+    // end class
+    out << "};\n";
 }
 
 }  // end of namespace souffle

@@ -542,7 +542,8 @@ public:
             }
         }
 
-        std::cout << "Total cpu time = " << usages.rbegin()->usertime << "μs" << std::endl;
+        std::cout << "Total cpu time = " << Tools::formatTime(usages.rbegin()->usertime / 1000000.0)
+                  << std::endl;
         uint64_t curHeight = 0;
         uint64_t curSystemHeight = 0;
 

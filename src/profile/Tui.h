@@ -584,10 +584,10 @@ public:
         }
 
         double intervalUsagePercent = 100.0 * maxIntervalUsage / timeStep;
-        std::cout << "Total cpu time = " << Tools::formatTime(usages.rbegin()->usertime / 1000000.0)
-                  << std::endl;
-        std::cout << "Peak cpu utilisation = " << peakUsagePercent << '%' << std::endl;
-        std::cout << "Peak interval cpu utilisation = " << intervalUsagePercent << '%' << std::endl;
+        std::printf("%11s%10s%10s\n", "cpu total", "cpu peak", "int peak");
+        std::printf("%11s%9s%%%9s%%\n", Tools::formatTime(usages.rbegin()->usertime / 1000000.0).c_str(),
+                Tools::formatNum(2, peakUsagePercent).c_str(),
+                Tools::formatNum(2, intervalUsagePercent).c_str());
 
         // Add columns to the graph
         previousUsage = {0, 0, 0, 0};
@@ -647,12 +647,14 @@ public:
     void top() {
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
         if (alive) run->update();
-        std::printf("%11s%10s%10s%20s\n\n", "runtime", "loadtime", "savetime", "tuples generated");
+        std::printf("%11s%10s%10s%20s\n", "runtime", "loadtime", "savetime", "tuples generated");
 
-        std::printf("%10s%10s%10s%14s\n", run->getRuntime().c_str(),
+        std::printf("%11s%10s%10s%14s\n", run->getRuntime().c_str(),
                 run->formatTime(run->getTotLoadtime()).c_str(),
                 run->formatTime(run->getTotSavetime()).c_str(),
                 run->formatNum(precision, run->getTotNumTuples()).c_str());
+        std::cout << std::endl;
+        usage();
     }
 
     void rel() {

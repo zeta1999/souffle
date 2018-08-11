@@ -483,7 +483,7 @@ public:
     void usage() {
         struct winsize w;
         ioctl(0, TIOCGWINSZ, &w);
-        uint32_t width = w.ws_col;
+        uint32_t width = w.ws_col > 0 ? w.ws_col : 80;
         uint32_t height = 20;
 
         DirectoryEntry* usageStats = dynamic_cast<DirectoryEntry*>(

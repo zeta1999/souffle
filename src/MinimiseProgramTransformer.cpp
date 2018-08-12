@@ -5,102 +5,37 @@
 
 namespace souffle {
 
-/**
- * Holds the variable decomposition of a given clause.
- * A variable decomposition is a representation of the variables in a clause,
- * but with variable names abstracted away.
- */
-// TODO: use a nullable vector + function instead of a class
-class VariableDecomposition {
-private:
-    bool decomposable;
-    // TODO ABDUL: change to set of pairs instead of vector of pairs
-    std::vector<std::vector<std::pair<int,int>>> decomposition;
+// TODO ABDUL: something weird going on with extractdisconecneojtoejododj transformer so fix that at some point maybe
 
-public:
-    const std::vector<std::vector<std::pair<int,int>>>& getDecomposition() const {
-        return decomposition;
-    }
-
-    bool isDecomposable() const {
-        return decomposable;
-    }
-
-    VariableDecomposition(const AstClause& clause) {
-        decomposable = true;
+bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
+    auto isValidClause = [&](const AstClause* clause) {
+        bool valid = true;
 
         // check that all body literals are atoms
-        for (AstLiteral* lit : clause.getBodyLiterals()) {
+        for (AstLiteral* lit : clause->getBodyLiterals()) {
             if (!dynamic_cast<AstAtom*>(lit)) {
-                decomposable = false;
-                return;
+                valid = false;
             }
         }
 
         // check that all arguments are either constants or variables
-        visitDepthFirst(clause, [&](const AstArgument& arg) {
+        visitDepthFirst(*clause, [&](const AstArgument& arg) {
             if (!dynamic_cast<const AstVariable*>(&arg) && !dynamic_cast<const AstConstant*>(&arg)) {
-                decomposable = false;
-                return;
+                valid = false;
             }
         });
 
-        // still here, so we can decompose under the assumption that all
-        // arguments are constants or variables, and all literals are atoms
+        return valid;
+    };
 
-        // --- decomposition ---
-        // keep track of the positions of all variables
-        // coordinate (x,y) means the variable can be found at atom x, argument y
-        // the clause head has given index 0, the first body literal has index 1
-        std::map<std::string, std::vector<std::pair<int, int>>> variableCoordinates;
-
-        // give every variable an empty position list in the map
-        visitDepthFirst(clause, [&](const AstVariable& var) {
-            variableCoordinates[var.getName()] = std::vector<std::pair<int,int>>();
-        });
-
-        std::vector<AstLiteral*> bodyLiterals = clause.getBodyLiterals();
-        bodyLiterals.insert(bodyLiterals.begin(), clause.getHead());
-
-        for (int i = 0; i < bodyLiterals.size(); i++) {
-            const AstAtom* currAtom = dynamic_cast<const AstAtom*>(bodyLiterals[i]);
-            std::vector<AstArgument*> arguments = currAtom->getArguments();
-
-            for (int j = 0; j < arguments.size(); j++) {
-                AstArgument* currArg = arguments[j];
-                if (const AstVariable* var = dynamic_cast<const AstVariable*>(currArg)) {
-                    // found a variable, so add this position to its list of coordinates
-                    variableCoordinates[var->getName()].push_back(std::make_pair(i,j));
-                }
-            }
-        }
-
-        // add the variable coordinate vectors to the decomposition list
-        // abstracts away the actual variable names used
-        for (auto kvp = variableCoordinates.begin(); kvp != variableCoordinates.end(); kvp++) {
-            decomposition.push_back(kvp->second);
-        }
-    }
-};
-
-// TODO ABDUL: something weird going on with extractdisconecneojtoejododj transformer so fix that at some point maybe
-
-bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
-    VariableDecomposition leftDec = VariableDecomposition(*left);
-    VariableDecomposition rightDec = VariableDecomposition(*right);
-
-    if (!leftDec.isDecomposable() || !rightDec.isDecomposable()) {
+    if (!isValidClause(left) || !isValidClause(right)) {
         return false;
     }
 
+    // rules must be the same length to be equal
     if (left->getBodyLiterals().size() != right->getBodyLiterals().size()) {
         return false;
     }
-
-    auto ld = leftDec.getDecomposition();
-    auto rd = rightDec.getDecomposition();
-    std::cout << "checking " << ld << " == " << rd << std::endl;
-    std::cout << *left << std::endl << *right << std::endl;
 
     int size = left->getBodyLiterals().size() + 1;
     std::vector<std::vector<int>> adj = std::vector<std::vector<int>>(size);

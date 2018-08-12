@@ -257,28 +257,28 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
     // set up the n x n permutation matrix, where n is the number of
     // atoms in the clause, including the head atom
     size_t size = left->getBodyLiterals().size() + 1;
-    std::vector<std::vector<unsigned int>> adj = std::vector<std::vector<unsigned int>>(size);
-    for (size_t i = 0; i < adj.size(); i++) {
-        adj[i] = std::vector<unsigned int>(size);
+    std::vector<std::vector<unsigned int>> permutationMatrix = std::vector<std::vector<unsigned int>>(size);
+    for (size_t i = 0; i < permutationMatrix.size(); i++) {
+        permutationMatrix[i] = std::vector<unsigned int>(size);
     }
 
     // create permutation matrix
     for (size_t i = 0; i < size; i++) {
         for (size_t j = 0; j < size; j++) {
             if (isValidMove(left, i, right, j)) {
-                adj[i][j] = 1;
+                permutationMatrix[i][j] = 1;
             }
         }
     }
 
-    std::vector<std::vector<unsigned int>> permutations = extractPermutations(adj);
+    // check if any of these permutations have valid variable mappings associated with them
+    std::vector<std::vector<unsigned int>> permutations = extractPermutations(permutationMatrix);
     for (auto permutation : permutations) {
-        std::cout << "testing " << permutation << " ... " << std::endl;
         if (isValidPermutation(left, right, permutation)) {
-            std::cout << "THEYRE EQUIVALENT!!!" << std::endl;
+            // valid permutation with valid corresponding variable mapping exists
+            // therefore, the two clauses are equivalent!
             return true;
         }
-        std::cout << permutation << " failed " << std::endl;
     }
 
     return false;
@@ -288,44 +288,44 @@ bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) 
     AstProgram& program = *translationUnit.getProgram();
 
     std::vector<AstClause*> clausesToDelete;
+
+    // split up each relation's rules into equivalene classes
+    // TODO: perhaps move into an analysis
     for (AstRelation* rel : program.getRelations()) {
         std::vector<std::vector<AstClause*>> equivalenceClasses;
+
         for (AstClause* clause : rel->getClauses()) {
             bool added = false;
 
             for (std::vector<AstClause*>& eqClass : equivalenceClasses) {
-                AstClause* representative = eqClass[0];
-                if (areBijectivelyEquivalent(representative, clause)) {
+                AstClause* rep = eqClass[0];
+
+                if (areBijectivelyEquivalent(rep, clause)) {
+                    // clause belongs to an existing equivalence class, so delete it
                     eqClass.push_back(clause);
                     clausesToDelete.push_back(clause);
-                    std::cout << "found equivalent rules :))))" << std::endl;
                     added = true;
                     break;
                 }
             }
 
             if (!added) {
+                // clause does not belong to any existing equivalence class, so keep it
+                // TODO: better syntax?
                 std::vector<AstClause*> clauseToAdd;
                 clauseToAdd.push_back(clause);
                 equivalenceClasses.push_back(clauseToAdd);
             }
         }
-
-        std::cout << rel << std::endl << equivalenceClasses << std::endl;
-        for (auto eqclass : equivalenceClasses) {
-            std::cout << "EQUIVALENCE CLASS:" << std::endl;
-            for (auto clause : eqclass) {
-                std::cout << "?:::"  << *clause << std::endl;
-            }
-            std::cout << "                        " << std::endl;
-        }
     }
 
+    // remove non-representative clauses
     for (auto clause : clausesToDelete) {
         program.removeClause(clause);
     }
 
-    return clausesToDelete.size() > 0;
+    // changed iff any clauses were deleted
+    return !clausesToDelete.empty();
 }
 
 }  // namespace souffle

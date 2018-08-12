@@ -1110,13 +1110,12 @@ public:
     };
 
     /**
-	 * A collection of operation hints speeding up some of the involved operations
-	 * by exploiting temporal locality.
-	 */
-    template<unsigned size = 1>
+     * A collection of operation hints speeding up some of the involved operations
+     * by exploiting temporal locality.
+     */
+    template <unsigned size = 1>
     struct btree_operation_hints {
-
-        using node_cache = LRUCache<node*,size>;
+        using node_cache = LRUCache<node*, size>;
 
         // the node where the last insertion terminated
         node_cache last_insert;
@@ -1316,29 +1315,29 @@ public:
         // test last insert hints
         lock_type::Lease cur_lease;
 
-        auto checkHint = [&](node* last_insert){
-        	// ignore null pointer
-        	if (!last_insert) return false;
-        	// get a read lease on indicated node
-			auto hint_lease = last_insert->lock.start_read();
-			// check whether it covers the key
-			if (!covers(last_insert, k)) return false;
-			// and if there was no concurrent modification
-			if (!last_insert->lock.validate(hint_lease)) return false;
-			// use hinted location
-			cur = last_insert;
-			// and keep lease
-			cur_lease = hint_lease;
-			// we found a hit
-			return true;
+        auto checkHint = [&](node* last_insert) {
+            // ignore null pointer
+            if (!last_insert) return false;
+            // get a read lease on indicated node
+            auto hint_lease = last_insert->lock.start_read();
+            // check whether it covers the key
+            if (!covers(last_insert, k)) return false;
+            // and if there was no concurrent modification
+            if (!last_insert->lock.validate(hint_lease)) return false;
+            // use hinted location
+            cur = last_insert;
+            // and keep lease
+            cur_lease = hint_lease;
+            // we found a hit
+            return true;
         };
 
         if (hints.last_insert.any(checkHint)) {
-    		// register this as a hit
-			hint_stats.inserts.addHit();
+            // register this as a hit
+            hint_stats.inserts.addHit();
         } else {
-        	// register this as a miss
-			hint_stats.inserts.addMiss();
+            // register this as a miss
+            hint_stats.inserts.addMiss();
         }
 
         // if there is no valid hint ..
@@ -1543,10 +1542,10 @@ public:
         node* cur = root;
 
         auto checkHints = [&](node* last_insert) {
-        	if (!last_insert) return false;
-        	if (!covers(last_insert,k)) return false;
-        	cur = last_insert;
-        	return true;
+            if (!last_insert) return false;
+            if (!covers(last_insert, k)) return false;
+            cur = last_insert;
+            return true;
         };
 
         // test last insert
@@ -1733,10 +1732,10 @@ public:
         node* cur = root;
 
         auto checkHints = [&](node* last_find_end) {
-        	if (!last_find_end) return false;
-        	if (!covers(last_find_end,k)) return false;
-        	cur = last_find_end;
-        	return true;
+            if (!last_find_end) return false;
+            if (!covers(last_find_end, k)) return false;
+            cur = last_find_end;
+            return true;
         };
 
         // test last location searched (temporal locality)
@@ -1794,11 +1793,11 @@ public:
         node* cur = root;
 
         auto checkHints = [&](node* last_lower_bound_end) {
-			if (!last_lower_bound_end) return false;
-			if (!covers(last_lower_bound_end,k)) return false;
-			cur = last_lower_bound_end;
-			return true;
-		};
+            if (!last_lower_bound_end) return false;
+            if (!covers(last_lower_bound_end, k)) return false;
+            cur = last_lower_bound_end;
+            return true;
+        };
 
         // test last searched node
         if (hints.last_lower_bound_end.any(checkHints)) {
@@ -1855,11 +1854,11 @@ public:
         node* cur = root;
 
         auto checkHints = [&](node* last_upper_bound_end) {
-			if (!last_upper_bound_end) return false;
-			if (!coversUpperBound(last_upper_bound_end,k)) return false;
-			cur = last_upper_bound_end;
-			return true;
-		};
+            if (!last_upper_bound_end) return false;
+            if (!coversUpperBound(last_upper_bound_end, k)) return false;
+            cur = last_upper_bound_end;
+            return true;
+        };
 
         // test last search node
         if (hints.last_upper_bound_end.any(checkHints)) {

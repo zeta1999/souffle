@@ -7,11 +7,97 @@ namespace souffle {
 
 // TODO ABDUL: something weird going on with extractdisconecneojtoejododj transformer so fix that at some point maybe
 
+/**
+ * Extract valid permutations from a given permutation matrix of valid moves.
+ */
+std::vector<std::vector<unsigned int>> extractPermutations(std::vector<std::vector<unsigned int>> permutationMatrix) {
+    size_t clauseSize = permutationMatrix.size();
+    // keep track of the possible end-positions of each atom in the first clause
+    std::vector<std::vector<unsigned int>> validMoves;
+    for (size_t i = 0; i < clauseSize; i++) {
+        std::vector<unsigned int> currentRow;
+        for (size_t j = 0; j < clauseSize; j++) {
+            if (permutationMatrix[i][j] == 1) {
+                currentRow.push_back(j);
+            }
+        }
+        validMoves.push_back(currentRow);
+    }
+
+    // extract the possible permutations, DFS style
+    std::vector<std::vector<unsigned int>> permutations;
+    std::vector<unsigned int> seen(clauseSize);
+    std::vector<unsigned int> currentPermutation;
+    std::stack<std::vector<unsigned int>> todoStack;
+
+    todoStack.push(std::vector<unsigned int>(validMoves[0])); // TODO: is this necessary?
+    size_t currentIdx = 0;
+    while (!todoStack.empty()) {
+        if (currentIdx == clauseSize) {
+            // permutation is complete
+            permutations.push_back(currentPermutation);
+
+            // undo the last number added to the permutation
+            currentIdx--;
+            if (currentIdx >= 0) {
+                seen[currentPermutation[currentIdx]] = 0;
+            }
+            currentPermutation.pop_back();
+
+            // see if we can pick up other permutations
+            continue;
+        }
+
+        // pull out the possibilities for the current point of the permutation
+        std::vector<unsigned int> possibilities = todoStack.top();
+        todoStack.pop();
+        if (possibilities.empty()) {
+            // no more possibilities at this point, so undo our last move
+            currentIdx--;
+            if (currentIdx >= 0) {
+                seen[currentPermutation[currentIdx]] = 0;
+            }
+            currentPermutation.pop_back();
+
+            // continue looking for permutations
+            continue;
+        }
+
+        // try the next possibility
+        unsigned int nextNum = possibilities[0];
+
+        // update the possibility vector for the current position
+        possibilities.erase(possibilities.begin());
+        todoStack.push(possibilities);
+
+        if (seen[nextNum]) {
+            // number already seen in this permutation
+            continue;
+        } else {
+            // number can be used
+            seen[nextNum] = 1;
+            currentPermutation.push_back(nextNum);
+            currentIdx++;
+
+            // if we havent reached the end of the permutation,
+            // push up the valid moves for the next position
+            if (currentIdx < clauseSize) {
+                todoStack.push(std::vector<unsigned int>(validMoves[currentIdx]));
+            }
+        }
+    }
+
+    // found all permutations
+    return permutations;
+}
+
 bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
+    // only check bijective equivalence for a subset of the possible clauses
     auto isValidClause = [&](const AstClause* clause) {
         bool valid = true;
 
         // check that all body literals are atoms
+        // i.e. avoid clauses with constraints or negations
         for (AstLiteral* lit : clause->getBodyLiterals()) {
             if (!dynamic_cast<AstAtom*>(lit)) {
                 valid = false;
@@ -19,6 +105,7 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
         }
 
         // check that all arguments are either constants or variables
+        // i.e. only allow primitive arguments
         visitDepthFirst(*clause, [&](const AstArgument& arg) {
             if (!dynamic_cast<const AstVariable*>(&arg) && !dynamic_cast<const AstConstant*>(&arg)) {
                 valid = false;
@@ -37,110 +124,53 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
         return false;
     }
 
-    int size = left->getBodyLiterals().size() + 1;
-    std::vector<std::vector<int>> adj = std::vector<std::vector<int>>(size);
+    // set up the n x n permutation matrix, where n is the number of
+    // atoms in the clause, including the head atom
+    size_t size = left->getBodyLiterals().size() + 1;
+    std::vector<std::vector<unsigned int>> adj = std::vector<std::vector<unsigned int>>(size);
     for (size_t i = 0; i < adj.size(); i++) {
-        adj[i] = std::vector<int>(size);
+        adj[i] = std::vector<unsigned int>(size);
     }
 
-    // TODO ABDUL fix up indices maybe idk
-    auto possibleMove = [&](AstClause* left, AstClause* right, int start, int end) {
-        if (start * end == 0 && start + end != 0) {
+    // checks if the atom at leftIdx in the left clause can potentially be
+    // matched up with the atom at rightIdx in the right clause
+    // NOTE: index 0 refers to the head atom, index 1 to the first body atom, etc.
+    auto possibleMove = [&](AstClause* left, int leftIdx, AstClause* right, int rightIdx) {
+        // invalid indices
+        if (leftIdx < 0 || rightIdx < 0) {
             return false;
-        } else if (start == 0) {
-            return true;
         }
-        start -=1;
-        end -=1;
 
-        if (left->getBodyLiteral(start)->getAtom()->getName() == right->getBodyLiteral(end)->getAtom()->getName()) {
-            return true;
+        // handle the case where one of the indices refers to the head
+        if (leftIdx == 0 && rightIdx == 0) {
+            const AstAtom* leftHead = left->getHead()->getAtom();
+            const AstAtom* rightHead = right->getHead()->getAtom();
+            return leftHead->getName() == rightHead->getName();
+        } else if (leftIdx == 0 || rightIdx == 0) {
+            return false;
         }
-        return false;
+
+        // both must hence be body atoms
+        int leftBodyAtomIdx = leftIdx - 1;
+        const AstAtom* leftAtom = left->getBodyLiteral(leftBodyAtomIdx)->getAtom();
+
+        int rightBodyAtomIdx = rightIdx - 1;
+        const AstAtom* rightAtom = right->getBodyLiteral(rightBodyAtomIdx)->getAtom();
+
+        return leftAtom->getName() == rightAtom->getName();
     };
 
-    // create matrix of permutations
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            if (possibleMove(left, right, i, j)) {
+    // create permutation matrix
+    for (size_t i = 0; i < size; i++) {
+        for (size_t j = 0; j < size; j++) {
+            if (possibleMove(left, i, right, j)) {
                 adj[i][j] = 1;
             }
         }
     }
 
-    auto getValidPermutations = [&](std::vector<std::vector<int>> adj) {
-        std::vector<std::vector<int>> sparseAdj;
-        for (size_t i = 0; i < adj.size(); i++) {
-            std::vector<int> currentRow;
-            for (size_t j = 0; j < adj.size(); j++) {
-                if (adj[i][j] == 1) {
-                    currentRow.push_back(j);
-                }
-            }
-            sparseAdj.push_back(currentRow);
-        }
 
-        std::vector<std::vector<int>> permutations;
-        // TODO ABDUL: this part
-        std::vector<int> seen(adj.size());
-        std::vector<int> currentPermutation;
-        std::stack<std::vector<int>> stack;
-
-        stack.push(std::vector<int>(sparseAdj[0])); // TODO necessary?
-        size_t currPos = 0;
-        while (!stack.empty()) {
-            std::cout << "JUMPING IN?!?!" << std::endl;
-            std::cout << currentPermutation << std::endl;
-            if (currPos == adj.size()) {
-                std::cout << "we here" << std::endl;
-                permutations.push_back(currentPermutation);
-                currPos -= 1;
-                seen[currentPermutation[currPos]] = 0;
-                currentPermutation.pop_back();
-                std::cout << "continuing..." << std::endl;
-                continue;
-            }
-
-            std::vector<int> possibilities = stack.top();
-            std::cout << "position: " << currPos << " ; values: " << possibilities << " with seen result: " << seen <<  std::endl;
-            stack.pop();
-            if (possibilities.size() == 0) {
-                std::cout << "we there" << std::endl;
-                std::cout << "absolutely broken? btw the size is " << currentPermutation.size() << "adn curr pos is " << currPos << std::endl;
-                if (currPos >= 1) {
-                    seen[currentPermutation[currPos-1]] = 0;
-                }
-                currPos -= 1;
-                std::cout << "not absolutely broken?" << std::endl;
-                currentPermutation.pop_back();
-                std::cout << "continuing..." << std::endl;
-                continue;
-            }
-            int currNum = possibilities[0];
-            possibilities.erase(possibilities.begin());
-            stack.push(possibilities);
-            std::cout << "we finalising stuff?" << std::endl;
-            if (seen[currNum]) {
-                std::cout << "continuing..." << std::endl;
-                continue;
-            } else {
-                seen[currNum] = 1;
-                currentPermutation.push_back(currNum);
-                currPos += 1;
-                if (currPos < adj.size()) {
-                    stack.push(std::vector<int>(sparseAdj[currPos]));
-                }
-            }
-        }
-
-        std::cout << "absolute beauty" << std::endl;
-
-        std::cout << permutations << std::endl;
-
-        return permutations;
-    };
-
-    auto validPermutation = [&](AstClause* left, AstClause* right, std::vector<int> permutation) {
+    auto validPermutation = [&](AstClause* left, AstClause* right, std::vector<unsigned int> permutation) {
         AstClause* clone = left->clone();
         std::vector<unsigned int> unsignedVersion(permutation.begin()+1, permutation.end());
         for (size_t i = 0; i < unsignedVersion.size(); i++) {
@@ -225,8 +255,7 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
         return equiv;
     };
 
-    std::vector<std::vector<int>> permutations = getValidPermutations(adj);
-
+    std::vector<std::vector<unsigned int>> permutations = extractPermutations(adj);
     for (auto permutation : permutations) {
         std::cout << "testing " << permutation << " ... " << std::endl;
         if (validPermutation(left, right, permutation)) {

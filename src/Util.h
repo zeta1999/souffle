@@ -1266,6 +1266,9 @@ inline bool isTransactionProfilingEnabled() {
  * to be accessed and iterated through in their LRU order.
  */
 template <typename T, unsigned size = 1>
+class LRUCache;
+
+template <typename T, unsigned size>
 class LRUCache {
     // the list of pointers maintained
     std::array<T, size> entries;

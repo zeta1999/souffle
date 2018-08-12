@@ -91,6 +91,136 @@ std::vector<std::vector<unsigned int>> extractPermutations(std::vector<std::vect
     return permutations;
 }
 
+/**
+ * Check if the atom at leftIdx in the left clause can potentially be matched up
+ * with the atom at rightIdx in the right clause.
+ * NOTE: index 0 refers to the head atom, index 1 to the first body atom, and so on.
+ */
+bool isValidMove(AstClause* left, size_t leftIdx, AstClause* right, size_t rightIdx) {
+    // invalid indices
+    if (leftIdx < 0 || rightIdx < 0) {
+        return false;
+    }
+
+    // handle the case where one of the indices refers to the head
+    if (leftIdx == 0 && rightIdx == 0) {
+        const AstAtom* leftHead = left->getHead()->getAtom();
+        const AstAtom* rightHead = right->getHead()->getAtom();
+        return leftHead->getName() == rightHead->getName();
+    } else if (leftIdx == 0 || rightIdx == 0) {
+        return false;
+    }
+
+    // both must hence be body atoms
+    int leftBodyAtomIdx = leftIdx - 1;
+    const AstAtom* leftAtom = left->getBodyLiteral(leftBodyAtomIdx)->getAtom();
+
+    int rightBodyAtomIdx = rightIdx - 1;
+    const AstAtom* rightAtom = right->getBodyLiteral(rightBodyAtomIdx)->getAtom();
+
+    return leftAtom->getName() == rightAtom->getName();
+}
+
+/**
+ * Check whether a valid variable mapping exists for the given permutation.
+ */
+bool isValidPermutation(AstClause* left, AstClause* right, std::vector<unsigned int> permutation) {
+    // --- perform the permutation ---
+
+    auto reorderedLeft = std::unique_ptr<AstClause>(left->clone());
+
+    // deduce the body atom permutation from the full clause permutation
+    std::vector<unsigned int> bodyPermutation(permutation.begin()+1, permutation.end());
+    for (size_t i = 0; i < bodyPermutation.size(); i++) {
+        bodyPermutation[i] -= 1;
+    }
+
+    // currently, <permutation[i] == j> indicates that atom i should map to position j
+    // internally, for the clause class' reordering function, <permutation[i] == j> indicates
+    // that position i should contain atom j
+    // rearrange the permutation to match the internals
+    // TODO: perhaps change the internals because this came up in magic set too
+    std::vector<unsigned int> reorderedPermutation(bodyPermutation.size());
+    for (size_t i = 0; i < bodyPermutation.size(); i++) {
+        reorderedPermutation[bodyPermutation[i]] = i;
+    }
+
+    // perform the permutation
+    reorderedLeft->reorderAtoms(reorderedPermutation);
+
+    // --- check if a valid variable exists corresponding to this permutation ---
+
+    std::map<std::string, std::string> variableMap;
+    visitDepthFirst(*reorderedLeft, [&](const AstVariable& var) {
+        variableMap[var.getName()] = "";
+    });
+
+    // need to match the variables in the body
+    std::vector<AstLiteral*> leftAtoms = reorderedLeft->getBodyLiterals();
+    std::vector<AstLiteral*> rightAtoms = right->getBodyLiterals();
+
+    // need to match the variables in the head
+    leftAtoms.push_back(reorderedLeft->getHead());
+    rightAtoms.push_back(right->getHead());
+
+    // check if a valid variable mapping exists
+    auto isVariable = [&](const AstArgument* arg) {
+        return dynamic_cast<const AstVariable*>(arg);
+    };
+
+    auto isConstant = [&](const AstArgument* arg) {
+        return dynamic_cast<const AstConstant*>(arg);
+    };
+
+    bool validMapping = true;
+    for (size_t i = 0; i < leftAtoms.size() && validMapping; i++) {
+        // match arguments
+        std::vector<AstArgument*> leftArgs = leftAtoms[i]->getAtom()->getArguments();
+        std::vector<AstArgument*> rightArgs = rightAtoms[i]->getAtom()->getArguments();
+
+        for (size_t j = 0; j < leftArgs.size(); j++) {
+            AstArgument* leftArg = leftArgs[j];
+            AstArgument* rightArg = rightArgs[j];
+            if (isVariable(leftArg) && isVariable(rightArg)) {
+                // both variables, their names should match to each other through the clause
+                std::string leftVarName = dynamic_cast<AstVariable*>(leftArg)->getName();
+                std::string rightVarName = dynamic_cast<AstVariable*>(rightArg)->getName();
+
+                std::string currentMap = variableMap[leftVarName];
+                if (currentMap == "") {
+                    // unassigned yet, so assign it appropriately
+                    variableMap[leftVarName] = rightVarName;
+                } else if (currentMap != rightVarName) {
+                    // mapping is inconsistent!
+                    // clauses cannot be equivalent under this permutation
+                    validMapping = false;
+                    break;
+                }
+            } else if (isConstant(leftArg) && isConstant(rightArg)) {
+                // check if its the same constant
+                auto leftCst = dynamic_cast<AstConstant*>(leftArg)->getIndex();
+                auto rightCst = dynamic_cast<AstConstant*>(rightArg)->getIndex();
+
+                if (leftCst != rightCst) {
+                    // constants don't match, failed!
+                    validMapping = false;
+                    break;
+                }
+            } else {
+                // not the same type, failed!
+                validMapping = false;
+                break;
+            }
+        }
+    }
+
+    // return whether a valid variable mapping exists for this permutation
+    return validMapping;
+}
+
+/**
+ * Check whether two clauses are bijectively equivalent.
+ */
 bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
     // only check bijective equivalence for a subset of the possible clauses
     auto isValidClause = [&](const AstClause* clause) {
@@ -132,133 +262,19 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
         adj[i] = std::vector<unsigned int>(size);
     }
 
-    // checks if the atom at leftIdx in the left clause can potentially be
-    // matched up with the atom at rightIdx in the right clause
-    // NOTE: index 0 refers to the head atom, index 1 to the first body atom, etc.
-    auto possibleMove = [&](AstClause* left, int leftIdx, AstClause* right, int rightIdx) {
-        // invalid indices
-        if (leftIdx < 0 || rightIdx < 0) {
-            return false;
-        }
-
-        // handle the case where one of the indices refers to the head
-        if (leftIdx == 0 && rightIdx == 0) {
-            const AstAtom* leftHead = left->getHead()->getAtom();
-            const AstAtom* rightHead = right->getHead()->getAtom();
-            return leftHead->getName() == rightHead->getName();
-        } else if (leftIdx == 0 || rightIdx == 0) {
-            return false;
-        }
-
-        // both must hence be body atoms
-        int leftBodyAtomIdx = leftIdx - 1;
-        const AstAtom* leftAtom = left->getBodyLiteral(leftBodyAtomIdx)->getAtom();
-
-        int rightBodyAtomIdx = rightIdx - 1;
-        const AstAtom* rightAtom = right->getBodyLiteral(rightBodyAtomIdx)->getAtom();
-
-        return leftAtom->getName() == rightAtom->getName();
-    };
-
     // create permutation matrix
     for (size_t i = 0; i < size; i++) {
         for (size_t j = 0; j < size; j++) {
-            if (possibleMove(left, i, right, j)) {
+            if (isValidMove(left, i, right, j)) {
                 adj[i][j] = 1;
             }
         }
     }
 
-
-    auto validPermutation = [&](AstClause* left, AstClause* right, std::vector<unsigned int> permutation) {
-        AstClause* clone = left->clone();
-        std::vector<unsigned int> unsignedVersion(permutation.begin()+1, permutation.end());
-        for (size_t i = 0; i < unsignedVersion.size(); i++) {
-            unsignedVersion[i] -= 1;
-        }
-        std::vector<unsigned int> newOrdering(unsignedVersion.size());
-        for (size_t i = 0; i < unsignedVersion.size(); i++) {
-            newOrdering[unsignedVersion[i]] = i;
-        }
-        std::cout << "we here " << std::endl;
-        std::cout << newOrdering << std::endl;
-        std::cout << "before: " << *clone << std::endl;
-        clone->reorderAtoms(newOrdering);
-        left = clone;
-        std::cout << "after: " << *clone << std::endl;
-        std::map<std::string, std::string> variableMap;
-        visitDepthFirst(*left, [&](const AstVariable& var) {
-            variableMap[var.getName()] = "";
-        });
-
-        // TODO ABDUL
-        std::cout << "checking: " << *clone << " " << *right << " " << std::endl;
-
-        // match the head
-        AstAtom* leftHead = left->getHead();
-        AstAtom* rightHead = right->getHead();
-
-        // match the body literals
-        std::vector<AstLiteral*> leftBodyLiterals = left->getBodyLiterals();
-        std::vector<AstLiteral*> rightBodyLiterals = right->getBodyLiterals();
-        leftBodyLiterals.push_back(leftHead);
-        rightBodyLiterals.push_back(rightHead);
-
-        auto singletonThing = [&](const AstArgument& arg) { return (dynamic_cast<const AstVariable*>(&arg) || dynamic_cast<const AstConstant*>(&arg)); };
-        auto isVariable = [&](const AstArgument* arg) { return (dynamic_cast<const AstVariable*>(arg) || 0); };
-        auto isConstant = [&](const AstArgument* arg) { return (dynamic_cast<const AstConstant*>(arg) || 0); };
-
-
-        bool bad = false;
-        visitDepthFirst(*left, [&](const AstArgument& arg) {
-            if (!singletonThing(arg)) { bad = true; }
-        });
-        visitDepthFirst(*right, [&](const AstArgument& arg) {
-            if (!singletonThing(arg)) { bad = true; }
-        });
-        if (bad) { std::cout << "THESE WERE BAD: " << *left << " " << *right << std::endl; return false; }
-
-        bool equiv = true;
-        for (size_t i = 0; i < leftBodyLiterals.size() && equiv; i++) {
-            std::cout << "getting: " << std::endl;
-            std::vector<AstArgument*> leftArgs = leftBodyLiterals[i]->getAtom()->getArguments();
-            std::vector<AstArgument*> rightArgs = rightBodyLiterals[i]->getAtom()->getArguments();
-            for (size_t j = 0; j < leftArgs.size(); j++) {
-                if (isVariable(leftArgs[j]) && isVariable(rightArgs[j])) {
-                    auto leftVar = dynamic_cast<AstVariable*>(leftArgs[j])->getName();
-                    auto rightVar = dynamic_cast<AstVariable*>(rightArgs[j])->getName();
-                    std::cout << leftVar << " VS " << rightVar << std::endl;
-                    std::cout << "in " << *leftBodyLiterals[i] << " vs " << *rightBodyLiterals[i] << "...." << std::endl;
-                    std::string currSymbol = variableMap[leftVar];
-                    if(currSymbol == "") {
-                        variableMap[leftVar] = rightVar;
-                    } else if (currSymbol != rightVar) {
-                        std::cout << "bad: " << leftVar << " " << currSymbol << " " << rightVar << std::endl;
-                        equiv = false;
-                        break;
-                    }
-                } else if (isConstant(leftArgs[j]) && isConstant(rightArgs[j])) {
-                    auto leftVar = dynamic_cast<AstConstant*>(leftArgs[j])->getIndex();
-                    auto rightVar = dynamic_cast<AstConstant*>(rightArgs[j])->getIndex();
-                    if (leftVar != rightVar) {
-                        equiv = false;
-                    }
-                } else {
-                    equiv = false;
-                    break;
-                }
-            }
-        }
-        std::cout << variableMap << std::endl;
-        std::cout << "equiv? " << equiv << std::endl;
-
-        return equiv;
-    };
-
     std::vector<std::vector<unsigned int>> permutations = extractPermutations(adj);
     for (auto permutation : permutations) {
         std::cout << "testing " << permutation << " ... " << std::endl;
-        if (validPermutation(left, right, permutation)) {
+        if (isValidPermutation(left, right, permutation)) {
             std::cout << "THEYRE EQUIVALENT!!!" << std::endl;
             return true;
         }

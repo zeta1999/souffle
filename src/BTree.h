@@ -1141,7 +1141,7 @@ public:
         }
     };
 
-    using operation_hints = btree_operation_hints<4>;
+    using operation_hints = btree_operation_hints<1>;
 
 private:
 #if defined(IS_PARALLEL) && !defined(HAS_TSX)

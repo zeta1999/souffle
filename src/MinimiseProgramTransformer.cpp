@@ -39,7 +39,7 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
 
     int size = left->getBodyLiterals().size() + 1;
     std::vector<std::vector<int>> adj = std::vector<std::vector<int>>(size);
-    for (int i = 0; i < adj.size(); i++) {
+    for (size_t i = 0; i < adj.size(); i++) {
         adj[i] = std::vector<int>(size);
     }
 
@@ -70,9 +70,9 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
 
     auto getValidPermutations = [&](std::vector<std::vector<int>> adj) {
         std::vector<std::vector<int>> sparseAdj;
-        for (int i = 0; i < adj.size(); i++) {
+        for (size_t i = 0; i < adj.size(); i++) {
             std::vector<int> currentRow;
-            for (int j = 0; j < adj.size(); j++) {
+            for (size_t j = 0; j < adj.size(); j++) {
                 if (adj[i][j] == 1) {
                     currentRow.push_back(j);
                 }
@@ -87,7 +87,7 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
         std::stack<std::vector<int>> stack;
 
         stack.push(std::vector<int>(sparseAdj[0])); // TODO necessary?
-        int currPos = 0;
+        size_t currPos = 0;
         while (!stack.empty()) {
             std::cout << "JUMPING IN?!?!" << std::endl;
             std::cout << currentPermutation << std::endl;
@@ -143,11 +143,11 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
     auto validPermutation = [&](AstClause* left, AstClause* right, std::vector<int> permutation) {
         AstClause* clone = left->clone();
         std::vector<unsigned int> unsignedVersion(permutation.begin()+1, permutation.end());
-        for (int i = 0; i < unsignedVersion.size(); i++) {
+        for (size_t i = 0; i < unsignedVersion.size(); i++) {
             unsignedVersion[i] -= 1;
         }
         std::vector<unsigned int> newOrdering(unsignedVersion.size());
-        for (int i = 0; i < unsignedVersion.size(); i++) {
+        for (size_t i = 0; i < unsignedVersion.size(); i++) {
             newOrdering[unsignedVersion[i]] = i;
         }
         std::cout << "we here " << std::endl;
@@ -189,11 +189,11 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
         if (bad) { std::cout << "THESE WERE BAD: " << *left << " " << *right << std::endl; return false; }
 
         bool equiv = true;
-        for (int i = 0; i < leftBodyLiterals.size() && equiv; i++) {
+        for (size_t i = 0; i < leftBodyLiterals.size() && equiv; i++) {
             std::cout << "getting: " << std::endl;
             std::vector<AstArgument*> leftArgs = leftBodyLiterals[i]->getAtom()->getArguments();
             std::vector<AstArgument*> rightArgs = rightBodyLiterals[i]->getAtom()->getArguments();
-            for (int j = 0; j < leftArgs.size(); j++) {
+            for (size_t j = 0; j < leftArgs.size(); j++) {
                 if (isVariable(leftArgs[j]) && isVariable(rightArgs[j])) {
                     auto leftVar = dynamic_cast<AstVariable*>(leftArgs[j])->getName();
                     auto rightVar = dynamic_cast<AstVariable*>(rightArgs[j])->getName();

@@ -5,8 +5,6 @@
 
 namespace souffle {
 
-// TODO ABDUL: something weird going on with extractdisconecneojtoejododj transformer so fix that at some point maybe
-
 /**
  * Extract valid permutations from a given permutation matrix of valid moves.
  */
@@ -30,7 +28,8 @@ std::vector<std::vector<unsigned int>> extractPermutations(std::vector<std::vect
     std::vector<unsigned int> currentPermutation;
     std::stack<std::vector<unsigned int>> todoStack;
 
-    todoStack.push(std::vector<unsigned int>(validMoves[0])); // TODO: is this necessary?
+    todoStack.push(validMoves[0]);
+
     size_t currentIdx = 0;
     while (!todoStack.empty()) {
         if (currentIdx == clauseSize) {
@@ -82,7 +81,7 @@ std::vector<std::vector<unsigned int>> extractPermutations(std::vector<std::vect
             // if we havent reached the end of the permutation,
             // push up the valid moves for the next position
             if (currentIdx < clauseSize) {
-                todoStack.push(std::vector<unsigned int>(validMoves[currentIdx]));
+                todoStack.push(validMoves[currentIdx]);
             }
         }
     }
@@ -139,7 +138,7 @@ bool isValidPermutation(AstClause* left, AstClause* right, std::vector<unsigned 
     // internally, for the clause class' reordering function, <permutation[i] == j> indicates
     // that position i should contain atom j
     // rearrange the permutation to match the internals
-    // TODO: perhaps change the internals because this came up in magic set too
+    // TODO (azreika): perhaps change the internal reordering strategy because this came up in MST too
     std::vector<unsigned int> reorderedPermutation(bodyPermutation.size());
     for (size_t i = 0; i < bodyPermutation.size(); i++) {
         reorderedPermutation[bodyPermutation[i]] = i;
@@ -290,7 +289,7 @@ bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) 
     std::vector<AstClause*> clausesToDelete;
 
     // split up each relation's rules into equivalene classes
-    // TODO: perhaps move into an analysis
+    // TODO (azreika): consider turning this into an ast analysis instead
     for (AstRelation* rel : program.getRelations()) {
         std::vector<std::vector<AstClause*>> equivalenceClasses;
 
@@ -311,9 +310,7 @@ bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) 
 
             if (!added) {
                 // clause does not belong to any existing equivalence class, so keep it
-                // TODO: better syntax?
-                std::vector<AstClause*> clauseToAdd;
-                clauseToAdd.push_back(clause);
+                std::vector<AstClause*> clauseToAdd = { clause };
                 equivalenceClasses.push_back(clauseToAdd);
             }
         }

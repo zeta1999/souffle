@@ -107,7 +107,7 @@ template <>
 inline const MPI_Datatype datatype<char>() {
     return MPI_BYTE;
 }
-}
+}  // namespace
 
 /* getCount */
 namespace {
@@ -119,7 +119,7 @@ inline int getCount(std::unique_ptr<MPI_Status>& status) {
     MPI_Get_count(status.get(), datatype<T>(), &count);
     return count;
 }
-}
+}  // namespace
 
 /* pack */
 namespace {
@@ -157,7 +157,7 @@ inline void pack<std::vector<std::string>>(
     MPI_Pack(&last[0], (int)last.size(), lastType, &newData[0], (int)newData.capacity(), &position,
             MPI_COMM_WORLD);
 }
-}
+}  // namespace
 
 /* unpack */
 namespace {
@@ -185,7 +185,7 @@ inline void unpack<std::vector<std::string>>(
         from = to;
     }
 }
-}
+}  // namespace
 
 /* init */
 namespace {
@@ -193,7 +193,7 @@ inline int init(int argc, char* argv[]) {
     auto flag = MPI_Init(&argc, &argv);
     return flag;
 }
-}
+}  // namespace
 
 /* finalize */
 namespace {
@@ -201,7 +201,7 @@ namespace {
 inline void finalize() {
     MPI_Finalize();
 }
-}
+}  // namespace
 
 /* commSize */
 namespace {
@@ -211,7 +211,7 @@ inline int commSize() {
 
     return size;
 }
-}
+}  // namespace
 
 /* commRank */
 namespace {
@@ -221,7 +221,7 @@ inline int commRank() {
 
     return rank;
 }
-}
+}  // namespace
 
 /* probe */
 namespace {
@@ -240,7 +240,7 @@ inline Status probe() {
 inline Status probe(const Status& status) {
     return probe(status->MPI_SOURCE, status->MPI_TAG);
 }
-}
+}  // namespace
 
 /* iprobe */
 namespace {
@@ -259,7 +259,7 @@ inline Status iprobe() {
 inline Status iprobe(const Status& status) {
     return iprobe(status->MPI_SOURCE, status->MPI_TAG);
 }
-}
+}  // namespace
 
 /* send */
 namespace {
@@ -361,7 +361,7 @@ inline void send(const T& data, const size_t length, const std::set<int>& destin
         send((!data.empty()), destinations, tag);
     }
 }
-}
+}  // namespace
 
 /* recv */
 namespace {
@@ -465,6 +465,6 @@ inline void recv(T& data, const size_t length, Status& status) {
         }
     }
 }
-}
+}  // namespace
 }  // end of namespace mpi
 }  // end of namespace souffle

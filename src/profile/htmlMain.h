@@ -182,6 +182,6 @@ std::string htmlBodyBottom = R"___(
 </html>
 
 )___";
-}
-}
-}
+}  // namespace html
+}  // namespace profile
+}  // namespace souffle

@@ -13,6 +13,7 @@
  * Defines AST transformation passes.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include "AstArgument.h"

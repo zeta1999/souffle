@@ -6,6 +6,14 @@
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
  */
 
+/************************************************************************
+ *
+ * @file souffle_prof.cpp
+ *
+ * Main program of souffle's profiler
+ *
+ ***********************************************************************/
+
 #include "profile/Cli.h"
 
 #include <iostream>

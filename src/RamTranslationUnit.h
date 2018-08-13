@@ -14,6 +14,7 @@
  * of a datalog program, error reports and cached analysis results.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include "DebugReport.h"

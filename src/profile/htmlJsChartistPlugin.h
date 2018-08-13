@@ -221,5 +221,5 @@ std::string jsChartistPlugin = R"___(
 
 )___";
 }
-}
-}
+}  // namespace profile
+}  // namespace souffle

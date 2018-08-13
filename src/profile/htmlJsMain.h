@@ -4,7 +4,7 @@
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
-*/
+ */
 
 #include <string>
 
@@ -515,5 +515,5 @@ function init() {
 init();
     )___";
 }
-}
-}
+}  // namespace profile
+}  // namespace souffle

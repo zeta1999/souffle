@@ -8,7 +8,8 @@ namespace souffle {
 /**
  * Extract valid permutations from a given permutation matrix of valid moves.
  */
-std::vector<std::vector<unsigned int>> extractPermutations(std::vector<std::vector<unsigned int>> permutationMatrix) {
+std::vector<std::vector<unsigned int>> extractPermutations(
+        std::vector<std::vector<unsigned int>> permutationMatrix) {
     size_t clauseSize = permutationMatrix.size();
     // keep track of the possible end-positions of each atom in the first clause
     std::vector<std::vector<unsigned int>> validMoves;
@@ -129,7 +130,7 @@ bool isValidPermutation(AstClause* left, AstClause* right, std::vector<unsigned 
     auto reorderedLeft = std::unique_ptr<AstClause>(left->clone());
 
     // deduce the body atom permutation from the full clause permutation
-    std::vector<unsigned int> bodyPermutation(permutation.begin()+1, permutation.end());
+    std::vector<unsigned int> bodyPermutation(permutation.begin() + 1, permutation.end());
     for (size_t i = 0; i < bodyPermutation.size(); i++) {
         bodyPermutation[i] -= 1;
     }
@@ -150,9 +151,7 @@ bool isValidPermutation(AstClause* left, AstClause* right, std::vector<unsigned 
     // --- check if a valid variable exists corresponding to this permutation ---
 
     std::map<std::string, std::string> variableMap;
-    visitDepthFirst(*reorderedLeft, [&](const AstVariable& var) {
-        variableMap[var.getName()] = "";
-    });
+    visitDepthFirst(*reorderedLeft, [&](const AstVariable& var) { variableMap[var.getName()] = ""; });
 
     // need to match the variables in the body
     std::vector<AstLiteral*> leftAtoms = reorderedLeft->getBodyLiterals();
@@ -163,13 +162,9 @@ bool isValidPermutation(AstClause* left, AstClause* right, std::vector<unsigned 
     rightAtoms.push_back(right->getHead());
 
     // check if a valid variable mapping exists
-    auto isVariable = [&](const AstArgument* arg) {
-        return dynamic_cast<const AstVariable*>(arg);
-    };
+    auto isVariable = [&](const AstArgument* arg) { return dynamic_cast<const AstVariable*>(arg); };
 
-    auto isConstant = [&](const AstArgument* arg) {
-        return dynamic_cast<const AstConstant*>(arg);
-    };
+    auto isConstant = [&](const AstArgument* arg) { return dynamic_cast<const AstConstant*>(arg); };
 
     bool validMapping = true;
     for (size_t i = 0; i < leftAtoms.size() && validMapping; i++) {
@@ -310,7 +305,7 @@ bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) 
 
             if (!added) {
                 // clause does not belong to any existing equivalence class, so keep it
-                std::vector<AstClause*> clauseToAdd = { clause };
+                std::vector<AstClause*> clauseToAdd = {clause};
                 equivalenceClasses.push_back(clauseToAdd);
             }
         }

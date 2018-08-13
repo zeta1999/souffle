@@ -388,8 +388,11 @@ int main(int argc, char** argv) {
                     std::make_unique<RemoveRedundantRelationsTransformer>()));
 
     // Equivalence pipeline
-    // TODO ABDUL : correct ones??
-    auto equivalencePipeline = std::make_unique<PipelineTransformer>(std::make_unique<MinimiseProgramTransformer>(), std::make_unique<RemoveRelationCopiesTransformer>(), std::make_unique<RemoveEmptyRelationsTransformer>(), std::make_unique<RemoveRedundantRelationsTransformer>());
+    auto equivalencePipeline =
+            std::make_unique<PipelineTransformer>(std::make_unique<MinimiseProgramTransformer>(),
+                    std::make_unique<RemoveRelationCopiesTransformer>(),
+                    std::make_unique<RemoveEmptyRelationsTransformer>(),
+                    std::make_unique<RemoveRedundantRelationsTransformer>());
 
 #ifdef USE_PROVENANCE
     // Provenance pipeline
@@ -408,8 +411,7 @@ int main(int argc, char** argv) {
             std::make_unique<InlineRelationsTransformer>(), std::make_unique<ReduceExistentialsTransformer>(),
             std::make_unique<ExtractDisconnectedLiteralsTransformer>(),
             std::make_unique<ResolveAliasesTransformer>(),
-            std::make_unique<RemoveRelationCopiesTransformer>(),
-            std::move(equivalencePipeline),
+            std::make_unique<RemoveRelationCopiesTransformer>(), std::move(equivalencePipeline),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),

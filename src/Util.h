@@ -1266,9 +1266,6 @@ inline bool isTransactionProfilingEnabled() {
  * to be accessed and iterated through in their LRU order.
  */
 template <typename T, unsigned size = 1>
-class LRUCache;
-
-template <typename T, unsigned size>
 class LRUCache {
     // the list of pointers maintained
     std::array<T, size> entries;
@@ -1365,20 +1362,19 @@ public:
     bool any(const Op& op) const {
         return forEachInOrder(op);
     }
-
-    // --- print support ---
-
-    friend std::ostream& operator<<(std::ostream& out, const LRUCache& cache) {
-        bool first = true;
-        cache.forEachInOrder([&](const T& val) {
-            if (!first) out << ",";
-            first = false;
-            out << val;
-            return false;
-        });
-        return out;
-    }
 };
+
+template <typename T, unsigned size>
+std::ostream& operator<<(std::ostream& out, const LRUCache<T, size>& cache) {
+    bool first = true;
+    cache.forEachInOrder([&](const T& val) {
+        if (!first) out << ",";
+        first = false;
+        out << val;
+        return false;
+    });
+    return out;
+}
 
 // a specialization for a single-entry cache
 template <typename T>

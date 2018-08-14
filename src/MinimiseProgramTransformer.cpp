@@ -28,6 +28,7 @@ std::vector<std::vector<unsigned int>> extractPermutations(
         std::vector<std::vector<unsigned int>> permutationMatrix) {
     size_t clauseSize = permutationMatrix.size();
     // keep track of the possible end-positions of each atom in the first clause
+    std::cout << "yes0" << std::endl;
     std::vector<std::vector<unsigned int>> validMoves;
     for (size_t i = 0; i < clauseSize; i++) {
         std::vector<unsigned int> currentRow;
@@ -39,6 +40,7 @@ std::vector<std::vector<unsigned int>> extractPermutations(
         validMoves.push_back(currentRow);
     }
 
+    std::cout << "yes1" << std::endl;
     // extract the possible permutations, DFS style
     std::vector<std::vector<unsigned int>> permutations;
     std::vector<unsigned int> seen(clauseSize);
@@ -49,36 +51,51 @@ std::vector<std::vector<unsigned int>> extractPermutations(
 
     size_t currentIdx = 0;
     while (!todoStack.empty()) {
+        std::cout << "yes11" << std::endl;
         if (currentIdx == clauseSize) {
             // permutation is complete
             permutations.push_back(currentPermutation);
 
+            if (currentIdx == 0) {
+                // already at starting position, so no more permutations possible
+                break;
+            }
+
             // undo the last number added to the permutation
             currentIdx--;
-            if (currentIdx >= 0) {
-                seen[currentPermutation[currentIdx]] = 0;
-            }
+            seen[currentPermutation[currentIdx]] = 0;
             currentPermutation.pop_back();
 
             // see if we can pick up other permutations
             continue;
         }
 
+        std::cout << todoStack.empty() << currentIdx << std::endl;
+
+        std::cout << "yes12" << std::endl;
         // pull out the possibilities for the current point of the permutation
         std::vector<unsigned int> possibilities = todoStack.top();
         todoStack.pop();
         if (possibilities.empty()) {
             // no more possibilities at this point, so undo our last move
-            currentIdx--;
-            if (currentIdx >= 0) {
-                seen[currentPermutation[currentIdx]] = 0;
+
+            if (currentIdx == 0) {
+                // already at starting position, so no more permutations possible
+                break;
             }
+
+            currentIdx--;
+            std::cout << "yes110" << currentPermutation << currentIdx << seen << std::endl;
+            seen[currentPermutation[currentIdx]] = 0;
+            std::cout << "yes111" << std::endl;
             currentPermutation.pop_back();
 
+            std::cout << "yes112" << std::endl;
             // continue looking for permutations
             continue;
         }
 
+        std::cout << "yes13" << std::endl;
         // try the next possibility
         unsigned int nextNum = possibilities[0];
 
@@ -102,7 +119,9 @@ std::vector<std::vector<unsigned int>> extractPermutations(
             }
         }
     }
+    std::cout << permutations << std::endl;
 
+    std::cout << "yes2" << std::endl;
     // found all permutations
     return permutations;
 }

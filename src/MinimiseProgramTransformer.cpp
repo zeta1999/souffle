@@ -147,7 +147,8 @@ bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, 
 /**
  * Check whether a valid variable mapping exists for the given permutation.
  */
-bool isValidPermutation(const AstClause* left, const AstClause* right, const std::vector<unsigned int>& permutation) {
+bool isValidPermutation(
+        const AstClause* left, const AstClause* right, const std::vector<unsigned int>& permutation) {
     // --- perform the permutation ---
 
     auto reorderedLeft = std::unique_ptr<AstClause>(left->clone());
@@ -185,9 +186,13 @@ bool isValidPermutation(const AstClause* left, const AstClause* right, const std
     rightAtoms.push_back(right->getHead());
 
     // check if a valid variable mapping exists
-    auto isVariable = [&](const AstArgument* arg) { return dynamic_cast<const AstVariable*>(arg) != nullptr; };
+    auto isVariable = [&](const AstArgument* arg) {
+        return dynamic_cast<const AstVariable*>(arg) != nullptr;
+    };
 
-    auto isConstant = [&](const AstArgument* arg) { return dynamic_cast<const AstConstant*>(arg) != nullptr; };
+    auto isConstant = [&](const AstArgument* arg) {
+        return dynamic_cast<const AstConstant*>(arg) != nullptr;
+    };
 
     bool validMapping = true;
     for (size_t i = 0; i < leftAtoms.size() && validMapping; i++) {
@@ -241,7 +246,6 @@ bool isValidPermutation(const AstClause* left, const AstClause* right, const std
 bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
     // only check bijective equivalence for a subset of the possible clauses
     auto isValidClause = [&](const AstClause* clause) {
-
         // check that all body literals are atoms
         // i.e. avoid clauses with constraints or negations
         for (AstLiteral* lit : clause->getBodyLiterals()) {
@@ -254,7 +258,8 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
         // i.e. only allow primitive arguments
         bool valid = true;
         visitDepthFirst(*clause, [&](const AstArgument& arg) {
-            if (dynamic_cast<const AstVariable*>(&arg) == nullptr && dynamic_cast<const AstConstant*>(&arg) == nullptr) {
+            if (dynamic_cast<const AstVariable*>(&arg) == nullptr &&
+                    dynamic_cast<const AstConstant*>(&arg) == nullptr) {
                 valid = false;
             }
         });

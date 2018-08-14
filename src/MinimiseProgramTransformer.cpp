@@ -25,10 +25,9 @@ namespace souffle {
  * Extract valid permutations from a given permutation matrix of valid moves.
  */
 std::vector<std::vector<unsigned int>> extractPermutations(
-        std::vector<std::vector<unsigned int>> permutationMatrix) {
+        const std::vector<std::vector<unsigned int>>& permutationMatrix) {
     size_t clauseSize = permutationMatrix.size();
     // keep track of the possible end-positions of each atom in the first clause
-    std::cout << "yes0" << std::endl;
     std::vector<std::vector<unsigned int>> validMoves;
     for (size_t i = 0; i < clauseSize; i++) {
         std::vector<unsigned int> currentRow;
@@ -40,7 +39,6 @@ std::vector<std::vector<unsigned int>> extractPermutations(
         validMoves.push_back(currentRow);
     }
 
-    std::cout << "yes1" << std::endl;
     // extract the possible permutations, DFS style
     std::vector<std::vector<unsigned int>> permutations;
     std::vector<unsigned int> seen(clauseSize);
@@ -51,7 +49,6 @@ std::vector<std::vector<unsigned int>> extractPermutations(
 
     size_t currentIdx = 0;
     while (!todoStack.empty()) {
-        std::cout << "yes11" << std::endl;
         if (currentIdx == clauseSize) {
             // permutation is complete
             permutations.push_back(currentPermutation);
@@ -70,9 +67,6 @@ std::vector<std::vector<unsigned int>> extractPermutations(
             continue;
         }
 
-        std::cout << todoStack.empty() << currentIdx << std::endl;
-
-        std::cout << "yes12" << std::endl;
         // pull out the possibilities for the current point of the permutation
         std::vector<unsigned int> possibilities = todoStack.top();
         todoStack.pop();
@@ -85,17 +79,13 @@ std::vector<std::vector<unsigned int>> extractPermutations(
             }
 
             currentIdx--;
-            std::cout << "yes110" << currentPermutation << currentIdx << seen << std::endl;
             seen[currentPermutation[currentIdx]] = 0;
-            std::cout << "yes111" << std::endl;
             currentPermutation.pop_back();
 
-            std::cout << "yes112" << std::endl;
             // continue looking for permutations
             continue;
         }
 
-        std::cout << "yes13" << std::endl;
         // try the next possibility
         unsigned int nextNum = possibilities[0];
 
@@ -119,9 +109,7 @@ std::vector<std::vector<unsigned int>> extractPermutations(
             }
         }
     }
-    std::cout << permutations << std::endl;
 
-    std::cout << "yes2" << std::endl;
     // found all permutations
     return permutations;
 }
@@ -131,7 +119,7 @@ std::vector<std::vector<unsigned int>> extractPermutations(
  * with the atom at rightIdx in the right clause.
  * NOTE: index 0 refers to the head atom, index 1 to the first body atom, and so on.
  */
-bool isValidMove(AstClause* left, size_t leftIdx, AstClause* right, size_t rightIdx) {
+bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, size_t rightIdx) {
     // invalid indices
     if (leftIdx < 0 || rightIdx < 0) {
         return false;
@@ -159,7 +147,7 @@ bool isValidMove(AstClause* left, size_t leftIdx, AstClause* right, size_t right
 /**
  * Check whether a valid variable mapping exists for the given permutation.
  */
-bool isValidPermutation(AstClause* left, AstClause* right, std::vector<unsigned int> permutation) {
+bool isValidPermutation(const AstClause* left, const AstClause* right, const std::vector<unsigned int>& permutation) {
     // --- perform the permutation ---
 
     auto reorderedLeft = std::unique_ptr<AstClause>(left->clone());
@@ -197,9 +185,9 @@ bool isValidPermutation(AstClause* left, AstClause* right, std::vector<unsigned 
     rightAtoms.push_back(right->getHead());
 
     // check if a valid variable mapping exists
-    auto isVariable = [&](const AstArgument* arg) { return dynamic_cast<const AstVariable*>(arg); };
+    auto isVariable = [&](const AstArgument* arg) { return dynamic_cast<const AstVariable*>(arg) != nullptr; };
 
-    auto isConstant = [&](const AstArgument* arg) { return dynamic_cast<const AstConstant*>(arg); };
+    auto isConstant = [&](const AstArgument* arg) { return dynamic_cast<const AstConstant*>(arg) != nullptr; };
 
     bool validMapping = true;
     for (size_t i = 0; i < leftAtoms.size() && validMapping; i++) {
@@ -216,7 +204,7 @@ bool isValidPermutation(AstClause* left, AstClause* right, std::vector<unsigned 
                 std::string rightVarName = dynamic_cast<AstVariable*>(rightArg)->getName();
 
                 std::string currentMap = variableMap[leftVarName];
-                if (currentMap == "") {
+                if (currentMap.empty()) {
                     // unassigned yet, so assign it appropriately
                     variableMap[leftVarName] = rightVarName;
                 } else if (currentMap != rightVarName) {
@@ -250,27 +238,26 @@ bool isValidPermutation(AstClause* left, AstClause* right, std::vector<unsigned 
 /**
  * Check whether two clauses are bijectively equivalent.
  */
-bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
+bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
     // only check bijective equivalence for a subset of the possible clauses
     auto isValidClause = [&](const AstClause* clause) {
-        bool valid = true;
 
         // check that all body literals are atoms
         // i.e. avoid clauses with constraints or negations
         for (AstLiteral* lit : clause->getBodyLiterals()) {
-            if (!dynamic_cast<AstAtom*>(lit)) {
-                valid = false;
+            if (dynamic_cast<AstAtom*>(lit) == nullptr) {
+                return false;
             }
         }
 
         // check that all arguments are either constants or variables
         // i.e. only allow primitive arguments
+        bool valid = true;
         visitDepthFirst(*clause, [&](const AstArgument& arg) {
-            if (!dynamic_cast<const AstVariable*>(&arg) && !dynamic_cast<const AstConstant*>(&arg)) {
+            if (dynamic_cast<const AstVariable*>(&arg) == nullptr && dynamic_cast<const AstConstant*>(&arg) == nullptr) {
                 valid = false;
             }
         });
-
         return valid;
     };
 
@@ -286,7 +273,7 @@ bool areBijectivelyEquivalent(AstClause* left, AstClause* right) {
     // set up the n x n permutation matrix, where n is the number of
     // atoms in the clause, including the head atom
     size_t size = left->getBodyLiterals().size() + 1;
-    std::vector<std::vector<unsigned int>> permutationMatrix = std::vector<std::vector<unsigned int>>(size);
+    auto permutationMatrix = std::vector<std::vector<unsigned int>>(size);
     for (size_t i = 0; i < permutationMatrix.size(); i++) {
         permutationMatrix[i] = std::vector<unsigned int>(size);
     }

@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <utility>
 
+// TODO: add cuckoo equivalent
 #define BINRELTBB
 #ifdef BINRELTBB
 #include <tbb/concurrent_hash_map.h>
@@ -289,6 +290,7 @@ private:
         // activated on one or more), we need to fully regen.
         equivalencePartition.clear();
 
+        sds.ds.a_blocks.trim();
         size_t dSetSize = sds.ds.a_blocks.size();
 // go through the underlying djset, and try to insert into the hash map with key being
 // the sparse representative
@@ -309,15 +311,17 @@ private:
                 if (needsCreation) a->second = std::make_shared<StatesList>(1);
 
                 // then simply insert the sparse value
-                size_t pos = a->second->createNode();
-                a->second->insertAt(pos, sVal);
+                a->second->append(sVal);
+                //size_t pos = a->second->createNode();
+                //a->second->insertAt(pos, sVal);
             } else {
                 typename StatesMap::const_accessor a;
                 equivalencePartition.find(a, rep);
 
                 // then simply insert the sparse value
-                size_t pos = a->second->createNode();
-                a->second->insertAt(pos, sVal);
+                a->second->append(sVal);
+                //size_t pos = a->second->createNode();
+                //a->second->insertAt(pos, sVal);
             }
         }
 
@@ -328,6 +332,7 @@ private:
         // make sure to empty out the hashmap
         resetEquivalencePartition();
 
+        sds.ds.a_blocks.trim();
         size_t djSetSize = sds.ds.a_blocks.size();
         // go through the disjoint set and insert into the hash map with the key being the sparse rep (i.e. find(c))        
 #pragma omp parallel for

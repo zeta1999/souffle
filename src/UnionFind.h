@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BlockList.h"
+#include "PiggyList.h"
 
 #include <atomic>
 #include <exception>
@@ -11,11 +12,12 @@
 #include <unordered_map>
 #include <vector>
 
-//#define SPARSETBB
+#define SPARSETBB
 #ifdef SPARSETBB
 #include <tbb/concurrent_hash_map.h>
 #else
-#include <junction/ConcurrentMap_Leapfrog.h>
+#include <libcuckoo/cuckoohash_map.hh>
+//#include <junction/ConcurrentMap_Leapfrog.h>
 #endif
 
 // branch predictor hacks
@@ -30,49 +32,11 @@ typedef uint64_t parent_t;
 
 // number of bits that the rank is
 constexpr uint8_t split_size = 8u;
+
+// block_t stores parent in the upper half, rank in the lower half
+typedef uint64_t block_t;
 // block_t & rank_mask extracts the rank
 constexpr block_t rank_mask = (1ul << split_size) - 1;
-
-// mapping from souffle val to union-find dense value
-template <class T>
-struct KeyTraits {
-    typedef T Key;
-    typedef int64_t Hash;
-    static const Hash NullKey = -1;
-    static const Hash NullHash = -2;
-
-    // from code.google.com/p/smhasher/wiki/MurmurHash3
-    static inline uint64_t avalanche(uint64_t h) {
-        h ^= h >> 33;
-        h *= 0xff51afd7ed558ccd;
-        h ^= h >> 33;
-        h *= 0xc4ceb9fe1a85ec53;
-        h ^= h >> 33;
-        return h;
-    }
-    static Hash hash(T key) {
-        return avalanche(Hash(key));
-    }
-
-    static inline uint64_t deavalanche(uint64_t h) {
-        h ^= h >> 33;
-        h *= 0x9cb4b2f8129337db;
-        h ^= h >> 33;
-        h *= 0x4f74430c22a54005;
-        h ^= h >> 33;
-        return h;
-    }
-    static Key dehash(Hash h) {
-        return (T) deavalanche(h);
-    }
-};
-template <class T>
-struct ValTraits {
-    typedef T value;
-    typedef int64_t IntType;
-    static const IntType NullValue = -1;
-    static const IntType Redirect = -2;
-};
 
 /**
  * Structure that emulates a Disjoint Set, i.e. a data structure that supports efficient union-find operations
@@ -82,6 +46,7 @@ class DisjointSet {
     friend class BinaryRelation;
 
 #ifdef SPARSETBB
+    //PiggyList<std::atomic<block_t>> a_blocks;
     BlockList<std::atomic<block_t>> a_blocks;
 #else
     /* store blocks of atomics - needs removal for speculative inserts */
@@ -91,7 +56,7 @@ class DisjointSet {
 public:
     DisjointSet(){};
 
-    inline size_t size() const {
+    inline size_t size() {
         auto sz = a_blocks.size();
         return sz;
     };
@@ -218,9 +183,11 @@ public:
         return a_blocks.get(nodeDetails).load();
     };
 
+#ifndef SPARSETBB
     inline void delNode(parent_t node) {
-        a_blocks.delNode(node);
+        a_blocks.remove(node);
     }
+#endif
 
     /**
      * Extract parent from block
@@ -261,7 +228,8 @@ class SparseDisjointSet {
 #ifdef SPARSETBB
     typedef tbb::concurrent_hash_map<SparseDomain, parent_t> SparseMap;
 #else
-    typedef junction::ConcurrentMap_Leapfrog<SparseDomain, parent_t, KeyTraits<SparseDomain>, ValTraits<parent_t>> SparseMap;
+    typedef cuckoohash_map<SparseDomain, parent_t> SparseMap;
+    //typedef junction::ConcurrentMap_Leapfrog<SparseDomain, parent_t, KeyTraits<SparseDomain>, ValTraits<parent_t>> SparseMap;
 #endif
     SparseMap sparseToDenseMap;
     // mapping from union-find val to souffle, union-find encoded as index
@@ -291,13 +259,11 @@ private:
         return a->second;
 #else
         parent_t dense;
-        bool exists = sparseToDenseMap.getInline(in, dense);
-        if (unlikely(!exists)) {
+        bool exists = sparseToDenseMap.find(in, dense);
+        if (!exists) {
             // attempt to insert a new val
-            parent_t proposedDense = ds.b2p(ds.makeNode());
-            dense = sparseToDenseMap.getsert(in, proposedDense);
-            // we got beaten, lets cleanup.
-            if (dense != proposedDense) ds.delNode(proposedDense);
+            dense = ds.b2p(ds.makeNode());
+            sparseToDenseMap.upsert(in, [this,&dense](parent_t& v) { this->ds.delNode(dense); dense=v; }, dense);
             denseToSparseMap.insertAt(dense, in);
         }
         return dense;
@@ -313,7 +279,7 @@ public:
 
         ds = old.ds;
         sparseToDenseMap = old.sparseToDenseMap;
-        denseToSparseMap = old.denseToSparseMap;
+        //denseToSparseMap = old.denseToSparseMap;
 
         return *this;
     }
@@ -349,7 +315,7 @@ public:
     void clear() {
         ds.clear();
 #ifdef SPARSETBB
-        sparseToDenseMap.clear()
+        sparseToDenseMap.clear();
 #else
         // we can't clear the junction map.. so lets indiana jones it
         SparseMap replacer;
@@ -369,7 +335,7 @@ public:
 #ifdef SPARSETBB
         return sparseToDenseMap.count(val);
 #else
-        return sparseToDenseMap.exists(val);
+        return sparseToDenseMap.contains(val);
 #endif
     };
 

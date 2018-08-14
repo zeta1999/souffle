@@ -13,6 +13,7 @@
  * Defines the semantic checker pass.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include "AstTransformer.h"

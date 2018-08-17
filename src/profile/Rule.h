@@ -23,7 +23,8 @@ namespace profile {
 class Rule {
 protected:
     std::string name;
-    double runtime = 0;
+    double starttime = 0;
+    double endtime = 0;
     long num_tuples = 0;
     std::string identifier;
     std::string locator = "";
@@ -44,15 +45,19 @@ public:
     }
 
     inline double getRuntime() {
-        return runtime;
+        return endtime - starttime;
     }
 
     inline long getNum_tuples() {
         return num_tuples;
     }
 
-    inline void setRuntime(double runtime) {
-        this->runtime = runtime;
+    inline void setStarttime(double time) {
+        starttime = time;
+    }
+
+    inline void setEndtime(double time) {
+        endtime = time;
     }
 
     inline void setNum_tuples(long num_tuples) {
@@ -105,7 +110,7 @@ public:
         } else {
             output << "{" << name << ":";
         }
-        output << "[" << runtime << "," << num_tuples << "]}";
+        output << "[" << getRuntime() << "," << num_tuples << "]}";
         return output.str();
     }
 };

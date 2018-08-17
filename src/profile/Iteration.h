@@ -23,7 +23,8 @@ namespace profile {
  */
 class Iteration {
 private:
-    double runtime = 0;
+    double starttime = 0;
+    double endtime = 0;
     long num_tuples = 0;
     double copy_time = 0;
     std::string locator = "";
@@ -45,19 +46,17 @@ public:
     std::string toString() {
         std::ostringstream output;
 
-        output << runtime << "," << num_tuples << "," << copy_time << ",";
+        output << getRuntime() << "," << num_tuples << "," << copy_time << ",";
         output << " recRule:";
-        for (auto& rul : rul_rec_map) output << rul.second->toString();
+        for (auto& rul : rul_rec_map) {
+            output << rul.second->toString();
+        }
         output << "\n";
         return output.str();
     }
 
     inline double getRuntime() {
-        return runtime;
-    }
-
-    inline void setRuntime(double runtime) {
-        this->runtime = runtime;
+        return endtime - starttime;
     }
 
     inline long getNum_tuples() {
@@ -74,6 +73,14 @@ public:
 
     inline void setCopy_time(double copy_time) {
         this->copy_time = copy_time;
+    }
+
+    inline void setStarttime(double time) {
+        starttime = time;
+    }
+
+    inline void setEndtime(double time) {
+        endtime = time;
     }
 
     inline std::string getLocator() {

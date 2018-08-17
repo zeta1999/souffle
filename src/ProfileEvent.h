@@ -111,6 +111,9 @@ public:
         timer.stop();
     }
 
+    void resetTimerInterval(uint32_t interval = 1) {
+        timer.resetTimerInterval(interval);
+    }
     const profile::ProfileDatabase& getDB() const {
         return database;
     }

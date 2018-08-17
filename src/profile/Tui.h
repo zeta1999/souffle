@@ -602,6 +602,13 @@ public:
                 }
             }
         }
+        if (usages.size() < 2) {
+            for (uint8_t i = 0; i < height + 2; ++i) {
+                std::cout << std::endl;
+            }
+            std::cout << "Insufficient data for usage statistics." << std::endl;
+            return;
+        }
 
         // Find maximum so we can normalise the graph
         previousUsage = {0, 0, 0, 0};

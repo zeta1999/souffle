@@ -54,6 +54,8 @@ public:
         struct rusage ru;
         getrusage(RUSAGE_SELF, &ru);
         startMaxRSS = ru.ru_maxrss;
+        // Assume that if we are logging the progress of an event then we care about usage during that time.
+        ProfileEventSingleton::instance().resetTimerInterval();
     }
     ~Logger() {
         struct rusage ru;

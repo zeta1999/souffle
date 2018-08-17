@@ -151,7 +151,15 @@ public:
                 std::cout << "Invalid parameters to graph command.\n";
             }
         } else if (c[0].compare("usage") == 0) {
-            usage();
+            if (c.size() > 1) {
+                if (c[1][0] == 'R') {
+                    usage(c[1]);
+                } else {
+                    std::cout << "Invalid parameters to usage command.\n";
+                }
+            } else {
+                usage();
+            }
         } else if (c[0].compare("help") == 0) {
             help();
         } else {
@@ -480,7 +488,33 @@ public:
         std::printf("  %-30s%-5s %s\n", "q", "-", "exit program.");
     }
 
-    void usage() {
+    void usage(std::string id) {
+        std::vector<std::vector<std::string>> rel_table = out.formatTable(rel_table_state, precision);
+        std::string name = "";
+        bool found = false;
+        for (auto& row : rel_table) {
+            if (row[5] == id || row[6] == id) {
+                name = row[5];
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cout << "Relation does not exist\n";
+            return;
+        }
+
+        auto* runtime = dynamic_cast<DurationEntry*>(ProfileEventSingleton::instance().getDB().lookupEntry(
+                {"program", "relation", name, "runtime"}));
+        if (runtime == nullptr) {
+            std::cerr << "Relation <" << name << "> runtime statistics not found in db" << std::endl;
+            return;
+        }
+
+        usage(runtime->getStart().count(), runtime->getEnd().count());
+    }
+
+    void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
         struct Usage {
             uint64_t time;
             uint32_t maxRSS;
@@ -509,8 +543,6 @@ public:
 
         Usage currentUsage;
         Usage previousUsage{0, 0, 0, 0};
-        uint64_t startTime = 0;
-        uint64_t endTime = 0;
         uint64_t timeStep = 0;
 
         std::set<Usage> usages;
@@ -541,8 +573,12 @@ public:
             }
 
             // Extract our overall stats
-            startTime = allUsages.begin()->time;
-            endTime = allUsages.rbegin()->time;
+            if (startTime == 0) {
+                startTime = allUsages.begin()->time;
+            }
+            if (endTime == 0) {
+                endTime = allUsages.rbegin()->time;
+            }
 
             if (allUsages.size() < width) {
                 width = allUsages.size();

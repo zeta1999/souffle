@@ -178,6 +178,17 @@ private:
                 th.join();
             }
         }
+
+        /** Reset timer interval.
+         *
+         *  The timer interval increases as the program executes. Resetting the interval is useful to
+         *  ensure that detailed usage information is gathered even in long running programs, if desired.
+         */
+        void resetTimerInterval(uint32_t interval = 1) {
+            t = interval;
+            runCount = 0;
+            run();
+        }
     };
 
     ProfileTimer timer;

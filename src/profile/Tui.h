@@ -506,17 +506,6 @@ public:
 
         Relation* rel = out.getProgramRun()->getRelation(name);
         usage(rel->getStarttime(), rel->getEndtime());
-
-        /*
-        auto* runtime = dynamic_cast<DurationEntry*>(ProfileEventSingleton::instance().getDB().lookupEntry(
-                {"program", "relation", name, "runtime"}));
-        if (runtime == nullptr) {
-            std::cerr << "Relation <" << name << "> runtime statistics not found in db" << std::endl;
-            return;
-        }
-
-        usage(runtime->getStart().count(), runtime->getEnd().count());
-        */
     }
 
     void usage(uint64_t endTime = 0, uint64_t startTime = 0) {

@@ -475,6 +475,8 @@ public:
         std::printf("  %-30s%-5s %s\n", "graph ver <rule id> <type>", "-",
                 "graph recursive(C) rule versions by type(tot_t/copy_t/tuples).");
         std::printf("  %-30s%-5s %s\n", "top", "-", "display top-level summary of program run.");
+        std::printf(
+                "  %-30s%-5s %s\n", "usage <relation id>", "-", "display CPU usage graphs for a relation.");
         std::printf("  %-30s%-5s %s\n", "help", "-", "print this.");
 
         std::cout << "\nInteractive mode only commands:" << std::endl;
@@ -680,6 +682,7 @@ public:
             linereader.appendTabCompletion("graph " + row[5] + " tot_t");
             linereader.appendTabCompletion("graph " + row[5] + " copy_t");
             linereader.appendTabCompletion("graph " + row[5] + " tuples");
+            linereader.appendTabCompletion("usage " + row[5]);
         }
     }
 

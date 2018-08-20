@@ -505,7 +505,7 @@ public:
         }
 
         Relation* rel = out.getProgramRun()->getRelation(name);
-        usage(rel->getStarttime(), rel->getEndtime());
+        usage(rel->getStarttime() * 1000000, rel->getEndtime() * 1000000);
     }
 
     void usage(uint64_t endTime = 0, uint64_t startTime = 0) {

@@ -44,9 +44,10 @@
 #define task_sync
 
 // section start / end => corresponding OpenMP pragmas
-//#define SECTIONS_START _Pragma("omp parallel sections") { // NOTE: disabled since it causes performance
-//loses
-#define SECTIONS_START {  // NOTE: we stick to flat-level parallelism since it is faster du to thread pooling
+// NOTE: disabled since it causes performance losses
+//#define SECTIONS_START _Pragma("omp parallel sections") {
+// NOTE: we stick to flat-level parallelism since it is faster due to thread pooling
+#define SECTIONS_START {
 #define SECTIONS_END }
 
 // the markers for a single section

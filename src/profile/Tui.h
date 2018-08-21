@@ -557,7 +557,33 @@ public:
                         usageStats->readDirectoryEntry(currentKey)->readEntry("maxRSS"))
                                               ->getSize();
 
+                // Duplicate times are possible
+                if (allUsages.find(currentUsage) != allUsages.end()) {
+                    auto& existing = *allUsages.find(currentUsage);
+                    currentUsage.systemtime = std::max(existing.systemtime, currentUsage.systemtime);
+                    currentUsage.usertime = std::max(existing.usertime, currentUsage.usertime);
+                    currentUsage.maxRSS = std::max(existing.maxRSS, currentUsage.maxRSS);
+                    allUsages.erase(currentUsage);
+                }
                 allUsages.insert(currentUsage);
+            }
+
+            // cpu times aren't quite recorded in a monotonic way, so skip the invalid ones.
+            previousUsage = *allUsages.begin();
+            for (auto& currentUsage : allUsages) {
+                if (currentUsage.usertime < previousUsage.usertime ||
+                        currentUsage.systemtime < previousUsage.systemtime ||
+                        currentUsage.time == previousUsage.time) {
+                    usages.insert(currentUsage);
+                }
+            }
+            for (auto& currentUsage : usages) {
+                allUsages.erase(currentUsage);
+            }
+            usages.empty();
+
+            previousUsage = {0, 0, 0, 0};
+            for (auto& currentUsage : allUsages) {
                 double cpuUsage = 100.0 *
                                   (currentUsage.systemtime + currentUsage.usertime -
                                           previousUsage.systemtime - previousUsage.usertime) /

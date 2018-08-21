@@ -153,9 +153,9 @@ public:
         } else if (c[0].compare("usage") == 0) {
             if (c.size() > 1) {
                 if (c[1][0] == 'R') {
-                    usage(c[1]);
+                    usageRelation(c[1]);
                 } else {
-                    std::cout << "Invalid parameters to usage command.\n";
+                    usageRule(c[1]);
                 }
             } else {
                 usage();
@@ -490,7 +490,7 @@ public:
         std::printf("  %-30s%-5s %s\n", "q", "-", "exit program.");
     }
 
-    void usage(std::string id) {
+    void usageRelation(std::string id) {
         std::vector<std::vector<std::string>> rel_table = out.formatTable(rel_table_state, precision);
         std::string name = "";
         bool found = false;
@@ -502,7 +502,7 @@ public:
             }
         }
         if (!found) {
-            std::cout << "Relation does not exist\n";
+            std::cout << "Relation does not exist.\n";
             return;
         }
 
@@ -510,7 +510,42 @@ public:
         usage(rel->getStarttime() * 1000000, rel->getEndtime() * 1000000);
     }
 
+    void usageRule(std::string id) {
+        std::vector<std::vector<std::string>> rul_table = out.formatTable(rul_table_state, precision);
+        std::string relName = "";
+        std::string srcLocator = "";
+        bool found = false;
+        for (auto& row : rul_table) {
+            if (row[5] == id || row[6] == id) {
+                relName = row[7];
+                srcLocator = row[10];
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cout << "Rule does not exist.\n";
+            return;
+        }
+
+        auto* rel = out.getProgramRun()->getRelation(relName);
+        if (rel == nullptr) {
+            std::cout << "Relation ceased to exist. Odd." << std::endl;
+            return;
+        }
+        if (rel->getRuleMap().count(srcLocator) == 0) {
+            std::cout << "Rule ceased to exist. Odd." << std::endl;
+            return;
+        }
+
+        auto& rul = rel->getRuleMap().at(srcLocator);
+        usage(rul->getStarttime() * 1000000, rul->getEndtime() * 1000000);
+    }
+
     void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
+        std::cout << "Start time = " << startTime << std::endl;
+        std::cout << "End time = " << endTime << std::endl;
+
         struct Usage {
             uint64_t time;
             uint32_t maxRSS;

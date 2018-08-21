@@ -48,6 +48,14 @@ public:
         return endtime - starttime;
     }
 
+    inline double getStarttime() {
+        return starttime;
+    }
+
+    inline double getEndtime() {
+        return endtime;
+    }
+
     inline long getNum_tuples() {
         return num_tuples;
     }

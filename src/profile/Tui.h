@@ -569,19 +569,14 @@ public:
             }
 
             // cpu times aren't quite recorded in a monotonic way, so skip the invalid ones.
-            previousUsage = *allUsages.begin();
-            for (auto& currentUsage : allUsages) {
-                if (currentUsage.usertime < previousUsage.usertime ||
-                        currentUsage.systemtime < previousUsage.systemtime ||
-                        currentUsage.time == previousUsage.time) {
-                    usages.insert(currentUsage);
+            for (auto it = ++allUsages.begin(); it != allUsages.end(); ++it) {
+                auto previous = std::prev(it);
+                if (it->usertime < previous->usertime || it->systemtime < previous->systemtime ||
+                        it->time == previous->time) {
+                    it = allUsages.erase(it);
+                    --it;
                 }
             }
-            for (auto& currentUsage : usages) {
-                allUsages.erase(currentUsage);
-            }
-            usages.empty();
-
             previousUsage = {0, 0, 0, 0};
             for (auto& currentUsage : allUsages) {
                 double cpuUsage = 100.0 *

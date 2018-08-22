@@ -160,7 +160,10 @@ private:
         }
 
     public:
-        ProfileTimer(uint32_t in = 1) : t(in) {}
+        /*
+         *  @param interval the size of the timing interval in milliseconds
+         */
+        ProfileTimer(uint32_t interval = 10) : t(interval) {}
 
         /** start timer on the thread th */
         void start() {
@@ -186,8 +189,10 @@ private:
          *
          *  The timer interval increases as the program executes. Resetting the interval is useful to
          *  ensure that detailed usage information is gathered even in long running programs, if desired.
+         *
+         *  @param interval the size of the timing interval in milliseconds
          */
-        void resetTimerInterval(uint32_t interval = 1) {
+        void resetTimerInterval(uint32_t interval = 10) {
             t = interval;
             runCount = 0;
             run();

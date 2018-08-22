@@ -44,8 +44,8 @@ public:
     }
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
-            base.setRuntime(runtime);
+            base.setStarttime(duration.getStart().count() / 1000000.0);
+            base.setEndtime(duration.getEnd().count() / 1000000.0);
         }
     }
     void visit(SizeEntry& size) override {
@@ -173,13 +173,11 @@ class IterationVisitor : public DSNVisitor<Iteration> {
 public:
     IterationVisitor(Iteration& iteration, Relation& relation) : DSNVisitor(iteration), relation(relation) {}
     void visit(DurationEntry& duration) override {
-        if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
-            base.setRuntime(runtime);
-        } else if (duration.getKey() == "copytime") {
+        if (duration.getKey() == "copytime") {
             auto copytime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setCopy_time(copytime);
         }
+        DSNVisitor::visit(duration);
     }
     void visit(DirectoryEntry& directory) override {
         if (directory.getKey() == "recursive-rule") {
@@ -228,16 +226,14 @@ class RelationVisitor : public DSNVisitor<Relation> {
 public:
     RelationVisitor(Relation& relation) : DSNVisitor(relation) {}
     void visit(DurationEntry& duration) override {
-        if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
-            base.setRuntime(runtime);
-        } else if (duration.getKey() == "loadtime") {
+        if (duration.getKey() == "loadtime") {
             auto loadtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setLoadtime(loadtime);
         } else if (duration.getKey() == "savetime") {
             auto savetime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setSavetime(savetime);
         }
+        DSNVisitor::visit(duration);
     }
     void visit(DirectoryEntry& directory) override {
         if (directory.getKey() == "iteration") {

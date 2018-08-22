@@ -151,7 +151,15 @@ public:
                 std::cout << "Invalid parameters to graph command.\n";
             }
         } else if (c[0].compare("usage") == 0) {
-            usage();
+            if (c.size() > 1) {
+                if (c[1][0] == 'R') {
+                    usage(c[1]);
+                } else {
+                    std::cout << "Invalid parameters to usage command.\n";
+                }
+            } else {
+                usage();
+            }
         } else if (c[0].compare("help") == 0) {
             help();
         } else {
@@ -467,6 +475,8 @@ public:
         std::printf("  %-30s%-5s %s\n", "graph ver <rule id> <type>", "-",
                 "graph recursive(C) rule versions by type(tot_t/copy_t/tuples).");
         std::printf("  %-30s%-5s %s\n", "top", "-", "display top-level summary of program run.");
+        std::printf(
+                "  %-30s%-5s %s\n", "usage <relation id>", "-", "display CPU usage graphs for a relation.");
         std::printf("  %-30s%-5s %s\n", "help", "-", "print this.");
 
         std::cout << "\nInteractive mode only commands:" << std::endl;
@@ -480,7 +490,27 @@ public:
         std::printf("  %-30s%-5s %s\n", "q", "-", "exit program.");
     }
 
-    void usage() {
+    void usage(std::string id) {
+        std::vector<std::vector<std::string>> rel_table = out.formatTable(rel_table_state, precision);
+        std::string name = "";
+        bool found = false;
+        for (auto& row : rel_table) {
+            if (row[5] == id || row[6] == id) {
+                name = row[5];
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cout << "Relation does not exist\n";
+            return;
+        }
+
+        Relation* rel = out.getProgramRun()->getRelation(name);
+        usage(rel->getStarttime() * 1000000, rel->getEndtime() * 1000000);
+    }
+
+    void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
         struct Usage {
             uint64_t time;
             uint32_t maxRSS;
@@ -509,8 +539,6 @@ public:
 
         Usage currentUsage;
         Usage previousUsage{0, 0, 0, 0};
-        uint64_t startTime = 0;
-        uint64_t endTime = 0;
         uint64_t timeStep = 0;
 
         std::set<Usage> usages;
@@ -529,7 +557,28 @@ public:
                         usageStats->readDirectoryEntry(currentKey)->readEntry("maxRSS"))
                                               ->getSize();
 
+                // Duplicate times are possible
+                if (allUsages.find(currentUsage) != allUsages.end()) {
+                    auto& existing = *allUsages.find(currentUsage);
+                    currentUsage.systemtime = std::max(existing.systemtime, currentUsage.systemtime);
+                    currentUsage.usertime = std::max(existing.usertime, currentUsage.usertime);
+                    currentUsage.maxRSS = std::max(existing.maxRSS, currentUsage.maxRSS);
+                    allUsages.erase(currentUsage);
+                }
                 allUsages.insert(currentUsage);
+            }
+
+            // cpu times aren't quite recorded in a monotonic way, so skip the invalid ones.
+            for (auto it = ++allUsages.begin(); it != allUsages.end(); ++it) {
+                auto previous = std::prev(it);
+                if (it->usertime < previous->usertime || it->systemtime < previous->systemtime ||
+                        it->time == previous->time) {
+                    it = allUsages.erase(it);
+                    --it;
+                }
+            }
+            previousUsage = {0, 0, 0, 0};
+            for (auto& currentUsage : allUsages) {
                 double cpuUsage = 100.0 *
                                   (currentUsage.systemtime + currentUsage.usertime -
                                           previousUsage.systemtime - previousUsage.usertime) /
@@ -541,8 +590,12 @@ public:
             }
 
             // Extract our overall stats
-            startTime = allUsages.begin()->time;
-            endTime = allUsages.rbegin()->time;
+            if (startTime == 0) {
+                startTime = allUsages.begin()->time;
+            }
+            if (endTime == 0) {
+                endTime = allUsages.rbegin()->time;
+            }
 
             if (allUsages.size() < width) {
                 width = allUsages.size();
@@ -560,6 +613,13 @@ public:
                     usages.insert(*it);
                 }
             }
+        }
+        if (usages.size() < 2) {
+            for (uint8_t i = 0; i < height + 2; ++i) {
+                std::cout << std::endl;
+            }
+            std::cout << "Insufficient data for usage statistics." << std::endl;
+            return;
         }
 
         // Find maximum so we can normalise the graph
@@ -643,6 +703,7 @@ public:
             linereader.appendTabCompletion("graph " + row[5] + " tot_t");
             linereader.appendTabCompletion("graph " + row[5] + " copy_t");
             linereader.appendTabCompletion("graph " + row[5] + " tuples");
+            linereader.appendTabCompletion("usage " + row[5]);
         }
     }
 

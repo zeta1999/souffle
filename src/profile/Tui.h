@@ -507,7 +507,7 @@ public:
         }
 
         Relation* rel = out.getProgramRun()->getRelation(name);
-        usage(rel->getStarttime() * 1000000, rel->getEndtime() * 1000000);
+        usage(rel->getEndtime() * 1000000, rel->getStarttime() * 1000000);
     }
 
     void usageRule(std::string id) {
@@ -539,7 +539,7 @@ public:
         }
 
         auto& rul = rel->getRuleMap().at(srcLocator);
-        usage(rul->getStarttime() * 1000000, rul->getEndtime() * 1000000);
+        usage(rul->getEndtime() * 1000000, rul->getStarttime() * 1000000);
     }
 
     void usage(uint64_t endTime = 0, uint64_t startTime = 0) {

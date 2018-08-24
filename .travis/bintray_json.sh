@@ -60,7 +60,7 @@ cat > ${3} <<EOF
         "vcs_url": "https://github.com/souffle-lang/souffle.git",
         "github_use_tag_release_notes": true,
         "github_release_notes_file": "debian/changelog",
-        "licenses": ["UPL"],
+        "licenses": ["UPL-1.0"],
         "public_download_numbers": false,
         "public_stats": false
     },

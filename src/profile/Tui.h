@@ -543,9 +543,6 @@ public:
     }
 
     void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
-        std::cout << "Start time = " << startTime << std::endl;
-        std::cout << "End time = " << endTime << std::endl;
-
         struct Usage {
             uint64_t time;
             uint32_t maxRSS;

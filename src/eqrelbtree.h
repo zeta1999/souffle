@@ -1,19 +1,3 @@
-/*
- * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
- * Licensed under the Universal Permissive License v 1.0 as shown at:
- * - https://opensource.org/licenses/UPL
- * - <souffle root>/licenses/SOUFFLE-UPL.txt
- */
-
-/************************************************************************
- *
- * @file BTree.h
- *
- * An implementation of a generic B-tree data structure including
- * interfaces for utilizing instances as set or multiset containers.
- *
- ***********************************************************************/
 
 #pragma once
 
@@ -21,9 +5,14 @@
 
 #include "ParallelUtils.h"
 #include "Util.h"
+#include "RamTypes.h"
+#include "DisjointSet.h"
+#include "BlockList.h"
+#include "BTree.h"
 #ifdef HAS_TSX
 #include "htmx86.h"
 #endif
+#include <atomic>
 #include <cassert>
 #include <iostream>
 #include <iterator>
@@ -33,199 +22,174 @@
 namespace souffle {
 
 namespace detail {
-
-// ---------- comparators --------------
-
-/**
- * A generic comparator implementation as it is used by
- * a b-tree based on types that can be less-than and
- * equality comparable.
- */
-template <typename T>
-struct comparator {
-    /**
-     * Compares the values of a and b and returns
-     * -1 if a<b, 1 if a>b and 0 otherwise
-     */
-    int operator()(const T& a, const T& b) const {
-        return (a > b) - (a < b);
-    }
-    bool less(const T& a, const T& b) const {
-        return a < b;
-    }
-    bool equal(const T& a, const T& b) const {
-        return a == b;
-    }
-};
-
 // ---------- search strategies --------------
-
-/**
- * A common base class for search strategies in b-trees.
- */
-struct search_strategy {};
-
-/**
- * A linear search strategy for looking up keys in b-tree nodes.
- */
-struct linear_search : public search_strategy {
-    /**
-     * Required user-defined default constructor.
-     */
-    linear_search() {}
-
-    /**
-     * Obtains an iterator referencing an element equivalent to the
-     * given key in the given range. If no such element is present,
-     * a reference to the first element not less than the given key
-     * is returned.
-     */
-    template <typename Key, typename Iter, typename Comp>
-    inline Iter operator()(const Key& k, Iter a, Iter b, Comp& comp) const {
-        return lower_bound(k, a, b, comp);
-    }
-
-    /**
-     * Obtains a reference to the first element in the given range that
-     * is not less than the given key.
-     */
-    template <typename Key, typename Iter, typename Comp>
-    inline Iter lower_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
-        auto c = a;
-        while (c < b) {
-            auto r = comp(*c, k);
-            if (r >= 0) {
-                return c;
-            }
-            ++c;
-        }
-        return b;
-    }
-
-    /**
-     * Obtains a reference to the first element in the given range that
-     * such that the given key is less than the referenced element.
-     */
-    template <typename Key, typename Iter, typename Comp>
-    inline Iter upper_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
-        auto c = a;
-        while (c < b) {
-            if (comp(*c, k) > 0) {
-                return c;
-            }
-            ++c;
-        }
-        return b;
-    }
-};
-
-/**
- * A binary search strategy for looking up keys in b-tree nodes.
- */
-struct binary_search : public search_strategy {
-    /**
-     * Required user-defined default constructor.
-     */
-    binary_search() {}
-
-    /**
-     * Obtains an iterator pointing to some element within the given
-     * range that is equal to the given key, if available. If multiple
-     * elements are equal to the given key, an undefined instance will
-     * be obtained (no guaranteed lower or upper boundary).  If no such
-     * element is present, a reference to the first element not less than
-     * the given key will be returned.
-     */
-    template <typename Key, typename Iter, typename Comp>
-    Iter operator()(const Key& k, Iter a, Iter b, Comp& comp) const {
-        Iter c;
-        auto count = b - a;
-        while (count > 0) {
-            auto step = count >> 1;
-            c = a + step;
-            auto r = comp(*c, k);
-            if (r == 0) {
-                return c;
-            }
-            if (r < 0) {
-                a = ++c;
-                count -= step + 1;
-            } else {
-                count = step;
-            }
-        }
-        return a;
-    }
-
-    /**
-     * Obtains a reference to the first element in the given range that
-     * is not less than the given key.
-     */
-    template <typename Key, typename Iter, typename Comp>
-    Iter lower_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
-        Iter c;
-        auto count = b - a;
-        while (count > 0) {
-            auto step = count >> 1;
-            c = a + step;
-            if (comp(*c, k) < 0) {
-                a = ++c;
-                count -= step + 1;
-            } else {
-                count = step;
-            }
-        }
-        return a;
-    }
-
-    /**
-     * Obtains a reference to the first element in the given range that
-     * such that the given key is less than the referenced element.
-     */
-    template <typename Key, typename Iter, typename Comp>
-    Iter upper_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
-        Iter c;
-        auto count = b - a;
-        while (count > 0) {
-            auto step = count >> 1;
-            c = a + step;
-            if (comp(k, *c) >= 0) {
-                a = ++c;
-                count -= step + 1;
-            } else {
-                count = step;
-            }
-        }
-        return a;
-    }
-};
-
-// ---------- search strategies selection --------------
-
-/**
- * A template-meta class to select search strategies for b-trees
- * depending on the key type.
- */
-template <typename S>
-struct strategy_selection {
-    typedef S type;
-};
-
-struct linear : public strategy_selection<linear_search> {};
-struct binary : public strategy_selection<binary_search> {};
-
-// by default every key utilizes binary search
-template <typename Key>
-struct default_strategy : public binary {};
-
-template <>
-struct default_strategy<int> : public linear {};
-
-template <typename... Ts>
-struct default_strategy<std::tuple<Ts...>> : public linear {};
-
+//
+///**
+// * A common base class for search strategies in b-trees.
+// */
+//struct search_strategy {};
+//
+///**
+// * A linear search strategy for looking up keys in b-tree nodes.
+// */
+//struct linear_search : public search_strategy {
+//    /**
+//     * Required user-defined default constructor.
+//     */
+//    linear_search() {}
+//
+//    /**
+//     * Obtains an iterator referencing an element equivalent to the
+//     * given key in the given range. If no such element is present,
+//     * a reference to the first element not less than the given key
+//     * is returned.
+//     */
+//    template <typename Key, typename Iter, typename Comp>
+//    inline Iter operator()(const Key& k, Iter a, Iter b, Comp& comp) const {
+//        return lower_bound(k, a, b, comp);
+//    }
+//
+//    /**
+//     * Obtains a reference to the first element in the given range that
+//     * is not less than the given key.
+//     */
+//    template <typename Key, typename Iter, typename Comp>
+//    inline Iter lower_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
+//        auto c = a;
+//        while (c < b) {
+//            auto r = comp(*c, k);
+//            if (r >= 0) {
+//                return c;
+//            }
+//            ++c;
+//        }
+//        return b;
+//    }
+//
+//    /**
+//     * Obtains a reference to the first element in the given range that
+//     * such that the given key is less than the referenced element.
+//     */
+//    template <typename Key, typename Iter, typename Comp>
+//    inline Iter upper_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
+//        auto c = a;
+//        while (c < b) {
+//            if (comp(*c, k) > 0) {
+//                return c;
+//            }
+//            ++c;
+//        }
+//        return b;
+//    }
+//};
+//
+///**
+// * A binary search strategy for looking up keys in b-tree nodes.
+// */
+//struct binary_search : public search_strategy {
+//    /**
+//     * Required user-defined default constructor.
+//     */
+//    binary_search() {}
+//
+//    /**
+//     * Obtains an iterator pointing to some element within the given
+//     * range that is equal to the given key, if available. If multiple
+//     * elements are equal to the given key, an undefined instance will
+//     * be obtained (no guaranteed lower or upper boundary).  If no such
+//     * element is present, a reference to the first element not less than
+//     * the given key will be returned.
+//     */
+//    template <typename Key, typename Iter, typename Comp>
+//    Iter operator()(const Key& k, Iter a, Iter b, Comp& comp) const {
+//        Iter c;
+//        auto count = b - a;
+//        while (count > 0) {
+//            auto step = count >> 1;
+//            c = a + step;
+//            auto r = comp(*c, k);
+//            if (r == 0) {
+//                return c;
+//            }
+//            if (r < 0) {
+//                a = ++c;
+//                count -= step + 1;
+//            } else {
+//                count = step;
+//            }
+//        }
+//        return a;
+//    }
+//
+//    /**
+//     * Obtains a reference to the first element in the given range that
+//     * is not less than the given key.
+//     */
+//    template <typename Key, typename Iter, typename Comp>
+//    Iter lower_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
+//        Iter c;
+//        auto count = b - a;
+//        while (count > 0) {
+//            auto step = count >> 1;
+//            c = a + step;
+//            if (comp(*c, k) < 0) {
+//                a = ++c;
+//                count -= step + 1;
+//            } else {
+//                count = step;
+//            }
+//        }
+//        return a;
+//    }
+//
+//    /**
+//     * Obtains a reference to the first element in the given range that
+//     * such that the given key is less than the referenced element.
+//     */
+//    template <typename Key, typename Iter, typename Comp>
+//    Iter upper_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
+//        Iter c;
+//        auto count = b - a;
+//        while (count > 0) {
+//            auto step = count >> 1;
+//            c = a + step;
+//            if (comp(k, *c) >= 0) {
+//                a = ++c;
+//                count -= step + 1;
+//            } else {
+//                count = step;
+//            }
+//        }
+//        return a;
+//    }
+//};
+//
+//// ---------- search strategies selection --------------
+//
+///**
+// * A template-meta class to select search strategies for b-trees
+// * depending on the key type.
+// */
+//template <typename S>
+//struct strategy_selection {
+//    typedef S type;
+//};
+//
+//struct linear : public strategy_selection<linear_search> {};
+//struct binary : public strategy_selection<binary_search> {};
+//
+//// by default every key utilizes binary search
+//template <typename Key>
+//struct default_strategy : public binary {};
+//
+//template <>
+//struct default_strategy<int> : public linear {};
+//
+//template <typename... Ts>
+//struct default_strategy<std::tuple<Ts...>> : public linear {};
 /**
  * The actual implementation of a b-tree data structure.
+ * This one is weird. It will hold a <RamDomain, size_t> pair, which maps from a sparse value to a dense value
  *
  * @tparam Key             .. the element type to be stored in this tree
  * @tparam Comparator     .. a class defining an order on the stored elements
@@ -237,7 +201,7 @@ struct default_strategy<std::tuple<Ts...>> : public linear {};
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
         unsigned blockSize, typename SearchStrategy, bool isSet>
-class btree {
+class IncrementingBTree {
 public:
     class iterator;
     typedef iterator const_iterator;
@@ -246,6 +210,10 @@ public:
     typedef range<iterator> chunk;
 
 private:
+    // the autoincrementing value that is the second half of the key pair
+    typedef typename Key::second_type counter_type;
+    //std::atomic<counter_type> counter;
+
     /* ------------- static utilities ----------------- */
 
     const static SearchStrategy search;
@@ -1220,22 +1188,22 @@ public:
     // -- ctors / dtors --
 
     // the default constructor creating an empty tree
-    btree(const Comparator& comp = Comparator()) : comp(comp), root(nullptr), leftmost(nullptr) {}
+    IncrementingBTree(const Comparator& comp = Comparator()) : comp(comp), root(nullptr), leftmost(nullptr){}
 
     // a constructor creating a tree from the given iterator range
     template <typename Iter>
-    btree(const Iter& a, const Iter& b) : root(nullptr), leftmost(nullptr) {
+    IncrementingBTree(const Iter& a, const Iter& b) : root(nullptr), leftmost(nullptr){
         insert(a, b);
     }
 
     // a move constructor
-    btree(btree&& other) : comp(other.comp), root(other.root), leftmost(other.leftmost) {
+    IncrementingBTree(IncrementingBTree&& other) : comp(other.comp), root(other.root), leftmost(other.leftmost) {
         other.root = nullptr;
         other.leftmost = nullptr;
     }
 
     // a copy constructor
-    btree(const btree& set) : comp(set.comp), root(nullptr), leftmost(nullptr) {
+    IncrementingBTree(const IncrementingBTree& set) : comp(set.comp), root(nullptr), leftmost(nullptr) {
         // use assignment operator for a deep copy
         *this = set;
     }
@@ -1245,11 +1213,11 @@ protected:
      * An internal constructor enabling the specific creation of a tree
      * based on internal parameters.
      */
-    btree(size_type size, node* root, leaf_node* leftmost) : root(root), leftmost(leftmost) {}
+    IncrementingBTree(size_type size, node* root, leaf_node* leftmost) : root(root), leftmost(leftmost) {}
 
 public:
     // the destructor freeing all contained nodes
-    ~btree() {
+    ~IncrementingBTree() {
         clear();
     }
 
@@ -1268,16 +1236,16 @@ public:
     /**
      * Inserts the given key into this tree.
      */
-    bool insert(const Key& k) {
+    counter_type insert(const Key& k, souffle::BlockList<souffle::RamDomain>& inserto, souffle::DisjointSet& ds) {
         operation_hints hints;
-        return insert(k, hints);
+        return insert(k, hints, inserto, ds);
     }
 
     /**
      * Inserts the given key into this tree.
      */
-    bool insert(const Key& k, operation_hints& hints) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+    counter_type insert(const Key& k, operation_hints& hints, souffle::BlockList<souffle::RamDomain>& inserto, souffle::DisjointSet& ds) {
+//#if defined(IS_PARALLEL) && !defined(HAS_TSX)
         // special handling for inserting first element
         while (root == nullptr) {
             // try obtaining root-lock
@@ -1296,7 +1264,9 @@ public:
             // create new node
             leftmost = new leaf_node();
             leftmost->numElements = 1;
-            leftmost->keys[0] = k;
+            size_t c2 = ds.makeNode();
+            leftmost->keys[0] = std::make_pair(k.first, c2);
+            inserto.insertAt(c2, k.first);
             root = leftmost;
 
             // operation complete => we can release the root lock
@@ -1304,7 +1274,7 @@ public:
 
             hints.last_insert = leftmost;
 
-            return true;
+            return c2;
         }
 
         // insert using iterative implementation
@@ -1362,6 +1332,7 @@ public:
                 auto b = &(cur->keys[cur->numElements]);
 
                 auto pos = search.lower_bound(k, a, b, comp);
+                counter_type outside = pos->second;
                 auto idx = pos - a;
 
                 // early exit for sets
@@ -1369,10 +1340,10 @@ public:
                     // validate results
                     if (!cur->lock.validate(cur_lease)) {
                         // start over again
-                        return insert(k, hints);
+                        return insert(k, hints, inserto, ds);
                     }
                     // we found the element => no check of lock necessary
-                    return false;
+                    return outside;
                 }
 
                 // get next pointer
@@ -1384,7 +1355,7 @@ public:
                 // check whether there was a write
                 if (!cur->lock.end_read(cur_lease)) {
                     // start over
-                    return insert(k, hints);
+                    return insert(k, hints, inserto, ds);
                 }
 
                 // go to next
@@ -1407,22 +1378,25 @@ public:
             auto pos = search.upper_bound(k, a, b, comp);
             auto idx = pos - a;
 
+            // cache just incase we find it in the next if statement
+            counter_type outside = (*(pos-1)).second;
+
             // early exit for sets
             if (isSet && pos != a && equal(*(pos - 1), k)) {
                 // validate result
                 if (!cur->lock.validate(cur_lease)) {
                     // start over again
-                    return insert(k, hints);
+                    return insert(k, hints, inserto, ds);
                 }
                 // we found the element => done
-                return false;
+                return outside;
             }
 
             // upgrade to write-permission
             if (!cur->lock.try_upgrade_to_write(cur_lease)) {
                 // something has changed => restart
                 hints.last_insert = cur;
-                return insert(k, hints);
+                return insert(k, hints, inserto, ds);
             }
 
             if (cur->numElements >= node::maxKeys) {
@@ -1484,7 +1458,7 @@ public:
                     cur->lock.end_write();
 
                     // insert in sibling
-                    return insert(k, hints);
+                    return insert(k, hints, inserto, ds);
                 }
             }
 
@@ -1496,8 +1470,13 @@ public:
                 cur->keys[j] = cur->keys[j - 1];
             }
 
+
+            size_t c2 = ds.makeNode();
+            leftmost->keys[0] = std::make_pair(k.first, c2);
+            inserto.insertAt(c2, k.first);
+
             // insert new element
-            cur->keys[idx] = k;
+            cur->keys[idx] = std::make_pair(k.first, c2);
             cur->numElements++;
 
             // release lock on current node
@@ -1505,122 +1484,124 @@ public:
 
             // remember last insertion position
             hints.last_insert = cur;
-            return true;
+            return c2;
         }
-#else
-#ifdef HAS_TSX
-        // set retry parameter
-        TX_RETRIES(maxRetries());
-        // begin hardware transactionm, enabling transaction logging if enabled
-        if (isTransactionProfilingEnabled()) {
-            TX_START_INST(NL, (&tdata));
-        } else {
-            TX_START(NL);
-        }
-#endif
-        // special handling for inserting first element
-        if (empty()) {
-            // create new node
-            leftmost = new leaf_node();
-            leftmost->numElements = 1;
-            leftmost->keys[0] = k;
-            root = leftmost;
-
-            hints.last_insert = leftmost;
-
-#ifdef HAS_TSX
-            // end hardware transaction
-            TX_END;
-#endif
-            return true;
-        }
-
-        // insert using iterative implementation
-        node* cur = root;
-
-        // test last insert
-        if (hints.last_insert && covers(hints.last_insert, k)) {
-            cur = hints.last_insert;
-            hint_stats.inserts.addHit();
-        } else {
-            hint_stats.inserts.addMiss();
-        }
-
-        while (true) {
-            // handle inner nodes
-            if (cur->inner) {
-                auto a = &(cur->keys[0]);
-                auto b = &(cur->keys[cur->numElements]);
-
-                auto pos = search.lower_bound(k, a, b, comp);
-                auto idx = pos - a;
-
-                // early exit for sets
-                if (isSet && pos != b && equal(*pos, k)) {
-#ifdef HAS_TSX
-                    // end hardware transaction
-                    TX_END;
-#endif
-                    return false;
-                }
-
-                cur = cur->getChild(idx);
-                continue;
-            }
-
-            // the rest is for leaf nodes
-            assert(!cur->inner);
-
-            // -- insert node in leaf node --
-
-            auto a = &(cur->keys[0]);
-            auto b = &(cur->keys[cur->numElements]);
-
-            auto pos = search.upper_bound(k, a, b, comp);
-            auto idx = pos - a;
-
-            // early exit for sets
-            if (isSet && pos != a && equal(*(pos - 1), k)) {
-#ifdef HAS_TSX
-                // end hardware transaction
-                TX_END;
-#endif
-                return false;
-            }
-
-            if (cur->numElements >= node::maxKeys) {
-                // split this node
-                idx -= cur->rebalance_or_split(&root, root_lock, idx);
-
-                // insert element in right fragment
-                if (((size_type)idx) > cur->numElements) {
-                    idx -= cur->numElements + 1;
-                    cur = cur->parent->getChild(cur->position + 1);
-                }
-            }
-
-            // ok - no split necessary
-            assert(cur->numElements < node::maxKeys && "Split required!");
-
-            // move keys
-            for (int j = cur->numElements; j > idx; --j) {
-                cur->keys[j] = cur->keys[j - 1];
-            }
-
-            // insert new element
-            cur->keys[idx] = k;
-            cur->numElements++;
-
-            // remember last insertion position
-            hints.last_insert = cur;
-
-#ifdef HAS_TSX
-            // end hardware transaction
-            TX_END;
-#endif
-            return true;
-        }
-#endif
+//#else
+//#ifdef HAS_TSX
+//        // set retry parameter
+//        TX_RETRIES(maxRetries());
+//        // begin hardware transactionm, enabling transaction logging if enabled
+//        if (isTransactionProfilingEnabled()) {
+//            TX_START_INST(NL, (&tdata));
+//        } else {
+//            TX_START(NL);
+//        }
+//#endif
+//        // special handling for inserting first element
+//        if (empty()) {
+//            // create new node
+//            leftmost = new leaf_node();
+//            leftmost->numElements = 1;
+//            leftmost->keys[0] = k;
+//            root = leftmost;
+//
+//            hints.last_insert = leftmost;
+//
+//#ifdef HAS_TSX
+//            // end hardware transaction
+//            TX_END;
+//#endif
+//            return true;
+//        }
+//
+//        // insert using iterative implementation
+//        node* cur = root;
+//
+//        // test last insert
+//        if (hints.last_insert && covers(hints.last_insert, k)) {
+//            cur = hints.last_insert;
+//            hint_stats.inserts.addHit();
+//        } else {
+//            hint_stats.inserts.addMiss();
+//        }
+//
+//        while (true) {
+//            // handle inner nodes
+//            if (cur->inner) {
+//                auto a = &(cur->keys[0]);
+//                auto b = &(cur->keys[cur->numElements]);
+//
+//                auto pos = search.lower_bound(k, a, b, comp);
+//                //cache just in case we find it.
+//                counter_type outside = pos->second;
+//                auto idx = pos - a;
+//
+//                // early exit for sets
+//                if (isSet && pos != b && equal(*pos, k)) {
+//#ifdef HAS_TSX
+//                    // end hardware transaction
+//                    TX_END;
+//#endif
+//                    return false;
+//                }
+//
+//                cur = cur->getChild(idx);
+//                continue;
+//            }
+//
+//            // the rest is for leaf nodes
+//            assert(!cur->inner);
+//
+//            // -- insert node in leaf node --
+//
+//            auto a = &(cur->keys[0]);
+//            auto b = &(cur->keys[cur->numElements]);
+//
+//            auto pos = search.upper_bound(k, a, b, comp);
+//            auto idx = pos - a;
+//
+//            // early exit for sets
+//            if (isSet && pos != a && equal(*(pos - 1), k)) {
+//#ifdef HAS_TSX
+//                // end hardware transaction
+//                TX_END;
+//#endif
+//                return false;
+//            }
+//
+//            if (cur->numElements >= node::maxKeys) {
+//                // split this node
+//                idx -= cur->rebalance_or_split(&root, root_lock, idx);
+//
+//                // insert element in right fragment
+//                if (((size_type)idx) > cur->numElements) {
+//                    idx -= cur->numElements + 1;
+//                    cur = cur->parent->getChild(cur->position + 1);
+//                }
+//            }
+//
+//            // ok - no split necessary
+//            assert(cur->numElements < node::maxKeys && "Split required!");
+//
+//            // move keys
+//            for (int j = cur->numElements; j > idx; --j) {
+//                cur->keys[j] = cur->keys[j - 1];
+//            }
+//
+//            // insert new element
+//            cur->keys[idx] = k;
+//            cur->numElements++;
+//
+//            // remember last insertion position
+//            hints.last_insert = cur;
+//
+//#ifdef HAS_TSX
+//            // end hardware transaction
+//            TX_END;
+//#endif
+//            return true;
+//        }
+//#endif
     }
 
     /**
@@ -1642,7 +1623,7 @@ public:
      * This can be a more effective alternative to the ordered insertion
      * of elements utilizing iterators.
      */
-    void insertAll(const btree& other) {
+    void insertAll(const IncrementingBTree& other) {
         // shortcut for non-sense operation
         if (this == &other) {
             return;
@@ -1651,7 +1632,7 @@ public:
         // make sure bigger tree is inserted in smaller tree
         if ((size() + 10000) < other.size()) {
             // switch sides
-            btree tmp = other;
+            IncrementingBTree tmp = other;
             tmp.insertAll(*this);
             swap(tmp);
             return;
@@ -1877,14 +1858,17 @@ public:
      * is a much more efficient operation than creating a copy and
      * realizing the swap utilizing assignment operations.
      */
-    void swap(btree& other) {
+    void swap(IncrementingBTree& other) {
         // swap the content
         std::swap(root, other.root);
         std::swap(leftmost, other.leftmost);
+        counter_type tmp = other.counter.load();
+        other.counter.store(this->counter.load());
+        this->counter.store(tmp);
     }
 
     // Implementation of the assignment operation for trees.
-    btree& operator=(const btree& other) {
+    IncrementingBTree& operator=(const IncrementingBTree& other) {
         // check identity
         if (this == &other) {
             return *this;
@@ -1906,12 +1890,15 @@ public:
         }
         leftmost = static_cast<leaf_node*>(tmp);
 
+
+        this->counter.store(other.counter.load());
+
         // done
         return *this;
     }
 
     // Implementation of an equality operation for trees.
-    bool operator==(const btree& other) const {
+    bool operator==(const IncrementingBTree& other) const {
         // check identity
         if (this == &other) {
             return true;
@@ -1935,7 +1922,7 @@ public:
     }
 
     // Implementation of an inequality operation for trees.
-    bool operator!=(const btree& other) const {
+    bool operator!=(const IncrementingBTree& other) const {
         return !(*this == other);
     }
 
@@ -2146,7 +2133,7 @@ private:
 // Instantiation of static member search.
 template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename SearchStrategy,
         bool isSet>
-const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet>::search;
+const SearchStrategy IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet>::search;
 
 }  // end namespace detail
 
@@ -2159,107 +2146,51 @@ const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy
  * @tparam blockSize    .. determines the number of bytes/block utilized by leaf nodes
  * @tparam SearchStrategy .. enables switching between linear, binary or any other search strategy
  */
-template <typename Key, typename Comparator = detail::comparator<Key>,
+template <typename Key, typename Comparator,
         typename Allocator = std::allocator<Key>,  // is ignored so far
         unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type>
-class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> {
-    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> super;
+class IncrementingBTreeSet : public detail::IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> {
+    typedef detail::IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> super;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true>;
+    friend class detail::IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true>;
 
 public:
     /**
      * A default constructor creating an empty set.
      */
-    btree_set(const Comparator& comp = Comparator()) : super(comp) {}
+    IncrementingBTreeSet(const Comparator& comp = Comparator()) : super(comp) {}
 
     /**
      * A constructor creating a set based on the given range.
      */
     template <typename Iter>
-    btree_set(const Iter& a, const Iter& b) {
+    IncrementingBTreeSet(const Iter& a, const Iter& b) {
         this->insert(a, b);
     }
 
     // A copy constructor.
-    btree_set(const btree_set& other) : super(other) {}
+    IncrementingBTreeSet(const IncrementingBTreeSet& other) : super(other) {}
 
     // A move constructor.
-    btree_set(btree_set&& other) : super(std::move(other)) {}
+    IncrementingBTreeSet(IncrementingBTreeSet&& other) : super(std::move(other)) {}
 
 private:
     // A constructor required by the bulk-load facility.
     template <typename s, typename n, typename l>
-    btree_set(s size, n* root, l* leftmost) : super(size, root, leftmost) {}
+    IncrementingBTreeSet(s size, n* root, l* leftmost) : super(size, root, leftmost) {}
 
 public:
     // Support for the assignment operator.
-    btree_set& operator=(const btree_set& other) {
+    IncrementingBTreeSet& operator=(const IncrementingBTreeSet& other) {
         super::operator=(other);
         return *this;
     }
 
     // Support for the bulk-load operator.
     template <typename Iter>
-    static btree_set load(const Iter& a, const Iter& b) {
-        return super::template load<btree_set>(a, b);
+    static IncrementingBTreeSet load(const Iter& a, const Iter& b) {
+        return super::template load<IncrementingBTreeSet>(a, b);
     }
 };
 
-/**
- * A b-tree based multi-set implementation.
- *
- * @tparam Key             .. the element type to be stored in this set
- * @tparam Comparator     .. a class defining an order on the stored elements
- * @tparam Allocator     .. utilized for allocating memory for required nodes
- * @tparam blockSize    .. determines the number of bytes/block utilized by leaf nodes
- * @tparam SearchStrategy .. enables switching between linear, binary or any other search strategy
- */
-template <typename Key, typename Comparator = detail::comparator<Key>,
-        typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type>
-class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false> {
-    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false> super;
-
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false>;
-
-public:
-    /**
-     * A default constructor creating an empty set.
-     */
-    btree_multiset(const Comparator& comp = Comparator()) : super(comp) {}
-
-    /**
-     * A constructor creating a set based on the given range.
-     */
-    template <typename Iter>
-    btree_multiset(const Iter& a, const Iter& b) {
-        this->insert(a, b);
-    }
-
-    // A copy constructor.
-    btree_multiset(const btree_multiset& other) : super(other) {}
-
-    // A move constructor.
-    btree_multiset(btree_multiset&& other) : super(std::move(other)) {}
-
-private:
-    // A constructor required by the bulk-load facility.
-    template <typename s, typename n, typename l>
-    btree_multiset(s size, n* root, l* leftmost) : super(size, root, leftmost) {}
-
-public:
-    // Support for the assignment operator.
-    btree_multiset& operator=(const btree_multiset& other) {
-        super::operator=(other);
-        return *this;
-    }
-
-    // Support for the bulk-load operator.
-    template <typename Iter>
-    static btree_multiset load(const Iter& a, const Iter& b) {
-        return super::template load<btree_multiset>(a, b);
-    }
-};
-
-}  // end of namespace souffle
+} // end namespace souffle

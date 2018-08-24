@@ -11,7 +11,7 @@
 #ifdef BINRELTBB
 #include <tbb/concurrent_hash_map.h>
 #else
-#include <junction/ConcurrentMap_Leapfrog.>
+#include <junction/ConcurrentMap_Leapfrog.h>
 #endif
 
 namespace souffle {
@@ -52,16 +52,6 @@ public:
                        , num_anteriors(0) 
 #endif
     {};
-
-    //// TODO: what is this for, and is it correctly implemented?
-    //BinaryRelation& operator=(const BinaryRelation& old) {
-    //    if (this == &old) return *this;
-
-    //    sds = old.sds;
-    //    orderedStates.clear();
-
-    //    return *this;
-    //}
 
     /**
      * TODO: implement this operation_hint class

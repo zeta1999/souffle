@@ -5,7 +5,7 @@
 #include <list>
 #include "ParallelUtils.h"
 //#include "spinny_lock.h"
-#include <concurrentqueue.h>
+//#include <concurrentqueue.h>
 
 using std::size_t;
 namespace souffle {

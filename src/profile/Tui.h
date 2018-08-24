@@ -567,7 +567,6 @@ public:
         }
 
         double maxIntervalUsage = 0;
-        double peakUsagePercent = 0;
 
         Usage currentUsage;
         Usage previousUsage{0, 0, 0, 0};
@@ -608,17 +607,6 @@ public:
                     it = allUsages.erase(it);
                     --it;
                 }
-            }
-            previousUsage = {0, 0, 0, 0};
-            for (auto& currentUsage : allUsages) {
-                double cpuUsage = 100.0 *
-                                  (currentUsage.systemtime + currentUsage.usertime -
-                                          previousUsage.systemtime - previousUsage.usertime) /
-                                  (currentUsage.time - previousUsage.time);
-                if (cpuUsage > peakUsagePercent) {
-                    peakUsagePercent = cpuUsage;
-                }
-                previousUsage = currentUsage;
             }
 
             // Extract our overall stats
@@ -666,9 +654,8 @@ public:
         }
 
         double intervalUsagePercent = 100.0 * maxIntervalUsage / timeStep;
-        std::printf("%11s%10s\n", "cpu total", "cpu peak");
-        std::printf("%11s%9s%%\n", Tools::formatTime(usages.rbegin()->usertime / 1000000.0).c_str(),
-                Tools::formatNum(2, peakUsagePercent).c_str());
+        std::printf("%11s\n", "cpu total");
+        std::printf("%11s\n", Tools::formatTime(usages.rbegin()->usertime / 1000000.0).c_str());
 
         // Add columns to the graph
         char grid[height][width];

@@ -475,8 +475,8 @@ public:
         std::printf("  %-30s%-5s %s\n", "graph ver <rule id> <type>", "-",
                 "graph recursive(C) rule versions by type(tot_t/copy_t/tuples).");
         std::printf("  %-30s%-5s %s\n", "top", "-", "display top-level summary of program run.");
-        std::printf(
-                "  %-30s%-5s %s\n", "usage <relation id>", "-", "display CPU usage graphs for a relation.");
+        std::printf("  %-30s%-5s %s\n", "usage [relation id|rule id]", "-",
+                "display CPU usage graphs for a relation or rule.");
         std::printf("  %-30s%-5s %s\n", "help", "-", "print this.");
 
         std::cout << "\nInteractive mode only commands:" << std::endl;

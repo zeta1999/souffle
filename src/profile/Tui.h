@@ -645,15 +645,16 @@ public:
         // Find maximum so we can normalise the graph
         previousUsage = {0, 0, 0, 0};
         for (auto& currentUsage : usages) {
-            long usageDiff = currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
-                             previousUsage.usertime;
+            double usageDiff = currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
+                               previousUsage.usertime;
+            usageDiff /= (currentUsage.time - previousUsage.time);
             if (usageDiff > maxIntervalUsage) {
                 maxIntervalUsage = usageDiff;
             }
             previousUsage = currentUsage;
         }
 
-        double intervalUsagePercent = 100.0 * maxIntervalUsage / timeStep;
+        double intervalUsagePercent = 100.0 * maxIntervalUsage;
         std::printf("%11s\n", "cpu total");
         std::printf("%11s\n", Tools::formatTime(usages.rbegin()->usertime / 1000000.0).c_str());
 
@@ -673,10 +674,13 @@ public:
             // Usage may be 0
             if (maxIntervalUsage != 0) {
                 curHeight = (currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
-                                    previousUsage.usertime) *
-                            height / maxIntervalUsage;
-                curSystemHeight =
-                        (currentUsage.systemtime - previousUsage.systemtime) / (maxIntervalUsage * height);
+                             previousUsage.usertime);
+                curHeight /= currentUsage.time - previousUsage.time;
+                curHeight *= height / maxIntervalUsage;
+
+                curSystemHeight = currentUsage.systemtime - previousUsage.systemtime;
+                curSystemHeight /= currentUsage.time - previousUsage.time;
+                curSystemHeight *= height / maxIntervalUsage;
             }
             for (uint32_t row = 0; row < curHeight; ++row) {
                 grid[row][col] = '*';

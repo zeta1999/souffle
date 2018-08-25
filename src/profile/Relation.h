@@ -200,6 +200,8 @@ public:
     }
 
     /**
+     * Return a map of Rules, indexed by srcLocator.
+     *
      * @return the ruleMap
      */
     inline std::unordered_map<std::string, std::shared_ptr<Rule>>& getRuleMap() {

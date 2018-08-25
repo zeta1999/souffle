@@ -153,9 +153,9 @@ public:
         } else if (c[0].compare("usage") == 0) {
             if (c.size() > 1) {
                 if (c[1][0] == 'R') {
-                    usage(c[1]);
+                    usageRelation(c[1]);
                 } else {
-                    std::cout << "Invalid parameters to usage command.\n";
+                    usageRule(c[1]);
                 }
             } else {
                 usage();
@@ -475,8 +475,8 @@ public:
         std::printf("  %-30s%-5s %s\n", "graph ver <rule id> <type>", "-",
                 "graph recursive(C) rule versions by type(tot_t/copy_t/tuples).");
         std::printf("  %-30s%-5s %s\n", "top", "-", "display top-level summary of program run.");
-        std::printf(
-                "  %-30s%-5s %s\n", "usage <relation id>", "-", "display CPU usage graphs for a relation.");
+        std::printf("  %-30s%-5s %s\n", "usage [relation id|rule id]", "-",
+                "display CPU usage graphs for a relation or rule.");
         std::printf("  %-30s%-5s %s\n", "help", "-", "print this.");
 
         std::cout << "\nInteractive mode only commands:" << std::endl;
@@ -490,7 +490,7 @@ public:
         std::printf("  %-30s%-5s %s\n", "q", "-", "exit program.");
     }
 
-    void usage(std::string id) {
+    void usageRelation(std::string id) {
         std::vector<std::vector<std::string>> rel_table = out.formatTable(rel_table_state, precision);
         std::string name = "";
         bool found = false;
@@ -502,12 +502,44 @@ public:
             }
         }
         if (!found) {
-            std::cout << "Relation does not exist\n";
+            std::cout << "Relation does not exist.\n";
             return;
         }
 
         Relation* rel = out.getProgramRun()->getRelation(name);
-        usage(rel->getStarttime() * 1000000, rel->getEndtime() * 1000000);
+        usage(rel->getEndtime() * 1000000, rel->getStarttime() * 1000000);
+    }
+
+    void usageRule(std::string id) {
+        std::vector<std::vector<std::string>> rul_table = out.formatTable(rul_table_state, precision);
+        std::string relName = "";
+        std::string srcLocator = "";
+        bool found = false;
+        for (auto& row : rul_table) {
+            if (row[5] == id || row[6] == id) {
+                relName = row[7];
+                srcLocator = row[10];
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cout << "Rule does not exist.\n";
+            return;
+        }
+
+        auto* rel = out.getProgramRun()->getRelation(relName);
+        if (rel == nullptr) {
+            std::cout << "Relation ceased to exist. Odd." << std::endl;
+            return;
+        }
+        if (rel->getRuleMap().count(srcLocator) == 0) {
+            std::cout << "Rule ceased to exist. Odd." << std::endl;
+            return;
+        }
+
+        auto& rul = rel->getRuleMap().at(srcLocator);
+        usage(rul->getEndtime() * 1000000, rul->getStarttime() * 1000000);
     }
 
     void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
@@ -535,7 +567,6 @@ public:
         }
 
         double maxIntervalUsage = 0;
-        double peakUsagePercent = 0;
 
         Usage currentUsage;
         Usage previousUsage{0, 0, 0, 0};
@@ -577,17 +608,6 @@ public:
                     --it;
                 }
             }
-            previousUsage = {0, 0, 0, 0};
-            for (auto& currentUsage : allUsages) {
-                double cpuUsage = 100.0 *
-                                  (currentUsage.systemtime + currentUsage.usertime -
-                                          previousUsage.systemtime - previousUsage.usertime) /
-                                  (currentUsage.time - previousUsage.time);
-                if (cpuUsage > peakUsagePercent) {
-                    peakUsagePercent = cpuUsage;
-                }
-                previousUsage = currentUsage;
-            }
 
             // Extract our overall stats
             if (startTime == 0) {
@@ -625,18 +645,18 @@ public:
         // Find maximum so we can normalise the graph
         previousUsage = {0, 0, 0, 0};
         for (auto& currentUsage : usages) {
-            long usageDiff = currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
-                             previousUsage.usertime;
+            double usageDiff = currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
+                               previousUsage.usertime;
+            usageDiff /= (currentUsage.time - previousUsage.time);
             if (usageDiff > maxIntervalUsage) {
                 maxIntervalUsage = usageDiff;
             }
             previousUsage = currentUsage;
         }
 
-        double intervalUsagePercent = 100.0 * maxIntervalUsage / timeStep;
-        std::printf("%11s%10s\n", "cpu total", "cpu peak");
-        std::printf("%11s%9s%%\n", Tools::formatTime(usages.rbegin()->usertime / 1000000.0).c_str(),
-                Tools::formatNum(2, peakUsagePercent).c_str());
+        double intervalUsagePercent = 100.0 * maxIntervalUsage;
+        std::printf("%11s\n", "cpu total");
+        std::printf("%11s\n", Tools::formatTime(usages.rbegin()->usertime / 1000000.0).c_str());
 
         // Add columns to the graph
         char grid[height][width];
@@ -654,10 +674,13 @@ public:
             // Usage may be 0
             if (maxIntervalUsage != 0) {
                 curHeight = (currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
-                                    previousUsage.usertime) *
-                            height / maxIntervalUsage;
-                curSystemHeight =
-                        (currentUsage.systemtime - previousUsage.systemtime) / (maxIntervalUsage * height);
+                             previousUsage.usertime);
+                curHeight /= currentUsage.time - previousUsage.time;
+                curHeight *= height / maxIntervalUsage;
+
+                curSystemHeight = currentUsage.systemtime - previousUsage.systemtime;
+                curSystemHeight /= currentUsage.time - previousUsage.time;
+                curSystemHeight *= height / maxIntervalUsage;
             }
             for (uint32_t row = 0; row < curHeight; ++row) {
                 grid[row][col] = '*';
@@ -735,11 +758,10 @@ public:
     void rul() {
         rul_table_state.sort(sort_col);
         std::cout << "  ----- Rule Table -----\n";
-        std::printf(
-                "%8s%8s%8s%8s%15s    %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "TUPLES", "ID RELATION");
+        std::printf("%8s%8s%8s%15s    %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID RELATION");
         for (auto& row : out.formatTable(rul_table_state, precision)) {
-            std::printf("%8s%8s%8s%8s%15s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                    row[3].c_str(), row[4].c_str(), row[6].c_str(), row[7].c_str());
+            std::printf("%8s%8s%8s%15s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                    row[4].c_str(), row[6].c_str(), row[7].c_str());
         }
     }
 
@@ -768,14 +790,13 @@ public:
         std::vector<std::vector<std::string>> rel_table = out.formatTable(rel_table_state, precision);
 
         std::cout << "  ----- Rules of a Relation -----\n";
-        std::printf(
-                "%8s%8s%8s%8s%10s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "TUPLES", "ID", "NAME");
+        std::printf("%8s%8s%8s%10s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID", "NAME");
         std::string name = "";
         bool found = false;  // workaround to make it the same as java (row[5] seems to have priority)
         for (auto& row : rel_table) {
             if (row[5].compare(str) == 0) {
-                std::printf("%8s%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                        row[3].c_str(), row[4].c_str(), row[6].c_str(), row[5].c_str());
+                std::printf("%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                        row[4].c_str(), row[6].c_str(), row[5].c_str());
                 name = row[5];
                 found = true;
                 break;
@@ -794,8 +815,8 @@ public:
         std::cout << " ---------------------------------------------------------\n";
         for (auto& row : rul_table) {
             if (row[7].compare(name) == 0) {
-                std::printf("%8s%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                        row[3].c_str(), row[4].c_str(), row[6].c_str(), row[7].c_str());
+                std::printf("%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                        row[4].c_str(), row[6].c_str(), row[7].c_str());
             }
         }
         std::string src = "";
@@ -854,21 +875,20 @@ public:
 
         // Print out the versions of this rule.
         std::cout << "  ----- Rule Versions Table -----\n";
-        std::printf("%8s%8s%8s%8s%10s%6s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "TUPLES", "VER");
+        std::printf("%8s%8s%8s%10s%6s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "VER");
         for (auto& row : rul_table) {
             if (row[6].compare(str) == 0) {
-                std::printf("%8s%8s%8s%8s%10s%6s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                        row[3].c_str(), row[4].c_str(), "");
+                std::printf("%8s%8s%8s%10s%6s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                        row[4].c_str(), "");
             }
         }
         std::cout << "   ---------------------------------------------\n";
         for (auto& _row : ver_table.rows) {
             Row row = *_row;
 
-            std::printf("%8s%8s%8s%8s%10s%6s\n", row[0]->toString(precision).c_str(),
+            std::printf("%8s%8s%8s%10s%6s\n", row[0]->toString(precision).c_str(),
                     row[1]->toString(precision).c_str(), row[2]->toString(precision).c_str(),
-                    row[3]->toString(precision).c_str(), row[4]->toString(precision).c_str(),
-                    row[8]->toString(precision).c_str());
+                    row[4]->toString(precision).c_str(), row[8]->toString(precision).c_str());
             Table atom_table = out.getVersionAtoms(strRel, srcLocator, row[8]->getLongVal());
             verAtoms(atom_table);
         }

@@ -116,8 +116,8 @@ Table inline OutputProcessor::getRelTable() {
         } else {
             row[8] = std::shared_ptr<CellInterface>(new Cell<double>(r->getNum_tuplesRel() / 1.0));
         }
-        row[9] = std::shared_ptr<CellInterface>(new Cell<double>(r->getSavetime()));
-        row[10] = std::shared_ptr<CellInterface>(new Cell<double>(r->getLoadtime()));
+        row[9] = std::shared_ptr<CellInterface>(new Cell<double>(r->getLoadtime()));
+        row[10] = std::shared_ptr<CellInterface>(new Cell<double>(r->getSavetime()));
         row[11] = std::shared_ptr<CellInterface>(new Cell<long>(r->getMaxRSSDiff()));
 
         table.addRow(std::make_shared<Row>(row));

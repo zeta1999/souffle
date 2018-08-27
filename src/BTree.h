@@ -1568,12 +1568,7 @@ public:
                 if (isSet && pos != b && weak_equal(*pos, k)) {
                     // update provenance information
                     if (less(k, *pos)) {
-                        if (!cur->lock.try_upgrade_to_write(cur_lease)) {
-                            // start again
-                            return insert(k, hints);
-                        }
                         update(*pos, k);
-                        cur->lock.end_write();
                         return true;
                     }
 
@@ -1599,12 +1594,7 @@ public:
             if (isSet && pos != a && weak_equal(*(pos - 1), k)) {
                 // update provenance information
                 if (less(k, *(pos - 1))) {
-                    if (!cur->lock.try_upgrade_to_write(cur_lease)) {
-                        // start again
-                        return insert(k, hints);
-                    }
                     update(*(pos - 1), k);
-                    cur->lock.end_write();
                     return true;
                 }
 

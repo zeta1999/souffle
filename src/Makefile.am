@@ -101,6 +101,7 @@ souffle_sources = \
               InterpreterRelation.h                     \
               LogStatement.h                            \
               MagicSet.cpp          MagicSet.h          \
+              MinimiseProgramTransformer.cpp            \
               ParserDriver.cpp      ParserDriver.h      \
               PrecedenceGraph.cpp   PrecedenceGraph.h   \
               ProfileEvent.h                            \
@@ -219,7 +220,8 @@ $(builddir)/scanner.cc: $(srcdir)/scanner.ll
 
 # driver depends on the generated header
 $(builddir)/parser.cc $(builddir)/stack.hh $(builddir)/scanner.cc \
-        $(builddir)/main.cpp $(builddir)/ParserDriver.cpp: $(builddir)/parser.hh
+    $(builddir)/souffle2bdd.cpp $(builddir)/souffle2lb.cpp \
+    $(builddir)/main.cpp $(builddir)/ParserDriver.cpp: $(builddir)/parser.hh
 
 ########## Unit Tests
 

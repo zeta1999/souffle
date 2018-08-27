@@ -26,9 +26,14 @@ namespace profile {
 class Relation {
 private:
     std::string name;
-    double runtime = 0;
+    double starttime = 0;
+    double endtime = 0;
+    double loadtime = 0;
+    double savetime = 0;
     long prev_num_tuples = 0;
     long num_tuples = 0;
+    size_t preMaxRSS = 0;
+    size_t postMaxRSS = 0;
     std::string id;
     std::string locator;
     int rul_id = 0;
@@ -61,8 +66,24 @@ public:
         return "C" + id.substr(1) + "." + std::to_string(++rec_id);
     }
 
+    inline double getLoadtime() {
+        return loadtime;
+    }
+
+    inline double getSavetime() {
+        return savetime;
+    }
+
+    inline double getStarttime() {
+        return starttime;
+    }
+
+    inline double getEndtime() {
+        return endtime;
+    }
+
     inline double getNonRecTime() {
-        return runtime;
+        return endtime - starttime;
     }
 
     double getRecTime() {
@@ -106,6 +127,10 @@ public:
         return getNum_tuplesRel();
     }
 
+    inline long getMaxRSSDiff() {
+        return postMaxRSS - preMaxRSS;
+    }
+
     long getTotNumRec_tuples() {
         long result = 0L;
         for (auto& iter : iterations) {
@@ -116,17 +141,42 @@ public:
         return result;
     }
 
-    inline void setRuntime(double runtime) {
-        this->runtime = runtime;
+    inline void setLoadtime(double loadtime) {
+        this->loadtime = loadtime;
+    }
+
+    inline void setSavetime(double savetime) {
+        this->savetime = savetime;
+    }
+
+    inline void setStarttime(double time) {
+        starttime = time;
+    }
+
+    inline void setEndtime(double time) {
+        endtime = time;
     }
 
     inline void setNum_tuples(long num_tuples) {
         this->num_tuples = num_tuples;
     }
 
+    inline void setPostMaxRSS(size_t maxRSS) {
+        this->postMaxRSS = maxRSS > postMaxRSS ? maxRSS : postMaxRSS;
+    }
+
+    inline void setPreMaxRSS(size_t maxRSS) {
+        if (preMaxRSS == 0) {
+            preMaxRSS = maxRSS;
+            return;
+        }
+        this->preMaxRSS = maxRSS < preMaxRSS ? maxRSS : postMaxRSS;
+    }
+
     std::string toString() {
         std::ostringstream output;
-        output << "{\n\"" << name << "\":[" << runtime << "," << num_tuples << "],\n\n\"onRecRules\":[\n";
+        output << "{\n\"" << name << "\":[" << getNonRecTime() << "," << num_tuples
+               << "],\n\n\"onRecRules\":[\n";
         for (auto& rul : ruleMap) {
             output << rul.second->toString();
         }
@@ -150,6 +200,8 @@ public:
     }
 
     /**
+     * Return a map of Rules, indexed by srcLocator.
+     *
      * @return the ruleMap
      */
     inline std::unordered_map<std::string, std::shared_ptr<Rule>>& getRuleMap() {

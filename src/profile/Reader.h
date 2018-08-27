@@ -44,8 +44,8 @@ public:
     }
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
-            base.setRuntime(runtime);
+            base.setStarttime(duration.getStart().count() / 1000000.0);
+            base.setEndtime(duration.getEnd().count() / 1000000.0);
         }
     }
     void visit(SizeEntry& size) override {
@@ -173,13 +173,11 @@ class IterationVisitor : public DSNVisitor<Iteration> {
 public:
     IterationVisitor(Iteration& iteration, Relation& relation) : DSNVisitor(iteration), relation(relation) {}
     void visit(DurationEntry& duration) override {
-        if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
-            base.setRuntime(runtime);
-        } else if (duration.getKey() == "copytime") {
+        if (duration.getKey() == "copytime") {
             auto copytime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
             base.setCopy_time(copytime);
         }
+        DSNVisitor::visit(duration);
     }
     void visit(DirectoryEntry& directory) override {
         if (directory.getKey() == "recursive-rule") {
@@ -187,9 +185,12 @@ public:
             for (const auto& key : directory.getKeys()) {
                 directory.readEntry(key)->accept(rulesVisitor);
             }
-        } else {
-            std::cerr << "Unexpected entry: " << std::endl;
-            directory.print(std::cerr, 0);
+        }
+        if (directory.getKey() == "maxRSS") {
+            auto* preMaxRSS = dynamic_cast<SizeEntry*>(directory.readEntry("pre"));
+            auto* postMaxRSS = dynamic_cast<SizeEntry*>(directory.readEntry("post"));
+            relation.setPreMaxRSS(preMaxRSS->getSize());
+            relation.setPostMaxRSS(postMaxRSS->getSize());
         }
     }
 
@@ -205,11 +206,10 @@ class IterationsVisitor : public Visitor {
 public:
     IterationsVisitor(Relation& relation) : relation(relation) {}
     void visit(DirectoryEntry& ruleEntry) override {
+        auto iteration = std::make_shared<Iteration>();
+        relation.getIterations().push_back(iteration);
+        IterationVisitor visitor(*iteration, relation);
         for (const auto& key : ruleEntry.getKeys()) {
-            auto iteration = std::make_shared<Iteration>();
-            relation.getIterations().push_back(iteration);
-            IterationVisitor visitor(*iteration, relation);
-
             ruleEntry.readEntry(key)->accept(visitor);
         }
     }
@@ -226,10 +226,14 @@ class RelationVisitor : public DSNVisitor<Relation> {
 public:
     RelationVisitor(Relation& relation) : DSNVisitor(relation) {}
     void visit(DurationEntry& duration) override {
-        if (duration.getKey() == "runtime") {
-            auto runtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
-            base.setRuntime(runtime);
+        if (duration.getKey() == "loadtime") {
+            auto loadtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            base.setLoadtime(loadtime);
+        } else if (duration.getKey() == "savetime") {
+            auto savetime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            base.setSavetime(savetime);
         }
+        DSNVisitor::visit(duration);
     }
     void visit(DirectoryEntry& directory) override {
         if (directory.getKey() == "iteration") {
@@ -242,6 +246,11 @@ public:
             for (const auto& key : directory.getKeys()) {
                 directory.readEntry(key)->accept(rulesVisitor);
             }
+        } else if (directory.getKey() == "maxRSS") {
+            auto* preMaxRSS = dynamic_cast<SizeEntry*>(directory.readEntry("pre"));
+            auto* postMaxRSS = dynamic_cast<SizeEntry*>(directory.readEntry("post"));
+            base.setPreMaxRSS(preMaxRSS->getSize());
+            base.setPostMaxRSS(postMaxRSS->getSize());
         }
     }
 };

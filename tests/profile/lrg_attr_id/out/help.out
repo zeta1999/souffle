@@ -10,6 +10,7 @@ Available profiling commands:
   graph <rule id> <type>        -     graph recursive(C) rule by type(tot_t/tuples).
   graph ver <rule id> <type>    -     graph recursive(C) rule versions by type(tot_t/copy_t/tuples).
   top                           -     display top-level summary of program run.
+  usage <relation id>           -     display CPU usage graphs for a relation.
   help                          -     print this.
 
 Interactive mode only commands:

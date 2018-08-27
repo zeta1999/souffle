@@ -848,5 +848,5 @@ th[role=columnheader]:not(.no-sort):hover:after {
 }
 )___";
 }
-}
-}
+}  // namespace profile
+}  // namespace souffle

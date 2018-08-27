@@ -45,13 +45,24 @@ class Logger {
 private:
     std::string label;
     time_point start;
+    size_t startMaxRSS;
     size_t iteration;
 
 public:
     Logger(std::string label, size_t iteration)
-            : label(std::move(label)), start(now()), iteration(iteration) {}
+            : label(std::move(label)), start(now()), iteration(iteration) {
+        struct rusage ru;
+        getrusage(RUSAGE_SELF, &ru);
+        startMaxRSS = ru.ru_maxrss;
+        // Assume that if we are logging the progress of an event then we care about usage during that time.
+        ProfileEventSingleton::instance().resetTimerInterval();
+    }
     ~Logger() {
-        ProfileEventSingleton::instance().makeTimingEvent(label, start, now(), iteration);
+        struct rusage ru;
+        getrusage(RUSAGE_SELF, &ru);
+        size_t endMaxRSS = ru.ru_maxrss;
+        ProfileEventSingleton::instance().makeTimingEvent(
+                label, start, now(), startMaxRSS, endMaxRSS, iteration);
     }
 };
 }  // end of namespace souffle

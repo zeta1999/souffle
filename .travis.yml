@@ -35,11 +35,11 @@ aliases:
     addons:
       apt:
         sources:
-        - llvm-toolchain-trusty-4.0
+        - llvm-toolchain-trusty-6.0
         - ubuntu-toolchain-r-test
         packages:
         - *linux_deps
-        - clang-4.0
+        - clang-6.0
         - libstdc++-7-dev
     #install: ".travis/linux/clang_install.sh"
     before_script: ".travis/init_test.sh"
@@ -60,7 +60,7 @@ aliases:
     stage: Testing
     os: osx
     osx_image: xcode8.3
-    install: ".travis/osx/install_withgcc.sh"
+    install: "travis_retry .travis/osx/install_withgcc.sh"
     before_script: ".travis/init_test.sh"
     script: ".travis/run_test.sh"
     after_failure: ".travis/after_failure.sh"
@@ -68,7 +68,7 @@ aliases:
       directories: $HOME/Library/Caches/Homebrew
   - &osxclang
     <<: *osxgcc
-    install: ".travis/osx/install.sh"
+    install: "travis_retry .travis/osx/install.sh"
     compiler: clang
     language: cpp
   - &osxpackage
@@ -77,7 +77,7 @@ aliases:
     before_script: ".travis/init_make_package.sh"
     script: ".travis/osx/make_package.sh"
   - &gcc_environment CC=gcc-7 CXX=g++-7
-  - &clang_environment CC=clang-4.0 CXX=clang++-4.0
+  - &clang_environment CC=clang-6.0 CXX=clang++-6.0
 
 jobs:
   include:
@@ -88,9 +88,11 @@ jobs:
     addons:
       apt:
         sources:
-        - llvm-toolchain-trusty-4.0
+        - llvm-toolchain-trusty-6.0
+        - ubuntu-toolchain-r-test
         packages:
-        - clang-format-4.0
+        - clang-format-6.0
+        - libstdc++-7-dev
     script: ".travis/run_test_format.sh"
 
 # Testing stage (-j8,-c -j8)

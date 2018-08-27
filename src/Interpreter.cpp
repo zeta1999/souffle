@@ -10,7 +10,7 @@
  *
  * @file Interpreter.cpp
  *
- * Implementation of the RAM interpreter.
+ * Implementation of Souffle's interpreter.
  *
  ***********************************************************************/
 
@@ -732,8 +732,7 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
                                     ioDirectives, Global::config().has("provenance"))
                             ->readAll(relation);
                 } catch (std::exception& e) {
-                    std::cerr << e.what();
-                    return false;
+                    std::cerr << "Error loading data: " << e.what() << "\n";
                 }
             }
             return true;

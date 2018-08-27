@@ -70,7 +70,7 @@ void executeBinary(const std::string& binaryFilename
         ,
         const int numberOfProcesses
 #endif
-        ) {
+) {
     assert(!binaryFilename.empty() && "binary filename cannot be blank");
 
     // check whether the executable exists
@@ -82,7 +82,14 @@ void executeBinary(const std::string& binaryFilename
     int exitCode;
 #ifdef USE_MPI
     if (Global::config().get("engine") == "mpi") {
-        exitCode = system(("mpiexec -n " + std::to_string(numberOfProcesses) + " " + binaryFilename).c_str());
+        std::stringstream ss;
+        ss << "mpiexec";
+        if (Global::config().has("hostfile")) {
+            ss << " --hostfile " << Global::config().get("hostfile");
+        }
+        ss << " -n " << std::to_string(numberOfProcesses);
+        ss << " " << binaryFilename;
+        exitCode = system(ss.str().c_str());
     } else
 #endif
     {
@@ -135,7 +142,7 @@ int main(int argc, char** argv) {
 
     /* have all to do with command line arguments in its own scope, as these are accessible through the global
      * configuration only */
-    {
+    try {
         Global::config().processArgs(argc, argv,
                 []() {
                     std::stringstream header;
@@ -200,6 +207,9 @@ int main(int argc, char** argv) {
                                     "Specify data structure (brie/btree/eqrel/rbtset/hashset)."},
                             {"engine", 'e', "[ file | mpi ]", "", false,
                                     "Specify communication engine for distributed execution."},
+                            {"hostfile", '\0', "FILE", "", false,
+                                    "Specify --hostfile option for call to mpiexec when using mpi as "
+                                    "execution engine."},
                             {"verbose", 'v', "", "", false, "Verbose output."},
                             {"help", 'h', "", "", false, "Display this help message."}};
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
@@ -302,8 +312,17 @@ int main(int argc, char** argv) {
             }
 #ifndef USE_MPI
             if (engine == "mpi") {
+                throw std::invalid_argument("Error: Use of engine '" + engine +
+                                            "' requires configure option '--enable-" + engine + "'.");
+            }
+            if (Global::config().has("hostfile")) {
                 throw std::invalid_argument(
-                        "Error: Use of engine '" + engine + "' requires configure option '--enable-mpi'.");
+                        "Error: Use of hostfile option requires configure option '--enable-" + engine + "'.");
+            }
+#else
+            if (engine != "mpi" && Global::config().has("hostfile")) {
+                throw std::invalid_argument(
+                        "Error: Use of hostfile option requires execution engine '" + engine + "'.");
             }
 #endif
         }
@@ -319,6 +338,9 @@ int main(int argc, char** argv) {
         if (Global::config().has("live-profile") && !Global::config().has("profile")) {
             Global::config().set("profile");
         }
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        exit(1);
     }
 
     // ------ start souffle -------------
@@ -389,6 +411,13 @@ int main(int argc, char** argv) {
                     std::make_unique<RemoveEmptyRelationsTransformer>(),
                     std::make_unique<RemoveRedundantRelationsTransformer>()));
 
+    // Equivalence pipeline
+    auto equivalencePipeline =
+            std::make_unique<PipelineTransformer>(std::make_unique<MinimiseProgramTransformer>(),
+                    std::make_unique<RemoveRelationCopiesTransformer>(),
+                    std::make_unique<RemoveEmptyRelationsTransformer>(),
+                    std::make_unique<RemoveRedundantRelationsTransformer>());
+
 #ifdef USE_PROVENANCE
     // Provenance pipeline
     auto provenancePipeline = std::make_unique<PipelineTransformer>(std::make_unique<ConditionalTransformer>(
@@ -406,7 +435,7 @@ int main(int argc, char** argv) {
             std::make_unique<InlineRelationsTransformer>(), std::make_unique<ReduceExistentialsTransformer>(),
             std::make_unique<ExtractDisconnectedLiteralsTransformer>(),
             std::make_unique<ResolveAliasesTransformer>(),
-            std::make_unique<RemoveRelationCopiesTransformer>(),
+            std::make_unique<RemoveRelationCopiesTransformer>(), std::move(equivalencePipeline),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
@@ -543,7 +572,7 @@ int main(int argc, char** argv) {
                             ,
                             ((int)astTranslationUnit->getAnalysis<SCCGraph>()->getNumberOfSCCs()) + 1
 #endif
-                            );
+                    );
                 }
             }
         } catch (std::exception& e) {

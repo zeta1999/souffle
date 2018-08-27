@@ -266,5 +266,5 @@ std::string jsTableSort = R"___(
 
 )___";
 }
-}
-}
+}  // namespace profile
+}  // namespace souffle

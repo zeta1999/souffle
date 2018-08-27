@@ -365,6 +365,11 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
         }
         out << "}\n";
+
+        out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
+        out << "(const t_tuple& t) const {\n";
+        out << "context h; return equalRange_" << search << "(t, h);\n";
+        out << "}\n";
     }
 
     // empty method
@@ -672,6 +677,10 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
         out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
         out << "}\n";
+
+        out << "range<iterator> equalRange_0(const t_tuple& t) const {\n";
+        out << "context h; return equalRange_0(t, h);\n";
+        out << "}\n";
     }
 
     for (int64_t search : getIndexSet().getSearches()) {
@@ -707,6 +716,11 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             }
             out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
         }
+        out << "}\n";
+
+        out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
+        out << "(const t_tuple& t) const {\n";
+        out << "context h; return equalRange_" << search << "(t, h);\n";
         out << "}\n";
     }
 
@@ -993,6 +1007,11 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
         out << "return make_range(iterator_" << indNum << "(r.begin()), iterator_" << indNum
             << "(r.end()));\n";
         out << "}\n";
+
+        out << "range<iterator_" << indNum << "> equalRange_" << search;
+        out << "(const t_tuple& t) const {\n";
+        out << "context h; return equalRange_" << search << "(t, h);\n";
+        out << "}\n";
     }
 
     // empty method
@@ -1249,6 +1268,11 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
         out << "auto r = ind_" << masterIndex << ".template getBoundaries<" << indSize << ">(orderIn_"
             << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
         out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
+        out << "}\n";
+
+        out << "range<iterator> equalRange_" << i;
+        out << "(const t_tuple& t) const {\n";
+        out << "context h; return equalRange_" << i << "(t, h);\n";
         out << "}\n";
     }
 

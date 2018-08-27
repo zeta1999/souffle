@@ -22,9 +22,11 @@ then
         ${SOUFFLE_DOCKER_TAG}
 else
     ulimit -c unlimited -S
+    BASEDIR=$(pwd)
     if [[ "${SOUFFLE_CATEGORY}" != *"Unit"* ]]
     then
         cd tests
     fi
-    TESTSUITEFLAGS="-j${SOUFFLE_MAKE_JOBS}" make check -j${SOUFFLE_MAKE_JOBS}
+    TESTSUITEFLAGS="-j${SOUFFLE_MAKE_JOBS}" make check -j${SOUFFLE_MAKE_JOBS} \
+        || (cd $BASEDIR && .travis/after_failure.sh && false)
 fi

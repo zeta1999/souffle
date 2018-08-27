@@ -65,11 +65,12 @@ public:
     }
 
     /** create an event for recording start and end times */
-    void makeTimingEvent(const std::string& txt, time_point start, time_point end, size_t iteration) {
+    void makeTimingEvent(const std::string& txt, time_point start, time_point end, size_t startMaxRSS,
+            size_t endMaxRSS, size_t iteration) {
         microseconds start_ms = std::chrono::duration_cast<microseconds>(start.time_since_epoch());
         microseconds end_ms = std::chrono::duration_cast<microseconds>(end.time_since_epoch());
         profile::EventProcessorSingleton::instance().process(
-                database, txt.c_str(), start_ms, end_ms, iteration);
+                database, txt.c_str(), start_ms, end_ms, startMaxRSS, endMaxRSS, iteration);
     }
 
     /** create quantity event */
@@ -110,6 +111,9 @@ public:
         timer.stop();
     }
 
+    void resetTimerInterval(uint32_t interval = 1) {
+        timer.resetTimerInterval(interval);
+    }
     const profile::ProfileDatabase& getDB() const {
         return database;
     }
@@ -156,7 +160,10 @@ private:
         }
 
     public:
-        ProfileTimer(uint32_t in = 1) : t(in) {}
+        /*
+         *  @param interval the size of the timing interval in milliseconds
+         */
+        ProfileTimer(uint32_t interval = 10) : t(interval) {}
 
         /** start timer on the thread th */
         void start() {
@@ -176,6 +183,19 @@ private:
             if (th.joinable()) {
                 th.join();
             }
+        }
+
+        /** Reset timer interval.
+         *
+         *  The timer interval increases as the program executes. Resetting the interval is useful to
+         *  ensure that detailed usage information is gathered even in long running programs, if desired.
+         *
+         *  @param interval the size of the timing interval in milliseconds
+         */
+        void resetTimerInterval(uint32_t interval = 10) {
+            t = interval;
+            runCount = 0;
+            run();
         }
     };
 

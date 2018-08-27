@@ -17,5 +17,5 @@ std::string jsChartistMin = R"___(
 
 )___";
 }
-}
-}
+}  // namespace profile
+}  // namespace souffle

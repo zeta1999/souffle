@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstProgram.h
+ * @file AstProgram.cpp
  *
  * Implement methods for class Program that represents a Datalog
  * program consisting of types, relations, and clauses.

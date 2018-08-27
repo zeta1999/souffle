@@ -223,7 +223,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ", " << Global::config().has("provenance");
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
                 out << ");\n";
-                out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+                out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                       "'\\n';}\n";
             }
             out << "}\n";
             PRINT_END_COMMENT(out);
@@ -273,14 +274,47 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // check whether loop nest can be parallelized
             bool parallel = false;
             if (const auto* scan = dynamic_cast<const RamScan*>(&insert.getOperation())) {
-                // if it is a full scan
-                if (scan->getRangeQueryColumns() == 0 && !scan->isPureExistenceCheck()) {
+                // if this is not a pure existence check
+                if (!scan->isPureExistenceCheck()) {
                     // yes it can!
                     parallel = true;
 
-                    // partition outermost relation
-                    out << "auto part = " << synthesiser.getRelationName(scan->getRelation()) << "->"
-                        << "partition();\n";
+                    const auto& rel = scan->getRelation();
+                    const auto& relName = synthesiser.getRelationName(rel);
+                    if (scan->getRangeQueryColumns() == 0) {
+                        // partition outermost relation
+                        out << "auto part = " << relName << "->partition();\n";
+                    } else {
+                        // check list of keys
+                        auto arity = rel.getArity();
+                        const auto& rangePattern = scan->getRangePattern();
+
+                        // a lambda for printing boundary key values
+                        auto printKeyTuple = [&]() {
+                            for (size_t i = 0; i < arity; i++) {
+                                if (rangePattern[i] != nullptr) {
+                                    visit(rangePattern[i], out);
+                                } else {
+                                    out << "0";
+                                }
+                                if (i + 1 < arity) {
+                                    out << ",";
+                                }
+                            }
+                        };
+
+                        // get index to be queried
+                        auto keys = scan->getRangeQueryColumns();
+                        // auto index = synthesiser.toIndex(keys);
+
+                        out << "const Tuple<RamDomain," << arity << "> key({{";
+                        printKeyTuple();
+                        out << "}});\n";
+                        out << "auto range = " << relName << "->"
+                            // << "equalRange" << index << "(key);\n";
+                            << "equalRange_" << keys << "(key);\n";
+                        out << "auto part = range.partition();\n";
+                    }
 
                     // build a parallel block around this loop nest
                     out << "PARALLEL_START;\n";
@@ -303,6 +337,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
                 // aggregate proof counters
             }
+
             out << "}\n";  // end lambda
             // out << "();";  // call lambda
             PRINT_END_COMMENT(out);
@@ -510,6 +545,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << "}\n";
                 } else if (scan.getLevel() == 0) {
                     // make this loop parallel
+                    // partition outermost relation
                     out << "pfor(auto it = part.begin(); it<part.end(); ++it) \n";
                     out << "try{";
                     out << "for(const auto& env0 : *it) {\n";
@@ -546,7 +582,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // get index to be queried
             auto keys = scan.getRangeQueryColumns();
-            auto index = synthesiser.toIndex(keys);
+            // auto index = synthesiser.toIndex(keys);
+
+            // if this is the parallel level
+            if (scan.getLevel() == 0 && !scan.isPureExistenceCheck()) {
+                // make this loop parallel
+                out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
+                out << "try{";
+                out << "for(const auto& env0 : *it) {\n";
+                visitSearch(scan, out);
+                out << "}\n";
+                out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+                out << "}\n";
+                return;
+                PRINT_END_COMMENT(out);
+            }
 
             // if it is a equality-range query
             out << "const Tuple<RamDomain," << arity << "> key({{";
@@ -558,11 +608,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 << "equalRange_" << keys << "(key," << ctxName << ");\n";
             if (scan.isPureExistenceCheck()) {
                 out << "if(!range.empty()) {\n";
+                visitSearch(scan, out);
+                out << "}\n";
             } else {
                 out << "for(const auto& env" << level << " : range) {\n";
+                visitSearch(scan, out);
+                out << "}\n";
             }
-            visitSearch(scan, out);
-            out << "}\n";
             PRINT_END_COMMENT(out);
         }
 
@@ -1695,7 +1747,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             os << ", " << Global::config().has("provenance");
             os << ")->readAll(*" << getRelationName(load.getRelation());
             os << ");\n";
-            os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+            os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                  "'\\n';}\n";
         }
     });
     os << "}\n";  // end of loadAll() method

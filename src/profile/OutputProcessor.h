@@ -101,7 +101,7 @@ Table inline OutputProcessor::getRelTable() {
     Table table;
     for (auto& rel : relation_map) {
         std::shared_ptr<Relation> r = rel.second;
-        Row row(9);
+        Row row(12);
         double total_time = r->getNonRecTime() + r->getRecTime() + r->getCopyTime();
         row[0] = std::shared_ptr<CellInterface>(new Cell<double>(total_time));
         row[1] = std::shared_ptr<CellInterface>(new Cell<double>(r->getNonRecTime()));
@@ -116,6 +116,9 @@ Table inline OutputProcessor::getRelTable() {
         } else {
             row[8] = std::shared_ptr<CellInterface>(new Cell<double>(r->getNum_tuplesRel() / 1.0));
         }
+        row[9] = std::shared_ptr<CellInterface>(new Cell<double>(r->getSavetime()));
+        row[10] = std::shared_ptr<CellInterface>(new Cell<double>(r->getLoadtime()));
+        row[11] = std::shared_ptr<CellInterface>(new Cell<long>(r->getMaxRSSDiff()));
 
         table.addRow(std::make_shared<Row>(row));
     }
@@ -139,13 +142,11 @@ Table inline OutputProcessor::getRulTable() {
     std::unordered_map<std::string, std::shared_ptr<Relation>>& relation_map = programRun->getRelation_map();
     std::unordered_map<std::string, std::shared_ptr<Row>> rule_map;
 
-    double tot_rec_tup = programRun->getTotNumRecTuples();
-    double tot_copy_time = programRun->getTotCopyTime();
-
     for (auto& rel : relation_map) {
         for (auto& _rul : rel.second->getRuleMap()) {
             Row row(11);
             std::shared_ptr<Rule> rul = _rul.second;
+            row[0] = std::shared_ptr<CellInterface>(new Cell<double>(rul->getRuntime()));
             row[1] = std::shared_ptr<CellInterface>(new Cell<double>(rul->getRuntime()));
             row[2] = std::shared_ptr<CellInterface>(new Cell<double>(0.0));
             row[3] = std::shared_ptr<CellInterface>(new Cell<double>(0.0));
@@ -167,10 +168,12 @@ Table inline OutputProcessor::getRulTable() {
                             new Cell<double>(row[2]->getDoubVal() + rul->getRuntime()));
                     row[4] = std::shared_ptr<CellInterface>(
                             new Cell<long>(row[4]->getLongVal() + rul->getNum_tuples()));
-                    row[0] = std::shared_ptr<CellInterface>(new Cell<double>(rul->getRuntime()));
+                    row[0] = std::shared_ptr<CellInterface>(
+                            new Cell<double>(row[0]->getDoubVal() + rul->getRuntime()));
                     rule_map[rul->getName()] = std::make_shared<Row>(row);
                 } else {
                     Row row(11);
+                    row[0] = std::shared_ptr<CellInterface>(new Cell<double>(rul->getRuntime()));
                     row[1] = std::shared_ptr<CellInterface>(new Cell<double>(0.0));
                     row[2] = std::shared_ptr<CellInterface>(new Cell<double>(rul->getRuntime()));
                     row[3] = std::shared_ptr<CellInterface>(new Cell<double>(0.0));
@@ -179,7 +182,6 @@ Table inline OutputProcessor::getRulTable() {
                     row[6] = std::shared_ptr<CellInterface>(new Cell<std::string>(rul->getId()));
                     row[7] = std::shared_ptr<CellInterface>(new Cell<std::string>(rel.second->getName()));
                     row[8] = std::shared_ptr<CellInterface>(new Cell<long>(rul->getVersion()));
-                    row[0] = std::shared_ptr<CellInterface>(new Cell<double>(rul->getRuntime()));
                     row[10] = std::shared_ptr<CellInterface>(new Cell<std::string>(rul->getLocator()));
                     rule_map[rul->getName()] = std::make_shared<Row>(row);
                 }
@@ -188,11 +190,6 @@ Table inline OutputProcessor::getRulTable() {
         for (auto& _row : rule_map) {
             std::shared_ptr<Row> row = _row.second;
             Row t = *row;
-            if (t[6]->getStringVal().at(0) == 'C') {
-                double rec_tup = (double)(t[4]->getLongVal());
-                t[3] = std::shared_ptr<CellInterface>(
-                        new Cell<double>(rec_tup * tot_copy_time / tot_rec_tup));
-            }
             double val = t[1]->getDoubVal() + t[2]->getDoubVal() + t[3]->getDoubVal();
 
             t[0] = std::shared_ptr<CellInterface>(new Cell<double>(val));

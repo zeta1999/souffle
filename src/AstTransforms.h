@@ -13,6 +13,7 @@
  * Defines AST transformation passes.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include "AstArgument.h"
@@ -187,6 +188,19 @@ private:
 public:
     std::string getName() const override {
         return "RemoveRedundantRelationsTransformer";
+    }
+};
+
+/**
+ * Transformation pass to remove equivalent rules.
+ */
+class MinimiseProgramTransformer : public AstTransformer {
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+
+public:
+    std::string getName() const override {
+        return "MinimiseProgramTransformer";
     }
 };
 

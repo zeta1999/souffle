@@ -8,18 +8,21 @@
 
 #pragma once
 
+#include "../ProfileEvent.h"
 #include "HtmlString.h"
 #include "OutputProcessor.h"
 #include "Reader.h"
 #include "Table.h"
 #include "UserInputReader.h"
 #include <algorithm>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
 #include <vector>
 #include <dirent.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 
 namespace souffle {
@@ -67,9 +70,15 @@ public:
         this->alive = true;
         updateDB();
         updater = std::thread([this]() {
+            // Update the display every 30s. Check for input every 0.5s
+            std::chrono::milliseconds interval(30000);
+            auto nextUpdateTime = std::chrono::high_resolution_clock::now();
             do {
-                std::this_thread::sleep_for(std::chrono::milliseconds(30000));
-                runCommand({});
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                if (nextUpdateTime < std::chrono::high_resolution_clock::now()) {
+                    runCommand({});
+                    nextUpdateTime = std::chrono::high_resolution_clock::now() + interval;
+                }
             } while (reader->isLive() && !linereader.hasReceivedInput());
         });
     }
@@ -101,9 +110,9 @@ public:
 
         // If we have not received any input yet in live mode then run top.
         if ((!linereader.hasReceivedInput() && c.empty()) || c[0].compare("top") == 0) {
-            // Move up 4 lines and overwrite the previous top output.
+            // Move up 3 lines and overwrite the previous top output.
             if (!firstRun && !linereader.hasReceivedInput()) {
-                std::cout << "\x1b[A\x1b[A\x1b[A\x1b[A";
+                std::cout << "\x1b[A\x1b[A\x1b[A";
             } else if (firstRun) {
                 firstRun = false;
             }
@@ -141,6 +150,16 @@ public:
             } else {
                 std::cout << "Invalid parameters to graph command.\n";
             }
+        } else if (c[0].compare("usage") == 0) {
+            if (c.size() > 1) {
+                if (c[1][0] == 'R') {
+                    usageRelation(c[1]);
+                } else {
+                    usageRule(c[1]);
+                }
+            } else {
+                usage();
+            }
         } else if (c[0].compare("help") == 0) {
             help();
         } else {
@@ -154,7 +173,7 @@ public:
             return;
         }
         if (loaded) {
-            std::cout << "SouffleProf v3.0.1\n";
+            std::cout << "SouffleProf\n";
             top();
         }
 
@@ -209,7 +228,7 @@ public:
     }
 
     void outputJson() {
-        std::cout << "SouffleProf v4.0.1\n";
+        std::cout << "SouffleProf\n";
         std::cout << "Generating JSON files...\n";
 
         std::string workingdir = Tools::getworkingdir();
@@ -423,9 +442,8 @@ public:
     }
 
     void quit() {
-        if (alive && loaded) {
-            // std::cerr << "Liver reader not implemented\n";
-            // live_reader.stopRead();
+        if (updater.joinable()) {
+            updater.join();
         }
     }
 
@@ -457,6 +475,8 @@ public:
         std::printf("  %-30s%-5s %s\n", "graph ver <rule id> <type>", "-",
                 "graph recursive(C) rule versions by type(tot_t/copy_t/tuples).");
         std::printf("  %-30s%-5s %s\n", "top", "-", "display top-level summary of program run.");
+        std::printf("  %-30s%-5s %s\n", "usage [relation id|rule id]", "-",
+                "display CPU usage graphs for a relation or rule.");
         std::printf("  %-30s%-5s %s\n", "help", "-", "print this.");
 
         std::cout << "\nInteractive mode only commands:" << std::endl;
@@ -470,6 +490,225 @@ public:
         std::printf("  %-30s%-5s %s\n", "q", "-", "exit program.");
     }
 
+    void usageRelation(std::string id) {
+        std::vector<std::vector<std::string>> rel_table = out.formatTable(rel_table_state, precision);
+        std::string name = "";
+        bool found = false;
+        for (auto& row : rel_table) {
+            if (row[5] == id || row[6] == id) {
+                name = row[5];
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cout << "Relation does not exist.\n";
+            return;
+        }
+
+        Relation* rel = out.getProgramRun()->getRelation(name);
+        usage(rel->getEndtime() * 1000000, rel->getStarttime() * 1000000);
+    }
+
+    void usageRule(std::string id) {
+        std::vector<std::vector<std::string>> rul_table = out.formatTable(rul_table_state, precision);
+        std::string relName = "";
+        std::string srcLocator = "";
+        bool found = false;
+        for (auto& row : rul_table) {
+            if (row[5] == id || row[6] == id) {
+                relName = row[7];
+                srcLocator = row[10];
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cout << "Rule does not exist.\n";
+            return;
+        }
+
+        auto* rel = out.getProgramRun()->getRelation(relName);
+        if (rel == nullptr) {
+            std::cout << "Relation ceased to exist. Odd." << std::endl;
+            return;
+        }
+        if (rel->getRuleMap().count(srcLocator) == 0) {
+            std::cout << "Rule ceased to exist. Odd." << std::endl;
+            return;
+        }
+
+        auto& rul = rel->getRuleMap().at(srcLocator);
+        usage(rul->getEndtime() * 1000000, rul->getStarttime() * 1000000);
+    }
+
+    void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
+        struct Usage {
+            uint64_t time;
+            uint32_t maxRSS;
+            uint64_t systemtime;
+            uint64_t usertime;
+            bool operator<(const Usage& other) const {
+                return time < other.time;
+            }
+        };
+
+        uint32_t width = getTermWidth() - 8;
+        uint32_t height = 20;
+
+        DirectoryEntry* usageStats = dynamic_cast<DirectoryEntry*>(
+                ProfileEventSingleton::instance().getDB().lookupEntry({"program", "usage", "timepoint"}));
+        if (usageStats == nullptr || usageStats->getKeys().size() < 2) {
+            for (uint8_t i = 0; i < height + 2; ++i) {
+                std::cout << std::endl;
+            }
+            std::cout << "Insufficient data for usage statistics." << std::endl;
+            return;
+        }
+
+        double maxIntervalUsage = 0;
+
+        Usage currentUsage;
+        Usage previousUsage{0, 0, 0, 0};
+        uint64_t timeStep = 0;
+
+        std::set<Usage> usages;
+        {
+            // Translate the string ordered text usage stats to a time ordered binary form.
+            std::set<Usage> allUsages;
+            for (auto& currentKey : usageStats->getKeys()) {
+                currentUsage.time = std::stol(currentKey);
+                currentUsage.systemtime = dynamic_cast<SizeEntry*>(
+                        usageStats->readDirectoryEntry(currentKey)->readEntry("systemtime"))
+                                                  ->getSize();
+                currentUsage.usertime = dynamic_cast<SizeEntry*>(
+                        usageStats->readDirectoryEntry(currentKey)->readEntry("usertime"))
+                                                ->getSize();
+                currentUsage.maxRSS = dynamic_cast<SizeEntry*>(
+                        usageStats->readDirectoryEntry(currentKey)->readEntry("maxRSS"))
+                                              ->getSize();
+
+                // Duplicate times are possible
+                if (allUsages.find(currentUsage) != allUsages.end()) {
+                    auto& existing = *allUsages.find(currentUsage);
+                    currentUsage.systemtime = std::max(existing.systemtime, currentUsage.systemtime);
+                    currentUsage.usertime = std::max(existing.usertime, currentUsage.usertime);
+                    currentUsage.maxRSS = std::max(existing.maxRSS, currentUsage.maxRSS);
+                    allUsages.erase(currentUsage);
+                }
+                allUsages.insert(currentUsage);
+            }
+
+            // cpu times aren't quite recorded in a monotonic way, so skip the invalid ones.
+            for (auto it = ++allUsages.begin(); it != allUsages.end(); ++it) {
+                auto previous = std::prev(it);
+                if (it->usertime < previous->usertime || it->systemtime < previous->systemtime ||
+                        it->time == previous->time) {
+                    it = allUsages.erase(it);
+                    --it;
+                }
+            }
+
+            // Extract our overall stats
+            if (startTime == 0) {
+                startTime = allUsages.begin()->time;
+            }
+            if (endTime == 0) {
+                endTime = allUsages.rbegin()->time;
+            }
+
+            if (allUsages.size() < width) {
+                width = allUsages.size();
+                usages = allUsages;
+                timeStep = (endTime - startTime) / width;
+            } else {
+                timeStep = (endTime - startTime) / width;
+
+                // Store the timepoints we need for the graph
+                for (uint32_t i = 1; i <= width; ++i) {
+                    auto it = allUsages.upper_bound(Usage{startTime + timeStep * i});
+                    if (it != allUsages.begin()) {
+                        --it;
+                    }
+                    usages.insert(*it);
+                }
+            }
+        }
+        if (usages.size() < 2) {
+            for (uint8_t i = 0; i < height + 2; ++i) {
+                std::cout << std::endl;
+            }
+            std::cout << "Insufficient data for usage statistics." << std::endl;
+            return;
+        }
+
+        // Find maximum so we can normalise the graph
+        previousUsage = {0, 0, 0, 0};
+        for (auto& currentUsage : usages) {
+            double usageDiff = currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
+                               previousUsage.usertime;
+            usageDiff /= (currentUsage.time - previousUsage.time);
+            if (usageDiff > maxIntervalUsage) {
+                maxIntervalUsage = usageDiff;
+            }
+            previousUsage = currentUsage;
+        }
+
+        double intervalUsagePercent = 100.0 * maxIntervalUsage;
+        std::printf("%11s\n", "cpu total");
+        std::printf("%11s\n", Tools::formatTime(usages.rbegin()->usertime / 1000000.0).c_str());
+
+        // Add columns to the graph
+        char grid[height][width];
+        for (uint32_t i = 0; i < height; ++i) {
+            for (uint32_t j = 0; j < width; ++j) {
+                grid[i][j] = ' ';
+            }
+        }
+
+        previousUsage = {0, 0, 0, 0};
+        uint32_t col = 0;
+        for (const Usage& currentUsage : usages) {
+            uint64_t curHeight = 0;
+            uint64_t curSystemHeight = 0;
+            // Usage may be 0
+            if (maxIntervalUsage != 0) {
+                curHeight = (currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
+                             previousUsage.usertime);
+                curHeight /= currentUsage.time - previousUsage.time;
+                curHeight *= height / maxIntervalUsage;
+
+                curSystemHeight = currentUsage.systemtime - previousUsage.systemtime;
+                curSystemHeight /= currentUsage.time - previousUsage.time;
+                curSystemHeight *= height / maxIntervalUsage;
+            }
+            for (uint32_t row = 0; row < curHeight; ++row) {
+                grid[row][col] = '*';
+            }
+            for (uint32_t row = curHeight - curSystemHeight; row < curHeight; ++row) {
+                grid[row][col] = '+';
+            }
+            previousUsage = currentUsage;
+            ++col;
+        }
+
+        // Print array
+        for (int32_t row = height - 1; row >= 0; --row) {
+            printf("%6s%% ", Tools::formatNum(0, intervalUsagePercent * (row + 1) / height).c_str());
+            for (uint32_t col = 0; col < width; ++col) {
+                std::cout << grid[row][col];
+            }
+            std::cout << std::endl;
+        }
+        for (uint32_t col = 0; col < 8; ++col) {
+            std::cout << ' ';
+        }
+        for (uint32_t col = 0; col < width; ++col) {
+            std::cout << '-';
+        }
+        std::cout << std::endl;
+    }
+
     void setupTabCompletion() {
         linereader.clearTabCompletion();
 
@@ -479,6 +718,7 @@ public:
         linereader.appendTabCompletion("graph ");
         linereader.appendTabCompletion("top");
         linereader.appendTabCompletion("help");
+        linereader.appendTabCompletion("usage");
 
         // add rel tab completes after the rest so users can see all commands first
         for (auto& row : out.formatTable(rel_table_state, precision)) {
@@ -486,38 +726,42 @@ public:
             linereader.appendTabCompletion("graph " + row[5] + " tot_t");
             linereader.appendTabCompletion("graph " + row[5] + " copy_t");
             linereader.appendTabCompletion("graph " + row[5] + " tuples");
+            linereader.appendTabCompletion("usage " + row[5]);
         }
     }
 
     void top() {
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
         if (alive) run->update();
-        std::string runtime = run->getRuntime();
-        std::cout << "\n Total runtime: " << runtime << "\n";
+        std::printf("%11s%10s%10s%20s\n", "runtime", "loadtime", "savetime", "tuples generated");
 
-        std::cout << "\n Total number of new tuples: " << run->formatNum(precision, run->getTotNumTuples())
-                  << std::endl;
+        std::printf("%11s%10s%10s%14s\n", run->getRuntime().c_str(),
+                run->formatTime(run->getTotLoadtime()).c_str(),
+                run->formatTime(run->getTotSavetime()).c_str(),
+                run->formatNum(precision, run->getTotNumTuples()).c_str());
+        std::cout << std::endl;
+        usage();
     }
 
     void rel() {
         rel_table_state.sort(sort_col);
         std::cout << " ----- Relation Table -----\n";
-        std::printf("%8s%8s%8s%8s%15s%6s%1s%s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "TUPLES", "ID", "",
-                "NAME");
+        std::printf("%8s%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
+                "SAVE_T", "RSSDiff", "TUPLES", "ID", "", "NAME");
         for (auto& row : out.formatTable(rel_table_state, precision)) {
-            std::printf("%8s%8s%8s%8s%15s%6s%1s%s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                    row[3].c_str(), row[4].c_str(), row[6].c_str(), "", row[5].c_str());
+            std::printf("%8s%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                    row[3].c_str(), row[9].c_str(), row[10].c_str(), row[11].c_str(), row[4].c_str(),
+                    row[6].c_str(), "", row[5].c_str());
         }
     }
 
     void rul() {
         rul_table_state.sort(sort_col);
         std::cout << "  ----- Rule Table -----\n";
-        std::printf(
-                "%8s%8s%8s%8s%15s    %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "TUPLES", "ID RELATION");
+        std::printf("%8s%8s%8s%15s    %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID RELATION");
         for (auto& row : out.formatTable(rul_table_state, precision)) {
-            std::printf("%8s%8s%8s%8s%15s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                    row[3].c_str(), row[4].c_str(), row[6].c_str(), row[7].c_str());
+            std::printf("%8s%8s%8s%15s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                    row[4].c_str(), row[6].c_str(), row[7].c_str());
         }
     }
 
@@ -546,14 +790,13 @@ public:
         std::vector<std::vector<std::string>> rel_table = out.formatTable(rel_table_state, precision);
 
         std::cout << "  ----- Rules of a Relation -----\n";
-        std::printf(
-                "%8s%8s%8s%8s%10s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "TUPLES", "ID", "NAME");
+        std::printf("%8s%8s%8s%10s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID", "NAME");
         std::string name = "";
         bool found = false;  // workaround to make it the same as java (row[5] seems to have priority)
         for (auto& row : rel_table) {
             if (row[5].compare(str) == 0) {
-                std::printf("%8s%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                        row[3].c_str(), row[4].c_str(), row[6].c_str(), row[5].c_str());
+                std::printf("%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                        row[4].c_str(), row[6].c_str(), row[5].c_str());
                 name = row[5];
                 found = true;
                 break;
@@ -572,8 +815,8 @@ public:
         std::cout << " ---------------------------------------------------------\n";
         for (auto& row : rul_table) {
             if (row[7].compare(name) == 0) {
-                std::printf("%8s%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                        row[3].c_str(), row[4].c_str(), row[6].c_str(), row[7].c_str());
+                std::printf("%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                        row[4].c_str(), row[6].c_str(), row[7].c_str());
             }
         }
         std::string src = "";
@@ -632,21 +875,20 @@ public:
 
         // Print out the versions of this rule.
         std::cout << "  ----- Rule Versions Table -----\n";
-        std::printf("%8s%8s%8s%8s%10s%6s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "TUPLES", "VER");
+        std::printf("%8s%8s%8s%10s%6s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "VER");
         for (auto& row : rul_table) {
             if (row[6].compare(str) == 0) {
-                std::printf("%8s%8s%8s%8s%10s%6s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                        row[3].c_str(), row[4].c_str(), "");
+                std::printf("%8s%8s%8s%10s%6s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                        row[4].c_str(), "");
             }
         }
         std::cout << "   ---------------------------------------------\n";
         for (auto& _row : ver_table.rows) {
             Row row = *_row;
 
-            std::printf("%8s%8s%8s%8s%10s%6s\n", row[0]->toString(precision).c_str(),
+            std::printf("%8s%8s%8s%10s%6s\n", row[0]->toString(precision).c_str(),
                     row[1]->toString(precision).c_str(), row[2]->toString(precision).c_str(),
-                    row[3]->toString(precision).c_str(), row[4]->toString(precision).c_str(),
-                    row[8]->toString(precision).c_str());
+                    row[4]->toString(precision).c_str(), row[8]->toString(precision).c_str());
             Table atom_table = out.getVersionAtoms(strRel, srcLocator, row[8]->getLongVal());
             verAtoms(atom_table);
         }
@@ -891,6 +1133,13 @@ protected:
         reader->processFile();
         rul_table_state = out.getRulTable();
         rel_table_state = out.getRelTable();
+    }
+
+    uint32_t getTermWidth() {
+        struct winsize w;
+        ioctl(0, TIOCGWINSZ, &w);
+        uint32_t width = w.ws_col > 0 ? w.ws_col : 80;
+        return width;
     }
 };
 

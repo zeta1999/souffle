@@ -20,7 +20,7 @@ dnl Positive testcase for Souffle provenance explainer
 dnl $1 -- test name
 dnl $2 -- category
 m4_define([POSITIVE_PROVENANCE_TEST],[
-  m4_define([PROV_FLAGS], [[], [-c]])
+  m4_define([PROV_FLAGS], [[], [-c], [-c -j8]])
   TEST_PROV_GROUP([$1],[
     TEST_EVAL_IN([$1],[$2], facts)
   ])

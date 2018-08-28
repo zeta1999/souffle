@@ -1253,6 +1253,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         // -- subroutine return --
 
         void visitReturn(const RamReturn& ret, std::ostream& out) override {
+            out << "std::lock_guard<std::mutex> guard(lock);\n";
             for (auto val : ret.getValues()) {
                 if (val == nullptr) {
                     out << "ret.push_back(0);\n";
@@ -1372,7 +1373,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     // generate C++ program
     os << "\n#include \"souffle/CompiledSouffle.h\"\n";
     if (Global::config().has("provenance")) {
-        os << "\n#include \"souffle/Explain.h\"\n";
+        os << "#include <mutex>\n";
+        os << "#include \"souffle/Explain.h\"\n";
     }
 
     if (Global::config().has("live-profile")) {
@@ -1820,6 +1822,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
                << "subproof_" << subroutineNum
                << "(const std::vector<RamDomain>& args, "
                   "std::vector<RamDomain>& ret, std::vector<bool>& err) {\n";
+
+            // a lock is needed when filling the subroutine return vectors
+            os << "std::mutex lock;\n";
 
             // generate code for body
             emitCode(os, *sub.second);

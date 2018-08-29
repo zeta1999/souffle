@@ -27,6 +27,8 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
         rel = new SynthesiserBrieRelation(ramRel, indexSet, isProvenance);
     } else if (ramRel.isEqRel()) {
         rel = new SynthesiserEqrelRelation(ramRel, indexSet, isProvenance);
+    } else if (ramRel.isRbtset()) {
+        rel = new SynthesiserRbtsetRelation(ramRel, indexSet, isProvenance);
     } else {
         // Handle the data structure command line flag
         if (Global::config().has("data-structure")) {
@@ -40,6 +42,8 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
                 rel = new SynthesiserBrieRelation(ramRel, indexSet, isProvenance);
             } else if (Global::config().get("data-structure") == "eqrel") {
                 rel = new SynthesiserEqrelRelation(ramRel, indexSet, isProvenance);
+            } else if (Global::config().get("data-structure") == "rbtset") {
+                rel = new SynthesiserRbtsetRelation(ramRel, indexSet, isProvenance);
             }
             // The default case, which is the most common
         } else {
@@ -425,7 +429,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
 // -------- Indirect Indexed B-Tree Relation --------
 
-/** Generate index set for a direct indexed relation */
+/** Generate index set for a indirect indexed relation */
 void SynthesiserIndirectRelation::computeIndices() {
     // Generate and set indices
     std::vector<std::vector<int>> inds = indices.getAllOrders();
@@ -498,7 +502,7 @@ void SynthesiserIndirectRelation::computeIndices() {
     computedIndices = inds;
 }
 
-/** Generate type name of a direct indexed relation */
+/** Generate type name of a indirect indexed relation */
 std::string SynthesiserIndirectRelation::getTypeName() {
     std::stringstream res;
     res << "t_btree_" << getArity();
@@ -514,7 +518,7 @@ std::string SynthesiserIndirectRelation::getTypeName() {
     return res.str();
 }
 
-/** Generate type struct of a direct indexed relation */
+/** Generate type struct of a indirect indexed relation */
 void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     size_t arity = getArity();
     const auto& inds = getIndices();
@@ -782,7 +786,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
 
 // -------- Brie Relation --------
 
-/** Generate index set for a direct indexed relation */
+/** Generate index set for a brie relation */
 void SynthesiserBrieRelation::computeIndices() {
     assert(!isProvenance && "bries cannot be used with provenance");
 
@@ -817,7 +821,7 @@ void SynthesiserBrieRelation::computeIndices() {
     computedIndices = inds;
 }
 
-/** Generate type name of a direct indexed relation */
+/** Generate type name of a brie relation */
 std::string SynthesiserBrieRelation::getTypeName() {
     std::stringstream res;
     res << "t_brie_" << getArity();
@@ -833,7 +837,7 @@ std::string SynthesiserBrieRelation::getTypeName() {
     return res.str();
 }
 
-/** Generate type struct of a direct indexed relation */
+/** Generate type struct of a brie relation */
 void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     size_t arity = getArity();
     const auto& inds = getIndices();
@@ -1087,7 +1091,7 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
 
 // -------- Eqrel Relation --------
 
-/** Generate index set for a direct indexed relation */
+/** Generate index set for a eqrel relation */
 void SynthesiserEqrelRelation::computeIndices() {
     assert(!isProvenance && "eqrel cannot be used with provenance");
 
@@ -1122,12 +1126,12 @@ void SynthesiserEqrelRelation::computeIndices() {
     computedIndices = inds;
 }
 
-/** Generate type name of a direct indexed relation */
+/** Generate type name of a eqrel relation */
 std::string SynthesiserEqrelRelation::getTypeName() {
     return "t_eqrel";
 }
 
-/** Generate type struct of a direct indexed relation */
+/** Generate type struct of a eqrel relation */
 void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     size_t arity = getArity();
     const auto& inds = getIndices();
@@ -1333,6 +1337,241 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     }
 
     // end class
+    out << "};\n";
+}
+
+
+// -------- Rbtset Relation --------
+
+/** Generate index set for a rbtset relation */
+void SynthesiserRbtsetRelation::computeIndices() {
+    assert(!isProvenance && "rbtset cannot be used with provenance");
+
+    // Generate and set indices
+    std::vector<std::vector<int>> inds = indices.getAllOrders();
+
+    // generate a full index if no indices exist
+    if (inds.empty()) {
+        std::vector<int> fullInd(getArity());
+        std::iota(fullInd.begin(), fullInd.end(), 0);
+        inds.push_back(fullInd);
+    }
+
+    // expand first index to be full if no full indices exist
+    bool fullExists = false;
+    for (size_t i = 0; i < inds.size(); i++) {
+        auto& ind = inds[i];
+        if (ind.size() == getArity()) {
+            fullExists = true;
+            masterIndex = i;
+        }
+    }
+
+    // expand the first ind to be full, it is guaranteed that at least one index exists
+    if (!fullExists) {
+        std::set<int> curIndexElems(inds[0].begin(), inds[0].end());
+
+        // expand index to be full
+        for (size_t i = 0; i < getArity(); i++) {
+            if (curIndexElems.find(i) == curIndexElems.end()) {
+                inds[0].push_back(i);
+            }
+        }
+
+        masterIndex = 0;
+    }
+
+    computedIndices = inds;
+}
+
+/** Generate type name of a rbtset relation */
+std::string SynthesiserRbtsetRelation::getTypeName() {
+    std::stringstream res;
+    res << "t_rbtset_" << getArity();
+
+    for (auto& ind : getIndices()) {
+        res << "__" << join(ind, "_");
+    }
+
+    for (auto& search : getIndexSet().getSearches()) {
+        res << "__" << search;
+    }
+
+    return res.str();
+}
+
+/** Generate type struct of a rbtset relation */
+void SynthesiserRbtsetRelation::generateTypeStruct(std::ostream& out) {
+    size_t arity = getArity();
+    const auto& inds = getIndices();
+    size_t numIndexes = inds.size();
+    std::map<std::vector<int>, int> indexToNumMap;
+
+    // struct definition
+    out << "struct " << getTypeName() << " {\n";
+
+    // stored tuple type
+    out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+
+    // generate the btree type for each relation
+    for (size_t i = 0; i < inds.size(); i++) {
+        auto& ind = inds[i];
+
+        if (i < getIndexSet().getAllOrders().size()) {
+            indexToNumMap[getIndexSet().getAllOrders()[i]] = i;
+        }
+
+        assert(ind.size() > 0 && "empty index!");
+
+        // generate a custom index comparator based on the index order
+        out << "struct tuple_less_" << i << " {\n";
+        out << "bool operator()(const t_tuple& a, const t_tuple& b) const {\n";
+        out << "return ";
+        for (size_t i = 0; i < ind.size() - 1; i++) {
+            out << "(a[" << ind[i] << "] < b[" << ind[i] << "] || (a[" << ind[i] << "] == b[" << ind[i] << "] &&\n";
+        }
+        out << "a[" << ind[ind.size() - 1] << "] < b[" << ind[ind.size() - 1] << "]";
+        for (size_t i = 0; i < 2 * (ind.size() - 1); i++) {
+            out << ")";
+        }
+        out << ";\n";
+        out << "}\n";
+        out << "};\n";
+
+        if (ind.size() == arity) {
+            out << "typedef std::set<t_tuple, tuple_less_" << i << "> t_ind_" << i
+                << ";\n";
+        } else {
+            out << "typedef std::multiset<t_tuple, tuple_less_" << i << "> t_ind_" << i
+                << ";\n";
+        }
+        out << "t_ind_" << i << " ind_" << i << ";\n";
+    }
+
+    // typedef master index iterator to be struct iterator
+    out << "typedef t_ind_" << masterIndex << "::iterator iterator;\n";
+
+    // create a global mutex lock for inserts
+    out << "std::mutex lock;\n";
+
+    // create a struct storing hints for each btree
+    out << "struct context {\n";
+    out << "};\n";
+    out << "context createContext() { return context(); }\n";
+
+    // insert methods
+    out << "bool insert(const t_tuple& t) {\n";
+    out << "std::lock_guard<std::mutex> guard(lock);\n";
+    out << "if (!contains(t)) {\n";
+    for (size_t i = 0; i < numIndexes; i++) {
+        out << "ind_" << i << ".insert(t);\n";
+    }
+    out << "return true;\n";
+    out << "} else return false;\n";
+    out << "}\n";  // end of insert(t_tuple&)
+
+    out << "bool insert(const t_tuple& t, context& h) {\n";
+    out << "return insert(t);\n";
+    out << "}\n";  // end of insert(t_tuple&, context&)
+
+    out << "bool insert(const RamDomain* ramDomain) {\n";
+    out << "RamDomain data[" << arity << "];\n";
+    out << "std::copy(ramDomain, ramDomain + " << arity << ", data);\n";
+    out << "const t_tuple& tuple = reinterpret_cast<const t_tuple&>(data);\n";
+    out << "return insert(tuple);\n";
+    out << "}\n";  // end of insert(RamDomain*)
+
+    std::vector<std::string> decls, params;
+    for (size_t i = 0; i < arity; i++) {
+        decls.push_back("RamDomain a" + std::to_string(i));
+        params.push_back("a" + std::to_string(i));
+    }
+    out << "bool insert(" << join(decls, ",") << ") {\n";
+    out << "RamDomain data[" << arity << "] = {" << join(params, ",") << "};\n";
+    out << "return insert(data);\n";
+    out << "}\n";  // end of insert(RamDomain x1, RamDomain x2, ...)
+
+    // insertAll methods
+    out << "template <typename T>\n";
+    out << "void insertAll(T& other) {\n";
+    out << "for (auto const& cur : other) {\n";
+    out << "insert(cur);\n";
+    out << "}\n";
+    out << "}\n";  // end of insertAll<T>
+
+    // contains methods
+    out << "bool contains(const t_tuple& t) {\n";
+    out << "return ind_" << masterIndex << ".find(t) != ind_" << masterIndex << ".end();\n";
+    out << "}\n";
+
+    out << "bool contains(const t_tuple& t, context& h) {\n";
+    out << "return contains(t);\n";
+    out << "}\n";
+
+    // size method
+    out << "std::size_t size() {\n";
+    out << "return ind_" << masterIndex << ".size();\n";
+    out << "}\n";
+
+    // find methods
+    out << "iterator find(const t_tuple& t) const {\n";
+    out << "return ind_" << masterIndex << ".find(t);\n";
+    out << "}\n";
+
+    out << "iterator find(const t_tuple& t, context& h) const {\n";
+    out << "return ind_" << masterIndex << ".find(t);\n";
+    out << "}\n";
+
+    // equalRange methods for each pattern which is used to search this relation
+    for (int64_t search : getIndexSet().getSearches()) {
+        auto lexOrder = getIndexSet().getLexOrder(search);
+        size_t indNum = indexToNumMap[lexOrder];
+
+        out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
+        out << "(const t_tuple& t, context& h) const {\n";
+        out << "auto pair = ind_" << indNum << ".equal_range(t);\n";
+        out << "return make_range(pair.first, pair.second);\n";
+        out << "}\n";
+
+        out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
+        out << "(const t_tuple& t) const {\n";
+        out << "context h; return equalRange_" << search << "(t, h);\n";
+        out << "}\n";
+    }
+
+    // empty method
+    out << "bool empty() {\n";
+    out << "return ind_" << masterIndex << ".empty();\n";
+    out << "}\n";
+
+    // partition method for parallelism
+    out << "std::vector<range<iterator>> partition() const {\n";
+    out << "range<iterator> full(begin(), end());\n";
+    out << "return full.partition(100);\n";
+    out << "}\n";
+
+    // purge method
+    out << "void purge() {\n";
+    for (size_t i = 0; i < numIndexes; i++) {
+        out << "ind_" << i << ".clear();\n";
+    }
+    out << "}\n";
+
+    // begin and end iterators
+    out << "iterator begin() const {\n";
+    out << "return ind_" << masterIndex << ".begin();\n";
+    out << "}\n";
+
+    out << "iterator end() const {\n";
+    out << "return ind_" << masterIndex << ".end();\n";
+    out << "}\n";
+
+    // printHintStatistics method
+    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+    out << "o << \"rbtset index: no hint statistics supported\\n\";\n";
+    out << "}\n";
+
+    // end struct
     out << "};\n";
 }
 

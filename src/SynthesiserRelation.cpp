@@ -61,6 +61,8 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
         }
     }
 
+    assert(rel != nullptr && "relation type not specified");
+
     // generate index set
     rel->computeIndices();
 
@@ -299,16 +301,16 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";  // end of insertAll(relationType& other)
 
     // contains methods
-    out << "bool contains(const t_tuple& t) {\n";
+    out << "bool contains(const t_tuple& t) const {\n";
     out << "return ind_" << masterIndex << ".contains(t);\n";
     out << "}\n";
 
-    out << "bool contains(const t_tuple& t, context& h) {\n";
+    out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".contains(t, h.hints_" << masterIndex << ");\n";
     out << "}\n";
 
     // size method
-    out << "std::size_t size() {\n";
+    out << "std::size_t size() const {\n";
     out << "return ind_" << masterIndex << ".size();\n";
     out << "}\n";
 
@@ -381,7 +383,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     }
 
     // empty method
-    out << "bool empty() {\n";
+    out << "bool empty() const {\n";
     out << "return ind_" << masterIndex << ".empty();\n";
     out << "}\n";
 
@@ -649,16 +651,16 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // contains methods
-    out << "bool contains(const t_tuple& t) {\n";
+    out << "bool contains(const t_tuple& t) const {\n";
     out << "return ind_" << masterIndex << ".contains(&t);\n";
     out << "}\n";
 
-    out << "bool contains(const t_tuple& t, context& h) {\n";
+    out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".contains(&t, h.hints_" << masterIndex << ");\n";
     out << "}\n";
 
     // size method
-    out << "std::size_t size() {\n";
+    out << "std::size_t size() const {\n";
     out << "return ind_" << masterIndex << ".size();\n";
     out << "}\n";
 
@@ -726,14 +728,14 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         }
         out << "}\n";
 
-        out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
+        out << "range<iterator_" << indNum << "> equalRange_" << search;
         out << "(const t_tuple& t) const {\n";
         out << "context h; return equalRange_" << search << "(t, h);\n";
         out << "}\n";
     }
 
     // empty method
-    out << "bool empty() {\n";
+    out << "bool empty() const {\n";
     out << "return ind_" << masterIndex << ".empty();\n";
     out << "}\n";
 
@@ -968,17 +970,17 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // contains methods
-    out << "bool contains(const t_tuple& t) {\n";
+    out << "bool contains(const t_tuple& t) const {\n";
     out << "return ind_" << masterIndex << ".contains(orderIn_" << masterIndex << "(t));\n";
     out << "}\n";
 
-    out << "bool contains(const t_tuple& t, context& h) {\n";
+    out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".contains(orderIn_" << masterIndex << "(t), h.hints_"
         << masterIndex << ");\n";
     out << "}\n";
 
     // size method
-    out << "std::size_t size() {\n";
+    out << "std::size_t size() const {\n";
     out << "return ind_" << masterIndex << ".size();\n";
     out << "}\n";
 
@@ -1023,7 +1025,7 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     }
 
     // empty method
-    out << "bool empty() {\n";
+    out << "bool empty() const {\n";
     out << "return ind_" << masterIndex << ".empty();\n";
     out << "}\n";
 
@@ -1116,7 +1118,7 @@ void SynthesiserEqrelRelation::computeIndices() {
             std::set<int> curIndexElems(ind.begin(), ind.end());
 
             // expand index to be full
-            for (int i = 0; i < getArity(); i++) {
+            for (size_t i = 0; i < getArity(); i++) {
                 if (curIndexElems.find(i) == curIndexElems.end()) {
                     ind.push_back(i);
                 }
@@ -1137,7 +1139,6 @@ std::string SynthesiserEqrelRelation::getTypeName() {
 
 /** Generate type struct of a eqrel relation */
 void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
-    size_t arity = getArity();
     const auto& inds = getIndices();
     size_t numIndexes = inds.size();
     std::map<std::vector<int>, int> indexToNumMap;
@@ -1240,16 +1241,16 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // contains methods
-    out << "bool contains(const t_tuple& t) {\n";
+    out << "bool contains(const t_tuple& t) const {\n";
     out << "return ind_" << masterIndex << ".contains(t[0], t[1]);\n";
     out << "}\n";
 
-    out << "bool contains(const t_tuple& t, context& h) {\n";
+    out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".contains(t[0], t[1]);\n";
     out << "}\n";
 
     // size method
-    out << "std::size_t size() {\n";
+    out << "std::size_t size() const {\n";
     out << "return ind_" << masterIndex << ".size();\n";
     out << "}\n";
 
@@ -1285,7 +1286,7 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     }
 
     // empty method
-    out << "bool empty() {\n";
+    out << "bool empty() const {\n";
     out << "return ind_" << masterIndex << ".size() == 0;\n";
     out << "}\n";
 
@@ -1502,16 +1503,16 @@ void SynthesiserRbtsetRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";  // end of insertAll<T>
 
     // contains methods
-    out << "bool contains(const t_tuple& t) {\n";
+    out << "bool contains(const t_tuple& t) const {\n";
     out << "return ind_" << masterIndex << ".find(t) != ind_" << masterIndex << ".end();\n";
     out << "}\n";
 
-    out << "bool contains(const t_tuple& t, context& h) {\n";
+    out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return contains(t);\n";
     out << "}\n";
 
     // size method
-    out << "std::size_t size() {\n";
+    out << "std::size_t size() const {\n";
     out << "return ind_" << masterIndex << ".size();\n";
     out << "}\n";
 
@@ -1552,7 +1553,7 @@ void SynthesiserRbtsetRelation::generateTypeStruct(std::ostream& out) {
     }
 
     // empty method
-    out << "bool empty() {\n";
+    out << "bool empty() const {\n";
     out << "return ind_" << masterIndex << ".empty();\n";
     out << "}\n";
 
@@ -1741,16 +1742,16 @@ void SynthesiserHashsetRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";  // end of insertAll<T>
 
     // contains methods
-    out << "bool contains(const t_tuple& t) {\n";
+    out << "bool contains(const t_tuple& t) const {\n";
     out << "return ind_" << masterIndex << ".find(t) != ind_" << masterIndex << ".end();\n";
     out << "}\n";
 
-    out << "bool contains(const t_tuple& t, context& h) {\n";
+    out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return contains(t);\n";
     out << "}\n";
 
     // size method
-    out << "std::size_t size() {\n";
+    out << "std::size_t size() const {\n";
     out << "return ind_" << masterIndex << ".size();\n";
     out << "}\n";
 
@@ -1768,39 +1769,8 @@ void SynthesiserHashsetRelation::generateTypeStruct(std::ostream& out) {
         auto lexOrder = getIndexSet().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
-        /*
-        // check if lexOrder is a permutation of the search
-        bool isPermutation = true;
-        for (int i = 0; i < arity; i++) {
-            if ((search >> i) & 1) {
-                if (std::find(lexOrder.begin(), lexOrder.end(), i) == lexOrder.end()) {
-                    isPermutation = false;
-                }
-            } else {
-                if (std::find(lexOrder.begin(), lexOrder.end(), i) != lexOrder.end()) {
-                    isPermutation = false;
-                }
-            }
-        }
-
-        if (isPermutation) {
-        */
         out << "range<t_ind_" << indNum << "::const_iterator> equalRange_" << search;
         out << "(const t_tuple& t) const {\n";
-        /*
-        // generate lower and upper bounds for range search
-        out << "t_tuple low(t); t_tuple high(t);\n";
-        // check which indices to pad out
-        for (size_t column = 0; column < arity; column++) {
-            // if bit number column is set
-            if (!((search >> column) & 1)) {
-                out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
-                out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
-            }
-        }
-        out << "return make_range(ind_" << indNum << ".lower_bound(low), ind_" << indNum <<
-        ".upper_bound(high));\n";
-        */
         out << "auto pair = ind_" << indNum << ".equal_range(t);\n";
         out << "return make_range(pair.first, pair.second);\n";
         out << "}\n";
@@ -1809,16 +1779,10 @@ void SynthesiserHashsetRelation::generateTypeStruct(std::ostream& out) {
         out << "(const t_tuple& t, context& h) const {\n";
         out << "return equalRange_" << search << "(t);\n";
         out << "}\n";
-        /*
-    } else {
-        out << "void equalRange_" << search << "(const t_tuple& t) const {}\n";
-        out << "void equalRange_" << search << "(const t_tuple& t, context& h) const {}\n";
-    }
-    */
     }
 
     // empty method
-    out << "bool empty() {\n";
+    out << "bool empty() const {\n";
     out << "return ind_" << masterIndex << ".empty();\n";
     out << "}\n";
 

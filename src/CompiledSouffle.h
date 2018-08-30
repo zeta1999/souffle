@@ -223,16 +223,16 @@ public:
         data = true;
         return !result;
     }
-    bool contains(const t_tuple& t) {
+    bool contains(const t_tuple& t) const {
         return data;
     }
-    bool contains(const t_tuple& t, context& h) {
+    bool contains(const t_tuple& t, context& h) const {
         return data;
     }
-    std::size_t size() {
+    std::size_t size() const {
         return data ? 1 : 0;
     }
-    bool empty() {
+    bool empty() const {
         return !data;
     }
     void purge() {

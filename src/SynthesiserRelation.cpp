@@ -1596,13 +1596,6 @@ void SynthesiserHashsetRelation::computeIndices() {
     // Generate and set indices
     std::vector<std::vector<int>> inds = indices.getAllOrders();
 
-    // generate a full index if no indices exist
-    if (inds.empty()) {
-        std::vector<int> fullInd(getArity());
-        std::iota(fullInd.begin(), fullInd.end(), 0);
-        inds.push_back(fullInd);
-    }
-
     // expand first index to be full if no full indices exist
     bool fullExists = false;
     for (size_t i = 0; i < inds.size(); i++) {
@@ -1613,18 +1606,12 @@ void SynthesiserHashsetRelation::computeIndices() {
         }
     }
 
-    // expand the first ind to be full, it is guaranteed that at least one index exists
-    if (!fullExists) {
-        std::set<int> curIndexElems(inds[0].begin(), inds[0].end());
-
-        // expand index to be full
-        for (size_t i = 0; i < getArity(); i++) {
-            if (curIndexElems.find(i) == curIndexElems.end()) {
-                inds[0].push_back(i);
-            }
-        }
-
-        masterIndex = 0;
+    // generate a full index if none exists
+    if (inds.empty() || !fullExists) {
+        std::vector<int> fullInd(getArity());
+        std::iota(fullInd.begin(), fullInd.end(), 0);
+        inds.push_back(fullInd);
+        masterIndex = inds.size() - 1;
     }
 
     computedIndices = inds;
@@ -1781,6 +1768,23 @@ void SynthesiserHashsetRelation::generateTypeStruct(std::ostream& out) {
         auto lexOrder = getIndexSet().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
+        /*
+        // check if lexOrder is a permutation of the search
+        bool isPermutation = true;
+        for (int i = 0; i < arity; i++) {
+            if ((search >> i) & 1) {
+                if (std::find(lexOrder.begin(), lexOrder.end(), i) == lexOrder.end()) {
+                    isPermutation = false;
+                }
+            } else {
+                if (std::find(lexOrder.begin(), lexOrder.end(), i) != lexOrder.end()) {
+                    isPermutation = false;
+                }
+            }
+        }
+
+        if (isPermutation) {
+        */
         out << "range<t_ind_" << indNum << "::const_iterator> equalRange_" << search;
         out << "(const t_tuple& t) const {\n";
         /*
@@ -1805,6 +1809,12 @@ void SynthesiserHashsetRelation::generateTypeStruct(std::ostream& out) {
         out << "(const t_tuple& t, context& h) const {\n";
         out << "return equalRange_" << search << "(t);\n";
         out << "}\n";
+        /*
+    } else {
+        out << "void equalRange_" << search << "(const t_tuple& t) const {}\n";
+        out << "void equalRange_" << search << "(const t_tuple& t, context& h) const {}\n";
+    }
+    */
     }
 
     // empty method

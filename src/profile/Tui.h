@@ -739,17 +739,16 @@ public:
                 run->formatTime(run->getTotLoadtime()).c_str(),
                 run->formatTime(run->getTotSavetime()).c_str(),
                 run->formatNum(precision, run->getTotNumTuples()).c_str());
-        std::cout << std::endl;
 
         // Progress bar
-        size_t totalRelations =
-                std::stoul(dynamic_cast<TextEntry*>(ProfileEventSingleton::instance().getDB().lookupEntry(
-                                                            {"program", "configuration", "relationCount"}))
-                                   ->getText());
+        auto* totalRelationsEntry =
+                dynamic_cast<TextEntry*>(ProfileEventSingleton::instance().getDB().lookupEntry(
+                        {"program", "configuration", "relationCount"}));
         // Determine number of relations processed
         size_t processedRelations = run->getRelation_map().size();
         size_t screenWidth = getTermWidth() - 10;
-        if (alive) {
+        if (alive && totalRelationsEntry != nullptr) {
+            size_t totalRelations = std::stoul(totalRelationsEntry->getText());
             std::cout << "Progress ";
             for (size_t i = 0; i < screenWidth; ++i) {
                 if (screenWidth * processedRelations / totalRelations > i) {

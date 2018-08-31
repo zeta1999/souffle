@@ -1559,29 +1559,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << R"_(ProfileEventSingleton::instance().makeTimeEvent("@time;starttime");)_" << '\n';
         os << "{\n"
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
-    }
 
-    if (Global::config().has("engine")) {
-        std::stringstream ss;
-        bool hasAtLeastOneStrata = false;
-        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
-            hasAtLeastOneStrata = true;
-            // go to stratum of index in switch
-            auto i = stratum.getIndex();
-            ss << "case " << i << ":\ngoto STRATUM_" << i << ";\nbreak;\n";
-        });
-        if (hasAtLeastOneStrata) {
-            os << "switch (stratumIndex) {\n";
-            {
-                // otherwise use stratum 0 if index is -1
-                os << "case (size_t) -1:\ngoto STRATUM_0;\nbreak;\n";
-            }
-            os << ss.str();
-            os << "}\n";
-        }
-    }
-
-    if (Global::config().has("profile")) {
         size_t relationCount = 0;
         visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
             if (create.getRelation().getName()[0] != '@') ++relationCount;
@@ -1604,6 +1582,27 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             }
         });
     }
+
+    if (Global::config().has("engine")) {
+        std::stringstream ss;
+        bool hasAtLeastOneStrata = false;
+        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+            hasAtLeastOneStrata = true;
+            // go to stratum of index in switch
+            auto i = stratum.getIndex();
+            ss << "case " << i << ":\ngoto STRATUM_" << i << ";\nbreak;\n";
+        });
+        if (hasAtLeastOneStrata) {
+            os << "switch (stratumIndex) {\n";
+            {
+                // otherwise use stratum 0 if index is -1
+                os << "case (size_t) -1:\ngoto STRATUM_0;\nbreak;\n";
+            }
+            os << ss.str();
+            os << "}\n";
+        }
+    }
+
     // Set up stratum
     visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
         os << "/* BEGIN STRATUM " << stratum.getIndex() << " */\n";

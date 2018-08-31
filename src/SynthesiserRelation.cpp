@@ -15,9 +15,11 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
     SynthesiserRelation* rel;
 
     // Handle the qualifier in souffle code
-    if (ramRel.getArity() == 0) {
+    if (isProvenance) {
+        rel = new SynthesiserDirectRelation(ramRel, indexSet, isProvenance);
+    } else if (ramRel.getArity() == 0) {
         rel = new SynthesiserNullaryRelation(ramRel, indexSet, isProvenance);
-    } else if (ramRel.isBTree() || isProvenance) {
+    } else if (ramRel.isBTree()) {
         if (ramRel.getArity() > 6) {
             rel = new SynthesiserIndirectRelation(ramRel, indexSet, isProvenance);
         } else {
@@ -102,6 +104,7 @@ void SynthesiserDirectRelation::computeIndices() {
         masterIndex = 0;
     }
 
+    /*
     // Add a full index if it does not exist
     bool fullExists = false;
     // check for full index
@@ -128,13 +131,14 @@ void SynthesiserDirectRelation::computeIndices() {
 
         masterIndex = 0;
     }
+    */
 
     // If this relation is used with provenance,
     // we must expand all search orders to be full indices,
     // since weak/strong comparators and updaters need this,
     // and also add provenance annotations to the indices
-    if (isProvenance) {
-        assert(getArity() >= 2 && "provenance must have arity at least 2");
+    // if (isProvenance) {
+    //     assert(getArity() >= 2 && "provenance must have arity at least 2");
 
         masterIndex = 0;
         for (auto& ind : inds) {
@@ -160,7 +164,7 @@ void SynthesiserDirectRelation::computeIndices() {
 
             assert(ind.size() == getArity());
         }
-    }
+    // }
 
     computedIndices = inds;
 }
@@ -195,7 +199,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
 
     // generate an updater class for provenance
-    if (Global::config().has("provenance")) {
+    if (isProvenance) {
         out << "struct updater_" << getTypeName() << " {\n";
         out << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
         out << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
@@ -437,6 +441,8 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
 /** Generate index set for a indirect indexed relation */
 void SynthesiserIndirectRelation::computeIndices() {
+    assert(!isProvenance);
+
     // Generate and set indices
     std::vector<std::vector<int>> inds = indices.getAllOrders();
 
@@ -462,7 +468,7 @@ void SynthesiserIndirectRelation::computeIndices() {
     }
 
     // expand the first ind to be full, it is guaranteed that at least one index exists
-    if (!fullExists && !isProvenance) {
+    if (!fullExists) {
         std::set<int> curIndexElems(inds[0].begin(), inds[0].end());
 
         // expand index to be full
@@ -473,36 +479,6 @@ void SynthesiserIndirectRelation::computeIndices() {
         }
 
         masterIndex = 0;
-    }
-
-    // If this relation is used with provenance,
-    // we must expand all search orders to be full indices,
-    // since weak/strong comparators and updaters need this,
-    // and also add provenance annotations to the indices
-    if (isProvenance) {
-        for (auto& ind : inds) {
-            if (ind.size() < getArity() - 2) {
-                // use a set as a cache for fast lookup
-                std::set<int> curIndexElems(ind.begin(), ind.end());
-
-                // expand index to be full
-                for (size_t i = 0; i < getArity() - 2; i++) {
-                    if (curIndexElems.find(i) == curIndexElems.end()) {
-                        ind.push_back(i);
-                    }
-                }
-            } else {
-                while (ind.size() > getArity() - 2) {
-                    ind.pop_back();
-                }
-            }
-
-            // add provenance annotations to the index
-            ind.push_back(getArity() - 1);
-            ind.push_back(getArity() - 2);
-
-            assert(ind.size() == getArity());
-        }
     }
 
     computedIndices = inds;
@@ -537,17 +513,6 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     // stored tuple type
     out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
 
-    // generate an updater class for provenance
-    // TODO: dzhao i think this needs to be modified for indirect indices
-    if (Global::config().has("provenance")) {
-        out << "struct updater_" << getTypeName() << " {\n";
-        out << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
-        out << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
-        out << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
-        out << "}\n";
-        out << "};\n";
-    }
-
     // table and lock required for storing actual data for indirect indices
     out << "Table<t_tuple> dataTable;\n";
     out << "Lock insert_lock;\n";
@@ -560,22 +525,14 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             indexToNumMap[getIndexSet().getAllOrders()[i]] = i;
         }
 
-        if (isProvenance) {
-            out << "typedef btree_set<const t_tuple*, index_utils::comparator<" << join(ind);
-            out << ">, std::allocator<const t_tuple*>, 256, typename "
-                   "souffle::detail::default_strategy<const t_tuple*>::type, index_utils::comparator<";
-            out << join(ind.begin(), ind.end() - 2) << ">, updater_" << getTypeName() << "> t_ind_" << i
-                << ";\n";
+        if (ind.size() == arity) {
+            out << "typedef btree_set<const t_tuple*, index_utils::deref_compare<typename "
+                   "index_utils::comparator<"
+                << join(ind) << ">>> t_ind_" << i << ";\n";
         } else {
-            if (ind.size() == arity) {
-                out << "typedef btree_set<const t_tuple*, index_utils::deref_compare<typename "
-                       "index_utils::comparator<"
-                    << join(ind) << ">>> t_ind_" << i << ";\n";
-            } else {
-                out << "typedef btree_multiset<const t_tuple*, index_utils::deref_compare<typename "
-                       "index_utils::comparator<"
-                    << join(ind) << ">>> t_ind_" << i << ";\n";
-            }
+            out << "typedef btree_multiset<const t_tuple*, index_utils::deref_compare<typename "
+                   "index_utils::comparator<"
+                << join(ind) << ">>> t_ind_" << i << ";\n";
         }
 
         out << "t_ind_" << i << " ind_" << i << ";\n";
@@ -679,17 +636,6 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             << i << "::operation_hints& h) const {\n";
         out << "return range<iterator_" << i << ">(ind_" << i << ".lower_bound(&low, h), ind_" << i
             << ".upper_bound(&high, h));\n";
-        out << "}\n";
-    }
-
-    // empty range search for provenance
-    if (isProvenance) {
-        out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
-        out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
-        out << "}\n";
-
-        out << "range<iterator> equalRange_0(const t_tuple& t) const {\n";
-        out << "context h; return equalRange_0(t, h);\n";
         out << "}\n";
     }
 

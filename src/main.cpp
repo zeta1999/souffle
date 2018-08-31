@@ -289,16 +289,12 @@ int main(int argc, char** argv) {
             Global::config().set("compile");
         }
 
-        /* disable provenance with multithreading */
-        /*
+        /* disable provenance with engine option */
         if (Global::config().has("provenance")) {
-            if (Global::config().has("jobs")) {
-                if (Global::config().get("jobs") != "1") {
-                    throw std::runtime_error("provenance cannot be enabled with multiple jobs.");
-                }
+            if (Global::config().has("engine")) {
+                throw std::runtime_error("provenance cannot be enabled with distributed execution.");
             }
         }
-        */
 
         /* ensure that souffle has been compiled with support for the execution engine, if specified */
         if (Global::config().has("engine")) {

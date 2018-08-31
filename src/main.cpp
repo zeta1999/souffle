@@ -328,14 +328,6 @@ int main(int argc, char** argv) {
         if (Global::config().has("live-profile") && !Global::config().has("profile")) {
             Global::config().set("profile");
         }
-
-        if (Global::config().has("live-profile") && !Global::config().has("profile")) {
-            Global::config().set("profile");
-        }
-
-        if (Global::config().has("live-profile") && !Global::config().has("profile")) {
-            Global::config().set("profile");
-        }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         exit(1);

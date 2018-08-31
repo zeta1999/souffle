@@ -740,6 +740,27 @@ public:
                 run->formatTime(run->getTotSavetime()).c_str(),
                 run->formatNum(precision, run->getTotNumTuples()).c_str());
         std::cout << std::endl;
+
+        // Progress bar
+        size_t totalRelations =
+                std::stoul(dynamic_cast<TextEntry*>(ProfileEventSingleton::instance().getDB().lookupEntry(
+                                                            {"program", "configuration", "relationCount"}))
+                                   ->getText());
+        // Determine number of relations processed
+        size_t processedRelations = run->getRelation_map().size();
+        size_t screenWidth = getTermWidth() - 10;
+        if (alive) {
+            std::cout << "Progress ";
+            for (size_t i = 0; i < screenWidth; ++i) {
+                if (screenWidth * processedRelations / totalRelations > i) {
+                    std::cout << '#';
+                } else {
+                    std::cout << '_';
+                }
+            }
+        }
+        std::cout << std::endl;
+
         usage();
     }
 

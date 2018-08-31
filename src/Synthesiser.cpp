@@ -533,6 +533,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitStratum(const RamStratum& stratum, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
+            if (Global::config().has("profile")) {
+                std::set<std::string> relNames;
+                visitDepthFirst(stratum,
+                        [&](const RamCreate& create) { relNames.insert(create.getRelation().getName()); });
+                for (const auto& cur : relNames) {
+                    std::cout
+                            << R"_(ProfileEventSingleton::instance().makeStratumRecord(stratum.getIndex(), ")_"
+                            << cur << R"_();)_" << '\n';
+                }
+            }
             PRINT_END_COMMENT(out);
         }
 

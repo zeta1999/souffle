@@ -523,5 +523,21 @@ public:
     }
 } configProcessor;
 
+/**
+ * Text entry processor
+ */
+const class TextProcessor : public EventProcessor {
+public:
+    TextProcessor() {
+        EventProcessorSingleton::instance().registerEventProcessor("@text", this);
+    }
+    void process(ProfileDatabase& db, const std::vector<std::string>& signature, va_list& args) override {
+        const std::string text = va_arg(args, char*);
+        auto path = signature;
+        path.front() = "program";
+        db.addTextEntry(path, text);
+    }
+} textProcessor;
+
 }  // namespace profile
 }  // namespace souffle

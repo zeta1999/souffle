@@ -668,6 +668,19 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
 
         bool visitStratum(const RamStratum& stratum) override {
             // TODO (lyndonhenry): should enable strata as subprograms for interpreter here
+            if (Global::config().has("profile")) {
+                std::map<std::string, size_t> relNames;
+                visitDepthFirst(stratum, [&](const RamCreate& create) {
+                    relNames[create.getRelation().getName()] = create.getRelation().getArity();
+                });
+                for (const auto& cur : relNames) {
+                    if (cur.first[0] == '@') {
+                        continue;
+                    }
+                    ProfileEventSingleton::instance().makeStratumRecord(
+                            stratum.getIndex(), "relation", cur.first, "arity", cur.second);
+                }
+            }
             return visit(stratum.getBody());
         }
 

@@ -101,70 +101,50 @@ void SynthesiserDirectRelation::computeIndices() {
         std::vector<int> fullInd(getArity());
         std::iota(fullInd.begin(), fullInd.end(), 0);
         inds.push_back(fullInd);
-        masterIndex = 0;
     }
 
-    /*
-    // Add a full index if it does not exist
-    bool fullExists = false;
-    // check for full index
-    for (size_t i = 0; i < inds.size(); i++) {
-        auto& ind = inds[i];
-        if (ind.size() == getArity()) {
-            fullExists = true;
-            if (masterIndex == (size_t)-1) {
-                masterIndex = i;
-            }
-        }
-    }
+    // expand all search orders to be full
+    for (auto& ind : inds) {
+        if (ind.size() < getArity()) {
+            // use a set as a cache for fast lookup
+            std::set<int> curIndexElems(ind.begin(), ind.end());
 
-    // expand the first ind to be full, it is guaranteed that at least one index exists
-    if (!fullExists && !isProvenance) {
-        std::set<int> curIndexElems(inds[0].begin(), inds[0].end());
-
-        // expand index to be full
-        for (size_t i = 0; i < getArity(); i++) {
-            if (curIndexElems.find(i) == curIndexElems.end()) {
-                inds[0].push_back(i);
-            }
-        }
-
-        masterIndex = 0;
-    }
-    */
-
-    // If this relation is used with provenance,
-    // we must expand all search orders to be full indices,
-    // since weak/strong comparators and updaters need this,
-    // and also add provenance annotations to the indices
-    // if (isProvenance) {
-    //     assert(getArity() >= 2 && "provenance must have arity at least 2");
-
-        masterIndex = 0;
-        for (auto& ind : inds) {
-            if (ind.size() < getArity() - 2) {
-                // use a set as a cache for fast lookup
-                std::set<int> curIndexElems(ind.begin(), ind.end());
-
+            // If this relation is used with provenance,
+            // we must expand all search orders to be full indices,
+            // since weak/strong comparators and updaters need this,
+            // and also add provenance annotations to the indices
+            if (isProvenance) {
                 // expand index to be full
                 for (size_t i = 0; i < getArity() - 2; i++) {
                     if (curIndexElems.find(i) == curIndexElems.end()) {
                         ind.push_back(i);
                     }
                 }
+
+                // remove any provenance annotations already in the index order
+                if (curIndexElems.find(getArity() - 1) != curIndexElems.end()) {
+                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - 1));
+                }
+
+                if (curIndexElems.find(getArity() - 2) != curIndexElems.end()) {
+                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - 2));
+                }
+
+                // add provenance annotations to the index, but in reverse order
+                ind.push_back(getArity() - 1);
+                ind.push_back(getArity() - 2);
             } else {
-                while (ind.size() > getArity() - 2) {
-                    ind.pop_back();
+                // expand index to be full
+                for (size_t i = 0; i < getArity(); i++) {
+                    if (curIndexElems.find(i) == curIndexElems.end()) {
+                        ind.push_back(i);
+                    }
                 }
             }
-
-            // add provenance annotations to the index
-            ind.push_back(getArity() - 1);
-            ind.push_back(getArity() - 2);
-
-            assert(ind.size() == getArity());
         }
-    // }
+    }
+
+    masterIndex = 0;
 
     computedIndices = inds;
 }
@@ -361,8 +341,8 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
         // use the more efficient find() method if the search pattern is full
         if (indSize == arity) {
-            out << "auto pos = find(t, h);\n";
-            out << "auto fin = end();\n";
+            out << "auto pos = ind_" << indNum << ".find(t, h.hints_" << indNum << ");\n";
+            out << "auto fin = ind_" << indNum << ".end();\n";
             out << "if (pos != fin) {fin = pos; ++fin;}\n";
             out << "return make_range(pos, fin);\n";
         } else {

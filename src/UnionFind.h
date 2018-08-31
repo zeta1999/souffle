@@ -14,20 +14,7 @@
 
 #include "DisjointSet.h"
 
-#define BTREESTUFF
-#ifndef BTREESTUFF
-    #define SPARSETBB
-
-    #ifdef SPARSETBB
-        #include <tbb/concurrent_hash_map.h>
-    #else
-        #define CUCKOOHASH
-        #include <libcuckoo/cuckoohash_map.hh>
-    //#include <junction/ConcurrentMap_Leapfrog.h>
-    #endif
-#else
-    #include "eqrelbtree.h"
-#endif
+#include "eqrelbtree.h"
 
 // branch predictor hacks
 #define unlikely(x) __builtin_expect((x), 0)
@@ -85,7 +72,12 @@ private:
 
 #if defined BTREESTUFF
         // TODO:
-        parent_t densi = sparseToDenseMap.insert({in, 0}, last_ins, denseToSparseMap, ds);
+        //parent_t densi = sparseToDenseMap.insert({in, 0}, last_ins, denseToSparseMap, ds);
+        parent_t densi = sparseToDenseMap.insert({in, 0}, last_ins, [&](typename PairStore::first_type d){ 
+                size_t c2 = this->ds.makeNode(); 
+                this->denseToSparseMap.insertAt(c2, d);
+                return c2;
+        });
         // TODO: make the node in the dj set
         //denseToSparseMap.insertAt(densi, in);
         return densi;

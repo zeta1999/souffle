@@ -1,7 +1,7 @@
 
 #pragma once
 
-#define IS_PARALLEL
+//#define IS_PARALLEL
 
 #include "ParallelUtils.h"
 #include "Util.h"
@@ -22,171 +22,6 @@
 namespace souffle {
 
 namespace detail {
-// ---------- search strategies --------------
-//
-///**
-// * A common base class for search strategies in b-trees.
-// */
-//struct search_strategy {};
-//
-///**
-// * A linear search strategy for looking up keys in b-tree nodes.
-// */
-//struct linear_search : public search_strategy {
-//    /**
-//     * Required user-defined default constructor.
-//     */
-//    linear_search() {}
-//
-//    /**
-//     * Obtains an iterator referencing an element equivalent to the
-//     * given key in the given range. If no such element is present,
-//     * a reference to the first element not less than the given key
-//     * is returned.
-//     */
-//    template <typename Key, typename Iter, typename Comp>
-//    inline Iter operator()(const Key& k, Iter a, Iter b, Comp& comp) const {
-//        return lower_bound(k, a, b, comp);
-//    }
-//
-//    /**
-//     * Obtains a reference to the first element in the given range that
-//     * is not less than the given key.
-//     */
-//    template <typename Key, typename Iter, typename Comp>
-//    inline Iter lower_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
-//        auto c = a;
-//        while (c < b) {
-//            auto r = comp(*c, k);
-//            if (r >= 0) {
-//                return c;
-//            }
-//            ++c;
-//        }
-//        return b;
-//    }
-//
-//    /**
-//     * Obtains a reference to the first element in the given range that
-//     * such that the given key is less than the referenced element.
-//     */
-//    template <typename Key, typename Iter, typename Comp>
-//    inline Iter upper_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
-//        auto c = a;
-//        while (c < b) {
-//            if (comp(*c, k) > 0) {
-//                return c;
-//            }
-//            ++c;
-//        }
-//        return b;
-//    }
-//};
-//
-///**
-// * A binary search strategy for looking up keys in b-tree nodes.
-// */
-//struct binary_search : public search_strategy {
-//    /**
-//     * Required user-defined default constructor.
-//     */
-//    binary_search() {}
-//
-//    /**
-//     * Obtains an iterator pointing to some element within the given
-//     * range that is equal to the given key, if available. If multiple
-//     * elements are equal to the given key, an undefined instance will
-//     * be obtained (no guaranteed lower or upper boundary).  If no such
-//     * element is present, a reference to the first element not less than
-//     * the given key will be returned.
-//     */
-//    template <typename Key, typename Iter, typename Comp>
-//    Iter operator()(const Key& k, Iter a, Iter b, Comp& comp) const {
-//        Iter c;
-//        auto count = b - a;
-//        while (count > 0) {
-//            auto step = count >> 1;
-//            c = a + step;
-//            auto r = comp(*c, k);
-//            if (r == 0) {
-//                return c;
-//            }
-//            if (r < 0) {
-//                a = ++c;
-//                count -= step + 1;
-//            } else {
-//                count = step;
-//            }
-//        }
-//        return a;
-//    }
-//
-//    /**
-//     * Obtains a reference to the first element in the given range that
-//     * is not less than the given key.
-//     */
-//    template <typename Key, typename Iter, typename Comp>
-//    Iter lower_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
-//        Iter c;
-//        auto count = b - a;
-//        while (count > 0) {
-//            auto step = count >> 1;
-//            c = a + step;
-//            if (comp(*c, k) < 0) {
-//                a = ++c;
-//                count -= step + 1;
-//            } else {
-//                count = step;
-//            }
-//        }
-//        return a;
-//    }
-//
-//    /**
-//     * Obtains a reference to the first element in the given range that
-//     * such that the given key is less than the referenced element.
-//     */
-//    template <typename Key, typename Iter, typename Comp>
-//    Iter upper_bound(const Key& k, Iter a, Iter b, Comp& comp) const {
-//        Iter c;
-//        auto count = b - a;
-//        while (count > 0) {
-//            auto step = count >> 1;
-//            c = a + step;
-//            if (comp(k, *c) >= 0) {
-//                a = ++c;
-//                count -= step + 1;
-//            } else {
-//                count = step;
-//            }
-//        }
-//        return a;
-//    }
-//};
-//
-//// ---------- search strategies selection --------------
-//
-///**
-// * A template-meta class to select search strategies for b-trees
-// * depending on the key type.
-// */
-//template <typename S>
-//struct strategy_selection {
-//    typedef S type;
-//};
-//
-//struct linear : public strategy_selection<linear_search> {};
-//struct binary : public strategy_selection<binary_search> {};
-//
-//// by default every key utilizes binary search
-//template <typename Key>
-//struct default_strategy : public binary {};
-//
-//template <>
-//struct default_strategy<int> : public linear {};
-//
-//template <typename... Ts>
-//struct default_strategy<std::tuple<Ts...>> : public linear {};
 /**
  * The actual implementation of a b-tree data structure.
  * This one is weird. It will hold a <RamDomain, size_t> pair, which maps from a sparse value to a dense value
@@ -200,7 +35,7 @@ namespace detail {
  */
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
-        unsigned blockSize, typename SearchStrategy, bool isSet>
+        unsigned blockSize, typename SearchStrategy, bool isSet, typename ReturnType = bool>
 class IncrementingBTree {
 public:
     class iterator;
@@ -1233,19 +1068,17 @@ public:
         return (root) ? root->countEntries() : 0;
     }
 
-    /**
-     * Inserts the given key into this tree.
-     */
-    counter_type insert(const Key& k, souffle::BlockList<souffle::RamDomain>& inserto, souffle::DisjointSet& ds) {
+    ReturnType insert(const Key& k) {
         operation_hints hints;
-        return insert(k, hints, inserto, ds);
+        return insert(k, hints);
     }
 
-    /**
-     * Inserts the given key into this tree.
-     */
-    counter_type insert(const Key& k, operation_hints& hints, souffle::BlockList<souffle::RamDomain>& inserto, souffle::DisjointSet& ds) {
-//#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+    ReturnType insert(const Key& k, std::function<typename Key::second_type(typename Key::first_type)> f) {
+        operation_hints hints;
+        return insert(k, hints, f);
+    }
+
+    ReturnType insert(const Key& k, operation_hints& hints, std::function<typename Key::second_type(typename Key::first_type)> f) {
         // special handling for inserting first element
         while (root == nullptr) {
             // try obtaining root-lock
@@ -1264,9 +1097,8 @@ public:
             // create new node
             leftmost = new leaf_node();
             leftmost->numElements = 1;
-            size_t c2 = ds.makeNode();
+            size_t c2 = f(k.first);
             leftmost->keys[0] = std::make_pair(k.first, c2);
-            inserto.insertAt(c2, k.first);
             root = leftmost;
 
             // operation complete => we can release the root lock
@@ -1340,7 +1172,7 @@ public:
                     // validate results
                     if (!cur->lock.validate(cur_lease)) {
                         // start over again
-                        return insert(k, hints, inserto, ds);
+                        return insert(k, hints, f);
                     }
                     // we found the element => no check of lock necessary
                     return outside;
@@ -1355,7 +1187,7 @@ public:
                 // check whether there was a write
                 if (!cur->lock.end_read(cur_lease)) {
                     // start over
-                    return insert(k, hints, inserto, ds);
+                    return insert(k, hints, f);
                 }
 
                 // go to next
@@ -1386,7 +1218,7 @@ public:
                 // validate result
                 if (!cur->lock.validate(cur_lease)) {
                     // start over again
-                    return insert(k, hints, inserto, ds);
+                    return insert(k, hints, f);
                 }
                 // we found the element => done
                 return outside;
@@ -1396,7 +1228,7 @@ public:
             if (!cur->lock.try_upgrade_to_write(cur_lease)) {
                 // something has changed => restart
                 hints.last_insert = cur;
-                return insert(k, hints, inserto, ds);
+                return insert(k, hints, f);
             }
 
             if (cur->numElements >= node::maxKeys) {
@@ -1458,7 +1290,7 @@ public:
                     cur->lock.end_write();
 
                     // insert in sibling
-                    return insert(k, hints, inserto, ds);
+                    return insert(k, hints, f);
                 }
             }
 
@@ -1470,10 +1302,8 @@ public:
                 cur->keys[j] = cur->keys[j - 1];
             }
 
-
-            size_t c2 = ds.makeNode();
+            size_t c2 = f(k.first);
             leftmost->keys[0] = std::make_pair(k.first, c2);
-            inserto.insertAt(c2, k.first);
 
             // insert new element
             cur->keys[idx] = std::make_pair(k.first, c2);
@@ -1486,122 +1316,354 @@ public:
             hints.last_insert = cur;
             return c2;
         }
-//#else
-//#ifdef HAS_TSX
-//        // set retry parameter
-//        TX_RETRIES(maxRetries());
-//        // begin hardware transactionm, enabling transaction logging if enabled
-//        if (isTransactionProfilingEnabled()) {
-//            TX_START_INST(NL, (&tdata));
-//        } else {
-//            TX_START(NL);
-//        }
-//#endif
-//        // special handling for inserting first element
-//        if (empty()) {
-//            // create new node
-//            leftmost = new leaf_node();
-//            leftmost->numElements = 1;
-//            leftmost->keys[0] = k;
-//            root = leftmost;
-//
-//            hints.last_insert = leftmost;
-//
-//#ifdef HAS_TSX
-//            // end hardware transaction
-//            TX_END;
-//#endif
-//            return true;
-//        }
-//
-//        // insert using iterative implementation
-//        node* cur = root;
-//
-//        // test last insert
-//        if (hints.last_insert && covers(hints.last_insert, k)) {
-//            cur = hints.last_insert;
-//            hint_stats.inserts.addHit();
-//        } else {
-//            hint_stats.inserts.addMiss();
-//        }
-//
-//        while (true) {
-//            // handle inner nodes
-//            if (cur->inner) {
-//                auto a = &(cur->keys[0]);
-//                auto b = &(cur->keys[cur->numElements]);
-//
-//                auto pos = search.lower_bound(k, a, b, comp);
-//                //cache just in case we find it.
-//                counter_type outside = pos->second;
-//                auto idx = pos - a;
-//
-//                // early exit for sets
-//                if (isSet && pos != b && equal(*pos, k)) {
-//#ifdef HAS_TSX
-//                    // end hardware transaction
-//                    TX_END;
-//#endif
-//                    return false;
-//                }
-//
-//                cur = cur->getChild(idx);
-//                continue;
-//            }
-//
-//            // the rest is for leaf nodes
-//            assert(!cur->inner);
-//
-//            // -- insert node in leaf node --
-//
-//            auto a = &(cur->keys[0]);
-//            auto b = &(cur->keys[cur->numElements]);
-//
-//            auto pos = search.upper_bound(k, a, b, comp);
-//            auto idx = pos - a;
-//
-//            // early exit for sets
-//            if (isSet && pos != a && equal(*(pos - 1), k)) {
-//#ifdef HAS_TSX
-//                // end hardware transaction
-//                TX_END;
-//#endif
-//                return false;
-//            }
-//
-//            if (cur->numElements >= node::maxKeys) {
-//                // split this node
-//                idx -= cur->rebalance_or_split(&root, root_lock, idx);
-//
-//                // insert element in right fragment
-//                if (((size_type)idx) > cur->numElements) {
-//                    idx -= cur->numElements + 1;
-//                    cur = cur->parent->getChild(cur->position + 1);
-//                }
-//            }
-//
-//            // ok - no split necessary
-//            assert(cur->numElements < node::maxKeys && "Split required!");
-//
-//            // move keys
-//            for (int j = cur->numElements; j > idx; --j) {
-//                cur->keys[j] = cur->keys[j - 1];
-//            }
-//
-//            // insert new element
-//            cur->keys[idx] = k;
-//            cur->numElements++;
-//
-//            // remember last insertion position
-//            hints.last_insert = cur;
-//
-//#ifdef HAS_TSX
-//            // end hardware transaction
-//            TX_END;
-//#endif
-//            return true;
-//        }
-//#endif
+    }
+
+    ReturnType insert(const Key& k, operation_hints& hints) {
+#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+        // special handling for inserting first element
+        while (root == nullptr) {
+            // try obtaining root-lock
+            if (!root_lock.try_start_write()) {
+                // somebody else was faster => re-check
+                continue;
+            }
+
+            // check loop condition again
+            if (root != nullptr) {
+                // somebody else was faster => normal insert
+                root_lock.end_write();
+                break;
+            }
+
+            // create new node
+            leftmost = new leaf_node();
+            leftmost->numElements = 1;
+            leftmost->keys[0] = k;
+            root = leftmost;
+
+            // operation complete => we can release the root lock
+            root_lock.end_write();
+
+            hints.last_insert = leftmost;
+
+            return true;
+        }
+
+        // insert using iterative implementation
+
+        node* cur = nullptr;
+
+        // test last insert
+        lock_type::Lease cur_lease;
+
+        if (hints.last_insert) {
+            // get a read lease on indicated node
+            auto hint_lease = hints.last_insert->lock.start_read();
+            // check whether it covers the key
+            if (covers(hints.last_insert, k)) {
+                // and if there was no concurrent modification
+                if (hints.last_insert->lock.validate(hint_lease)) {
+                    // use hinted location
+                    cur = hints.last_insert;
+                    // and keep lease
+                    cur_lease = hint_lease;
+                    // register this as a hit
+                    hint_stats.inserts.addHit();
+                } else {
+                    // register this as a miss
+                    hint_stats.inserts.addMiss();
+                }
+            } else {
+                // register this as a miss
+                hint_stats.inserts.addMiss();
+            }
+        }
+
+        // if there is no valid hint ..
+        if (!cur) {
+            do {
+                // get root - access lock
+                auto root_lease = root_lock.start_read();
+
+                // start with root
+                cur = root;
+
+                // get lease of the next node to be accessed
+                cur_lease = cur->lock.start_read();
+
+                // check validity of root pointer
+                if (root_lock.end_read(root_lease)) break;
+
+            } while (true);
+        }
+
+        while (true) {
+            // handle inner nodes
+            if (cur->inner) {
+                auto a = &(cur->keys[0]);
+                auto b = &(cur->keys[cur->numElements]);
+
+                auto pos = search.lower_bound(k, a, b, comp);
+                auto idx = pos - a;
+
+                // early exit for sets
+                if (isSet && pos != b && equal(*pos, k)) {
+                    // validate results
+                    if (!cur->lock.validate(cur_lease)) {
+                        // start over again
+                        return insert(k, hints);
+                    }
+                    // we found the element => no check of lock necessary
+                    return false;
+                }
+
+                // get next pointer
+                auto next = cur->getChild(idx);
+
+                // get lease on next level
+                auto next_lease = next->lock.start_read();
+
+                // check whether there was a write
+                if (!cur->lock.end_read(cur_lease)) {
+                    // start over
+                    return insert(k, hints);
+                }
+
+                // go to next
+                cur = next;
+
+                // move on lease
+                cur_lease = next_lease;
+
+                continue;
+            }
+
+            // the rest is for leaf nodes
+            assert(!cur->inner);
+
+            // -- insert node in leaf node --
+
+            auto a = &(cur->keys[0]);
+            auto b = &(cur->keys[cur->numElements]);
+
+            auto pos = search.upper_bound(k, a, b, comp);
+            auto idx = pos - a;
+
+            // early exit for sets
+            if (isSet && pos != a && equal(*(pos - 1), k)) {
+                // validate result
+                if (!cur->lock.validate(cur_lease)) {
+                    // start over again
+                    return insert(k, hints);
+                }
+                // we found the element => done
+                return false;
+            }
+
+            // upgrade to write-permission
+            if (!cur->lock.try_upgrade_to_write(cur_lease)) {
+                // something has changed => restart
+                hints.last_insert = cur;
+                return insert(k, hints);
+            }
+
+            if (cur->numElements >= node::maxKeys) {
+                // -- lock parents --
+                auto priv = cur;
+                auto parent = priv->parent;
+                std::vector<node*> parents;
+                do {
+                    if (parent) {
+                        parent->lock.start_write();
+                        while (true) {
+                            // check whether parent is correct
+                            if (parent == priv->parent) break;
+                            // switch parent
+                            parent->lock.abort_write();
+                            parent = priv->parent;
+                            parent->lock.start_write();
+                        }
+                    } else {
+                        // lock root lock => since cur is root
+                        root_lock.start_write();
+                    }
+
+                    // record locked node
+                    parents.push_back(parent);
+
+                    // stop at "sphere of influence"
+                    if (!parent || !parent->isFull()) break;
+
+                    // go one step higher
+                    priv = parent;
+                    parent = parent->parent;
+
+                } while (true);
+
+                // split this node
+                auto old_root = root;
+                idx -= cur->rebalance_or_split(const_cast<node**>(&root), root_lock, idx);
+
+                // release parent lock
+                for (auto it = parents.rbegin(); it != parents.rend(); ++it) {
+                    auto parent = *it;
+
+                    // release this lock
+                    if (parent) {
+                        parent->lock.end_write();
+                    } else {
+                        if (old_root != root) {
+                            root_lock.end_write();
+                        } else {
+                            root_lock.abort_write();
+                        }
+                    }
+                }
+
+                // insert element in right fragment
+                if (((size_type)idx) > cur->numElements) {
+                    // release current lock
+                    cur->lock.end_write();
+
+                    // insert in sibling
+                    return insert(k, hints);
+                }
+            }
+
+            // ok - no split necessary
+            assert(cur->numElements < node::maxKeys && "Split required!");
+
+            // move keys
+            for (int j = cur->numElements; j > idx; --j) {
+                cur->keys[j] = cur->keys[j - 1];
+            }
+
+            // insert new element
+            cur->keys[idx] = k;
+            cur->numElements++;
+
+            // release lock on current node
+            cur->lock.end_write();
+
+            // remember last insertion position
+            hints.last_insert = cur;
+            return true;
+        }
+#else
+#ifdef HAS_TSX
+        // set retry parameter
+        TX_RETRIES(maxRetries());
+        // begin hardware transactionm, enabling transaction logging if enabled
+        if (isTransactionProfilingEnabled()) {
+            TX_START_INST(NL, (&tdata));
+        } else {
+            TX_START(NL);
+        }
+#endif
+        // special handling for inserting first element
+        if (empty()) {
+            // create new node
+            leftmost = new leaf_node();
+            leftmost->numElements = 1;
+            leftmost->keys[0] = k;
+            root = leftmost;
+
+            hints.last_insert = leftmost;
+
+#ifdef HAS_TSX
+            // end hardware transaction
+            TX_END;
+#endif
+            return true;
+        }
+
+        // insert using iterative implementation
+        node* cur = root;
+
+        // test last insert
+        if (hints.last_insert && covers(hints.last_insert, k)) {
+            cur = hints.last_insert;
+            hint_stats.inserts.addHit();
+        } else {
+            hint_stats.inserts.addMiss();
+        }
+
+        while (true) {
+            // handle inner nodes
+            if (cur->inner) {
+                auto a = &(cur->keys[0]);
+                auto b = &(cur->keys[cur->numElements]);
+
+                auto pos = search.lower_bound(k, a, b, comp);
+                auto idx = pos - a;
+
+                // early exit for sets
+                if (isSet && pos != b && equal(*pos, k)) {
+#ifdef HAS_TSX
+                    // end hardware transaction
+                    TX_END;
+#endif
+                    return false;
+                }
+
+                cur = cur->getChild(idx);
+                continue;
+            }
+
+            // the rest is for leaf nodes
+            assert(!cur->inner);
+
+            // -- insert node in leaf node --
+
+            auto a = &(cur->keys[0]);
+            auto b = &(cur->keys[cur->numElements]);
+
+            auto pos = search.upper_bound(k, a, b, comp);
+            auto idx = pos - a;
+
+            // early exit for sets
+            if (isSet && pos != a && equal(*(pos - 1), k)) {
+#ifdef HAS_TSX
+                // end hardware transaction
+                TX_END;
+#endif
+                return false;
+            }
+
+            if (cur->numElements >= node::maxKeys) {
+                // split this node
+                idx -= cur->rebalance_or_split(&root, root_lock, idx);
+
+                // insert element in right fragment
+                if (((size_type)idx) > cur->numElements) {
+                    idx -= cur->numElements + 1;
+                    cur = cur->parent->getChild(cur->position + 1);
+                }
+            }
+
+            // ok - no split necessary
+            assert(cur->numElements < node::maxKeys && "Split required!");
+
+            // move keys
+            for (int j = cur->numElements; j > idx; --j) {
+                cur->keys[j] = cur->keys[j - 1];
+            }
+
+            // insert new element
+            cur->keys[idx] = k;
+            cur->numElements++;
+
+            // remember last insertion position
+            hints.last_insert = cur;
+
+#ifdef HAS_TSX
+            // end hardware transaction
+            TX_END;
+#endif
+            return true;
+        }
+#endif
+        
     }
 
     /**
@@ -1862,9 +1924,6 @@ public:
         // swap the content
         std::swap(root, other.root);
         std::swap(leftmost, other.leftmost);
-        counter_type tmp = other.counter.load();
-        other.counter.store(this->counter.load());
-        this->counter.store(tmp);
     }
 
     // Implementation of the assignment operation for trees.
@@ -1891,7 +1950,6 @@ public:
         leftmost = static_cast<leaf_node*>(tmp);
 
 
-        this->counter.store(other.counter.load());
 
         // done
         return *this;
@@ -2132,8 +2190,8 @@ private:
 
 // Instantiation of static member search.
 template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename SearchStrategy,
-        bool isSet>
-const SearchStrategy IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet>::search;
+        bool isSet, typename ReturnType>
+const SearchStrategy IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, ReturnType>::search;
 
 }  // end namespace detail
 
@@ -2149,10 +2207,10 @@ const SearchStrategy IncrementingBTree<Key, Comparator, Allocator, blockSize, Se
 template <typename Key, typename Comparator,
         typename Allocator = std::allocator<Key>,  // is ignored so far
         unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type>
-class IncrementingBTreeSet : public detail::IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> {
-    typedef detail::IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> super;
+class IncrementingBTreeSet : public detail::IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, typename Key::second_type> {
+    typedef detail::IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, typename Key::second_type> super;
 
-    friend class detail::IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true>;
+    friend class detail::IncrementingBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, typename Key::second_type>;
 
 public:
     /**

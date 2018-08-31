@@ -7,10 +7,15 @@
 #include <utility>
 
 // TODO: add cuckoo equivalent
-#define BINRELTBB
-#ifdef BINRELTBB
+//#define BINRELTBB
+//#define BINRELJUNC
+#define BINRELBTREE
+
+#if defined BINRELBTREE
+#include "eqrelbtree.h"
+#elif defined BINRELTBB
 #include <tbb/concurrent_hash_map.h>
-#else
+#elif defined BINRELJUNC
 #include <junction/ConcurrentMap_Leapfrog.h>
 #endif
 
@@ -34,10 +39,14 @@ class BinaryRelation {
     // the ordering of states per disjoint set (mapping from representative to trie)
     // just a cache
     typedef souffle::BlockList<DomainInt> StatesList;
-#ifdef BINRELTBB
+#if defined BINRELBTREE
+    typedef StatesList* StatesBucket;
+    typedef std::pair<DomainInt, StatesBucket> StorePair;
+    typedef souffle::IncrementingBTreeSet<StorePair, souffle::EqrelMapComparator<StorePair>> StatesMap;
+#elif defined BINRELTBB
     typedef std::shared_ptr<StatesList> StatesBucket;
     typedef tbb::concurrent_hash_map<DomainInt, StatesBucket> StatesMap;
-#else
+#elif defined BINRELJUNC
     typedef StatesList* StatesBucket;
     typedef junction::ConcurrentMap_Leapfrog<DomainInt, StatesBucket> StatesMap;
     // as leapfrog does not support size, keep track of it ourselves
@@ -48,7 +57,7 @@ class BinaryRelation {
 public:
 
     BinaryRelation() : statesMapStale(false)
-#ifndef BINRELTBB
+#if defined BINRELJUNC
                        , num_anteriors(0) 
 #endif
     {};
@@ -95,7 +104,19 @@ public:
      */
     void insertAll(const BinaryRelation<TupleType>& other) {
         other.genAllDisjointSetLists();
-#ifdef BINRELTBB 
+#if defined BINRELBTREE
+        // iterate over partitions at a time
+        pfor (typename StatesMap::chunk it: other.equivalencePartition.getChunks(MAX_THREADS)) {
+            for (auto& p : it) {
+                DomainInt rep = p.first;
+                StatesList pl = *p.second;
+                const size_t ksize = pl.size();
+                for (size_t i = 0; i < ksize; ++i) {
+                    this->sds.unionNodes(rep, pl.get(i));
+                }
+            }
+        }
+#elif defined BINRELTBB 
         for (auto& keypair : other.equivalencePartition) {
             DomainInt rep = keypair.first;
             StatesBucket& sb = keypair.second;
@@ -108,7 +129,7 @@ public:
                 this->sds.unionNodes(rep, sb->get(i));
             }
         }
-#else
+#elif defined BINRELJUNC
         auto it = StatesMap::Iterator(equivalencePartition);
 #pragma omp parallel for
         for (; it.isValid(); it.next()) {
@@ -134,7 +155,11 @@ public:
     void extend(const BinaryRelation<TupleType>& other) {
         this->genAllDisjointSetLists();
         other.genAllDisjointSetLists();
-#ifdef BINRELTBB
+
+#if defined BINRELBTREE
+        static_assert(false, "you haven't finished me");
+
+#elif defined BINRELTBB
         // iterate over all elements for each dj set in this binrel
         for (auto& keypair : equivalencePartition) {
             // DomainInt rep = keypair.first;

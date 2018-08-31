@@ -131,6 +131,13 @@
 #endif
 
 #ifdef IS_PARALLEL
+#define MAX_THREADS (omp_get_max_threads())
+#else
+#define MAX_THREADS (1)
+#endif
+
+#ifdef IS_PARALLEL
+
 
 #include <mutex>
 

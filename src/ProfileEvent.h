@@ -65,11 +65,10 @@ public:
 
     /** create stratum record */
     void makeStratumRecord(size_t index, const std::string& type, const std::string& relName,
-            const std::string& key, size_t arity) {
+            const std::string& key, const std::string& value) {
         std::stringstream ss;
         ss << "@text;stratum;" << index << ';' << type << ';' << relName << ';' << key;
-        profile::EventProcessorSingleton::instance().process(
-                database, ss.str().c_str(), std::to_string(arity).c_str());
+        profile::EventProcessorSingleton::instance().process(database, ss.str().c_str(), value.c_str());
     }
 
     /** create time event */

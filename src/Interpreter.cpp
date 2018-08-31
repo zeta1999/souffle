@@ -678,7 +678,7 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
                         continue;
                     }
                     ProfileEventSingleton::instance().makeStratumRecord(
-                            stratum.getIndex(), "relation", cur.first, "arity", cur.second);
+                            stratum.getIndex(), "relation", cur.first, "arity", std::to_string(cur.second));
                 }
             }
             return visit(stratum.getBody());

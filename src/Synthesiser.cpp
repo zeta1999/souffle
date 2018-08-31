@@ -533,16 +533,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitStratum(const RamStratum& stratum, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            if (Global::config().has("profile")) {
-                std::set<std::string> relNames;
-                visitDepthFirst(stratum,
-                        [&](const RamCreate& create) { relNames.insert(create.getRelation().getName()); });
-                for (const auto& cur : relNames) {
-                    std::cout
-                            << R"_(ProfileEventSingleton::instance().makeStratumRecord(stratum.getIndex(), ")_"
-                            << cur << R"_();)_" << '\n';
-                }
-            }
             PRINT_END_COMMENT(out);
         }
 
@@ -1591,6 +1581,23 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         }
     }
 
+    if (Global::config().has("profile")) {
+        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+            std::map<std::string, size_t> relNames;
+            visitDepthFirst(stratum, [&](const RamCreate& create) {
+                relNames[create.getRelation().getName()] = create.getRelation().getArity();
+            });
+            for (const auto& cur : relNames) {
+                if (cur.first[0] == '@') {
+                    continue;
+                }
+                os << "ProfileEventSingleton::instance().makeStratumRecord(" << stratum.getIndex()
+                   << R"_(, "relation", ")_" << cur.first << R"_(", "arity", ")_" << cur.second << R"_(");)_"
+                   << '\n';
+            }
+        });
+    }
+    // Set up stratum
     visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
         os << "/* BEGIN STRATUM " << stratum.getIndex() << " */\n";
         if (Global::config().has("engine")) {

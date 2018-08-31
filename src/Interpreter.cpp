@@ -822,6 +822,12 @@ void Interpreter::executeMain() {
         for (const auto& cur : Global::config().data()) {
             ProfileEventSingleton::instance().makeConfigRecord(cur.first, cur.second);
         }
+        size_t relationCount = 0;
+        visitDepthFirst(main, [&](const RamCreate& create) {
+            if (create.getRelation().getName()[0] != '@') ++relationCount;
+        });
+        ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string(relationCount));
+
         evalStmt(main);
         ProfileEventSingleton::instance().stopTimer();
         for (auto const& cur : frequencies) {

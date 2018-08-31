@@ -1582,6 +1582,13 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     }
 
     if (Global::config().has("profile")) {
+        size_t relationCount = 0;
+        visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+            if (create.getRelation().getName()[0] != '@') ++relationCount;
+        });
+        os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"
+           << relationCount << "));";
+
         visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
             std::map<std::string, size_t> relNames;
             visitDepthFirst(stratum, [&](const RamCreate& create) {

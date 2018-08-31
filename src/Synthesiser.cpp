@@ -1837,6 +1837,18 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << classname + " obj;\n";
     }
 
+    if (Global::config().has("profile")) {
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("", opt.getSourceFileName());)_"
+           << '\n';
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("fact-dir", opt.getInputFileDir());)_"
+           << '\n';
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("jobs", std::to_string(opt.getNumJobs()));)_"
+           << '\n';
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("output-dir", opt.getOutputFileDir());)_"
+           << '\n';
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("version", ")_"
+           << Global::config().get("version") << R"_(");)_" << '\n';
+    }
 #ifdef USE_MPI
     if (Global::config().get("engine") == "mpi") {
         os << "\n#ifdef USE_MPI\n";

@@ -508,5 +508,20 @@ public:
     }
 } frequencyAtomProcessor;
 
+/**
+ * Config entry processor
+ */
+const class ConfigProcessor : public EventProcessor {
+public:
+    ConfigProcessor() {
+        EventProcessorSingleton::instance().registerEventProcessor("@config", this);
+    }
+    void process(ProfileDatabase& db, const std::vector<std::string>& signature, va_list& args) override {
+        const std::string key = va_arg(args, char*);
+        const std::string& value = va_arg(args, char*);
+        db.addTextEntry({"program", "configuration", key}, value);
+    }
+} configProcessor;
+
 }  // namespace profile
 }  // namespace souffle

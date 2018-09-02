@@ -20,11 +20,7 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
     } else if (ramRel.getArity() == 0) {
         rel = new SynthesiserNullaryRelation(ramRel, indexSet, isProvenance);
     } else if (ramRel.isBTree()) {
-        if (ramRel.getArity() > 6) {
-            rel = new SynthesiserIndirectRelation(ramRel, indexSet, isProvenance);
-        } else {
-            rel = new SynthesiserDirectRelation(ramRel, indexSet, isProvenance);
-        }
+        rel = new SynthesiserDirectRelation(ramRel, indexSet, isProvenance);
     } else if (ramRel.isBrie()) {
         rel = new SynthesiserBrieRelation(ramRel, indexSet, isProvenance);
     } else if (ramRel.isEqRel()) {
@@ -37,11 +33,7 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
         // Handle the data structure command line flag
         if (Global::config().has("data-structure")) {
             if (Global::config().get("data-structure") == "btree") {
-                if (ramRel.getArity() > 6) {
-                    rel = new SynthesiserIndirectRelation(ramRel, indexSet, isProvenance);
-                } else {
-                    rel = new SynthesiserDirectRelation(ramRel, indexSet, isProvenance);
-                }
+                rel = new SynthesiserDirectRelation(ramRel, indexSet, isProvenance);
             } else if (Global::config().get("data-structure") == "brie") {
                 rel = new SynthesiserBrieRelation(ramRel, indexSet, isProvenance);
             } else if (Global::config().get("data-structure") == "eqrel") {
@@ -50,6 +42,9 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
                 rel = new SynthesiserRbtsetRelation(ramRel, indexSet, isProvenance);
             } else if (Global::config().get("data-structure") == "hashset") {
                 rel = new SynthesiserHashsetRelation(ramRel, indexSet, isProvenance);
+            } else {
+                // Fallback if no valid -d option
+                rel = new SynthesiserDirectRelation(ramRel, indexSet, isProvenance);
             }
             // The default case, which is the most common
         } else {
@@ -231,14 +226,8 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
     // insert methods
     out << "bool insert(const t_tuple& t) {\n";
-    out << "if (ind_" << masterIndex << ".insert(t)) {\n";
-    for (size_t i = 0; i < numIndexes; i++) {
-        if (i != masterIndex) {
-            out << "ind_" << i << ".insert(t);\n";
-        }
-    }
-    out << "return true;\n";
-    out << "} else return false;\n";
+    out << "context h;\n";
+    out << "return insert(t, h);\n";
     out << "}\n";  // end of insert(t_tuple&)
 
     out << "bool insert(const t_tuple& t, context& h) {\n";
@@ -285,12 +274,13 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";  // end of insertAll(relationType& other)
 
     // contains methods
-    out << "bool contains(const t_tuple& t) const {\n";
-    out << "return ind_" << masterIndex << ".contains(t);\n";
-    out << "}\n";
-
     out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".contains(t, h.hints_" << masterIndex << ");\n";
+    out << "}\n";
+
+    out << "bool contains(const t_tuple& t) const {\n";
+    out << "context h;\n";
+    out << "return contains(t, h);\n";
     out << "}\n";
 
     // size method
@@ -299,12 +289,13 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // find methods
-    out << "iterator find(const t_tuple& t) const {\n";
-    out << "return ind_" << masterIndex << ".find(t);\n";
-    out << "}\n";
-
     out << "iterator find(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".find(t, h.hints_" << masterIndex << ");\n";
+    out << "}\n";
+
+    out << "iterator find(const t_tuple& t) const {\n";
+    out << "context h;\n";
+    out << "return find(t, h);\n";
     out << "}\n";
 
     // lowerUpperBound methods for internal use
@@ -356,13 +347,15 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
                     out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
                 }
             }
-            out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
+            out << "return make_range(ind_" << indNum << ".lower_bound(low, h.hints_" << indNum << "), ind_"
+                << indNum << ".upper_bound(high, h.hints_" << indNum << "));\n";
         }
         out << "}\n";
 
         out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
         out << "(const t_tuple& t) const {\n";
-        out << "context h; return equalRange_" << search << "(t, h);\n";
+        out << "context h;\n";
+        out << "return equalRange_" << search << "(t, h);\n";
         out << "}\n";
     }
 
@@ -588,12 +581,13 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // contains methods
-    out << "bool contains(const t_tuple& t) const {\n";
-    out << "return ind_" << masterIndex << ".contains(&t);\n";
-    out << "}\n";
-
     out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".contains(&t, h.hints_" << masterIndex << ");\n";
+    out << "}\n";
+
+    out << "bool contains(const t_tuple& t) const {\n";
+    out << "context h;\n";
+    out << "return contains(t, h);\n";
     out << "}\n";
 
     // size method
@@ -602,22 +596,14 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // find methods
-    out << "iterator find(const t_tuple& t) const {\n";
-    out << "return ind_" << masterIndex << ".find(&t);\n";
-    out << "}\n";
-
     out << "iterator find(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".find(&t, h.hints_" << masterIndex << ");\n";
     out << "}\n";
 
-    // lowerUpperBound method for internal use
-    for (size_t i = 0; i < numIndexes; i++) {
-        out << "range<iterator_" << i << "> lowerUpperBound(const t_tuple& low, const t_tuple& high, t_ind_"
-            << i << "::operation_hints& h) const {\n";
-        out << "return range<iterator_" << i << ">(ind_" << i << ".lower_bound(&low, h), ind_" << i
-            << ".upper_bound(&high, h));\n";
-        out << "}\n";
-    }
+    out << "iterator find(const t_tuple& t) const {\n";
+    out << "context h;\n";
+    out << "return find(t, h);\n";
+    out << "}\n";
 
     for (int64_t search : getIndexSet().getSearches()) {
         auto lexOrder = getIndexSet().getLexOrder(search);
@@ -650,7 +636,8 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
                     out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
                 }
             }
-            out << "return lowerUpperBound(low, high, h.hints_" << indNum << ");\n";
+            out << "return range<iterator_" << indNum << ">(ind_" << indNum << ".lower_bound(&low, h.hints_"
+                << indNum << "), ind_" << indNum << ".upper_bound(&high, h.hints_" << indNum << "));\n";
         }
         out << "}\n";
 
@@ -839,15 +826,9 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
 
     // insert methods
     out << "bool insert(const t_tuple& t) {\n";
-    out << "if (ind_" << masterIndex << ".insert(orderIn_" << masterIndex << "(t))) {\n";
-    for (size_t i = 0; i < numIndexes; i++) {
-        if (i != masterIndex) {
-            out << "ind_" << i << ".insert(orderIn_" << i << "(t));\n";
-        }
-    }
-    out << "return true;\n";
-    out << "} else return false;\n";
-    out << "}\n";  // end of insert(t_tuple&)
+    out << "context h;\n";
+    out << "return insert(t, h);\n";
+    out << "}\n";
 
     out << "bool insert(const t_tuple& t, context& h) {\n";
     out << "if (ind_" << masterIndex << ".insert(orderIn_" << masterIndex << "(t), h.hints_" << masterIndex
@@ -896,13 +877,14 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // contains methods
-    out << "bool contains(const t_tuple& t) const {\n";
-    out << "return ind_" << masterIndex << ".contains(orderIn_" << masterIndex << "(t));\n";
-    out << "}\n";
-
     out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".contains(orderIn_" << masterIndex << "(t), h.hints_"
         << masterIndex << ");\n";
+    out << "}\n";
+
+    out << "bool contains(const t_tuple& t) const {\n";
+    out << "context h;\n";
+    out << "return contains(t, h);\n";
     out << "}\n";
 
     // size method
@@ -912,13 +894,14 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
 
     // find methods
     if (arity > 1) {
-        out << "iterator find(const t_tuple& t) const {\n";
-        out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t));\n";
-        out << "}\n";
-
         out << "iterator find(const t_tuple& t, context& h) const {\n";
         out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t), h.hints_"
             << masterIndex << ");\n";
+        out << "}\n";
+
+        out << "iterator find(const t_tuple& t) const {\n";
+        out << "context h;\n";
+        out << "return find(t, h);\n";
         out << "}\n";
     }
 

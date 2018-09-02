@@ -158,7 +158,7 @@ jobs:
     env:
     - "gcc-efile"
     - *gcc_environment
-    - SOUFFLE_CATEGORY=FastEvaluation,Interface,Profile,Provenance SOUFFLE_CONFS="-c -j8 -efile"
+    - SOUFFLE_CATEGORY=FastEvaluation,Interface,Profile SOUFFLE_CONFS="-c -j8 -efile"
 
 # Testing stage (-j8,-c -j8)
   - <<: *linuxgcc

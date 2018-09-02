@@ -40,6 +40,8 @@ public:
     SynthesiserRelation(const RamRelation& rel, const IndexSet& indices, const bool isProvenance = false)
             : relation(rel), indices(indices), isProvenance(isProvenance) {}
 
+    ~SynthesiserRelation() = default;
+
     /** Compute the final list of indices to be used */
     virtual void computeIndices() = 0;
 

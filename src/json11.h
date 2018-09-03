@@ -59,6 +59,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #ifdef _MSC_VER
@@ -85,8 +86,8 @@ public:
     enum Type { NUL, NUMBER, BOOL, STRING, ARRAY, OBJECT };
 
     // Array and object typedefs
-    typedef std::vector<Json> array;
-    typedef std::map<std::string, Json> object;
+    using array = std::vector<Json>;
+    using object = std::map<std::string, Json>;
 
     // Constructors for the various types of JSON value.
     Json() noexcept;                 // NUL
@@ -215,7 +216,7 @@ public:
      * Return true if this is a JSON object and, for each item in types, has a field of
      * the given type. If not, return false and set err to a descriptive message.
      */
-    typedef std::initializer_list<std::pair<std::string, Type>> shape;
+    using shape = std::initializer_list<std::pair<std::string, Type>>;
     bool has_shape(const shape& types, std::string& err) const;
 
 private:
@@ -241,7 +242,7 @@ protected:
     virtual const Json& operator[](size_t i) const;
     virtual const Json::object& object_items() const;
     virtual const Json& operator[](const std::string& key) const;
-    virtual ~JsonValue() {}
+    virtual ~JsonValue() = default;
 };
 
 }  // namespace json11
@@ -962,7 +963,7 @@ struct JsonParser final {
             ch = get_next_token();
             if (ch == '}') return data;
 
-            while (1) {
+            while (true) {
                 if (ch != '"') return fail("expected '\"' in object, got " + esc(ch));
 
                 string key = parse_string();
@@ -988,7 +989,7 @@ struct JsonParser final {
             ch = get_next_token();
             if (ch == ']') return data;
 
-            while (1) {
+            while (true) {
                 i--;
                 data.push_back(parse_json(depth + 1));
                 if (failed) return Json();

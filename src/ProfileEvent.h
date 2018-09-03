@@ -58,6 +58,19 @@ public:
         return singleton;
     }
 
+    /** create config record */
+    void makeConfigRecord(const std::string& key, const std::string& value) {
+        profile::EventProcessorSingleton::instance().process(database, "@config", key.c_str(), value.c_str());
+    }
+
+    /** create stratum record */
+    void makeStratumRecord(size_t index, const std::string& type, const std::string& relName,
+            const std::string& key, const std::string& value) {
+        std::stringstream ss;
+        ss << "@text;stratum;" << index << ';' << type << ';' << relName << ';' << key;
+        profile::EventProcessorSingleton::instance().process(database, ss.str().c_str(), value.c_str());
+    }
+
     /** create time event */
     void makeTimeEvent(const std::string& txt) {
         profile::EventProcessorSingleton::instance().process(

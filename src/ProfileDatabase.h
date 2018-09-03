@@ -221,7 +221,7 @@ public:
     // write size entry
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, ' ') << '"' << getKey();
-        os << "\": { \"start\": ";
+        os << R"_(": { "start": )_";
         os << start.count();
         os << ", \"end\": ";
         os << end.count();
@@ -253,7 +253,7 @@ public:
     // write size entry
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, ' ') << '"' << getKey();
-        os << "\": { \"time\": ";
+        os << R"_(": { "time": )_";
         os << time.count();
         os << '}';
     }

@@ -34,7 +34,7 @@ namespace Tools {
 static const std::string arr[] = {"K", "M", "B", "t", "q", "Q", "s", "S", "o", "n", "d", "U"};
 static const std::vector<std::string> abbreviations(arr, arr + sizeof(arr) / sizeof(arr[0]));
 
-inline std::string formatNum(int precision, long amount) {
+inline std::string formatNum(int precision, int64_t amount) {
     // assumes number is < 999*10^12
     if (amount == 0) {
         return "0";
@@ -112,7 +112,7 @@ inline std::string formatNum(int precision, long amount) {
         result += abbreviations.at(i);
         return result;
     }
-    return NULL;
+    return nullptr;
 }
 
 inline std::string formatTime(double number) {
@@ -120,20 +120,20 @@ inline std::string formatTime(double number) {
         return "-";
     }
 
-    long sec = std::lrint(number);
+    uint64_t sec = std::lrint(number);
     if (sec >= 100) {
-        long min = (long)std::floor(sec / 60);
+        uint64_t min = std::floor(sec / 60);
         if (min >= 100) {
-            long hours = (long)std::floor(min / 60);
+            uint64_t hours = std::floor(min / 60);
             if (hours >= 100) {
-                long days = (long)std::floor(hours / 24);
+                uint64_t days = std::floor(hours / 24);
                 return std::to_string(days) + "D";
             }
             return std::to_string(hours) + "h";
         }
         if (min < 10) {
             // temp should always be 1 digit long
-            long temp = (long)std::floor((sec - (min * 60.0)) * 10.0 / 6.0);  // x*10/6 instead of x/60*100
+            uint64_t temp = std::floor((sec - (min * 60.0)) * 10.0 / 6.0);  // x*10/6 instead of x/60*100
             return std::to_string(min) + "." + std::to_string(temp).substr(0, 1) + "m";
         }
         return std::to_string(min) + "m";

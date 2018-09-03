@@ -28,7 +28,6 @@ private:
     long num_tuples = 0;
     double copy_time = 0;
     std::string locator = "";
-    long prev_num_tuples = 0;
 
     std::unordered_map<std::string, std::shared_ptr<Rule>> rul_rec_map;
 

@@ -215,6 +215,7 @@ int main(int argc, char** argv) {
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
                 }());
 
+        Global::config().set("version", PACKAGE_VERSION);
         // ------ command line arguments -------------
 
         /* for the help option, if given simply print the help text then exit */
@@ -323,14 +324,6 @@ int main(int argc, char** argv) {
                         "Error: Use of hostfile option requires execution engine '" + engine + "'.");
             }
 #endif
-        }
-
-        if (Global::config().has("live-profile") && !Global::config().has("profile")) {
-            Global::config().set("profile");
-        }
-
-        if (Global::config().has("live-profile") && !Global::config().has("profile")) {
-            Global::config().set("profile");
         }
 
         if (Global::config().has("live-profile") && !Global::config().has("profile")) {

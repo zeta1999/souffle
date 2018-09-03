@@ -508,5 +508,36 @@ public:
     }
 } frequencyAtomProcessor;
 
+/**
+ * Config entry processor
+ */
+const class ConfigProcessor : public EventProcessor {
+public:
+    ConfigProcessor() {
+        EventProcessorSingleton::instance().registerEventProcessor("@config", this);
+    }
+    void process(ProfileDatabase& db, const std::vector<std::string>& signature, va_list& args) override {
+        const std::string key = va_arg(args, char*);
+        const std::string& value = va_arg(args, char*);
+        db.addTextEntry({"program", "configuration", key}, value);
+    }
+} configProcessor;
+
+/**
+ * Text entry processor
+ */
+const class TextProcessor : public EventProcessor {
+public:
+    TextProcessor() {
+        EventProcessorSingleton::instance().registerEventProcessor("@text", this);
+    }
+    void process(ProfileDatabase& db, const std::vector<std::string>& signature, va_list& args) override {
+        const std::string text = va_arg(args, char*);
+        auto path = signature;
+        path.front() = "program";
+        db.addTextEntry(path, text);
+    }
+} textProcessor;
+
 }  // namespace profile
 }  // namespace souffle

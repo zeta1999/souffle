@@ -25,6 +25,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -66,7 +67,7 @@ protected:
 class AtomFrequenciesVisitor : public Visitor {
 public:
     AtomFrequenciesVisitor(Rule& rule) : rule(rule) {}
-    void visit(DirectoryEntry& directory) {
+    void visit(DirectoryEntry& directory) override {
         const std::string& clause = directory.getKey();
 
         for (auto& key : directory.getKeys()) {
@@ -274,11 +275,12 @@ private:
 public:
     std::shared_ptr<ProgramRun> run;
 
-    Reader(std::string filename, std::shared_ptr<ProgramRun> run) : file_loc(std::move(filename)), run(run) {
+    Reader(std::string filename, std::shared_ptr<ProgramRun> run)
+            : file_loc(std::move(filename)), run(std::move(run)) {
         ProfileEventSingleton::instance().setDBFromFile(file_loc);
     }
 
-    Reader(std::shared_ptr<ProgramRun> run) : run(run) {}
+    Reader(std::shared_ptr<ProgramRun> run) : run(std::move(run)) {}
     /**
      * Read the contents from file into the class
      */

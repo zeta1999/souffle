@@ -240,7 +240,7 @@ public:
         DIR* dir;
         bool exists = false;
 
-        if ((dir = opendir((workingdir + std::string("/profiler_html")).c_str())) != NULL) {
+        if ((dir = opendir((workingdir + std::string("/profiler_html")).c_str())) != nullptr) {
             exists = true;
             closedir(dir);
         }
@@ -329,9 +329,9 @@ public:
                 src = row[10]->toString(-1);
             }
 
-            std::fprintf(outfile, "\"%s\":[\"%s\",\"%s\",%s,%s,%s,%s,%lu,\"%s\",[",
-                    row[6]->toString(0).c_str(), Tools::cleanJsonOut(row[5]->toString(0)).c_str(),
-                    row[6]->toString(0).c_str(), Tools::cleanJsonOut(row[0]->getDoubVal()).c_str(),
+            std::fprintf(outfile, R"_("%s":["%s","%s",%s,%s,%s,%s,%lu,"%s",[)_", row[6]->toString(0).c_str(),
+                    Tools::cleanJsonOut(row[5]->toString(0)).c_str(), row[6]->toString(0).c_str(),
+                    Tools::cleanJsonOut(row[0]->getDoubVal()).c_str(),
                     Tools::cleanJsonOut(row[1]->getDoubVal()).c_str(),
                     Tools::cleanJsonOut(row[2]->getDoubVal()).c_str(),
                     Tools::cleanJsonOut(row[3]->getDoubVal()).c_str(), row[4]->getLongVal(), src.c_str());
@@ -340,8 +340,7 @@ public:
             for (auto& _ver_row : ver_table.getRows()) {
                 has_ver = true;
                 Row ver_row = *_ver_row;
-                std::fprintf(outfile, "[\"%s\",\"%s\",%s,%s,%s,%s,%lu,\"%s\",%lu],",
-
+                std::fprintf(outfile, R"_(["%s","%s",%s,%s,%s,%s,%lu,"%s",%lu],)_",
                         Tools::cleanJsonOut(ver_row[5]->toString(0)).c_str(), ver_row[6]->toString(0).c_str(),
                         Tools::cleanJsonOut(ver_row[0]->getDoubVal()).c_str(),
                         Tools::cleanJsonOut(ver_row[1]->getDoubVal()).c_str(),
@@ -352,11 +351,11 @@ public:
             if (row[6]->toString(0).at(0) == 'C') {
                 std::fprintf(outfile, "],{\"tot_t\":[");
 
-                std::vector<long> iteration_tuples;
+                std::vector<uint64_t> iteration_tuples;
                 for (auto& i : run->getRelation_map()[row[7]->toString(0)]->getIterations()) {
                     bool add = false;
                     double tot_time = 0.0;
-                    long tot_num = 0.0;
+                    uint64_t tot_num = 0.0;
                     for (auto& rul : i->getRul_rec()) {
                         if (rul.second->getId() == row[6]->toString(0)) {
                             tot_time += rul.second->getRuntime();
@@ -430,8 +429,8 @@ public:
 
         DIR* dir;
         struct dirent* ent;
-        if ((dir = opendir("./old_runs")) != NULL) {
-            while ((ent = readdir(dir)) != NULL) {
+        if ((dir = opendir("./old_runs")) != nullptr) {
+            while ((ent = readdir(dir)) != nullptr) {
                 // if the file doesnt exist in the working directory, it is in old_runs (to remove . and ..)
                 if (!Tools::file_exists(ent->d_name)) {
                     printf("- %s\n", ent->d_name);
@@ -944,7 +943,7 @@ public:
                     std::printf("%4s   %s\n\n", "NO", "COPYTIME");
                     graphD(list);
                 } else if (col.compare("tuples") == 0) {
-                    std::vector<long> list;
+                    std::vector<uint64_t> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->getNum_tuples());
                     }
@@ -974,7 +973,7 @@ public:
                     std::printf("%4s   %s\n\n", "NO", "COPYTIME");
                     graphD(list);
                 } else if (col.compare("tuples") == 0) {
-                    std::vector<long> list;
+                    std::vector<uint64_t> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->getNum_tuples());
                     }
@@ -1012,10 +1011,10 @@ public:
                     std::printf("%4s   %s\n\n", "NO", "RUNTIME");
                     graphD(list);
                 } else if (col.compare("tuples") == 0) {
-                    std::vector<long> list;
+                    std::vector<uint64_t> list;
                     for (auto& i : iter) {
                         bool add = false;
-                        long tot_num = 0L;
+                        uint64_t tot_num = 0L;
                         for (auto& rul : i->getRul_rec()) {
                             if (rul.second->getId().compare(c) == 0) {
                                 tot_num += rul.second->getNum_tuples();
@@ -1061,7 +1060,7 @@ public:
             std::printf("%4s   %s\n\n", "NO", "COPYTIME");
             graphD(list);
         } else if (col.compare("tuples") == 0) {
-            std::vector<long> list;
+            std::vector<uint64_t> list;
             for (auto& row : ver_table.rows) {
                 list.emplace_back((*row)[4]->getLongVal());
             }
@@ -1082,10 +1081,9 @@ public:
         std::reverse(list.begin(), list.end());
         int i = 0;
         for (auto& d : list) {
-            int len = (int)(67 * (d / max));
-            // TODO: %4d %10.8f
+            uint32_t len = 67 * (d / max);
             std::string bar = "";
-            for (int j = 0; j < len; j++) {
+            for (uint32_t j = 0; j < len; j++) {
                 bar += "*";
             }
 
@@ -1097,8 +1095,8 @@ public:
         }
     }
 
-    void graphL(std::vector<long> list) {
-        long max = 0;
+    void graphL(std::vector<uint64_t> list) {
+        uint64_t max = 0;
         for (auto& l : list) {
             if (l > max) {
                 max = l;
@@ -1108,7 +1106,7 @@ public:
         std::reverse(list.begin(), list.end());
         int i = 0;
         for (auto& l : list) {
-            int len = (int)(64 * ((double)l / (double)max));
+            uint32_t len = 64 * ((double)l / (double)max);
             std::string bar = "";
             for (int j = 0; j < len; j++) {
                 bar += "*";
@@ -1119,7 +1117,6 @@ public:
     }
 
     static bool string_sort(std::vector<std::string> a, std::vector<std::string> b) {
-        // std::cerr << a->getCells()[0]->getDoubVal() << "\n";
         return a[0] > b[0];
     }
 

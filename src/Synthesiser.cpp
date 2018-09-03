@@ -1504,14 +1504,14 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
                                                                //         idxAnalysis->getIndexes(rel));
                                           relationType->getTypeName();
 
-        // defining table
-        os << "// -- Table: " << raw_name << "\n";
-
         // print class definition for the type
         if (!isNew) {
             generateRelationTypeStruct(os, std::move(relationType));
-            os << "\n";
         }
+
+        // defining table
+        os << "// -- Table: " << raw_name << "\n";
+
         os << type << "* " << name << ";\n";
         if (!initCons.empty()) {
             initCons += ",\n";

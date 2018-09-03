@@ -23,7 +23,7 @@ public:
 
     virtual std::string getStringVal() = 0;
 
-    virtual ~CellInterface() {}
+    virtual ~CellInterface() = default;
 };
 
 }  // namespace profile

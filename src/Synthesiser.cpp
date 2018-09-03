@@ -1606,6 +1606,31 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << R"_(ProfileEventSingleton::instance().makeTimeEvent("@time;starttime");)_" << '\n';
         os << "{\n"
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
+        // Store count of relations
+        size_t relationCount = 0;
+        visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+            if (create.getRelation().getName()[0] != '@') ++relationCount;
+        });
+        // Store configuration
+        os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"
+           << relationCount << "));";
+
+        // Record relations created in each stratum
+        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+            std::map<std::string, size_t> relNames;
+            visitDepthFirst(stratum, [&](const RamCreate& create) {
+                relNames[create.getRelation().getName()] = create.getRelation().getArity();
+            });
+            for (const auto& cur : relNames) {
+                // Skip temporary relations, marked with '@'
+                if (cur.first[0] == '@') {
+                    continue;
+                }
+                os << "ProfileEventSingleton::instance().makeStratumRecord(" << stratum.getIndex()
+                   << R"_(, "relation", ")_" << cur.first << R"_(", "arity", ")_" << cur.second << R"_(");)_"
+                   << '\n';
+            }
+        });
     }
 
     if (Global::config().has("engine")) {
@@ -1628,6 +1653,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         }
     }
 
+    // Set up stratum
     visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
         os << "/* BEGIN STRATUM " << stratum.getIndex() << " */\n";
         if (Global::config().has("engine")) {
@@ -1886,6 +1912,18 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << classname + " obj;\n";
     }
 
+    if (Global::config().has("profile")) {
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("", opt.getSourceFileName());)_"
+           << '\n';
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("fact-dir", opt.getInputFileDir());)_"
+           << '\n';
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("jobs", std::to_string(opt.getNumJobs()));)_"
+           << '\n';
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("output-dir", opt.getOutputFileDir());)_"
+           << '\n';
+        os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("version", ")_"
+           << Global::config().get("version") << R"_(");)_" << '\n';
+    }
 #ifdef USE_MPI
     if (Global::config().get("engine") == "mpi") {
         os << "\n#ifdef USE_MPI\n";

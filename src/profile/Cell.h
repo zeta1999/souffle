@@ -23,7 +23,7 @@ class Cell : public CellInterface {
 public:
     T val;
     Cell(T value) : val(value){};
-    virtual ~Cell() {}
+    ~Cell() override = default;
 };
 
 template <>

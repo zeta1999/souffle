@@ -668,12 +668,15 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
 
         bool visitStratum(const RamStratum& stratum) override {
             // TODO (lyndonhenry): should enable strata as subprograms for interpreter here
+
+            // Record relations created in each stratum
             if (Global::config().has("profile")) {
                 std::map<std::string, size_t> relNames;
                 visitDepthFirst(stratum, [&](const RamCreate& create) {
                     relNames[create.getRelation().getName()] = create.getRelation().getArity();
                 });
                 for (const auto& cur : relNames) {
+                    // Skip temporary relations, marked with '@'
                     if (cur.first[0] == '@') {
                         continue;
                     }
@@ -819,9 +822,11 @@ void Interpreter::executeMain() {
         // Enable profiling for execution of main
         ProfileEventSingleton::instance().startTimer();
         ProfileEventSingleton::instance().makeTimeEvent("@time;starttime");
+        // Store configuration
         for (const auto& cur : Global::config().data()) {
             ProfileEventSingleton::instance().makeConfigRecord(cur.first, cur.second);
         }
+        // Store count of relations
         size_t relationCount = 0;
         visitDepthFirst(main, [&](const RamCreate& create) {
             if (create.getRelation().getName()[0] != '@') ++relationCount;

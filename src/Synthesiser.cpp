@@ -1559,20 +1559,23 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << R"_(ProfileEventSingleton::instance().makeTimeEvent("@time;starttime");)_" << '\n';
         os << "{\n"
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
-
+        // Store count of relations
         size_t relationCount = 0;
         visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
             if (create.getRelation().getName()[0] != '@') ++relationCount;
         });
+        // Store configuration
         os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"
            << relationCount << "));";
 
+        // Record relations created in each stratum
         visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
             std::map<std::string, size_t> relNames;
             visitDepthFirst(stratum, [&](const RamCreate& create) {
                 relNames[create.getRelation().getName()] = create.getRelation().getArity();
             });
             for (const auto& cur : relNames) {
+                // Skip temporary relations, marked with '@'
                 if (cur.first[0] == '@') {
                     continue;
                 }

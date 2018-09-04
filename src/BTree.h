@@ -1226,7 +1226,6 @@ public:
     // a move constructor
     btree(btree&& other)
             : comp(other.comp), weak_comp(other.weak_comp), root(other.root), leftmost(other.leftmost) {
-        other.numElements = 0;
         other.root = nullptr;
         other.leftmost = nullptr;
     }
@@ -1373,7 +1372,7 @@ public:
                     }
 
                     // update provenance information
-                    if (less(k, *pos)) {
+                    if (typeid(Comparator) != typeid(WeakComparator) && less(k, *pos)) {
                         if (!cur->lock.try_upgrade_to_write(cur_lease)) {
                             // start again
                             return insert(k, hints);
@@ -1428,7 +1427,7 @@ public:
                 }
 
                 // update provenance information
-                if (less(k, *(pos - 1))) {
+                if (typeid(Comparator) != typeid(WeakComparator) && less(k, *(pos - 1))) {
                     if (!cur->lock.try_upgrade_to_write(cur_lease)) {
                         // start again
                         return insert(k, hints);
@@ -1541,8 +1540,6 @@ public:
             leftmost->keys[0] = k;
             root = leftmost;
 
-            // increment number of elements
-            ++numElements;
             hints.last_insert.access(leftmost);
 
             return true;
@@ -1577,7 +1574,7 @@ public:
                 // early exit for sets
                 if (isSet && pos != b && weak_equal(*pos, k)) {
                     // update provenance information
-                    if (less(k, *pos)) {
+                    if (typeid(Comparator) != typeid(WeakComparator) && less(k, *pos)) {
                         update(*pos, k);
                         return true;
                     }
@@ -1603,7 +1600,7 @@ public:
             // early exit for sets
             if (isSet && pos != a && weak_equal(*(pos - 1), k)) {
                 // update provenance information
-                if (less(k, *(pos - 1))) {
+                if (typeid(Comparator) != typeid(WeakComparator) && less(k, *(pos - 1))) {
                     update(*(pos - 1), k);
                     return true;
                 }

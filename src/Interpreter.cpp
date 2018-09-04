@@ -854,6 +854,11 @@ void Interpreter::executeMain() {
         });
         ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string(relationCount));
 
+        // Store count of rules
+        size_t ruleCount = 0;
+        visitDepthFirst(main, [&](const RamInsert& rule) { ++ruleCount; });
+        ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
+
         evalStmt(main);
         ProfileEventSingleton::instance().stopTimer();
         for (auto const& cur : frequencies) {

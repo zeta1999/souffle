@@ -732,22 +732,38 @@ public:
     void top() {
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
         if (alive) run->update();
-        std::printf("%11s%10s%10s%20s\n", "runtime", "loadtime", "savetime", "tuples generated");
-
-        std::printf("%11s%10s%10s%14s\n", run->getRuntime().c_str(),
-                run->formatTime(run->getTotLoadtime()).c_str(),
-                run->formatTime(run->getTotSavetime()).c_str(),
-                run->formatNum(precision, run->getTotNumTuples()).c_str());
-
-        // Progress bar
         auto* totalRelationsEntry =
                 dynamic_cast<TextEntry*>(ProfileEventSingleton::instance().getDB().lookupEntry(
                         {"program", "configuration", "relationCount"}));
+        auto* totalRulesEntry =
+                dynamic_cast<TextEntry*>(ProfileEventSingleton::instance().getDB().lookupEntry(
+                        {"program", "configuration", "ruleCount"}));
+        size_t totalRelations = 0;
+        if (totalRelationsEntry != nullptr) {
+            totalRelations = std::stoul(totalRelationsEntry->getText());
+        } else {
+            totalRelations = run->getRelation_map().size();
+        }
+        size_t totalRules = 0;
+        if (totalRulesEntry != nullptr) {
+            totalRules = std::stoul(totalRulesEntry->getText());
+        } else {
+            totalRules = rul_table_state.getRows().size();
+        }
+        std::printf("%11s%10s%10s%10s%10s%20s\n", "runtime", "loadtime", "savetime", "relations", "rules",
+                "tuples generated");
+
+        std::printf("%11s%10s%10s%10s%10s%14s\n", run->getRuntime().c_str(),
+                run->formatTime(run->getTotLoadtime()).c_str(),
+                run->formatTime(run->getTotSavetime()).c_str(), run->formatNum(0, totalRelations).c_str(),
+                run->formatNum(0, totalRules).c_str(),
+                run->formatNum(precision, run->getTotNumTuples()).c_str());
+
+        // Progress bar
         // Determine number of relations processed
         size_t processedRelations = run->getRelation_map().size();
         size_t screenWidth = getTermWidth() - 10;
         if (alive && totalRelationsEntry != nullptr) {
-            size_t totalRelations = std::stoul(totalRelationsEntry->getText());
             std::cout << "Progress ";
             for (size_t i = 0; i < screenWidth; ++i) {
                 if (screenWidth * processedRelations / totalRelations > i) {

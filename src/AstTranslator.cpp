@@ -1139,9 +1139,11 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 r1->getHead()->setName(relNew[rel]->getName());
                 r1->getAtoms()[j]->setName(relDelta[atomRelation]->getName());
                 if (Global::config().has("provenance")) {
-                    r1->addToBody(std::make_unique<AstProvenanceNegation>(std::unique_ptr<AstAtom>(cl->getHead()->clone())));
+                    r1->addToBody(std::make_unique<AstProvenanceNegation>(
+                            std::unique_ptr<AstAtom>(cl->getHead()->clone())));
                 } else {
-                    r1->addToBody(std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cl->getHead()->clone())));
+                    r1->addToBody(
+                            std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cl->getHead()->clone())));
                 }
 
                 // replace wildcards with variables (reduces indices when wildcards are used in recursive

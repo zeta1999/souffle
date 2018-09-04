@@ -460,6 +460,21 @@ private:
         }
 
         /**
+         * Counts the number of entries contained in the sub-tree rooted
+         * by this node.
+         */
+        size_type countEntries() const {
+            if (this->isLeaf()) {
+                return this->numElements;
+            }
+            size_type sum = this->numElements;
+            for (unsigned i = 0; i <= this->numElements; ++i) {
+                sum += getChild(i)->countEntries();
+            }
+            return sum;
+        }
+
+        /**
          * Determines the amount of memory used by the sub-tree rooted
          * by this node.
          */
@@ -1154,18 +1169,12 @@ public:
 
 private:
 #ifdef IS_PARALLEL
-    // the total number of elements in this tree
-    volatile size_type numElements;
-
     // a pointer to the root node of this tree
     node* volatile root;
 
     // a lock to synchronize update operations on the root pointer
     lock_type root_lock;
 #else
-    // the total number of elements in this tree
-    size_type numElements;
-
     // a pointer to the root node of this tree
     node* root;
 
@@ -1206,26 +1215,24 @@ public:
 
     // the default constructor creating an empty tree
     btree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator())
-            : comp(comp), weak_comp(weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {}
+            : comp(comp), weak_comp(weak_comp), root(nullptr), leftmost(nullptr) {}
 
     // a constructor creating a tree from the given iterator range
     template <typename Iter>
-    btree(const Iter& a, const Iter& b) : numElements(0), root(nullptr), leftmost(nullptr) {
+    btree(const Iter& a, const Iter& b) : root(nullptr), leftmost(nullptr) {
         insert(a, b);
     }
 
     // a move constructor
     btree(btree&& other)
-            : comp(other.comp), weak_comp(other.weak_comp), numElements(other.numElements), root(other.root),
-              leftmost(other.leftmost) {
+            : comp(other.comp), weak_comp(other.weak_comp), root(other.root), leftmost(other.leftmost) {
         other.numElements = 0;
         other.root = nullptr;
         other.leftmost = nullptr;
     }
 
     // a copy constructor
-    btree(const btree& set)
-            : comp(set.comp), weak_comp(set.weak_comp), numElements(0), root(nullptr), leftmost(nullptr) {
+    btree(const btree& set) : comp(set.comp), weak_comp(set.weak_comp), root(nullptr), leftmost(nullptr) {
         // use assignment operator for a deep copy
         *this = set;
     }
@@ -1235,8 +1242,7 @@ protected:
      * An internal constructor enabling the specific creation of a tree
      * based on internal parameters.
      */
-    btree(size_type size, node* root, leaf_node* leftmost)
-            : numElements(size), root(root), leftmost(leftmost) {}
+    btree(size_type size, node* root, leaf_node* leftmost) : root(root), leftmost(leftmost) {}
 
 public:
     // the destructor freeing all contained nodes
@@ -1248,12 +1254,12 @@ public:
 
     // emptiness check
     bool empty() const {
-        return numElements == 0;
+        return root == nullptr;
     }
 
     // determines the number of elements in this tree
     size_type size() const {
-        return numElements;
+        return (root) ? root->countEntries() : 0;
     }
 
     /**
@@ -1271,7 +1277,7 @@ public:
 #ifdef IS_PARALLEL
 
         // special handling for inserting first element
-        while (numElements == 0) {
+        while (root == nullptr) {
             // try obtaining root-lock
             if (!root_lock.try_start_write()) {
                 // somebody else was faster => re-check
@@ -1279,7 +1285,7 @@ public:
             }
 
             // check loop condition again
-            if (numElements != 0) {
+            if (root != nullptr) {
                 // somebody else was faster => normal insert
                 root_lock.end_write();
                 break;
@@ -1290,9 +1296,6 @@ public:
             leftmost->numElements = 1;
             leftmost->keys[0] = k;
             root = leftmost;
-
-            // increment number of elements (atomically)
-            __sync_fetch_and_add(&numElements, 1);
 
             // operation complete => we can release the root lock
             root_lock.end_write();
@@ -1524,9 +1527,6 @@ public:
             // release lock on current node
             cur->lock.end_write();
 
-            // new element has been inserted
-            __sync_fetch_and_add(&numElements, 1);
-
             // remember last insertion position
             hints.last_insert.access(cur);
             return true;
@@ -1633,9 +1633,6 @@ public:
             // insert new element
             cur->keys[idx] = k;
             cur->numElements++;
-
-            // new element has been inserted
-            ++numElements;
 
             // remember last insertion position
             hints.last_insert.access(cur);
@@ -1909,10 +1906,7 @@ public:
      * Clears this tree.
      */
     void clear() {
-        numElements = 0;
-        if (root) {
-            delete root;
-        }
+        delete root;
         root = nullptr;
         leftmost = nullptr;
     }
@@ -1924,7 +1918,6 @@ public:
      */
     void swap(btree& other) {
         // swap the content
-        std::swap(numElements, other.numElements);
         std::swap(root, other.root);
         std::swap(leftmost, other.leftmost);
     }
@@ -1943,7 +1936,6 @@ public:
         }
 
         // clone content (deep copy)
-        numElements = other.size();
         root = other.root->clone();
 
         // update leftmost reference

@@ -145,21 +145,6 @@ jobs:
     - SOUFFLE_CONFS="-c -j8 -empi"
     - SOUFFLE_MAKE_JOBS="2"
 
-# Testing stage with 64bit RamDomains (-j8,-c -j8, skipping the 32bit Semantic tests)
-  - <<: *linuxgcc
-    before_script: ".travis/init_test_64bit.sh"
-    env:
-    - "gcc-64bit-setup"
-    - *gcc_environment
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
-
-# Testing stage with engine option (-c -j8 -efile, FastEvaluation and select others)
-  - <<: *linuxgcc
-    env:
-    - "gcc-efile"
-    - *gcc_environment
-    - SOUFFLE_CATEGORY=FastEvaluation,Interface,Profile SOUFFLE_CONFS="-c -j8 -efile"
-
 # Testing stage (-j8,-c -j8)
   - <<: *linuxgcc
     env:

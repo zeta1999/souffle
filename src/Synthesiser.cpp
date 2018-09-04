@@ -310,7 +310,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         out << "const Tuple<RamDomain," << arity << "> key({{";
                         printKeyTuple();
                         out << "}});\n";
-                        out << "auto range = " << relName << "->"
+                        out << "auto range = " << relName
+                            << "->"
                             // << "equalRange" << index << "(key);\n";
                             << "equalRange_" << keys << "(key);\n";
                         out << "auto part = range.partition();\n";

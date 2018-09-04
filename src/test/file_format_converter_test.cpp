@@ -305,7 +305,8 @@ TEST(FileFormatConverter, fromLogToCsv) {
 
     // function to run a single test case for a particular config
     const auto runTestCase = [&](const std::string& logFilePath, const std::string& csvFilePath,
-            const std::map<std::string, std::string>& config, const std::string& expected) {
+                                     const std::map<std::string, std::string>& config,
+                                     const std::string& expected) {
         FileFormatConverter::fromLogToCsv(logFilePath, csvFilePath, config);
         const auto actual = readFileToString(csvFilePath);
         EXPECT_EQ(actual, expected);

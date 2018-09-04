@@ -225,7 +225,7 @@ struct default_strategy<std::tuple<Ts...>> : public linear {};
  */
 template <typename T>
 struct updater {
-    void update(T& old_t, const T& new_t) {}
+    void update(T& /* old_t */, const T& /* new_t */) {}
 };
 
 /**
@@ -579,7 +579,7 @@ private:
         }
 
         /**
-         * Moves keys from the this node to one of its siblings or splits
+         * Moves keys from this node to one of its siblings or splits
          * this node to make some space for the insertion of an element at
          * position idx.
          *

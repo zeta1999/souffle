@@ -308,7 +308,7 @@ public:
             auto tupleDuration =
                     std::chrono::duration_cast<std::chrono::duration<double>>(tupleEnd - tupleStart);
 
-            std::cout << ", Time: " << tupleDuration.count() << std::endl;
+            std::cout << ", Time: " << tupleDuration.count() << "\n";
         }
 
         auto after_time = std::chrono::high_resolution_clock::now();

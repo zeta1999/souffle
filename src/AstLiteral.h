@@ -179,7 +179,7 @@ protected:
     std::unique_ptr<AstAtom> atom;
 
 public:
-    AstNegation(std::unique_ptr<AstAtom> a) : atom(std::move(a)) {}
+    AstNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     ~AstNegation() override = default;
 
@@ -237,7 +237,7 @@ protected:
     std::unique_ptr<AstAtom> atom;
 
 public:
-    AstProvenanceNegation(std::unique_ptr<AstAtom> a) : atom(std::move(a)) {}
+    AstProvenanceNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     ~AstProvenanceNegation() override = default;
 

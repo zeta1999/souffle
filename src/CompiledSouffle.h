@@ -167,7 +167,7 @@ private:
 
 public:
     t_nullaries() : data(false) {}
-    typedef ram::Tuple<RamDomain, 0> t_tuple;
+    using t_tuple = ram::Tuple<RamDomain, 0>;
     struct context {};
     context createContext() {
         return context();
@@ -206,7 +206,7 @@ public:
     void insert(const t_tuple& t) {
         data = true;
     }
-    void insert(const t_tuple& t, context& h) {
+    void insert(const t_tuple& t, context& /* ctxt */) {
         data = true;
     }
     void insert(const RamDomain* ramDomain) {
@@ -226,7 +226,7 @@ public:
     bool contains(const t_tuple& t) const {
         return data;
     }
-    bool contains(const t_tuple& t, context& h) const {
+    bool contains(const t_tuple& t, context& /* ctxt */) const {
         return data;
     }
     std::size_t size() const {

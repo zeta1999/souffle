@@ -266,51 +266,76 @@ public:
             new_file = new_file + std::to_string(i) + ".html";
         }
 
-        FILE* outfile;
-        outfile = std::fopen(new_file.c_str(), "w");
+        std::ofstream outfile(new_file);
 
         HtmlString html;
 
-        std::fprintf(outfile, "%s", html.get_first_half().c_str());
+        outfile << html.get_first_half();
 
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
         std::string source_loc;
-        std::fprintf(
-                outfile, "data={'top':[%f,%lu],\n'rel':{\n", run->getDoubleRuntime(), run->getTotNumTuples());
+
+        auto comma = [&outfile](bool& first, const std::string& delimiter = ", ") {
+            if (!first) {
+                outfile << delimiter;
+            } else {
+                first = false;
+            }
+        };
+        outfile << R"_(data={"top":[)_" << run->getDoubleRuntime() << "," << run->getTotNumTuples() << "],\n";
+        outfile << R"_("rel":{)_";
+        bool firstRow = true;
         for (auto& _row : rel_table_state.getRows()) {
+            comma(firstRow, ",\n");
+
             Row row = *_row;
-            std::fprintf(outfile, "'%s':['%s','%s',%s,%s,%s,%s,%lu,'%s',[", row[6]->toString(0).c_str(),
-                    Tools::cleanJsonOut(row[5]->toString(0)).c_str(), row[6]->toString(0).c_str(),
-                    Tools::cleanJsonOut(row[0]->getDoubVal()).c_str(),
-                    Tools::cleanJsonOut(row[1]->getDoubVal()).c_str(),
-                    Tools::cleanJsonOut(row[2]->getDoubVal()).c_str(),
-                    Tools::cleanJsonOut(row[3]->getDoubVal()).c_str(), row[4]->getLongVal(),
-                    row[7]->toString(0).c_str());
+            outfile << '"' << row[6]->toString(0) << R"_(": [)_";
+            outfile << '"' << Tools::cleanJsonOut(row[5]->toString(0)) << R"_(", )_";
+            outfile << '"' << Tools::cleanJsonOut(row[6]->toString(0)) << R"_(", )_";
+            outfile << row[0]->getDoubVal() << ", ";
+            outfile << row[1]->getDoubVal() << ", ";
+            outfile << row[2]->getDoubVal() << ", ";
+            outfile << row[3]->getDoubVal() << ", ";
+            outfile << row[4]->getLongVal() << ", ";
+            outfile << '"' << Tools::cleanJsonOut(row[7]->toString(0)) << R"_(", [)_";
+
             source_loc = row[7]->toString(0);
+
+            bool firstCol = true;
             for (auto& _rel_row : rul_table_state.getRows()) {
                 Row rel_row = *_rel_row;
                 if (rel_row[7]->toString(0) == row[5]->toString(0)) {
-                    std::fprintf(outfile, "'%s',", rel_row[6]->toString(0).c_str());
+                    comma(firstCol);
+                    outfile << '"' << rel_row[6]->toString(0) << '"';
                 }
             }
-            std::fprintf(outfile, "],{\"tot_t\":[");
+            outfile << "], ";
             std::vector<std::shared_ptr<Iteration>> iter =
                     run->getRelation_map()[row[5]->toString(0)]->getIterations();
+            outfile << R"_({"tot_t": [)_";
+            firstCol = true;
             for (auto& i : iter) {
-                std::fprintf(outfile, "%s,", Tools::cleanJsonOut(i->getRuntime()).c_str());
+                comma(firstCol);
+                outfile << i->getRuntime();
             }
-            std::fprintf(outfile, "],\"copy_t\":[");
+            outfile << R"_(], "copy_t": [)_";
+            firstCol = true;
             for (auto& i : iter) {
-                std::fprintf(outfile, "%s,", Tools::cleanJsonOut(i->getCopy_time()).c_str());
+                comma(firstCol);
+                outfile << i->getCopy_time();
             }
-            std::fprintf(outfile, "],\"tuples\":[");
+            outfile << R"_(], "tuples": [)_";
+            firstCol = true;
             for (auto& i : iter) {
-                std::fprintf(outfile, "%lu,", i->getNum_tuples());
+                comma(firstCol);
+                outfile << i->getNum_tuples();
             }
-            std::fprintf(outfile, "]}],\n");
+            outfile << "]}]";
         }
-        std::fprintf(outfile, "},'rul':{\n");
+        outfile << "},\n";
+        outfile << R"_("rul": {)_";
 
+        firstRow = true;
         for (auto& _row : rul_table_state.getRows()) {
             Row row = *_row;
 
@@ -328,30 +353,46 @@ public:
             } else {
                 src = row[10]->toString(-1);
             }
+            comma(firstRow);
+            outfile << "\n ";
 
-            std::fprintf(outfile, R"_("%s":["%s","%s",%s,%s,%s,%s,%lu,"%s",[)_", row[6]->toString(0).c_str(),
-                    Tools::cleanJsonOut(row[5]->toString(0)).c_str(), row[6]->toString(0).c_str(),
-                    Tools::cleanJsonOut(row[0]->getDoubVal()).c_str(),
-                    Tools::cleanJsonOut(row[1]->getDoubVal()).c_str(),
-                    Tools::cleanJsonOut(row[2]->getDoubVal()).c_str(),
-                    Tools::cleanJsonOut(row[3]->getDoubVal()).c_str(), row[4]->getLongVal(), src.c_str());
+            outfile << '"' << row[6]->toString(0) << R"_(": [)_";
+            outfile << '"' << Tools::cleanJsonOut(row[5]->toString(0)) << R"_(", )_";
+            outfile << '"' << Tools::cleanJsonOut(row[6]->toString(0)) << R"_(", )_";
+            outfile << row[0]->getDoubVal() << ", ";
+            outfile << row[1]->getDoubVal() << ", ";
+            outfile << row[2]->getDoubVal() << ", ";
+            outfile << row[3]->getDoubVal() << ", ";
+            outfile << row[4]->getLongVal() << ", [";
 
             bool has_ver = false;
+            bool firstCol = true;
             for (auto& _ver_row : ver_table.getRows()) {
+                comma(firstCol);
                 has_ver = true;
                 Row ver_row = *_ver_row;
-                std::fprintf(outfile, R"_(["%s","%s",%s,%s,%s,%s,%lu,"%s",%lu],)_",
-                        Tools::cleanJsonOut(ver_row[5]->toString(0)).c_str(), ver_row[6]->toString(0).c_str(),
-                        Tools::cleanJsonOut(ver_row[0]->getDoubVal()).c_str(),
-                        Tools::cleanJsonOut(ver_row[1]->getDoubVal()).c_str(),
-                        Tools::cleanJsonOut(ver_row[2]->getDoubVal()).c_str(),
-                        Tools::cleanJsonOut(ver_row[3]->getDoubVal()).c_str(), ver_row[4]->getLongVal(),
-                        src.c_str(), ver_row[8]->getLongVal());
+                outfile << '[';
+                outfile << '"' << Tools::cleanJsonOut(ver_row[5]->toString(0)) << R"_(", )_";
+                outfile << '"' << Tools::cleanJsonOut(ver_row[6]->toString(0)) << R"_(", )_";
+                outfile << ver_row[0]->getDoubVal() << ", ";
+                outfile << ver_row[1]->getDoubVal() << ", ";
+                outfile << ver_row[2]->getDoubVal() << ", ";
+                outfile << ver_row[3]->getDoubVal() << ", ";
+                outfile << ver_row[4]->getLongVal() << ", ";
+                outfile << '"' << src << R"_(", )_";
+                outfile << ver_row[8]->getLongVal();
+                outfile << ']';
             }
-            if (row[6]->toString(0).at(0) == 'C') {
-                std::fprintf(outfile, "],{\"tot_t\":[");
+
+            outfile << "], ";
+
+            if (row[6]->toString(0).at(0) != 'C') {
+                outfile << "{}, {}]";
+            } else {
+                outfile << R"_({"tot_t": [)_";
 
                 std::vector<uint64_t> iteration_tuples;
+                bool firstCol = true;
                 for (auto& i : run->getRelation_map()[row[7]->toString(0)]->getIterations()) {
                     bool add = false;
                     double tot_time = 0.0;
@@ -365,40 +406,48 @@ public:
                         }
                     }
                     if (add) {
-                        std::fprintf(outfile, "%s,", Tools::cleanJsonOut(tot_time).c_str());
+                        comma(firstCol);
+                        outfile << tot_time;
                         iteration_tuples.push_back(tot_num);
                     }
                 }
-                std::fprintf(outfile, "], \"tuples\":[");
+                outfile << R"_(], "tuples": [)_";
+                firstCol = true;
                 for (auto& i : iteration_tuples) {
-                    std::fprintf(outfile, "%lu,", i);
+                    comma(firstCol);
+                    outfile << i;
                 }
 
-                std::fprintf(outfile, "]},{");
+                outfile << "]}, {";
 
                 if (has_ver) {
-                    std::fprintf(outfile, "\"tot_t\":[\n");
+                    outfile << R"_("tot_t": [)_";
 
+                    firstCol = true;
                     for (auto& row : ver_table.rows) {
-                        std::fprintf(outfile, "%s,", Tools::cleanJsonOut((*row)[0]->getDoubVal()).c_str());
+                        comma(firstCol);
+                        outfile << (*row)[0]->getDoubVal();
                     }
-                    std::fprintf(outfile, "],\n\"copy_t\":[");
+                    outfile << R"_(], "copy_t": [)_";
+
+                    firstCol = true;
                     for (auto& row : ver_table.rows) {
-                        std::fprintf(outfile, "%s,", Tools::cleanJsonOut((*row)[3]->getDoubVal()).c_str());
+                        comma(firstCol);
+                        outfile << (*row)[3]->getDoubVal();
                     }
-                    std::fprintf(outfile, "],\n\"tuples\":[");
+                    outfile << R"_(], "tuples": [)_";
+
+                    firstCol = true;
                     for (auto& row : ver_table.rows) {
-                        std::fprintf(outfile, "%ld,", (*row)[4]->getLongVal());
+                        comma(firstCol);
+                        outfile << (*row)[4]->getLongVal();
                     }
-                    std::fprintf(outfile, "]}],\n");
-                } else {
-                    std::fprintf(outfile, "}],\n");
+                    outfile << ']';
                 }
-            } else {
-                std::fprintf(outfile, "],{},{}],\n");
+                outfile << "}]";
             }
         }
-        std::fprintf(outfile, "},");
+        outfile << "\n}, \n";
 
         std::string source_file_loc = Tools::split(source_loc, " ").at(0);
         std::ifstream source_file(source_file_loc);
@@ -407,18 +456,18 @@ public:
                       << std::endl;
         } else {
             std::string str;
-            std::fprintf(outfile, "code:[");
+            outfile << R"_("code": [)_";
+            bool firstCol = true;
             while (getline(source_file, str)) {
-                std::fprintf(outfile, "\"%s\",", Tools::escapeQuotes(str).c_str());
+                comma(firstCol, ",\n");
+                outfile << '"' << Tools::cleanJsonOut(str) << '"';
             }
-            std::fprintf(outfile, "]");
+            outfile << ']';
             source_file.close();
         }
 
-        std::fprintf(outfile, "};");
-        std::fprintf(outfile, "%s", html.get_second_half().c_str());
-
-        fclose(outfile);
+        outfile << "};\n";
+        outfile << html.get_second_half();
 
         std::cout << "file output to: " << new_file << std::endl;
     }
@@ -1124,7 +1173,7 @@ public:
         for (auto& l : list) {
             uint32_t len = 64 * ((double)l / (double)max);
             std::string bar = "";
-            for (int j = 0; j < len; j++) {
+            for (uint32_t j = 0; j < len; j++) {
                 bar += "*";
             }
 

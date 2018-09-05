@@ -58,12 +58,6 @@ protected:
     /** Get context name */
     const std::string getOpContextName(const RamRelation& rel);
 
-    /** Get relation type */
-    // std::string getRelationType(const RamRelation& rel, std::size_t arity, const IndexSet& indexes);
-
-    /** Get relation type */
-    // const std::string getRelationTypeName(const RamRelation& rel, const IndexSet& indices);
-
     /** Get relation struct definition */
     void generateRelationTypeStruct(std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType);
 

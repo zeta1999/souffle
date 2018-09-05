@@ -8,6 +8,9 @@
 
 #include "SynthesiserRelation.h"
 
+#include <numeric>
+#include <set>
+
 namespace souffle {
 
 std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation(
@@ -171,7 +174,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "struct " << getTypeName() << " {\n";
 
     // stored tuple type
-    out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+    out << "using t_tuple = Tuple<RamDomain, " << arity << ">;\n";
 
     // generate an updater class for provenance
     if (isProvenance) {
@@ -194,27 +197,26 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
         // for provenance, all indices must be full so we use btree_set
         // also strong/weak comparators and updater methods
         if (isProvenance) {
-            out << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind);
+            out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);
             out << ">, std::allocator<t_tuple>, 256, typename "
                    "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
-            out << join(ind.begin(), ind.end() - 2) << ">, updater_" << getTypeName() << "> t_ind_" << i
-                << ";\n";
+            out << join(ind.begin(), ind.end() - 2) << ">, updater_" << getTypeName() << ">;\n";
 
             // without provenance, some indices may be not full, so we use btree_multiset for those
         } else {
             if (ind.size() == arity) {
-                out << "typedef btree_set<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_" << i
-                    << ";\n";
+                out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind)
+                    << ">>;\n";
             } else {
-                out << "typedef btree_multiset<t_tuple, index_utils::comparator<" << join(ind) << ">> t_ind_"
-                    << i << ";\n";
+                out << "using t_ind_" << i << " = btree_multiset<t_tuple, index_utils::comparator<"
+                    << join(ind) << ">>;\n";
             }
         }
         out << "t_ind_" << i << " ind_" << i << ";\n";
     }
 
     // typedef master index iterator to be struct iterator
-    out << "typedef t_ind_" << masterIndex << "::iterator iterator;\n";
+    out << "using iterator = t_ind_" << masterIndex << "::iterator;\n";
 
     // create a struct storing hints for each btree
     out << "struct context {\n";
@@ -484,7 +486,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "struct " << getTypeName() << " {\n";
 
     // stored tuple type
-    out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+    out << "using t_tuple = Tuple<RamDomain, " << arity << ">;\n";
 
     // table and lock required for storing actual data for indirect indices
     out << "Table<t_tuple> dataTable;\n";
@@ -499,13 +501,15 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         }
 
         if (ind.size() == arity) {
-            out << "typedef btree_set<const t_tuple*, index_utils::deref_compare<typename "
+            out << "using t_ind_" << i
+                << " = btree_set<const t_tuple*, index_utils::deref_compare<typename "
                    "index_utils::comparator<"
-                << join(ind) << ">>> t_ind_" << i << ";\n";
+                << join(ind) << ">>>;\n";
         } else {
-            out << "typedef btree_multiset<const t_tuple*, index_utils::deref_compare<typename "
+            out << "using t_ind_" << i
+                << " = btree_multiset<const t_tuple*, index_utils::deref_compare<typename "
                    "index_utils::comparator<"
-                << join(ind) << ">>> t_ind_" << i << ";\n";
+                << join(ind) << ">>>;\n";
         }
 
         out << "t_ind_" << i << " ind_" << i << ";\n";
@@ -515,7 +519,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     for (size_t i = 0; i < numIndexes; i++) {
         out << "using iterator_" << i << " = IterDerefWrapper<typename t_ind_" << i << "::iterator>;\n";
     }
-    out << "typedef iterator_" << masterIndex << " iterator;\n";
+    out << "using iterator = iterator_" << masterIndex << ";\n";
 
     // Create a struct storing the context hints for each index
     out << "struct context {\n";
@@ -771,10 +775,10 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
         if (i < getIndexSet().getAllOrders().size()) {
             indexToNumMap[getIndexSet().getAllOrders()[i]] = i;
         }
-        out << "typedef Trie<" << inds[i].size() << "> t_ind_" << i << ";\n";
+        out << "using t_ind_" << i << " = Trie<" << inds[i].size() << ">;\n";
         out << "t_ind_" << i << " ind_" << i << ";\n";
     }
-    out << "typedef t_ind_" << masterIndex << "::entry_type t_tuple;\n";
+    out << "using t_tuple = t_ind_" << masterIndex << "::entry_type;\n";
 
     // generate auxiliary iterators that use orderOut
     for (size_t i = 0; i < numIndexes; i++) {
@@ -814,7 +818,7 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
         out << "    }\n";
         out << "};\n";
     }
-    out << "typedef iterator_" << masterIndex << " iterator;\n";
+    out << "using iterator = iterator_" << masterIndex << ";\n";
 
     // hints struct
     out << "struct context {\n";
@@ -1056,8 +1060,8 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "struct " << getTypeName() << " {\n";
 
     // eqrel is only for binary relations
-    out << "typedef ram::Tuple<RamDomain, 2> t_tuple;\n";
-    out << "typedef BinaryRelation<t_tuple> t_ind_" << masterIndex << ";\n";
+    out << "using t_tuple = ram::Tuple<RamDomain, 2>;\n";
+    out << "using t_ind_" << masterIndex << " = BinaryRelation<t_tuple>;\n";
     out << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
 
     // generate auxiliary iterators that reorder tuples according to index orders
@@ -1099,7 +1103,7 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
         out << "};\n";
     }
 
-    out << "typedef iterator_" << masterIndex << " iterator;\n";
+    out << "using iterator = iterator_" << masterIndex << ";\n";
 
     // Create a struct storing the context hints for each index
     out << "struct context {\n";
@@ -1324,7 +1328,7 @@ void SynthesiserRbtsetRelation::generateTypeStruct(std::ostream& out) {
     out << "struct " << getTypeName() << " {\n";
 
     // stored tuple type
-    out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+    out << "using t_tuple = Tuple<RamDomain, " << arity << ">;\n";
 
     // generate the btree type for each relation
     for (size_t i = 0; i < inds.size(); i++) {
@@ -1353,15 +1357,15 @@ void SynthesiserRbtsetRelation::generateTypeStruct(std::ostream& out) {
         out << "};\n";
 
         if (ind.size() == arity) {
-            out << "typedef std::set<t_tuple, tuple_less_" << i << "> t_ind_" << i << ";\n";
+            out << "using t_ind_" << i << " = std::set<t_tuple, tuple_less_" << i << ">;\n";
         } else {
-            out << "typedef std::multiset<t_tuple, tuple_less_" << i << "> t_ind_" << i << ";\n";
+            out << "using t_ind_" << i << " = std::multiset<t_tuple, tuple_less_" << i << ">;\n";
         }
         out << "t_ind_" << i << " ind_" << i << ";\n";
     }
 
     // typedef master index iterator to be struct iterator
-    out << "typedef t_ind_" << masterIndex << "::iterator iterator;\n";
+    out << "using iterator = t_ind_" << masterIndex << "::iterator;\n";
 
     // create a global mutex lock for inserts
     out << "std::mutex lock;\n";
@@ -1554,7 +1558,7 @@ void SynthesiserHashsetRelation::generateTypeStruct(std::ostream& out) {
     out << "struct " << getTypeName() << " {\n";
 
     // stored tuple type
-    out << "typedef Tuple<RamDomain, " << arity << "> t_tuple;\n";
+    out << "using t_tuple = Tuple<RamDomain, " << arity << ">;\n";
 
     // generate the btree type for each relation
     for (size_t i = 0; i < inds.size(); i++) {
@@ -1590,17 +1594,17 @@ void SynthesiserHashsetRelation::generateTypeStruct(std::ostream& out) {
         out << "};\n";
 
         if (ind.size() == arity) {
-            out << "typedef std::unordered_set<t_tuple, tuple_hasher_" << i << ", tuple_equal_" << i
-                << "> t_ind_" << i << ";\n";
+            out << "using t_ind_" << i << " = std::unordered_set<t_tuple, tuple_hasher_" << i
+                << ", tuple_equal_" << i << ">;\n";
         } else {
-            out << "typedef std::unordered_multiset<t_tuple, tuple_hasher_" << i << ", tuple_equal_" << i
-                << "> t_ind_" << i << ";\n";
+            out << "using t_ind_" << i << " = std::unordered_multiset<t_tuple, tuple_hasher_" << i
+                << ", tuple_equal_" << i << ">;\n";
         }
         out << "t_ind_" << i << " ind_" << i << ";\n";
     }
 
     // typedef master index iterator to be struct iterator
-    out << "typedef t_ind_" << masterIndex << "::const_iterator iterator;\n";
+    out << "using iterator = t_ind_" << masterIndex << "::const_iterator;\n";
 
     // create a global mutex lock for inserts
     out << "std::mutex lock;\n";

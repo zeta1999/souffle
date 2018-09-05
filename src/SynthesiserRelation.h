@@ -12,7 +12,11 @@
 #include "IndexSetAnalysis.h"
 #include "RamRelation.h"
 
+#include <memory>
 #include <numeric>
+#include <ostream>
+#include <string>
+#include <vector>
 
 namespace souffle {
 
@@ -28,7 +32,7 @@ protected:
     std::string dataStructure;
 
     /** The final list of indices used */
-    std::vector<std::vector<int>> computedIndices;
+    std::vector<IndexSet::LexicographicalOrder> computedIndices;
 
     /** The number of the master index */
     size_t masterIndex = -1;
@@ -51,7 +55,7 @@ public:
     }
 
     /** Get data structure of relation */
-    std::string getDataStructure() const {
+    const std::string& getDataStructure() const {
         return dataStructure;
     }
 

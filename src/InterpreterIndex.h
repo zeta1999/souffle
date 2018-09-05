@@ -182,7 +182,8 @@ private:
     index_set set;                         // set storing tuple pointers of table
 
 public:
-    InterpreterIndex(InterpreterIndexOrder order) : theOrder(std::move(order)), set(comparator(theOrder)) {}
+    InterpreterIndex(InterpreterIndexOrder order)
+            : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
     const InterpreterIndexOrder& order() const {
         return theOrder;

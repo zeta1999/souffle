@@ -645,6 +645,10 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
                     returnValue->addValue(translateValue(arg, valueIndex));
                 }
             } else if (auto neg = dynamic_cast<AstNegation*>(lit)) {
+                for (AstArgument* arg : neg->getAtom()->getArguments()) {
+                    returnValue->addValue(translateValue(arg, valueIndex));
+                }
+            } else if (auto neg = dynamic_cast<AstProvenanceNegation*>(lit)) {
                 for (size_t i = 0; i < neg->getAtom()->getArguments().size() - 2; i++) {
                     auto arg = neg->getAtom()->getArguments()[i];
                     returnValue->addValue(translateValue(arg, valueIndex));
@@ -663,21 +667,20 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
         }
 
         // check existence for original tuple if we have provenance
-        if (Global::config().has("provenance")) {
+        // only if we don't compile
+        if (Global::config().has("provenance") &&
+                ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
+                        !Global::config().has("generate")))) {
             auto uniquenessEnforcement = std::make_unique<RamNotExists>(getRelation(&head));
             auto arity = head.getArity() - 2;
 
-            bool add = true;
+            bool isVolatile = true;
             // add args for original tuple
             for (size_t i = 0; i < arity; i++) {
                 auto arg = head.getArgument(i);
 
                 // don't add counters
-                if (dynamic_cast<AstCounter*>(arg)) {
-                    add = false;
-                    break;
-                }
-
+                visitDepthFirst(*arg, [&](const AstCounter& cur) { isVolatile = false; });
                 uniquenessEnforcement->addArg(translateValue(arg, valueIndex));
             }
 
@@ -685,7 +688,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
             uniquenessEnforcement->addArg(nullptr);
             uniquenessEnforcement->addArg(nullptr);
 
-            if (add) {
+            if (isVolatile) {
                 project->addCondition(std::move(uniquenessEnforcement), *project);
             }
         }
@@ -866,6 +869,37 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
             if (Global::config().has("provenance")) {
                 notExists->addArg(nullptr);
                 notExists->addArg(nullptr);
+            }
+
+            // add constraint
+            op->addCondition(std::unique_ptr<RamCondition>(notExists));
+
+            // for provenance negation
+        } else if (auto neg = dynamic_cast<const AstProvenanceNegation*>(lit)) {
+            // get contained atom
+            const AstAtom* atom = neg->getAtom();
+
+            // create constraint
+            RamProvenanceNotExists* notExists = new RamProvenanceNotExists(getRelation(atom));
+
+            auto arity = atom->getArity();
+
+            // account for two extra provenance columns
+            if (Global::config().has("provenance")) {
+                arity -= 2;
+            }
+
+            for (size_t i = 0; i < arity; i++) {
+                const auto& arg = atom->getArgument(i);
+                // for (const auto& arg : atom->getArguments()) {
+                notExists->addArg(translateValue(*arg, valueIndex));
+            }
+
+            // we don't care about the provenance columns when doing the existence check
+            if (Global::config().has("provenance")) {
+                notExists->addArg(nullptr);
+                // add the height annotation for provenanceNotExists
+                notExists->addArg(translateValue(*(atom->getArgument(arity + 1)), valueIndex));
             }
 
             // add constraint
@@ -1104,8 +1138,13 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 std::unique_ptr<AstClause> r1(cl->clone());
                 r1->getHead()->setName(relNew[rel]->getName());
                 r1->getAtoms()[j]->setName(relDelta[atomRelation]->getName());
-                r1->addToBody(
-                        std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cl->getHead()->clone())));
+                if (Global::config().has("provenance")) {
+                    r1->addToBody(std::make_unique<AstProvenanceNegation>(
+                            std::unique_ptr<AstAtom>(cl->getHead()->clone())));
+                } else {
+                    r1->addToBody(
+                            std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cl->getHead()->clone())));
+                }
 
                 // replace wildcards with variables (reduces indices when wildcards are used in recursive
                 // atoms)

@@ -19,6 +19,7 @@
 #include "IndexSetAnalysis.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
+#include "SynthesiserRelation.h"
 #include <map>
 #include <ostream>
 #include <set>
@@ -41,6 +42,9 @@ private:
     /** Frequency profiling of searches */
     std::map<std::string, unsigned> idxMap;
 
+    /** Cache for generated types for relations */
+    std::set<std::string> typeCache;
+
 protected:
     /** Convert RAM identifier */
     const std::string convertRamIdent(const std::string& name);
@@ -54,8 +58,8 @@ protected:
     /** Get context name */
     const std::string getOpContextName(const RamRelation& rel);
 
-    /** Get relation type */
-    std::string getRelationType(const RamRelation& rel, std::size_t arity, const IndexSet& indexes);
+    /** Get relation struct definition */
+    void generateRelationTypeStruct(std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType);
 
     /* Convert SearchColums to a template index */
     std::string toIndex(SearchColumns key);

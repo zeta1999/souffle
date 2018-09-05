@@ -264,10 +264,6 @@ void RamProject::print(std::ostream& os, int tabpos) const {
         os << " IF ";
         condition->print(os);
     }
-
-    if (hasFilter()) {
-        os << " UNLESS IN " << getFilter().getName();
-    }
 }
 
 /* add condition */

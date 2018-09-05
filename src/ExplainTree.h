@@ -81,6 +81,7 @@ protected:
     uint32_t height = 0;  // height of node (including sub-trees)
     int xpos = 0;         // x-position of text
     int ypos = 0;         // y-position of text
+    uint32_t size = 0;
 
 public:
     TreeNode(std::string t = "") : txt(std::move(t)) {}
@@ -101,6 +102,14 @@ public:
 
     // render node in screen buffer
     virtual void render(ScreenBuffer& s) = 0;
+
+    size_t getSize() {
+        return size;
+    }
+
+    void setSize(size_t s) {
+        size = s;
+    }
 
     virtual void printJSON(std::ostream& os, int pos) = 0;
 };

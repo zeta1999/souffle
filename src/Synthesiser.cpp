@@ -31,6 +31,7 @@
 #include "RamVisitor.h"
 #include "SymbolMask.h"
 #include "SymbolTable.h"
+#include "SynthesiserRelation.h"
 #include "TernaryFunctorOps.h"
 #include "UnaryFunctorOps.h"
 #include "Util.h"
@@ -112,49 +113,17 @@ const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
     return getRelationName(rel) + "_op_ctxt";
 }
 
-/** Get relation type */
-std::string Synthesiser::getRelationType(const RamRelation& rel, std::size_t arity, const IndexSet& indexes) {
-    std::stringstream res;
-    res << "ram::Relation";
-    res << "<";
-
-    if (rel.isBTree()) {
-        res << "BTree,";
-    } else if (rel.isRbtset()) {
-        res << "Rbtset,";
-    } else if (rel.isHashset()) {
-        res << "Hashset,";
-    } else if (rel.isBrie()) {
-        res << "Brie,";
-    } else if (rel.isEqRel()) {
-        res << "EqRel,";
-    } else {
-        auto data_structure = Global::config().get("data-structure");
-        if (data_structure == "btree") {
-            res << "BTree,";
-        } else if (data_structure == "rbtset") {
-            res << "Rbtset,";
-        } else if (data_structure == "hashset") {
-            res << "Hashset,";
-        } else if (data_structure == "brie") {
-            res << "Brie,";
-        } else if (data_structure == "eqrel") {
-            res << "Eqrel,";
-        } else {
-            res << "Auto,";
-        }
+/** Get relation type struct */
+void Synthesiser::generateRelationTypeStruct(
+        std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType) {
+    // If this type has been generated already, use the cached version
+    if (typeCache.find(relationType->getTypeName()) != typeCache.end()) {
+        return;
     }
+    typeCache.insert(relationType->getTypeName());
 
-    res << arity;
-    if (!areIndexesDisabled()) {
-        for (auto& cur : indexes.getAllOrders()) {
-            res << ", ram::index<";
-            res << join(cur, ",");
-            res << ">";
-        }
-    }
-    res << ">";
-    return res.str();
+    // Generate the type struct for the relation
+    relationType->generateTypeStruct(out);
 }
 
 /* Convert SearchColums to a template index */
@@ -187,11 +156,10 @@ std::set<RamRelation> Synthesiser::getReferencedRelations(const RamOperation& op
             res.insert(agg->getRelation());
         } else if (auto notExist = dynamic_cast<const RamNotExists*>(&node)) {
             res.insert(notExist->getRelation());
+        } else if (auto provNotExist = dynamic_cast<const RamProvenanceNotExists*>(&node)) {
+            res.insert(provNotExist->getRelation());
         } else if (auto project = dynamic_cast<const RamProject*>(&node)) {
             res.insert(project->getRelation());
-            if (project->hasFilter()) {
-                res.insert(project->getFilter());
-            }
         }
     });
     return res;
@@ -337,13 +305,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
                         // get index to be queried
                         auto keys = scan->getRangeQueryColumns();
-                        auto index = synthesiser.toIndex(keys);
 
                         out << "const Tuple<RamDomain," << arity << "> key({{";
                         printKeyTuple();
                         out << "}});\n";
                         out << "auto range = " << relName << "->"
-                            << "equalRange" << index << "(key);\n";
+                            << "equalRange_" << keys << "(key);\n";
                         out << "auto part = range.partition();\n";
                     }
 
@@ -613,7 +580,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // get index to be queried
             auto keys = scan.getRangeQueryColumns();
-            auto index = synthesiser.toIndex(keys);
 
             // if this is the parallel level
             if (scan.getLevel() == 0 && !scan.isPureExistenceCheck()) {
@@ -634,7 +600,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             printKeyTuple();
             out << "}});\n";
             out << "auto range = " << relName << "->"
-                << "equalRange" << index << "(key," << ctxName << ");\n";
+                << "equalRange_" << keys << "(key," << ctxName << ");\n";
             if (scan.isPureExistenceCheck()) {
                 out << "if(!range.empty()) {\n";
                 visitSearch(scan, out);
@@ -741,7 +707,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 printKeyTuple();
                 out << "}});\n";
                 out << "auto range = " << relName << "->"
-                    << "equalRange" << index << "(key," << ctxName << ");\n";
+                    << "equalRange_" << keys << "(key," << ctxName << ");\n";
             }
 
             // add existence check
@@ -833,9 +799,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             } else {
                 out << "Tuple<RamDomain," << arity << "> tuple({{(RamDomain)("
                     << join(project.getValues(), "),(RamDomain)(", rec) << ")}});\n";
-
-                // check filter
             }
+
+            // check filter
             if (project.hasFilter()) {
                 auto relFilter = synthesiser.getRelationName(project.getFilter());
                 auto ctxFilter = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(project.getFilter()) + ")";
@@ -984,7 +950,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // else we conduct a range query
             out << relName << "->"
                 << "equalRange";
-            out << synthesiser.toIndex(ne.getKey());
+            out << "_" << ne.getKey();
             out << "(Tuple<RamDomain," << arity << ">({{";
             out << join(ne.getValues(), ",", [&](std::ostream& out, RamValue* value) {
                 if (!value) {
@@ -994,6 +960,41 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
             });
             out << "}})," << ctxName << ").empty()";
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitProvenanceNotExists(const RamProvenanceNotExists& ne, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            // get some details
+            const auto& rel = ne.getRelation();
+            auto relName = synthesiser.getRelationName(rel);
+            auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
+            auto arity = rel.getArity();
+
+            // provenance not exists is never total, conduct a range query
+            out << "[&]() -> bool {\n";
+            out << "auto existenceCheck = " << relName << "->"
+                << "equalRange";
+            // out << synthesiser.toIndex(ne.getKey());
+            out << "_" << ne.getKey();
+            out << "(Tuple<RamDomain," << arity << ">({{";
+            for (size_t i = 0; i < ne.getValues().size() - 1; i++) {
+                RamValue* val = ne.getValues()[i];
+                if (!val) {
+                    out << "0";
+                } else {
+                    visit(*val, out);
+                }
+                out << ",";
+            }
+            // extra 0 for provenance height annotation
+            out << "0";
+
+            out << "}})," << ctxName << ");\n";
+            out << "if (existenceCheck.empty()) return true; else return (*existenceCheck.begin())["
+                << arity - 1 << "] > ";
+            visit(*(ne.getValues()[arity - 1]), out);
+            out << ";}()\n";
             PRINT_END_COMMENT(out);
         }
 
@@ -1224,6 +1225,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         // -- subroutine return --
 
         void visitReturn(const RamReturn& ret, std::ostream& out) override {
+            out << "std::lock_guard<std::mutex> guard(lock);\n";
             for (auto val : ret.getValues()) {
                 if (val == nullptr) {
                     out << "ret.push_back(0);\n";
@@ -1343,14 +1345,14 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     // generate C++ program
     os << "\n#include \"souffle/CompiledSouffle.h\"\n";
     if (Global::config().has("provenance")) {
-        os << "\n#include \"souffle/Explain.h\"\n";
+        os << "#include <mutex>\n";
+        os << "#include \"souffle/Explain.h\"\n";
     }
 
     if (Global::config().has("live-profile")) {
         os << "#include <thread>\n";
-        os << "#include \"souffle/profile/Tui.h\"\n";
+        os << "#include \"profile/Tui.h\"\n";
     }
-
     os << "\n";
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
@@ -1434,7 +1436,6 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         }
         os << ";";
     }
-
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
@@ -1455,16 +1456,24 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         const std::string& raw_name = rel.getName();
         const std::string& name = getRelationName(rel);
 
+        // TODO: make this correct
         // ensure that the type of the new knowledge is the same as that of the delta knowledge
-        tempType = (rel.isTemp() && raw_name.find("@delta") != std::string::npos)
-                           ? getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel))
-                           : tempType;
-        const std::string& type =
-                (rel.isTemp()) ? tempType
-                               : getRelationType(rel, rel.getArity(), idxAnalysis->getIndexes(rel));
+        bool isDelta = rel.isTemp() && raw_name.find("@delta") != std::string::npos;
+        bool isNew = rel.isTemp() && raw_name.find("@new") != std::string::npos;
+        bool isProvInfo = raw_name.find("@info") != std::string::npos;
+        auto relationType = SynthesiserRelation::getSynthesiserRelation(
+                rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+        tempType = isDelta ? relationType->getTypeName() : tempType;
+        const std::string& type = (rel.isTemp()) ? tempType : relationType->getTypeName();
+
+        // print class definition for the type
+        if (!isNew) {
+            generateRelationTypeStruct(os, std::move(relationType));
+        }
 
         // defining table
         os << "// -- Table: " << raw_name << "\n";
+
         os << type << "* " << name << ";\n";
         if (!initCons.empty()) {
             initCons += ",\n";
@@ -1620,7 +1629,6 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         if (Global::config().has("engine")) {
             os << "if (stratumIndex != (size_t) -1) goto EXIT;\n";
         }
-
         os << "/* END STRATUM " << stratum.getIndex() << " */\n";
     });
 
@@ -1802,6 +1810,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
                << "subproof_" << subroutineNum
                << "(const std::vector<RamDomain>& args, "
                   "std::vector<RamDomain>& ret, std::vector<bool>& err) {\n";
+
+            // a lock is needed when filling the subroutine return vectors
+            os << "std::mutex lock;\n";
 
             // generate code for body
             emitCode(os, *sub.second);

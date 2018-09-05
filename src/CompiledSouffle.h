@@ -159,4 +159,86 @@ public:
         return symTable;
     }
 };
+
+/** Nullary relations */
+class t_nullaries {
+private:
+    bool data;
+
+public:
+    t_nullaries() : data(false) {}
+    using t_tuple = ram::Tuple<RamDomain, 0>;
+    struct context {};
+    context createContext() {
+        return context();
+    }
+    class iterator : public std::iterator<std::forward_iterator_tag, RamDomain*> {
+        bool value;
+
+    public:
+        iterator(bool v = false) : value(v) {}
+
+        const RamDomain* operator*() {
+            return nullptr;
+        }
+
+        bool operator==(const iterator& other) const {
+            return other.value == value;
+        }
+
+        bool operator!=(const iterator& other) const {
+            return other.value != value;
+        }
+
+        iterator& operator++() {
+            if (value) {
+                value = false;
+            }
+            return *this;
+        }
+    };
+    iterator begin() const {
+        return iterator(data);
+    }
+    iterator end() const {
+        return iterator();
+    }
+    void insert(const t_tuple& t) {
+        data = true;
+    }
+    void insert(const t_tuple& t, context& /* ctxt */) {
+        data = true;
+    }
+    void insert(const RamDomain* ramDomain) {
+        data = true;
+    }
+    template <typename T>
+    void insertAll(T& other) {
+        if (!other.empty()) {
+            insert();
+        }
+    }
+    bool insert() {
+        bool result = data;
+        data = true;
+        return !result;
+    }
+    bool contains(const t_tuple& t) const {
+        return data;
+    }
+    bool contains(const t_tuple& t, context& /* ctxt */) const {
+        return data;
+    }
+    std::size_t size() const {
+        return data ? 1 : 0;
+    }
+    bool empty() const {
+        return !data;
+    }
+    void purge() {
+        data = false;
+    }
+    void printHintStatistics(std::ostream& o, std::string prefix) const {}
+};
+
 }  // namespace souffle

@@ -275,6 +275,13 @@ public:
                     printStr("Usage: printrel <relation name>\n");
                     continue;
                 }
+            } else if (command[0] == "measure") {
+                try {
+                    printStr(prov.measureRelation(command[1]));
+                } catch (std::exception& e) {
+                    printStr("Usage: printrel <relation name>\n");
+                    continue;
+                }
             } else if (command[0] == "output") {
                 if (command.size() == 2) {
                     output = new std::ofstream(command[1]);
@@ -304,7 +311,7 @@ public:
                         "explain <relation>(<element1>, <element2>, ...): Prints derivation tree\n"
                         "subproof <relation>(<label>): Prints derivation tree for a subproof, label is "
                         "generated if a derivation tree exceeds height limit\n"
-                        "rule <rule number>: Prints a rule\n"
+                        "rule <relation name> <rule number>: Prints a rule\n"
                         "printrel <relation name>: Prints the tuples of a relation\n"
                         "output [<filename>]: Write output into a file/disable output\n"
                         "format json/proof: switch format between json and proof-trees\n"

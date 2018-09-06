@@ -99,32 +99,6 @@ function graphIterRul() {
     drawGraph();
 }
 
-function graphRulVer() {
-    // TODO: fix magic number
-    if (!selected.rul || selected.rul[0]!='C') {
-        alert("Please select a recursive rule (ID starts with C) to graph.");
-        return;
-    }
-
-    came_from = "rul";
-
-    graph_vals.labels = [];
-    graph_vals.tot_t = [];
-    graph_vals.tuples = [];
-    for (j = 0; j < data.rul[selected.rul][10].tot_t.length; j++) {
-        graph_vals.labels.push(j.toString());
-        graph_vals.tot_t.push(
-            data.rul[selected.rul][10].tot_t[j]
-        );
-        graph_vals.tuples.push(
-            data.rul[selected.rul][10].tuples[j]
-        )
-    }
-
-    document.getElementById('chart_tab').click();
-    drawGraph();
-}
-
 function drawGraph() {
     var options = {
         height: "calc((100vh - 167px) / 2)",

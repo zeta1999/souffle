@@ -110,7 +110,6 @@ std::string htmlBodyTop = R"___(
     <h3>Rules table</h3>
     <button onclick="toggle_precision();">Toggle number precision</button>
     <button onclick="graphIterRul();">Graph iterations of selected</button>
-    <button onclick="graphRulVer();">Graph versions of selected</button>
     <div class="table_wrapper">
         <table id='Rul_table'>
             <thead>

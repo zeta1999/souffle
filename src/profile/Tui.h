@@ -50,6 +50,16 @@ private:
     std::shared_ptr<Reader> reader;
     InputReader linereader;
 
+    struct Usage {
+        uint64_t time;
+        uint32_t maxRSS;
+        uint64_t systemtime;
+        uint64_t usertime;
+        bool operator<(const Usage& other) const {
+            return time < other.time;
+        }
+    };
+
 public:
     Tui(std::string filename, bool live, bool gui) {
         this->f_name = filename;
@@ -462,11 +472,25 @@ public:
                 comma(firstCol, ",\n");
                 outfile << '"' << Tools::cleanJsonOut(str) << '"';
             }
-            outfile << ']';
+            outfile << "],\n";
             source_file.close();
         }
 
-        outfile << "};\n";
+        // Add usage statistics
+        auto usages = getUsageStats(512);
+
+        outfile << R"_("usage": [)_";
+        firstRow = true;
+        for (auto usage : usages) {
+            comma(firstRow);
+            outfile << '[';
+            outfile << usage.time << ", ";
+            outfile << usage.usertime << ", ";
+            outfile << usage.systemtime << ", ";
+            outfile << usage.maxRSS;
+            outfile << ']';
+        }
+        outfile << "]};\n";
         outfile << html.get_second_half();
 
         std::cout << "file output to: " << new_file << std::endl;
@@ -590,23 +614,86 @@ public:
         usage(rul->getEndtime() * 1000000, rul->getStarttime() * 1000000);
     }
 
-    void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
-        struct Usage {
-            uint64_t time;
-            uint32_t maxRSS;
-            uint64_t systemtime;
-            uint64_t usertime;
-            bool operator<(const Usage& other) const {
-                return time < other.time;
-            }
-        };
-
-        uint32_t width = getTermWidth() - 8;
-        uint32_t height = 20;
-
+    std::set<Usage> getUsageStats(size_t width = size_t(-1)) {
+        std::set<Usage> usages;
         DirectoryEntry* usageStats = dynamic_cast<DirectoryEntry*>(
                 ProfileEventSingleton::instance().getDB().lookupEntry({"program", "usage", "timepoint"}));
         if (usageStats == nullptr || usageStats->getKeys().size() < 2) {
+            return usages;
+        }
+        uint64_t endTime = 0;
+        uint64_t startTime = 0;
+        uint64_t timeStep = 0;
+        // Translate the string ordered text usage stats to a time ordered binary form.
+        std::set<Usage> allUsages;
+        for (auto& currentKey : usageStats->getKeys()) {
+            Usage currentUsage;
+            currentUsage.time = std::stol(currentKey);
+            currentUsage.systemtime = dynamic_cast<SizeEntry*>(
+                    usageStats->readDirectoryEntry(currentKey)->readEntry("systemtime"))
+                                              ->getSize();
+            currentUsage.usertime = dynamic_cast<SizeEntry*>(
+                    usageStats->readDirectoryEntry(currentKey)->readEntry("usertime"))
+                                            ->getSize();
+            currentUsage.maxRSS =
+                    dynamic_cast<SizeEntry*>(usageStats->readDirectoryEntry(currentKey)->readEntry("maxRSS"))
+                            ->getSize();
+
+            // Duplicate times are possible
+            if (allUsages.find(currentUsage) != allUsages.end()) {
+                auto& existing = *allUsages.find(currentUsage);
+                currentUsage.systemtime = std::max(existing.systemtime, currentUsage.systemtime);
+                currentUsage.usertime = std::max(existing.usertime, currentUsage.usertime);
+                currentUsage.maxRSS = std::max(existing.maxRSS, currentUsage.maxRSS);
+                allUsages.erase(currentUsage);
+            }
+            allUsages.insert(currentUsage);
+        }
+
+        // cpu times aren't quite recorded in a monotonic way, so skip the invalid ones.
+        for (auto it = ++allUsages.begin(); it != allUsages.end(); ++it) {
+            auto previous = std::prev(it);
+            if (it->usertime < previous->usertime || it->systemtime < previous->systemtime ||
+                    it->time == previous->time) {
+                it = allUsages.erase(it);
+                --it;
+            }
+        }
+
+        // Extract our overall stats
+        if (startTime == 0) {
+            startTime = allUsages.begin()->time;
+        }
+        if (endTime == 0) {
+            endTime = allUsages.rbegin()->time;
+        }
+
+        // If we don't have enough records, just return what we can
+        if (allUsages.size() < width) {
+            return allUsages;
+        }
+
+        timeStep = (endTime - startTime) / width;
+
+        // Store the timepoints we need for the graph
+        for (uint32_t i = 1; i <= width; ++i) {
+            auto it = allUsages.upper_bound(Usage{startTime + timeStep * i});
+            if (it != allUsages.begin()) {
+                --it;
+            }
+            usages.insert(*it);
+        }
+
+        return usages;
+    }
+
+    void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
+        uint32_t width = getTermWidth() - 8;
+        uint32_t height = 20;
+
+        std::set<Usage> usages = getUsageStats(width);
+
+        if (usages.size() < 2) {
             for (uint8_t i = 0; i < height + 2; ++i) {
                 std::cout << std::endl;
             }
@@ -616,82 +703,20 @@ public:
 
         double maxIntervalUsage = 0;
 
-        Usage currentUsage;
-        Usage previousUsage{0, 0, 0, 0};
-        uint64_t timeStep = 0;
-
-        std::set<Usage> usages;
-        {
-            // Translate the string ordered text usage stats to a time ordered binary form.
-            std::set<Usage> allUsages;
-            for (auto& currentKey : usageStats->getKeys()) {
-                currentUsage.time = std::stol(currentKey);
-                currentUsage.systemtime = dynamic_cast<SizeEntry*>(
-                        usageStats->readDirectoryEntry(currentKey)->readEntry("systemtime"))
-                                                  ->getSize();
-                currentUsage.usertime = dynamic_cast<SizeEntry*>(
-                        usageStats->readDirectoryEntry(currentKey)->readEntry("usertime"))
-                                                ->getSize();
-                currentUsage.maxRSS = dynamic_cast<SizeEntry*>(
-                        usageStats->readDirectoryEntry(currentKey)->readEntry("maxRSS"))
-                                              ->getSize();
-
-                // Duplicate times are possible
-                if (allUsages.find(currentUsage) != allUsages.end()) {
-                    auto& existing = *allUsages.find(currentUsage);
-                    currentUsage.systemtime = std::max(existing.systemtime, currentUsage.systemtime);
-                    currentUsage.usertime = std::max(existing.usertime, currentUsage.usertime);
-                    currentUsage.maxRSS = std::max(existing.maxRSS, currentUsage.maxRSS);
-                    allUsages.erase(currentUsage);
-                }
-                allUsages.insert(currentUsage);
-            }
-
-            // cpu times aren't quite recorded in a monotonic way, so skip the invalid ones.
-            for (auto it = ++allUsages.begin(); it != allUsages.end(); ++it) {
-                auto previous = std::prev(it);
-                if (it->usertime < previous->usertime || it->systemtime < previous->systemtime ||
-                        it->time == previous->time) {
-                    it = allUsages.erase(it);
-                    --it;
-                }
-            }
-
-            // Extract our overall stats
-            if (startTime == 0) {
-                startTime = allUsages.begin()->time;
-            }
-            if (endTime == 0) {
-                endTime = allUsages.rbegin()->time;
-            }
-
-            if (allUsages.size() < width) {
-                width = allUsages.size();
-                usages = allUsages;
-                timeStep = (endTime - startTime) / width;
-            } else {
-                timeStep = (endTime - startTime) / width;
-
-                // Store the timepoints we need for the graph
-                for (uint32_t i = 1; i <= width; ++i) {
-                    auto it = allUsages.upper_bound(Usage{startTime + timeStep * i});
-                    if (it != allUsages.begin()) {
-                        --it;
-                    }
-                    usages.insert(*it);
-                }
-            }
+        // Extract our overall stats
+        if (startTime == 0) {
+            startTime = usages.begin()->time;
         }
-        if (usages.size() < 2) {
-            for (uint8_t i = 0; i < height + 2; ++i) {
-                std::cout << std::endl;
-            }
-            std::cout << "Insufficient data for usage statistics." << std::endl;
-            return;
+        if (endTime == 0) {
+            endTime = usages.rbegin()->time;
+        }
+
+        if (usages.size() < width) {
+            width = usages.size();
         }
 
         // Find maximum so we can normalise the graph
-        previousUsage = {0, 0, 0, 0};
+        Usage previousUsage{0, 0, 0, 0};
         for (auto& currentUsage : usages) {
             double usageDiff = currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
                                previousUsage.usertime;

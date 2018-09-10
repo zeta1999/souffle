@@ -477,18 +477,20 @@ public:
         }
 
         // Add usage statistics
-        auto usages = getUsageStats(512);
+        auto usages = getUsageStats(100);
 
         outfile << R"_("usage": [)_";
         firstRow = true;
+        Usage previousUsage = *usages.begin();
         for (auto usage : usages) {
             comma(firstRow);
             outfile << '[';
             outfile << usage.time << ", ";
-            outfile << usage.usertime << ", ";
-            outfile << usage.systemtime << ", ";
-            outfile << usage.maxRSS;
+            outfile << (usage.usertime - previousUsage.usertime) / 1000000.0 << ", ";
+            outfile << (usage.systemtime - previousUsage.systemtime) / 1000000.0 << ", ";
+            outfile << usage.maxRSS * 1024;
             outfile << ']';
+            previousUsage = usage;
         }
         outfile << "]};\n";
         outfile << html.get_second_half();

@@ -298,9 +298,14 @@ inline std::string cleanJsonOut(std::string val) {
     }
 
     size_t start_pos = 0;
+    while ((start_pos = val.find('\\', start_pos)) != std::string::npos) {
+        val.replace(start_pos, 1, "\\\\");
+        start_pos += 2;
+    }
+    start_pos = 0;
     while ((start_pos = val.find('"', start_pos)) != std::string::npos) {
-        val.replace(start_pos, 1, "\"");
-        start_pos++;
+        val.replace(start_pos, 1, "\\\"");
+        start_pos += 2;
     }
     return val;
 }

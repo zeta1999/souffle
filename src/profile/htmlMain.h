@@ -53,8 +53,15 @@ std::string htmlBodyTop = R"___(
         <p>To visualise a graph of a relation, select the relation from the Relations table, then press the graph selected button to show the iterations of the Relation</p>
         <p>Similarly for a Rule, in the Rules table, select a rule, and select either graph the selected rule's iterations or the versions of the selected rule.</p>
     </div>
-    <div id="Top" class="tabcontent" style="max-width:800px;margin-left: auto;margin-right: auto;">
+    <div id="Top" class="tabcontent" style="margin-left: auto;margin-right: auto;">
         <h3>Top</h3>
+        <div id="top-stats"></div>
+        <div id="top-graphs">
+            <h1>CPU time</h1>
+            <div class="ct-chart-cpu"></div>
+            <h1>Maximum Resident Set Size</h1>
+            <div class="ct-chart-rss"></div>
+        </div>
     </div>
     <div id="Relations" class="tabcontent">
         <h3>Relations table</h3>
@@ -110,7 +117,6 @@ std::string htmlBodyTop = R"___(
     <h3>Rules table</h3>
     <button onclick="toggle_precision();">Toggle number precision</button>
     <button onclick="graphIterRul();">Graph iterations of selected</button>
-    <button onclick="graphRulVer();">Graph versions of selected</button>
     <div class="table_wrapper">
         <table id='Rul_table'>
             <thead>

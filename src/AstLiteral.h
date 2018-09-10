@@ -179,7 +179,7 @@ protected:
     std::unique_ptr<AstAtom> atom;
 
 public:
-    AstNegation(std::unique_ptr<AstAtom> a) : atom(std::move(a)) {}
+    AstNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     ~AstNegation() override = default;
 
@@ -221,6 +221,64 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstNegation*>(&node));
         const auto& other = static_cast<const AstNegation&>(node);
+        return *atom == *other.atom;
+    }
+};
+
+/**
+ * Subclass of Literal that represents a negated atom, * e.g., !parent(x,y).
+ * A Negated atom occurs in a body of clause and cannot occur in a head of a clause.
+ *
+ * Specialised for provenance: used for existence check that tuple doesn't already exist
+ */
+class AstProvenanceNegation : public AstLiteral {
+protected:
+    /** A pointer to the negated Atom */
+    std::unique_ptr<AstAtom> atom;
+
+public:
+    AstProvenanceNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
+
+    ~AstProvenanceNegation() override = default;
+
+    /** Returns the nested atom as the referenced atom */
+    const AstAtom* getAtom() const override {
+        return atom.get();
+    }
+
+    /** Return the negated atom */
+    AstAtom* getAtom() {
+        return atom.get();
+    }
+
+    /** Output to a given stream */
+    void print(std::ostream& os) const override {
+        os << "prov!";
+        atom->print(os);
+    }
+
+    /** Creates a clone if this AST sub-structure */
+    AstProvenanceNegation* clone() const override {
+        AstProvenanceNegation* res = new AstProvenanceNegation(std::unique_ptr<AstAtom>(atom->clone()));
+        res->setSrcLoc(getSrcLoc());
+        return res;
+    }
+
+    /** Mutates this node */
+    void apply(const AstNodeMapper& map) override {
+        atom = map(std::move(atom));
+    }
+
+    /** Obtains a list of all embedded child nodes */
+    std::vector<const AstNode*> getChildNodes() const override {
+        return {atom.get()};
+    }
+
+protected:
+    /** Implements the node comparison for this node type */
+    bool equal(const AstNode& node) const override {
+        assert(dynamic_cast<const AstProvenanceNegation*>(&node));
+        const AstProvenanceNegation& other = static_cast<const AstProvenanceNegation&>(node);
         return *atom == *other.atom;
     }
 };

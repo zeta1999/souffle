@@ -20,17 +20,11 @@ dnl Positive testcase for Souffle provenance explainer
 dnl $1 -- test name
 dnl $2 -- category
 m4_define([POSITIVE_PROVENANCE_TEST],[
-  m4_define([PROV_FLAGS], [[], [-c]])
-  TEST_PROV_GROUP([$1],[
-    TEST_EVAL_IN([$1],[$2], facts)
+  m4_ifblank(m4_join([],ENV_CONFS), [
+    m4_define([PROV_FLAGS], [[], [-c], [-c -j8]])
+  ], [
+    m4_define([PROV_FLAGS], [ENV_CONFS])
   ])
-])
-
-dnl Negative testcase for Souffle provenance explainer
-dnl $1 -- test name
-dnl $2 -- category
-m4_define([NEGATIVE_PROVENANCE_TEST],[
-  m4_define([PROV_FLAGS], [[], [-c]])
   TEST_PROV_GROUP([$1],[
     TEST_EVAL_IN([$1],[$2], facts)
   ])
@@ -41,3 +35,4 @@ m4_define([NEGATIVE_PROVENANCE_TEST],[
 POSITIVE_PROVENANCE_TEST([path],[provenance])
 POSITIVE_PROVENANCE_TEST([negation],[provenance])
 POSITIVE_PROVENANCE_TEST([cprog1],[provenance])
+POSITIVE_PROVENANCE_TEST([high_arity],[provenance])

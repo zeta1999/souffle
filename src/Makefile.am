@@ -124,6 +124,7 @@ souffle_sources = \
               SrcLocation.cpp    SrcLocation.h          \
               StringPool.h                              \
               Synthesiser.cpp       Synthesiser.h       \
+              SynthesiserRelation.cpp SynthesiserRelation.h \
               TernaryFunctorOps.h                       \
               TypeSystem.cpp        TypeSystem.h        \
               UnaryFunctorOps.h                         \

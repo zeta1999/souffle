@@ -99,30 +99,58 @@ function graphIterRul() {
     drawGraph();
 }
 
-function graphRulVer() {
-    // TODO: fix magic number
-    if (!selected.rul || selected.rul[0]!='C') {
-        alert("Please select a recursive rule (ID starts with C) to graph.");
-        return;
-    }
 
-    came_from = "rul";
-
+function graphUsages() {
     graph_vals.labels = [];
-    graph_vals.tot_t = [];
-    graph_vals.tuples = [];
-    for (j = 0; j < data.rul[selected.rul][10].tot_t.length; j++) {
-        graph_vals.labels.push(j.toString());
-        graph_vals.tot_t.push(
-            data.rul[selected.rul][10].tot_t[j]
-        );
-        graph_vals.tuples.push(
-            data.rul[selected.rul][10].tuples[j]
-        )
+    graph_vals.cpu = [];
+    graph_vals.rss = [];
+    for (j = 0; j < data.usage.length; j++) {
+        graph_vals.labels.push(
+            /* data.usage[j][0].toString());*/
+            j.toString());
+        graph_vals.cpu.push(
+            (data.usage[j][1] + data.usage[j][2]).toString());
+        graph_vals.rss.push(
+            data.usage[j][3].toString());
     }
 
-    document.getElementById('chart_tab').click();
-    drawGraph();
+    var options = {
+        height: "calc((100vh - 167px) / 2)",
+        axisY: {
+            labelInterpolationFnc: function (value) {
+                return humanize_time(value);
+            }
+        },
+        axisX: {
+            labelInterpolationFnc: function (value) {
+                var n = Math.floor(graph_vals.labels.length/15);
+                if (n>1) {
+                    if (value%n == 0) {
+                        return value;
+                    }
+                    return null;
+                }
+                return value;
+            }
+        },
+        plugins: [Chartist.plugins.tooltip()]
+    };
+
+    new Chartist.Bar(".ct-chart-cpu", {
+        labels: graph_vals.labels,
+        series: [graph_vals.cpu],
+    }, options);
+
+    options.axisY = {
+        labelInterpolationFnc: function (value) {
+            return minify_numbers(value);
+        }
+    };
+
+    new Chartist.Bar(".ct-chart-rss", {
+        labels: graph_vals.labels,
+        series: [graph_vals.rss],
+    }, options)
 }
 
 function drawGraph() {
@@ -433,13 +461,14 @@ function genRulVer() {
 
 function gen_top() {
     var x, line1, line2;
-    x = document.getElementById("Top");
+    x = document.getElementById("top-stats");
     line1 = document.createElement("p");
     line1.textContent = "Total runtime: " + humanize_time(data.top[0]) + " (" + data.top[0] + " seconds)";
     line2 = document.createElement("p");
     line2.textContent = "Total tuples: " + minify_numbers(data.top[1]) + " (" + data.top[1] + ")";
     x.appendChild(line1);
-    x.appendChild(line2)
+    x.appendChild(line2);
+    graphUsages();
 }
 
 function view_code_snippet(value) {

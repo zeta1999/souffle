@@ -37,7 +37,9 @@ public:
     }
     inline std::string get_second_half() {
         std::stringstream ss;
-        ss << "</script>" << wrapJs(html::jsUtil) << wrapJs(html::jsMain) << html::htmlBodyBottom;
+        ss << "</script>" << wrapJs(html::jsTableSort) << wrapJs(html::jsChartistMin)
+           << wrapJs(html::jsChartistPlugin) << wrapJs(html::jsUtil) << wrapJs(html::jsMain)
+           << html::htmlBodyBottom;
         return ss.str();
     }
 

@@ -96,13 +96,10 @@ void executeBinary(const std::string& binaryFilename
         exitCode = system(binaryFilename.c_str());
     }
 
-// only remove temp files if we are not configuring with --enable-debug
-#ifndef NDEBUG
     if (Global::config().get("dl-program").empty()) {
         remove(binaryFilename.c_str());
         remove((binaryFilename + ".cpp").c_str());
     }
-#endif
 
     // exit with same code as executable
     if (exitCode != 0) {

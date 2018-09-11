@@ -58,7 +58,7 @@ AC_ARG_ENABLE(
 )
 
 AS_IF([test "x$enable_debug" = "xyes"], [CXXFLAGS="$CXXFLAGS -O0 -g3"],
-  [test "x$enable_debug" != "xyes"], [CXXFLAGS="$CXXFLAGS -O3 -DNDEBUG"]
+  [test "x$enable_debug" != "xyes"], [CXXFLAGS="$CXXFLAGS -O3"]
 )
 
 if test "$BUILD_TYPE" == "Debug" ; then

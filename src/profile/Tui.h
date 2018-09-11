@@ -373,7 +373,10 @@ public:
             outfile << row[1]->getDoubVal() << ", ";
             outfile << row[2]->getDoubVal() << ", ";
             outfile << row[3]->getDoubVal() << ", ";
-            outfile << row[4]->getLongVal() << ", [";
+            outfile << row[4]->getLongVal() << ", ";
+
+            outfile << '"' << src << R"_(", )_";
+            outfile << "[";
 
             bool has_ver = false;
             bool firstCol = true;

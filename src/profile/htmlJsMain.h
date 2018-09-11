@@ -106,12 +106,11 @@ function graphUsages() {
     graph_vals.rss = [];
     for (j = 0; j < data.usage.length; j++) {
         graph_vals.labels.push(
-            /* data.usage[j][0].toString());*/
-            j.toString());
+            data.usage[j][4]);
         graph_vals.cpu.push(
-            (data.usage[j][1] + data.usage[j][2]).toString());
+            {meta: data.usage[j][4], value: (data.usage[j][1] + data.usage[j][2]).toString()});
         graph_vals.rss.push(
-            data.usage[j][3].toString());
+            {meta: data.usage[j][4], value: data.usage[j][3].toString()});
     }
 
     var options = {
@@ -123,14 +122,7 @@ function graphUsages() {
         },
         axisX: {
             labelInterpolationFnc: function (value) {
-                var n = Math.floor(graph_vals.labels.length/15);
-                if (n>1) {
-                    if (value%n == 0) {
-                        return value;
-                    }
-                    return null;
-                }
-                return value;
+                return "";
             }
         },
         plugins: [Chartist.plugins.tooltip()]

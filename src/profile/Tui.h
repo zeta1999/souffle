@@ -488,7 +488,15 @@ public:
             outfile << usage.time << ", ";
             outfile << (usage.usertime - previousUsage.usertime) / 1000000.0 << ", ";
             outfile << (usage.systemtime - previousUsage.systemtime) / 1000000.0 << ", ";
-            outfile << usage.maxRSS * 1024;
+            outfile << usage.maxRSS * 1024 << ", ";
+            outfile << '"';
+            bool firstCol = true;
+            for (auto& cur : out.getProgramRun()->getRelationsAtTime(
+                         previousUsage.time / 1000000.0, usage.time / 1000000.0)) {
+                comma(firstCol);
+                outfile << cur->getName();
+            }
+            outfile << '"';
             outfile << ']';
             previousUsage = usage;
         }

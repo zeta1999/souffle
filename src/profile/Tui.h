@@ -373,7 +373,10 @@ public:
             outfile << row[1]->getDoubVal() << ", ";
             outfile << row[2]->getDoubVal() << ", ";
             outfile << row[3]->getDoubVal() << ", ";
-            outfile << row[4]->getLongVal() << ", [";
+            outfile << row[4]->getLongVal() << ", ";
+
+            outfile << '"' << src << R"_(", )_";
+            outfile << "[";
 
             bool has_ver = false;
             bool firstCol = true;
@@ -488,7 +491,15 @@ public:
             outfile << usage.time << ", ";
             outfile << (usage.usertime - previousUsage.usertime) / 1000000.0 << ", ";
             outfile << (usage.systemtime - previousUsage.systemtime) / 1000000.0 << ", ";
-            outfile << usage.maxRSS * 1024;
+            outfile << usage.maxRSS * 1024 << ", ";
+            outfile << '"';
+            bool firstCol = true;
+            for (auto& cur : out.getProgramRun()->getRelationsAtTime(
+                         previousUsage.time / 1000000.0, usage.time / 1000000.0)) {
+                comma(firstCol);
+                outfile << cur->getName();
+            }
+            outfile << '"';
             outfile << ']';
             previousUsage = usage;
         }

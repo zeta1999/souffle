@@ -108,30 +108,18 @@ std::string jsChartistPlugin = R"___(
 
                     meta = '<span class="chartist-tooltip-meta">' + meta + '</span>';
 
-                    // if (hasMeta) {
-                    //     tooltipText += meta + '<br>';
-                    // } else {
-                    //     // For Pie Charts also take the labels into account
-                    //     // Could add support for more charts here as well!
-                    //     if (chart instanceof Chartist.Pie) {
-                    //         var label = next($point, 'ct-label');
-                    //         if (label) {
-                    //             tooltipText += text(label) + '<br>';
-                    //         }
-                    //     }
-                    // }
-                    //
-                    // if (value) {
-                    //     if (options.currency) {
-                    //         if (options.currencyFormatCallback != undefined) {
-                    //             value = options.currencyFormatCallback(value, options);
-                    //         } else {
-                    //             value = options.currency + value.replace(/(\d)(?=(\d{3})+(?:\.\d+)?$)/g, '$1,');
-                    //         }
-                    //     }
-                    //     value = '<span class="chartist-tooltip-value">' + value + '</span>';
-                    //     tooltipText += value;
-                    // }
+                    if (hasMeta) {
+                        tooltipText += meta + '<br>';
+                    } else {
+                        // For Pie Charts also take the labels into account
+                        // Could add support for more charts here as well!
+                        if (chart instanceof Chartist.Pie) {
+                            var label = next($point, 'ct-label');
+                            if (label) {
+                                tooltipText += text(label) + '<br>';
+                            }
+                        }
+                    }
 
                     if (value) {
                         if (value % 1 === 0) {

@@ -12,6 +12,7 @@
 #include "StringUtils.h"
 #include "Table.h"
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -124,6 +125,16 @@ public:
             return &(*relation_map[name]);
         }
         return nullptr;
+    }
+
+    std::set<std::shared_ptr<Relation>> getRelationsAtTime(double start, double end) {
+        std::set<std::shared_ptr<Relation>> result;
+        for (auto& cur : relation_map) {
+            if (cur.second->getStarttime() <= end && cur.second->getEndtime() >= start) {
+                result.insert(cur.second);
+            }
+        }
+        return result;
     }
 
     inline std::string formatTime(double runtime) {

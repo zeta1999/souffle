@@ -75,10 +75,20 @@ public:
     }
 
     inline double getStarttime() {
+        for (auto& iteration : iterations) {
+            if (starttime == 0 || starttime > iteration->getStarttime()) {
+                starttime = iteration->getStarttime();
+            }
+        }
         return starttime;
     }
 
     inline double getEndtime() {
+        for (auto& iteration : iterations) {
+            if (endtime < iteration->getEndtime()) {
+                endtime = iteration->getEndtime();
+            }
+        }
         return endtime;
     }
 

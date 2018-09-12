@@ -130,9 +130,7 @@ public:
     std::set<std::shared_ptr<Relation>> getRelationsAtTime(double start, double end) {
         std::set<std::shared_ptr<Relation>> result;
         for (auto& cur : relation_map) {
-            if ((cur.second->getStarttime() <= end && cur.second->getStarttime() >= start) ||
-                    (cur.second->getEndtime() <= end && cur.second->getEndtime() >= start) ||
-                    (cur.second->getEndtime() > end && cur.second->getStarttime() < start)) {
+            if (cur.second->getStarttime() <= end && cur.second->getEndtime() >= start) {
                 result.insert(cur.second);
             }
         }

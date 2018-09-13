@@ -999,9 +999,8 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
             std::set<std::string> literalVariables;
 
             // Store all variables in the literal
-            visitDepthFirst(*clauseLiteral, [&](const AstVariable& var) {
-                literalVariables.insert(var.getName());
-            });
+            visitDepthFirst(
+                    *clauseLiteral, [&](const AstVariable& var) { literalVariables.insert(var.getName()); });
 
             // No new edges if only one variable is present
             if (literalVariables.size() > 1) {
@@ -1021,9 +1020,8 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
 
         // Find the connected component associated with the head
         std::set<std::string> headComponent;
-        visitDepthFirst(*clause.getHead(), [&](const AstVariable& var){
-            headComponent.insert(var.getName());
-        });
+        visitDepthFirst(
+                *clause.getHead(), [&](const AstVariable& var) { headComponent.insert(var.getName()); });
 
         if (!headComponent.empty()) {
             variableGraph.visitDepthFirst(*headComponent.begin(), [&](const std::string& var) {

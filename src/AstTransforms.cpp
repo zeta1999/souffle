@@ -945,6 +945,14 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
     return changed;
 }
 
+bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translationUnit) {
+    bool changed = false;
+
+    // TODO: partition body literals transformer
+
+    return changed;
+}
+
 bool ExtractDisconnectedLiteralsTransformer::transform(AstTranslationUnit& translationUnit) {
     // TODO (azreika): consider extending to partition body atoms based on variable-use instead
     bool changed = false;

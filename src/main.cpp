@@ -419,7 +419,9 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
             std::make_unique<ReplaceSingletonVariablesTransformer>(),
             std::make_unique<InlineRelationsTransformer>(), std::make_unique<ReduceExistentialsTransformer>(),
-            std::make_unique<ExtractDisconnectedLiteralsTransformer>(),
+            // TODO XXX : remove this line
+            // std::make_unique<ExtractDisconnectedLiteralsTransformer>(),
+            std::make_unique<PartitionBodyLiteralsTransformer>(),
             std::make_unique<ResolveAliasesTransformer>(),
             std::make_unique<RemoveRelationCopiesTransformer>(), std::move(equivalencePipeline),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),

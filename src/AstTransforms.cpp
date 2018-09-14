@@ -950,7 +950,7 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
     AstProgram& program = *translationUnit.getProgram();
 
     /* Process:
-     * Go through each clause and construt a variable dependency graph G.
+     * Go through each clause and construct a variable dependency graph G.
      * The nodes of G are the variables. A path between a and b exists iff
      * a and b appear in a common body literal.
      *

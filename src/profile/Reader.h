@@ -317,21 +317,6 @@ public:
 
     void save(std::string f_name);
 
-    void process(const std::vector<std::string>& data) {
-        {
-            if (data[0].find("frequency") != std::string::npos) {
-                if (relation_map.find(data[1]) == relation_map.end()) {
-                    relation_map.emplace(data[1], std::make_shared<Relation>(Relation(data[1], createId())));
-                }
-                std::shared_ptr<Relation> _rel = relation_map[data[1]];
-                addFrequency(_rel, data);
-            }
-        }
-
-        run->SetRuntime(this->runtime);
-        run->setRelation_map(this->relation_map);
-    }
-
     inline bool isLive() {
         return online;
     }
@@ -347,38 +332,6 @@ public:
             relation.readEntry(key)->accept(relationVisitor);
         }
     }
-
-    void addIteration(std::shared_ptr<Relation> rel, std::vector<std::string> data);
-
-    void addFrequency(std::shared_ptr<Relation> rel, std::vector<std::string> data) {
-        std::unordered_map<std::string, std::shared_ptr<Rule>>& ruleMap = rel->getRuleMap();
-
-        // If we can't find the rule then it must be an Iteration
-        if (ruleMap.find(data[3]) == ruleMap.end()) {
-            for (auto& iter : rel->getIterations()) {
-                for (auto& rule : iter->getRul_rec()) {
-                    if (rule.second->getVersion() == std::stoi(data[2])) {
-                        rule.second->addAtomFrequency(data[4], data[5], std::stoi(data[7]));
-                        return;
-                    }
-                }
-            }
-        } else {
-            std::shared_ptr<Rule> _rul = ruleMap[data[3]];
-            // 0: @frequency-rule;
-            // 1: relationName;
-            // 2: version;
-            // 3: srcloc;
-            // 4: stringify(clause);
-            // 5: stringify(atom);
-            // 6: level;
-            // 7: count
-            // Generate name from atom + version
-            _rul->addAtomFrequency(data[4], data[5], std::stoi(data[7]));
-        }
-    }
-
-    void addRule(std::shared_ptr<Relation> rel, std::vector<std::string> data);
 
     inline bool isLoaded() {
         return loaded;

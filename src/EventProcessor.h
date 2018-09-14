@@ -493,6 +493,9 @@ public:
         // non-recursive rule
         if (rule == originalRule) {
             db.addSizeEntry({"program", "relation", relation, "non-recursive-rule", rule, "atom-frequency",
+                                    rule, atom, "level"},
+                    level);
+            db.addSizeEntry({"program", "relation", relation, "non-recursive-rule", rule, "atom-frequency",
                                     rule, atom, "num-tuples"},
                     number);
         } else {

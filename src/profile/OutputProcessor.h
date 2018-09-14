@@ -235,11 +235,11 @@ Table inline OutputProcessor::getAtomTable(std::string strRel, std::string strRu
                 continue;
             }
             for (auto& atom : rul->getAtoms()) {
-                Row row(3);
+                Row row(4);
                 row[0] = std::shared_ptr<CellInterface>(new Cell<std::string>(atom.rule));
                 row[1] = std::shared_ptr<CellInterface>(new Cell<std::string>(atom.identifier));
                 row[2] = std::shared_ptr<CellInterface>(new Cell<long>(atom.level));
-                row[2] = std::shared_ptr<CellInterface>(new Cell<long>(atom.frequency));
+                row[3] = std::shared_ptr<CellInterface>(new Cell<long>(atom.frequency));
 
                 table.addRow(std::make_shared<Row>(row));
             }
@@ -359,6 +359,7 @@ Table inline OutputProcessor::getVersions(std::string strRel, std::string strRul
  * atom table :
  * ROW[0] = rule
  * ROW[1] = atom
+ * ROW[2] = level
  * ROW[3] = frequency
  */
 Table inline OutputProcessor::getVersionAtoms(std::string strRel, std::string srcLocator, int version) {
@@ -377,7 +378,7 @@ Table inline OutputProcessor::getVersionAtoms(std::string strRel, std::string sr
                             row[0] = std::shared_ptr<CellInterface>(new Cell<std::string>(atom.rule));
                             row[1] = std::shared_ptr<CellInterface>(new Cell<std::string>(atom.identifier));
                             row[2] = std::shared_ptr<CellInterface>(new Cell<long>(atom.level));
-                            row[2] = std::shared_ptr<CellInterface>(new Cell<long>(atom.frequency));
+                            row[3] = std::shared_ptr<CellInterface>(new Cell<long>(atom.frequency));
                             table.addRow(std::make_shared<Row>(row));
                         }
                     }

@@ -33,10 +33,10 @@ public:
     bool operator<(const Atom& other) const {
         if (rule != other.rule) {
             return rule < other.rule;
-        } else if (identifier != other.identifier) {
-            return identifier < other.identifier;
+        } else if (level != other.level) {
+            return level < other.level;
         }
-        return level < other.level;
+        return identifier < other.identifier;
     }
 };
 

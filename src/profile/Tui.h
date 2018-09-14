@@ -1245,7 +1245,7 @@ protected:
                 firstRun = false;
             }
             std::printf(
-                    "      %-16s%s\n", row[2]->toString(precision).c_str(), row[1]->getStringVal().c_str());
+                    "      %-16s%s\n", row[3]->toString(precision).c_str(), row[1]->getStringVal().c_str());
         }
         std::cout << '\n';
     }

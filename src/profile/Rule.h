@@ -8,11 +8,13 @@
 
 #pragma once
 
-#include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <tuple>
 #include <utility>
+
+#include "Atom.h"
 
 namespace souffle {
 namespace profile {
@@ -28,7 +30,7 @@ protected:
     long num_tuples = 0;
     std::string identifier;
     std::string locator = "";
-    std::map<std::tuple<std::string, std::string>, size_t> atoms{};
+    std::set<Atom> atoms;
 
 private:
     bool recursive = false;
@@ -72,11 +74,12 @@ public:
         this->num_tuples = num_tuples;
     }
 
-    inline void addAtomFrequency(const std::string& subruleName, std::string atom, long frequency) {
-        atoms[std::make_tuple(subruleName, atom)] = frequency;
+    inline void addAtomFrequency(
+            const std::string& subruleName, std::string atom, size_t level, size_t frequency) {
+        atoms.emplace(atom, subruleName, level, frequency);
     }
 
-    const std::map<std::tuple<std::string, std::string>, size_t>& getAtoms() {
+    const std::set<Atom>& getAtoms() {
         return atoms;
     }
     inline std::string getName() {

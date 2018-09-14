@@ -71,12 +71,13 @@ public:
         const std::string& clause = directory.getKey();
 
         for (auto& key : directory.getKeys()) {
-            auto* numTuples =
+            auto* level = dynamic_cast<SizeEntry*>(directory.readDirectoryEntry(key)->readEntry("level"));
+            auto* frequency =
                     dynamic_cast<SizeEntry*>(directory.readDirectoryEntry(key)->readEntry("num-tuples"));
-            if (numTuples == nullptr) {
+            if (frequency == nullptr || level == nullptr) {
                 return;
             }
-            rule.addAtomFrequency(clause, key, numTuples->getSize());
+            rule.addAtomFrequency(clause, key, level->getSize(), frequency->getSize());
         }
     }
 

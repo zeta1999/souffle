@@ -74,10 +74,10 @@ public:
             auto* level = dynamic_cast<SizeEntry*>(directory.readDirectoryEntry(key)->readEntry("level"));
             auto* frequency =
                     dynamic_cast<SizeEntry*>(directory.readDirectoryEntry(key)->readEntry("num-tuples"));
-            if (frequency == nullptr || level == nullptr) {
-                return;
-            }
-            rule.addAtomFrequency(clause, key, level->getSize(), frequency->getSize());
+            // Handle older logs
+            size_t intFreq = frequency == nullptr ? 0 : frequency->getSize();
+            size_t intLevel = level == nullptr ? 0 : level->getSize();
+            rule.addAtomFrequency(clause, key, intLevel, intFreq);
         }
     }
 

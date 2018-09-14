@@ -1105,12 +1105,14 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
 
         for (AstLiteral* bodyLiteral : clause.getBodyLiterals()) {
             bool associated = false;
+            bool hasVariables = false;
             visitDepthFirst(*bodyLiteral, [&](const AstVariable& var) {
+                hasVariables = true;
                 if (headComponent.find(var.getName()) != headComponent.end()) {
                     associated = true;
                 }
             });
-            if (associated) {
+            if (associated || !hasVariables) {
                 replacementClause->addToBody(std::unique_ptr<AstLiteral>(bodyLiteral->clone()));
             }
         }

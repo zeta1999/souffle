@@ -975,20 +975,18 @@ std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(const
         appendStmt(res, std::move(rule));
     }
 
-    // if no clauses have been translated, we are done
-    if (!res) {
-        return res;
-    }
-
     // add logging for entire relation
     if (Global::config().has("profile")) {
         const std::string& relationName = toString(rel.getName());
         const SrcLocation& srcLocation = rel.getSrcLoc();
-        const std::string logTimerStatement = LogStatement::tNonrecursiveRelation(relationName, srcLocation);
         const std::string logSizeStatement = LogStatement::nNonrecursiveRelation(relationName, srcLocation);
 
-        // add timer
-        res = std::make_unique<RamLogTimer>(std::move(res), logTimerStatement);
+        // add timer if we did any work
+        if (res) {
+            const std::string logTimerStatement =
+                    LogStatement::tNonrecursiveRelation(relationName, srcLocation);
+            res = std::make_unique<RamLogTimer>(std::move(res), logTimerStatement);
+        }
 
         // add table size printer
         appendStmt(res,

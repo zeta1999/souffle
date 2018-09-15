@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -16,6 +16,29 @@
 
 namespace souffle {
 namespace profile {
+
+/*
+ * Class to hold information about souffle Atom profile information
+ */
+class Atom {
+public:
+    const std::string identifier;
+    const std::string rule;
+    const size_t level;
+    const size_t frequency;
+
+    Atom(std::string identifier, std::string rule, size_t level, size_t frequency)
+            : identifier(std::move(identifier)), rule(std::move(rule)), level(level), frequency(frequency) {}
+
+    bool operator<(const Atom& other) const {
+        if (rule != other.rule) {
+            return rule < other.rule;
+        } else if (level != other.level) {
+            return level < other.level;
+        }
+        return identifier < other.identifier;
+    }
+};
 
 /*
  * Class to hold information about souffle Rule profile information
@@ -28,7 +51,7 @@ protected:
     long num_tuples = 0;
     std::string identifier;
     std::string locator = "";
-    std::map<std::tuple<std::string, std::string>, size_t> atoms{};
+    std::set<Atom> atoms;
 
 private:
     bool recursive = false;
@@ -72,11 +95,12 @@ public:
         this->num_tuples = num_tuples;
     }
 
-    inline void addAtomFrequency(const std::string& subruleName, std::string atom, long frequency) {
-        atoms[std::make_tuple(subruleName, atom)] = frequency;
+    inline void addAtomFrequency(
+            const std::string& subruleName, std::string atom, size_t level, size_t frequency) {
+        atoms.emplace(atom, subruleName, level, frequency);
     }
 
-    const std::map<std::tuple<std::string, std::string>, size_t>& getAtoms() {
+    const std::set<Atom>& getAtoms() {
         return atoms;
     }
     inline std::string getName() {

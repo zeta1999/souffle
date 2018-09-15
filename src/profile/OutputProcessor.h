@@ -215,7 +215,8 @@ Table inline OutputProcessor::getRulTable() {
  * atom table :
  * ROW[0] = clause
  * ROW[1] = atom
- * ROW[2] = frequency
+ * ROW[2] = level
+ * ROW[3] = frequency
  */
 Table inline OutputProcessor::getAtomTable(std::string strRel, std::string strRul) {
     std::unordered_map<std::string, std::shared_ptr<Relation>>& relation_map = programRun->getRelation_map();
@@ -234,10 +235,11 @@ Table inline OutputProcessor::getAtomTable(std::string strRel, std::string strRu
                 continue;
             }
             for (auto& atom : rul->getAtoms()) {
-                Row row(3);
-                row[0] = std::shared_ptr<CellInterface>(new Cell<std::string>(std::get<0>(atom.first)));
-                row[1] = std::shared_ptr<CellInterface>(new Cell<std::string>(std::get<1>(atom.first)));
-                row[2] = std::shared_ptr<CellInterface>(new Cell<long>(atom.second));
+                Row row(4);
+                row[0] = std::shared_ptr<CellInterface>(new Cell<std::string>(atom.rule));
+                row[1] = std::shared_ptr<CellInterface>(new Cell<std::string>(atom.identifier));
+                row[2] = std::shared_ptr<CellInterface>(new Cell<long>(atom.level));
+                row[3] = std::shared_ptr<CellInterface>(new Cell<long>(atom.frequency));
 
                 table.addRow(std::make_shared<Row>(row));
             }
@@ -268,7 +270,7 @@ Table inline OutputProcessor::getSubrulTable(std::string strRel, std::string str
             }
             for (auto& atom : rul->getAtoms()) {
                 Row row(1);
-                row[0] = std::shared_ptr<CellInterface>(new Cell<std::string>(std::get<0>(atom.first)));
+                row[0] = std::shared_ptr<CellInterface>(new Cell<std::string>(atom.rule));
 
                 table.addRow(std::make_shared<Row>(row));
             }
@@ -357,6 +359,7 @@ Table inline OutputProcessor::getVersions(std::string strRel, std::string strRul
  * atom table :
  * ROW[0] = rule
  * ROW[1] = atom
+ * ROW[2] = level
  * ROW[3] = frequency
  */
 Table inline OutputProcessor::getVersionAtoms(std::string strRel, std::string srcLocator, int version) {
@@ -372,11 +375,10 @@ Table inline OutputProcessor::getVersionAtoms(std::string strRel, std::string sr
                     if (rul->getLocator().compare(srcLocator) == 0 && rul->getVersion() == version) {
                         for (auto& atom : rul->getAtoms()) {
                             Row row(4);
-                            row[0] = std::shared_ptr<CellInterface>(
-                                    new Cell<std::string>(std::get<0>(atom.first)));
-                            row[1] = std::shared_ptr<CellInterface>(
-                                    new Cell<std::string>(std::get<1>(atom.first)));
-                            row[2] = std::shared_ptr<CellInterface>(new Cell<long>(atom.second));
+                            row[0] = std::shared_ptr<CellInterface>(new Cell<std::string>(atom.rule));
+                            row[1] = std::shared_ptr<CellInterface>(new Cell<std::string>(atom.identifier));
+                            row[2] = std::shared_ptr<CellInterface>(new Cell<long>(atom.level));
+                            row[3] = std::shared_ptr<CellInterface>(new Cell<long>(atom.frequency));
                             table.addRow(std::make_shared<Row>(row));
                         }
                     }

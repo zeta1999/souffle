@@ -245,19 +245,20 @@ public:
 };
 
 /**
- * Transformation pass to move literals out of a clause and into
- * new relations if they are independent of head arguments.
- * E.g. a(x) :- b(x), c(y), d(y). is transformed into:
- *      - a(x) :- b(x), newrel().
- *      - newrel() :- c(y), d(y).
+ * Transformation pass to move literals into new clauses
+ * if they are independent of remaining literals.
+ * E.g. a(x) :- b(x), c(y), d(y), e(z). is transformed into:
+ *      - a(x) :- b(x), newrel1(), newrel2().
+ *      - newrel1() :- c(y), d(y).
+ *      - newrel2() :- e(z).
  */
-class ExtractDisconnectedLiteralsTransformer : public AstTransformer {
+class PartitionBodyLiteralsTransformer : public AstTransformer {
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 
 public:
     std::string getName() const override {
-        return "ExtractDisconnectedLiteralsTransformer";
+        return "PartitionBodyLiteralsTransformer";
     }
 };
 

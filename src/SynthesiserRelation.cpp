@@ -300,21 +300,10 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "return find(t, h);\n";
     out << "}\n";
 
-    // lowerUpperBound methods for internal use
-    for (size_t i = 0; i < numIndexes; i++) {
-        out << "range<t_ind_" << i << "::iterator> lowerUpperBound("
-            << "const t_tuple& low, const t_tuple& high, t_ind_" << i << "::operation_hints& h) const {\n";
-        out << "return range<t_ind_" << i << "::iterator>(ind_" << i << ".lower_bound(low, h), ind_" << i
-            << ".upper_bound(high, h));\n";
-        out << "}\n";
-    }
-
     // empty equalRange method
-    if (isProvenance) {
-        out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
-        out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
-        out << "}\n";
-    }
+    out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
+    out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
+    out << "}\n";
 
     // equalRange methods for each pattern which is used to search this relation
     for (int64_t search : getIndexSet().getSearches()) {
@@ -607,6 +596,11 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "iterator find(const t_tuple& t) const {\n";
     out << "context h;\n";
     out << "return find(t, h);\n";
+    out << "}\n";
+
+    // empty equalRange method
+    out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
+    out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
     for (int64_t search : getIndexSet().getSearches()) {
@@ -908,6 +902,11 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
         out << "return find(t, h);\n";
         out << "}\n";
     }
+
+    // empty equalRange method
+    out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
+    out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
+    out << "}\n";
 
     // equalRange methods
     for (int64_t search : getIndexSet().getSearches()) {
@@ -1438,6 +1437,11 @@ void SynthesiserRbtsetRelation::generateTypeStruct(std::ostream& out) {
     out << "return ind_" << masterIndex << ".find(t);\n";
     out << "}\n";
 
+    // empty equalRange method
+    out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
+    out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
+    out << "}\n";
+
     // equalRange methods for each pattern which is used to search this relation
     for (int64_t search : getIndexSet().getSearches()) {
         auto lexOrder = getIndexSet().getLexOrder(search);
@@ -1675,6 +1679,11 @@ void SynthesiserHashsetRelation::generateTypeStruct(std::ostream& out) {
 
     out << "iterator find(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".find(t);\n";
+    out << "}\n";
+
+    // empty equalRange method
+    out << "range<iterator> equalRange_0(const t_tuple& t, context& h) const {\n";
+    out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
     // equalRange methods for each pattern which is used to search this relation

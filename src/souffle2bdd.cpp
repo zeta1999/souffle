@@ -421,7 +421,7 @@ int main(int argc, char** argv) {
                 std::make_unique<RemoveBooleanConstraintsTransformer>(),
                 std::make_unique<InlineRelationsTransformer>(),
                 std::make_unique<ReduceExistentialsTransformer>(),
-                std::make_unique<ExtractDisconnectedLiteralsTransformer>(),
+                std::make_unique<PartitionBodyLiteralsTransformer>(),
                 std::make_unique<RemoveRelationCopiesTransformer>(),
                 std::make_unique<MaterializeAggregationQueriesTransformer>(),
                 std::make_unique<RemoveEmptyRelationsTransformer>(),

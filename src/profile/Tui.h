@@ -102,7 +102,6 @@ public:
     }
 
     void runCommand(std::vector<std::string> c) {
-        static bool firstRun = true;
         if (linereader.hasReceivedInput() && c.empty()) {
             return;
         }
@@ -121,13 +120,13 @@ public:
         }
 
         // If we have not received any input yet in live mode then run top.
-        if ((!linereader.hasReceivedInput() && c.empty()) || c[0].compare("top") == 0) {
-            // Move up 3 lines and overwrite the previous top output.
-            if (!firstRun && !linereader.hasReceivedInput()) {
-                std::cout << "\x1b[A\x1b[A\x1b[A";
-            } else if (firstRun) {
-                firstRun = false;
-            }
+        if ((!linereader.hasReceivedInput() && c.empty())) {
+            // Move up n lines and overwrite the previous top output.
+            std::cout << "\x1b[3D";
+            std::cout << "\x1b[27A";
+            top();
+            std::cout << "\x1b[B> ";
+        } else if (c[0].compare("top") == 0) {
             top();
         } else if (c[0].compare("rel") == 0) {
             if (c.size() == 2) {

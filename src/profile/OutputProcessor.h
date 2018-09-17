@@ -196,7 +196,7 @@ Table inline OutputProcessor::getRulTable() {
 
             if (t[0]->getDoubVal() != 0.0) {
                 t[9] = std::shared_ptr<CellInterface>(
-                        new Cell<double>(t[4]->getLongVal() / t[0]->getDoubVal()));
+                        new Cell<long>(t[4]->getLongVal() / (t[0]->getDoubVal() * 1000)));
             } else {
                 t[9] = std::shared_ptr<CellInterface>(new Cell<double>(t[4]->getLongVal() / 1.0));
             }

@@ -891,6 +891,8 @@ public:
         size_t count = 0;
         for (auto& row : out.formatTable(rel_table_state, precision)) {
             if (++count > resultLimit) {
+                std::cout << (rel_table_state.getRows().size() - resultLimit) << " rows not shown"
+                          << std::endl;
                 break;
             }
             std::printf("%8s%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
@@ -906,6 +908,8 @@ public:
         size_t count = 0;
         for (auto& row : out.formatTable(rul_table_state, precision)) {
             if (++count > resultLimit) {
+                std::cout << (rul_table_state.getRows().size() - resultLimit) << " rows not shown"
+                          << std::endl;
                 break;
             }
             std::printf("%8s%8s%8s%15s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),

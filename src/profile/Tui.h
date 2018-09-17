@@ -203,12 +203,6 @@ public:
         setupTabCompletion();
 
         while (true) {
-            if (!loaded) {
-                loadMenu();
-                if (!f_name.empty()) {
-                    std::cout << "Error loading file.\n";
-                }
-            }
             std::string untrimmedInput = linereader.getInput();
             std::string input = Tools::trimWhitespace(untrimmedInput);
 
@@ -225,18 +219,6 @@ public:
             if (c[0] == "q" || c[0] == "quit") {
                 quit();
                 break;
-                //            } else if (c[0] == "load" || c[0] == "open") {
-                //                if (c.size() == 2) {
-                //                    load(c[0], c[1]);
-                //                } else {
-                //                    loadMenu();
-                //                }
-                //        } else if (c[0] == "save") {
-                //            if (c.size() == 1) {
-                //                std::cout << "Enter file name to save.\n";
-                //            } else if (c.size() == 2) {
-                //                save(c[1]);
-                //            }
             } else if (c[0] == "sort") {
                 if (c.size() == 2 && std::stoi(c[1]) < 7) {
                     sort_col = std::stoi(c[1]);
@@ -521,38 +503,9 @@ public:
         std::cout << "file output to: " << new_file << std::endl;
     }
 
-    void loadMenu() {
-        std::cout << "Please 'load' a file or 'open' from Previous Runs.\n";
-        std::cout << "Previous Runs:\n";
-
-        DIR* dir;
-        struct dirent* ent;
-        if ((dir = opendir("./old_runs")) != nullptr) {
-            while ((ent = readdir(dir)) != nullptr) {
-                // if the file doesnt exist in the working directory, it is in old_runs (to remove . and ..)
-                if (!Tools::file_exists(ent->d_name)) {
-                    printf("- %s\n", ent->d_name);
-                }
-            }
-            closedir(dir);
-        }
-    }
-
     void quit() {
         if (updater.joinable()) {
             updater.join();
-        }
-    }
-
-    void save(std::string save_name) {
-        if (loaded) {
-            // std::shared_ptr<ProgramRun>& run = out.getProgramRun();
-            // Reader saver(this->f_name, run, false, false);
-            // saver.save(save_name);
-            std::cout << "Save not implemented.\n";
-            // std::cout << "Save success.\n";
-        } else {
-            std::cout << "Save failed.\n";
         }
     }
 
@@ -577,10 +530,6 @@ public:
         std::printf("  %-30s%-5s %s\n", "help", "-", "print this.");
 
         std::cout << "\nInteractive mode only commands:" << std::endl;
-        std::printf("  %-30s%-5s %s\n", "load <filename>", "-", "load the given profiler log file.");
-        std::printf("  %-30s%-5s %s\n", "open", "-", "list stored souffle log files.");
-        std::printf("  %-30s%-5s %s\n", "open <filename>", "-", "open the given stored log file.");
-        std::printf("  %-30s%-5s %s\n", "save <filename>", "-", "store a copy of the souffle log file.");
         //    if (alive) std::printf("  %-30s%-5s %s\n", "stop", "-",
         //                "stop the current live run.");
         std::printf("  %-30s%-5s %s\n", "limit <row count>", "-", "limit number of results shown.");

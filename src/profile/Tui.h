@@ -838,8 +838,8 @@ public:
     void rel() {
         rel_table_state.sort(sort_col);
         std::cout << " ----- Relation Table -----\n";
-        std::printf("%8s%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
-                "SAVE_T", "RSSDiff", "TUPLES", "ID", "", "NAME");
+        std::printf("%8s%8s%8s%8s%8s%8s%15s%12s%6s %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
+                "SAVE_T", "TUPLES", "kTUPLES/s", "ID", "NAME");
         size_t count = 0;
         for (auto& row : out.formatTable(rel_table_state, precision)) {
             if (++count > resultLimit) {
@@ -847,16 +847,16 @@ public:
                           << std::endl;
                 break;
             }
-            std::printf("%8s%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                    row[3].c_str(), row[9].c_str(), row[10].c_str(), row[11].c_str(), row[4].c_str(),
-                    row[6].c_str(), "", row[5].c_str());
+            std::printf("%8s%8s%8s%8s%8s%8s%15s%12s%6s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                    row[3].c_str(), row[9].c_str(), row[10].c_str(), row[4].c_str(), row[8].c_str(),
+                    row[6].c_str(), row[5].c_str());
         }
     }
 
     void rul() {
         rul_table_state.sort(sort_col);
         std::cout << "  ----- Rule Table -----\n";
-        std::printf("%8s%8s%8s%15s%17s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "TUPLES/s", "ID",
+        std::printf("%8s%8s%8s%15s%12s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "kTUPLES/s", "ID",
                 "RELATION");
         size_t count = 0;
         for (auto& row : out.formatTable(rul_table_state, precision)) {
@@ -865,7 +865,7 @@ public:
                           << std::endl;
                 break;
             }
-            std::printf("%8s%8s%8s%15s%13skT/s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+            std::printf("%8s%8s%8s%15s%12s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                     row[4].c_str(), row[9].c_str(), row[6].c_str(), row[7].c_str());
         }
     }

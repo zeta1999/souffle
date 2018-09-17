@@ -112,9 +112,10 @@ Table inline OutputProcessor::getRelTable() {
         row[6] = std::shared_ptr<CellInterface>(new Cell<std::string>(r->getId()));
         row[7] = std::shared_ptr<CellInterface>(new Cell<std::string>(r->getLocator()));
         if (total_time != 0.0) {
-            row[8] = std::shared_ptr<CellInterface>(new Cell<double>(r->getNum_tuplesRel() / total_time));
+            row[8] = std::shared_ptr<CellInterface>(
+                    new Cell<long>(r->getNum_tuplesRel() / (total_time * 1000)));
         } else {
-            row[8] = std::shared_ptr<CellInterface>(new Cell<double>(r->getNum_tuplesRel() / 1.0));
+            row[8] = std::shared_ptr<CellInterface>(new Cell<long>(r->getNum_tuplesRel() / 1.0));
         }
         row[9] = std::shared_ptr<CellInterface>(new Cell<double>(r->getLoadtime()));
         row[10] = std::shared_ptr<CellInterface>(new Cell<double>(r->getSavetime()));

@@ -25,7 +25,7 @@ namespace profile {
  */
 class Relation {
 private:
-    std::string name;
+    const std::string name;
     double starttime = 0;
     double endtime = 0;
     double loadtime = 0;
@@ -34,7 +34,7 @@ private:
     long num_tuples = 0;
     size_t preMaxRSS = 0;
     size_t postMaxRSS = 0;
-    std::string id;
+    const std::string id;
     std::string locator;
     int rul_id = 0;
     int rec_id = 0;
@@ -112,16 +112,16 @@ public:
         return result;
     }
 
-    long getNum_tuplesRel() {
-        long result = 0L;
+    size_t getNum_tuplesRel() {
+        size_t result = 0;
         for (auto& iter : iterations) {
             result += iter->getNum_tuples();
         }
         return num_tuples + result;
     }
 
-    long getNum_tuplesRul() {
-        long result = 0L;
+    size_t getNum_tuplesRul() {
+        size_t result = 0;
         for (auto& rul : ruleMap) {
             result += rul.second->getNum_tuples();
         }
@@ -133,16 +133,16 @@ public:
         return result;
     }
 
-    inline long getTotNum_tuples() {
+    inline size_t getTotNum_tuples() {
         return getNum_tuplesRel();
     }
 
-    inline long getMaxRSSDiff() {
+    inline size_t getMaxRSSDiff() {
         return postMaxRSS - preMaxRSS;
     }
 
-    long getTotNumRec_tuples() {
-        long result = 0L;
+    size_t getTotNumRec_tuples() {
+        size_t result = 0;
         for (auto& iter : iterations) {
             for (auto& rul : iter->getRul_rec()) {
                 result += rul.second->getNum_tuples();

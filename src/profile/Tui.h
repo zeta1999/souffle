@@ -49,6 +49,8 @@ private:
     Table rul_table_state;
     std::shared_ptr<Reader> reader;
     InputReader linereader;
+    /// Limit results shown. Default value chosen to approximate unlimited
+    size_t resultLimit = 20000;
 
     struct Usage {
         uint64_t time;
@@ -172,6 +174,16 @@ public:
             }
         } else if (c[0].compare("help") == 0) {
             help();
+        } else if (c[0].compare("limit") == 0) {
+            if (c.size() == 1) {
+                setResultLimit(20000);
+            } else {
+                try {
+                    setResultLimit(std::stoul(c[1]));
+                } catch (...) {
+                    std::cout << "Invalid parameters to limit command.\n";
+                }
+            }
         } else {
             std::cout << "Unknown command. Use \"help\" for a list of commands.\n";
         }
@@ -571,6 +583,7 @@ public:
         std::printf("  %-30s%-5s %s\n", "save <filename>", "-", "store a copy of the souffle log file.");
         //    if (alive) std::printf("  %-30s%-5s %s\n", "stop", "-",
         //                "stop the current live run.");
+        std::printf("  %-30s%-5s %s\n", "limit <row count>", "-", "limit number of results shown.");
         std::printf("  %-30s%-5s %s\n", "sort <col number>", "-", "sort tables by given column number.");
         std::printf("  %-30s%-5s %s\n", "q", "-", "exit program.");
     }
@@ -805,6 +818,7 @@ public:
         linereader.appendTabCompletion("top");
         linereader.appendTabCompletion("help");
         linereader.appendTabCompletion("usage");
+        linereader.appendTabCompletion("limit ");
 
         // add rel tab completes after the rest so users can see all commands first
         for (auto& row : out.formatTable(rel_table_state, precision)) {
@@ -865,12 +879,20 @@ public:
         usage();
     }
 
+    void setResultLimit(size_t limit) {
+        resultLimit = limit;
+    }
+
     void rel() {
         rel_table_state.sort(sort_col);
         std::cout << " ----- Relation Table -----\n";
         std::printf("%8s%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
                 "SAVE_T", "RSSDiff", "TUPLES", "ID", "", "NAME");
+        size_t count = 0;
         for (auto& row : out.formatTable(rel_table_state, precision)) {
+            if (++count > resultLimit) {
+                break;
+            }
             std::printf("%8s%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                     row[3].c_str(), row[9].c_str(), row[10].c_str(), row[11].c_str(), row[4].c_str(),
                     row[6].c_str(), "", row[5].c_str());
@@ -881,7 +903,11 @@ public:
         rul_table_state.sort(sort_col);
         std::cout << "  ----- Rule Table -----\n";
         std::printf("%8s%8s%8s%15s    %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID RELATION");
+        size_t count = 0;
         for (auto& row : out.formatTable(rul_table_state, precision)) {
+            if (++count > resultLimit) {
+                break;
+            }
             std::printf("%8s%8s%8s%15s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                     row[4].c_str(), row[6].c_str(), row[7].c_str());
         }

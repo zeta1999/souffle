@@ -64,6 +64,10 @@ private:
 
 public:
     Tui(std::string filename, bool live, bool gui) {
+        // Set a friendlier output size if we're being interacted with directly.
+        if (live) {
+            resultLimit = 20;
+        }
         this->f_name = filename;
 
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();

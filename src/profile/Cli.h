@@ -73,7 +73,7 @@ public:
                 std::string filename = args.at(1);
 
                 if (args.size() == 2) {
-                    Tui(filename, false, false).runProf();
+                    Tui(filename, true, false).runProf();
 
                 } else {
                     switch (args.at(2).at(args.at(2).length() - 1)) {

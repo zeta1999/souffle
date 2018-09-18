@@ -49,6 +49,8 @@ private:
     Table rul_table_state;
     std::shared_ptr<Reader> reader;
     InputReader linereader;
+    /// Limit results shown. Default value chosen to approximate unlimited
+    size_t resultLimit = 20000;
 
     struct Usage {
         uint64_t time;
@@ -62,6 +64,10 @@ private:
 
 public:
     Tui(std::string filename, bool live, bool gui) {
+        // Set a friendlier output size if we're being interacted with directly.
+        if (live) {
+            resultLimit = 20;
+        }
         this->f_name = filename;
 
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
@@ -100,7 +106,6 @@ public:
     }
 
     void runCommand(std::vector<std::string> c) {
-        static bool firstRun = true;
         if (linereader.hasReceivedInput() && c.empty()) {
             return;
         }
@@ -119,13 +124,13 @@ public:
         }
 
         // If we have not received any input yet in live mode then run top.
-        if ((!linereader.hasReceivedInput() && c.empty()) || c[0].compare("top") == 0) {
-            // Move up 3 lines and overwrite the previous top output.
-            if (!firstRun && !linereader.hasReceivedInput()) {
-                std::cout << "\x1b[A\x1b[A\x1b[A";
-            } else if (firstRun) {
-                firstRun = false;
-            }
+        if ((!linereader.hasReceivedInput() && c.empty())) {
+            // Move up n lines and overwrite the previous top output.
+            std::cout << "\x1b[3D";
+            std::cout << "\x1b[27A";
+            top();
+            std::cout << "\x1b[B> ";
+        } else if (c[0].compare("top") == 0) {
             top();
         } else if (c[0].compare("rel") == 0) {
             if (c.size() == 2) {
@@ -172,6 +177,16 @@ public:
             }
         } else if (c[0].compare("help") == 0) {
             help();
+        } else if (c[0].compare("limit") == 0) {
+            if (c.size() == 1) {
+                setResultLimit(20000);
+            } else {
+                try {
+                    setResultLimit(std::stoul(c[1]));
+                } catch (...) {
+                    std::cout << "Invalid parameters to limit command.\n";
+                }
+            }
         } else {
             std::cout << "Unknown command. Use \"help\" for a list of commands.\n";
         }
@@ -191,12 +206,6 @@ public:
         setupTabCompletion();
 
         while (true) {
-            if (!loaded) {
-                loadMenu();
-                if (!f_name.empty()) {
-                    std::cout << "Error loading file.\n";
-                }
-            }
             std::string untrimmedInput = linereader.getInput();
             std::string input = Tools::trimWhitespace(untrimmedInput);
 
@@ -213,18 +222,6 @@ public:
             if (c[0] == "q" || c[0] == "quit") {
                 quit();
                 break;
-                //            } else if (c[0] == "load" || c[0] == "open") {
-                //                if (c.size() == 2) {
-                //                    load(c[0], c[1]);
-                //                } else {
-                //                    loadMenu();
-                //                }
-                //        } else if (c[0] == "save") {
-                //            if (c.size() == 1) {
-                //                std::cout << "Enter file name to save.\n";
-                //            } else if (c.size() == 2) {
-                //                save(c[1]);
-                //            }
             } else if (c[0] == "sort") {
                 if (c.size() == 2 && std::stoi(c[1]) < 7) {
                     sort_col = std::stoi(c[1]);
@@ -509,38 +506,9 @@ public:
         std::cout << "file output to: " << new_file << std::endl;
     }
 
-    void loadMenu() {
-        std::cout << "Please 'load' a file or 'open' from Previous Runs.\n";
-        std::cout << "Previous Runs:\n";
-
-        DIR* dir;
-        struct dirent* ent;
-        if ((dir = opendir("./old_runs")) != nullptr) {
-            while ((ent = readdir(dir)) != nullptr) {
-                // if the file doesnt exist in the working directory, it is in old_runs (to remove . and ..)
-                if (!Tools::file_exists(ent->d_name)) {
-                    printf("- %s\n", ent->d_name);
-                }
-            }
-            closedir(dir);
-        }
-    }
-
     void quit() {
         if (updater.joinable()) {
             updater.join();
-        }
-    }
-
-    void save(std::string save_name) {
-        if (loaded) {
-            // std::shared_ptr<ProgramRun>& run = out.getProgramRun();
-            // Reader saver(this->f_name, run, false, false);
-            // saver.save(save_name);
-            std::cout << "Save not implemented.\n";
-            // std::cout << "Save success.\n";
-        } else {
-            std::cout << "Save failed.\n";
         }
     }
 
@@ -565,12 +533,9 @@ public:
         std::printf("  %-30s%-5s %s\n", "help", "-", "print this.");
 
         std::cout << "\nInteractive mode only commands:" << std::endl;
-        std::printf("  %-30s%-5s %s\n", "load <filename>", "-", "load the given profiler log file.");
-        std::printf("  %-30s%-5s %s\n", "open", "-", "list stored souffle log files.");
-        std::printf("  %-30s%-5s %s\n", "open <filename>", "-", "open the given stored log file.");
-        std::printf("  %-30s%-5s %s\n", "save <filename>", "-", "store a copy of the souffle log file.");
         //    if (alive) std::printf("  %-30s%-5s %s\n", "stop", "-",
         //                "stop the current live run.");
+        std::printf("  %-30s%-5s %s\n", "limit <row count>", "-", "limit number of results shown.");
         std::printf("  %-30s%-5s %s\n", "sort <col number>", "-", "sort tables by given column number.");
         std::printf("  %-30s%-5s %s\n", "q", "-", "exit program.");
     }
@@ -805,6 +770,7 @@ public:
         linereader.appendTabCompletion("top");
         linereader.appendTabCompletion("help");
         linereader.appendTabCompletion("usage");
+        linereader.appendTabCompletion("limit ");
 
         // add rel tab completes after the rest so users can see all commands first
         for (auto& row : out.formatTable(rel_table_state, precision)) {
@@ -865,25 +831,42 @@ public:
         usage();
     }
 
+    void setResultLimit(size_t limit) {
+        resultLimit = limit;
+    }
+
     void rel() {
         rel_table_state.sort(sort_col);
         std::cout << " ----- Relation Table -----\n";
-        std::printf("%8s%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
-                "SAVE_T", "RSSDiff", "TUPLES", "ID", "", "NAME");
+        std::printf("%8s%8s%8s%8s%8s%8s%15s%12s%6s %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
+                "SAVE_T", "TUPLES", "kTUPLES/s", "ID", "NAME");
+        size_t count = 0;
         for (auto& row : out.formatTable(rel_table_state, precision)) {
-            std::printf("%8s%8s%8s%8s%8s%8s%8s%15s%6s%1s%s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                    row[3].c_str(), row[9].c_str(), row[10].c_str(), row[11].c_str(), row[4].c_str(),
-                    row[6].c_str(), "", row[5].c_str());
+            if (++count > resultLimit) {
+                std::cout << (rel_table_state.getRows().size() - resultLimit) << " rows not shown"
+                          << std::endl;
+                break;
+            }
+            std::printf("%8s%8s%8s%8s%8s%8s%15s%12s%6s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                    row[3].c_str(), row[9].c_str(), row[10].c_str(), row[4].c_str(), row[8].c_str(),
+                    row[6].c_str(), row[5].c_str());
         }
     }
 
     void rul() {
         rul_table_state.sort(sort_col);
         std::cout << "  ----- Rule Table -----\n";
-        std::printf("%8s%8s%8s%15s    %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID RELATION");
+        std::printf("%8s%8s%8s%15s%12s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "kTUPLES/s", "ID",
+                "RELATION");
+        size_t count = 0;
         for (auto& row : out.formatTable(rul_table_state, precision)) {
-            std::printf("%8s%8s%8s%15s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                    row[4].c_str(), row[6].c_str(), row[7].c_str());
+            if (++count > resultLimit) {
+                std::cout << (rul_table_state.getRows().size() - resultLimit) << " rows not shown"
+                          << std::endl;
+                break;
+            }
+            std::printf("%8s%8s%8s%15s%12s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                    row[4].c_str(), row[9].c_str(), row[6].c_str(), row[7].c_str());
         }
     }
 

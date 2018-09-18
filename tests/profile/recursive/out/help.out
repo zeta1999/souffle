@@ -10,14 +10,11 @@ Available profiling commands:
   graph <rule id> <type>        -     graph recursive(C) rule by type(tot_t/tuples).
   graph ver <rule id> <type>    -     graph recursive(C) rule versions by type(tot_t/copy_t/tuples).
   top                           -     display top-level summary of program run.
-  usage <relation id>           -     display CPU usage graphs for a relation.
+  usage [relation id|rule id]   -     display CPU usage graphs for a relation or rule.
   help                          -     print this.
 
 Interactive mode only commands:
-  load <filename>               -     load the given profiler log file.
-  open                          -     list stored souffle log files.
-  open <filename>               -     open the given stored log file.
-  save <filename>               -     store a copy of the souffle log file.
+  limit <row count>             -     limit number of results shown.
   sort <col number>             -     sort tables by given column number.
   q                             -     exit program.
 

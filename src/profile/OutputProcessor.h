@@ -112,9 +112,10 @@ Table inline OutputProcessor::getRelTable() {
         row[6] = std::shared_ptr<CellInterface>(new Cell<std::string>(r->getId()));
         row[7] = std::shared_ptr<CellInterface>(new Cell<std::string>(r->getLocator()));
         if (total_time != 0.0) {
-            row[8] = std::shared_ptr<CellInterface>(new Cell<double>(r->getNum_tuplesRel() / total_time));
+            row[8] = std::shared_ptr<CellInterface>(
+                    new Cell<long>(r->getNum_tuplesRel() / (total_time * 1000)));
         } else {
-            row[8] = std::shared_ptr<CellInterface>(new Cell<double>(r->getNum_tuplesRel() / 1.0));
+            row[8] = std::shared_ptr<CellInterface>(new Cell<long>(r->getNum_tuplesRel() / 1.0));
         }
         row[9] = std::shared_ptr<CellInterface>(new Cell<double>(r->getLoadtime()));
         row[10] = std::shared_ptr<CellInterface>(new Cell<double>(r->getSavetime()));
@@ -196,7 +197,7 @@ Table inline OutputProcessor::getRulTable() {
 
             if (t[0]->getDoubVal() != 0.0) {
                 t[9] = std::shared_ptr<CellInterface>(
-                        new Cell<double>(t[4]->getLongVal() / t[0]->getDoubVal()));
+                        new Cell<long>(t[4]->getLongVal() / (t[0]->getDoubVal() * 1000)));
             } else {
                 t[9] = std::shared_ptr<CellInterface>(new Cell<double>(t[4]->getLongVal() / 1.0));
             }

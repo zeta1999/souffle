@@ -292,8 +292,9 @@ public:
         if (programDuration == nullptr) {
             auto startTimeEntry = dynamic_cast<TimeEntry*>(db.lookupEntry({"program", "starttime"}));
             if (startTimeEntry != nullptr) {
-                auto time = startTimeEntry->getTime();
-                runtime = (now().time_since_epoch().count() - time.count()) / 1000000.0;
+                microseconds time = startTimeEntry->getTime();
+                microseconds timeNow = std::chrono::duration_cast<microseconds>(now().time_since_epoch());
+                runtime = (timeNow - time).count() / 1000000.0;
             }
         } else {
             runtime = (programDuration->getEnd() - programDuration->getStart()).count() / 1000000.0;

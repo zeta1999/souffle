@@ -834,6 +834,7 @@ void Interpreter::executeMain() {
     if (!Global::config().has("profile")) {
         evalStmt(main);
     } else {
+        ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
         // Prepare the frequency table for threaded use
         visitDepthFirst(main, [&](const RamSearch& node) {
             if (!node.getProfileText().empty()) {
@@ -865,15 +866,6 @@ void Interpreter::executeMain() {
             for (auto const& iter : cur.second) {
                 ProfileEventSingleton::instance().makeQuantityEvent(cur.first, iter.second, iter.first);
             }
-        }
-        // open output stream if we're logging the profile data to file
-        if (!Global::config().get("profile").empty()) {
-            std::string fname = Global::config().get("profile");
-            std::ofstream os(fname);
-            if (!os.is_open()) {
-                throw std::invalid_argument("Cannot open profile log file <" + fname + ">");
-            }
-            ProfileEventSingleton::instance().dump(os);
         }
     }
     SignalHandler::instance()->reset();

@@ -1532,6 +1532,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         }
     }
     os << "{\n";
+    if (Global::config().has("profile")) {
+        os << "ProfileEventSingleton::instance().setOutputFile(profiling_fname);\n";
+    }
     os << registerRel;
     os << "}\n";
     // -- destructor --
@@ -1639,9 +1642,6 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     if (Global::config().has("profile")) {
         os << "}\n";
         os << "dumpFreqs();\n";
-        os << "ProfileEventSingleton::instance().stopTimer();\n";
-        os << "std::ofstream profile(profiling_fname);\n";
-        os << "ProfileEventSingleton::instance().dump(profile);\n";
     }
 
     // add code printing hint statistics

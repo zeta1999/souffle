@@ -165,6 +165,8 @@ public:
             } else {
                 std::cout << "Invalid parameters to graph command.\n";
             }
+        } else if (c[0].compare("memory") == 0) {
+            memoryUsage();
         } else if (c[0].compare("usage") == 0) {
             if (c.size() > 1) {
                 if (c[1][0] == 'R') {
@@ -530,6 +532,7 @@ public:
         std::printf("  %-30s%-5s %s\n", "top", "-", "display top-level summary of program run.");
         std::printf("  %-30s%-5s %s\n", "usage [relation id|rule id]", "-",
                 "display CPU usage graphs for a relation or rule.");
+        std::printf("  %-30s%-5s %s\n", "memory", "-", "display memory usage.");
         std::printf("  %-30s%-5s %s\n", "help", "-", "print this.");
 
         std::cout << "\nInteractive mode only commands:" << std::endl;
@@ -760,6 +763,47 @@ public:
         std::cout << std::endl;
     }
 
+    void memoryUsage(uint64_t endTime = 0, uint64_t startTime = 0) {
+        uint32_t width = getTermWidth() - 8;
+        uint32_t height = 20;
+        uint32_t maxMaxRSS = 0;
+
+        std::set<Usage> usages = getUsageStats(width);
+        char grid[height][width];
+        for (uint32_t i = 0; i < height; ++i) {
+            for (uint32_t j = 0; j < width; ++j) {
+                grid[i][j] = ' ';
+            }
+        }
+
+        for (auto& usage : usages) {
+            maxMaxRSS = std::max(maxMaxRSS, usage.maxRSS);
+        }
+        size_t col = 0;
+        for (const Usage& currentUsage : usages) {
+            uint64_t curHeight = height * currentUsage.maxRSS / maxMaxRSS;
+            for (uint32_t row = 0; row < curHeight; ++row) {
+                grid[row][col] = '*';
+            }
+            ++col;
+        }
+
+        // Print array
+        for (int32_t row = height - 1; row >= 0; --row) {
+            printf("%6s ", Tools::formatMemory(maxMaxRSS * (row + 1) / height).c_str());
+            for (uint32_t col = 0; col < width; ++col) {
+                std::cout << grid[row][col];
+            }
+            std::cout << std::endl;
+        }
+        for (uint32_t col = 0; col < 8; ++col) {
+            std::cout << ' ';
+        }
+        for (uint32_t col = 0; col < width; ++col) {
+            std::cout << '-';
+        }
+        std::cout << std::endl;
+    }
     void setupTabCompletion() {
         linereader.clearTabCompletion();
 

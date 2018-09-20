@@ -115,6 +115,17 @@ inline std::string formatNum(int precision, int64_t amount) {
     return nullptr;
 }
 
+inline std::string formatMemory(uint64_t kbytes) {
+    if (kbytes < 1024L * 2) {
+        return std::to_string(kbytes) + "kB";
+    } else if (kbytes < 1024L * 1024 * 2) {
+        return std::to_string(kbytes / 1024) + "MB";
+    } else if (kbytes < 1024L * 1024 * 1024 * 2) {
+        return std::to_string(kbytes / (1024 * 1024)) + "GB";
+    }
+    return std::to_string(kbytes / (1024 * 1024 * 1024)) + "TB";
+}
+
 inline std::string formatTime(double number) {
     if (std::isnan(number) || std::isinf(number)) {
         return "-";

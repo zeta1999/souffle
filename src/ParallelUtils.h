@@ -186,7 +186,11 @@ public:
 namespace detail {
 
 /* Pause instruction to prevent excess processor bus usage */
+#ifdef __x86_64__
 #define cpu_relax() asm volatile("pause\n" : : : "memory")
+#else
+#define cpu_relax() asm volatile("" : : : "memory")
+#endif
 
 /**
  * A utility class managing waiting operations for spin locks.

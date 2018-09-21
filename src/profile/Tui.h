@@ -54,7 +54,7 @@ private:
 
     struct Usage {
         uint64_t time;
-        uint32_t maxRSS;
+        uint64_t maxRSS;
         uint64_t systemtime;
         uint64_t usertime;
         bool operator<(const Usage& other) const {
@@ -767,7 +767,7 @@ public:
     void memoryUsage(uint64_t endTime = 0, uint64_t startTime = 0) {
         uint32_t width = getTermWidth() - 8;
         uint32_t height = 20;
-        uint32_t maxMaxRSS = 0;
+        uint64_t maxMaxRSS = 0;
 
         std::set<Usage> usages = getUsageStats(width);
         char grid[height][width];

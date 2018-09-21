@@ -939,32 +939,21 @@ public:
         std::vector<std::vector<std::string>> rel_table = out.formatTable(rel_table_state, precision);
 
         std::cout << "  ----- Rules of a Relation -----\n";
-        std::printf("%8s%8s%8s%10s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID", "NAME");
+        std::printf("%8s%8s%8s%16s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID", "NAME");
         std::string name = "";
-        bool found = false;  // workaround to make it the same as java (row[5] seems to have priority)
         for (auto& row : rel_table) {
-            if (row[5].compare(str) == 0) {
-                std::printf("%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+            // Test for relation name or relation id
+            if (row[5].compare(str) == 0 || row[6].compare(str) == 0) {
+                std::printf("%8s%8s%8s%16s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                         row[4].c_str(), row[6].c_str(), row[5].c_str());
                 name = row[5];
-                found = true;
                 break;
-            }
-        }
-        if (!found) {
-            for (auto& row : rel_table) {
-                if (row[6].compare(str) == 0) {
-                    std::printf("%8s%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                            row[3].c_str(), row[4].c_str(), row[6].c_str(), row[5].c_str());
-                    name = row[5];
-                    break;
-                }
             }
         }
         std::cout << " ---------------------------------------------------------\n";
         for (auto& row : rul_table) {
             if (row[7].compare(name) == 0) {
-                std::printf("%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                std::printf("%8s%8s%8s%16s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                         row[4].c_str(), row[6].c_str(), row[7].c_str());
             }
         }
@@ -1024,10 +1013,10 @@ public:
 
         // Print out the versions of this rule.
         std::cout << "  ----- Rule Versions Table -----\n";
-        std::printf("%8s%8s%8s%10s%6s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "VER");
+        std::printf("%8s%8s%8s%16s%6s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "VER");
         for (auto& row : rul_table) {
             if (row[6].compare(str) == 0) {
-                std::printf("%8s%8s%8s%10s%6s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                std::printf("%8s%8s%8s%16s%6s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                         row[4].c_str(), "");
             }
         }
@@ -1035,7 +1024,7 @@ public:
         for (auto& _row : ver_table.rows) {
             Row row = *_row;
 
-            std::printf("%8s%8s%8s%10s%6s\n", row[0]->toString(precision).c_str(),
+            std::printf("%8s%8s%8s%16s%6s\n", row[0]->toString(precision).c_str(),
                     row[1]->toString(precision).c_str(), row[2]->toString(precision).c_str(),
                     row[4]->toString(precision).c_str(), row[8]->toString(precision).c_str());
             Table atom_table = out.getVersionAtoms(strRel, srcLocator, row[8]->getLongVal());

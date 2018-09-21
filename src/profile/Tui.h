@@ -1268,11 +1268,14 @@ protected:
                 firstRun = true;
             }
             if (firstRun) {
-                std::printf("      %-16s%s\n", "FREQ", "ATOM");
+                std::printf("      %-16s%-16s%s\n", "FREQ", "RELSIZE", "ATOM");
                 firstRun = false;
             }
-            std::printf(
-                    "      %-16s%s\n", row[3]->toString(precision).c_str(), row[1]->getStringVal().c_str());
+            std::string relationName = row[1]->getStringVal();
+            relationName = relationName.substr(0, relationName.find('('));
+            size_t relationSize = out.getProgramRun()->getRelation(relationName)->getNum_tuplesRel();
+            std::printf("      %-16s%-16s%s\n", row[3]->toString(precision).c_str(),
+                    std::to_string(relationSize).c_str(), row[1]->getStringVal().c_str());
         }
         std::cout << '\n';
     }

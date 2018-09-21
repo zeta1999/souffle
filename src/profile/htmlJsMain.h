@@ -117,7 +117,7 @@ function graphUsages() {
         height: "calc((100vh - 167px) / 2)",
         axisY: {
             labelInterpolationFnc: function (value) {
-                return humanize_time(value);
+                return humanise_time(value);
             }
         },
         axisX: {
@@ -150,7 +150,7 @@ function drawGraph() {
         height: "calc((100vh - 167px) / 2)",
         axisY: {
             labelInterpolationFnc: function (value) {
-                return humanize_time(value);
+                return humanise_time(value);
             }
         },
         axisX: {
@@ -230,7 +230,7 @@ function flip_table_values(table) {
             cell = table.rows[i].cells[j];
             if (cell.className === "time_cell") {
                 val = cell.getAttribute('data-sort');
-                cell.innerHTML = humanize_time(parseFloat(val));
+                cell.innerHTML = humanise_time(parseFloat(val));
             } else if (cell.className === "int_cell") {
                 val = cell.getAttribute('data-sort');
                 cell.innerHTML = minify_numbers(parseInt(val));
@@ -257,7 +257,7 @@ function create_cell(type, value, perc_total) {
     } else if (type === "id") {
         cell.innerHTML = value;
     } else if (type === "time") {
-        cell.innerHTML = humanize_time(value);
+        cell.innerHTML = humanise_time(value);
         cell.setAttribute('data-sort', value);
         cell.className = "time_cell";
     } else if (type === "int") {
@@ -455,11 +455,17 @@ function gen_top() {
     var x, line1, line2;
     x = document.getElementById("top-stats");
     line1 = document.createElement("p");
-    line1.textContent = "Total runtime: " + humanize_time(data.top[0]) + " (" + data.top[0] + " seconds)";
+    line1.textContent = "Total runtime: " + humanise_time(data.top[0]) + " (" + data.top[0] + " seconds)";
     line2 = document.createElement("p");
     line2.textContent = "Total tuples: " + minify_numbers(data.top[1]) + " (" + data.top[1] + ")";
+    line3 = document.createElement("p");
+    line3.textContent = "Total loadtime: " + humanise_time(data.top[2]) + " (" + data.top[2] + " seconds)";
+    line4 = document.createElement("p");
+    line4.textContent = "Total savetime: " + humanise_time(data.top[3]) + " (" + data.top[3] + " seconds)";
     x.appendChild(line1);
     x.appendChild(line2);
+    x.appendChild(line3);
+    x.appendChild(line4);
     graphUsages();
 }
 

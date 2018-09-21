@@ -291,7 +291,8 @@ public:
                 first = false;
             }
         };
-        outfile << R"_(data={"top":[)_" << run->getDoubleRuntime() << "," << run->getTotNumTuples() << "],\n";
+        outfile << R"_(data={"top":[)_" << run->getDoubleRuntime() << "," << run->getTotNumTuples() << ","
+                << run->getTotLoadtime() << "," << run->getTotSavetime() << "],\n";
         outfile << R"_("rel":{)_";
         bool firstRow = true;
         for (auto& _row : rel_table_state.getRows()) {

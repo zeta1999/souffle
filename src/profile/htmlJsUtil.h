@@ -20,7 +20,7 @@ function clean_percentages(data) {
     return data.toPrecision(3);
 }
 
-function humanize_time(time) {
+function humanise_time(time) {
     if (precision) return time.toString();
     if (time < 1e-9) {
         return '0';

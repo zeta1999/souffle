@@ -485,12 +485,17 @@ public:
         outfile << R"_("usage": [)_";
         firstRow = true;
         Usage previousUsage = *usages.begin();
+        auto beginTime = out.getProgramRun()->getStarttime();
         for (auto usage : usages) {
             comma(firstRow);
             outfile << '[';
-            outfile << usage.time << ", ";
-            outfile << (usage.usertime - previousUsage.usertime) / 1000000.0 << ", ";
-            outfile << (usage.systemtime - previousUsage.systemtime) / 1000000.0 << ", ";
+            outfile << (usage.time - beginTime.count()) / 1000000.0 << ", ";
+            outfile << ((usage.usertime - previousUsage.usertime) / 1000000.0) /
+                               (usage.time - previousUsage.time)
+                    << ", ";
+            outfile << ((usage.systemtime - previousUsage.systemtime) / 1000000.0) /
+                               (usage.time - previousUsage.time)
+                    << ", ";
             outfile << usage.maxRSS * 1024 << ", ";
             outfile << '"';
             bool firstCol = true;

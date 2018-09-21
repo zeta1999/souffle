@@ -122,7 +122,7 @@ function graphUsages() {
         },
         axisX: {
             labelInterpolationFnc: function (value) {
-                return "";
+                return humanise_time(value);
             }
         },
         plugins: [Chartist.plugins.tooltip()]

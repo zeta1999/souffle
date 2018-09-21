@@ -291,7 +291,7 @@ public:
                 first = false;
             }
         };
-        outfile << R"_(data={"top":[)_" << run->getDoubleRuntime() << "," << run->getTotNumTuples() << ","
+        outfile << R"_(data={"top":[)_" << run->getRuntime() << "," << run->getTotNumTuples() << ","
                 << run->getTotLoadtime() << "," << run->getTotSavetime() << "],\n";
         outfile << R"_("rel":{)_";
         bool firstRow = true;
@@ -1263,9 +1263,11 @@ protected:
             }
             std::string relationName = row[1]->getStringVal();
             relationName = relationName.substr(0, relationName.find('('));
-            size_t relationSize = out.getProgramRun()->getRelation(relationName)->getNum_tuplesRel();
-            std::printf("      %-16s%-16s%s\n", row[3]->toString(precision).c_str(),
-                    std::to_string(relationSize).c_str(), row[1]->getStringVal().c_str());
+            auto* relation = out.getProgramRun()->getRelation(relationName);
+            std::string relationSize =
+                    relation == nullptr ? "--" : std::to_string(relation->getNum_tuplesRel());
+            std::printf("      %-16s%-16s%s\n", row[3]->toString(precision).c_str(), relationSize.c_str(),
+                    row[1]->getStringVal().c_str());
         }
         std::cout << '\n';
     }

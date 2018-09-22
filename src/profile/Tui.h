@@ -291,8 +291,11 @@ public:
                 first = false;
             }
         };
-        outfile << R"_(data={"top":[)_" << run->getRuntime() << "," << run->getTotNumTuples() << ","
-                << run->getTotLoadtime() << "," << run->getTotSavetime() << "],\n";
+        auto beginTime = out.getProgramRun()->getStarttime();
+        auto endTime = out.getProgramRun()->getEndtime();
+        outfile << R"_(data={"top":[)_" << (endTime - beginTime).count() / 1000000.0 << ","
+                << run->getTotNumTuples() << "," << run->getTotLoadtime() << "," << run->getTotSavetime()
+                << "],\n";
         outfile << R"_("rel":{)_";
         bool firstRow = true;
         for (auto& _row : rel_table_state.getRows()) {
@@ -485,15 +488,14 @@ public:
         outfile << R"_("usage": [)_";
         firstRow = true;
         Usage previousUsage = *usages.begin();
-        auto beginTime = out.getProgramRun()->getStarttime();
+        previousUsage.time = beginTime.count();
         for (auto usage : usages) {
             comma(firstRow);
             outfile << '[';
             outfile << (usage.time - beginTime.count()) / 1000000.0 << ", ";
-            outfile << ((usage.usertime - previousUsage.usertime) / 1000000.0) /
-                               (usage.time - previousUsage.time)
+            outfile << 100.0 * (usage.usertime - previousUsage.usertime) / (usage.time - previousUsage.time)
                     << ", ";
-            outfile << ((usage.systemtime - previousUsage.systemtime) / 1000000.0) /
+            outfile << 100.0 * (usage.systemtime - previousUsage.systemtime) /
                                (usage.time - previousUsage.time)
                     << ", ";
             outfile << usage.maxRSS * 1024 << ", ";

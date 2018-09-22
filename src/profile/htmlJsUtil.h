@@ -50,6 +50,20 @@ function humanise_time(time) {
     }
 }
 
+function minify_memory(value) {
+    if (value < 1024 * 10) {
+        return value + 'B';
+    } else if (value < 1024 * 1024 * 10) {
+        return Math.round(value / 1024) + 'kB';
+    } else if (value < 1024 * 1024 * 1024 * 10) {
+        return Math.round(value / (1024 * 1024)) + 'MB';
+    } else if (value < 1024 * 1024 * 1024 * 1024 * 10) {
+        return Math.round(value / Math.round(1024 * 1024 * 1024)) + 'GB';
+    } else {
+        return Math.round(value / Math.round(1024 * 1024 * 1024 * 1024)) + 'TB';
+    }
+}
+
 function minify_numbers(num) {
     if (precision) return num.toString();
     kilo = (num / 1000);

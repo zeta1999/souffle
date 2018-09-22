@@ -104,9 +104,10 @@ function graphUsages() {
     graph_vals.labels = [];
     graph_vals.cpu = [];
     graph_vals.rss = [];
+    var interval = Math.ceil(data.usage.length / 8);
     for (j = 0; j < data.usage.length; j++) {
         graph_vals.labels.push(
-            data.usage[j][4]);
+            j % interval == 0 ? data.usage[j][0] : "");
         graph_vals.cpu.push(
             {meta: data.usage[j][4], value: (data.usage[j][1] + data.usage[j][2]).toString()});
         graph_vals.rss.push(
@@ -117,15 +118,20 @@ function graphUsages() {
         height: "calc((100vh - 167px) / 2)",
         axisY: {
             labelInterpolationFnc: function (value) {
-                return humanise_time(value);
+                return value.toFixed(0) + '%';
             }
         },
         axisX: {
             labelInterpolationFnc: function (value) {
+                if (!value) {
+                    return "";
+                }
                 return humanise_time(value);
             }
         },
-        plugins: [Chartist.plugins.tooltip()]
+        plugins: [Chartist.plugins.tooltip({tooltipFnc: function (meta, value) {
+                value = Number(value);
+                return meta + '<br/>' + value.toFixed(0) + '%';}})]
     };
 
     new Chartist.Bar(".ct-chart-cpu", {
@@ -135,10 +141,12 @@ function graphUsages() {
 
     options.axisY = {
         labelInterpolationFnc: function (value) {
-            return minify_numbers(value);
-        }
+            return minify_memory(value);
+        },
     };
 
+    options.plugins = [Chartist.plugins.tooltip({tooltipFnc: function(meta, value) {
+                return meta + '<br/>' + minify_memory(value);}})]
     new Chartist.Bar(".ct-chart-rss", {
         labels: graph_vals.labels,
         series: [graph_vals.rss],

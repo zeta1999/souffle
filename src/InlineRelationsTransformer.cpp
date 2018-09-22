@@ -69,7 +69,7 @@ void normaliseInlinedHeads(AstProgram& program) {
     // Go through the clauses of all inlined relations
     for (AstRelation* rel : program.getRelations()) {
         if (!rel->isInline()) {
-            break;
+            continue;
         }
 
         for (AstClause* clause : rel->getClauses()) {

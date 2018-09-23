@@ -44,18 +44,14 @@ namespace souffle {
 class ProfileEventSingleton {
     /** profile database */
     profile::ProfileDatabase database;
-    std::string filename{"souffle.profile"};
+    std::string filename{""};
 
     ProfileEventSingleton() = default;
 
 public:
     ~ProfileEventSingleton() {
         stopTimer();
-        std::ofstream os(filename);
-        if (!os.is_open()) {
-            std::cerr << "Cannot open profile log file <" + filename + ">";
-        }
-        ProfileEventSingleton::instance().dump(os);
+        ProfileEventSingleton::instance().dump();
     }
 
     /** get instance */
@@ -119,8 +115,15 @@ public:
         this->filename = filename;
     }
     /** Dump all events */
-    void dump(std::ostream& os) {
-        database.print(os);
+    void dump() {
+        if (!filename.empty()) {
+            std::ofstream os(filename);
+            if (!os.is_open()) {
+                std::cerr << "Cannot open profile log file <" + filename + ">";
+            } else {
+                database.print(os);
+            }
+        }
     }
 
     /** Start timer */

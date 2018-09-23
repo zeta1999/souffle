@@ -54,7 +54,7 @@ private:
 
     struct Usage {
         uint64_t time;
-        uint32_t maxRSS;
+        uint64_t maxRSS;
         uint64_t systemtime;
         uint64_t usertime;
         bool operator<(const Usage& other) const {
@@ -291,7 +291,11 @@ public:
                 first = false;
             }
         };
-        outfile << R"_(data={"top":[)_" << run->getDoubleRuntime() << "," << run->getTotNumTuples() << "],\n";
+        auto beginTime = out.getProgramRun()->getStarttime();
+        auto endTime = out.getProgramRun()->getEndtime();
+        outfile << R"_(data={"top":[)_" << (endTime - beginTime).count() / 1000000.0 << ","
+                << run->getTotNumTuples() << "," << run->getTotLoadtime() << "," << run->getTotSavetime()
+                << "],\n";
         outfile << R"_("rel":{)_";
         bool firstRow = true;
         for (auto& _row : rel_table_state.getRows()) {
@@ -484,12 +488,16 @@ public:
         outfile << R"_("usage": [)_";
         firstRow = true;
         Usage previousUsage = *usages.begin();
+        previousUsage.time = beginTime.count();
         for (auto usage : usages) {
             comma(firstRow);
             outfile << '[';
-            outfile << usage.time << ", ";
-            outfile << (usage.usertime - previousUsage.usertime) / 1000000.0 << ", ";
-            outfile << (usage.systemtime - previousUsage.systemtime) / 1000000.0 << ", ";
+            outfile << (usage.time - beginTime.count()) / 1000000.0 << ", ";
+            outfile << 100.0 * (usage.usertime - previousUsage.usertime) / (usage.time - previousUsage.time)
+                    << ", ";
+            outfile << 100.0 * (usage.systemtime - previousUsage.systemtime) /
+                               (usage.time - previousUsage.time)
+                    << ", ";
             outfile << usage.maxRSS * 1024 << ", ";
             outfile << '"';
             bool firstCol = true;
@@ -766,7 +774,7 @@ public:
     void memoryUsage(uint64_t endTime = 0, uint64_t startTime = 0) {
         uint32_t width = getTermWidth() - 8;
         uint32_t height = 20;
-        uint32_t maxMaxRSS = 0;
+        uint64_t maxMaxRSS = 0;
 
         std::set<Usage> usages = getUsageStats(width);
         char grid[height][width];
@@ -939,32 +947,21 @@ public:
         std::vector<std::vector<std::string>> rel_table = out.formatTable(rel_table_state, precision);
 
         std::cout << "  ----- Rules of a Relation -----\n";
-        std::printf("%8s%8s%8s%10s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID", "NAME");
+        std::printf("%8s%8s%8s%16s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID", "NAME");
         std::string name = "";
-        bool found = false;  // workaround to make it the same as java (row[5] seems to have priority)
         for (auto& row : rel_table) {
-            if (row[5].compare(str) == 0) {
-                std::printf("%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+            // Test for relation name or relation id
+            if (row[5].compare(str) == 0 || row[6].compare(str) == 0) {
+                std::printf("%8s%8s%8s%16s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                         row[4].c_str(), row[6].c_str(), row[5].c_str());
                 name = row[5];
-                found = true;
                 break;
-            }
-        }
-        if (!found) {
-            for (auto& row : rel_table) {
-                if (row[6].compare(str) == 0) {
-                    std::printf("%8s%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                            row[3].c_str(), row[4].c_str(), row[6].c_str(), row[5].c_str());
-                    name = row[5];
-                    break;
-                }
             }
         }
         std::cout << " ---------------------------------------------------------\n";
         for (auto& row : rul_table) {
             if (row[7].compare(name) == 0) {
-                std::printf("%8s%8s%8s%10s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                std::printf("%8s%8s%8s%16s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                         row[4].c_str(), row[6].c_str(), row[7].c_str());
             }
         }
@@ -1024,10 +1021,10 @@ public:
 
         // Print out the versions of this rule.
         std::cout << "  ----- Rule Versions Table -----\n";
-        std::printf("%8s%8s%8s%10s%6s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "VER");
+        std::printf("%8s%8s%8s%16s%6s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "VER");
         for (auto& row : rul_table) {
             if (row[6].compare(str) == 0) {
-                std::printf("%8s%8s%8s%10s%6s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                std::printf("%8s%8s%8s%16s%6s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                         row[4].c_str(), "");
             }
         }
@@ -1035,7 +1032,7 @@ public:
         for (auto& _row : ver_table.rows) {
             Row row = *_row;
 
-            std::printf("%8s%8s%8s%10s%6s\n", row[0]->toString(precision).c_str(),
+            std::printf("%8s%8s%8s%16s%6s\n", row[0]->toString(precision).c_str(),
                     row[1]->toString(precision).c_str(), row[2]->toString(precision).c_str(),
                     row[4]->toString(precision).c_str(), row[8]->toString(precision).c_str());
             Table atom_table = out.getVersionAtoms(strRel, srcLocator, row[8]->getLongVal());
@@ -1268,11 +1265,16 @@ protected:
                 firstRun = true;
             }
             if (firstRun) {
-                std::printf("      %-16s%s\n", "FREQ", "ATOM");
+                std::printf("      %-16s%-16s%s\n", "FREQ", "RELSIZE", "ATOM");
                 firstRun = false;
             }
-            std::printf(
-                    "      %-16s%s\n", row[3]->toString(precision).c_str(), row[1]->getStringVal().c_str());
+            std::string relationName = row[1]->getStringVal();
+            relationName = relationName.substr(0, relationName.find('('));
+            auto* relation = out.getProgramRun()->getRelation(relationName);
+            std::string relationSize =
+                    relation == nullptr ? "--" : std::to_string(relation->getNum_tuplesRel());
+            std::printf("      %-16s%-16s%s\n", row[3]->toString(precision).c_str(), relationSize.c_str(),
+                    row[1]->getStringVal().c_str());
         }
         std::cout << '\n';
     }

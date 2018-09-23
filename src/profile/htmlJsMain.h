@@ -104,9 +104,10 @@ function graphUsages() {
     graph_vals.labels = [];
     graph_vals.cpu = [];
     graph_vals.rss = [];
+    var interval = Math.ceil(data.usage.length / 8);
     for (j = 0; j < data.usage.length; j++) {
         graph_vals.labels.push(
-            data.usage[j][4]);
+            j % interval == 0 ? data.usage[j][0] : "");
         graph_vals.cpu.push(
             {meta: data.usage[j][4], value: (data.usage[j][1] + data.usage[j][2]).toString()});
         graph_vals.rss.push(
@@ -117,15 +118,20 @@ function graphUsages() {
         height: "calc((100vh - 167px) / 2)",
         axisY: {
             labelInterpolationFnc: function (value) {
-                return humanize_time(value);
+                return value.toFixed(0) + '%';
             }
         },
         axisX: {
             labelInterpolationFnc: function (value) {
-                return "";
+                if (!value) {
+                    return "";
+                }
+                return humanise_time(value);
             }
         },
-        plugins: [Chartist.plugins.tooltip()]
+        plugins: [Chartist.plugins.tooltip({tooltipFnc: function (meta, value) {
+                value = Number(value);
+                return meta + '<br/>' + value.toFixed(0) + '%';}})]
     };
 
     new Chartist.Bar(".ct-chart-cpu", {
@@ -135,10 +141,12 @@ function graphUsages() {
 
     options.axisY = {
         labelInterpolationFnc: function (value) {
-            return minify_numbers(value);
-        }
+            return minify_memory(value);
+        },
     };
 
+    options.plugins = [Chartist.plugins.tooltip({tooltipFnc: function(meta, value) {
+                return meta + '<br/>' + minify_memory(value);}})]
     new Chartist.Bar(".ct-chart-rss", {
         labels: graph_vals.labels,
         series: [graph_vals.rss],
@@ -150,7 +158,7 @@ function drawGraph() {
         height: "calc((100vh - 167px) / 2)",
         axisY: {
             labelInterpolationFnc: function (value) {
-                return humanize_time(value);
+                return humanise_time(value);
             }
         },
         axisX: {
@@ -230,7 +238,7 @@ function flip_table_values(table) {
             cell = table.rows[i].cells[j];
             if (cell.className === "time_cell") {
                 val = cell.getAttribute('data-sort');
-                cell.innerHTML = humanize_time(parseFloat(val));
+                cell.innerHTML = humanise_time(parseFloat(val));
             } else if (cell.className === "int_cell") {
                 val = cell.getAttribute('data-sort');
                 cell.innerHTML = minify_numbers(parseInt(val));
@@ -257,7 +265,7 @@ function create_cell(type, value, perc_total) {
     } else if (type === "id") {
         cell.innerHTML = value;
     } else if (type === "time") {
-        cell.innerHTML = humanize_time(value);
+        cell.innerHTML = humanise_time(value);
         cell.setAttribute('data-sort', value);
         cell.className = "time_cell";
     } else if (type === "int") {
@@ -455,11 +463,17 @@ function gen_top() {
     var x, line1, line2;
     x = document.getElementById("top-stats");
     line1 = document.createElement("p");
-    line1.textContent = "Total runtime: " + humanize_time(data.top[0]) + " (" + data.top[0] + " seconds)";
+    line1.textContent = "Total runtime: " + humanise_time(data.top[0]) + " (" + data.top[0] + " seconds)";
     line2 = document.createElement("p");
     line2.textContent = "Total tuples: " + minify_numbers(data.top[1]) + " (" + data.top[1] + ")";
+    line3 = document.createElement("p");
+    line3.textContent = "Total loadtime: " + humanise_time(data.top[2]) + " (" + data.top[2] + " seconds)";
+    line4 = document.createElement("p");
+    line4.textContent = "Total savetime: " + humanise_time(data.top[3]) + " (" + data.top[3] + " seconds)";
     x.appendChild(line1);
     x.appendChild(line2);
+    x.appendChild(line3);
+    x.appendChild(line4);
     graphUsages();
 }
 

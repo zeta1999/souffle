@@ -20,7 +20,7 @@ function clean_percentages(data) {
     return data.toPrecision(3);
 }
 
-function humanize_time(time) {
+function humanise_time(time) {
     if (precision) return time.toString();
     if (time < 1e-9) {
         return '0';
@@ -47,6 +47,20 @@ function humanize_time(time) {
         year = (days / 365);
         if (year < 3) return weeks.toFixed(2) + "W";
         return year.toFixed(2) + "Y"
+    }
+}
+
+function minify_memory(value) {
+    if (value < 1024 * 10) {
+        return value + 'B';
+    } else if (value < 1024 * 1024 * 10) {
+        return Math.round(value / 1024) + 'kB';
+    } else if (value < 1024 * 1024 * 1024 * 10) {
+        return Math.round(value / (1024 * 1024)) + 'MB';
+    } else if (value < 1024 * 1024 * 1024 * 1024 * 10) {
+        return Math.round(value / Math.round(1024 * 1024 * 1024)) + 'GB';
+    } else {
+        return Math.round(value / Math.round(1024 * 1024 * 1024 * 1024)) + 'TB';
     }
 }
 

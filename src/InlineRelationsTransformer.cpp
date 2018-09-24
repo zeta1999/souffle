@@ -388,10 +388,16 @@ std::vector<std::vector<AstLiteral*>> combineNegatedLiterals(
             newVec.push_back(negateLiteral(lhsLit));
 
             for (AstLiteral* lit : rhsVec) {
-                newVec.push_back(lit);
+                newVec.push_back(lit->clone());
             }
 
             negation.push_back(newVec);
+        }
+    }
+
+    for (std::vector<AstLiteral*> rhsVec : combinedRHS) {
+        for (AstLiteral* lit : rhsVec) {
+            delete lit;
         }
     }
 

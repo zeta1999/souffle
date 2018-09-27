@@ -189,6 +189,7 @@ int main(int argc, char** argv) {
                             {"magic-transform", 'm', "RELATIONS", "", false,
                                     "Enable magic set transformation changes on the given relations, use '*' "
                                     "for all."},
+                            {"disable-transformers", 'z', "TRANSFORMERS", "", false, "Disable the given AST transformers"},
                             {"dl-program", 'o', "FILE", "", false,
                                     "Generate C++ source code, written to <FILE>, and compile this to a "
                                     "binary executable (without executing it)."},
@@ -426,6 +427,32 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
             std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
+
+    // Disable unwanted transformations
+    if (Global::config().has("disable-transformers")) {
+        // TODO (azreika): maybe push this into utils
+        auto split = [&](std::string str, char delimiter) {
+            std::set<std::string> parts;
+
+            int begin = 0;
+            for (size_t i = 0; i < str.size(); i++) {
+                if (str[i] == delimiter) {
+                    std::string token = str.substr(begin, (i-begin));
+                    parts.insert(token);
+                    begin = i + 1;
+                }
+            }
+
+            parts.insert(str.substr(begin)); // add in the last remaining token
+            parts.erase("");                 // remove empty tokens
+
+            return parts;
+        };
+
+        std::set<std::string> givenTransformers = split(Global::config().get("disable-transformers"), ',');
+
+        pipeline->disableTransformers(givenTransformers);
+    }
 
     // Set up the debug report if necessary
     if (!Global::config().get("debug-report").empty()) {

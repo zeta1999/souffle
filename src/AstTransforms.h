@@ -354,6 +354,16 @@ public:
         }
     }
 
+    void disableTransformers(const std::set<std::string>& transforms) override {
+        for (auto& i : pipeline) {
+            if (auto* mt = dynamic_cast<MetaTransformer*>(i.get())) {
+                mt->disableTransformers(transforms);
+            } else if (transforms.find(i->getName()) != transforms.end()) {
+                i = std::make_unique<NullTransformer>();
+            }
+        }
+    }
+
     std::string getName() const override {
         return "PipelineTransformer";
     }
@@ -387,6 +397,14 @@ public:
         this->verbose = verbose;
         if (auto* mt = dynamic_cast<MetaTransformer*>(transformer.get())) {
             mt->setVerbosity(verbose);
+        }
+    }
+
+    void disableTransformers(const std::set<std::string>& transforms) override {
+        if (auto* mt = dynamic_cast<MetaTransformer*>(transformer.get())) {
+            mt->disableTransformers(transforms);
+        } else if (transforms.find(transformer->getName()) != transforms.end()) {
+            transformer = std::make_unique<NullTransformer>();
         }
     }
 
@@ -426,6 +444,14 @@ public:
         }
     }
 
+    void disableTransformers(const std::set<std::string>& transforms) override {
+        if (auto* mt = dynamic_cast<MetaTransformer*>(transformer.get())) {
+            mt->disableTransformers(transforms);
+        } else if (transforms.find(transformer->getName()) != transforms.end()) {
+            transformer = std::make_unique<NullTransformer>();
+        }
+    }
+
     std::string getName() const override {
         return "WhileTransformer";
     }
@@ -454,6 +480,14 @@ public:
         this->verbose = verbose;
         if (auto* mt = dynamic_cast<MetaTransformer*>(transformer.get())) {
             mt->setVerbosity(verbose);
+        }
+    }
+
+    void disableTransformers(const std::set<std::string>& transforms) override {
+        if (auto* mt = dynamic_cast<MetaTransformer*>(transformer.get())) {
+            mt->disableTransformers(transforms);
+        } else if (transforms.find(transformer->getName()) != transforms.end()) {
+            transformer = std::make_unique<NullTransformer>();
         }
     }
 

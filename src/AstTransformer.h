@@ -49,6 +49,9 @@ public:
     /* Enable high verbosity */
     virtual void setVerbosity(bool verbose) = 0;
 
+    /* Disable subtransformers */
+    virtual void disableTransformers(const std::set<std::string>& transforms) = 0;
+
     /* Apply a nested transformer */
     bool applySubtransformer(AstTranslationUnit& translationUnit, AstTransformer* transformer);
 };
@@ -64,6 +67,8 @@ public:
     void setDebugReport() override {}
 
     void setVerbosity(bool verbose) override {}
+
+    void disableTransformers(const std::set<std::string>& transforms) override {}
 
     std::string getName() const override {
         return "NullTransformer";

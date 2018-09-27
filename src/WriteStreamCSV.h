@@ -44,7 +44,7 @@ public:
     WriteFileCSV(const SymbolMask& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const bool provenance = false)
             : WriteStream(symbolMask, symbolTable, provenance), delimiter(getDelimiter(ioDirectives)),
-              file(ioDirectives.getFileName()) {
+              file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
         }
@@ -85,7 +85,7 @@ public:
     WriteGZipFileCSV(const SymbolMask& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const bool provenance = false)
             : WriteStream(symbolMask, symbolTable, provenance), delimiter(getDelimiter(ioDirectives)),
-              file(ioDirectives.getFileName()) {
+              file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
         }

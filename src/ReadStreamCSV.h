@@ -156,7 +156,8 @@ public:
     ReadFileCSV(const SymbolMask& symbolMask, SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const bool provenance = false)
             : ReadStreamCSV(fileHandle, symbolMask, symbolTable, ioDirectives, provenance),
-              baseName(souffle::baseName(getFileName(ioDirectives))), fileHandle(getFileName(ioDirectives)) {
+              baseName(souffle::baseName(getFileName(ioDirectives))),
+              fileHandle(getFileName(ioDirectives), std::ios::in | std::ios::binary) {
         if (!ioDirectives.has("intermediate")) {
             if (!fileHandle.is_open()) {
                 throw std::invalid_argument("Cannot open fact file " + baseName + "\n");

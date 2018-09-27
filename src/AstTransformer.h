@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <set>
 #include <string>
 
 namespace souffle {
@@ -50,6 +51,23 @@ public:
 
     /* Apply a nested transformer */
     bool applySubtransformer(AstTranslationUnit& translationUnit, AstTransformer* transformer);
+};
+
+/**
+ * Transformer that does absolutely nothing
+ */
+class NullTransformer : public MetaTransformer {
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+
+public:
+    void setDebugReport() override {}
+
+    void setVerbosity(bool verbose) override {}
+
+    std::string getName() const override {
+        return "NullTransformer";
+    }
 };
 
 }  // end of namespace souffle

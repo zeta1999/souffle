@@ -459,9 +459,44 @@ function genRulVer() {
     document.getElementById("rulver").style.display = "block";
 }
 
+function genConfig() {
+    var table = document.createElement("table");
+    {
+        var header = document.createElement("thead");
+        var headerRow = document.createElement("tr");
+        var headerName = document.createElement("th");
+        headerName.textContent = "Key";
+        var headerValue = document.createElement("th");
+        headerValue.textContent = "Value";
+
+        headerRow.appendChild(headerName);
+        headerRow.appendChild(headerValue);
+        header.appendChild(headerRow);
+        table.appendChild(header);
+    }
+    var body = document.createElement("tbody");
+    for (i in data["configuration"]) {
+        var row = document.createElement("tr");
+        var name = document.createElement("td");
+        if (i === "") {
+            name.textContent = "Datalog input file";
+        } else {
+            name.textContent = i;
+        }
+        var value = document.createElement("td");
+        value.textContent = data["configuration"][i];
+
+        row.appendChild(name);
+        row.appendChild(value);
+        body.appendChild(row);
+    }
+    table.appendChild(body);
+    return table;
+}
+
 function gen_top() {
-    var x, line1, line2;
-    x = document.getElementById("top-stats");
+    var statsElement, line1, line2;
+    statsElement = document.getElementById("top-stats");
     line1 = document.createElement("p");
     line1.textContent = "Total runtime: " + humanise_time(data.top[0]) + " (" + data.top[0] + " seconds)";
     line2 = document.createElement("p");
@@ -470,11 +505,13 @@ function gen_top() {
     line3.textContent = "Total loadtime: " + humanise_time(data.top[2]) + " (" + data.top[2] + " seconds)";
     line4 = document.createElement("p");
     line4.textContent = "Total savetime: " + humanise_time(data.top[3]) + " (" + data.top[3] + " seconds)";
-    x.appendChild(line1);
-    x.appendChild(line2);
-    x.appendChild(line3);
-    x.appendChild(line4);
+    statsElement.appendChild(line1);
+    statsElement.appendChild(line2);
+    statsElement.appendChild(line3);
+    statsElement.appendChild(line4);
     graphUsages();
+
+    document.getElementById("top-config").appendChild(genConfig());
 }
 
 function view_code_snippet(value) {

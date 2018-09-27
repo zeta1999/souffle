@@ -510,7 +510,18 @@ public:
             outfile << ']';
             previousUsage = usage;
         }
-        outfile << "]};\n";
+        outfile << "],\n";
+
+        // Add configuration key-value pairs
+        outfile << "configuration: {";
+        firstRow = true;
+        for (auto& kvp :
+                ProfileEventSingleton::instance().getDB().getStringMap({"program", "configuration"})) {
+            comma(firstRow);
+            outfile << '"' << kvp.first << R"_(": ")_" << Tools::cleanJsonOut(kvp.second) << '"';
+        }
+        outfile << "}";
+        outfile << "};\n";
         outfile << html.get_second_half();
 
         std::cout << "file output to: " << new_file << std::endl;

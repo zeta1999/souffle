@@ -40,6 +40,10 @@
 
 namespace souffle {
 
+bool NullTransformer::transform(AstTranslationUnit& translationUnit) {
+    return false;
+}
+
 bool PipelineTransformer::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
     for (auto& transformer : pipeline) {

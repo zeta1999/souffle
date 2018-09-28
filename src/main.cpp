@@ -189,7 +189,8 @@ int main(int argc, char** argv) {
                             {"magic-transform", 'm', "RELATIONS", "", false,
                                     "Enable magic set transformation changes on the given relations, use '*' "
                                     "for all."},
-                            {"disable-transformers", 'z', "TRANSFORMERS", "", false, "Disable the given AST transformers."},
+                            {"disable-transformers", 'z', "TRANSFORMERS", "", false,
+                                    "Disable the given AST transformers."},
                             {"dl-program", 'o', "FILE", "", false,
                                     "Generate C++ source code, written to <FILE>, and compile this to a "
                                     "binary executable (without executing it)."},
@@ -437,14 +438,14 @@ int main(int argc, char** argv) {
             int begin = 0;
             for (size_t i = 0; i < str.size(); i++) {
                 if (str[i] == delimiter) {
-                    std::string token = str.substr(begin, (i-begin));
+                    std::string token = str.substr(begin, (i - begin));
                     parts.insert(token);
                     begin = i + 1;
                 }
             }
 
-            parts.insert(str.substr(begin)); // add in the last remaining token
-            parts.erase("");                 // remove empty tokens
+            parts.insert(str.substr(begin));  // add in the last remaining token
+            parts.erase("");                  // remove empty tokens
 
             return parts;
         };

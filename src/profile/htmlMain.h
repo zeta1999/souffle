@@ -56,6 +56,7 @@ std::string htmlBodyTop = R"___(
     <div id="Top" class="tabcontent" style="margin-left: auto;margin-right: auto;">
         <h3>Top</h3>
         <div id="top-stats"></div>
+        <div id="top-config"></div>
         <div id="top-graphs">
             <h1>CPU time</h1>
             <div class="ct-chart-cpu"></div>

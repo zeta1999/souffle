@@ -189,6 +189,8 @@ public:
                     std::cout << "Invalid parameters to limit command.\n";
                 }
             }
+        } else if (c[0].compare("configuration") == 0) {
+            configuration();
         } else {
             std::cout << "Unknown command. Use \"help\" for a list of commands.\n";
         }
@@ -510,7 +512,18 @@ public:
             outfile << ']';
             previousUsage = usage;
         }
-        outfile << "]};\n";
+        outfile << "],\n";
+
+        // Add configuration key-value pairs
+        outfile << "configuration: {";
+        firstRow = true;
+        for (auto& kvp :
+                ProfileEventSingleton::instance().getDB().getStringMap({"program", "configuration"})) {
+            comma(firstRow);
+            outfile << '"' << kvp.first << R"_(": ")_" << Tools::cleanJsonOut(kvp.second) << '"';
+        }
+        outfile << "}";
+        outfile << "};\n";
         outfile << html.get_second_half();
 
         std::cout << "file output to: " << new_file << std::endl;
@@ -538,6 +551,7 @@ public:
         std::printf("  %-30s%-5s %s\n", "graph ver <rule id> <type>", "-",
                 "graph recursive(C) rule versions by type(tot_t/copy_t/tuples).");
         std::printf("  %-30s%-5s %s\n", "top", "-", "display top-level summary of program run.");
+        std::printf("  %-30s%-5s %s\n", "configuration", "-", "display configuration settings for this run.");
         std::printf("  %-30s%-5s %s\n", "usage [relation id|rule id]", "-",
                 "display CPU usage graphs for a relation or rule.");
         std::printf("  %-30s%-5s %s\n", "memory", "-", "display memory usage.");
@@ -823,6 +837,8 @@ public:
         linereader.appendTabCompletion("help");
         linereader.appendTabCompletion("usage");
         linereader.appendTabCompletion("limit ");
+        linereader.appendTabCompletion("memory");
+        linereader.appendTabCompletion("configuration");
 
         // add rel tab completes after the rest so users can see all commands first
         for (auto& row : out.formatTable(rel_table_state, precision)) {
@@ -832,6 +848,20 @@ public:
             linereader.appendTabCompletion("graph " + row[5] + " tuples");
             linereader.appendTabCompletion("usage " + row[5]);
         }
+    }
+
+    void configuration() {
+        std::cout << "Configuration" << '\n';
+        printf("%30s      %s", "Key", "Value\n\n");
+        for (auto& kvp :
+                ProfileEventSingleton::instance().getDB().getStringMap({"program", "configuration"})) {
+            if (kvp.first == "") {
+                printf("%30s      %s\n", "Datalog input file", kvp.second.c_str());
+                continue;
+            }
+            printf("%30s      %s\n", kvp.first.c_str(), kvp.second.c_str());
+        }
+        std::cout << std::endl;
     }
 
     void top() {

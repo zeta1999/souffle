@@ -296,7 +296,7 @@ protected:
     /**
      * Find path: if directories along the path do not exist, create them.
      */
-    DirectoryEntry* lookupPath(std::vector<std::string> path) {
+    DirectoryEntry* lookupPath(const std::vector<std::string>& path) {
         DirectoryEntry* dir = root.get();
         for (const std::string& key : path) {
             assert(!key.empty() && "Key is empty!");
@@ -429,6 +429,26 @@ public:
             }
         }
         return dir->readEntry(*last);
+    }
+
+    /**
+     * Return a map of string keys to string values.
+     */
+    std::map<std::string, std::string> getStringMap(const std::vector<std::string>& path) const {
+        std::map<std::string, std::string> kvps;
+        DirectoryEntry* parent = dynamic_cast<DirectoryEntry*>(lookupEntry(path));
+        if (parent == nullptr) {
+            return kvps;
+        }
+
+        for (const auto& key : parent->getKeys()) {
+            TextEntry* text = dynamic_cast<TextEntry*>(parent->readEntry(key));
+            if (text != nullptr) {
+                kvps[key] = text->getText();
+            }
+        }
+
+        return kvps;
     }
 
     // print database

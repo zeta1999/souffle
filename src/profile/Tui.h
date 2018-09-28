@@ -237,76 +237,93 @@ public:
         }
     }
 
-    std::string genJson() {
-        std::stringstream outfile;
+    std::stringstream& genJsonTop(std::stringstream& ss) {
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
-        std::string source_loc;
 
-        auto comma = [&outfile](bool& first, const std::string& delimiter = ", ") {
+        auto beginTime = run->getStarttime();
+        auto endTime = run->getEndtime();
+        ss << R"_({"top":[)_" << (endTime - beginTime).count() / 1000000.0 << "," << run->getTotNumTuples()
+           << "," << run->getTotLoadtime() << "," << run->getTotSavetime() << "]\n";
+        return ss;
+    }
+
+    std::stringstream& genJsonRelations(std::stringstream& ss) {
+        std::shared_ptr<ProgramRun>& run = out.getProgramRun();
+
+        auto comma = [&ss](bool& first, const std::string& delimiter = ", ") {
             if (!first) {
-                outfile << delimiter;
+                ss << delimiter;
             } else {
                 first = false;
             }
         };
-        auto beginTime = out.getProgramRun()->getStarttime();
-        auto endTime = out.getProgramRun()->getEndtime();
-        outfile << R"_({"top":[)_" << (endTime - beginTime).count() / 1000000.0 << ","
-                << run->getTotNumTuples() << "," << run->getTotLoadtime() << "," << run->getTotSavetime()
-                << "],\n";
-        outfile << R"_("rel":{)_";
+
+        ss << R"_("rel":{)_";
         bool firstRow = true;
         for (auto& _row : rel_table_state.getRows()) {
             comma(firstRow, ",\n");
 
             Row row = *_row;
-            outfile << '"' << row[6]->toString(0) << R"_(": [)_";
-            outfile << '"' << Tools::cleanJsonOut(row[5]->toString(0)) << R"_(", )_";
-            outfile << '"' << Tools::cleanJsonOut(row[6]->toString(0)) << R"_(", )_";
-            outfile << row[0]->getDoubVal() << ", ";
-            outfile << row[1]->getDoubVal() << ", ";
-            outfile << row[2]->getDoubVal() << ", ";
-            outfile << row[3]->getDoubVal() << ", ";
-            outfile << row[4]->getLongVal() << ", ";
-            outfile << '"' << Tools::cleanJsonOut(row[7]->toString(0)) << R"_(", [)_";
-
-            source_loc = row[7]->toString(0);
+            ss << '"' << row[6]->toString(0) << R"_(": [)_";
+            ss << '"' << Tools::cleanJsonOut(row[5]->toString(0)) << R"_(", )_";
+            ss << '"' << Tools::cleanJsonOut(row[6]->toString(0)) << R"_(", )_";
+            ss << row[0]->getDoubVal() << ", ";
+            ss << row[1]->getDoubVal() << ", ";
+            ss << row[2]->getDoubVal() << ", ";
+            ss << row[3]->getDoubVal() << ", ";
+            ss << row[4]->getLongVal() << ", ";
+            ss << '"' << Tools::cleanJsonOut(row[7]->toString(0)) << R"_(", [)_";
 
             bool firstCol = true;
             for (auto& _rel_row : rul_table_state.getRows()) {
                 Row rel_row = *_rel_row;
                 if (rel_row[7]->toString(0) == row[5]->toString(0)) {
                     comma(firstCol);
-                    outfile << '"' << rel_row[6]->toString(0) << '"';
+                    ss << '"' << rel_row[6]->toString(0) << '"';
                 }
             }
-            outfile << "], ";
+            ss << "], ";
             std::vector<std::shared_ptr<Iteration>> iter =
                     run->getRelation_map()[row[5]->toString(0)]->getIterations();
-            outfile << R"_({"tot_t": [)_";
+            ss << R"_({"tot_t": [)_";
             firstCol = true;
             for (auto& i : iter) {
                 comma(firstCol);
-                outfile << i->getRuntime();
+                ss << i->getRuntime();
             }
-            outfile << R"_(], "copy_t": [)_";
+            ss << R"_(], "copy_t": [)_";
             firstCol = true;
             for (auto& i : iter) {
                 comma(firstCol);
-                outfile << i->getCopy_time();
+                ss << i->getCopy_time();
             }
-            outfile << R"_(], "tuples": [)_";
+            ss << R"_(], "tuples": [)_";
             firstCol = true;
             for (auto& i : iter) {
                 comma(firstCol);
-                outfile << i->getNum_tuples();
+                ss << i->getNum_tuples();
             }
-            outfile << "]}]";
+            ss << "]}]";
         }
-        outfile << "},\n";
-        outfile << R"_("rul": {)_";
+        ss << "},\n";
 
-        firstRow = true;
+        return ss;
+    }
+
+    std::stringstream& genJsonRules(std::stringstream& ss) {
+        std::shared_ptr<ProgramRun>& run = out.getProgramRun();
+
+        auto comma = [&ss](bool& first, const std::string& delimiter = ", ") {
+            if (!first) {
+                ss << delimiter;
+            } else {
+                first = false;
+            }
+        };
+
+        ss << R"_("rul": {)_";
+
+        bool firstRow = true;
         for (auto& _row : rul_table_state.getRows()) {
             Row row = *_row;
 
@@ -325,19 +342,19 @@ public:
                 src = row[10]->toString(-1);
             }
             comma(firstRow);
-            outfile << "\n ";
+            ss << "\n ";
 
-            outfile << '"' << row[6]->toString(0) << R"_(": [)_";
-            outfile << '"' << Tools::cleanJsonOut(row[5]->toString(0)) << R"_(", )_";
-            outfile << '"' << Tools::cleanJsonOut(row[6]->toString(0)) << R"_(", )_";
-            outfile << row[0]->getDoubVal() << ", ";
-            outfile << row[1]->getDoubVal() << ", ";
-            outfile << row[2]->getDoubVal() << ", ";
-            outfile << row[3]->getDoubVal() << ", ";
-            outfile << row[4]->getLongVal() << ", ";
+            ss << '"' << row[6]->toString(0) << R"_(": [)_";
+            ss << '"' << Tools::cleanJsonOut(row[5]->toString(0)) << R"_(", )_";
+            ss << '"' << Tools::cleanJsonOut(row[6]->toString(0)) << R"_(", )_";
+            ss << row[0]->getDoubVal() << ", ";
+            ss << row[1]->getDoubVal() << ", ";
+            ss << row[2]->getDoubVal() << ", ";
+            ss << row[3]->getDoubVal() << ", ";
+            ss << row[4]->getLongVal() << ", ";
 
-            outfile << '"' << src << R"_(", )_";
-            outfile << "[";
+            ss << '"' << src << R"_(", )_";
+            ss << "[";
 
             bool has_ver = false;
             bool firstCol = true;
@@ -345,25 +362,25 @@ public:
                 comma(firstCol);
                 has_ver = true;
                 Row ver_row = *_ver_row;
-                outfile << '[';
-                outfile << '"' << Tools::cleanJsonOut(ver_row[5]->toString(0)) << R"_(", )_";
-                outfile << '"' << Tools::cleanJsonOut(ver_row[6]->toString(0)) << R"_(", )_";
-                outfile << ver_row[0]->getDoubVal() << ", ";
-                outfile << ver_row[1]->getDoubVal() << ", ";
-                outfile << ver_row[2]->getDoubVal() << ", ";
-                outfile << ver_row[3]->getDoubVal() << ", ";
-                outfile << ver_row[4]->getLongVal() << ", ";
-                outfile << '"' << src << R"_(", )_";
-                outfile << ver_row[8]->getLongVal();
-                outfile << ']';
+                ss << '[';
+                ss << '"' << Tools::cleanJsonOut(ver_row[5]->toString(0)) << R"_(", )_";
+                ss << '"' << Tools::cleanJsonOut(ver_row[6]->toString(0)) << R"_(", )_";
+                ss << ver_row[0]->getDoubVal() << ", ";
+                ss << ver_row[1]->getDoubVal() << ", ";
+                ss << ver_row[2]->getDoubVal() << ", ";
+                ss << ver_row[3]->getDoubVal() << ", ";
+                ss << ver_row[4]->getLongVal() << ", ";
+                ss << '"' << src << R"_(", )_";
+                ss << ver_row[8]->getLongVal();
+                ss << ']';
             }
 
-            outfile << "], ";
+            ss << "], ";
 
             if (row[6]->toString(0).at(0) != 'C') {
-                outfile << "{}, {}]";
+                ss << "{}, {}]";
             } else {
-                outfile << R"_({"tot_t": [)_";
+                ss << R"_({"tot_t": [)_";
 
                 std::vector<uint64_t> iteration_tuples;
                 bool firstCol = true;
@@ -381,48 +398,62 @@ public:
                     }
                     if (add) {
                         comma(firstCol);
-                        outfile << tot_time;
+                        ss << tot_time;
                         iteration_tuples.push_back(tot_num);
                     }
                 }
-                outfile << R"_(], "tuples": [)_";
+                ss << R"_(], "tuples": [)_";
                 firstCol = true;
                 for (auto& i : iteration_tuples) {
                     comma(firstCol);
-                    outfile << i;
+                    ss << i;
                 }
 
-                outfile << "]}, {";
+                ss << "]}, {";
 
                 if (has_ver) {
-                    outfile << R"_("tot_t": [)_";
+                    ss << R"_("tot_t": [)_";
 
                     firstCol = true;
                     for (auto& row : ver_table.rows) {
                         comma(firstCol);
-                        outfile << (*row)[0]->getDoubVal();
+                        ss << (*row)[0]->getDoubVal();
                     }
-                    outfile << R"_(], "copy_t": [)_";
+                    ss << R"_(], "copy_t": [)_";
 
                     firstCol = true;
                     for (auto& row : ver_table.rows) {
                         comma(firstCol);
-                        outfile << (*row)[3]->getDoubVal();
+                        ss << (*row)[3]->getDoubVal();
                     }
-                    outfile << R"_(], "tuples": [)_";
+                    ss << R"_(], "tuples": [)_";
 
                     firstCol = true;
                     for (auto& row : ver_table.rows) {
                         comma(firstCol);
-                        outfile << (*row)[4]->getLongVal();
+                        ss << (*row)[4]->getLongVal();
                     }
-                    outfile << ']';
+                    ss << ']';
                 }
-                outfile << "}]";
+                ss << "}]";
             }
         }
-        outfile << "\n}, \n";
+        ss << "\n}";
+        return ss;
+    }
 
+    std::stringstream& genJsonUsage(std::stringstream& ss) {
+        std::shared_ptr<ProgramRun>& run = out.getProgramRun();
+
+        auto comma = [&ss](bool& first, const std::string& delimiter = ", ") {
+            if (!first) {
+                ss << delimiter;
+            } else {
+                first = false;
+            }
+        };
+
+        std::string source_loc = (*rel_table_state.getRows()[0])[7]->getStringVal();
         std::string source_file_loc = Tools::split(source_loc, " ").at(0);
         std::ifstream source_file(source_file_loc);
         if (!source_file.is_open()) {
@@ -430,58 +461,85 @@ public:
                       << std::endl;
         } else {
             std::string str;
-            outfile << R"_("code": [)_";
+            ss << R"_("code": [)_";
             bool firstCol = true;
             while (getline(source_file, str)) {
                 comma(firstCol, ",\n");
-                outfile << '"' << Tools::cleanJsonOut(str) << '"';
+                ss << '"' << Tools::cleanJsonOut(str) << '"';
             }
-            outfile << "],\n";
+            ss << "],\n";
             source_file.close();
         }
 
         // Add usage statistics
         auto usages = getUsageStats(100);
+        auto beginTime = run->getStarttime();
 
-        outfile << R"_("usage": [)_";
-        firstRow = true;
+        ss << R"_("usage": [)_";
+        bool firstRow = true;
         Usage previousUsage = *usages.begin();
         previousUsage.time = beginTime.count();
         for (auto usage : usages) {
             comma(firstRow);
-            outfile << '[';
-            outfile << (usage.time - beginTime.count()) / 1000000.0 << ", ";
-            outfile << 100.0 * (usage.usertime - previousUsage.usertime) / (usage.time - previousUsage.time)
-                    << ", ";
-            outfile << 100.0 * (usage.systemtime - previousUsage.systemtime) /
-                               (usage.time - previousUsage.time)
-                    << ", ";
-            outfile << usage.maxRSS * 1024 << ", ";
-            outfile << '"';
+            ss << '[';
+            ss << (usage.time - beginTime.count()) / 1000000.0 << ", ";
+            ss << 100.0 * (usage.usertime - previousUsage.usertime) / (usage.time - previousUsage.time)
+               << ", ";
+            ss << 100.0 * (usage.systemtime - previousUsage.systemtime) / (usage.time - previousUsage.time)
+               << ", ";
+            ss << usage.maxRSS * 1024 << ", ";
+            ss << '"';
             bool firstCol = true;
             for (auto& cur : out.getProgramRun()->getRelationsAtTime(
                          previousUsage.time / 1000000.0, usage.time / 1000000.0)) {
                 comma(firstCol);
-                outfile << cur->getName();
+                ss << cur->getName();
             }
-            outfile << '"';
-            outfile << ']';
+            ss << '"';
+            ss << ']';
             previousUsage = usage;
         }
-        outfile << "],\n";
+        ss << "]   }";
+        return ss;
+    }
+
+    std::stringstream& genJsonConfiguration(std::stringstream& ss) {
+        auto comma = [&ss](bool& first, const std::string& delimiter = ", ") {
+            if (!first) {
+                ss << delimiter;
+            } else {
+                first = false;
+            }
+        };
 
         // Add configuration key-value pairs
-        outfile << "configuration: {";
-        firstRow = true;
+        ss << R"_("configuration": {)_";
+        bool firstRow = true;
         for (auto& kvp :
                 ProfileEventSingleton::instance().getDB().getStringMap({"program", "configuration"})) {
             comma(firstRow);
-            outfile << '"' << kvp.first << R"_(": ")_" << Tools::cleanJsonOut(kvp.second) << '"';
+            ss << '"' << kvp.first << R"_(": ")_" << Tools::cleanJsonOut(kvp.second) << '"';
         }
-        outfile << "}";
-        outfile << "};\n";
+        ss << "}";
+        return ss;
+    }
 
-        return outfile.str();
+    std::string genJson() {
+        std::stringstream ss;
+
+        genJsonTop(ss);
+        ss << ",\n";
+        genJsonRelations(ss);
+        ss << ",\n";
+        genJsonRules(ss);
+        ss << ",\n";
+        genJsonUsage(ss);
+        ss << ",\n";
+        genJsonConfiguration(ss);
+
+        ss << "};\n";
+
+        return ss.str();
     }
 
     void outputHtml() {

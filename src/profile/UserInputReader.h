@@ -19,10 +19,7 @@ namespace souffle {
 namespace profile {
 
 /*
- * A class that reads user input a char at a time allowing for tab completion and history to be implemented
- * TODO: consider: only display history based on current input
- * - eg. history is ["rel R1", "rul N1.1", "graph R1 tot_t"] user types "rel" and presses up, will show "rel
- * R1" only
+ * A class that reads user input a char at a time allowing for tab completion and history
  */
 class InputReader {
 private:

@@ -58,7 +58,6 @@ public:
 
     /** Sort by ID. */
     static bool ID(const std::shared_ptr<Row>& a, const std::shared_ptr<Row>& b) {
-        // TODO: compare the actual ID values
         return b->cells[6]->getStringVal() > a->cells[6]->getStringVal();
     }
 };

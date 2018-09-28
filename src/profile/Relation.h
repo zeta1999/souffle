@@ -190,7 +190,6 @@ public:
         for (auto& rul : ruleMap) {
             output << rul.second->toString();
         }
-        // TODO: ensure this is the same as java, as java just prints an array
         output << "\n],\n\"iterations\":\n";
         output << "[";
         if (iterations.empty()) {

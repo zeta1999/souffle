@@ -55,7 +55,7 @@ public:
                 std::sort(rows.begin(), rows.end(), DataComparator::NAME);
                 break;
             case 0:
-            default:  // if the col_num isn't defined just use TIME... TODO: consider printing warning?
+            default:  // if the col_num isn't defined use TIME
                 std::sort(rows.begin(), rows.end(), DataComparator::TIME);
                 break;
         }

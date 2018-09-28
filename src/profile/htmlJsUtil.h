@@ -124,7 +124,6 @@ function minify_numbers(num) {
 
 (function () {
     var compare = function (a, b) {
-        // TODO: regex for numbers and sort them? (for IDs and src location)
         return a.localeCompare(b);
     };
     Tablesort.extend("text", function (a) {

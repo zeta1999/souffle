@@ -4,8 +4,6 @@ namespace souffle {
 namespace profile {
 namespace html {
 std::string cssChartist = R"___(
-/* TODO: consider removing unused classes */
-
 p {
     padding: 4px
 }

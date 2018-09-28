@@ -520,7 +520,70 @@ public:
             comma(firstRow);
             ss << '"' << kvp.first << R"_(": ")_" << Tools::cleanJsonOut(kvp.second) << '"';
         }
-        ss << "}";
+        ss << '}';
+        return ss;
+    }
+
+    std::stringstream& genJsonAtoms(std::stringstream& ss) {
+        std::shared_ptr<ProgramRun>& run = out.getProgramRun();
+
+        auto comma = [&ss](bool& first, const std::string& delimiter = ", ") {
+            if (!first) {
+                ss << delimiter;
+            } else {
+                first = false;
+            }
+        };
+
+        ss << R"_("atoms": {)_";
+
+        bool firstRow = true;
+        for (auto& relation : run->getRelation_map()) {
+            // Get atoms for non-recursive rules
+            for (auto& rule : relation.second->getRuleMap()) {
+                comma(firstRow, ", \n");
+                ss << '"' << rule.second->getId() << R"_(": [)_";
+                bool firstCol = true;
+                for (auto& atom : rule.second->getAtoms()) {
+                    comma(firstCol);
+                    std::string relationName = atom.identifier;
+                    relationName = relationName.substr(0, relationName.find('('));
+                    auto* relation = out.getProgramRun()->getRelation(relationName);
+                    std::string relationSize =
+                            relation == nullptr ? "" : std::to_string(relation->getNum_tuplesRel());
+                    ss << '[';
+                    ss << '"' << Tools::cleanJsonOut(Tools::cleanString(atom.rule)) << R"_(", )_";
+                    ss << '"' << Tools::cleanJsonOut(atom.identifier) << R"_(", )_";
+                    ss << relationSize << ", ";
+                    ss << atom.frequency << ']';
+                }
+                ss << "]";
+            }
+            // Get atoms for recursive rules
+            for (auto& iteration : relation.second->getIterations()) {
+                for (auto& rule : iteration->getRul_rec()) {
+                    comma(firstRow, ", \n");
+                    ss << '"' << rule.second->getId() << R"_(": [)_";
+                    bool firstCol = true;
+                    for (auto& atom : rule.second->getAtoms()) {
+                        comma(firstCol);
+                        std::string relationName = atom.identifier;
+                        relationName = relationName.substr(0, relationName.find('('));
+                        auto* relation = out.getProgramRun()->getRelation(relationName);
+                        std::string relationSize =
+                                relation == nullptr ? "" : std::to_string(relation->getNum_tuplesRel());
+                        ss << '[';
+                        ss << '"' << Tools::cleanJsonOut(Tools::cleanString(atom.rule)) << R"_(", )_";
+                        ss << '"' << Tools::cleanJsonOut(atom.identifier) << R"_(", )_";
+                        ss << relationSize << ", ";
+                        ss << atom.frequency << ']';
+                    }
+                    ss << "]";
+                }
+            }
+        }
+
+        ss << '}';
         return ss;
     }
 
@@ -536,6 +599,9 @@ public:
         genJsonUsage(ss);
         ss << ",\n";
         genJsonConfiguration(ss);
+        ss << ",\n";
+        genJsonAtoms(ss);
+        ss << '\n';
 
         ss << "};\n";
 

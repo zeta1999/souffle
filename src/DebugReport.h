@@ -129,7 +129,7 @@ public:
         }
     }
 
-    void disableTransformers(const std::set<std::string>& transforms) {
+    void disableTransformers(const std::set<std::string>& transforms) override {
         if (auto* mt = dynamic_cast<MetaTransformer*>(wrappedTransformer.get())) {
             mt->disableTransformers(transforms);
         } else if (transforms.find(wrappedTransformer->getName()) != transforms.end()) {

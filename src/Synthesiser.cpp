@@ -1641,6 +1641,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
 
     if (Global::config().has("profile")) {
         os << "}\n";
+        os << "ProfileEventSingleton::instance().stopTimer();\n";
         os << "dumpFreqs();\n";
     }
 

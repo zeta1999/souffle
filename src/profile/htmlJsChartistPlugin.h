@@ -126,7 +126,7 @@ std::string jsChartistPlugin = R"___(
                             value = '<span class="chartist-tooltip-value">' + minify_numbers(value) + '</span>';
                             tooltipText += value;
                         } else {
-                            value = '<span class="chartist-tooltip-value">' + humanize_time(parseFloat(value)) + '</span>';
+                            value = '<span class="chartist-tooltip-value">' + humanise_time(parseFloat(value)) + '</span>';
                             tooltipText += value;
                         }
                     }

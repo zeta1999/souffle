@@ -11,6 +11,7 @@
 #include "Relation.h"
 #include "StringUtils.h"
 #include "Table.h"
+#include <chrono>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -28,15 +29,21 @@ namespace profile {
 class ProgramRun {
 private:
     std::unordered_map<std::string, std::shared_ptr<Relation>> relation_map;
-    double runtime = -1.0;
+    std::chrono::microseconds startTime{0};
+    std::chrono::microseconds endTime{0};
+
     double tot_rec_tup = 0.0;
     double tot_copy_time = 0.0;
 
 public:
     ProgramRun() : relation_map() {}
 
-    inline void SetRuntime(double runtime) {
-        this->runtime = runtime;
+    inline void setStarttime(std::chrono::microseconds time) {
+        startTime = time;
+    }
+
+    inline void setEndtime(std::chrono::microseconds time) {
+        endTime = time;
     }
 
     inline void setRelation_map(std::unordered_map<std::string, std::shared_ptr<Relation>>& relation_map) {
@@ -50,7 +57,7 @@ public:
 
     std::string toString() {
         std::ostringstream output;
-        output << "ProgramRun:" << runtime << "\nRelations:\n";
+        output << "ProgramRun:" << getRuntime() << "\nRelations:\n";
         for (auto r = relation_map.begin(); r != relation_map.end(); ++r) {
             output << r->second->toString() << "\n";
         }
@@ -62,14 +69,18 @@ public:
     }
 
     std::string getRuntime() {
-        if (runtime == -1.0) {
+        if (startTime == endTime) {
             return "--";
         }
-        return formatTime(runtime);
+        return formatTime((endTime - startTime).count() / 1000000);
     }
 
-    double getDoubleRuntime() {
-        return runtime;
+    std::chrono::microseconds getStarttime() const {
+        return startTime;
+    }
+
+    std::chrono::microseconds getEndtime() const {
+        return endTime;
     }
 
     double getTotLoadtime() {

@@ -269,7 +269,6 @@ private:
     bool loaded = false;
     bool online{true};
 
-    double runtime{0};
     std::unordered_map<std::string, std::shared_ptr<Relation>> relation_map{};
     int rel_id{0};
 
@@ -292,12 +291,12 @@ public:
         if (programDuration == nullptr) {
             auto startTimeEntry = dynamic_cast<TimeEntry*>(db.lookupEntry({"program", "starttime"}));
             if (startTimeEntry != nullptr) {
-                microseconds time = startTimeEntry->getTime();
-                microseconds timeNow = std::chrono::duration_cast<microseconds>(now().time_since_epoch());
-                runtime = (timeNow - time).count() / 1000000.0;
+                run->setStarttime(startTimeEntry->getTime());
+                run->setEndtime(std::chrono::duration_cast<microseconds>(now().time_since_epoch()));
             }
         } else {
-            runtime = (programDuration->getEnd() - programDuration->getStart()).count() / 1000000.0;
+            run->setStarttime(programDuration->getStart());
+            run->setEndtime(programDuration->getEnd());
             online = false;
         }
 
@@ -312,7 +311,6 @@ public:
                 addRelation(*relation);
             }
         }
-        run->SetRuntime(this->runtime);
         run->setRelation_map(this->relation_map);
         loaded = true;
     }

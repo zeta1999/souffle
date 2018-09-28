@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
                             {"magic-transform", 'm', "RELATIONS", "", false,
                                     "Enable magic set transformation changes on the given relations, use '*' "
                                     "for all."},
-                            {"disable-transformers", 'z', "TRANSFORMERS", "", false, "Disable the given AST transformers"},
+                            {"disable-transformers", 'z', "TRANSFORMERS", "", false, "Disable the given AST transformers."},
                             {"dl-program", 'o', "FILE", "", false,
                                     "Generate C++ source code, written to <FILE>, and compile this to a "
                                     "binary executable (without executing it)."},
@@ -430,7 +430,7 @@ int main(int argc, char** argv) {
 
     // Disable unwanted transformations
     if (Global::config().has("disable-transformers")) {
-        // TODO (azreika): maybe push this into utils
+        // TODO (azreika): add splitter into utils
         auto split = [&](std::string str, char delimiter) {
             std::set<std::string> parts;
 
@@ -450,7 +450,6 @@ int main(int argc, char** argv) {
         };
 
         std::set<std::string> givenTransformers = split(Global::config().get("disable-transformers"), ',');
-
         pipeline->disableTransformers(givenTransformers);
     }
 

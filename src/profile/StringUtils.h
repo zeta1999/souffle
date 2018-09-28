@@ -266,15 +266,6 @@ inline bool file_exists(const std::string& name) {
     return f.good();
 }
 
-inline std::string getworkingdir() {
-    char cCurrentPath[FILENAME_MAX];
-    if (!getcwd(cCurrentPath, sizeof(cCurrentPath))) {
-        return std::string();
-    }
-    cCurrentPath[sizeof(cCurrentPath) - 1] = '\0';
-    return std::string(cCurrentPath);
-}
-
 inline std::string cleanString(std::string val) {
     if (val.size() < 2) {
         return val;

@@ -9,7 +9,7 @@
 #pragma once
 
 #include "../ProfileEvent.h"
-#include "HtmlString.h"
+#include "HtmlGenerator.h"
 #include "OutputProcessor.h"
 #include "Reader.h"
 #include "Table.h"
@@ -34,7 +34,6 @@ namespace profile {
  * ProgramRun -> Reader.h ProgramRun stores all the data
  * OutputProcessor grabs the data and makes tables
  * Tui displays the data
- * TODO: move parts of the code into other classes, especially the outputJson function
  */
 class Tui {
 private:
@@ -238,51 +237,8 @@ public:
         }
     }
 
-    void outputJson() {
-        std::cout << "SouffleProf\n";
-        std::cout << "Generating JSON files...\n";
-
-        std::string workingdir = Tools::getworkingdir();
-        if (workingdir.size() == 0) {
-            std::cerr << "Error getting working directory.\nTry run the profiler using an absolute path."
-                      << std::endl;
-            throw 1;
-        }
-        DIR* dir;
-        bool exists = false;
-
-        if ((dir = opendir((workingdir + std::string("/profiler_html")).c_str())) != nullptr) {
-            exists = true;
-            closedir(dir);
-        }
-        if (!exists) {
-            std::string sPath = workingdir + std::string("/profiler_html");
-            mode_t nMode = 0733;  // UNIX style permissions
-            int nError = 0;
-            nError = mkdir(sPath.c_str(), nMode);
-            if (nError != 0) {
-                std::cerr
-                        << "directory ./profiler_html/ failed to be created. Please create it and try again.";
-                exit(2);
-            }
-        }
-
-        std::string new_file = workingdir + std::string("/profiler_html/");
-        if (Tools::file_exists(new_file)) {
-            int i = 1;
-            while (Tools::file_exists(new_file + std::to_string(i) + ".html")) {
-                i++;
-            }
-
-            new_file = new_file + std::to_string(i) + ".html";
-        }
-
-        std::ofstream outfile(new_file);
-
-        HtmlString html;
-
-        outfile << html.get_first_half();
-
+    std::string genJson() {
+        std::stringstream outfile;
         std::shared_ptr<ProgramRun>& run = out.getProgramRun();
         std::string source_loc;
 
@@ -295,7 +251,7 @@ public:
         };
         auto beginTime = out.getProgramRun()->getStarttime();
         auto endTime = out.getProgramRun()->getEndtime();
-        outfile << R"_(data={"top":[)_" << (endTime - beginTime).count() / 1000000.0 << ","
+        outfile << R"_({"top":[)_" << (endTime - beginTime).count() / 1000000.0 << ","
                 << run->getTotNumTuples() << "," << run->getTotLoadtime() << "," << run->getTotSavetime()
                 << "],\n";
         outfile << R"_("rel":{)_";
@@ -524,7 +480,42 @@ public:
         }
         outfile << "}";
         outfile << "};\n";
-        outfile << html.get_second_half();
+
+        return outfile.str();
+    }
+
+    void outputHtml() {
+        std::cout << "SouffleProf\n";
+        std::cout << "Generating HTML files...\n";
+
+        DIR* dir;
+        bool exists = false;
+
+        std::string path{"profiler_html"};
+        if ((dir = opendir(path.c_str())) != nullptr) {
+            exists = true;
+            closedir(dir);
+        }
+        if (!exists) {
+            mode_t nMode = 0733;  // UNIX style permissions
+            int nError = 0;
+            nError = mkdir(path.c_str(), nMode);
+            if (nError != 0) {
+                std::cerr << "directory " << path << " could not be created. Please create it and try again.";
+                exit(2);
+            }
+        }
+
+        std::string new_file;
+        int i = 0;
+        do {
+            ++i;
+            new_file = path + '/' + std::to_string(i) + ".html";
+        } while (Tools::file_exists(new_file));
+
+        std::ofstream outfile(new_file);
+
+        outfile << HtmlGenerator::getHtml(genJson());
 
         std::cout << "file output to: " << new_file << std::endl;
     }

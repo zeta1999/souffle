@@ -24,16 +24,6 @@ function changeSelectedRul(id) {
     genRulVer();
 }
 
-
-
-function goBack() {
-    if (came_from==="rel") {
-        document.getElementById("rel_tab").click();
-    } else if (came_from==="rul") {
-        document.getElementById("rul_tab").click();
-    }
-}
-
 function highlightRow() {
     var i;
     for (i=0;i<document.getElementsByClassName("rel_row").length;i++) {
@@ -196,13 +186,8 @@ function drawGraph() {
 
 function changeTab(event, change_to) {
     if (change_to === "Chart") {
-        document.getElementById("code-tab").style.display = "none";
         document.getElementById("chart-tab").style.display = "block";
-    } else if (change_to === "Code") {
-        document.getElementById("code-tab").style.display = "block";
-        document.getElementById("chart-tab").style.display = "none";
     } else {
-        document.getElementById("code-tab").style.display = "none";
         document.getElementById("chart-tab").style.display = "none";
     }
     var c, d, e;
@@ -534,22 +519,15 @@ function gen_code(highlight_row) {
     var list, row, text, target_row;
     list = document.getElementById("code-list");
     list.innerHTML = "";
-    list.style.background = "#AAA";
-    list.style.paddingLeft = "12px";
-    list.style.color = "#666";
     for (var i=0; i<data.code.length; i++) {
         row = document.createElement("li");
         row.className = "code-li";
-        if (i+1 != highlight_row) {
-            row.style.background = "#FAFAFA";
+        if (i+1 == highlight_row) {
             target_row = row;
-        } else {
             row.style.background = "#E0FFFF";
         }
         row.style.marginBottom = "0";
         text = document.createElement("span");
-        text.style.paddingLeft = "6px";
-        text.style.color = "#666";
         text.className = "text-span";
         text.textContent = data.code[i];
         row.appendChild(text);
@@ -575,6 +553,7 @@ function init() {
     gen_top();
     gen_rel_table();
     gen_rul_table();
+    gen_code(-1)
     Tablesort(document.getElementById('Rel_table'),{descending: true});
     Tablesort(document.getElementById('Rul_table'),{descending: true});
     Tablesort(document.getElementById('rulesofrel_table'),{descending: true});

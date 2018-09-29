@@ -623,6 +623,17 @@ button {
     margin-bottom: 1em;
 }
 
+#code-list {
+    background: #AAA;
+    padding-left: 2em;
+    color: #666;
+}
+
+.code-li {
+    background: #FAFAFA;
+    marginBottom: 0;
+}
+
 #code-view {
     overflow: auto;
     height: calc( 100vh - 160px );
@@ -630,8 +641,11 @@ button {
     font-family: Consolas, Menlo, Monaco, Lucida Console,'Bitstream Vera Sans Mono','Courier',monospace;
     line-height: 21px;
 }
+
 #code-view .text-span {
     white-space: nowrap;
+    padding-left: 6px;
+    color: #666;
 }
 
 #code-view .ol li:before  {

@@ -27,7 +27,7 @@ package:
 	rm -rf $(dpkg_dir)
 	$(MKDIR_P) $(dpkg_dir)
 	$(MAKE) dist
-	tar -xvf $(dist_src) -C $(dpkg_dir)
+	tar -xf $(dist_src) -C $(dpkg_dir)
 	cp -r debian $(dpkg_dir)/$(distdir)
 	mv $(dist_src) $(dpkg_dir)/$(deb_src)
 	cd $(dpkg_dir)/$(distdir) && DEB_BUILD_OPTIONS=nocheck $(DEBUILD) -us -uc

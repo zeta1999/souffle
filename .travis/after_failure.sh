@@ -29,17 +29,17 @@ RELEVANT_EXTENSIONS=".out .err .log .ccerr"
 MAXIMUM_LINES="200"
 
 # Show the current directory, and the contents of each direct subdirectory
-pretty_print "Current directory status"
-pwd
-ls -l
-for FI in */; do
-    pretty_print $FI
-    ls $FI
-done
+# pretty_print "Current directory status"
+# pwd
+# ls -l
+# for FI in */; do
+#     pretty_print $FI
+#     ls $FI
+# done
 
 # print some program data
 pretty_print "Installed tools"
-for exe in git java javac gcc g++ clang clang++ automake autoconf flex bison; do
+for exe in git gcc g++ clang clang++ automake autoconf flex bison; do
     which $exe
     ($exe --version 2>/dev/null >/dev/null && $exe --version ) || $exe -version
     echo

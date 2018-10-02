@@ -243,7 +243,7 @@ public:
         auto beginTime = run->getStarttime();
         auto endTime = run->getEndtime();
         ss << R"_({"top":[)_" << (endTime - beginTime).count() / 1000000.0 << "," << run->getTotNumTuples()
-           << "," << run->getTotLoadtime() << "," << run->getTotSavetime() << "]\n";
+           << "," << run->getTotLoadtime() << "," << run->getTotSavetime() << "]";
         return ss;
     }
 
@@ -305,7 +305,7 @@ public:
             }
             ss << "]}]";
         }
-        ss << "},\n";
+        ss << "}";
 
         return ss;
     }
@@ -499,7 +499,7 @@ public:
             ss << ']';
             previousUsage = usage;
         }
-        ss << "]   }";
+        ss << ']';
         return ss;
     }
 

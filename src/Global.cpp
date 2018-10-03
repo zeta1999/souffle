@@ -176,7 +176,7 @@ void MainConfig::processArgs(int argc, char** argv, const std::string& header, c
     }
 
     // obtain the name of the datalog file, and store it in the option with the empty key
-    if (argc > 1 && !Global::config().has("help")) {
+    if (argc > 1 && !Global::config().has("help") && !Global::config().has("version")) {
         std::string filename = "";
         // ensure that the optind is less than the total number of arguments
         if (argc > 1 && optind >= argc) {

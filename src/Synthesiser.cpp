@@ -1544,8 +1544,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "}\n";
 
     // -- run function --
-    os << "private:\ntemplate <bool performIO> void runFunction(std::string inputDirectory = \".\", "
-          "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1) {\n";
+    os << "private:\nvoid runFunction(std::string inputDirectory = \".\", "
+          "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1, bool performIO = false) "
+          "{\n";
 
     os << "SignalHandler::instance()->set();\n";
     if (Global::config().has("verbose")) {
@@ -1662,15 +1663,15 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "}\n";  // end of runFunction() method
 
     // add methods to run with and without performing IO (mainly for the interface)
-    os << "public:\nvoid run(size_t stratumIndex = (size_t) -1) override { runFunction<false>(\".\", \".\", "
-          "stratumIndex); }\n";
+    os << "public:\nvoid run(size_t stratumIndex = (size_t) -1) override { runFunction(\".\", \".\", "
+          "stratumIndex, false); }\n";
     os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\", "
           "size_t stratumIndex = (size_t) -1) "
           "override { ";
     if (Global::config().has("live-profile")) {
         os << "std::thread profiler([]() { profile::Tui().runProf(); });\n";
     }
-    os << "runFunction<true>(inputDirectory, outputDirectory, stratumIndex);\n";
+    os << "runFunction(inputDirectory, outputDirectory, stratumIndex, true);\n";
     if (Global::config().has("live-profile")) {
         os << "if (profiler.joinable()) { profiler.join(); }\n";
     }

@@ -1513,7 +1513,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                             return (lhs.first * rhs.second > lhs.second * rhs.first);
                         };
 
-                        std::pair<int,int> currMaxRatio = std::pair<int,int>(0,1);
+                        std::pair<int,int> currMaxRatio = std::pair<int,int>(-1,1);
                         unsigned int currMaxIdx = 0;
 
                         for (unsigned int i = 0; i < atoms.size(); i++) {

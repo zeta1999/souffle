@@ -27,6 +27,7 @@
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
+#include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
 #include "TypeSystem.h"
@@ -1429,6 +1430,180 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
 
             // Prepend propositions
             prependPropositions(clause);
+
+            if (Global::config().has("SIPS")) {
+                // Grab the atoms in the clause
+                std::vector<AstAtom*> atoms = clause->getAtoms();
+
+                // Decide which SIPS to use
+                std::function<int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSIPS;
+                std::string SIPSchosen = Global::config().get("SIPS");
+
+                // Count the number of bound arguments in a given atom
+                auto numBoundArguments = [&](const AstAtom* atom, const std::set<std::string>& boundVariables) {
+                    int count = 0;
+                    for (const AstArgument* arg : atom->getArguments()) {
+                        bool isBound = true;
+                        visitDepthFirst(*arg, [&](const AstVariable& var) {
+                            if (boundVariables.find(var.getName()) == boundVariables.end()) {
+                                isBound = false;
+                            }
+                        });
+
+                        if (isBound) {
+                            count++;
+                        }
+                    }
+                    return count;
+                };
+
+                if (SIPSchosen == "naive") {
+                    // Choose the first predicate with at least one bound argument
+                    getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+                        for (unsigned int i = 0; i < atoms.size(); i++) {
+                            if (atoms[i] == nullptr) {
+                                // Already processed, move on
+                                continue;
+                            }
+
+                            if (isProposition(atoms[i]) || (numBoundArguments(atoms[i], boundVariables) >= 1)) {
+                                return i;
+                            }
+                        }
+
+                        // None found, so just return the first non-null
+                        for (unsigned int i = 0; i < atoms.size(); i++) {
+                            if (atoms[i] != nullptr) {
+                                return i;
+                            }
+                        }
+
+                        // Fall back to the first
+                        return 0U;
+                    };
+                } else if (SIPSchosen == "max-bound") {
+                    // Order based on maximum number of bound variables
+                    getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+                        int currMaxBound = -1;
+                        unsigned int currMaxIdx = 0;
+
+                        for (unsigned int i = 0; i < atoms.size(); i++) {
+                            if (atoms[i] == nullptr) {
+                                // Already processed, move on
+                                continue;
+                            }
+
+                            if (isProposition(atoms[i])) {
+                                return i;
+                            }
+
+                            int numBound = numBoundArguments(atoms[i], boundVariables);
+                            if (numBound > currMaxBound) {
+                                currMaxBound = numBound;
+                                currMaxIdx = i;
+                            }
+                        }
+
+                        return currMaxIdx;
+                    };
+                } else if (SIPSchosen == "max-ratio") {
+                    // Order based on maximum ratio of bound to unbound
+                    getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+                        auto isLargerRatio = [&](std::pair<int,int> lhs, std::pair<int,int> rhs) {
+                            return (lhs.first * rhs.second > lhs.second * rhs.first);
+                        };
+
+                        std::pair<int,int> currMaxRatio = std::pair<int,int>(0,1);
+                        unsigned int currMaxIdx = 0;
+
+                        for (unsigned int i = 0; i < atoms.size(); i++) {
+                            if (atoms[i] == nullptr) {
+                                // Already processed, move on
+                                continue;
+                            }
+
+                            if (isProposition(atoms[i])) {
+                                return i;
+                            }
+
+                            int numBound = numBoundArguments(atoms[i], boundVariables);
+                            int numArgs = atoms[i]->getArguments().size();
+                            if (isLargerRatio(std::make_pair(numBound, numArgs), currMaxRatio)) {
+                                currMaxRatio = std::make_pair(numBound, numArgs);
+                                currMaxIdx = i;
+                            }
+                        }
+
+                        return currMaxIdx;
+                    };
+                } else if (SIPSchosen == "least-free-vars") {
+                    // Order based on the least amount of free variables in the atom
+                    getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+                        int currLeastFree = -1;
+                        unsigned int currLeastIdx = 0;
+
+                        for (unsigned int i = 0; i < atoms.size(); i++) {
+                            if (atoms[i] == nullptr) {
+                                // Already processed, move on
+                                continue;
+                            }
+
+                            if (isProposition(atoms[i])) {
+                                return i;
+                            }
+
+                            std::set<std::string> freeVars;
+                            visitDepthFirst(*atoms[i], [&](const AstVariable& var) {
+                                if (boundVariables.find(var.getName()) == boundVariables.end()) {
+                                    freeVars.insert(var.getName());
+                                }
+                            });
+
+                            int numFreeVars = freeVars.size();
+                            if (currLeastFree == -1 || numFreeVars < currLeastFree) {
+                                currLeastFree = numFreeVars;
+                                currLeastIdx = i;
+                            }
+                        }
+
+                        return currLeastIdx;
+                    };
+                } else {
+                    // Keep the same order - left takes precedence
+                    getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+                        for (unsigned int i = 0; i < atoms.size(); i++) {
+                            if (atoms[i] == nullptr) {
+                                // Already processed, move on
+                                continue;
+                            }
+
+                            return i;
+                        }
+
+                        return 0U;
+                    };
+                }
+
+                // Apply the SIPS to get a new ordering
+                std::set<std::string> boundVariables;
+                std::vector<unsigned int> newOrder(atoms.size());
+
+                unsigned int numAdded = 0;
+                while (numAdded < atoms.size()) {
+                    int nextIdx = getNextAtomSIPS(atoms, boundVariables);
+
+                    visitDepthFirst(*atoms[nextIdx], [&](const AstVariable& var) {
+                        boundVariables.insert(var.getName());
+                    });
+
+                    newOrder[numAdded] = nextIdx;
+                    atoms[nextIdx] = nullptr;
+                    numAdded++;
+                }
+
+                // Reorder the clause accordingly
+                clause->reorderAtoms(newOrder);
+            }
         }
     }
 

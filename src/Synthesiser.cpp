@@ -1580,6 +1580,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         // Store configuration
         os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"
            << relationCount << "));";
+        // Outline stratum records for faster compilation
+        os << "[](){\n";
 
         // Record relations created in each stratum
         visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
@@ -1597,6 +1599,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
                    << '\n';
             }
         });
+        // End stratum record outlining
+        os << "}();\n";
     }
 
     if (Global::config().has("engine")) {

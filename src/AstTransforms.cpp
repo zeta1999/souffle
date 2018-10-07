@@ -1394,15 +1394,15 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     };
 
     auto prependPropositions = [&](AstClause* clause){
-        const std::vector<AstLiteral*>& bodyLiterals = clause->getBodyLiterals();
+        const std::vector<AstAtom*>& atoms = clause->getAtoms();
 
         // Calculate the new ordering
         std::vector<unsigned int> nonPropositionIndices;
         std::vector<unsigned int> newOrder;
 
         bool seenNonProp;
-        for (unsigned int i = 0; i < bodyLiterals.size(); i++) {
-            if (isProposition(bodyLiterals[i])) {
+        for (unsigned int i = 0; i < atoms.size(); i++) {
+            if (isProposition(atoms[i])) {
                 newOrder.push_back(i);
                 if (seenNonProp) {
                     changed = true;

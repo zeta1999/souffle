@@ -1376,7 +1376,63 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
 }
 
 bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) {
-    return false;
+    bool changed = false;
+    AstProgram& program = *translationUnit.getProgram();
+
+    // --- Reordering --- : Prepend Propositions
+    auto isProposition = [&](const AstLiteral* literal) {
+        if (dynamic_cast<const AstAtom*>(literal) == nullptr) {
+            return false;
+        }
+
+        bool isProp = true;
+        visitDepthFirst(*literal, [&](const AstVariable& var){
+            isProp = false;
+        });
+        return isProp;
+    };
+
+    auto prependPropositions = [&](AstClause* clause){
+        const std::vector<AstLiteral*>& bodyLiterals = clause->getBodyLiterals();
+
+        // Calculate the new ordering
+        std::vector<unsigned int> nonPropositionIndices;
+        std::vector<unsigned int> newOrder;
+
+        bool seenNonProp;
+        for (unsigned int i = 0; i < bodyLiterals.size(); i++) {
+            if (isProposition(bodyLiterals[i])) {
+                newOrder.push_back(i);
+                if (seenNonProp) {
+                    changed = true;
+                }
+            } else {
+                nonPropositionIndices.push_back(i);
+                seenNonProp = true;
+            }
+        }
+        for (unsigned int idx : nonPropositionIndices) {
+            newOrder.push_back(idx);
+        }
+
+        // Reorder the clause accordingly
+        clause->reorderAtoms(newOrder);
+    };
+
+    // Literal reordering is a rule-local transformation
+    for (const AstRelation* rel : program.getRelations()) {
+        for (AstClause* clause : rel->getClauses()) {
+            // Ignore clauses with fixed execution plans
+            if (clause->hasFixedExecutionPlan()) {
+                continue;
+            }
+
+            // Prepend propositions
+            prependPropositions(clause);
+        }
+    }
+
+    return changed;
 }
 
 bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationUnit) {

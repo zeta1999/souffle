@@ -302,7 +302,7 @@ public:
     std::string getName() const override {
         return "ReorderLiteralsTransformer";
     }
-}
+};
 
 /**
  * Transformation pass to normalise constraints.

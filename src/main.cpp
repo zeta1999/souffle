@@ -434,6 +434,7 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveRelationCopiesTransformer>(), std::move(equivalencePipeline),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
+            std::make_unique<ReorderLiteralsTransformer>(),
             std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
             std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
 

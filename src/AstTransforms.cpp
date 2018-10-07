@@ -1375,6 +1375,10 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
     return changed;
 }
 
+bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) {
+    return false;
+}
+
 bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
 

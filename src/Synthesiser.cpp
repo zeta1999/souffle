@@ -265,9 +265,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // outline each search operation to improve compilation time
-            // Disabled to work around issue #345 with clang 3.7-3.9 & omp.
-            // out << "[&]()";
-
+#ifdef __clang__
+#if __clang_major > 3
+            out << "[&]()";
+#endif
+#else
+            out << "[&]()";
+#endif
             // enclose operation in its own scope
             out << "{\n";
 
@@ -336,8 +340,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // aggregate proof counters
             }
 
-            out << "}\n";  // end lambda
-            // out << "();";  // call lambda
+            out << "}\n";
+#ifdef __clang__
+#if __clang_major > 3
+            out << "();";  // call lambda
+#endif
+#else
+            out << "();";  // call lambda
+#endif
             PRINT_END_COMMENT(out);
         }
 

@@ -33,7 +33,8 @@ bool AstPragmaChecker::transform(AstTranslationUnit& translationUnit) {
             size_t splitPoint = option.find(':');
 
             std::string optionName = option.substr(0, splitPoint);
-            std::string optionValue = (splitPoint == std::string::npos) ? "" : option.substr(splitPoint+1, option.length());
+            std::string optionValue =
+                    (splitPoint == std::string::npos) ? "" : option.substr(splitPoint + 1, option.length());
 
             if (!Global::config().has(optionName)) {
                 changed = true;

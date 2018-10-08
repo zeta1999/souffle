@@ -26,6 +26,7 @@
 #include "Global.h"
 #include "IODirectives.h"
 #include "SrcLocation.h"
+#include "Util.h"
 #include <cassert>
 #include <utility>
 
@@ -56,22 +57,6 @@ bool contains(std::set<AdornedPredicate> adornedPredicates, const AstRelationIde
         }
     }
     return false;
-}
-
-// splits up a string into a set given a delimiter
-std::set<std::string> split(std::string str, char delimiter) {
-    std::set<std::string> res;
-    int begin = 0;
-    for (size_t i = 0; i < str.size(); i++) {
-        if (str[i] == delimiter) {
-            std::string token = str.substr(begin, (i - begin));
-            res.insert(token);
-            begin = i + 1;
-        }
-    }
-    res.insert(str.substr(begin));  // add in the last remaining token
-    res.erase("");                  // remove empty tokens
-    return res;
 }
 
 // checks whether a string begins with a given string
@@ -403,8 +388,8 @@ std::set<AstRelationIdentifier> addForwardDependencies(
 // is ignored by the transformation
 std::set<AstRelationIdentifier> addIgnoredRelations(
         const AstProgram* program, std::set<AstRelationIdentifier> relations) {
-    // get a set of all relations specified by the option
-    std::set<std::string> specifiedRelations = split(Global::config().get("magic-transform"), ',');
+    // get a vector of all relations specified by the option
+    std::vector<std::string> specifiedRelations = splitString(Global::config().get("magic-transform"), ',');
 
     // if a star was used as a relation, then magic set will be performed for all nodes
     if (contains(specifiedRelations, "*")) {

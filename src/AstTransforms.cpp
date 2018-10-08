@@ -1378,23 +1378,19 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
 }
 
 /**
- * Checks whether the given literal is a 'proposition',
- * in the sense that it has no variables in its arguments,
- * and so will take a constant time to process and is
- * independent of the remainder of the clause.
+ * Checks that the given literal is a proposition - that is,
+ * an atom with no arguments, which is hence independent of the
+ * rest of the clause.
  */
 bool isProposition(const AstLiteral* literal) {
-    if (dynamic_cast<const AstAtom*>(literal) == nullptr) {
+    const AstAtom* correspondingAtom = dynamic_cast<const AstAtom*>(literal);
+    if (correspondingAtom == nullptr) {
         // Just a constraint with no associated atom
         return false;
     }
 
-    bool isProp = true;
-    visitDepthFirst(*literal, [&](const AstVariable& var) {
-        // Found a variable, therefore not a proposition
-        isProp = false;
-    });
-    return isProp;
+    // Check that it has no arguments
+    return correspondingAtom->getArguments().empty();
 }
 
 /**

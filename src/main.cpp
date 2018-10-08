@@ -431,8 +431,10 @@ int main(int argc, char** argv) {
 
     // Disable unwanted transformations
     if (Global::config().has("disable-transformers")) {
-        std::vector<std::string> givenTransformers = splitString(Global::config().get("disable-transformers"), ',');
-        pipeline->disableTransformers(std::set<std::string>(givenTransformers.begin(), givenTransformers.end()));
+        std::vector<std::string> givenTransformers =
+                splitString(Global::config().get("disable-transformers"), ',');
+        pipeline->disableTransformers(
+                std::set<std::string>(givenTransformers.begin(), givenTransformers.end()));
     }
 
     // Set up the debug report if necessary

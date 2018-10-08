@@ -197,6 +197,7 @@ int main(int argc, char** argv) {
                             {"profile", 'p', "FILE", "", false,
                                     "Enable profiling, and write profile data to <FILE>."},
                             {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
+                            {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
 #ifdef USE_PROVENANCE
                             {"provenance", 't', "EXPLAIN", "", false,
                                     "Enable provenance information via guided SLD."},

@@ -493,15 +493,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitSwap(const RamSwap& swap, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            const std::string tempKnowledge = "rel_0";
             const std::string& deltaKnowledge = synthesiser.getRelationName(swap.getFirstRelation());
             const std::string& newKnowledge = synthesiser.getRelationName(swap.getSecondRelation());
 
-            // perform a triangular swap of pointers
-            out << "{\nauto " << tempKnowledge << " = " << deltaKnowledge << ";\n"
-                << deltaKnowledge << " = " << newKnowledge << ";\n"
-                << newKnowledge << " = " << tempKnowledge << ";\n"
-                << "}\n";
+            out << "std::swap(" << deltaKnowledge << ", " << newKnowledge << ");\n";
             PRINT_END_COMMENT(out);
         }
 

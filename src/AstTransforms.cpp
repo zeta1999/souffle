@@ -1619,6 +1619,10 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                 while (numAdded < atoms.size()) {
                     int nextIdx = getNextAtomSIPS(atoms, boundVariables);
 
+                    if (nextIdx != numAdded) {
+                        changed = true;
+                    }
+
                     visitDepthFirst(*atoms[nextIdx],
                             [&](const AstVariable& var) { boundVariables.insert(var.getName()); });
 

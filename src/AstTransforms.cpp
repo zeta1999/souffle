@@ -1103,11 +1103,17 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
         }
 
         // Create the replacement clause
-        // a(x) <- b(x), c(y), d(z). --> a(x) <- b(x), newrel0(), newrel1().
+        // a(x) <- b(x), c(y), d(z). --> a(x) <- newrel0(), newrel1(), b(x).
         auto* replacementClause = new AstClause();
         replacementClause->setSrcLoc(clause.getSrcLoc());
         replacementClause->setHead(std::unique_ptr<AstAtom>(clause.getHead()->clone()));
 
+        // Add the new propositions to the clause first
+        for (AstAtom* newAtom : replacementAtoms) {
+            replacementClause->addToBody(std::unique_ptr<AstLiteral>(newAtom));
+        }
+
+        // Add the remaining body literals to the clause
         for (AstLiteral* bodyLiteral : clause.getBodyLiterals()) {
             bool associated = false;
             bool hasVariables = false;
@@ -1120,11 +1126,6 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
             if (associated || !hasVariables) {
                 replacementClause->addToBody(std::unique_ptr<AstLiteral>(bodyLiteral->clone()));
             }
-        }
-
-        // Add the new propositions to the clause
-        for (AstAtom* newAtom : replacementAtoms) {
-            replacementClause->addToBody(std::unique_ptr<AstLiteral>(newAtom));
         }
 
         // Replace the old clause with the new one

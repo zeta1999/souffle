@@ -440,27 +440,10 @@ int main(int argc, char** argv) {
 
     // Disable unwanted transformations
     if (Global::config().has("disable-transformers")) {
-        // TODO (azreika): add splitter into utils
-        auto split = [&](std::string str, char delimiter) {
-            std::set<std::string> parts;
-
-            int begin = 0;
-            for (size_t i = 0; i < str.size(); i++) {
-                if (str[i] == delimiter) {
-                    std::string token = str.substr(begin, (i - begin));
-                    parts.insert(token);
-                    begin = i + 1;
-                }
-            }
-
-            parts.insert(str.substr(begin));  // add in the last remaining token
-            parts.erase("");                  // remove empty tokens
-
-            return parts;
-        };
-
-        std::set<std::string> givenTransformers = split(Global::config().get("disable-transformers"), ',');
-        pipeline->disableTransformers(givenTransformers);
+        std::vector<std::string> givenTransformers =
+                splitString(Global::config().get("disable-transformers"), ',');
+        pipeline->disableTransformers(
+                std::set<std::string>(givenTransformers.begin(), givenTransformers.end()));
     }
 
     // Set up the debug report if necessary

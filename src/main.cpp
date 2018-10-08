@@ -170,8 +170,7 @@ int main(int argc, char** argv) {
                 // the empty string if they take none
                 []() {
                     MainOption opts[] = {
-                            {"", 0, "", "", false,
-                                    ""},  // main option, the datalog program itself, key is always empty
+                            {"", 0, "", "", false, ""},  // the datalog program itself, key is always empty
                             {"fact-dir", 'F', "DIR", ".", false, "Specify directory for fact files."},
                             {"include-dir", 'I', "DIR", ".", true, "Specify directory for include files."},
                             {"output-dir", 'D', "DIR", ".", false,
@@ -206,20 +205,29 @@ int main(int argc, char** argv) {
                                     "Specify data structure (brie/btree/eqrel/rbtset/hashset)."},
                             {"engine", 'e', "[ file | mpi ]", "", false,
                                     "Specify communication engine for distributed execution."},
-                            {"hostfile", '\0', "FILE", "", false,
+                            {"hostfile", '\1', "FILE", "", false,
                                     "Specify --hostfile option for call to mpiexec when using mpi as "
                                     "execution engine."},
                             {"verbose", 'v', "", "", false, "Verbose output."},
+                            {"version", '\2', "", "", false, "Version."},
                             {"help", 'h', "", "", false, "Display this help message."}};
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
                 }());
 
-        Global::config().set("version", PACKAGE_VERSION);
         // ------ command line arguments -------------
+
+        /* for the version option, if given print the version text then exit */
+        if (Global::config().has("version")) {
+            std::cout << "Souffle: " << PACKAGE_VERSION << "" << std::endl;
+            std::cout << "Copyright (c) 2016-18 The Souffle Developers." << std::endl;
+            std::cout << "Copyright (c) 2013-16 Oracle and/or its affiliates." << std::endl;
+            return 0;
+        }
+        Global::config().set("version", PACKAGE_VERSION);
 
         /* for the help option, if given simply print the help text then exit */
         if (!Global::config().has("") || Global::config().has("help")) {
-            std::cerr << Global::config().help();
+            std::cout << Global::config().help();
             return 0;
         }
 

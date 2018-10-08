@@ -86,7 +86,7 @@ public:
                             Tui(filename, false, false).runCommand(Tools::split(args.at(3), " "));
                             break;
                         case 'j':
-                            Tui(filename, false, true).outputJson();
+                            Tui(filename, false, true).outputHtml();
                             break;
                     }
                 }

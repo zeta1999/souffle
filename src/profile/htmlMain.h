@@ -25,12 +25,12 @@ std::string htmlBodyTop = R"___(
 <body>
 <div id="wrapper" style="width:100%;height:inherit;">
     <ul class="tab">
-        <li><a href="javascript:void(0)" class="tablinks" id="default" onclick="changeTab(event, 'Top');">Top</a></li>
-        <li><a href="javascript:void(0)" class="tablinks" id="rel_tab" onclick="changeTab(event, 'Relations');came_from = 'rel';">Relations</a></li>
-        <li><a href="javascript:void(0)" class="tablinks" id="rul_tab" onclick="changeTab(event, 'Rules');came_from = 'rul';">Rules</a></li>
-        <li><a href="javascript:void(0)" class="tablinks" onclick="changeTab(event, 'Help')">Help</a></li>
-        <li id="chart-tab" style="display:none;"><a href="javascript:void(0)" id="chart_tab" onclick="changeTab(event, 'Chart')" class="tablinks">Chart</a></li>
-        <li id="code-tab" style="display:none;"><a href="javascript:void(0)" id="code_tab" onclick="changeTab(event, 'Code')" class="tablinks">Code</a></li>
+        <li><a class="tablinks" id="default" onclick="changeTab(event, 'Top');">Top</a></li>
+        <li><a class="tablinks" id="rel_tab" onclick="changeTab(event, 'Relations');came_from = 'rel';">Relations</a></li>
+        <li><a class="tablinks" id="rul_tab" onclick="changeTab(event, 'Rules');came_from = 'rul';">Rules</a></li>
+        <li id="code-tab"><a class="tablinks" id="code_tab" onclick="changeTab(event, 'Code')">Code</a></li>
+        <li><a class="tablinks" onclick="changeTab(event, 'Help')">Help</a></li>
+        <li id="chart-tab" style="display:none;"><a id="chart_tab" onclick="changeTab(event, 'Chart')" class="tablinks">Chart</a></li>
     </ul>
     <div id="Help" class="tabcontent" style="max-width:800px;margin-left: auto;margin-right: auto;">
         <h3>GUI Souffle profiler</h3>
@@ -176,7 +176,6 @@ std::string htmlBodyTop = R"___(
     <!--<button onclick="show_graph_vals=!show_graph_vals;draw_graph();">Toggle values</button>-->
 </div>
 <div id="Code" class="tabcontent">
-    <button onclick="goBack(event)">Go Back</button>
     <h3>Source Code</h3>
     <div id="code-view">
         <ol id="code-list"></ol>

@@ -1390,7 +1390,7 @@ bool isProposition(const AstLiteral* literal) {
     }
 
     bool isProp = true;
-    visitDepthFirst(*literal, [&](const AstVariable& var){
+    visitDepthFirst(*literal, [&](const AstVariable& var) {
         // Found a variable, therefore not a proposition
         isProp = false;
     });
@@ -1405,17 +1405,18 @@ bool isProposition(const AstLiteral* literal) {
  * For example, the 'max-bound' SIPS function will return the
  * atom in the clause with the maximum number of bound arguments.
  */
-std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getSIPSfunction(const std::string& SIPSchosen) {
+std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getSIPSfunction(
+        const std::string& SIPSchosen) {
     // Count the number of bound arguments in a given atom
     auto numBoundArguments = [&](const AstAtom* atom, const std::set<std::string>& boundVariables) {
         int count = 0;
         for (const AstArgument* arg : atom->getArguments()) {
             bool isBound = true;
             visitDepthFirst(*arg, [&](const AstVariable& var) {
-                    if (boundVariables.find(var.getName()) == boundVariables.end()) {
+                if (boundVariables.find(var.getName()) == boundVariables.end()) {
                     isBound = false;
-                    }
-                    });
+                }
+            });
 
             if (isBound) {
                 count++;
@@ -1485,11 +1486,11 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
     } else if (SIPSchosen == "max-ratio") {
         // Order based on maximum ratio of bound to unbound
         getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
-            auto isLargerRatio = [&](std::pair<int,int> lhs, std::pair<int,int> rhs) {
+            auto isLargerRatio = [&](std::pair<int, int> lhs, std::pair<int, int> rhs) {
                 return (lhs.first * rhs.second > lhs.second * rhs.first);
             };
 
-            std::pair<int,int> currMaxRatio = std::pair<int,int>(-1,1);
+            std::pair<int, int> currMaxRatio = std::pair<int, int>(-1, 1);
             unsigned int currMaxIdx = 0;
 
             for (unsigned int i = 0; i < atoms.size(); i++) {
@@ -1530,10 +1531,10 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
 
                 std::set<std::string> freeVars;
                 visitDepthFirst(*atoms[i], [&](const AstVariable& var) {
-                        if (boundVariables.find(var.getName()) == boundVariables.end()) {
+                    if (boundVariables.find(var.getName()) == boundVariables.end()) {
                         freeVars.insert(var.getName());
-                        }
-                        });
+                    }
+                });
 
                 int numFreeVars = freeVars.size();
                 if (currLeastFree == -1 || numFreeVars < currLeastFree) {
@@ -1568,7 +1569,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     AstProgram& program = *translationUnit.getProgram();
 
     // --- Reordering --- : Prepend Propositions
-    auto prependPropositions = [&](AstClause* clause){
+    auto prependPropositions = [&](AstClause* clause) {
         const std::vector<AstAtom*>& atoms = clause->getAtoms();
 
         // Calculate the new ordering
@@ -1611,7 +1612,8 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                 std::vector<AstAtom*> atoms = clause->getAtoms();
 
                 // Decide which SIPS to use
-                std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSIPS = getSIPSfunction(Global::config().get("SIPS"));
+                std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
+                        getNextAtomSIPS = getSIPSfunction(Global::config().get("SIPS"));
 
                 // Apply the SIPS to get a new ordering
                 std::set<std::string> boundVariables;
@@ -1621,9 +1623,8 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                 while (numAdded < atoms.size()) {
                     int nextIdx = getNextAtomSIPS(atoms, boundVariables);
 
-                    visitDepthFirst(*atoms[nextIdx], [&](const AstVariable& var) {
-                        boundVariables.insert(var.getName());
-                    });
+                    visitDepthFirst(*atoms[nextIdx],
+                            [&](const AstVariable& var) { boundVariables.insert(var.getName()); });
 
                     newOrder[numAdded] = nextIdx;
                     atoms[nextIdx] = nullptr;

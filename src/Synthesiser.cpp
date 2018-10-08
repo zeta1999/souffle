@@ -265,9 +265,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // outline each search operation to improve compilation time
-            // Disabled to work around issue #345 with clang 3.7-3.9 & omp.
-            // out << "[&]()";
-
+#ifdef __clang__
+#if __clang_major > 3
+            out << "[&]()";
+#endif
+#else
+            out << "[&]()";
+#endif
             // enclose operation in its own scope
             out << "{\n";
 
@@ -336,8 +340,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // aggregate proof counters
             }
 
-            out << "}\n";  // end lambda
-            // out << "();";  // call lambda
+            out << "}\n";
+#ifdef __clang__
+#if __clang_major > 3
+            out << "();";  // call lambda
+#endif
+#else
+            out << "();";  // call lambda
+#endif
             PRINT_END_COMMENT(out);
         }
 
@@ -1544,8 +1554,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "}\n";
 
     // -- run function --
-    os << "private:\ntemplate <bool performIO> void runFunction(std::string inputDirectory = \".\", "
-          "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1) {\n";
+    os << "private:\nvoid runFunction(std::string inputDirectory = \".\", "
+          "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1, bool performIO = false) "
+          "{\n";
 
     os << "SignalHandler::instance()->set();\n";
     if (Global::config().has("verbose")) {
@@ -1579,6 +1590,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         // Store configuration
         os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"
            << relationCount << "));";
+        // Outline stratum records for faster compilation
+        os << "[](){\n";
 
         // Record relations created in each stratum
         visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
@@ -1596,6 +1609,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
                    << '\n';
             }
         });
+        // End stratum record outlining
+        os << "}();\n";
     }
 
     if (Global::config().has("engine")) {
@@ -1662,15 +1677,15 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "}\n";  // end of runFunction() method
 
     // add methods to run with and without performing IO (mainly for the interface)
-    os << "public:\nvoid run(size_t stratumIndex = (size_t) -1) override { runFunction<false>(\".\", \".\", "
-          "stratumIndex); }\n";
+    os << "public:\nvoid run(size_t stratumIndex = (size_t) -1) override { runFunction(\".\", \".\", "
+          "stratumIndex, false); }\n";
     os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\", "
           "size_t stratumIndex = (size_t) -1) "
           "override { ";
     if (Global::config().has("live-profile")) {
         os << "std::thread profiler([]() { profile::Tui().runProf(); });\n";
     }
-    os << "runFunction<true>(inputDirectory, outputDirectory, stratumIndex);\n";
+    os << "runFunction(inputDirectory, outputDirectory, stratumIndex, true);\n";
     if (Global::config().has("live-profile")) {
         os << "if (profiler.joinable()) { profiler.join(); }\n";
     }

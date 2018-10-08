@@ -197,6 +197,7 @@ int main(int argc, char** argv) {
                             {"profile", 'p', "FILE", "", false,
                                     "Enable profiling, and write profile data to <FILE>."},
                             {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
+                            {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
 #ifdef USE_PROVENANCE
                             {"provenance", 't', "EXPLAIN", "", false,
                                     "Enable provenance information via guided SLD."},
@@ -434,6 +435,7 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveRelationCopiesTransformer>(), std::move(equivalencePipeline),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
+            std::make_unique<ReorderLiteralsTransformer>(),
             std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
             std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
 

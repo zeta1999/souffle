@@ -1512,9 +1512,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     }
 
     // print relation definitions
-    std::string initCons;      // initialization of constructor
-    std::string deleteForNew;  // matching deletes for each new, used in the destructor
-    std::string registerRel;   // registration of relations
+    std::string initCons;     // initialization of constructor
+    std::string registerRel;  // registration of relations
     int relCtr = 0;
     std::string tempType;  // string to hold the type of the temporary relations
     visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
@@ -1542,12 +1541,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         // defining table
         os << "// -- Table: " << raw_name << "\n";
 
-        os << type << "* " << name << ";\n";
-        if (!initCons.empty()) {
-            initCons += ",\n";
-        }
-        initCons += name + "(new " + type + "())";
-        deleteForNew += "delete " + name + ";\n";
+        os << "std::unique_ptr<" << type << "> " << name << " = std::make_unique<" << type << ">();\n";
         if ((rel.isInput() || rel.isComputed() || Global::config().has("provenance")) && !rel.isTemp()) {
             os << "souffle::RelationWrapper<";
             os << relCtr++ << ",";
@@ -1576,7 +1570,10 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             tupleType += "}}";
             tupleName += "}}";
 
-            initCons += ",\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
+            if (!initCons.empty()) {
+                initCons += ",\n";
+            }
+            initCons += "\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
                         tupleType + "," + tupleName + ")";
             registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + "," +
                            std::to_string(rel.isInput()) + "," + std::to_string(rel.isOutput()) + ");\n";
@@ -1608,7 +1605,6 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     // -- destructor --
 
     os << "~" << classname << "() {\n";
-    os << deleteForNew;
     os << "}\n";
 
     // -- run function --

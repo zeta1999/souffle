@@ -784,8 +784,14 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
         bool visitInsert(const RamInsert& insert) override {
             // run generic query executor
 
-            if(interpreter.evalCond(*insert.getCondition())) {
-               interpreter.evalOp(insert.getOperation());
+	   
+	    const RamCondition *c = insert.getCondition();
+	    if(c != nullptr) { 
+               if(interpreter.evalCond(*insert.getCondition())) {
+                  interpreter.evalOp(insert.getOperation());
+	       }
+	    } else {
+                  interpreter.evalOp(insert.getOperation());
 	    }
             return true;
         }

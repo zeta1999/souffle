@@ -419,7 +419,8 @@ protected:
     std::unique_ptr<RamCondition> condition;
 
 public:
-    RamInsert(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c=nullptr) : RamStatement(RN_Insert), operation(std::move(o)), condition(std::move(c)) {}
+    RamInsert(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
+            : RamStatement(RN_Insert), operation(std::move(o)), condition(std::move(c)) {}
 
     /** Get RAM operation */
     const RamOperation& getOperation() const {
@@ -429,18 +430,18 @@ public:
 
     /** Get RAM condition */
     const RamCondition* getCondition() const {
-	return condition.get();
+        return condition.get();
     }
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
         os << "INSERT ";
-	if (condition != nullptr) {
-		os << "WHERE ";
-		condition->print(os);
-	}
-	os << "\n";
+        if (condition != nullptr) {
+            os << "WHERE ";
+            condition->print(os);
+        }
+        os << "\n";
         operation->print(os, tabpos + 1);
     }
 
@@ -452,12 +453,12 @@ public:
     /** Create clone */
     RamInsert* clone() const override {
         RamInsert* res;
-	if (condition != nullptr) {
-           res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()));
-	} else {
-           res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()), 
-			       std::unique_ptr<RamCondition>(condition->clone()));
-	}
+        if (condition != nullptr) {
+            res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()));
+        } else {
+            res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()),
+                    std::unique_ptr<RamCondition>(condition->clone()));
+        }
         return res;
     }
 
@@ -472,8 +473,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamInsert*>(&node));
         const auto& other = static_cast<const RamInsert&>(node);
-        return getOperation() == other.getOperation() &&
-	       getCondition() == other.getCondition();
+        return getOperation() == other.getOperation() && getCondition() == other.getCondition();
     }
 };
 

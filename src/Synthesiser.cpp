@@ -264,6 +264,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 	    std::string projectRelName;
 	    int projectRelArity=-1; 
 
+	    if(insert.getCondition() != nullptr) {
+		    out << "if(";
+                    visit(*insert.getCondition(), out);
+		    out << ") {\n";
+	    }
+
             visitDepthFirst(insert, [&](const RamProject& project) { projectRelArity = project.getRelation().getArity();  
 			                                             projectRelName = project.getRelation().getName(); });
 
@@ -369,6 +375,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 #else
             out << "();";  // call lambda
 #endif
+	   if(insert.getCondition() != nullptr) {
+	    out << "}\n";
+	   }
+
             PRINT_END_COMMENT(out);
         }
 

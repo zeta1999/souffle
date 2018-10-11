@@ -695,11 +695,6 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
             }
         }
 
-	// add stopping criteria for nullary relations
-	// (if it contains already the null tuple, don't re-compute)
-	if (head.getArity() == 0) {
-            project->addCondition(std::make_unique<RamEmpty>(getRelation(&origHead)), *project);
-	}
 
         // build up insertion call
         op = std::move(project);  // start with innermost
@@ -916,10 +911,18 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
             std::cout << "Unsupported node type: " << typeid(*lit).name();
             assert(false && "Unsupported node type!");
         }
-    }
+    } 
 
+
+
+    // add stopping criteria for nullary relations
+    // (if it contains already the null tuple, don't re-compute)
+    std::unique_ptr<RamCondition> ramInsertCondition;
+    if(!ret && head.getArity() == 0) {
+        ramInsertCondition = std::make_unique<RamEmpty>(getRelation(&origHead));
+    }
     /* generate the final RAM Insert statement */
-    return std::make_unique<RamInsert>(std::move(op));
+    return std::make_unique<RamInsert>(std::move(op), std::move(ramInsertCondition));
 }
 
 /* utility for appending statements */

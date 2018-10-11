@@ -783,7 +783,10 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
 
         bool visitInsert(const RamInsert& insert) override {
             // run generic query executor
-            interpreter.evalOp(insert.getOperation());
+
+            if(interpreter.evalCond(*insert.getCondition())) {
+               interpreter.evalOp(insert.getOperation());
+	    }
             return true;
         }
 

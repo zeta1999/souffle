@@ -460,7 +460,7 @@ public:
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << relation->getName() << " ≠ ∅";
+        os << relation->getName() << " = ∅";
     }
 
     /** Obtain list of child nodes */

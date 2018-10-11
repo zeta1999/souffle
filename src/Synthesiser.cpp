@@ -108,6 +108,11 @@ const std::string Synthesiser::getRelationName(const RamRelation& rel) {
     return "rel_" + convertRamIdent(rel.getName());
 }
 
+/** Get relation name via string */
+const std::string Synthesiser::getRelationName(const std::string& relName) {
+    return "rel_" + convertRamIdent(relName);
+}
+
 /** Get context name */
 const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
     return getRelationName(rel) + "_op_ctxt";
@@ -255,13 +260,29 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitInsert(const RamInsert& insert, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // enclose operation with a check for an empty relation
-            std::set<RamRelation> input_relations;
-            visitDepthFirst(insert, [&](const RamScan& scan) { input_relations.insert(scan.getRelation()); });
-            if (!input_relations.empty()) {
-                out << "if (" << join(input_relations, "&&", [&](std::ostream& out, const RamRelation& rel) {
-                    out << "!" << synthesiser.getRelationName(rel) << "->"
-                        << "empty()";
-                }) << ") ";
+            std::set<std::string> inputRelNames;
+	    std::string projectRelName;
+	    int projectRelArity=-1; 
+
+            visitDepthFirst(insert, [&](const RamProject& project) { projectRelArity = project.getRelation().getArity();  
+			                                             projectRelName = project.getRelation().getName(); });
+
+            visitDepthFirst(insert, [&](const RamScan& scan) { inputRelNames.insert(scan.getRelation().getName()); });
+
+            if (!inputRelNames.empty() || projectRelArity == 0) {
+                out << "if (";
+		if (!inputRelNames.empty()) { 
+	            out << join(inputRelNames, "&&", [&](std::ostream& os, const std::string relName) {
+                        os << "!" << synthesiser.getRelationName(relName) << "->empty()";
+                    });
+		} 
+		if(projectRelArity == 0) { 
+		    if (!inputRelNames.empty()) {
+			out << "&&"; 
+		    }
+		    out << synthesiser.getRelationName(projectRelName) << "->empty()";
+		}
+	        out << ") ";
             }
 
             // outline each search operation to improve compilation time

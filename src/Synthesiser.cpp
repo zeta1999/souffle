@@ -1702,9 +1702,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             auto i = stratum.getIndex();
             os << "STRATUM_" << i << ":\n";
         }
-        os << "{\n";
+        os << "[&]() {\n";
         emitCode(os, stratum.getBody());
-        os << "}\n";
+        os << "}();\n";
         if (Global::config().has("engine")) {
             os << "if (stratumIndex != (size_t) -1) goto EXIT;\n";
         }

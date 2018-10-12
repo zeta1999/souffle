@@ -18,6 +18,7 @@ Usage:
   souffle-compile [options] <FILE>.cpp
 Options:
   -h           show usage
+  -g           Build in debug mode
   -v           verbose output
   -w           enable warnings\n"
   exit 1;
@@ -42,12 +43,12 @@ set -e
 ## set environment variables
 
 # set by autoconf
-CXX=@CXX@
-CPPFLAGS="@CPPFLAGS@"
-CXXFLAGS="@CXXFLAGS@"
-LDFLAGS="@LDFLAGS@"
-LIBS="@LIBS@"
-OMP_FLAG="@OPENMP_CFLAGS@"
+CXX="$(printenv CXX || true)"
+test -z "$CXX" && CXX=@CXX@
+CPPFLAGS="$(printenv CPPFLAGS || true) @CPPFLAGS@"
+CXXFLAGS="$(printenv CXXFLAGS || true) @SOUFFLE_CXXFLAGS@"
+LDFLAGS="$(printenv LDFLAGS || true) @LDFLAGS@"
+LIBS="$(printenv LIBS || true) @LIBS@"
 
 # set by command flags
 WARNINGS=""
@@ -64,6 +65,9 @@ while getopts "hwvs" opt; do
   case "$opt" in
     h|\?) # Show usage and exit
       usage;
+    ;;
+    g|\?) # enable debug mode
+      CXXFLAGS = "$CXXFLAGS -g";
     ;;
     w) # enable warnings
       WARNINGS="1"

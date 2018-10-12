@@ -578,6 +578,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto level = scan.getLevel();
 
+	    // construct empty condition for nullary relations
+	    std::string nullaryStopStmt;
+	    std::string nullaryCond;
+            visitDepthFirst(scan, [&](const RamProject& project) {
+                int arity =  project.getRelation().getArity();
+		std::string projectRelName = synthesiser.getRelationName(project.getRelation().getName());
+		if (arity == 0) {
+		   nullaryStopStmt = "if(!" +  projectRelName + "->empty()) break;";
+		   nullaryCond = projectRelName + "->empty()";
+		}
+            });
+
             // if this search is a full scan
             if (scan.getRangeQueryColumns() == 0) {
                 if (scan.isPureExistenceCheck()) {
@@ -588,15 +600,24 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 } else if (scan.getLevel() == 0) {
                     // make this loop parallel
                     // partition outermost relation
-                    out << "pfor(auto it = part.begin(); it<part.end(); ++it) \n";
+                    out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
+		    if(nullaryCond.length() > 0) {
+			    out << "if(" << nullaryCond << ") {\n";
+		    }
                     out << "try{";
                     out << "for(const auto& env0 : *it) {\n";
+		    out << nullaryStopStmt;
                     visitSearch(scan, out);
                     out << "}\n";
                     out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+		    if(nullaryCond.length() > 0) {
+			    out << "}\n";
+		    }
+		    out << "}\n";
                 } else {
                     out << "for(const auto& env" << level << " : "
                         << "*" << relName << ") {\n";
+		    out << nullaryStopStmt;
                     visitSearch(scan, out);
                     out << "}\n";
                 }
@@ -629,11 +650,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (scan.getLevel() == 0 && !scan.isPureExistenceCheck()) {
                 // make this loop parallel
                 out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
+		    if(nullaryCond.length() > 0) {
+			    out << "if(" << nullaryCond << ") {\n";
+		    }
                 out << "try{";
                 out << "for(const auto& env0 : *it) {\n";
+		out << nullaryStopStmt;
                 visitSearch(scan, out);
                 out << "}\n";
                 out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+		    if(nullaryCond.length() > 0) {
+			    out << "}\n";
+		    }
                 out << "}\n";
                 return;
                 PRINT_END_COMMENT(out);
@@ -651,6 +679,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
             } else {
                 out << "for(const auto& env" << level << " : range) {\n";
+	        out << nullaryStopStmt;
                 visitSearch(scan, out);
                 out << "}\n";
             }

@@ -108,6 +108,11 @@ const std::string Synthesiser::getRelationName(const RamRelation& rel) {
     return "rel_" + convertRamIdent(rel.getName());
 }
 
+/** Get relation name via string */
+const std::string Synthesiser::getRelationName(const std::string& relName) {
+    return "rel_" + convertRamIdent(relName);
+}
+
 /** Get context name */
 const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
     return getRelationName(rel) + "_op_ctxt";
@@ -255,13 +260,38 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitInsert(const RamInsert& insert, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // enclose operation with a check for an empty relation
-            std::set<RamRelation> input_relations;
-            visitDepthFirst(insert, [&](const RamScan& scan) { input_relations.insert(scan.getRelation()); });
-            if (!input_relations.empty()) {
-                out << "if (" << join(input_relations, "&&", [&](std::ostream& out, const RamRelation& rel) {
-                    out << "!" << synthesiser.getRelationName(rel) << "->"
-                        << "empty()";
-                }) << ") ";
+            std::set<std::string> inputRelNames;
+            std::string projectRelName;
+            int projectRelArity = -1;
+
+            if (insert.getCondition() != nullptr) {
+                out << "if(";
+                visit(*insert.getCondition(), out);
+                out << ") {\n";
+            }
+
+            visitDepthFirst(insert, [&](const RamProject& project) {
+                projectRelArity = project.getRelation().getArity();
+                projectRelName = project.getRelation().getName();
+            });
+
+            visitDepthFirst(
+                    insert, [&](const RamScan& scan) { inputRelNames.insert(scan.getRelation().getName()); });
+
+            if (!inputRelNames.empty() || projectRelArity == 0) {
+                out << "if (";
+                if (!inputRelNames.empty()) {
+                    out << join(inputRelNames, "&&", [&](std::ostream& os, const std::string relName) {
+                        os << "!" << synthesiser.getRelationName(relName) << "->empty()";
+                    });
+                }
+                if (projectRelArity == 0) {
+                    if (!inputRelNames.empty()) {
+                        out << "&&";
+                    }
+                    out << synthesiser.getRelationName(projectRelName) << "->empty()";
+                }
+                out << ") ";
             }
 
             // outline each search operation to improve compilation time
@@ -348,6 +378,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 #else
             out << "();";  // call lambda
 #endif
+            if (insert.getCondition() != nullptr) {
+                out << "}\n";
+            }
+
             PRINT_END_COMMENT(out);
         }
 
@@ -544,6 +578,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto level = scan.getLevel();
 
+            // construct empty condition for nullary relations
+            std::string nullaryStopStmt;
+            std::string nullaryCond;
+            visitDepthFirst(scan, [&](const RamProject& project) {
+                int arity = project.getRelation().getArity();
+                std::string projectRelName = synthesiser.getRelationName(project.getRelation().getName());
+                if (arity == 0) {
+                    nullaryStopStmt = "if(!" + projectRelName + "->empty()) break;";
+                    nullaryCond = projectRelName + "->empty()";
+                }
+            });
+
             // if this search is a full scan
             if (scan.getRangeQueryColumns() == 0) {
                 if (scan.isPureExistenceCheck()) {
@@ -554,15 +600,24 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 } else if (scan.getLevel() == 0) {
                     // make this loop parallel
                     // partition outermost relation
-                    out << "pfor(auto it = part.begin(); it<part.end(); ++it) \n";
+                    out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
+                    if (nullaryCond.length() > 0) {
+                        out << "if(" << nullaryCond << ") {\n";
+                    }
                     out << "try{";
                     out << "for(const auto& env0 : *it) {\n";
+                    out << nullaryStopStmt;
                     visitSearch(scan, out);
                     out << "}\n";
                     out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+                    if (nullaryCond.length() > 0) {
+                        out << "}\n";
+                    }
+                    out << "}\n";
                 } else {
                     out << "for(const auto& env" << level << " : "
                         << "*" << relName << ") {\n";
+                    out << nullaryStopStmt;
                     visitSearch(scan, out);
                     out << "}\n";
                 }
@@ -595,11 +650,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (scan.getLevel() == 0 && !scan.isPureExistenceCheck()) {
                 // make this loop parallel
                 out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
+                if (nullaryCond.length() > 0) {
+                    out << "if(" << nullaryCond << ") {\n";
+                }
                 out << "try{";
                 out << "for(const auto& env0 : *it) {\n";
+                out << nullaryStopStmt;
                 visitSearch(scan, out);
                 out << "}\n";
                 out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+                if (nullaryCond.length() > 0) {
+                    out << "}\n";
+                }
                 out << "}\n";
                 return;
                 PRINT_END_COMMENT(out);
@@ -617,6 +679,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
             } else {
                 out << "for(const auto& env" << level << " : range) {\n";
+                out << nullaryStopStmt;
                 visitSearch(scan, out);
                 out << "}\n";
             }

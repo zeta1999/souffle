@@ -18,7 +18,6 @@ Usage:
   souffle-compile [options] <FILE>.cpp
 Options:
   -h           show usage
-  -s           compile a program without OpenMP support
   -v           verbose output
   -w           enable warnings\n"
   exit 1;
@@ -72,9 +71,6 @@ while getopts "hwvs" opt; do
     v) # Verbose output
       set -x
     ;;
-    s) # compile without openmp
-      OMP_FLAG=""
-    ;;
   esac
 done
 
@@ -106,13 +102,13 @@ if test -f $dir/$exe
 then
   if [ "$WARNINGS" = 1 ]
   then
-     echo "$CXX $CXXFLAGS $CPPFLAGS -o$dir/$exe $1 $LIBS -I$HEADER_DIR $OMP_FLAG"
+     echo "$CXX $CXXFLAGS $CPPFLAGS -o$dir/$exe $1 $LIBS -I$HEADER_DIR"
      cat $dir/$exe.$$.ccerr 1>&2
   fi
   rm $dir/$exe.$$.ccerr
 else
   echo "compiler error: cannot compile source file $1" 1>&2
-  echo "$CXX $CXXFLAGS $CPPFLAGS -o$dir/$exe $1 $LIBS -I$HEADER_DIR $OMP_FLAG"
+  echo "$CXX $CXXFLAGS $CPPFLAGS -o$dir/$exe $1 $LIBS -I$HEADER_DIR"
   cat $dir/$exe.$$.ccerr 1>&2
   rm -f $dir/$exe.$$.ccerr
   exit 1

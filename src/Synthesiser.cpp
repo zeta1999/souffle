@@ -1425,6 +1425,19 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
 
+    visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+        // get some table details
+        const auto& rel = create.getRelation();
+        const std::string& raw_name = rel.getName();
+
+        bool isProvInfo = raw_name.find("@info") != std::string::npos;
+        auto relationType = SynthesiserRelation::getSynthesiserRelation(
+                rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+
+        generateRelationTypeStruct(os, std::move(relationType));
+    });
+    os << '\n';
+
     os << "class " << classname << " : public SouffleProgram {\n";
 
     // regex wrapper
@@ -1526,17 +1539,11 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         // TODO: make this correct
         // ensure that the type of the new knowledge is the same as that of the delta knowledge
         bool isDelta = rel.isTemp() && raw_name.find("@delta") != std::string::npos;
-        bool isNew = rel.isTemp() && raw_name.find("@new") != std::string::npos;
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
         tempType = isDelta ? relationType->getTypeName() : tempType;
         const std::string& type = (rel.isTemp()) ? tempType : relationType->getTypeName();
-
-        // print class definition for the type
-        if (!isNew) {
-            generateRelationTypeStruct(os, std::move(relationType));
-        }
 
         // defining table
         os << "// -- Table: " << raw_name << "\n";

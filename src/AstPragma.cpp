@@ -28,7 +28,7 @@ bool AstPragmaChecker::transform(AstTranslationUnit& translationUnit) {
 
     // Take in pragma options from the command line
     if (Global::config().has("pragma")) {
-        std::vector<std::string> configOptions = splitString(Global::config().get("pragma"), ',');
+        std::vector<std::string> configOptions = splitString(Global::config().get("pragma"), ';');
         for (const std::string& option : configOptions) {
             size_t splitPoint = option.find(':');
 

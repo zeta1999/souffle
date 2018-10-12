@@ -294,7 +294,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ") ";
             }
 
-                // outline each search operation to improve compilation time
+            // outline each search operation to improve compilation time
 #ifdef __clang__
 #if __clang_major > 3
             out << "[&]()";

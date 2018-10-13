@@ -70,9 +70,9 @@ public:
 
     std::string getName() const {
         std::stringstream ss;
-        ss<<join(names, ".");
+        ss << join(names, ".");
         return ss.str();
-    } 
+    }
 
     // -- comparison operators --
 

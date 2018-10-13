@@ -10,8 +10,8 @@
  *
  * @file AstProfileUse.h
  *
- * Defines a simple class to query profile data from a profile 
- * for profile-guided optimisation. 
+ * Defines a simple class to query profile data from a profile
+ * for profile-guided optimisation.
  *
  ***********************************************************************/
 
@@ -38,6 +38,7 @@ class AstProfileUse : public AstAnalysis {
 private:
     /** performance model of profile run */
     std::shared_ptr<profile::ProgramRun> programRun;
+
 public:
     static constexpr const char* name = "profile-use";
 
@@ -50,7 +51,7 @@ public:
     void print(std::ostream& os) const override;
 
     /** Return size of relation */
-    size_t getRelationSize(const AstRelationIdentifier *rel);
+    size_t getRelationSize(const AstRelationIdentifier* rel);
 };
 
 }  // end of namespace souffle

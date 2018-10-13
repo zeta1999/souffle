@@ -68,6 +68,12 @@ public:
         return names;
     }
 
+    std::string getName() const {
+        std::stringstream ss;
+        ss << join(names, ".");
+        return ss.str();
+    }
+
     // -- comparison operators --
 
     bool operator==(const AstRelationIdentifier& other) const {

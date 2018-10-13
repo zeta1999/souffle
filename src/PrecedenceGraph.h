@@ -31,6 +31,9 @@
 
 namespace souffle {
 
+class AstClause;
+class AstTranslationUnit;
+
 /**
  * Analysis pass computing the precedence graph of the relations of the datalog progam.
  */

@@ -16,25 +16,19 @@
  ***********************************************************************/
 
 #include "AstProfileUse.h"
-#include "AstClause.h"
-#include "AstLiteral.h"
-#include "AstProgram.h"
-#include "AstRelation.h"
+#include "profile/Reader.h"
+#include "profile/Relation.h"
+#include "profile/ProgramRun.h"
 #include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
-#include "AstUtils.h"
-#include "AstVisitor.h"
 #include "Global.h"
-#include "Util.h"
-#include <algorithm>
-#include <iterator>
-#include <set>
 #include <string>
 
 namespace souffle {
 
-AstProfileUse::AstProfileUse() : programRun(std::make_shared<profile::ProgramRun>(profile::ProgramRun())) {}
-
+/**
+ * Run analysis, i.e., retrieve profile information
+ */
 void AstProfileUse::run(const AstTranslationUnit& translationUnit) {
     if (Global::config().has("profile-use")) {
         std::string filename = Global::config().get("profile-use");
@@ -42,13 +36,26 @@ void AstProfileUse::run(const AstTranslationUnit& translationUnit) {
     }
 }
 
+/**
+ * Print analysis
+ */
 void AstProfileUse::print(std::ostream& os) const {}
 
+/**
+ * Check whether relation size is defined in profile
+ */
+bool AstProfileUse::hasRelationSize(const AstRelationIdentifier* rel) {
+    return programRun->getRelation(rel->getName()) != nullptr;
+}
+
+/**
+ * Get relation size from profile
+ */
 size_t AstProfileUse::getRelationSize(const AstRelationIdentifier* rel) {
     if (profile::Relation* profRel = programRun->getRelation(rel->getName())) {
         return profRel->getTotNum_tuples();
     } else {
-        throw std::runtime_error("failed to find");
+        return 0;
     }
 }
 

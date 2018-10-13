@@ -16,12 +16,12 @@
  ***********************************************************************/
 
 #include "AstProfileUse.h"
-#include "profile/Reader.h"
-#include "profile/Relation.h"
-#include "profile/ProgramRun.h"
 #include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
 #include "Global.h"
+#include "profile/ProgramRun.h"
+#include "profile/Reader.h"
+#include "profile/Relation.h"
 #include <string>
 
 namespace souffle {

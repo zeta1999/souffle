@@ -493,15 +493,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitSwap(const RamSwap& swap, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            const std::string tempKnowledge = "rel_0";
             const std::string& deltaKnowledge = synthesiser.getRelationName(swap.getFirstRelation());
             const std::string& newKnowledge = synthesiser.getRelationName(swap.getSecondRelation());
 
-            // perform a triangular swap of pointers
-            out << "{\nauto " << tempKnowledge << " = " << deltaKnowledge << ";\n"
-                << deltaKnowledge << " = " << newKnowledge << ";\n"
-                << newKnowledge << " = " << tempKnowledge << ";\n"
-                << "}\n";
+            out << "std::swap(" << deltaKnowledge << ", " << newKnowledge << ");\n";
             PRINT_END_COMMENT(out);
         }
 
@@ -1430,6 +1425,19 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
 
+    visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+        // get some table details
+        const auto& rel = create.getRelation();
+        const std::string& raw_name = rel.getName();
+
+        bool isProvInfo = raw_name.find("@info") != std::string::npos;
+        auto relationType = SynthesiserRelation::getSynthesiserRelation(
+                rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+
+        generateRelationTypeStruct(os, std::move(relationType));
+    });
+    os << '\n';
+
     os << "class " << classname << " : public SouffleProgram {\n";
 
     // regex wrapper
@@ -1517,9 +1525,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     }
 
     // print relation definitions
-    std::string initCons;      // initialization of constructor
-    std::string deleteForNew;  // matching deletes for each new, used in the destructor
-    std::string registerRel;   // registration of relations
+    std::string initCons;     // initialization of constructor
+    std::string registerRel;  // registration of relations
     int relCtr = 0;
     std::string tempType;  // string to hold the type of the temporary relations
     visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
@@ -1532,27 +1539,16 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         // TODO: make this correct
         // ensure that the type of the new knowledge is the same as that of the delta knowledge
         bool isDelta = rel.isTemp() && raw_name.find("@delta") != std::string::npos;
-        bool isNew = rel.isTemp() && raw_name.find("@new") != std::string::npos;
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
         tempType = isDelta ? relationType->getTypeName() : tempType;
         const std::string& type = (rel.isTemp()) ? tempType : relationType->getTypeName();
 
-        // print class definition for the type
-        if (!isNew) {
-            generateRelationTypeStruct(os, std::move(relationType));
-        }
-
         // defining table
         os << "// -- Table: " << raw_name << "\n";
 
-        os << type << "* " << name << ";\n";
-        if (!initCons.empty()) {
-            initCons += ",\n";
-        }
-        initCons += name + "(new " + type + "())";
-        deleteForNew += "delete " + name + ";\n";
+        os << "std::unique_ptr<" << type << "> " << name << " = std::make_unique<" << type << ">();\n";
         if ((rel.isInput() || rel.isComputed() || Global::config().has("provenance")) && !rel.isTemp()) {
             os << "souffle::RelationWrapper<";
             os << relCtr++ << ",";
@@ -1581,7 +1577,10 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             tupleType += "}}";
             tupleName += "}}";
 
-            initCons += ",\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
+            if (!initCons.empty()) {
+                initCons += ",\n";
+            }
+            initCons += "\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
                         tupleType + "," + tupleName + ")";
             registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + "," +
                            std::to_string(rel.isInput()) + "," + std::to_string(rel.isOutput()) + ");\n";
@@ -1613,7 +1612,6 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     // -- destructor --
 
     os << "~" << classname << "() {\n";
-    os << deleteForNew;
     os << "}\n";
 
     // -- run function --
@@ -1704,9 +1702,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             auto i = stratum.getIndex();
             os << "STRATUM_" << i << ":\n";
         }
-        os << "{\n";
+        os << "[&]() {\n";
         emitCode(os, stratum.getBody());
-        os << "}\n";
+        os << "}();\n";
         if (Global::config().has("engine")) {
             os << "if (stratumIndex != (size_t) -1) goto EXIT;\n";
         }

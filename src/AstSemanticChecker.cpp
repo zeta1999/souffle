@@ -67,18 +67,27 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // suppress warnings for given relations
     if (Global::config().has("suppress")) {
         std::vector<std::string> suppressedRelations = splitString(Global::config().get("suppress"), ',');
-        for (auto& relname : suppressedRelations) {
-            const std::vector<std::string>& comps = splitString(relname, '.');
-            if (!comps.empty()) {
-                // generate the relation identifier
-                AstRelationIdentifier relid(comps[0]);
-                for (size_t i = 1; i < comps.size(); i++) {
-                    relid.append(comps[i]);
-                }
 
-                // update suppressed qualifier if the relation is found
-                if (AstRelation* rel = program.getRelation(relid)) {
-                    rel->setQualifier(rel->getQualifier() | SUPPRESSED_RELATION);
+        if (std::find(suppressedRelations.begin(), suppressedRelations.end(), "*") != suppressedRelations.end()) {
+            // mute all relations
+            for (AstRelation* rel : program.getRelations()) {
+                rel->setQualifier(rel->getQualifier() | SUPPRESSED_RELATION);
+            }
+        } else {
+            // mute only the given relations (if they exist)
+            for (auto& relname : suppressedRelations) {
+                const std::vector<std::string> comps = splitString(relname, '.');
+                if (!comps.empty()) {
+                    // generate the relation identifier
+                    AstRelationIdentifier relid(comps[0]);
+                    for (size_t i = 1; i < comps.size(); i++) {
+                        relid.append(comps[i]);
+                    }
+
+                    // update suppressed qualifier if the relation is found
+                    if (AstRelation* rel = program.getRelation(relid)) {
+                        rel->setQualifier(rel->getQualifier() | SUPPRESSED_RELATION);
+                    }
                 }
             }
         }

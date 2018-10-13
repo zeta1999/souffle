@@ -66,9 +66,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         const PrecedenceGraph& precedenceGraph, const RecursiveClauses& recursiveClauses) {
     // suppress warnings for given relations
     if (Global::config().has("suppress-warnings")) {
-        std::vector<std::string> suppressedRelations = splitString(Global::config().get("suppress-warnings"), ',');
+        std::vector<std::string> suppressedRelations =
+                splitString(Global::config().get("suppress-warnings"), ',');
 
-        if (std::find(suppressedRelations.begin(), suppressedRelations.end(), "*") != suppressedRelations.end()) {
+        if (std::find(suppressedRelations.begin(), suppressedRelations.end(), "*") !=
+                suppressedRelations.end()) {
             // mute all relations
             for (AstRelation* rel : program.getRelations()) {
                 rel->setQualifier(rel->getQualifier() | SUPPRESSED_RELATION);

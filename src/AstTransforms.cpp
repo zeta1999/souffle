@@ -20,6 +20,7 @@
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
+#include "AstProfileUse.h"
 #include "AstRelation.h"
 #include "AstRelationIdentifier.h"
 #include "AstTypeAnalysis.h"
@@ -1563,6 +1564,9 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
 bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
     AstProgram& program = *translationUnit.getProgram();
+
+    // Works only if profile-use in Globals is set!!
+    // auto* profileUse = translationUnit.getAnalysis<AstProfileUse>();
 
     // --- Reordering --- : Prepend Propositions
     auto prependPropositions = [&](AstClause* clause) {

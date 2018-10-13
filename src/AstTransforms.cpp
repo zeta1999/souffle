@@ -1617,7 +1617,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
 
                 unsigned int numAdded = 0;
                 while (numAdded < atoms.size()) {
-                    int nextIdx = getNextAtomSIPS(atoms, boundVariables);
+                    unsigned int nextIdx = getNextAtomSIPS(atoms, boundVariables);
 
                     if (nextIdx != numAdded) {
                         changed = true;

@@ -64,6 +64,26 @@ bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
 void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& program,
         const TypeEnvironment& typeEnv, const TypeAnalysis& typeAnalysis,
         const PrecedenceGraph& precedenceGraph, const RecursiveClauses& recursiveClauses) {
+    // suppress warnings for given relations
+    if (Global::config().has("suppress")) {
+        std::vector<std::string> suppressedRelations = splitString(Global::config().get("suppress"), ',');
+        for (auto& relname : suppressedRelations) {
+            const std::vector<std::string>& comps = splitString(relname, '.');
+            if (!comps.empty()) {
+                // generate the relation identifier
+                AstRelationIdentifier relid(comps[0]);
+                for (size_t i = 1; i < comps.size(); i++) {
+                    relid.append(comps[i]);
+                }
+
+                // update suppressed qualifier if the relation is found
+                if (AstRelation* rel = program.getRelation(relid)) {
+                    rel->setQualifier(rel->getQualifier() | SUPPRESSED_RELATION);
+                }
+            }
+        }
+    }
+
     // -- conduct checks --
     // TODO: re-write to use visitors
     checkTypes(report, program);
@@ -636,7 +656,7 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     }
 
     // check whether this relation is empty
-    if (relation.clauseSize() == 0 && !relation.isInput()) {
+    if (relation.clauseSize() == 0 && !relation.isInput() && !relation.isSuppressed()) {
         report.addWarning(
                 "No rules/facts defined for relation " + toString(relation.getName()), relation.getSrcLoc());
     }

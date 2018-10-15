@@ -1565,30 +1565,6 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     bool changed = false;
     AstProgram& program = *translationUnit.getProgram();
 
-    if (Global::config().has("profile-use")) {
-        auto* profileUse = translationUnit.getAnalysis<AstProfileUse>();
-
-        auto getExpectedSize = [&](const AstAtom* atom) {
-            return profileUse->getRelationSize(atom->getName());
-        };
-
-        for (AstRelation* rel : program.getRelations()) {
-            for (AstClause* clause : rel->getClauses()) {
-                std::vector<AstAtom*> atoms = clause->getAtoms();
-                std::vector<std::pair<int, unsigned int>> atomSizes;
-                for (unsigned int i = 0; i < atoms.size(); i++) {
-                    atomSizes.push_back(std::pair<int,unsigned int>(getExpectedSize(atoms[i]), i));
-                }
-                std::sort(atomSizes.begin(), atomSizes.end());
-                std::vector<unsigned int> newOrder;
-                for (const auto& pair : atomSizes) {
-                    newOrder.push_back(pair.second);
-                }
-                clause->reorderAtoms(newOrder);
-            }
-        }
-    }
-
     // --- Reordering --- : Prepend Propositions
     auto prependPropositions = [&](AstClause* clause) {
         const std::vector<AstAtom*>& atoms = clause->getAtoms();
@@ -1657,6 +1633,30 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                 }
 
                 // Reorder the clause accordingly
+                clause->reorderAtoms(newOrder);
+            }
+        }
+    }
+
+    if (Global::config().has("profile-use")) {
+        auto* profileUse = translationUnit.getAnalysis<AstProfileUse>();
+
+        auto getSizeClass = [&](const AstAtom* atom) {
+            return (int) log10(profileUse->getRelationSize(atom->getName()));
+        };
+
+        for (AstRelation* rel : program.getRelations()) {
+            for (AstClause* clause : rel->getClauses()) {
+                std::vector<AstAtom*> atoms = clause->getAtoms();
+                std::vector<std::pair<int, unsigned int>> atomSizes;
+                for (unsigned int i = 0; i < atoms.size(); i++) {
+                    atomSizes.push_back(std::pair<int,unsigned int>(getSizeClass(atoms[i]), i));
+                }
+                std::sort(atomSizes.begin(), atomSizes.end());
+                std::vector<unsigned int> newOrder;
+                for (const auto& pair : atomSizes) {
+                    newOrder.push_back(pair.second);
+                }
                 clause->reorderAtoms(newOrder);
             }
         }

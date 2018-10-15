@@ -303,11 +303,11 @@ int main(int argc, char** argv) {
             std::string allMacros = "";
             for (const char& ch : Global::config().get("macro")) {
                 if (ch == ' ') {
-                   allMacros += " -D";
-                   allMacros += currentMacro;
-                   currentMacro = "";
+                    allMacros += " -D";
+                    allMacros += currentMacro;
+                    currentMacro = "";
                 } else {
-                   currentMacro += ch;
+                    currentMacro += ch;
                 }
             }
             allMacros += " -D" + currentMacro;
@@ -378,7 +378,7 @@ int main(int argc, char** argv) {
 
     cmd += " -W0 " + Global::config().get("include-dir");
     if (Global::config().has("macro")) {
-        cmd += " " + Global::config().get("macro"); 
+        cmd += " " + Global::config().get("macro");
     }
     cmd += " " + Global::config().get("");
     FILE* in = popen(cmd.c_str(), "r");

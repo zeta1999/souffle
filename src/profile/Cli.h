@@ -68,7 +68,9 @@ public:
         std::string filename = args['f'];
 
         if (args.count('c') != 0) {
-            Tui(filename, false, false).runCommand(Tools::split(args['c'], " "));
+            for (auto& command : Tools::split(args['c'], ";")) {
+                Tui(filename, false, false).runCommand(Tools::split(command, " "));
+            }
         } else if (args.count('j') != 0) {
             if (args['j'] == "j") {
                 Tui(filename, false, true).outputHtml();

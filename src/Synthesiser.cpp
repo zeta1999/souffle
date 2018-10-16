@@ -108,6 +108,11 @@ const std::string Synthesiser::getRelationName(const RamRelation& rel) {
     return "rel_" + convertRamIdent(rel.getName());
 }
 
+/** Get relation name via string */
+const std::string Synthesiser::getRelationName(const std::string& relName) {
+    return "rel_" + convertRamIdent(relName);
+}
+
 /** Get context name */
 const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
     return getRelationName(rel) + "_op_ctxt";
@@ -255,19 +260,48 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitInsert(const RamInsert& insert, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // enclose operation with a check for an empty relation
-            std::set<RamRelation> input_relations;
-            visitDepthFirst(insert, [&](const RamScan& scan) { input_relations.insert(scan.getRelation()); });
-            if (!input_relations.empty()) {
-                out << "if (" << join(input_relations, "&&", [&](std::ostream& out, const RamRelation& rel) {
-                    out << "!" << synthesiser.getRelationName(rel) << "->"
-                        << "empty()";
-                }) << ") ";
+            std::set<std::string> inputRelNames;
+            std::string projectRelName;
+            int projectRelArity = -1;
+
+            if (insert.getCondition() != nullptr) {
+                out << "if(";
+                visit(*insert.getCondition(), out);
+                out << ") {\n";
+            }
+
+            visitDepthFirst(insert, [&](const RamProject& project) {
+                projectRelArity = project.getRelation().getArity();
+                projectRelName = project.getRelation().getName();
+            });
+
+            visitDepthFirst(
+                    insert, [&](const RamScan& scan) { inputRelNames.insert(scan.getRelation().getName()); });
+
+            if (!inputRelNames.empty() || projectRelArity == 0) {
+                out << "if (";
+                if (!inputRelNames.empty()) {
+                    out << join(inputRelNames, "&&", [&](std::ostream& os, const std::string relName) {
+                        os << "!" << synthesiser.getRelationName(relName) << "->empty()";
+                    });
+                }
+                if (projectRelArity == 0) {
+                    if (!inputRelNames.empty()) {
+                        out << "&&";
+                    }
+                    out << synthesiser.getRelationName(projectRelName) << "->empty()";
+                }
+                out << ") ";
             }
 
             // outline each search operation to improve compilation time
-            // Disabled to work around issue #345 with clang 3.7-3.9 & omp.
-            // out << "[&]()";
-
+#ifdef __clang__
+#if __clang_major > 3
+            out << "[&]()";
+#endif
+#else
+            out << "[&]()";
+#endif
             // enclose operation in its own scope
             out << "{\n";
 
@@ -336,8 +370,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // aggregate proof counters
             }
 
-            out << "}\n";  // end lambda
-            // out << "();";  // call lambda
+            out << "}\n";
+#ifdef __clang__
+#if __clang_major > 3
+            out << "();";  // call lambda
+#endif
+#else
+            out << "();";  // call lambda
+#endif
+            if (insert.getCondition() != nullptr) {
+                out << "}\n";
+            }
+
             PRINT_END_COMMENT(out);
         }
 
@@ -449,15 +493,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitSwap(const RamSwap& swap, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            const std::string tempKnowledge = "rel_0";
             const std::string& deltaKnowledge = synthesiser.getRelationName(swap.getFirstRelation());
             const std::string& newKnowledge = synthesiser.getRelationName(swap.getSecondRelation());
 
-            // perform a triangular swap of pointers
-            out << "{\nauto " << tempKnowledge << " = " << deltaKnowledge << ";\n"
-                << deltaKnowledge << " = " << newKnowledge << ";\n"
-                << newKnowledge << " = " << tempKnowledge << ";\n"
-                << "}\n";
+            out << "std::swap(" << deltaKnowledge << ", " << newKnowledge << ");\n";
             PRINT_END_COMMENT(out);
         }
 
@@ -534,6 +573,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto level = scan.getLevel();
 
+            // construct empty condition for nullary relations
+            std::string nullaryStopStmt;
+            std::string nullaryCond;
+            visitDepthFirst(scan, [&](const RamProject& project) {
+                int arity = project.getRelation().getArity();
+                std::string projectRelName = synthesiser.getRelationName(project.getRelation().getName());
+                if (arity == 0) {
+                    nullaryStopStmt = "if(!" + projectRelName + "->empty()) break;";
+                    nullaryCond = projectRelName + "->empty()";
+                }
+            });
+
             // if this search is a full scan
             if (scan.getRangeQueryColumns() == 0) {
                 if (scan.isPureExistenceCheck()) {
@@ -544,15 +595,24 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 } else if (scan.getLevel() == 0) {
                     // make this loop parallel
                     // partition outermost relation
-                    out << "pfor(auto it = part.begin(); it<part.end(); ++it) \n";
+                    out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
+                    if (nullaryCond.length() > 0) {
+                        out << "if(" << nullaryCond << ") {\n";
+                    }
                     out << "try{";
                     out << "for(const auto& env0 : *it) {\n";
+                    out << nullaryStopStmt;
                     visitSearch(scan, out);
                     out << "}\n";
                     out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+                    if (nullaryCond.length() > 0) {
+                        out << "}\n";
+                    }
+                    out << "}\n";
                 } else {
                     out << "for(const auto& env" << level << " : "
                         << "*" << relName << ") {\n";
+                    out << nullaryStopStmt;
                     visitSearch(scan, out);
                     out << "}\n";
                 }
@@ -585,11 +645,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (scan.getLevel() == 0 && !scan.isPureExistenceCheck()) {
                 // make this loop parallel
                 out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
+                if (nullaryCond.length() > 0) {
+                    out << "if(" << nullaryCond << ") {\n";
+                }
                 out << "try{";
                 out << "for(const auto& env0 : *it) {\n";
+                out << nullaryStopStmt;
                 visitSearch(scan, out);
                 out << "}\n";
                 out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+                if (nullaryCond.length() > 0) {
+                    out << "}\n";
+                }
                 out << "}\n";
                 return;
                 PRINT_END_COMMENT(out);
@@ -607,6 +674,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
             } else {
                 out << "for(const auto& env" << level << " : range) {\n";
+                out << nullaryStopStmt;
                 visitSearch(scan, out);
                 out << "}\n";
             }
@@ -1357,6 +1425,19 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
 
+    visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+        // get some table details
+        const auto& rel = create.getRelation();
+        const std::string& raw_name = rel.getName();
+
+        bool isProvInfo = raw_name.find("@info") != std::string::npos;
+        auto relationType = SynthesiserRelation::getSynthesiserRelation(
+                rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+
+        generateRelationTypeStruct(os, std::move(relationType));
+    });
+    os << '\n';
+
     os << "class " << classname << " : public SouffleProgram {\n";
 
     // regex wrapper
@@ -1444,9 +1525,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     }
 
     // print relation definitions
-    std::string initCons;      // initialization of constructor
-    std::string deleteForNew;  // matching deletes for each new, used in the destructor
-    std::string registerRel;   // registration of relations
+    std::string initCons;     // initialization of constructor
+    std::string registerRel;  // registration of relations
     int relCtr = 0;
     std::string tempType;  // string to hold the type of the temporary relations
     visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
@@ -1459,27 +1539,16 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         // TODO: make this correct
         // ensure that the type of the new knowledge is the same as that of the delta knowledge
         bool isDelta = rel.isTemp() && raw_name.find("@delta") != std::string::npos;
-        bool isNew = rel.isTemp() && raw_name.find("@new") != std::string::npos;
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
         tempType = isDelta ? relationType->getTypeName() : tempType;
         const std::string& type = (rel.isTemp()) ? tempType : relationType->getTypeName();
 
-        // print class definition for the type
-        if (!isNew) {
-            generateRelationTypeStruct(os, std::move(relationType));
-        }
-
         // defining table
         os << "// -- Table: " << raw_name << "\n";
 
-        os << type << "* " << name << ";\n";
-        if (!initCons.empty()) {
-            initCons += ",\n";
-        }
-        initCons += name + "(new " + type + "())";
-        deleteForNew += "delete " + name + ";\n";
+        os << "std::unique_ptr<" << type << "> " << name << " = std::make_unique<" << type << ">();\n";
         if ((rel.isInput() || rel.isComputed() || Global::config().has("provenance")) && !rel.isTemp()) {
             os << "souffle::RelationWrapper<";
             os << relCtr++ << ",";
@@ -1508,7 +1577,10 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             tupleType += "}}";
             tupleName += "}}";
 
-            initCons += ",\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
+            if (!initCons.empty()) {
+                initCons += ",\n";
+            }
+            initCons += "\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
                         tupleType + "," + tupleName + ")";
             registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + "," +
                            std::to_string(rel.isInput()) + "," + std::to_string(rel.isOutput()) + ");\n";
@@ -1540,12 +1612,12 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     // -- destructor --
 
     os << "~" << classname << "() {\n";
-    os << deleteForNew;
     os << "}\n";
 
     // -- run function --
-    os << "private:\ntemplate <bool performIO> void runFunction(std::string inputDirectory = \".\", "
-          "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1) {\n";
+    os << "private:\nvoid runFunction(std::string inputDirectory = \".\", "
+          "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1, bool performIO = false) "
+          "{\n";
 
     os << "SignalHandler::instance()->set();\n";
     if (Global::config().has("verbose")) {
@@ -1579,6 +1651,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         // Store configuration
         os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"
            << relationCount << "));";
+        // Outline stratum records for faster compilation
+        os << "[](){\n";
 
         // Record relations created in each stratum
         visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
@@ -1596,6 +1670,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
                    << '\n';
             }
         });
+        // End stratum record outlining
+        os << "}();\n";
     }
 
     if (Global::config().has("engine")) {
@@ -1626,9 +1702,9 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
             auto i = stratum.getIndex();
             os << "STRATUM_" << i << ":\n";
         }
-        os << "{\n";
+        os << "[&]() {\n";
         emitCode(os, stratum.getBody());
-        os << "}\n";
+        os << "}();\n";
         if (Global::config().has("engine")) {
             os << "if (stratumIndex != (size_t) -1) goto EXIT;\n";
         }
@@ -1662,15 +1738,15 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "}\n";  // end of runFunction() method
 
     // add methods to run with and without performing IO (mainly for the interface)
-    os << "public:\nvoid run(size_t stratumIndex = (size_t) -1) override { runFunction<false>(\".\", \".\", "
-          "stratumIndex); }\n";
+    os << "public:\nvoid run(size_t stratumIndex = (size_t) -1) override { runFunction(\".\", \".\", "
+          "stratumIndex, false); }\n";
     os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\", "
           "size_t stratumIndex = (size_t) -1) "
           "override { ";
     if (Global::config().has("live-profile")) {
         os << "std::thread profiler([]() { profile::Tui().runProf(); });\n";
     }
-    os << "runFunction<true>(inputDirectory, outputDirectory, stratumIndex);\n";
+    os << "runFunction(inputDirectory, outputDirectory, stratumIndex, true);\n";
     if (Global::config().has("live-profile")) {
         os << "if (profiler.joinable()) { profiler.join(); }\n";
     }

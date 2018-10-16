@@ -188,6 +188,8 @@ int main(int argc, char** argv) {
                             {"magic-transform", 'm', "RELATIONS", "", false,
                                     "Enable magic set transformation changes on the given relations, use '*' "
                                     "for all."},
+                            {"macro", 'M', "MACROS", "", false,
+                                    "Set macro definitions for the pre-processor"},
                             {"disable-transformers", 'z', "TRANSFORMERS", "", false,
                                     "Disable the given AST transformers."},
                             {"dl-program", 'o', "FILE", "", false,
@@ -196,7 +198,10 @@ int main(int argc, char** argv) {
                             {"live-profile", 'l', "", "", false, "Enable live profiling."},
                             {"profile", 'p', "FILE", "", false,
                                     "Enable profiling, and write profile data to <FILE>."},
+                            {"profile-use", 'u', "FILE", "", false,
+                                    "Use profile log-file <FILE> for profile-guided optimization."},
                             {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
+                            {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
 #ifdef USE_PROVENANCE
                             {"provenance", 't', "EXPLAIN", "", false,
                                     "Enable provenance information via guided SLD."},
@@ -292,6 +297,23 @@ int main(int argc, char** argv) {
             Global::config().set("include-dir", allIncludes);
         }
 
+        /* collect all macro definitions for the pre-processor */
+        if (Global::config().has("macro")) {
+            std::string currentMacro = "";
+            std::string allMacros = "";
+            for (const char& ch : Global::config().get("macro")) {
+                if (ch == ' ') {
+                    allMacros += " -D";
+                    allMacros += currentMacro;
+                    currentMacro = "";
+                } else {
+                    currentMacro += ch;
+                }
+            }
+            allMacros += " -D" + currentMacro;
+            Global::config().set("macro", allMacros);
+        }
+
         /* turn on compilation of executables */
         if (Global::config().has("dl-program")) {
             Global::config().set("compile");
@@ -354,7 +376,11 @@ int main(int argc, char** argv) {
         throw std::runtime_error("failed to locate mcpp pre-processor");
     }
 
-    cmd += " -W0 " + Global::config().get("include-dir") + " " + Global::config().get("");
+    cmd += " -W0 " + Global::config().get("include-dir");
+    if (Global::config().has("macro")) {
+        cmd += " " + Global::config().get("macro");
+    }
+    cmd += " " + Global::config().get("");
     FILE* in = popen(cmd.c_str(), "r");
 
     /* Time taking for parsing */
@@ -434,32 +460,16 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveRelationCopiesTransformer>(), std::move(equivalencePipeline),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
+            std::make_unique<ReorderLiteralsTransformer>(),
             std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
             std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
 
     // Disable unwanted transformations
     if (Global::config().has("disable-transformers")) {
-        // TODO (azreika): add splitter into utils
-        auto split = [&](std::string str, char delimiter) {
-            std::set<std::string> parts;
-
-            int begin = 0;
-            for (size_t i = 0; i < str.size(); i++) {
-                if (str[i] == delimiter) {
-                    std::string token = str.substr(begin, (i - begin));
-                    parts.insert(token);
-                    begin = i + 1;
-                }
-            }
-
-            parts.insert(str.substr(begin));  // add in the last remaining token
-            parts.erase("");                  // remove empty tokens
-
-            return parts;
-        };
-
-        std::set<std::string> givenTransformers = split(Global::config().get("disable-transformers"), ',');
-        pipeline->disableTransformers(givenTransformers);
+        std::vector<std::string> givenTransformers =
+                splitString(Global::config().get("disable-transformers"), ',');
+        pipeline->disableTransformers(
+                std::set<std::string>(givenTransformers.begin(), givenTransformers.end()));
     }
 
     // Set up the debug report if necessary

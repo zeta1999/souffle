@@ -508,6 +508,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
 
     // get extract some details
     const AstAtom& head = *clause.getHead();
+    const AstAtom& origHead = *originalClause.getHead();
 
     // a utility to translate atoms to relations
     auto getRelation = [&](const AstAtom* atom) {
@@ -910,8 +911,14 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
         }
     }
 
+    // add stopping criteria for nullary relations
+    // (if it contains already the null tuple, don't re-compute)
+    std::unique_ptr<RamCondition> ramInsertCondition;
+    if (!ret && head.getArity() == 0) {
+        ramInsertCondition = std::make_unique<RamEmpty>(getRelation(&origHead));
+    }
     /* generate the final RAM Insert statement */
-    return std::make_unique<RamInsert>(std::move(op));
+    return std::make_unique<RamInsert>(std::move(op), std::move(ramInsertCondition));
 }
 
 /* utility for appending statements */

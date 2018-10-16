@@ -415,8 +415,12 @@ protected:
     /** RAM operation */
     std::unique_ptr<RamOperation> operation;
 
+    /** RAM condition */
+    std::unique_ptr<RamCondition> condition;
+
 public:
-    RamInsert(std::unique_ptr<RamOperation> o) : RamStatement(RN_Insert), operation(std::move(o)) {}
+    RamInsert(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
+            : RamStatement(RN_Insert), operation(std::move(o)), condition(std::move(c)) {}
 
     /** Get RAM operation */
     const RamOperation& getOperation() const {
@@ -424,27 +428,44 @@ public:
         return *operation;
     }
 
+    /** Get RAM condition */
+    const RamCondition* getCondition() const {
+        return condition.get();
+    }
+
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
-        os << "INSERT \n";
+        os << "INSERT ";
+        if (condition != nullptr) {
+            os << "WHERE ";
+            condition->print(os);
+        }
+        os << "\n";
         operation->print(os, tabpos + 1);
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(operation.get());
+        return std::vector<const RamNode*>({operation.get(), condition.get()});
     }
 
     /** Create clone */
     RamInsert* clone() const override {
-        RamInsert* res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()));
+        RamInsert* res;
+        if (condition != nullptr) {
+            res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()));
+        } else {
+            res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()),
+                    std::unique_ptr<RamCondition>(condition->clone()));
+        }
         return res;
     }
 
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         operation = map(std::move(operation));
+        condition = map(std::move(condition));
     }
 
 protected:
@@ -452,7 +473,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamInsert*>(&node));
         const auto& other = static_cast<const RamInsert&>(node);
-        return getOperation() == other.getOperation();
+        return getOperation() == other.getOperation() && getCondition() == other.getCondition();
     }
 };
 

@@ -809,6 +809,19 @@ inline bool endsWith(const std::string& value, const std::string& ending) {
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
+/**
+ * Splits a string given a delimiter
+ */
+inline std::vector<std::string> splitString(const std::string& str, char delimiter) {
+    std::vector<std::string> parts;
+    std::stringstream strstr(str);
+    std::string token;
+    while (std::getline(strstr, token, delimiter)) {
+        parts.push_back(token);
+    }
+    return parts;
+}
+
 // -------------------------------------------------------------------------------
 //                              Functional Utils
 // -------------------------------------------------------------------------------

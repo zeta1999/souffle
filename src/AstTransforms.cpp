@@ -1510,6 +1510,33 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
 
             return currMaxIdx;
         };
+    } else if (SIPSchosen == "least-free") {
+        // Order based on the least amount of non-bound arguments in the atom
+        getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+            int currLeastFree = -1;
+            unsigned int currLeastIdx = 0;
+
+            for (unsigned int i = 0; i < atoms.size(); i++) {
+                if (atoms[i] == nullptr) {
+                    // Already processed, move on
+                    continue;
+                }
+
+                if (isProposition(atoms[i])) {
+                    return i;
+                }
+
+                int numBound = numBoundArguments(atoms[i], boundVariables);
+                // TODO (azreika): add assertion here?
+                int numFree = atoms[i]->getArity() - numBound;
+                if (currLeastFree == -1 || numFree < currLeastFree) {
+                    currLeastFree = numFree;
+                    currLeastIdx = i;
+                }
+            }
+
+            return currLeastIdx;
+        };
     } else if (SIPSchosen == "least-free-vars") {
         // Order based on the least amount of free variables in the atom
         getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {

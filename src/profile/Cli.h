@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <getopt.h>
 
 namespace souffle {
 namespace profile {
@@ -29,7 +30,13 @@ public:
 
     Cli(int argc, char* argv[]) : args() {
         int c;
-        while ((c = getopt(argc, argv, "c:hj::")) != -1) {
+        option longOptions[1];
+        longOptions[0] = {0, 0, 0, 0};
+        while ((c = getopt_long(argc, argv, "c:hj::", longOptions, nullptr)) != EOF) {
+            // An invalid argument was given
+            if (c == '?') {
+                exit(1);
+            }
             if (optarg != nullptr) {
                 if (*optarg == '=') {
                     args[c] = optarg + 1;
@@ -59,8 +66,9 @@ public:
                          "'-c help' for a list"
                       << std::endl
                       << "                      of commands." << std::endl
-                      << "-j <filename<         Generate a GUI (html/js) version of the profiler."
+                      << "-j[filename]          Generate a GUI (html/js) version of the profiler."
                       << std::endl
+                      << "                      Default filename is profiler_html/[num].html" << std::endl
                       << "-h                    Print this help message." << std::endl;
             exit(0);
         }

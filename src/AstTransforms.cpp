@@ -1501,6 +1501,7 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
                 }
 
                 int numBound = numBoundArguments(atoms[i], boundVariables);
+                // TODO (azreika): change to arity
                 int numArgs = atoms[i]->getArguments().size();
                 if (isLargerRatio(std::make_pair(numBound, numArgs), currMaxRatio)) {
                     currMaxRatio = std::make_pair(numBound, numArgs);
@@ -1681,23 +1682,76 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     if (Global::config().has("profile-use")) {
         auto* profileUse = translationUnit.getAnalysis<AstProfileUse>();
 
-        auto getSizeClass = [&](const AstAtom* atom) {
-            return (int) log10(profileUse->getRelationSize(atom->getName()));
+        auto numBoundArguments = [&](const AstAtom* atom, const std::set<std::string>& boundVariables) {
+            int count = 0;
+            for (const AstArgument* arg : atom->getArguments()) {
+                bool isBound = true;
+                visitDepthFirst(*arg, [&](const AstVariable& var) {
+                        if (boundVariables.find(var.getName()) == boundVariables.end()) {
+                        isBound = false;
+                        }
+                        });
+
+                if (isBound) {
+                    count++;
+                }
+            }
+            return count;
         };
 
+        auto profilerSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+            double currOptimalVal = -1;
+            unsigned int currOptimalIdx = 0;
+            bool set = false;
+
+            for (unsigned int i = 0; i < atoms.size(); i++) {
+                if (atoms[i] == nullptr) {
+                    // Already processed, move on
+                    continue;
+                }
+
+                AstAtom* atom = atoms[i];
+
+                if (isProposition(atom)) {
+                    return i;
+                }
+
+                int numBound = numBoundArguments(atoms[i], boundVariables);
+                int numArgs = atoms[i]->getArity();
+                int numFree = numArgs - numBound;
+
+                double value = log(profileUse->getRelationSize(atom->getName()));
+                value *= (numFree * 1.0)/numArgs;
+                if (!set || value < currOptimalVal) {
+                    set = true;
+                    currOptimalVal = value;
+                    currOptimalIdx = i;
+                }
+            }
+
+            return currOptimalIdx;
+        }
+
+        // TODO: extract to function
+        // TODO: extract this whole thing ot an external file
         for (AstRelation* rel : program.getRelations()) {
             for (AstClause* clause : rel->getClauses()) {
+                if (clause->hasFixedExecutionPlan()) {
+                    continue;
+                }
+
                 std::vector<AstAtom*> atoms = clause->getAtoms();
-                std::vector<std::pair<int, unsigned int>> atomSizes;
-                for (unsigned int i = 0; i < atoms.size(); i++) {
-                    atomSizes.push_back(std::pair<int,unsigned int>(getSizeClass(atoms[i]), i));
+                std::vector<unsigned int> newOrdering = applySIPS(profilerSIPS,atoms);
+
+                // Check if we have a change
+                for (unsigned int i = 0; !changed && i < newOrdering.size(); i++) {
+                    if (newOrdering[i] != i) {
+                        changed = true;
+                    }
                 }
-                std::sort(atomSizes.begin(), atomSizes.end());
-                std::vector<unsigned int> newOrder;
-                for (const auto& pair : atomSizes) {
-                    newOrder.push_back(pair.second);
-                }
-                clause->reorderAtoms(newOrder);
+
+                // Reorder the clause accordingly
+                clause->reorderAtoms(newOrdering);
             }
         }
     }

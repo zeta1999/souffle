@@ -1588,6 +1588,29 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
     return getNextAtomSIPS;
 }
 
+std::vector<unsigned int> applySIPS(std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSIPS, std::vector<AstAtom*> atoms) {
+    std::set<std::string> boundVariables;
+    std::vector<unsigned int> newOrder(atoms.size());
+
+    unsigned int numAdded = 0;
+    while (numAdded < atoms.size()) {
+        unsigned int nextIdx = getNextAtomSIPS(atoms, boundVariables);
+        AstAtom* nextAtom = atoms[nextIdx];
+
+        for (AstArgument* arg : nextAtom->getArguments()) {
+            if (AstVariable* var = dynamic_cast<AstVariable*>(arg)) {
+                boundVariables.insert(var->getName());
+            }
+        }
+
+        newOrder[numAdded] = nextIdx;
+        atoms[nextIdx] = nullptr;
+        numAdded++;
+    }
+
+    return newOrder;
+}
+
 bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
     AstProgram& program = *translationUnit.getProgram();
@@ -1640,27 +1663,17 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                         getNextAtomSIPS = getSIPSfunction(Global::config().get("SIPS"));
 
                 // Apply the SIPS to get a new ordering
-                std::set<std::string> boundVariables;
-                std::vector<unsigned int> newOrder(atoms.size());
+                std::vector<unsigned int> newOrdering = applySIPS(getNextAtomSIPS, atoms);
 
-                unsigned int numAdded = 0;
-                while (numAdded < atoms.size()) {
-                    unsigned int nextIdx = getNextAtomSIPS(atoms, boundVariables);
-
-                    if (nextIdx != numAdded) {
+                // Check if we have a change
+                for (unsigned int i = 0; !changed && i < newOrdering.size(); i++) {
+                    if (newOrdering[i] != i) {
                         changed = true;
                     }
-
-                    visitDepthFirst(*atoms[nextIdx],
-                            [&](const AstVariable& var) { boundVariables.insert(var.getName()); });
-
-                    newOrder[numAdded] = nextIdx;
-                    atoms[nextIdx] = nullptr;
-                    numAdded++;
                 }
 
                 // Reorder the clause accordingly
-                clause->reorderAtoms(newOrder);
+                clause->reorderAtoms(newOrdering);
             }
         }
     }

@@ -1589,7 +1589,9 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
     return getNextAtomSIPS;
 }
 
-std::vector<unsigned int> applySIPS(std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSIPS, std::vector<AstAtom*> atoms) {
+std::vector<unsigned int> applySIPS(
+        std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSIPS,
+        std::vector<AstAtom*> atoms) {
     std::set<std::string> boundVariables;
     std::vector<unsigned int> newOrder(atoms.size());
 
@@ -1687,10 +1689,10 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
             for (const AstArgument* arg : atom->getArguments()) {
                 bool isBound = true;
                 visitDepthFirst(*arg, [&](const AstVariable& var) {
-                        if (boundVariables.find(var.getName()) == boundVariables.end()) {
+                    if (boundVariables.find(var.getName()) == boundVariables.end()) {
                         isBound = false;
-                        }
-                        });
+                    }
+                });
 
                 if (isBound) {
                     count++;
@@ -1699,38 +1701,39 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
             return count;
         };
 
-        auto profilerSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
-            double currOptimalVal = -1;
-            unsigned int currOptimalIdx = 0;
-            bool set = false;
+        auto profilerSIPS =
+                [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+                    double currOptimalVal = -1;
+                    unsigned int currOptimalIdx = 0;
+                    bool set = false;
 
-            for (unsigned int i = 0; i < atoms.size(); i++) {
-                if (atoms[i] == nullptr) {
-                    // Already processed, move on
-                    continue;
+                    for (unsigned int i = 0; i < atoms.size(); i++) {
+                        if (atoms[i] == nullptr) {
+                            // Already processed, move on
+                            continue;
+                        }
+
+                        AstAtom* atom = atoms[i];
+
+                        if (isProposition(atom)) {
+                            return i;
+                        }
+
+                        int numBound = numBoundArguments(atoms[i], boundVariables);
+                        int numArgs = atoms[i]->getArity();
+                        int numFree = numArgs - numBound;
+
+                        double value = log(profileUse->getRelationSize(atom->getName()));
+                        value *= (numFree * 1.0) / numArgs;
+                        if (!set || value < currOptimalVal) {
+                            set = true;
+                            currOptimalVal = value;
+                            currOptimalIdx = i;
+                        }
+                    }
+
+                    return currOptimalIdx;
                 }
-
-                AstAtom* atom = atoms[i];
-
-                if (isProposition(atom)) {
-                    return i;
-                }
-
-                int numBound = numBoundArguments(atoms[i], boundVariables);
-                int numArgs = atoms[i]->getArity();
-                int numFree = numArgs - numBound;
-
-                double value = log(profileUse->getRelationSize(atom->getName()));
-                value *= (numFree * 1.0)/numArgs;
-                if (!set || value < currOptimalVal) {
-                    set = true;
-                    currOptimalVal = value;
-                    currOptimalIdx = i;
-                }
-            }
-
-            return currOptimalIdx;
-        }
 
         // TODO: extract to function
         // TODO: extract this whole thing ot an external file
@@ -1741,7 +1744,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                 }
 
                 std::vector<AstAtom*> atoms = clause->getAtoms();
-                std::vector<unsigned int> newOrdering = applySIPS(profilerSIPS,atoms);
+                std::vector<unsigned int> newOrdering = applySIPS(profilerSIPS, atoms);
 
                 // Check if we have a change
                 for (unsigned int i = 0; !changed && i < newOrdering.size(); i++) {

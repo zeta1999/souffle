@@ -1701,39 +1701,38 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
             return count;
         };
 
-        auto profilerSIPS =
-                [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
-                    double currOptimalVal = -1;
-                    unsigned int currOptimalIdx = 0;
-                    bool set = false;
+        auto profilerSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+            double currOptimalVal = -1;
+            unsigned int currOptimalIdx = 0;
+            bool set = false;
 
-                    for (unsigned int i = 0; i < atoms.size(); i++) {
-                        if (atoms[i] == nullptr) {
-                            // Already processed, move on
-                            continue;
-                        }
-
-                        AstAtom* atom = atoms[i];
-
-                        if (isProposition(atom)) {
-                            return i;
-                        }
-
-                        int numBound = numBoundArguments(atoms[i], boundVariables);
-                        int numArgs = atoms[i]->getArity();
-                        int numFree = numArgs - numBound;
-
-                        double value = log(profileUse->getRelationSize(atom->getName()));
-                        value *= (numFree * 1.0) / numArgs;
-                        if (!set || value < currOptimalVal) {
-                            set = true;
-                            currOptimalVal = value;
-                            currOptimalIdx = i;
-                        }
-                    }
-
-                    return currOptimalIdx;
+            for (unsigned int i = 0; i < atoms.size(); i++) {
+                if (atoms[i] == nullptr) {
+                    // Already processed, move on
+                    continue;
                 }
+
+                AstAtom* atom = atoms[i];
+
+                if (isProposition(atom)) {
+                    return i;
+                }
+
+                int numBound = numBoundArguments(atoms[i], boundVariables);
+                int numArgs = atoms[i]->getArity();
+                int numFree = numArgs - numBound;
+
+                double value = log(profileUse->getRelationSize(atom->getName()));
+                value *= (numFree * 1.0) / numArgs;
+                if (!set || value < currOptimalVal) {
+                    set = true;
+                    currOptimalVal = value;
+                    currOptimalIdx = i;
+                }
+            }
+
+            return currOptimalIdx;
+        };
 
         // TODO: extract to function
         // TODO: extract this whole thing ot an external file

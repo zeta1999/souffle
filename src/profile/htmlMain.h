@@ -104,6 +104,7 @@ std::string htmlBodyTop = R"___(
                     <th data-sort-method="number">Tuples</th>
                     <th data-sort-method="number">% of Time</th>
                     <th data-sort-method="number">% of Tuples</th>
+                    <th data-sort-method="number">R/W ratio</th>
                     <th data-sort-method="text" style="width:20%;">Source</th>
                 </tr>
                 </thead>
@@ -159,6 +160,22 @@ std::string htmlBodyTop = R"___(
                 </tr>
                 </thead>
                 <tbody id="rulver_body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="atoms" style="display:none;">
+        <h3>Atom Frequency Table</h3>
+        <div class="table_wrapper">
+            <table id='atomstable'>
+                <thead>
+                <tr>
+                    <th data-sort-method="text">Name</th>
+                    <th data-sort-method="text">Relation Size</th>
+                    <th data-sort-method="text">Frequency</th>
+                </tr>
+                </thead>
+                <tbody id="atoms_body">
                 </tbody>
             </table>
         </div>

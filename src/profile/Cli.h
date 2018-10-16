@@ -53,8 +53,7 @@ public:
 
         if (args.count('h') != 0 || args.count('f') == 0) {
             std::cout << "Souffle Profiler" << std::endl
-                      << "Usage: souffle-profile [-f] <log-file> [ -h | -c <command> [options] | -j ]"
-                      << std::endl
+                      << "Usage: souffle-profile <log-file> [ -h | -c <command> [options] | -j ]" << std::endl
                       << "<log-file>            The log file to profile." << std::endl
                       << "-c <command>          Run the given command on the log file, try with  "
                          "'-c help' for a list"

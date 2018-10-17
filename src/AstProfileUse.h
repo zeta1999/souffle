@@ -47,10 +47,10 @@ public:
     void print(std::ostream& os) const override;
 
     /** Check whether the relation size exists in profile */
-    bool hasRelationSize(const AstRelationIdentifier* rel);
+    bool hasRelationSize(const AstRelationIdentifier& rel);
 
     /** Return size of relation in the profile */
-    size_t getRelationSize(const AstRelationIdentifier* rel);
+    size_t getRelationSize(const AstRelationIdentifier& rel);
 };
 
 }  // end of namespace souffle

@@ -1391,10 +1391,10 @@ int numBoundArguments(const AstAtom* atom, const std::set<std::string>& boundVar
         // Argument is bound iff all contained variables are bound
         bool isBound = true;
         visitDepthFirst(*arg, [&](const AstVariable& var) {
-                if (boundVariables.find(var.getName()) == boundVariables.end()) {
+            if (boundVariables.find(var.getName()) == boundVariables.end()) {
                 isBound = false;
-                }
-                });
+            }
+        });
         if (isBound) {
             count++;
         }
@@ -1617,9 +1617,9 @@ std::vector<unsigned int> applySIPS(
             }
         }
 
-        newOrder[numAdded] = nextIdx; // add to the ordering
-        atoms[nextIdx] = nullptr; // mark as done
-        numAdded++; // move on
+        newOrder[numAdded] = nextIdx;  // add to the ordering
+        atoms[nextIdx] = nullptr;      // mark as done
+        numAdded++;                    // move on
     }
 
     return newOrder;

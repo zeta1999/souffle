@@ -608,40 +608,47 @@ public:
         return ss.str();
     }
 
-    void outputHtml() {
+    void outputHtml(std::string filename = "profiler_html/") {
         std::cout << "SouffleProf\n";
         std::cout << "Generating HTML files...\n";
 
         DIR* dir;
         bool exists = false;
 
-        std::string path{"profiler_html"};
-        if ((dir = opendir(path.c_str())) != nullptr) {
-            exists = true;
-            closedir(dir);
-        }
-        if (!exists) {
-            mode_t nMode = 0733;  // UNIX style permissions
-            int nError = 0;
-            nError = mkdir(path.c_str(), nMode);
-            if (nError != 0) {
-                std::cerr << "directory " << path << " could not be created. Please create it and try again.";
-                exit(2);
+        if (filename.find('/') != std::string::npos) {
+            std::string path = filename.substr(0, filename.find('/'));
+            if ((dir = opendir(path.c_str())) != nullptr) {
+                exists = true;
+                closedir(dir);
+            }
+            if (!exists) {
+                mode_t nMode = 0733;  // UNIX style permissions
+                int nError = 0;
+                nError = mkdir(path.c_str(), nMode);
+                if (nError != 0) {
+                    std::cerr << "directory " << path
+                              << " could not be created. Please create it and try again.";
+                    exit(2);
+                }
             }
         }
+        std::string filetype = ".html";
+        std::string newFile = filename;
 
-        std::string new_file;
-        int i = 0;
-        do {
-            ++i;
-            new_file = path + '/' + std::to_string(i) + ".html";
-        } while (Tools::file_exists(new_file));
+        if (filename.size() <= filetype.size() ||
+                !std::equal(filetype.rbegin(), filetype.rend(), filename.rbegin())) {
+            int i = 0;
+            do {
+                ++i;
+                newFile = filename + std::to_string(i) + ".html";
+            } while (Tools::file_exists(newFile));
+        }
 
-        std::ofstream outfile(new_file);
+        std::ofstream outfile(newFile);
 
         outfile << HtmlGenerator::getHtml(genJson());
 
-        std::cout << "file output to: " << new_file << std::endl;
+        std::cout << "file output to: " << newFile << std::endl;
     }
 
     void quit() {

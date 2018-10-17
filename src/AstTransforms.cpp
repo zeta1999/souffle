@@ -1378,6 +1378,31 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
     return changed;
 }
 
+/* TODO (azreika): extract ReorderLiteralsTransformer-related things to a new file
+                 - everything from here to the transformer function */
+
+/**
+ * Counts the number of bound arguments in a given atom.
+ */
+int numBoundArguments(const AstAtom* atom, const std::set<std::string>& boundVariables) {
+    int count = 0;
+
+    for (const AstArgument* arg : atom->getArguments()) {
+        // Argument is bound iff all contained variables are bound
+        bool isBound = true;
+        visitDepthFirst(*arg, [&](const AstVariable& var) {
+                if (boundVariables.find(var.getName()) == boundVariables.end()) {
+                isBound = false;
+                }
+                });
+        if (isBound) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
 /**
  * Checks that the given literal is a proposition - that is,
  * an atom with no arguments, which is hence independent of the
@@ -1404,24 +1429,6 @@ bool isProposition(const AstLiteral* literal) {
  */
 std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getSIPSfunction(
         const std::string& SIPSchosen) {
-    // Count the number of bound arguments in a given atom
-    auto numBoundArguments = [&](const AstAtom* atom, const std::set<std::string>& boundVariables) {
-        int count = 0;
-        for (const AstArgument* arg : atom->getArguments()) {
-            bool isBound = true;
-            visitDepthFirst(*arg, [&](const AstVariable& var) {
-                if (boundVariables.find(var.getName()) == boundVariables.end()) {
-                    isBound = false;
-                }
-            });
-
-            if (isBound) {
-                count++;
-            }
-        }
-        return count;
-    };
-
     // --- Create the appropriate SIPS function. ---
 
     // Each SIPS function has a priority metric (e.g. max-bound atoms). The function will typically
@@ -1501,8 +1508,7 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
                 }
 
                 int numBound = numBoundArguments(atoms[i], boundVariables);
-                // TODO (azreika): change to arity
-                int numArgs = atoms[i]->getArguments().size();
+                int numArgs = atoms[i]->getArity();
                 if (isLargerRatio(std::make_pair(numBound, numArgs), currMaxRatio)) {
                     currMaxRatio = std::make_pair(numBound, numArgs);
                     currMaxIdx = i;
@@ -1528,7 +1534,6 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
                 }
 
                 int numBound = numBoundArguments(atoms[i], boundVariables);
-                // TODO (azreika): add assertion here?
                 int numFree = atoms[i]->getArity() - numBound;
                 if (currLeastFree == -1 || numFree < currLeastFree) {
                     currLeastFree = numFree;
@@ -1589,6 +1594,9 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
     return getNextAtomSIPS;
 }
 
+/**
+ * Finds the new ordering of a given vector of atoms after the given SIPS is applied.
+ */
 std::vector<unsigned int> applySIPS(
         std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSIPS,
         std::vector<AstAtom*> atoms) {
@@ -1597,18 +1605,21 @@ std::vector<unsigned int> applySIPS(
 
     unsigned int numAdded = 0;
     while (numAdded < atoms.size()) {
+        // Grab the next atom, based on the SIPS priority
         unsigned int nextIdx = getNextAtomSIPS(atoms, boundVariables);
         AstAtom* nextAtom = atoms[nextIdx];
 
+        // Set all arguments that are variables as bound
+        // Arguments that are functors, etc. should not bind anything
         for (AstArgument* arg : nextAtom->getArguments()) {
             if (AstVariable* var = dynamic_cast<AstVariable*>(arg)) {
                 boundVariables.insert(var->getName());
             }
         }
 
-        newOrder[numAdded] = nextIdx;
-        atoms[nextIdx] = nullptr;
-        numAdded++;
+        newOrder[numAdded] = nextIdx; // add to the ordering
+        atoms[nextIdx] = nullptr; // mark as done
+        numAdded++; // move on
     }
 
     return newOrder;
@@ -1681,25 +1692,9 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
         }
     }
 
+    // Profile-Guided Reordering
     if (Global::config().has("profile-use")) {
         auto* profileUse = translationUnit.getAnalysis<AstProfileUse>();
-
-        auto numBoundArguments = [&](const AstAtom* atom, const std::set<std::string>& boundVariables) {
-            int count = 0;
-            for (const AstArgument* arg : atom->getArguments()) {
-                bool isBound = true;
-                visitDepthFirst(*arg, [&](const AstVariable& var) {
-                    if (boundVariables.find(var.getName()) == boundVariables.end()) {
-                        isBound = false;
-                    }
-                });
-
-                if (isBound) {
-                    count++;
-                }
-            }
-            return count;
-        };
 
         auto profilerSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
             double currOptimalVal = -1;
@@ -1734,8 +1729,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
             return currOptimalIdx;
         };
 
-        // TODO: extract to function
-        // TODO: extract this whole thing ot an external file
+        // TODO (azreika): pull out to a function
         for (AstRelation* rel : program.getRelations()) {
             for (AstClause* clause : rel->getClauses()) {
                 if (clause->hasFixedExecutionPlan()) {

@@ -347,14 +347,13 @@ public:
     ProfileDatabase(const std::string& filename) : root(std::make_unique<DirectoryEntry>("root")) {
         std::ifstream file(filename);
         if (!file.is_open()) {
-            std::cerr << "Log file could not be opened." << std::endl;
-            exit(1);
+            throw std::runtime_error("Log file could not be opened.");
         }
         std::string jsonString((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
         std::string error;
         json11::Json json = json11::Json::parse(jsonString, error);
         if (!error.empty()) {
-            std::cerr << "Parse error: " << error << std::endl;
+            throw std::runtime_error("Parse error: " + error);
         }
         parseJson(json["root"], root);
     }

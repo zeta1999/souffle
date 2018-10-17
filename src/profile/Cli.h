@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <getopt.h>
 
 namespace souffle {
 namespace profile {
@@ -25,72 +26,66 @@ namespace profile {
  */
 class Cli {
 public:
-    std::vector<std::string> args;
+    std::map<char, std::string> args;
 
     Cli(int argc, char* argv[]) : args() {
-        for (int i = 0; i < argc; i++) {
-            args.push_back(std::string(argv[i]));
+        int c;
+        option longOptions[1];
+        longOptions[0] = {0, 0, 0, 0};
+        while ((c = getopt_long(argc, argv, "c:hj::", longOptions, nullptr)) != EOF) {
+            // An invalid argument was given
+            if (c == '?') {
+                exit(1);
+            }
+            if (optarg != nullptr) {
+                if (*optarg == '=') {
+                    args[c] = optarg + 1;
+                } else {
+                    args[c] = optarg;
+                }
+            } else {
+                args[c] = c;
+            }
+        }
+        if (optind < argc && args.count('f') == 0) {
+            args['f'] = argv[optind];
         }
     }
 
-    void error() {
-        std::cout << "Unknown error.\nTry souffle-profile -h for help.\n";
-        exit(1);
-    }
-
     void parse() {
-        if (args.size() == 1) {
+        if (args.size() == 0) {
             std::cout << "No arguments provided.\nTry souffle-profile -h for help.\n";
             exit(1);
         }
 
-        switch (args.at(1).at(0)) {
-            case '-':
-                switch (args.at(1).at(args.at(1).length() - 1)) {
-                    case 'h':
-                        std::cout << "Souffle Profiler" << std::endl
-                                  << "Usage: souffle-profile -h | <log-file> [ -c <command> [options] |"
-                                     "-j ]"
-                                  << std::endl
-                                  << "<log-file>            The log file to profile." << std::endl
-                                  << "-c <command>          Run the given command on the log file, try with  "
-                                     "'-c help' for a list"
-                                  << std::endl
-                                  << "                      of commands." << std::endl
-                                  << "-j                    Generate a GUI (html/js) version of the profiler."
-                                  << std::endl
-                                  << "-h                    Print this help message." << std::endl;
-                        break;
-                    default:
-                        std::cout << "Unknown option " << args.at(1)
-                                  << ".\nTry souffle-profile -h for help.\n";
-                        exit(1);
-                        break;
-                }
-                break;
-            default:
+        if (args.count('h') != 0 || args.count('f') == 0) {
+            std::cout << "Souffle Profiler" << std::endl
+                      << "Usage: souffle-profile <log-file> [ -h | -c <command> [options] | -j ]" << std::endl
+                      << "<log-file>            The log file to profile." << std::endl
+                      << "-c <command>          Run the given command on the log file, try with  "
+                         "'-c help' for a list"
+                      << std::endl
+                      << "                      of commands." << std::endl
+                      << "-j[filename]          Generate a GUI (html/js) version of the profiler."
+                      << std::endl
+                      << "                      Default filename is profiler_html/[num].html" << std::endl
+                      << "-h                    Print this help message." << std::endl;
+            exit(0);
+        }
+        std::string filename = args['f'];
 
-                std::string filename = args.at(1);
-
-                if (args.size() == 2) {
-                    Tui(filename, true, false).runProf();
-
-                } else {
-                    switch (args.at(2).at(args.at(2).length() - 1)) {
-                        case 'c':
-                            if (args.size() == 3) {
-                                std::cout << "No arguments provided for option " << args.at(2)
-                                          << ".\nTry souffle-profile -h for help.\n";
-                                exit(1);
-                            }
-                            Tui(filename, false, false).runCommand(Tools::split(args.at(3), " "));
-                            break;
-                        case 'j':
-                            Tui(filename, false, true).outputHtml();
-                            break;
-                    }
-                }
-                break;
+        if (args.count('c') != 0) {
+            for (auto& command : Tools::split(args['c'], ";")) {
+                Tui(filename, false, false).runCommand(Tools::split(command, " "));
+            }
+        } else if (args.count('j') != 0) {
+            if (args['j'] == "j") {
+                Tui(filename, false, true).outputHtml();
+            } else {
+                Tui(filename, false, true).outputHtml(args['j']);
+            }
+        } else {
+            Tui(filename, true, false).runProf();
         }
     }
 };

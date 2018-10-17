@@ -188,6 +188,8 @@ int main(int argc, char** argv) {
                             {"magic-transform", 'm', "RELATIONS", "", false,
                                     "Enable magic set transformation changes on the given relations, use '*' "
                                     "for all."},
+                            {"macro", 'M', "MACROS", "", false,
+                                    "Set macro definitions for the pre-processor"},
                             {"disable-transformers", 'z', "TRANSFORMERS", "", false,
                                     "Disable the given AST transformers."},
                             {"dl-program", 'o', "FILE", "", false,
@@ -295,6 +297,23 @@ int main(int argc, char** argv) {
             Global::config().set("include-dir", allIncludes);
         }
 
+        /* collect all macro definitions for the pre-processor */
+        if (Global::config().has("macro")) {
+            std::string currentMacro = "";
+            std::string allMacros = "";
+            for (const char& ch : Global::config().get("macro")) {
+                if (ch == ' ') {
+                    allMacros += " -D";
+                    allMacros += currentMacro;
+                    currentMacro = "";
+                } else {
+                    currentMacro += ch;
+                }
+            }
+            allMacros += " -D" + currentMacro;
+            Global::config().set("macro", allMacros);
+        }
+
         /* turn on compilation of executables */
         if (Global::config().has("dl-program")) {
             Global::config().set("compile");
@@ -357,7 +376,11 @@ int main(int argc, char** argv) {
         throw std::runtime_error("failed to locate mcpp pre-processor");
     }
 
-    cmd += " -W0 " + Global::config().get("include-dir") + " " + Global::config().get("");
+    cmd += " -W0 " + Global::config().get("include-dir");
+    if (Global::config().has("macro")) {
+        cmd += " " + Global::config().get("macro");
+    }
+    cmd += " " + Global::config().get("");
     FILE* in = popen(cmd.c_str(), "r");
 
     /* Time taking for parsing */

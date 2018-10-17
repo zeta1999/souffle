@@ -520,7 +520,70 @@ public:
             comma(firstRow);
             ss << '"' << kvp.first << R"_(": ")_" << Tools::cleanJsonOut(kvp.second) << '"';
         }
-        ss << "}";
+        ss << '}';
+        return ss;
+    }
+
+    std::stringstream& genJsonAtoms(std::stringstream& ss) {
+        std::shared_ptr<ProgramRun>& run = out.getProgramRun();
+
+        auto comma = [&ss](bool& first, const std::string& delimiter = ", ") {
+            if (!first) {
+                ss << delimiter;
+            } else {
+                first = false;
+            }
+        };
+
+        ss << R"_("atoms": {)_";
+
+        bool firstRow = true;
+        for (auto& relation : run->getRelation_map()) {
+            // Get atoms for non-recursive rules
+            for (auto& rule : relation.second->getRuleMap()) {
+                comma(firstRow, ", \n");
+                ss << '"' << rule.second->getId() << R"_(": [)_";
+                bool firstCol = true;
+                for (auto& atom : rule.second->getAtoms()) {
+                    comma(firstCol);
+                    std::string relationName = atom.identifier;
+                    relationName = relationName.substr(0, relationName.find('('));
+                    auto* relation = out.getProgramRun()->getRelation(relationName);
+                    std::string relationSize =
+                            relation == nullptr ? "" : std::to_string(relation->getNum_tuplesRel());
+                    ss << '[';
+                    ss << '"' << Tools::cleanJsonOut(Tools::cleanString(atom.rule)) << R"_(", )_";
+                    ss << '"' << Tools::cleanJsonOut(atom.identifier) << R"_(", )_";
+                    ss << relationSize << ", ";
+                    ss << atom.frequency << ']';
+                }
+                ss << "]";
+            }
+            // Get atoms for recursive rules
+            for (auto& iteration : relation.second->getIterations()) {
+                for (auto& rule : iteration->getRul_rec()) {
+                    comma(firstRow, ", \n");
+                    ss << '"' << rule.second->getId() << R"_(": [)_";
+                    bool firstCol = true;
+                    for (auto& atom : rule.second->getAtoms()) {
+                        comma(firstCol);
+                        std::string relationName = atom.identifier;
+                        relationName = relationName.substr(0, relationName.find('('));
+                        auto* relation = out.getProgramRun()->getRelation(relationName);
+                        std::string relationSize =
+                                relation == nullptr ? "" : std::to_string(relation->getNum_tuplesRel());
+                        ss << '[';
+                        ss << '"' << Tools::cleanJsonOut(Tools::cleanString(atom.rule)) << R"_(", )_";
+                        ss << '"' << Tools::cleanJsonOut(atom.identifier) << R"_(", )_";
+                        ss << relationSize << ", ";
+                        ss << atom.frequency << ']';
+                    }
+                    ss << "]";
+                }
+            }
+        }
+
+        ss << '}';
         return ss;
     }
 
@@ -536,46 +599,56 @@ public:
         genJsonUsage(ss);
         ss << ",\n";
         genJsonConfiguration(ss);
+        ss << ",\n";
+        genJsonAtoms(ss);
+        ss << '\n';
 
         ss << "};\n";
 
         return ss.str();
     }
 
-    void outputHtml() {
+    void outputHtml(std::string filename = "profiler_html/") {
         std::cout << "SouffleProf\n";
         std::cout << "Generating HTML files...\n";
 
         DIR* dir;
         bool exists = false;
 
-        std::string path{"profiler_html"};
-        if ((dir = opendir(path.c_str())) != nullptr) {
-            exists = true;
-            closedir(dir);
-        }
-        if (!exists) {
-            mode_t nMode = 0733;  // UNIX style permissions
-            int nError = 0;
-            nError = mkdir(path.c_str(), nMode);
-            if (nError != 0) {
-                std::cerr << "directory " << path << " could not be created. Please create it and try again.";
-                exit(2);
+        if (filename.find('/') != std::string::npos) {
+            std::string path = filename.substr(0, filename.find('/'));
+            if ((dir = opendir(path.c_str())) != nullptr) {
+                exists = true;
+                closedir(dir);
+            }
+            if (!exists) {
+                mode_t nMode = 0733;  // UNIX style permissions
+                int nError = 0;
+                nError = mkdir(path.c_str(), nMode);
+                if (nError != 0) {
+                    std::cerr << "directory " << path
+                              << " could not be created. Please create it and try again.";
+                    exit(2);
+                }
             }
         }
+        std::string filetype = ".html";
+        std::string newFile = filename;
 
-        std::string new_file;
-        int i = 0;
-        do {
-            ++i;
-            new_file = path + '/' + std::to_string(i) + ".html";
-        } while (Tools::file_exists(new_file));
+        if (filename.size() <= filetype.size() ||
+                !std::equal(filetype.rbegin(), filetype.rend(), filename.rbegin())) {
+            int i = 0;
+            do {
+                ++i;
+                newFile = filename + std::to_string(i) + ".html";
+            } while (Tools::file_exists(newFile));
+        }
 
-        std::ofstream outfile(new_file);
+        std::ofstream outfile(newFile);
 
         outfile << HtmlGenerator::getHtml(genJson());
 
-        std::cout << "file output to: " << new_file << std::endl;
+        std::cout << "file output to: " << newFile << std::endl;
     }
 
     void quit() {

@@ -277,7 +277,12 @@ public:
 
     Reader(std::string filename, std::shared_ptr<ProgramRun> run)
             : file_loc(std::move(filename)), run(std::move(run)) {
-        ProfileEventSingleton::instance().setDBFromFile(file_loc);
+        try {
+            ProfileEventSingleton::instance().setDBFromFile(file_loc);
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            exit(1);
+        }
     }
 
     Reader(std::shared_ptr<ProgramRun> run) : run(std::move(run)) {}

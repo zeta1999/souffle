@@ -428,11 +428,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitLogSize(const RamLogSize& print, std::ostream& out) override {
+        void visitLogSize(const RamLogSize& size, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "ProfileEventSingleton::instance().makeQuantityEvent( R\"(";
-            out << print.getMessage() << ")\",";
-            out << synthesiser.getRelationName(print.getRelation()) << "->size(),iter);";
+            out << size.getMessage() << ")\",";
+            out << synthesiser.getRelationName(size.getRelation()) << "->size(),iter);";
             PRINT_END_COMMENT(out);
         }
 
@@ -516,8 +516,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const std::string ext = fileExtension(Global::config().get("profile"));
 
             // create local timer
-            out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter);\n";
+            if (timer.getRelation() == nullptr) {
+                out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter);\n";
+            } else {
+                const auto& rel = *timer.getRelation();
+                auto relName = synthesiser.getRelationName(rel);
 
+                out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter, [&](){return " << relName
+                    << "->size();});\n";
+            }
             // insert statement to be measured
             visit(timer.getStatement(), out);
 

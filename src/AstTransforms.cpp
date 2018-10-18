@@ -1384,7 +1384,7 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
 /**
  * Counts the number of bound arguments in a given atom.
  */
-int numBoundArguments(const AstAtom* atom, const std::set<std::string>& boundVariables) {
+unsigned int numBoundArguments(const AstAtom* atom, const std::set<std::string>& boundVariables) {
     int count = 0;
 
     for (const AstArgument* arg : atom->getArguments()) {
@@ -1516,6 +1516,39 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
             }
 
             return currMaxIdx;
+        };
+    } else if (SIPSchosen == "all-bound") {
+        // Prioritise those with all arguments bound; otherwise, left to right
+        getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+            unsigned int currFirst = 0;
+            bool seen = false;
+
+            for (unsigned int i = 0; i < atoms.size(); i++) {
+                const AstAtom* currAtom = atoms[i];
+
+                if (currAtom == nullptr) {
+                    // Already processed, move on
+                    continue;
+                }
+
+                if (isProposition(currAtom)) {
+                    // Propositions are the best
+                    return i;
+                }
+
+                if (numBoundArguments(currAtom, boundVariables) == currAtom->getArity()) {
+                    // All arguments are bound!
+                    return i;
+                }
+
+                if (!seen) {
+                    // First valid atom, set as default priority
+                    seen = true;
+                    currFirst = i;
+                }
+            }
+
+            return currFirst;
         };
     } else if (SIPSchosen == "least-free") {
         // Order based on the least amount of non-bound arguments in the atom

@@ -351,6 +351,96 @@ protected:
 };
 
 /**
+ * Subclass of Argument that represents a unary function
+ */
+class AstUnaryUserDefinedFunctor : public AstFunctor {
+protected:
+
+    /** name of user-defined functor */
+    std::string name;
+
+    /** type of user-defined functor */
+    std::string type;
+
+    /** operand */
+    std::unique_ptr<AstArgument> operand;
+
+public:
+    AstUnaryUserDefinedFunctor(const std::string &name, const std::string &type, std::unique_ptr<AstArgument> o) : name(name),type(type), operand(std::move(o)) {}
+
+    ~AstUnaryUserDefinedFunctor() override = default;
+
+    AstArgument* getOperand() const {
+        return operand.get();
+    }
+
+    /** get name of unary user-defined functor */
+    const std::string &getName() const {
+	return name;
+    }
+
+    /** get type of unary user-defined functor */
+    const std::string &getType() const {
+        return type;
+    }
+
+    /** Check if the return value of this functor is a number type. */
+    bool isNumerical() const {
+        return type[1] == 'N';
+    }
+
+    /** Check if the return value of this functor is a symbol type. */
+    bool isSymbolic() const {
+        return type[1] == 'S'; 
+    }
+
+    /** Check if the argument of this functor is a number type. */
+    bool acceptsNumbers() const {
+        return type[0] == 'N';
+    }
+
+    /** Check if the argument of this functor is a symbol type. */
+    bool acceptsSymbols() const {
+        return type[0] == 'S';
+    }
+
+    /** Print argument to the given output stream */
+    void print(std::ostream& os) const override {
+        os << '#' << name;
+        os << "(";
+        operand->print(os);
+        os << ")";
+    }
+
+    /** Creates a clone */
+    AstUnaryUserDefinedFunctor* clone() const override {
+        auto res = new AstUnaryUserDefinedFunctor(name, type, std::unique_ptr<AstArgument>(operand->clone()));
+        res->setSrcLoc(getSrcLoc());
+        return res;
+    }
+
+    /** Mutates this node */
+    void apply(const AstNodeMapper& map) override {
+        operand = map(std::move(operand));
+    }
+
+    /** Obtains a list of all embedded child nodes */
+    std::vector<const AstNode*> getChildNodes() const override {
+        auto res = AstArgument::getChildNodes();
+        res.push_back(operand.get());
+        return res;
+    }
+
+protected:
+    /** Implements the node comparison for this node type */
+    bool equal(const AstNode& node) const override {
+        assert(nullptr != dynamic_cast<const AstUnaryUserDefinedFunctor*>(&node));
+        const auto& other = static_cast<const AstUnaryUserDefinedFunctor&>(node);
+        return name == other.name && type == other.type && *operand == *other.operand;
+    }
+};
+
+/**
  * Subclass of Argument that represents a binary function
  */
 class AstBinaryFunctor : public AstFunctor {

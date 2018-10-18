@@ -107,6 +107,39 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             }
         }
 
+	RamDomain visitUnaryUserDefinedOperator(const RamUnaryUserDefinedOperator &op) {
+            RamDomain arg = visit(op.getValue());
+	    const std::string &name = op.getName();
+	    const std::string &type = op.getType();
+	    const char *str_arg = nullptr;
+	    RamDomain result;
+
+	    void *handle=interpreter.loadDLL();  // load DLL (if not done yet)
+            void *fn = dlsym(handle, name.c_str());
+            if(fn == nullptr){ 
+	       std::cerr << "Cannot find user-defined unary operator " << name << " in " << SOUFFLE_DLL << std::endl;
+	    }
+
+            // if argument is a string convert it to string.
+            if (type[0]=='S') {
+		  str_arg=interpreter.getSymbolTable().resolve(arg).c_str();
+	    }
+	    if (type == "SS") { 
+		    const char *result_str = (*(const char * (*)(const char *)) fn)(str_arg);
+		    result = interpreter.getSymbolTable().lookup(result_str);
+	    } else if (type == "SN") { 
+		    result = (*(RamDomain (*)(const char *)) fn)(str_arg);
+	    } else if (type == "NS") {
+		    const char *result_str = (*(const char * (*)(RamDomain)) fn)(arg);
+		    result = interpreter.getSymbolTable().lookup(result_str);
+	    } else if (type == "NN") {
+		    result = (*(RamDomain (*)(RamDomain)) fn)(arg);
+	    } else abort(); 
+
+	    return result;
+	}
+
+
         // binary functors
         RamDomain visitBinaryOperator(const RamBinaryOperator& op) override {
             RamDomain lhs = visit(op.getLHS());

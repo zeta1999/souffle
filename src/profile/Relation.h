@@ -37,6 +37,7 @@ private:
     std::string locator;
     int ruleId = 0;
     int recursiveId = 0;
+    size_t tuplesRead;
 
     std::vector<std::shared_ptr<Iteration>> iterations;
 
@@ -235,6 +236,14 @@ public:
 
     void setReady(bool ready) {
         this->ready = ready;
+    }
+
+    size_t getReads() const {
+        return tuplesRead;
+    }
+
+    void setReads(size_t tuplesRead) {
+        this->tuplesRead = tuplesRead;
     }
 };
 

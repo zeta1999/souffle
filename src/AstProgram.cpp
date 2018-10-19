@@ -75,6 +75,13 @@ void AstProgram::appendRelation(std::unique_ptr<AstRelation> r) {
     rel = std::move(r);
 }
 
+/* Add a functor declaration to the program */
+void AstProgram::addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> f) {
+    const auto& name = f->getName();
+    assert(functors.find(name) == functors.end() && "Redefinition of relation!");
+    functors[name] = std::move(f);
+}
+
 /* Remove a relation from the program */
 void AstProgram::removeRelation(const AstRelationIdentifier& name) {
     /* Remove relation from map */
@@ -104,6 +111,11 @@ void AstProgram::removeClause(const AstClause* clause) {
 AstRelation* AstProgram::getRelation(const AstRelationIdentifier& name) const {
     auto pos = relations.find(name);
     return (pos == relations.end()) ? nullptr : pos->second.get();
+}
+
+AstFunctorDeclaration * AstProgram::getFunctorDeclaration(const std::string &name) const {
+    auto pos = functors.find(name);
+    return (pos == functors.end()) ? nullptr : pos->second.get();
 }
 
 /* Add a clause to the program */
@@ -164,6 +176,15 @@ void AstProgram::print(std::ostream& os) const {
         for (const auto& cur : instantiations) {
             os << *cur << "\n";
         }
+    }
+
+    /* Print functors */
+    os << "\n// ----- Functors -----\n";
+    for (const auto& cur : functors) {
+        const std::unique_ptr<AstFunctorDeclaration>& f = cur.second;
+        os << "\n\n// -- " << f->getName() << " --\n";
+	f->print(os);
+	os << "\n";
     }
 
     /* Print relations */

@@ -35,6 +35,7 @@
     #include "AstArgument.h"
     #include "AstClause.h"
     #include "AstComponent.h"
+    #include "AstFunctorDeclaration.h"
     #include "AstIODirective.h"
     #include "AstNode.h"
     #include "AstParserUtils.h"
@@ -51,6 +52,23 @@
 
     namespace souffle {
         class ParserDriver;
+    }
+
+    inline char *strappend(char *s, char c) {
+       char *r=(char *)malloc(strlen(s)+2); 
+       assert(r!=nullptr && "memory depleted");
+       strcpy(r,s); 
+       r[strlen(s)]=c;
+       r[strlen(s)+1]=0;
+       free(s);
+       return r;
+    }
+    inline char *strappend(char c) {
+       char *r=(char *)malloc(2); 
+       assert(r!=nullptr && "memory depleted");
+       r[0]=c;
+       r[1]=0;
+       return r;
     }
 
     using yyscan_t = void*;
@@ -116,6 +134,7 @@
 %token PLAN                      "plan keyword"
 %token IF                        ":-"
 %token DECL                      "relation declaration"
+%token DECLFUNC                  "functor declaration"
 %token INPUT_DECL                "input directives declaration"
 %token OUTPUT_DECL               "output directives declaration"
 %token PRINTSIZE_DECL            "printsize directives declaration"
@@ -167,8 +186,11 @@
 %type <AstComponent *>                   component component_head component_body
 %type <AstComponentType *>               comp_type
 %type <AstComponentInit *>               comp_init
+%type <AstFunctorDeclaration *>          functor_decl
+%type <std::string>                      functor_type; 
+%type <std::string>                      functor_typeargs;
 %type <AstRelation *>                    attributes non_empty_attributes relation_body
-%type <std::vector<AstRelation *>>       relation_list relation_head
+%type <std::vector<AstRelation *>>       relation_list relation_decl
 %type <AstArgument *>                    arg
 %type <AstAtom *>                        arg_list non_empty_arg_list atom
 %type <std::vector<AstAtom*>>            head
@@ -211,7 +233,10 @@ unit
   : unit type {
         driver.addType(std::unique_ptr<AstType>($2));
     }
-  | unit relation_head {
+  | unit functor_decl {
+        driver.addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration>($2));
+    } 
+  | unit relation_decl {
         for(const auto& cur : $2) driver.addRelation(std::unique_ptr<AstRelation>(cur));
     }
   | unit iodirective_head {
@@ -392,7 +417,31 @@ qualifiers
         $$ = 0;
     }
 
-relation_head
+functor_decl 
+  : DECLFUNC IDENT LPAREN functor_typeargs RPAREN COLON functor_type {
+        $$ = new AstFunctorDeclaration($2, $4+$7);
+    } 
+  | DECLFUNC IDENT LPAREN RPAREN COLON functor_type {
+        $$ = new AstFunctorDeclaration($2, $6);
+    }
+  ;
+
+functor_type
+  : IDENT {
+     if ($1 == "number") {
+        $$ = "N";
+     } else if ($1 == "symbol") {
+        $$ = "S";
+     } else driver.error(@1, "number or symbol identifier expected");
+    } 
+  ;
+
+functor_typeargs
+  : functor_type COMMA functor_typeargs { $$ = $3 + $1; }
+  | functor_type { $$ = $1;  }
+  ;
+
+relation_decl
   : DECL relation_list {
       $$.swap($2);
     }
@@ -994,7 +1043,7 @@ component_body
         $$ = $1;
         $$->addType(std::unique_ptr<AstType>($2));
     }
-  | component_body relation_head {
+  | component_body relation_decl {
         $$ = $1;
         for(const auto& cur : $2) $$->addRelation(std::unique_ptr<AstRelation>(cur));
     }

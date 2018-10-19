@@ -25,76 +25,76 @@ class Iteration {
 private:
     double starttime = 0;
     double endtime = 0;
-    long num_tuples = 0;
-    double copy_time = 0;
+    size_t numTuples = 0;
+    double copytime = 0;
     std::string locator = "";
 
-    std::unordered_map<std::string, std::shared_ptr<Rule>> rul_rec_map;
+    std::unordered_map<std::string, std::shared_ptr<Rule>> rules;
 
 public:
-    Iteration() : rul_rec_map() {}
+    Iteration() : rules() {}
 
     void addRule(const std::string& ruleKey, std::shared_ptr<Rule>& rule) {
-        rul_rec_map[ruleKey] = rule;
+        rules[ruleKey] = rule;
     }
 
-    inline const std::unordered_map<std::string, std::shared_ptr<Rule>>& getRul_rec() {
-        return this->rul_rec_map;
+    const std::unordered_map<std::string, std::shared_ptr<Rule>>& getRules() const {
+        return rules;
     }
 
-    std::string toString() {
+    std::string toString() const {
         std::ostringstream output;
 
-        output << getRuntime() << "," << num_tuples << "," << copy_time << ",";
+        output << getRuntime() << "," << numTuples << "," << copytime << ",";
         output << " recRule:";
-        for (auto& rul : rul_rec_map) {
+        for (auto& rul : rules) {
             output << rul.second->toString();
         }
         output << "\n";
         return output.str();
     }
 
-    inline double getRuntime() {
+    double getRuntime() const {
         return endtime - starttime;
     }
 
-    inline double getStarttime() {
+    double getStarttime() const {
         return starttime;
     }
 
-    inline double getEndtime() {
+    double getEndtime() const {
         return endtime;
     }
 
-    inline long getNum_tuples() {
-        return num_tuples;
+    size_t size() const {
+        return numTuples;
     }
 
-    inline void setNum_tuples(long num_tuples) {
-        this->num_tuples = num_tuples;
+    void setNumTuples(long numTuples) {
+        this->numTuples = numTuples;
     }
 
-    inline double getCopy_time() {
-        return copy_time;
+    double getCopytime() const {
+        return copytime;
     }
 
-    inline void setCopy_time(double copy_time) {
-        this->copy_time = copy_time;
+    void setCopytime(double copy_time) {
+        this->copytime = copy_time;
     }
 
-    inline void setStarttime(double time) {
+    void setStarttime(double time) {
         starttime = time;
     }
 
-    inline void setEndtime(double time) {
+    void setEndtime(double time) {
         endtime = time;
     }
 
-    inline std::string getLocator() {
+    const std::string& getLocator() const {
         return locator;
     }
 
-    inline void setLocator(std::string locator) {
+    void setLocator(std::string locator) {
         this->locator = locator;
     }
 };

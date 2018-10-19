@@ -678,8 +678,15 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
         }
 
         bool visitLogTimer(const RamLogTimer& timer) override {
-            Logger logger(timer.getMessage().c_str(), interpreter.getIterationNumber());
-            return visit(timer.getStatement());
+            if (timer.getRelation() == nullptr) {
+                Logger logger(timer.getMessage().c_str(), interpreter.getIterationNumber());
+                return visit(timer.getStatement());
+            } else {
+                const InterpreterRelation& rel = interpreter.getRelation(*timer.getRelation());
+                Logger logger(timer.getMessage().c_str(), interpreter.getIterationNumber(),
+                        std::bind(&InterpreterRelation::size, &rel));
+                return visit(timer.getStatement());
+            }
         }
 
         bool visitDebugInfo(const RamDebugInfo& dbg) override {
@@ -732,10 +739,10 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
             return true;
         }
 
-        bool visitLogSize(const RamLogSize& print) override {
-            const InterpreterRelation& rel = interpreter.getRelation(print.getRelation());
+        bool visitLogSize(const RamLogSize& size) override {
+            const InterpreterRelation& rel = interpreter.getRelation(size.getRelation());
             ProfileEventSingleton::instance().makeQuantityEvent(
-                    print.getMessage(), rel.size(), interpreter.getIterationNumber());
+                    size.getMessage(), rel.size(), interpreter.getIterationNumber());
             return true;
         }
 

@@ -51,7 +51,7 @@ public:
     }
     void visit(SizeEntry& size) override {
         if (size.getKey() == "num-tuples") {
-            base.setNum_tuples(size.getSize());
+            base.setNumTuples(size.getSize());
         }
     }
     void visit(DirectoryEntry& ruleEntry) override {}
@@ -160,7 +160,7 @@ public:
         for (const auto& key : ruleEntry.getKeys()) {
             ruleEntry.readEntry(key)->accept(visitor);
         }
-        relation.getRuleMap()[rule->getLocator()] = rule;
+        relation.addRule(rule);
     }
 
 protected:
@@ -177,7 +177,7 @@ public:
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "copytime") {
             auto copytime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
-            base.setCopy_time(copytime);
+            base.setCopytime(copytime);
         }
         DSNVisitor::visit(duration);
     }
@@ -209,7 +209,7 @@ public:
     IterationsVisitor(Relation& relation) : relation(relation) {}
     void visit(DirectoryEntry& ruleEntry) override {
         auto iteration = std::make_shared<Iteration>();
-        relation.getIterations().push_back(iteration);
+        relation.addIteration(iteration);
         IterationVisitor visitor(*iteration, relation);
         for (const auto& key : ruleEntry.getKeys()) {
             ruleEntry.readEntry(key)->accept(visitor);
@@ -269,7 +269,7 @@ private:
     bool loaded = false;
     bool online{true};
 
-    std::unordered_map<std::string, std::shared_ptr<Relation>> relation_map{};
+    std::unordered_map<std::string, std::shared_ptr<Relation>> relationMap{};
     int rel_id{0};
 
 public:
@@ -291,7 +291,7 @@ public:
      */
     void processFile() {
         rel_id = 0;
-        relation_map.clear();
+        relationMap.clear();
         auto programDuration = dynamic_cast<DurationEntry*>(db.lookupEntry({"program", "runtime"}));
         if (programDuration == nullptr) {
             auto startTimeEntry = dynamic_cast<TimeEntry*>(db.lookupEntry({"program", "starttime"}));
@@ -316,7 +316,7 @@ public:
                 addRelation(*relation);
             }
         }
-        run->setRelation_map(this->relation_map);
+        run->setRelationMap(this->relationMap);
         loaded = true;
     }
 
@@ -329,8 +329,8 @@ public:
     void addRelation(const DirectoryEntry& relation) {
         const std::string& name = relation.getKey();
 
-        relation_map.emplace(name, std::make_shared<Relation>(name, createId()));
-        auto& rel = *relation_map[name];
+        relationMap.emplace(name, std::make_shared<Relation>(name, createId()));
+        auto& rel = *relationMap[name];
         RelationVisitor relationVisitor(rel);
 
         for (const auto& key : relation.getKeys()) {

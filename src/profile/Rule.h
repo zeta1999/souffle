@@ -48,7 +48,7 @@ protected:
     std::string name;
     double starttime = 0;
     double endtime = 0;
-    long num_tuples = 0;
+    long numTuples = 0;
     std::string identifier;
     std::string locator = "";
     std::set<Atom> atoms;
@@ -63,55 +63,54 @@ public:
     Rule(std::string name, int version, std::string id)
             : name(std::move(name)), identifier(std::move(id)), recursive(true), version(version) {}
 
-    inline std::string getId() {
+    std::string getId() const {
         return identifier;
     }
 
-    inline double getRuntime() {
+    double getRuntime() const {
         return endtime - starttime;
     }
 
-    inline double getStarttime() {
+    double getStarttime() const {
         return starttime;
     }
 
-    inline double getEndtime() {
+    double getEndtime() const {
         return endtime;
     }
 
-    inline long getNum_tuples() {
-        return num_tuples;
+    long size() {
+        return numTuples;
     }
 
-    inline void setStarttime(double time) {
+    void setStarttime(double time) {
         starttime = time;
     }
 
-    inline void setEndtime(double time) {
+    void setEndtime(double time) {
         endtime = time;
     }
 
-    inline void setNum_tuples(long num_tuples) {
-        this->num_tuples = num_tuples;
+    void setNumTuples(long numTuples) {
+        this->numTuples = numTuples;
     }
 
-    inline void addAtomFrequency(
-            const std::string& subruleName, std::string atom, size_t level, size_t frequency) {
+    void addAtomFrequency(const std::string& subruleName, std::string atom, size_t level, size_t frequency) {
         atoms.emplace(atom, subruleName, level, frequency);
     }
 
-    const std::set<Atom>& getAtoms() {
+    const std::set<Atom>& getAtoms() const {
         return atoms;
     }
-    inline std::string getName() {
+    std::string getName() const {
         return name;
     }
 
-    inline void setId(std::string id) {
+    void setId(std::string id) {
         identifier = id;
     }
 
-    inline std::string getLocator() {
+    std::string getLocator() const {
         return locator;
     }
 
@@ -119,30 +118,30 @@ public:
         this->locator = locator;
     }
 
-    inline bool isRecursive() {
+    bool isRecursive() const {
         return recursive;
     }
 
-    inline void setRecursive(bool recursive) {
+    void setRecursive(bool recursive) {
         this->recursive = recursive;
     }
 
-    inline int getVersion() {
+    int getVersion() const {
         return version;
     }
 
-    inline void setVersion(int version) {
+    void setVersion(int version) {
         this->version = version;
     }
 
-    std::string toString() {
+    std::string toString() const {
         std::ostringstream output;
         if (recursive) {
             output << "{" << name << "," << version << ":";
         } else {
             output << "{" << name << ":";
         }
-        output << "[" << getRuntime() << "," << num_tuples << "]}";
+        output << "[" << getRuntime() << "," << numTuples << "]}";
         return output.str();
     }
 };

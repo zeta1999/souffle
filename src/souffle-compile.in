@@ -61,13 +61,13 @@ error "installation error: souffle header files cannot be found" $?
 
 # Options processing via getopts builtin, it is very limiting but on OSX the
 # default getopt is an old BSD getopt, so need this for portability
-while getopts "hwvs" opt; do
+while getopts "hwvg" opt; do
   case "$opt" in
     h|\?) # Show usage and exit
       usage;
     ;;
-    g|\?) # enable debug mode
-      CXXFLAGS = "$CXXFLAGS -g";
+    g) # enable debug mode
+      CXXFLAGS="$CXXFLAGS -g";
     ;;
     w) # enable warnings
       WARNINGS="1"

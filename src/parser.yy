@@ -420,9 +420,11 @@ qualifiers
 functor_decl 
   : DECLFUNC IDENT LPAREN functor_typeargs RPAREN COLON functor_type {
         $$ = new AstFunctorDeclaration($2, $4+$7);
+        $$->setSrcLoc(@$);
     } 
   | DECLFUNC IDENT LPAREN RPAREN COLON functor_type {
         $$ = new AstFunctorDeclaration($2, $6);
+        $$->setSrcLoc(@$);
     }
   ;
 

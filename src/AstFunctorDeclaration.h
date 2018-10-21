@@ -28,7 +28,7 @@ namespace souffle {
  * AstFunctorDeclaration
  */
 
-class AstFunctorDeclaration : AstNode {
+class AstFunctorDeclaration : public AstNode {
 private:
 
     /** name of functor */
@@ -52,7 +52,7 @@ public:
     }
 
     /** print */
-    void print(std::ostream& out) const {
+    void print(std::ostream& out) const override {
 	 auto convert = [&](char type) { 
             switch(type) {
             case 'N': return "number";

@@ -100,6 +100,7 @@ void ParserDriver::addPragma(std::unique_ptr<AstPragma> p) {
 }
 
 void ParserDriver::addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> f) {
+    const std::string &name = f->getName();
     if (AstFunctorDeclaration* prev = translationUnit->getProgram()->getFunctorDeclaration(name)) {
         Diagnostic err(Diagnostic::ERROR,
                 DiagnosticMessage("Redefinition of functor " + toString(name), f->getSrcLoc()),

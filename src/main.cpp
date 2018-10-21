@@ -111,12 +111,6 @@ void executeBinary(const std::string& binaryFilename
  * Compiles the given source file to a binary file.
  */
 void compileToBinary(std::string compileCmd, const std::string& sourceFilename) {
-    // set up number of threads
-    auto num_threads = std::stoi(Global::config().get("jobs"));
-    if (num_threads == 1) {
-        compileCmd += "-s ";
-    }
-
     // add source code
     compileCmd += sourceFilename;
 

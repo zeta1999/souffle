@@ -43,11 +43,11 @@ public:
        assert(type.length() > 0 && "type is empty");
     }
 
-    const std::string &getName() {
+    const std::string &getName() const {
 	    return name;
     }
 
-    const std::string &getType() {
+    const std::string &getType() const {
 	    return type;
     }
 

@@ -108,15 +108,16 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
         }
 
 	RamDomain visitUserDefinedOperator(const RamUserDefinedOperator &op) override {
-            RamDomain arg = visit(op.getValue());
+#if 0
+        RamDomain arg = visit(op.getValue());
 	    const std::string &name = op.getName();
 	    const std::string &type = op.getType();
 	    const char *str_arg = nullptr;
 	    RamDomain result;
 
 	    void *handle=interpreter.loadDLL();  // load DLL (if not done yet)
-            void *fn = dlsym(handle, name.c_str());
-            if(fn == nullptr){ 
+        void *fn = dlsym(handle, name.c_str());
+        if(fn == nullptr){ 
 	       std::cerr << "Cannot find user-defined unary operator " << name << " in " << SOUFFLE_DLL << std::endl;
 	    }
 
@@ -137,6 +138,8 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 	    } else abort(); 
 
 	    return result;
+#endif
+        return 0;
 	}
 
 

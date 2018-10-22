@@ -187,8 +187,8 @@
 %type <AstComponentType *>               comp_type
 %type <AstComponentInit *>               comp_init
 %type <AstFunctorDeclaration *>          functor_decl
-%type <std::string>                      functor_type; 
-%type <std::string>                      functor_typeargs;
+%type <std::string>                      functor_type
+%type <std::string>                      functor_typeargs
 %type <AstRelation *>                    attributes non_empty_attributes relation_body
 %type <std::vector<AstRelation *>>       relation_list relation_decl
 %type <AstArgument *>                    arg

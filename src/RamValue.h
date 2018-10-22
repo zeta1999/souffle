@@ -134,13 +134,13 @@ private:
     std::vector<std::unique_ptr<RamValue>> arguments;
 
     /** Name of user-defined unary functor */ 
-    std::string name; 
+    const std::string name; 
 
     /** Argument type */ 
-    std::string type; 
+    const std::string type; 
 
 public:
-    RamUserDefinedOperator(std::vector<std::unique_ptr<RamValue>> args)
+    RamUserDefinedOperator(const std::string &n, const std::string &t, std::vector<std::unique_ptr<RamValue>> args)
             : RamValue(RN_UserDefinedOperator,
                       all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
               arguments(std::move(args)),
@@ -149,7 +149,8 @@ public:
     /** Print */
     void print(std::ostream& os) const override {
         os << "%" << name << "_" << type << "(";
-        os << join(",",arguments) << ")";
+        os << join(arguments, ",",  [](std::ostream& out, const std::unique_ptr<RamValue>& arg) { out << *arg; }); 
+        os << ")";
     }
 
     /** Get values */
@@ -208,34 +209,9 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
         const auto& other = static_cast<const RamUserDefinedOperator&>(node);
-        return name = other.name && type = other.type && equal_targets(arguments, other.arguments);
+        return name == other.name && type == other.type && equal_targets(arguments, other.arguments);
     }
 
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(argument.get());
-    }
-
-    /** Apply mapper */
-    void apply(const RamNodeMapper& map) override {
-        argument = map(std::move(argument));
-    }
-
-    /** Create clone */
-    RamUserDefinedOperator* clone() const override {
-        RamUserDefinedOperator* res = new RamUserDefinedOperator(name, type, std::unique_ptr<RamValue>(argument->clone()));
-        return res;
-    }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
-        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
-        return getArgument() == other.getArgument() &&
-	       name == other.getName() && 
-	       type == other.getType(); 
-    }
 };
 
 /**

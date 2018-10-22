@@ -22,7 +22,8 @@ AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl Do not set default CFLAGS and CXXFLAGS
-CXXFLAGS=" -Wall -std=c++11 $CXXFLAGS"
+ENV_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS=" -Wall -std=c++11"
 
 # Disable provenance
 AC_ARG_ENABLE(
@@ -367,6 +368,10 @@ AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([dup2 fchdir getcwd getpagesize gettimeofday isascii memset mkdir munmap pow regcomp rmdir setenv socket strcasecmp strchr strdup strerror strrchr strstr strtol strtoull])
+
+SOUFFLE_CXXFLAGS="$CXXFLAGS"
+AC_SUBST(SOUFFLE_CXXFLAGS)
+CXXFLAGS="$CXXFLAGS $ENV_CXXFLAGS"
 
 AC_OUTPUT(
   [ src/souffle-compile src/souffle-config debian/changelog ],

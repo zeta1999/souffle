@@ -64,6 +64,9 @@
 /* Relation uses a hash set */
 #define HASHSET_RELATION (0x400)
 
+/* Relation warnings are suppressed */
+#define SUPPRESSED_RELATION (0x800)
+
 namespace souffle {
 
 /*!
@@ -189,6 +192,11 @@ public:
     /** Check whether relation is an overridable relation */
     bool isOverridable() const {
         return (qualifier & OVERRIDABLE_RELATION) != 0;
+    }
+
+    /** Check whether relation warnings are suppressed */
+    bool isSuppressed() const {
+        return (qualifier & SUPPRESSED_RELATION) != 0;
     }
 
     /** Check whether relation is an inlined relation */

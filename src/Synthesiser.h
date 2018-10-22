@@ -55,6 +55,9 @@ protected:
     /** Get relation name */
     const std::string getRelationName(const RamRelation& rel);
 
+    /** Get relation name */
+    const std::string getRelationName(const std::string& relName);
+
     /** Get context name */
     const std::string getOpContextName(const RamRelation& rel);
 

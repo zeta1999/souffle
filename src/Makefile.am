@@ -69,6 +69,7 @@ souffle_sources = \
               AstParserUtils.cpp    AstParserUtils.h    \
               AstPragma.cpp         AstPragma.h         \
               AstProgram.cpp        AstProgram.h        \
+              AstProfileUse.cpp     AstProfileUse.h     \
               AstRelation.h                             \
               AstRelationIdentifier.h                   \
               AstSemanticChecker.cpp                    \

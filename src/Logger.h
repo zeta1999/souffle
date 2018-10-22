@@ -21,6 +21,7 @@
 #include "ProfileEvent.h"
 
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <utility>
 
@@ -47,10 +48,12 @@ private:
     time_point start;
     size_t startMaxRSS;
     size_t iteration;
+    std::function<size_t()> size;
+    size_t preSize;
 
 public:
-    Logger(std::string label, size_t iteration)
-            : label(std::move(label)), start(now()), iteration(iteration) {
+    Logger(std::string label, size_t iteration, std::function<size_t()> size = []() { return 0; })
+            : label(std::move(label)), start(now()), iteration(iteration), size(size), preSize(size()) {
         struct rusage ru;
         getrusage(RUSAGE_SELF, &ru);
         startMaxRSS = ru.ru_maxrss;
@@ -62,7 +65,7 @@ public:
         getrusage(RUSAGE_SELF, &ru);
         size_t endMaxRSS = ru.ru_maxrss;
         ProfileEventSingleton::instance().makeTimingEvent(
-                label, start, now(), startMaxRSS, endMaxRSS, iteration);
+                label, start, now(), startMaxRSS, endMaxRSS, size() - preSize, iteration);
     }
 };
 }  // end of namespace souffle

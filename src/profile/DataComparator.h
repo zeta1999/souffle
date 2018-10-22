@@ -28,22 +28,22 @@ class DataComparator {
 public:
     /** Sort by total time. */
     static bool TIME(const std::shared_ptr<Row>& a, const std::shared_ptr<Row>& b) {
-        return a->cells[0]->getDoubVal() > b->cells[0]->getDoubVal();
+        return a->cells[0]->getDoubleVal() > b->cells[0]->getDoubleVal();
     }
 
     /** Sort by non-recursive time. */
     static bool NR_T(const std::shared_ptr<Row>& a, const std::shared_ptr<Row>& b) {
-        return a->cells[1]->getDoubVal() > b->cells[1]->getDoubVal();
+        return a->cells[1]->getDoubleVal() > b->cells[1]->getDoubleVal();
     }
 
     /** Sort by recursive time. */
     static bool R_T(const std::shared_ptr<Row>& a, const std::shared_ptr<Row>& b) {
-        return a->cells[2]->getDoubVal() > b->cells[2]->getDoubVal();
+        return a->cells[2]->getDoubleVal() > b->cells[2]->getDoubleVal();
     }
 
     /** Sort by copy time. */
     static bool C_T(const std::shared_ptr<Row>& a, const std::shared_ptr<Row>& b) {
-        return a->cells[3]->getDoubVal() > b->cells[3]->getDoubVal();
+        return a->cells[3]->getDoubleVal() > b->cells[3]->getDoubleVal();
     }
 
     /** Sort by tuple count. */

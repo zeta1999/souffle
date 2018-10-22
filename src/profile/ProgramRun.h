@@ -28,15 +28,12 @@ namespace profile {
  */
 class ProgramRun {
 private:
-    std::unordered_map<std::string, std::shared_ptr<Relation>> relation_map;
+    std::unordered_map<std::string, std::shared_ptr<Relation>> relationMap;
     std::chrono::microseconds startTime{0};
     std::chrono::microseconds endTime{0};
 
-    double tot_rec_tup = 0.0;
-    double tot_copy_time = 0.0;
-
 public:
-    ProgramRun() : relation_map() {}
+    ProgramRun() : relationMap() {}
 
     inline void setStarttime(std::chrono::microseconds time) {
         startTime = time;
@@ -46,29 +43,24 @@ public:
         endTime = time;
     }
 
-    inline void setRelation_map(std::unordered_map<std::string, std::shared_ptr<Relation>>& relation_map) {
-        this->relation_map = relation_map;
+    inline void setRelationMap(std::unordered_map<std::string, std::shared_ptr<Relation>>& relationMap) {
+        this->relationMap = relationMap;
     }
-
-    inline void update() {
-        tot_rec_tup = (double)getTotNumRecTuples();
-        tot_copy_time = getTotCopyTime();
-    };
 
     std::string toString() {
         std::ostringstream output;
         output << "ProgramRun:" << getRuntime() << "\nRelations:\n";
-        for (auto r = relation_map.begin(); r != relation_map.end(); ++r) {
+        for (auto r = relationMap.begin(); r != relationMap.end(); ++r) {
             output << r->second->toString() << "\n";
         }
         return output.str();
     }
 
-    inline std::unordered_map<std::string, std::shared_ptr<Relation>>& getRelation_map() {
-        return relation_map;
+    inline const std::unordered_map<std::string, std::shared_ptr<Relation>>& getRelationMap() const {
+        return relationMap;
     }
 
-    std::string getRuntime() {
+    std::string getRuntime() const {
         if (startTime == endTime) {
             return "--";
         }
@@ -83,64 +75,64 @@ public:
         return endTime;
     }
 
-    double getTotLoadtime() {
+    double getTotalLoadtime() const {
         double result = 0;
-        for (auto& item : relation_map) {
+        for (auto& item : relationMap) {
             result += item.second->getLoadtime();
         }
         return result;
     }
 
-    double getTotSavetime() {
+    double getTotalSavetime() const {
         double result = 0;
-        for (auto& item : relation_map) {
+        for (auto& item : relationMap) {
             result += item.second->getSavetime();
         }
         return result;
     }
 
-    long getTotNumTuples() {
+    long getTotalSize() const {
         long result = 0;
-        for (auto& item : relation_map) {
-            result += item.second->getTotNum_tuples();
+        for (auto& item : relationMap) {
+            result += item.second->size();
         }
         return result;
     }
 
-    long getTotNumRecTuples() {
+    long getTotalRecursiveSize() const {
         long result = 0;
-        for (auto& item : relation_map) {
-            result += item.second->getTotNumRec_tuples();
+        for (auto& item : relationMap) {
+            result += item.second->getTotalRecursiveRuleSize();
         }
         return result;
     }
 
-    double getTotCopyTime() {
+    double getTotalCopyTime() const {
         double result = 0;
-        for (auto& item : relation_map) {
+        for (auto& item : relationMap) {
             result += item.second->getCopyTime();
         }
         return result;
     }
 
-    double getTotTime() {
+    double getTotalTime() const {
         double result = 0;
-        for (auto& item : relation_map) {
+        for (auto& item : relationMap) {
             result += item.second->getRecTime();
         }
         return result;
     }
 
-    Relation* getRelation(std::string name) {
-        if (relation_map.find(name) != relation_map.end()) {
-            return &(*relation_map[name]);
+    const Relation* getRelation(const std::string& name) const {
+        if (relationMap.find(name) != relationMap.end()) {
+            return &(*relationMap.at(name));
         }
         return nullptr;
     }
 
-    std::set<std::shared_ptr<Relation>> getRelationsAtTime(double start, double end) {
+    std::set<std::shared_ptr<Relation>> getRelationsAtTime(double start, double end) const {
         std::set<std::shared_ptr<Relation>> result;
-        for (auto& cur : relation_map) {
+        for (auto& cur : relationMap) {
             if (cur.second->getStarttime() <= end && cur.second->getEndtime() >= start) {
                 result.insert(cur.second);
             }
@@ -148,15 +140,15 @@ public:
         return result;
     }
 
-    inline std::string formatTime(double runtime) {
+    inline std::string formatTime(double runtime) const {
         return Tools::formatTime(runtime);
     }
 
-    inline std::string formatNum(int precision, long number) {
+    inline std::string formatNum(int precision, long number) const {
         return Tools::formatNum(precision, number);
     }
 
-    inline std::vector<std::vector<std::string>> formatTable(Table table, int precision) {
+    inline std::vector<std::vector<std::string>> formatTable(Table& table, int precision) const {
         return Tools::formatTable(table, precision);
     }
 };

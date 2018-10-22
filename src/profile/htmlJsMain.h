@@ -22,6 +22,7 @@ function changeSelectedRul(id) {
     selected.rul = id;
     highlightRow();
     genRulVer();
+    genAtomVer();
 }
 
 function highlightRow() {
@@ -442,6 +443,25 @@ function genRulVer() {
     }
 
     document.getElementById("rulver").style.display = "block";
+}
+
+function genAtomVer() {
+    var atoms = data.atoms[selected.rul];
+    var table_body = document.getElementById('atoms_body');
+    table_body.innerHTML = "";
+
+    for (i = 0; i < atoms.length; ++i) {
+        var row = document.createElement("tr");
+        row.appendChild(create_cell("text", atoms[i][1]));
+        if (atoms[i][2] === undefined) {
+            row.appendChild(create_cell("text", '--'));
+        } else {
+            row.appendChild(create_cell("int", atoms[i][2]));
+        }
+        row.appendChild(create_cell("int", atoms[i][3]));
+        table_body.appendChild(row);
+    }
+    document.getElementById("atoms").style.display = "block";
 }
 
 function genConfig() {

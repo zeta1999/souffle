@@ -248,6 +248,7 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
     auto isValidClause = [&](const AstClause* clause) {
         // check that all body literals are atoms
         // i.e. avoid clauses with constraints or negations
+        // TODO (azreika): extend to constraints and negations
         for (AstLiteral* lit : clause->getBodyLiterals()) {
             if (dynamic_cast<AstAtom*>(lit) == nullptr) {
                 return false;

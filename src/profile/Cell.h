@@ -20,72 +20,76 @@ namespace profile {
 
 template <typename T>
 class Cell : public CellInterface {
+    const T value;
+
 public:
-    T val;
-    Cell(T value) : val(value){};
+    Cell(T value) : value(value){};
     ~Cell() override = default;
 };
 
 template <>
 class Cell<double> : public CellInterface {
+    const double value;
+
 public:
-    double val;
-    Cell(double value) : val(value){};
-    double getDoubVal() override {
-        return val;
+    Cell(double value) : value(value){};
+    double getDoubleVal() const override {
+        return value;
     }
-    long getLongVal() override {
+    long getLongVal() const override {
         std::cerr << "getting long on double cell\n";
         throw this;
     }
-    std::string getStringVal() override {
+    std::string getStringVal() const override {
         std::cerr << "getting string on double cell\n";
         throw this;
     }
-    std::string toString(int precision) override {
-        return Tools::formatTime(val);
+    std::string toString(int precision) const override {
+        return Tools::formatTime(value);
     }
 };
 
 template <>
 class Cell<std::string> : public CellInterface {
+    const std::string value;
+
 public:
-    std::string val;
-    Cell(std::string value) : val(std::move(value)){};
-    double getDoubVal() override {
+    Cell(std::string value) : value(std::move(value)){};
+    double getDoubleVal() const override {
         std::cerr << "getting double on string cell\n";
         throw this;
     }
-    long getLongVal() override {
+    long getLongVal() const override {
         std::cerr << "getting long on string cell\n";
         throw this;
     }
-    std::string getStringVal() override {
-        return val;
+    std::string getStringVal() const override {
+        return value;
     }
-    std::string toString(int precision) override {
-        return Tools::cleanString(val);
+    std::string toString(int precision) const override {
+        return Tools::cleanString(value);
     }
 };
 
 template <>
 class Cell<long> : public CellInterface {
+    const long value;
+
 public:
-    long val;
-    Cell(long value) : val(value){};
-    double getDoubVal() override {
+    Cell(long value) : value(value){};
+    double getDoubleVal() const override {
         std::cerr << "getting double on long cell\n";
         throw this;
     }
-    std::string getStringVal() override {
+    std::string getStringVal() const override {
         std::cerr << "getting string on long cell\n";
         throw this;
     }
-    long getLongVal() override {
-        return val;
+    long getLongVal() const override {
+        return value;
     }
-    std::string toString(int precision) override {
-        return Tools::formatNum(precision, val);
+    std::string toString(int precision) const override {
+        return Tools::formatNum(precision, value);
     };
 };
 
@@ -93,19 +97,19 @@ template <>
 class Cell<void> : public CellInterface, std::false_type {
 public:
     Cell() = default;
-    double getDoubVal() override {
+    double getDoubleVal() const override {
         std::cerr << "getting double on void cell";
         throw this;
     }
-    long getLongVal() override {
+    long getLongVal() const override {
         std::cerr << "getting long on void cell";
         throw this;
     }
-    std::string getStringVal() override {
+    std::string getStringVal() const override {
         std::cerr << "getting string on void cell\n";
         throw this;
     }
-    std::string toString(int precision) override {
+    std::string toString(int precision) const override {
         return "-";
     }
 };

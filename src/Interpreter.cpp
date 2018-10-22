@@ -48,6 +48,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
+#include <ffi.h>
 
 namespace souffle {
 
@@ -108,38 +109,64 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
         }
 
         RamDomain visitUserDefinedOperator(const RamUserDefinedOperator& op) override {
-#if 0
-        RamDomain arg = visit(op.getValue());
-	    const std::string &name = op.getName();
-	    const std::string &type = op.getType();
-	    const char *str_arg = nullptr;
-	    RamDomain result;
+            // get name and type
+            const std::string& name = op.getName();
+            const std::string& type = op.getType();
 
-	    void *handle=interpreter.loadDLL();  // load DLL (if not done yet)
-        void *fn = dlsym(handle, name.c_str());
-        if(fn == nullptr){ 
-	       std::cerr << "Cannot find user-defined unary operator " << name << " in " << SOUFFLE_DLL << std::endl;
-	    }
+            // load DLL (if not done yet)
+            void* handle = interpreter.loadDLL();
+            void* fn = dlsym(handle, name.c_str());
+            if (fn == nullptr) {
+                std::cerr << "Cannot find user-defined operator " << name << " in " << SOUFFLE_DLL
+                          << std::endl;
+                exit(1);
+            }
 
-            // if argument is a string convert it to string.
-            if (type[0]=='S') {
-		  str_arg=interpreter.getSymbolTable().resolve(arg).c_str();
-	    }
-	    if (type == "SS") { 
-		    const char *result_str = (*(const char * (*)(const char *)) fn)(str_arg);
-		    result = interpreter.getSymbolTable().lookup(result_str);
-	    } else if (type == "SN") { 
-		    result = (*(RamDomain (*)(const char *)) fn)(str_arg);
-	    } else if (type == "NS") {
-		    const char *result_str = (*(const char * (*)(RamDomain)) fn)(arg);
-		    result = interpreter.getSymbolTable().lookup(result_str);
-	    } else if (type == "NN") {
-		    result = (*(RamDomain (*)(RamDomain)) fn)(arg);
-	    } else abort(); 
+            // prepare dynamic call environment
+            size_t n = op.getArgNum();
+            ffi_cif cif;
+            ffi_type* args[n];
+            void* values[n];
+            RamDomain intVal[n];
+            ffi_arg rc;
 
-	    return result;
-#endif
-            return 0;
+            /* Initialize the argument info vectors */
+            for (size_t i = 0; i < op.getArgNum(); i++) {
+                RamDomain arg = visit(op.getArg(i));
+                if (type[i] == 'N') {
+                    const char* str_arg = interpreter.getSymbolTable().resolve(arg).c_str();
+                    args[i] = &ffi_type_pointer;
+                    values[i] = &str_arg;
+                } else {
+                    const char* str_arg = interpreter.getSymbolTable().resolve(arg).c_str();
+                    args[i] = &ffi_type_uint32;
+                    intVal[i] = arg;
+                    values[i] = &inVal[i];
+                }
+            }
+
+            if (type[n + 1] == 'N') {
+                // Initialize for numerical return value
+                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, op.getArgNum(), &ffi_type_uint32, args) != FFI_OK) {
+                    std::cerr << "Failed to prepare CIF for user-defined operator ";
+                    std::cerr << name << std::endl;
+                    exit(1);
+                }
+            } else {
+                // Initialize for string return value
+                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, op.getArgNum(), &ffi_type_pointer, args) != FFI_OK) {
+                    std::cerr << "Failed to prepare CIF for user-defined operator ";
+                    std::cerr << name << std::endl;
+                    exit(1);
+                }
+            }
+            ffi_call(&cif, fn, &rc, values);
+            if (type[n + 1] == 'N') {
+                result = *((RamDomain*)rc);
+            } else {
+                result = interpreter.getSymbolTable().lookup(*((const char**)rc));
+            }
+            return result;
         }
 
         // binary functors

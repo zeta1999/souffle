@@ -15,7 +15,6 @@
  ***********************************************************************/
 %skeleton "lalr1.cc"
 %require "3.0.2"
-%expect 1
 %defines
 %define parser_class_name {parser}
 %define api.token.constructor
@@ -568,13 +567,13 @@ arg
         $$ = new AstCounter();
         $$->setSrcLoc(@$);
     }
-  |  IDENT LPAREN functorlist RPAREN {
-        $$ = $3;
-        $3->setName($1);
+  | PERCENT IDENT LPAREN functorlist RPAREN {
+        $$ = $4;
+        $4->setName($2);
         $$->setSrcLoc(@$);
     }
-  | IDENT LPAREN RPAREN {
-        $$ = new AstUserDefinedFunctor($1); 
+  | PERCENT IDENT LPAREN RPAREN {
+        $$ = new AstUserDefinedFunctor($2); 
         $$->setSrcLoc(@$);
     }
   | IDENT {

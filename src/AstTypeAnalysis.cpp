@@ -268,7 +268,6 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
 
         // atoms are producing grounded variables
         void visitAtom(const AstAtom& cur) override {
-
             // some atoms need to be skipped (head or negation)
             if (ignore.find(&cur) != ignore.end()) {
                 return;
@@ -761,7 +760,7 @@ void TypeAnalysis::print(std::ostream& os) const {
     }
 }
 
-/** 
+/**
  * Generic type analysis framework for clauses
  */
 
@@ -926,36 +925,35 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         void visitUserDefinedFunctor(const AstUserDefinedFunctor& fun) override {
             auto cur = getVar(fun);
 
-            // get functor declaration 
-            const AstFunctorDeclaration *funDecl = program->getFunctorDeclaration(fun.getName()); 
+            // get functor declaration
+            const AstFunctorDeclaration* funDecl = program->getFunctorDeclaration(fun.getName());
             // check whether functor declaration exists
             if (funDecl != nullptr) {
-
                 // add a constraint for the return type
                 if (funDecl->isNumerical()) {
-                   addConstraint(isSubtypeOf(cur, env.getNumberType()));
-                } 
+                    addConstraint(isSubtypeOf(cur, env.getNumberType()));
+                }
                 if (funDecl->isSymbolic()) {
-                   addConstraint(isSubtypeOf(cur, env.getSymbolType()));
+                    addConstraint(isSubtypeOf(cur, env.getSymbolType()));
                 }
 
-                // add constraints for arguments 
-                for(size_t i=0;i<fun.getArgNum();i++) {
+                // add constraints for arguments
+                for (size_t i = 0; i < fun.getArgNum(); i++) {
                     auto arg = getVar(fun.getArg(i));
 
-                    // check that usage does not exceed 
+                    // check that usage does not exceed
                     // number of arguments in declaration
-                    if (i < funDecl->getArgNum()) { 
-                       // add constraints for the i-th argument
-                       if (funDecl->acceptsNumbers(i)) {
-                           addConstraint(isSubtypeOf(arg, env.getNumberType()));
-                       } 
-                       if (funDecl->acceptsSymbols(i)) {
-                           addConstraint(isSubtypeOf(arg, env.getSymbolType()));
-                       }
-                    } 
+                    if (i < funDecl->getArgNum()) {
+                        // add constraints for the i-th argument
+                        if (funDecl->acceptsNumbers(i)) {
+                            addConstraint(isSubtypeOf(arg, env.getNumberType()));
+                        }
+                        if (funDecl->acceptsSymbols(i)) {
+                            addConstraint(isSubtypeOf(arg, env.getSymbolType()));
+                        }
+                    }
                 }
-            } 
+            }
         }
 
         // counter

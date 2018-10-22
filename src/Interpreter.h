@@ -25,12 +25,12 @@
 #include "RamTypes.h"
 
 #include <cassert>
-#include <dlfcn.h>
 #include <map>
 #include <string>
 #include <vector>
+#include <dlfcn.h>
 
-#define SOUFFLE_DLL "soufflelib.so" 
+#define SOUFFLE_DLL "soufflelib.so"
 
 namespace souffle {
 
@@ -66,7 +66,7 @@ private:
     size_t iteration;
 
     /** Dynamic library for user-defined functors */
-    void *dll; 
+    void* dll;
 
 protected:
     /** Evaluate value */
@@ -157,16 +157,17 @@ protected:
     }
 
     /** Load dll */
-    void *loadDLL() {
-	    if (dll == nullptr) { 
-                dll = dlopen(SOUFFLE_DLL, RTLD_LAZY);;
-		if (dll == nullptr) {
-                    std::cerr << "Cannot find Souffle's DLL" << std::endl;
-		    exit(1);
-		}
-	    }
+    void* loadDLL() {
+        if (dll == nullptr) {
+            dll = dlopen(SOUFFLE_DLL, RTLD_LAZY);
+            ;
+            if (dll == nullptr) {
+                std::cerr << "Cannot find Souffle's DLL" << std::endl;
+                exit(1);
+            }
+        }
 
-	    return dll;
+        return dll;
     }
 
 public:

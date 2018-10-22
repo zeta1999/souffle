@@ -18,10 +18,10 @@
 #pragma once
 
 #include "AstComponent.h"
+#include "AstFunctorDeclaration.h"
 #include "AstNode.h"
 #include "AstPragma.h"
 #include "AstRelationIdentifier.h"
-#include "AstFunctorDeclaration.h"
 #include "AstType.h"
 #include "Util.h"
 #include <cassert>
@@ -123,7 +123,7 @@ public:
     AstRelation* getRelation(const AstRelationIdentifier& name) const;
 
     /** Get functor declaration */
-    AstFunctorDeclaration *getFunctorDeclaration(const std::string &name) const; 
+    AstFunctorDeclaration* getFunctorDeclaration(const std::string& name) const;
 
     /** Get all relations in the program */
     std::vector<AstRelation*> getRelations() const;

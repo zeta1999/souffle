@@ -133,23 +133,24 @@ private:
     /** Argument of unary function */
     std::vector<std::unique_ptr<RamValue>> arguments;
 
-    /** Name of user-defined unary functor */ 
-    const std::string name; 
+    /** Name of user-defined unary functor */
+    const std::string name;
 
-    /** Argument type */ 
-    const std::string type; 
+    /** Argument type */
+    const std::string type;
 
 public:
-    RamUserDefinedOperator(const std::string &n, const std::string &t, std::vector<std::unique_ptr<RamValue>> args)
+    RamUserDefinedOperator(
+            const std::string& n, const std::string& t, std::vector<std::unique_ptr<RamValue>> args)
             : RamValue(RN_UserDefinedOperator,
                       all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
-              arguments(std::move(args)),
-                      name(n), type(t) {} 
+              arguments(std::move(args)), name(n), type(t) {}
 
     /** Print */
     void print(std::ostream& os) const override {
         os << "%" << name << "_" << type << "(";
-        os << join(arguments, ",",  [](std::ostream& out, const std::unique_ptr<RamValue>& arg) { out << *arg; }); 
+        os << join(
+                arguments, ",", [](std::ostream& out, const std::unique_ptr<RamValue>& arg) { out << *arg; });
         os << ")";
     }
 
@@ -158,12 +159,12 @@ public:
         return toPtrVector(arguments);
     }
 
-    const std::string &getName() const { 
-	    return name;
+    const std::string& getName() const {
+        return name;
     }
 
-    const std::string &getType() const {
-      return type;
+    const std::string& getType() const {
+        return type;
     }
 
     /** Get level */
@@ -189,7 +190,7 @@ public:
 
     /** Create clone */
     RamUserDefinedOperator* clone() const override {
-        RamUserDefinedOperator* res = new RamUserDefinedOperator(name,type,{});
+        RamUserDefinedOperator* res = new RamUserDefinedOperator(name, type, {});
         for (auto& cur : arguments) {
             RamValue* arg = cur->clone();
             res->arguments.push_back(std::unique_ptr<RamValue>(arg));
@@ -211,7 +212,6 @@ protected:
         const auto& other = static_cast<const RamUserDefinedOperator&>(node);
         return name == other.name && type == other.type && equal_targets(arguments, other.arguments);
     }
-
 };
 
 /**

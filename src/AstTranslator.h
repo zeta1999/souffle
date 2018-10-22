@@ -52,11 +52,11 @@ private:
     /** Map modified relation identifiers to original relation identifiers */
     std::map<std::string, std::string> modifiedIdMap;
 
-    /** AST program */ 
-    const AstProgram *program;
+    /** AST program */
+    const AstProgram* program;
 
     /** Type environment */
-    const TypeEnvironment *typeEnv;
+    const TypeEnvironment* typeEnv;
 
 private:
     /**
@@ -248,11 +248,11 @@ private:
         }
     };
 
-/**
- * A utility function assigning names to unnamed variables such that enclosing
- * constructs may be cloned without losing the variable-identity.
- */
-void nameUnnamedVariables(AstClause* clause);
+    /**
+     * A utility function assigning names to unnamed variables such that enclosing
+     * constructs may be cloned without losing the variable-identity.
+     */
+    void nameUnnamedVariables(AstClause* clause);
 
     void appendStmt(std::unique_ptr<RamStatement>& stmtList, std::unique_ptr<RamStatement> stmt);
 
@@ -267,36 +267,35 @@ void nameUnnamedVariables(AstClause* clause);
     std::vector<IODirectives> getInputIODirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
-    std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel, 
+    std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
-    std::unique_ptr<RamRelation> getRamRelation(const AstRelation* rel,
-            std::string name, size_t arity, const bool istemp = false, const bool hashset = false);
+    std::unique_ptr<RamRelation> getRamRelation(const AstRelation* rel, std::string name, size_t arity,
+            const bool istemp = false, const bool hashset = false);
 
     std::string translateRelationName(const AstRelationIdentifier& id);
 
     std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueIndex& index = ValueIndex());
-    
+
     std::unique_ptr<RamValue> translateValue(const AstArgument& arg, const ValueIndex& index = ValueIndex()) {
         return translateValue(&arg, index);
     }
 
     /** generate RAM code for a clause */
-    std::unique_ptr<RamStatement> translateClause(const AstClause& clause,
-            const AstClause& originalClause, int version = 0,
-            bool ret = false, bool hashset = false);
+    std::unique_ptr<RamStatement> translateClause(const AstClause& clause, const AstClause& originalClause,
+            int version = 0, bool ret = false, bool hashset = false);
 
     /**
      * Generates RAM code for the non-recursive clauses of the given relation.
      *
      * @return a corresponding statement or null if there are no non-recursive clauses.
      */
-    std::unique_ptr<RamStatement> translateNonRecursiveRelation(const AstRelation& rel,
-            const RecursiveClauses* recursiveClauses);
+    std::unique_ptr<RamStatement> translateNonRecursiveRelation(
+            const AstRelation& rel, const RecursiveClauses* recursiveClauses);
 
     /** generate RAM code for recursive relations in a strongly-connected component */
-    std::unique_ptr<RamStatement> translateRecursiveRelation(const std::set<const AstRelation*>& scc,
-            const RecursiveClauses* recursiveClauses);
+    std::unique_ptr<RamStatement> translateRecursiveRelation(
+            const std::set<const AstRelation*>& scc, const RecursiveClauses* recursiveClauses);
 
     /** generate RAM code for subroutine to get subproofs */
     std::unique_ptr<RamStatement> makeSubproofSubroutine(const AstClause& clause);
@@ -305,12 +304,10 @@ void nameUnnamedVariables(AstClause* clause);
     std::unique_ptr<RamProgram> translateProgram(const AstTranslationUnit& translationUnit);
 
 public:
-    AstTranslator() : program(nullptr) {
-    };
+    AstTranslator() : program(nullptr){};
 
     /** translates AST to translation unit  */
     std::unique_ptr<RamTranslationUnit> translateUnit(AstTranslationUnit& tu);
-
 };
 
 }  // end of namespace souffle

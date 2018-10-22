@@ -251,11 +251,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // - user-defined functors -
     visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
-       const AstFunctorDeclaration *funDecl = program.getFunctorDeclaration(fun.getName());
-       if (funDecl == nullptr) {
-           report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
-       } else {
-            if(funDecl->getArgNum() != fun.getArgNum()) { 
+        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+        if (funDecl == nullptr) {
+            report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
+        } else {
+            if (funDecl->getArgNum() != fun.getArgNum()) {
                 report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
             }
             // check return values of user-defined functor
@@ -265,18 +265,18 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
                 report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
             }
-            for(size_t i=0;i<fun.getArgNum();i++) {
-               const AstArgument *arg = fun.getArg(i); 
-               if(i<funDecl->getArgNum()) {
-                 if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                     report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-                 }
-                 if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                     report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
-                 }
-               } 
-            } 
-        } 
+            for (size_t i = 0; i < fun.getArgNum(); i++) {
+                const AstArgument* arg = fun.getArg(i);
+                if (i < funDecl->getArgNum()) {
+                    if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
+                        report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+                    }
+                    if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
+                        report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+                    }
+                }
+            }
+        }
     });
 
     // - binary relation -
@@ -380,18 +380,17 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
         return hasUnnamedVariable(bf->getLHS()) || hasUnnamedVariable(bf->getRHS());
     }
     if (const auto* tf = dynamic_cast<const AstTernaryFunctor*>(arg)) {
-        return hasUnnamedVariable(tf->getArg(0)) || 
-               hasUnnamedVariable(tf->getArg(1)) ||
+        return hasUnnamedVariable(tf->getArg(0)) || hasUnnamedVariable(tf->getArg(1)) ||
                hasUnnamedVariable(tf->getArg(2));
     }
     if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-        for(size_t i=0;i<udf->getArgNum();i++) {
-             if(hasUnnamedVariable(udf->getArg(i))){
-                 return true;
-             }
+        for (size_t i = 0; i < udf->getArgNum(); i++) {
+            if (hasUnnamedVariable(udf->getArg(i))) {
+                return true;
+            }
         }
         return false;
-    } 
+    }
     if (const auto* ri = dynamic_cast<const AstRecordInit*>(arg)) {
         return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
@@ -474,7 +473,7 @@ void AstSemanticChecker::checkArgument(
         checkArgument(report, program, *ternFunc->getArg(1));
         checkArgument(report, program, *ternFunc->getArg(2));
     } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
-        for(size_t i=0;i<userDefFunc->getArgNum();i++){
+        for (size_t i = 0; i < userDefFunc->getArgNum(); i++) {
             checkArgument(report, program, *userDefFunc->getArg(i));
         }
     }

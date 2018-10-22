@@ -355,7 +355,6 @@ protected:
  */
 class AstUserDefinedFunctor : public AstFunctor {
 protected:
-
     /** name of user-defined functor */
     std::string name;
 
@@ -365,31 +364,31 @@ protected:
 public:
     AstUserDefinedFunctor() {}
 
-    AstUserDefinedFunctor(const std::string &name) : name(name) {}
+    AstUserDefinedFunctor(const std::string& name) : name(name) {}
 
     ~AstUserDefinedFunctor() override = default;
 
     /** get name */
-    const std::string &getName() const {
-	return name;
+    const std::string& getName() const {
+        return name;
     }
 
-    /** set name */ 
-    void setName(const std::string &n) {
-        name = n; 
+    /** set name */
+    void setName(const std::string& n) {
+        name = n;
     }
 
     /** get argument */
-    const AstArgument * getArg(size_t idx) const { 
+    const AstArgument* getArg(size_t idx) const {
         return args[idx].get();
     }
 
     /** get number of arguments */
     size_t getArgNum() const {
-        return args.size(); 
+        return args.size();
     }
 
-    /** get arguments */ 
+    /** get arguments */
     std::vector<AstArgument*> getArguments() const {
         return toPtrVector(args);
     }

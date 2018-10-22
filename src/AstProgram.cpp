@@ -113,7 +113,7 @@ AstRelation* AstProgram::getRelation(const AstRelationIdentifier& name) const {
     return (pos == relations.end()) ? nullptr : pos->second.get();
 }
 
-AstFunctorDeclaration * AstProgram::getFunctorDeclaration(const std::string &name) const {
+AstFunctorDeclaration* AstProgram::getFunctorDeclaration(const std::string& name) const {
     auto pos = functors.find(name);
     return (pos == functors.end()) ? nullptr : pos->second.get();
 }
@@ -183,8 +183,8 @@ void AstProgram::print(std::ostream& os) const {
     for (const auto& cur : functors) {
         const std::unique_ptr<AstFunctorDeclaration>& f = cur.second;
         os << "\n\n// -- " << f->getName() << " --\n";
-	f->print(os);
-	os << "\n";
+        f->print(os);
+        os << "\n";
     }
 
     /* Print relations */

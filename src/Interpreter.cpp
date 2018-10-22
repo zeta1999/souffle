@@ -107,7 +107,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             }
         }
 
-	RamDomain visitUserDefinedOperator(const RamUserDefinedOperator &op) override {
+        RamDomain visitUserDefinedOperator(const RamUserDefinedOperator& op) override {
 #if 0
         RamDomain arg = visit(op.getValue());
 	    const std::string &name = op.getName();
@@ -139,9 +139,8 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
 	    return result;
 #endif
-        return 0;
-	}
-
+            return 0;
+        }
 
         // binary functors
         RamDomain visitBinaryOperator(const RamBinaryOperator& op) override {

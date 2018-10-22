@@ -142,8 +142,8 @@ std::vector<IODirectives> AstTranslator::getInputIODirectives(
     return inputDirectives;
 }
 
-std::vector<IODirectives> AstTranslator::getOutputIODirectives(const AstRelation* rel,
-        std::string filePath, const std::string& fileExt) {
+std::vector<IODirectives> AstTranslator::getOutputIODirectives(
+        const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> outputDirectives;
 
     for (const auto& current : rel->getIODirectives()) {
@@ -202,10 +202,8 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(const AstRelation
     return outputDirectives;
 }
 
-std::unique_ptr<RamRelation> AstTranslator::getRamRelation(const AstRelation* rel,
-        std::string name, size_t arity, const bool istemp,
-        const bool hashset) 
-        {
+std::unique_ptr<RamRelation> AstTranslator::getRamRelation(
+        const AstRelation* rel, std::string name, size_t arity, const bool istemp, const bool hashset) {
     // avoid name conflicts for temporary identifiers
     if (istemp) {
         name.insert(0, "@");
@@ -235,8 +233,7 @@ std::string AstTranslator::translateRelationName(const AstRelationIdentifier& id
     return getRelationName(id);
 }
 
-std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, const ValueIndex& index ) 
-{
+std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, const ValueIndex& index) {
     std::unique_ptr<RamValue> val;
     if (!arg) {
         return val;
@@ -288,11 +285,9 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
     return val;
 }
 
-
 /** generate RAM code for a clause */
-std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& clause,
-        const AstClause& originalClause,
-        int version, bool ret, bool hashset) {
+std::unique_ptr<RamStatement> AstTranslator::translateClause(
+        const AstClause& clause, const AstClause& originalClause, int version, bool ret, bool hashset) {
     // check whether there is an imposed order constraint
     if (clause.getExecutionPlan() && clause.getExecutionPlan()->hasOrderFor(version)) {
         // get the imposed order
@@ -742,13 +737,14 @@ void AstTranslator::appendStmt(std::unique_ptr<RamStatement>& stmtList, std::uni
 }
 
 /** generate RAM code for a non-recursive relation */
-std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(const AstRelation& rel, const RecursiveClauses* recursiveClauses) {
+std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(
+        const AstRelation& rel, const RecursiveClauses* recursiveClauses) {
     /* start with an empty sequence */
     std::unique_ptr<RamStatement> res;
 
     // the ram table reference
-    std::unique_ptr<RamRelation> rrel = getRamRelation(
-            &rel, getRelationName(rel.getName()), rel.getArity(), false, rel.isHashset());
+    std::unique_ptr<RamRelation> rrel =
+            getRamRelation(&rel, getRelationName(rel.getName()), rel.getArity(), false, rel.isHashset());
 
     /* iterate over all clauses that belong to the relation */
     for (AstClause* clause : rel.getClauses()) {
@@ -842,8 +838,7 @@ void AstTranslator::nameUnnamedVariables(AstClause* clause) {
 
 /** generate RAM code for recursive relations in a strongly-connected component */
 std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
-        const std::set<const AstRelation*>& scc, 
-        const RecursiveClauses* recursiveClauses) {
+        const std::set<const AstRelation*>& scc, const RecursiveClauses* recursiveClauses) {
     // initialize sections
     std::unique_ptr<RamStatement> preamble;
     std::unique_ptr<RamSequence> updateTable(new RamSequence());
@@ -864,10 +859,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         /* create two temporary tables for relaxed semi-naive evaluation */
         auto relName = getRelationName(rel->getName());
         rrel[rel] = getRamRelation(rel, relName, rel->getArity(), false, rel->isHashset());
-        relDelta[rel] =
-                getRamRelation(rel, "delta_" + relName, rel->getArity(), true, rel->isHashset());
-        relNew[rel] =
-                getRamRelation(rel, "new_" + relName, rel->getArity(), true, rel->isHashset());
+        relDelta[rel] = getRamRelation(rel, "delta_" + relName, rel->getArity(), true, rel->isHashset());
+        relNew[rel] = getRamRelation(rel, "new_" + relName, rel->getArity(), true, rel->isHashset());
 
         modifiedIdMap[relName] = relName;
         modifiedIdMap[relDelta[rel]->getName()] = relName;
@@ -932,7 +925,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
             const auto& atoms = cl->getAtoms();
             for (size_t j = 0; j < atoms.size(); ++j) {
                 const AstAtom* atom = atoms[j];
-                const AstRelation* atomRelation = getAtomRelation(atom,program);
+                const AstRelation* atomRelation = getAtomRelation(atom, program);
 
                 // only interested in atoms within the same SCC
                 if (!isInSameSCC(atomRelation)) {
@@ -957,9 +950,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
                 // reduce R to P ...
                 for (size_t k = j + 1; k < atoms.size(); k++) {
-                    if (isInSameSCC(getAtomRelation(atoms[k],program))) {
+                    if (isInSameSCC(getAtomRelation(atoms[k], program))) {
                         AstAtom* cur = r1->getAtoms()[k]->clone();
-                        cur->setName(relDelta[getAtomRelation(atoms[k],program)]->getName());
+                        cur->setName(relDelta[getAtomRelation(atoms[k], program)]->getName());
                         r1->addToBody(std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cur)));
                     }
                 }
@@ -1046,8 +1039,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 }
 
 /** make a subroutine to search for subproofs */
-std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(
-        const AstClause& clause) {
+std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstClause& clause) {
     // make intermediate clause with constraints
     std::unique_ptr<AstClause> intermediateClause(clause.clone());
 
@@ -1118,20 +1110,19 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
     // a function to create relations
     const auto& makeRamCreate = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                         const std::string relationNamePrefix) {
-        appendStmt(
-                current, std::make_unique<RamCreate>(std::unique_ptr<RamRelation>(getRamRelation(relation,
-                                 relationNamePrefix + getRelationName(relation->getName()),
-                                 relation->getArity(), !relationNamePrefix.empty(), relation->isHashset()))));
+        appendStmt(current,
+                std::make_unique<RamCreate>(std::unique_ptr<RamRelation>(
+                        getRamRelation(relation, relationNamePrefix + getRelationName(relation->getName()),
+                                relation->getArity(), !relationNamePrefix.empty(), relation->isHashset()))));
     };
 
     // a function to load relations
     const auto& makeRamLoad = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const std::string& inputDirectory, const std::string& fileExtension) {
-        std::unique_ptr<RamStatement> statement =
-                std::make_unique<RamLoad>(std::unique_ptr<RamRelation>(getRamRelation(relation, 
-                                                  getRelationName(relation->getName()), relation->getArity(),
-                                                  false, relation->isHashset())),
-                        getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
+        std::unique_ptr<RamStatement> statement = std::make_unique<RamLoad>(
+                std::unique_ptr<RamRelation>(getRamRelation(relation, getRelationName(relation->getName()),
+                        relation->getArity(), false, relation->isHashset())),
+                getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
         if (Global::config().has("profile")) {
             const std::string logTimerStatement = LogStatement::tRelationLoadTime(
                     getRelationName(relation->getName()), relation->getSrcLoc());
@@ -1150,12 +1141,10 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
     // a function to store relations
     const auto& makeRamStore = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                        const std::string& outputDirectory, const std::string& fileExtension) {
-        std::unique_ptr<RamStatement> statement =
-                std::make_unique<RamStore>(std::unique_ptr<RamRelation>(getRamRelation(relation, 
-                                                   getRelationName(relation->getName()), relation->getArity(),
-                                                   false, relation->isHashset())),
-                        getOutputIODirectives(
-                                relation,  Global::config().get(outputDirectory), fileExtension));
+        std::unique_ptr<RamStatement> statement = std::make_unique<RamStore>(
+                std::unique_ptr<RamRelation>(getRamRelation(relation, getRelationName(relation->getName()),
+                        relation->getArity(), false, relation->isHashset())),
+                getOutputIODirectives(relation, Global::config().get(outputDirectory), fileExtension));
         if (Global::config().has("profile")) {
             const std::string logTimerStatement = LogStatement::tRelationSaveTime(
                     getRelationName(relation->getName()), relation->getSrcLoc());
@@ -1166,26 +1155,26 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
     // a function to drop relations
     const auto& makeRamDrop = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
-        appendStmt(current, std::make_unique<RamDrop>(
-                                    getRamRelation(relation, getRelationName(relation->getName()),
-                                            relation->getArity(), false, relation->isHashset())));
+        appendStmt(current,
+                std::make_unique<RamDrop>(getRamRelation(relation, getRelationName(relation->getName()),
+                        relation->getArity(), false, relation->isHashset())));
     };
 
 #ifdef USE_MPI
     const auto& makeRamSend = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const std::set<size_t> destinationStrata) {
-        appendStmt(current, std::make_unique<RamSend>(
-                                    getRamRelation(relation, getRelationName(relation->getName()),
-                                            relation->getArity(), false, relation->isHashset()),
-                                    destinationStrata));
+        appendStmt(current,
+                std::make_unique<RamSend>(getRamRelation(relation, getRelationName(relation->getName()),
+                                                  relation->getArity(), false, relation->isHashset()),
+                        destinationStrata));
     };
 
     const auto& makeRamRecv = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const size_t sourceStrata) {
-        appendStmt(current, std::make_unique<RamRecv>(
-                                    getRamRelation(relation, getRelationName(relation->getName()),
-                                            relation->getArity(), false, relation->isHashset()),
-                                    sourceStrata));
+        appendStmt(current,
+                std::make_unique<RamRecv>(getRamRelation(relation, getRelationName(relation->getName()),
+                                                  relation->getArity(), false, relation->isHashset()),
+                        sourceStrata));
     };
 
     const auto& makeRamNotify = [&](std::unique_ptr<RamStatement>& current) {
@@ -1266,10 +1255,9 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         }
         // compute the relations themselves
         std::unique_ptr<RamStatement> bodyStatement =
-                (!isRecursive) ? translateNonRecursiveRelation(*((const AstRelation*)*allInterns.begin()),
-                                         recursiveClauses)
-                               : translateRecursiveRelation(
-                                         allInterns, recursiveClauses);
+                (!isRecursive) ? translateNonRecursiveRelation(
+                                         *((const AstRelation*)*allInterns.begin()), recursiveClauses)
+                               : translateRecursiveRelation(allInterns, recursiveClauses);
         appendStmt(current, std::move(bodyStatement));
 
         // print the size of all printsize relations in the current SCC
@@ -1417,8 +1405,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
 
             std::string subroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_subproof";
-            prog->addSubroutine(
-                    subroutineLabel, makeSubproofSubroutine(clause));
+            prog->addSubroutine(subroutineLabel, makeSubproofSubroutine(clause));
         });
     }
 

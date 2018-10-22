@@ -130,20 +130,21 @@ protected:
 // TODO (#541): have a single n-ary function
 class RamUserDefinedOperator : public RamValue {
 private:
+    /** Argument of unary function */
+    std::vector<std::unique_ptr<RamValue>> arguments;
+
     /** Name of user-defined unary functor */ 
     std::string name; 
 
     /** Argument type */ 
     std::string type; 
 
-    /** Argument of unary function */
-    std::vector<std::unique_ptr<RamValue>> arguments;
-
 public:
-    RamUserDefinedOperator(const std::string &n, const std::string &t, std::vector<std::unique_ptr<RamValue>> args)
-            : RamValue(RN_UserDefinedOperator, false),
-                      name(n), type(t), 
-                      all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), arguments(std::move(args)) {}
+    RamUserDefinedOperator(std::vector<std::unique_ptr<RamValue>> args)
+            : RamValue(RN_UserDefinedOperator,
+                      all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
+              arguments(std::move(args)),
+                      name(n), type(t) {} 
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -151,19 +152,7 @@ public:
         os << join(",",arguments) << ")";
     }
 
-    /** Get Argument */
-    // TODO (#541): rename to getArgument()
-    const RamValue* getValue() const {
-        return argument.get();
-    }
-    const RamValue& getArgument() const {
-        return *argument;
-    }
     /** Get values */
-    // TODO (#541): remove getter
-    std::vector<RamValue*> getValues() const {
-        return toPtrVector(arguments);
-    }
     std::vector<RamValue*> getArguments() const {
         return toPtrVector(arguments);
     }
@@ -179,7 +168,47 @@ public:
     /** Get level */
     // TODO (#541): move to an analysis
     size_t getLevel() const override {
-        return argument->getLevel();
+        size_t level = 0;
+        for (const auto& arg : arguments) {
+            if (arg) {
+                level = std::max(level, arg->getLevel());
+            }
+        }
+        return level;
+    }
+
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        std::vector<const RamNode*> res;
+        for (const auto& cur : arguments) {
+            res.push_back(cur.get());
+        }
+        return res;
+    }
+
+    /** Create clone */
+    RamUserDefinedOperator* clone() const override {
+        RamUserDefinedOperator* res = new RamUserDefinedOperator(name,type,{});
+        for (auto& cur : arguments) {
+            RamValue* arg = cur->clone();
+            res->arguments.push_back(std::unique_ptr<RamValue>(arg));
+        }
+        return res;
+    }
+
+    /** Apply mapper */
+    void apply(const RamNodeMapper& map) override {
+        for (auto& arg : arguments) {
+            arg = map(std::move(arg));
+        }
+    }
+
+protected:
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
+        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
+        return name = other.name && type = other.type && equal_targets(arguments, other.arguments);
     }
 
     /** Obtain list of child nodes */

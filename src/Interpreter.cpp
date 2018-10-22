@@ -49,9 +49,16 @@
 #include <typeinfo>
 #include <utility>
 #include <ffi.h>
+#include <stdio.h>
 
 namespace souffle {
 
+extern "C" {
+const char* g(const char* x) {
+    printf("%p\n", x);
+    return "Hello";
+}
+}
 /** Evaluate RAM Value */
 RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& ctxt) {
     class ValueEvaluator : public RamVisitor<RamDomain> {
@@ -115,7 +122,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
             // load DLL (if not done yet)
             void* handle = interpreter.loadDLL();
-            void (*fn)() =  (void (*)()) dlsym(handle, name.c_str());
+            void (*fn)() = (void (*)())dlsym(handle, name.c_str());
             if (fn == nullptr) {
                 std::cerr << "Cannot find user-defined operator " << name << " in " << SOUFFLE_DLL
                           << std::endl;
@@ -128,19 +135,16 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             ffi_type* args[n];
             void* values[n];
             RamDomain intVal[n];
+            const char* strVal[n];
             ffi_arg rc;
 
-            /* Initialize the argument info vectors */
+            /* Initialize arguments for ffi-call */
             for (size_t i = 0; i < op.getArgNum(); i++) {
                 RamDomain arg = visit(op.getArg(i));
                 if (type[i] == 'S') {
-                    //const char* str_arg = interpreter.getSymbolTable().resolve(arg).c_str();
-                    char* str_arg = "blabla";
-
-		    std::cout << "input: " << str_arg << "\n";
-		    printf("ptr:%p\n", str_arg);
                     args[i] = &ffi_type_pointer;
-                    values[i] = &str_arg;
+                    strVal[i] = interpreter.getSymbolTable().resolve(arg).c_str();
+                    values[i] = &strVal[i];
                 } else {
                     args[i] = &ffi_type_uint32;
                     intVal[i] = arg;
@@ -148,6 +152,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                 }
             }
 
+            // call external function
             if (type[n] == 'N') {
                 // Initialize for numerical return value
                 if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, n, &ffi_type_uint32, args) != FFI_OK) {
@@ -164,14 +169,13 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                 }
             }
             ffi_call(&cif, fn, &rc, values);
-
-	    std::cout << name << " " << type << "\n";
             RamDomain result;
             if (type[n] == 'N') {
                 result = ((RamDomain)rc);
             } else {
                 result = interpreter.getSymbolTable().lookup(((const char*)rc));
             }
+
             return result;
         }
 

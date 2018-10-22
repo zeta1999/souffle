@@ -133,8 +133,12 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             /* Initialize the argument info vectors */
             for (size_t i = 0; i < op.getArgNum(); i++) {
                 RamDomain arg = visit(op.getArg(i));
-                if (type[i] == 'N') {
-                    const char* str_arg = interpreter.getSymbolTable().resolve(arg).c_str();
+                if (type[i] == 'S') {
+                    //const char* str_arg = interpreter.getSymbolTable().resolve(arg).c_str();
+                    char* str_arg = "blabla";
+
+		    std::cout << "input: " << str_arg << "\n";
+		    printf("ptr:%p\n", str_arg);
                     args[i] = &ffi_type_pointer;
                     values[i] = &str_arg;
                 } else {
@@ -144,16 +148,16 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                 }
             }
 
-            if (type[n + 1] == 'N') {
+            if (type[n] == 'N') {
                 // Initialize for numerical return value
-                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, op.getArgNum(), &ffi_type_uint32, args) != FFI_OK) {
+                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, n, &ffi_type_uint32, args) != FFI_OK) {
                     std::cerr << "Failed to prepare CIF for user-defined operator ";
                     std::cerr << name << std::endl;
                     exit(1);
                 }
             } else {
                 // Initialize for string return value
-                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, op.getArgNum(), &ffi_type_pointer, args) != FFI_OK) {
+                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, n, &ffi_type_pointer, args) != FFI_OK) {
                     std::cerr << "Failed to prepare CIF for user-defined operator ";
                     std::cerr << name << std::endl;
                     exit(1);
@@ -161,11 +165,12 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             }
             ffi_call(&cif, fn, &rc, values);
 
+	    std::cout << name << " " << type << "\n";
             RamDomain result;
-            if (type[n + 1] == 'N') {
-                result = *((RamDomain*)rc);
+            if (type[n] == 'N') {
+                result = ((RamDomain)rc);
             } else {
-                result = interpreter.getSymbolTable().lookup(*((const char**)rc));
+                result = interpreter.getSymbolTable().lookup(((const char*)rc));
             }
             return result;
         }

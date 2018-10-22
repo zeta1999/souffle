@@ -27,6 +27,7 @@
     #include <cassert>
     #include <cstdarg>
     #include <cstdio>
+    #include <memory.h>
     #include <cstdlib>
     #include <stack>
     #include <string>
@@ -52,23 +53,6 @@
 
     namespace souffle {
         class ParserDriver;
-    }
-
-    inline char *strappend(char *s, char c) {
-       char *r=(char *)malloc(strlen(s)+2); 
-       assert(r!=nullptr && "memory depleted");
-       strcpy(r,s); 
-       r[strlen(s)]=c;
-       r[strlen(s)+1]=0;
-       free(s);
-       return r;
-    }
-    inline char *strappend(char c) {
-       char *r=(char *)malloc(2); 
-       assert(r!=nullptr && "memory depleted");
-       r[0]=c;
-       r[1]=0;
-       return r;
     }
 
     using yyscan_t = void*;

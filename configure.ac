@@ -250,40 +250,16 @@ DIST_PACKAGING([osx],[OSX_PACKAGE],[PKGBUILD],[pkgbuild])
 DIST_PACKAGING([bsd],[BSD_PACKAGE],[PKGBUILD],[pkgbuild])
 
 dnl ============================libffi=========================================
-PKG_CHECK_MODULES(FFI, libffi, have_ffi_pkgconfig=yes, have_ffi_pkgconfig=no)
-
-if test x"$have_ffi_pkgconfig" = xno ; then
-	AC_MSG_CHECKING(for ffi.h)
-
-	AC_TRY_CPP([#include <ffi.h>], have_ffi_h=yes, have_ffi_h=no)
-	if test x"$have_ffi_h" = x"yes"; then
-		save_LIBS=$LIBS
-		if test x"$with_ffi" = x"yes" || test x"$with_ffi" = x"auto"; then
-			other_LIBS=
-		else
-			other_LIBS=$with_ffi
-		fi
-
-		AC_SEARCH_LIBS(ffi_call,ffi,,AC_MSG_ERROR([libffi not found]),$other_LIBS)
-		if test x"$ac_cv_search_ffi_call" = x"none required" ; then
-			FFI_LDFLAGS=$other_LIBS
-		else
-			FFI_LDFLAGS="$ac_cv_search_ffi_call $other_LIBS"
-		fi
-		LIBS=$save_LIBS
-	fi
-	if test x"$have_ffi_h" != x"yes" ; then
-		AC_MSG_ERROR([ffi.h not found])
-	fi
-
-	FFI_CFLAGS=
-
-	AC_MSG_RESULT([$have_ffi_h])
-fi
+PKG_PROG_PKG_CONFIG()
+PKG_CHECK_MODULES(FFI, [libffi])
 
 dnl Enable pthread library
 AC_CHECK_LIB(pthread, pthread_create,,
     [AC_MSG_ERROR([required library pthread missing])])
+
+dnl Enable dynamic loadable libaries
+AC_CHECK_LIB(dl, dlopen,,
+    [AC_MSG_ERROR([required library dynamic load missing])])
 
 dnl Enables OpenMP in the souffle compiler and interpreter
 AC_OPENMP

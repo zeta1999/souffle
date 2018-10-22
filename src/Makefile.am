@@ -141,7 +141,7 @@ souffle_sources = \
 noinst_LTLIBRARIES = libsouffle.la
 libsouffle_la_SOURCES  = $(souffle_sources)
 libsouffle_la_CXXFLAGS = $(souffle_CPPFLAGS)
-libsouffle_la_LDFLAGS = --static --dlopen --pic
+libsouffle_la_LDFLAGS = --static --dlopen --pic -ldl -lffi
 
 souffle_SOURCES = main.cpp
 souffle_LDADD = libsouffle.la

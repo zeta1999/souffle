@@ -379,6 +379,16 @@ public:
         name = n; 
     }
 
+    /** get argument */
+    const AstArgument * getArg(size_t idx) const { 
+        return args[idx].get();
+    }
+
+    /** get number of arguments */
+    size_t getArgNum() const {
+        return args.size(); 
+    }
+
     /** get arguments */ 
     std::vector<AstArgument*> getArguments() const {
         return toPtrVector(args);

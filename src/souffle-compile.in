@@ -67,7 +67,7 @@ while getopts "hwvg" opt; do
       usage;
     ;;
     g) # enable debug mode
-      CXXFLAGS="$CXXFLAGS -g";
+        CXXFLAGS="$(echo $CXXFLAGS|sed 's/-O[0-9s]//g') -g -O0";
     ;;
     w) # enable warnings
       WARNINGS="1"

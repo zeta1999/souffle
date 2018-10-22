@@ -128,7 +128,7 @@ protected:
  * Unary user-defined function
  */
 // TODO (#541): have a single n-ary function
-class RamUnaryUserDefinedOperator : public RamValue {
+class RamUserDefinedOperator : public RamValue {
 private:
     /** Name of user-defined unary functor */ 
     std::string name; 
@@ -137,32 +137,18 @@ private:
     std::string type; 
 
     /** Argument of unary function */
-    std::unique_ptr<RamValue> argument;
+    std::vector<std::unique_ptr<RamValue>> arguments;
 
 public:
-    RamUnaryUserDefinedOperator(const std::string &n, const std::string &t, std::unique_ptr<RamValue> v)
-            : RamValue(RN_UnaryUserDefinedOperator, false), name(n), type(t), argument(std::move(v)) {}
+    RamUserDefinedOperator(const std::string &n, const std::string &t, std::vector<std::unique_ptr<RamValue>> args)
+            : RamValue(RN_UserDefinedOperator, false),
+                      name(n), type(t), 
+                      all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), arguments(std::move(args)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << "#";
-	if (type[1] == 'S') { 
-	   os << "(symbol)";
-	} else if (type[1] == 'N') {
-	   os << "(number)";
-	} else {
-	   os << "(unknown)";
-	}
-       	os << name << "(";
-	if (type[0] == 'S') { 
-	   os << "(symbol)";
-	} else if (type[0] == 'N') {
-	   os << "(number)";
-	} else {
-	   os << "(unknown)";
-	}
-        argument->print(os);
-        os << ")";
+        os << "%" << name << "_" << type << "(";
+        os << join(",",arguments) << ")";
     }
 
     /** Get Argument */
@@ -172,6 +158,14 @@ public:
     }
     const RamValue& getArgument() const {
         return *argument;
+    }
+    /** Get values */
+    // TODO (#541): remove getter
+    std::vector<RamValue*> getValues() const {
+        return toPtrVector(arguments);
+    }
+    std::vector<RamValue*> getArguments() const {
+        return toPtrVector(arguments);
     }
 
     const std::string &getName() const { 
@@ -199,16 +193,16 @@ public:
     }
 
     /** Create clone */
-    RamUnaryUserDefinedOperator* clone() const override {
-        RamUnaryUserDefinedOperator* res = new RamUnaryUserDefinedOperator(name, type, std::unique_ptr<RamValue>(argument->clone()));
+    RamUserDefinedOperator* clone() const override {
+        RamUserDefinedOperator* res = new RamUserDefinedOperator(name, type, std::unique_ptr<RamValue>(argument->clone()));
         return res;
     }
 
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamUnaryUserDefinedOperator*>(&node));
-        const auto& other = static_cast<const RamUnaryUserDefinedOperator&>(node);
+        assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
+        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
         return getArgument() == other.getArgument() &&
 	       name == other.getName() && 
 	       type == other.getType(); 

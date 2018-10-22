@@ -70,13 +70,13 @@ public:
     } 
 
     /** accepts the i-th argument as a symbolic value */
-    bool acceptsSymbols(size_t idx) { 
+    bool acceptsSymbols(size_t idx) const { 
           assert(idx <= getArgNum() && "argument index out of bound");
           return (type[idx]=='S');
     }
 
     /** accepts the i-th argument as a number value */
-    bool acceptsNumbers(size_t idx) { 
+    bool acceptsNumbers(size_t idx) const { 
           assert(idx <= getArgNum() && "argument index out of bound");
           return (type[idx]=='N');
     }

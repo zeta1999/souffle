@@ -107,7 +107,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             }
         }
 
-	RamDomain visitUnaryUserDefinedOperator(const RamUnaryUserDefinedOperator &op) {
+	RamDomain visitUserDefinedOperator(const RamUserDefinedOperator &op) override {
             RamDomain arg = visit(op.getValue());
 	    const std::string &name = op.getName();
 	    const std::string &type = op.getType();

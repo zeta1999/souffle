@@ -249,6 +249,13 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
+    // - ternary functors -
+    visitDepthFirst(nodes, [&](const AstUserDefinedFactor& fun) {
+
+        const AstUserDefinedFunctorDeclaration *funDecl = program->getFunctorDeclaration(fun.getName()); 
+
+    });
+
     // - binary relation -
     visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
         // only interested in non-equal constraints

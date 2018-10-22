@@ -932,10 +932,10 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             if (funDecl != nullptr) {
 
                 // add a constraint for the return type
-                if (funDecl.isNumerical()) {
+                if (funDecl->isNumerical()) {
                    addConstraint(isSubtypeOf(cur, env.getNumberType()));
                 } 
-                if (funDecl.isSymbolic()) {
+                if (funDecl->isSymbolic()) {
                    addConstraint(isSubtypeOf(cur, env.getSymbolType()));
                 }
 

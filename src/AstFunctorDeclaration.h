@@ -51,6 +51,36 @@ public:
 	    return type;
     }
 
+    /** get number of arguments */
+    size_t getArgNum() const {
+            assert(type.length()>0 && "wrong type declaration for user-defined functor");
+            return type.length()-1;
+    }
+
+    /** is return type a symbolic value */
+    bool isSymbolic() const {
+            assert(type.length()>0 && "wrong type declaration for user-defined functor");
+            return (type[type.length()-1]=='S');
+    } 
+
+    /** is return type a number value */
+    bool isNumerical() const {
+            assert(type.length()>0 && "wrong type declaration for user-defined functor");
+            return (type[type.length()-1]=='N');
+    } 
+
+    /** accepts the i-th argument as a symbolic value */
+    bool acceptsSymbols(size_t idx) { 
+          assert(idx <= getArgNum() && "argument index out of bound");
+          return (type[idx]=='S');
+    }
+
+    /** accepts the i-th argument as a number value */
+    bool acceptsNumbers(size_t idx) { 
+          assert(idx <= getArgNum() && "argument index out of bound");
+          return (type[idx]=='N');
+    }
+
     /** print */
     void print(std::ostream& out) const override {
 	 auto convert = [&](char type) { 

@@ -445,8 +445,9 @@ std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueInde
         val = std::make_unique<RamNumber>(c->getIndex());
     } else if (const auto* uf = dynamic_cast<const AstUnaryFunctor*>(arg)) {
         val = std::make_unique<RamUnaryOperator>(uf->getFunction(), translateValue(uf->getOperand(), index));
-    } else if (const auto* uudf = dynamic_cast<const AstUnaryUserDefinedFunctor*>(arg)) {
-        val = std::make_unique<RamUnaryUserDefinedOperator>(uudf->getName(), uudf->getType(), translateValue(uudf->getOperand(), index));
+    } else if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+        val = std::make_unique<RamNumber>(0);
+        // val = std::make_unique<RamUnaryUserDefinedOperator>(uudf->getName(), uudf->getType(), translateValue(uudf->getOperand(), index));
     } else if (const auto* bf = dynamic_cast<const AstBinaryFunctor*>(arg)) {
         val = std::make_unique<RamBinaryOperator>(
                 bf->getFunction(), translateValue(bf->getLHS(), index), translateValue(bf->getRHS(), index));

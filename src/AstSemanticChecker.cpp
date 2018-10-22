@@ -355,6 +355,9 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (const auto* ri = dynamic_cast<const AstRecordInit*>(arg)) {
         return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
+    if (const auto* ri = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+        return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
+    }
     if (dynamic_cast<const AstAggregator*>(arg)) {
         return false;
     }
@@ -473,6 +476,10 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
     } else if (dynamic_cast<const AstConstant*>(&argument)) {
         // this one is fine - type checker will make sure of number and symbol constants
     } else if (auto* ri = dynamic_cast<const AstRecordInit*>(&argument)) {
+        for (auto* arg : ri->getArguments()) {
+            checkConstant(report, *arg);
+        }
+    } else if (auto* ri = dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
         for (auto* arg : ri->getArguments()) {
             checkConstant(report, *arg);
         }

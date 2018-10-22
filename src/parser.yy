@@ -15,6 +15,7 @@
  ***********************************************************************/
 %skeleton "lalr1.cc"
 %require "3.0.2"
+%expect 1
 %defines
 %define parser_class_name {parser}
 %define api.token.constructor
@@ -201,6 +202,7 @@
 %type <AstExecutionOrder *>              exec_order exec_order_list
 %type <AstExecutionPlan *>               exec_plan exec_plan_list
 %type <AstRecordInit *>                  recordlist
+%type <AstUserDefinedFunctor *>          functorlist
 %type <AstRecordType *>                  recordtype
 %type <AstUnionType *>                   uniontype
 %type <std::vector<AstTypeIdentifier>>   type_params type_param_list
@@ -220,6 +222,7 @@
 %precedence BW_NOT L_NOT
 %precedence NEG
 %left CARET
+
 
 %%
 %start program;
@@ -421,7 +424,7 @@ functor_decl
   : DECLFUNC IDENT LPAREN functor_typeargs RPAREN COLON functor_type {
         $$ = new AstFunctorDeclaration($2, $4+$7);
         $$->setSrcLoc(@$);
-    } 
+    }
   | DECLFUNC IDENT LPAREN RPAREN COLON functor_type {
         $$ = new AstFunctorDeclaration($2, $6);
         $$->setSrcLoc(@$);
@@ -563,6 +566,15 @@ arg
     }
   | DOLLAR {
         $$ = new AstCounter();
+        $$->setSrcLoc(@$);
+    }
+  |  IDENT LPAREN functorlist RPAREN {
+        $$ = $3;
+        $3->setName($1);
+        $$->setSrcLoc(@$);
+    }
+  | IDENT LPAREN RPAREN {
+        $$ = new AstUserDefinedFunctor($1); 
         $$->setSrcLoc(@$);
     }
   | IDENT {
@@ -784,6 +796,17 @@ arg
         std::cerr << "ERROR: '" << $1 << "' is a keyword reserved for future implementation!" << std::endl;
         exit(1);
     }
+
+functorlist
+  : arg {
+       $$ = new AstUserDefinedFunctor(); 
+       $$->add(std::unique_ptr<AstArgument>($1));
+    }  
+  | functorlist COMMA arg { 
+       $$ = $1;
+       $$->add(std::unique_ptr<AstArgument>($3));
+    } 
+  ;
 
 recordlist
   : arg {

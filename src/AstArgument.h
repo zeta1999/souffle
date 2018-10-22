@@ -353,90 +353,80 @@ protected:
 /**
  * Subclass of Argument that represents a unary function
  */
-class AstUnaryUserDefinedFunctor : public AstFunctor {
+class AstUserDefinedFunctor : public AstFunctor {
 protected:
 
     /** name of user-defined functor */
     std::string name;
 
-    /** type of user-defined functor */
-    std::string type;
-
-    /** operand */
-    std::unique_ptr<AstArgument> operand;
+    /** arguments of user-defined functor */
+    std::vector<std::unique_ptr<AstArgument>> args;
 
 public:
-    AstUnaryUserDefinedFunctor(const std::string &name, const std::string &type, std::unique_ptr<AstArgument> o) : name(name),type(type), operand(std::move(o)) {}
+    AstUserDefinedFunctor() {}
 
-    ~AstUnaryUserDefinedFunctor() override = default;
+    AstUserDefinedFunctor(const std::string &name) : name(name) {}
 
-    AstArgument* getOperand() const {
-        return operand.get();
-    }
+    ~AstUserDefinedFunctor() override = default;
 
-    /** get name of unary user-defined functor */
+    /** get name */
     const std::string &getName() const {
 	return name;
     }
 
-    /** get type of unary user-defined functor */
-    const std::string &getType() const {
-        return type;
+    /** set name */ 
+    void setName(const std::string &n) {
+        name = n; 
     }
 
-    /** Check if the return value of this functor is a number type. */
-    bool isNumerical() const {
-        return type[1] == 'N';
+    /** get arguments */ 
+    std::vector<AstArgument*> getArguments() const {
+        return toPtrVector(args);
     }
 
-    /** Check if the return value of this functor is a symbol type. */
-    bool isSymbolic() const {
-        return type[1] == 'S'; 
+    /** add argument to argument list */
+    void add(std::unique_ptr<AstArgument> arg) {
+        args.push_back(std::move(arg));
     }
 
-    /** Check if the argument of this functor is a number type. */
-    bool acceptsNumbers() const {
-        return type[0] == 'N';
-    }
-
-    /** Check if the argument of this functor is a symbol type. */
-    bool acceptsSymbols() const {
-        return type[0] == 'S';
-    }
-
-    /** Print argument to the given output stream */
+    /** print user-defined functor */
     void print(std::ostream& os) const override {
-        os << '#' << name;
-        os << "(";
-        operand->print(os);
-        os << ")";
+        os << '#' << name << "(" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << ")";
     }
 
-    /** Creates a clone */
-    AstUnaryUserDefinedFunctor* clone() const override {
-        auto res = new AstUnaryUserDefinedFunctor(name, type, std::unique_ptr<AstArgument>(operand->clone()));
+    /** Create clone */
+    AstUserDefinedFunctor* clone() const override {
+        auto res = new AstUserDefinedFunctor();
+        for (auto& cur : args) {
+            res->args.push_back(std::unique_ptr<AstArgument>(cur->clone()));
+        }
         res->setSrcLoc(getSrcLoc());
+        res->setName(getName());
         return res;
     }
 
     /** Mutates this node */
     void apply(const AstNodeMapper& map) override {
-        operand = map(std::move(operand));
+        for (auto& arg : args) {
+            arg = map(std::move(arg));
+        }
     }
 
     /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         auto res = AstArgument::getChildNodes();
-        res.push_back(operand.get());
+        for (auto& cur : args) {
+            res.push_back(cur.get());
+        }
         return res;
     }
 
 protected:
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstUnaryUserDefinedFunctor*>(&node));
-        const auto& other = static_cast<const AstUnaryUserDefinedFunctor&>(node);
-        return name == other.name && type == other.type && *operand == *other.operand;
+        assert(nullptr != dynamic_cast<const AstUserDefinedFunctor*>(&node));
+        const auto& other = static_cast<const AstUserDefinedFunctor&>(node);
+        return name == other.name && equal_targets(args, other.args);
     }
 };
 

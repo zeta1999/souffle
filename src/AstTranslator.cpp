@@ -331,7 +331,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
         // translate arguments
         std::vector<std::unique_ptr<RamValue>> values;
         for (auto& arg : clause.getHead()->getArguments()) {
-            values.push_back(translateValue(*arg));
+            values.push_back(translateValue(arg));
         }
 
         // create a fact statement
@@ -673,7 +673,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
             for (size_t i = 0; i < arity; i++) {
                 const auto& arg = atom->getArgument(i);
                 // for (const auto& arg : atom->getArguments()) {
-                notExists->addArg(translateValue(*arg, valueIndex));
+                notExists->addArg(translateValue(arg, valueIndex));
             }
 
             // we don't care about the provenance columns when doing the existence check
@@ -703,14 +703,14 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(const AstClause& cl
             for (size_t i = 0; i < arity; i++) {
                 const auto& arg = atom->getArgument(i);
                 // for (const auto& arg : atom->getArguments()) {
-                notExists->addArg(translateValue(*arg, valueIndex));
+                notExists->addArg(translateValue(arg, valueIndex));
             }
 
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
                 notExists->addArg(nullptr);
                 // add the height annotation for provenanceNotExists
-                notExists->addArg(translateValue(*(atom->getArgument(arity + 1)), valueIndex));
+                notExists->addArg(translateValue(atom->getArgument(arity + 1), valueIndex));
             }
 
             // add constraint
@@ -1093,6 +1093,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(
 /** translates the given datalog program into an equivalent RAM program  */
 std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) {
     // obtain type environment from analysis
+    typeEnv = &translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
 
     // obtain recursive clauses from analysis
     const auto* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
@@ -1431,7 +1432,6 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     SymbolTable& symTab = tu.getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
-    typeEnv = &tu.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
     if (!Global::config().get("debug-report").empty()) {
         if (ramProg) {
             auto ram_end = std::chrono::high_resolution_clock::now();

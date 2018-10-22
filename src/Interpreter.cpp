@@ -115,7 +115,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
             // load DLL (if not done yet)
             void* handle = interpreter.loadDLL();
-            void* fn = dlsym(handle, name.c_str());
+            void (*fn)() =  (void (*)()) dlsym(handle, name.c_str());
             if (fn == nullptr) {
                 std::cerr << "Cannot find user-defined operator " << name << " in " << SOUFFLE_DLL
                           << std::endl;
@@ -138,10 +138,9 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                     args[i] = &ffi_type_pointer;
                     values[i] = &str_arg;
                 } else {
-                    const char* str_arg = interpreter.getSymbolTable().resolve(arg).c_str();
                     args[i] = &ffi_type_uint32;
                     intVal[i] = arg;
-                    values[i] = &inVal[i];
+                    values[i] = &intVal[i];
                 }
             }
 
@@ -161,6 +160,8 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                 }
             }
             ffi_call(&cif, fn, &rc, values);
+
+            RamDomain result;
             if (type[n + 1] == 'N') {
                 result = *((RamDomain*)rc);
             } else {

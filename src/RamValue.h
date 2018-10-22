@@ -159,6 +159,14 @@ public:
         return toPtrVector(arguments);
     }
 
+    const RamValue* getArg(size_t i) const {
+        return arguments[i].get();
+    }
+
+    size_t getArgNum() const {
+        return arguments.size();
+    }
+
     const std::string& getName() const {
         return name;
     }

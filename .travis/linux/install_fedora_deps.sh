@@ -22,7 +22,7 @@ travis_retry() {
 }
 
 # Build dependencies
-travis_retry yum install -y -q autoconf automake bison clang doxygen flex gcc gcc-c++ git kernel-devel ncurses-devel sqlite-devel libtool make mcpp pkg-config python sqlite sudo zlib-devel
+travis_retry yum install -y -q autoconf automake bison clang doxygen flex gcc gcc-c++ git kernel-devel ncurses-devel sqlite-devel libtool make mcpp pkg-config python sqlite sudo zlib-devel libffi-devel
 
 # Set up the package builder
 travis_retry yum install -y -q ruby-devel gcc make rpm-build libffi-devel

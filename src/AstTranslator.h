@@ -58,7 +58,6 @@ private:
     /** Type environment */
     const TypeEnvironment* typeEnv;
 
-private:
     /**
      * The location of some value in a loop nest.
      */

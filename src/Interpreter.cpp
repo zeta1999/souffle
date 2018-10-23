@@ -49,16 +49,9 @@
 #include <typeinfo>
 #include <utility>
 #include <ffi.h>
-#include <stdio.h>
 
 namespace souffle {
 
-extern "C" {
-const char* g(const char* x) {
-    printf("%p\n", x);
-    return "Hello";
-}
-}
 /** Evaluate RAM Value */
 RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& ctxt) {
     class ValueEvaluator : public RamVisitor<RamDomain> {
@@ -130,16 +123,16 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             }
 
             // prepare dynamic call environment
-            size_t n = op.getArgCount();
+            size_t arity = op.getArgCount();
             ffi_cif cif;
-            ffi_type* args[n];
-            void* values[n];
-            RamDomain intVal[n];
-            const char* strVal[n];
+            ffi_type* args[arity];
+            void* values[arity];
+            RamDomain intVal[arity];
+            const char* strVal[arity];
             ffi_arg rc;
 
             /* Initialize arguments for ffi-call */
-            for (size_t i = 0; i < op.getArgCount(); i++) {
+            for (size_t i = 0; i < arity; i++) {
                 RamDomain arg = visit(op.getArg(i));
                 if (type[i] == 'S') {
                     args[i] = &ffi_type_pointer;
@@ -153,16 +146,16 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             }
 
             // call external function
-            if (type[n] == 'N') {
+            if (type[arity] == 'N') {
                 // Initialize for numerical return value
-                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, n, &ffi_type_uint32, args) != FFI_OK) {
+                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_uint32, args) != FFI_OK) {
                     std::cerr << "Failed to prepare CIF for user-defined operator ";
                     std::cerr << name << std::endl;
                     exit(1);
                 }
             } else {
                 // Initialize for string return value
-                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, n, &ffi_type_pointer, args) != FFI_OK) {
+                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
                     std::cerr << "Failed to prepare CIF for user-defined operator ";
                     std::cerr << name << std::endl;
                     exit(1);
@@ -170,7 +163,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             }
             ffi_call(&cif, fn, &rc, values);
             RamDomain result;
-            if (type[n] == 'N') {
+            if (type[arity] == 'N') {
                 result = ((RamDomain)rc);
             } else {
                 result = interpreter.getSymbolTable().lookup(((const char*)rc));

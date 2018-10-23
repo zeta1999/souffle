@@ -555,8 +555,8 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         for (auto* arg : ri->getArguments()) {
             checkConstant(report, *arg);
         }
-    } else if (auto* ri = dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
-        for (auto* arg : ri->getArguments()) {
+    } else if (auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
+        for (auto* arg : udf->getArguments()) {
             checkConstant(report, *arg);
         }
     } else {

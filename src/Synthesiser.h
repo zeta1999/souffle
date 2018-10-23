@@ -81,6 +81,7 @@ public:
     virtual ~Synthesiser() = default;
 
     /** Generate code */
-    void generateCode(const RamTranslationUnit& tu, std::ostream& os, const std::string& id, bool &withSharedLibrary);
+    void generateCode(
+            const RamTranslationUnit& tu, std::ostream& os, const std::string& id, bool& withSharedLibrary);
 };
 }  // end of namespace souffle

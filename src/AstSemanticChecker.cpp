@@ -286,7 +286,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         if (funDecl == nullptr) {
             report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
         } else {
-            if (funDecl->getArgNum() != fun.getArgNum()) {
+            if (funDecl->getArgCount() != fun.getArgCount()) {
                 report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
             }
             // check return values of user-defined functor
@@ -296,9 +296,9 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
                 report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
             }
-            for (size_t i = 0; i < fun.getArgNum(); i++) {
+            for (size_t i = 0; i < fun.getArgCount(); i++) {
                 const AstArgument* arg = fun.getArg(i);
-                if (i < funDecl->getArgNum()) {
+                if (i < funDecl->getArgCount()) {
                     if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
                         report.addError("Non-numeric argument for functor", arg->getSrcLoc());
                     }
@@ -415,7 +415,7 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
                hasUnnamedVariable(tf->getArg(2));
     }
     if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-        for (size_t i = 0; i < udf->getArgNum(); i++) {
+        for (size_t i = 0; i < udf->getArgCount(); i++) {
             if (hasUnnamedVariable(udf->getArg(i))) {
                 return true;
             }
@@ -504,7 +504,7 @@ void AstSemanticChecker::checkArgument(
         checkArgument(report, program, *ternFunc->getArg(1));
         checkArgument(report, program, *ternFunc->getArg(2));
     } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
-        for (size_t i = 0; i < userDefFunc->getArgNum(); i++) {
+        for (size_t i = 0; i < userDefFunc->getArgCount(); i++) {
             checkArgument(report, program, *userDefFunc->getArg(i));
         }
     }

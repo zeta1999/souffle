@@ -577,14 +577,14 @@ int main(int argc, char** argv) {
             std::string baseIdentifier = identifier(simpleName(baseFilename));
             std::string sourceFilename = baseFilename + ".cpp";
 
-	    bool withSharedLibrary;
+            bool withSharedLibrary;
             std::ofstream os(sourceFilename);
             synthesiser->generateCode(*ramTranslationUnit, os, baseIdentifier, withSharedLibrary);
             os.close();
 
-	    if (withSharedLibrary)  {
+            if (withSharedLibrary) {
                 compileCmd += "-s ";
-	    }
+            }
 
             if (Global::config().has("compile")) {
                 auto start = std::chrono::high_resolution_clock::now();

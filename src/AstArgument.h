@@ -384,7 +384,7 @@ public:
     }
 
     /** get number of arguments */
-    size_t getArgNum() const {
+    size_t getArgCount() const {
         return args.size();
     }
 

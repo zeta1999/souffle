@@ -938,12 +938,12 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 }
 
                 // add constraints for arguments
-                for (size_t i = 0; i < fun.getArgNum(); i++) {
+                for (size_t i = 0; i < fun.getArgCount(); i++) {
                     auto arg = getVar(fun.getArg(i));
 
                     // check that usage does not exceed
                     // number of arguments in declaration
-                    if (i < funDecl->getArgNum()) {
+                    if (i < funDecl->getArgCount()) {
                         // add constraints for the i-th argument
                         if (funDecl->acceptsNumbers(i)) {
                             addConstraint(isSubtypeOf(arg, env.getNumberType()));

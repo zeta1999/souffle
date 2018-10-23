@@ -130,7 +130,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             }
 
             // prepare dynamic call environment
-            size_t n = op.getArgNum();
+            size_t n = op.getArgCount();
             ffi_cif cif;
             ffi_type* args[n];
             void* values[n];
@@ -139,7 +139,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             ffi_arg rc;
 
             /* Initialize arguments for ffi-call */
-            for (size_t i = 0; i < op.getArgNum(); i++) {
+            for (size_t i = 0; i < op.getArgCount(); i++) {
                 RamDomain arg = visit(op.getArg(i));
                 if (type[i] == 'S') {
                     args[i] = &ffi_type_pointer;
@@ -269,7 +269,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
         // -- subroutine argument
         RamDomain visitArgument(const RamArgument& arg) override {
-            return ctxt.getArgument(arg.getArgNumber());
+            return ctxt.getArgument(arg.getArgCount());
         }
 
         // -- safety net --

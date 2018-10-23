@@ -1324,7 +1324,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         // -- subroutine argument --
 
         void visitArgument(const RamArgument& arg, std::ostream& out) override {
-            out << "(args)[" << arg.getArgNumber() << "]";
+            out << "(args)[" << arg.getArgCount() << "]";
         }
 
         // -- subroutine return --
@@ -1426,7 +1426,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     CodeEmitter(*this).visit(stmt, out);
 }
 
-void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os, const std::string& id, bool &withSharedLibrary) {
+void Synthesiser::generateCode(
+        const RamTranslationUnit& unit, std::ostream& os, const std::string& id, bool& withSharedLibrary) {
     // ---------------------------------------------------------------
     //                      Auto-Index Generation
     // ---------------------------------------------------------------
@@ -1466,7 +1467,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
         if (functors.find(op.getName()) == functors.end())
             functors.insert(std::make_pair(op.getName(), op.getType()));
-	withSharedLibrary = true;
+        withSharedLibrary = true;
     });
     os << "extern \"C\" {\n";
     for (const auto& f : functors) {

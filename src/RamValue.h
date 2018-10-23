@@ -163,7 +163,7 @@ public:
         return arguments[i].get();
     }
 
-    size_t getArgNum() const {
+    size_t getArgCount() const {
         return arguments.size();
     }
 
@@ -670,7 +670,7 @@ public:
     RamArgument(size_t number) : RamValue(RN_Argument, false), number(number) {}
 
     /** Get argument number */
-    size_t getArgNumber() const {
+    size_t getArgCount() const {
         return number;
     }
 
@@ -692,7 +692,7 @@ public:
 
     /** Create clone */
     RamArgument* clone() const override {
-        auto* res = new RamArgument(getArgNumber());
+        auto* res = new RamArgument(getArgCount());
         return res;
     }
 
@@ -704,7 +704,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamArgument*>(&node));
         const auto& other = static_cast<const RamArgument&>(node);
-        return getArgNumber() == other.getArgNumber();
+        return getArgCount() == other.getArgCount();
     }
 };
 

@@ -51,7 +51,7 @@ public:
     }
 
     /** get number of arguments */
-    size_t getArgNum() const {
+    size_t getArgCount() const {
         assert(type.length() > 0 && "wrong type declaration for user-defined functor");
         return type.length() - 1;
     }
@@ -70,13 +70,13 @@ public:
 
     /** accepts the i-th argument as a symbolic value */
     bool acceptsSymbols(size_t idx) const {
-        assert(idx <= getArgNum() && "argument index out of bound");
+        assert(idx <= getArgCount() && "argument index out of bound");
         return (type[idx] == 'S');
     }
 
     /** accepts the i-th argument as a number value */
     bool acceptsNumbers(size_t idx) const {
-        assert(idx <= getArgNum() && "argument index out of bound");
+        assert(idx <= getArgCount() && "argument index out of bound");
         return (type[idx] == 'N');
     }
 

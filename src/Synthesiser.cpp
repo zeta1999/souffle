@@ -1261,6 +1261,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
+	void visitUserDefinedOperator(const RamUserDefinedOperator &op, std::ostream &out) override {
+		out << "Us";
+	}
+
         void visitTernaryOperator(const RamTernaryOperator& op, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             switch (op.getOperator()) {

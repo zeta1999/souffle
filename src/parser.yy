@@ -118,7 +118,7 @@
 %token PLAN                      "plan keyword"
 %token IF                        ":-"
 %token DECL                      "relation declaration"
-%token DECLFUNC                  "functor declaration"
+%token FUNCTOR                   "functor declaration"
 %token INPUT_DECL                "input directives declaration"
 %token OUTPUT_DECL               "output directives declaration"
 %token PRINTSIZE_DECL            "printsize directives declaration"
@@ -404,11 +404,11 @@ qualifiers
     }
 
 functor_decl 
-  : DECLFUNC IDENT LPAREN functor_typeargs RPAREN COLON functor_type {
+  : FUNCTOR IDENT LPAREN functor_typeargs RPAREN COLON functor_type {
         $$ = new AstFunctorDeclaration($2, $4+$7);
         $$->setSrcLoc(@$);
     }
-  | DECLFUNC IDENT LPAREN RPAREN COLON functor_type {
+  | FUNCTOR IDENT LPAREN RPAREN COLON functor_type {
         $$ = new AstFunctorDeclaration($2, $6);
         $$->setSrcLoc(@$);
     }

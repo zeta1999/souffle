@@ -10,7 +10,6 @@ aliases:
     - flex
     - libncurses5-dev
     - libtool
-    - libffi-dev
     - lsb-release
     - mcpp
   - &linuxgcc

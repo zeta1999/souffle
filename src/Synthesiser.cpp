@@ -1261,9 +1261,35 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-	void visitUserDefinedOperator(const RamUserDefinedOperator &op, std::ostream &out) override {
-		out << "Us";
-	}
+        void visitUserDefinedOperator(const RamUserDefinedOperator& op, std::ostream& out) override {
+            const std::string& name = op.getName();
+            const std::string& type = op.getType();
+            size_t arity = type.length() - 1;
+
+            if (type[arity] == 'S') {
+                out << "symTable.lookup(";
+            }
+            out << name << "(";
+
+            for (size_t i = 0; i < arity; i++) {
+                if (i > 0) {
+                    out << ",";
+                }
+                if (type[i] == 'N') {
+                    out << "((RamDomain)";
+                    visit(op.getArg(i), out);
+                    out << ")";
+                } else {
+                    out << "symTable.resolve((RamDomain)";
+                    visit(op.getArg(i), out);
+                    out << ").c_str()";
+                }
+            }
+            out << ")";
+            if (type[arity] == 'S') {
+                out << ")";
+            }
+        }
 
         void visitTernaryOperator(const RamTernaryOperator& op, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
@@ -1293,12 +1319,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 << join(pack.getValues(), ",", rec) << "})"
                 << ")";
             PRINT_END_COMMENT(out);
-        }
-
-        // -- user-defined operator 
-
-        void visitUserDefinedOperator(const RamUserDefinedOperator& op, std::ostream& out) override {
-
         }
 
         // -- subroutine argument --
@@ -1439,6 +1459,36 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
         os << "#include \"souffle/profile/Tui.h\"\n";
     }
     os << "\n";
+    // produce external definitions for user-defined functors
+    std::map<std::string, std::string> functors;
+    visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
+        if (functors.find(op.getName()) == functors.end())
+            functors.insert(std::make_pair(op.getName(), op.getType()));
+    });
+    os << "extern \"C\" {\n";
+    for (const auto& f : functors) {
+        size_t arity = f.second.length() - 1;
+        const std::string& type = f.second;
+        const std::string& name = f.first;
+        if (type[arity] == 'N') {
+            os << "souffle::RamDomain ";
+        } else if (type[arity] == 'S') {
+            os << "const char * ";
+        }
+        os << name << "(";
+        std::vector<std::string> args;
+        for (size_t i = 0; i < arity; i++) {
+            if (type[i] == 'N') {
+                args.push_back("souffle::RamDomain");
+            } else {
+                args.push_back("const char *");
+            }
+        }
+        os << join(args, ",");
+        os << ");\n";
+    }
+    os << "}\n";
+    os << "\n";
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
 
@@ -1488,36 +1538,6 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "functor.\\n\";\n";
     os << "     raise(SIGFPE);\n";
     os << "   } return result;\n";
-    os << "}\n";
-
-
-    std::map<std::string, std::string> functors;
-        visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
-            if(functors.find(op.getName()) != functors.end()) 
-                 functors.insert(std::make_pair(op.getName(), op.getType()));});
-
-    os << "extern \"C\" {\n";
-    for(const auto &f: functors) {
-        size_t arity = f.second.length()-1;
-        const std::string &type = f.second;
-        const std::string &name = f.first;
-        if (type[arity] == 'N') {
-             os << "RamDomain ";
-        } else if (type[arity] == 'S') {
-             os << "const char * ";
-        }
-        os << name << "("; 
-        std::vector<std::string> args;
-        for(size_t i=0;i<arity;i++) {
-           if(type[i]=='N') {
-               args.push_back("RamDomain");
-           } else {
-               args.push_back("const char *");
-           }
-        }
-        os << join(args,","); 
-        os << ");\n";
-    }
     os << "}\n";
 
 // if using mpi...

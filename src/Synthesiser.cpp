@@ -1291,6 +1291,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
+        // -- user-defined operator 
+
+        void visitUserDefinedOperator(const RamUserDefinedOperator& op, std::ostream& out) override {
+
+        }
+
         // -- subroutine argument --
 
         void visitArgument(const RamArgument& arg, std::ostream& out) override {
@@ -1480,7 +1486,35 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "   } return result;\n";
     os << "}\n";
 
-    visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {});
+
+    std::map<std::string, std::string> functors;
+        visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
+            if(functors.find(op.getName()) != functors.end()) 
+                 functors.insert(std::make_pair(op.getName(), op.getType()));});
+
+    os << "extern \"C\" {\n";
+    for(const auto &f: functors) {
+        size_t arity = f.second.length()-1;
+        const std::string &type = f.second;
+        const std::string &name = f.first;
+        if (type[arity] == 'N') {
+             os << "RamDomain ";
+        } else if (type[arity] == 'S') {
+             os << "const char * ";
+        }
+        os << name << "("; 
+        std::vector<std::string> args;
+        for(size_t i=0;i<arity;i++) {
+           if(type[i]=='N') {
+               args.push_back("RamDomain");
+           } else {
+               args.push_back("const char *");
+           }
+        }
+        os << join(args,","); 
+        os << ");\n";
+    }
+    os << "}\n";
 
 // if using mpi...
 #ifdef USE_MPI

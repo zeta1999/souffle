@@ -10,5 +10,6 @@ brew update
 brew install md5sha1sum bison libtool mcpp libffi
 brew link bison --force
 brew link libffi --force
+export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig/
 
 rm /Users/travis/Library/Logs/DiagnosticReports/* || true

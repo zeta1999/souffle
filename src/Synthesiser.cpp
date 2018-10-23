@@ -1426,7 +1426,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     CodeEmitter(*this).visit(stmt, out);
 }
 
-void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os, const std::string& id) {
+void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os, const std::string& id, bool &withSharedLibrary) {
     // ---------------------------------------------------------------
     //                      Auto-Index Generation
     // ---------------------------------------------------------------
@@ -1437,6 +1437,8 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     // ---------------------------------------------------------------
     //                      Code Generation
     // ---------------------------------------------------------------
+
+    withSharedLibrary = false;
 
     std::string classname = "Sf_" + id;
 
@@ -1464,6 +1466,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
         if (functors.find(op.getName()) == functors.end())
             functors.insert(std::make_pair(op.getName(), op.getType()));
+	withSharedLibrary = true;
     });
     os << "extern \"C\" {\n";
     for (const auto& f : functors) {

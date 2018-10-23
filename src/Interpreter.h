@@ -30,7 +30,7 @@
 #include <vector>
 #include <dlfcn.h>
 
-#define SOUFFLE_DLL "soufflelib.so"
+#define SOUFFLE_DLL "libfunctors.so"
 
 namespace souffle {
 

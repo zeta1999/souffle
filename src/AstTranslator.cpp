@@ -1131,7 +1131,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
                     getRelationName(relation->getName()), relation->getSrcLoc());
             statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement,
                     std::unique_ptr<RamRelation>(
-                            getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
+                            getRamRelation(relation, getRelationName(relation->getName()),
                                     relation->getArity(), false, relation->isHashset())));
         }
         appendStmt(current, std::move(statement));
@@ -1156,7 +1156,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
                     getRelationName(relation->getName()), relation->getSrcLoc());
             statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement,
                     std::unique_ptr<RamRelation>(
-                            getRamRelation(relation, &typeEnv, getRelationName(relation->getName()),
+                            getRamRelation(relation, getRelationName(relation->getName()),
                                     relation->getArity(), false, relation->isHashset())));
         }
         appendStmt(current, std::move(statement));
@@ -1213,8 +1213,8 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         const auto& internOuts = sccGraph.getInternalOutputRelations(scc);
         const auto& externOutPreds = sccGraph.getExternalOutputPredecessorRelations(scc);
         const auto& externNonOutPreds = sccGraph.getExternalNonOutputPredecessorRelations(scc);
-        const auto& externPreds = sccGraph.getExternalPredecessorRelations(scc);
-        const auto& internsWithExternSuccs = sccGraph.getInternalRelationsWithExternalSuccessors(scc);
+        // const auto& externPreds = sccGraph.getExternalPredecessorRelations(scc);
+        // const auto& internsWithExternSuccs = sccGraph.getInternalRelationsWithExternalSuccessors(scc);
         const auto& internNonOutsWithExternSuccs =
                 sccGraph.getInternalNonOutputRelationsWithExternalSuccessors(scc);
 

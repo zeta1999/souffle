@@ -1480,9 +1480,7 @@ void Synthesiser::generateCode(const RamTranslationUnit& unit, std::ostream& os,
     os << "   } return result;\n";
     os << "}\n";
 
-
-    visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
-    });
+    visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {});
 
 // if using mpi...
 #ifdef USE_MPI

@@ -63,6 +63,7 @@ souffle_sources = \
               AstComponent.h                            \
               AstComponentChecker.cpp                   \
               AstComponentChecker.h                     \
+              AstFunctorDeclaration.h                   \
               AstIODirective.h                          \
               AstLiteral.h                              \
               AstNode.h                                 \

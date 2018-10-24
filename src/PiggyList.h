@@ -10,17 +10,97 @@
 using std::size_t;
 namespace souffle {
 
+/**
+ * A PiggyList that allows insertAt functionality.
+ * This means we can't append, as we don't know the next available element.
+ * insertAt is dangerous. You must be careful not to call it for the same index twice!
+ */
+template <class T>
+class RandomInsertPiggyList {
+    const size_t BLOCKBITS = 16ul;
+    const size_t INITIALBLOCKSIZE = (1ul << BLOCKBITS);
+
+    // number of elements currently stored within
+    std::atomic<size_t> numElements;
+
+    // 2^64 - 1 elements can be stored (default initialised to nullptrs)
+    static constexpr size_t maxContainers = 64;
+    std::atomic<T*> blockLookupTable[maxContainers]{};
+    
+    // for parallel node insertions
+    mutable SpinLock slock;
+
+    /**
+     * Free the arrays allocated within the linked list nodes
+     */
+    void freeList() {
+        // delete all - deleting a nullptr is a no-op
+        for (size_t i = 0; i < maxContainers; ++i) {
+            delete[] blockLookupTable[i].load();
+            // reset the container within to be empty.
+            blockLookupTable[i].store(nullptr);
+        }
+    }
+
+    public:
+    RandomInsertPiggyList() : numElements(0) { }
+    // an instance where the initial size is not 65k, and instead is user settable (to a power of initialbitsize)
+    RandomInsertPiggyList(size_t initialbitsize) : BLOCKBITS(initialbitsize), numElements(0) {}
+
+    /** copy constructor */
+    RandomInsertPiggyList(const RandomInsertPiggyList& other) = delete;
+    /** move constructor */
+    RandomInsertPiggyList(RandomInsertPiggyList&& other) = delete;
+    // copy assign ctor
+    RandomInsertPiggyList& operator=(RandomInsertPiggyList other) = delete;
+
+    ~RandomInsertPiggyList() {
+        freeList();
+    }
+
+    inline size_t size() const { return numElements.load(); }
+
+    inline T* getBlock(size_t blockNum) const { return blockLookupTable[blockNum]; }
+
+    inline T& get(size_t index) const {
+        size_t nindex = index + INITIALBLOCKSIZE;
+        size_t blockNum = (63 - __builtin_clzll(nindex));
+        size_t blockInd = (nindex) & ((1 << blockNum) - 1);
+        return this->getBlock(blockNum-BLOCKBITS)[blockInd];
+    }
+
+    void insertAt(size_t index, T value) {
+        // starting with an initial blocksize requires some shifting to transform into a nice powers of two series
+        size_t blockNum = (63 - __builtin_clzll(index + INITIALBLOCKSIZE)) - BLOCKBITS;
+
+        // allocate the block if not allocated
+        if (blockLookupTable[blockNum].load(std::memory_order_relaxed) == nullptr) {
+            slock.lock();
+            if (blockLookupTable[blockNum].load(std::memory_order_relaxed) == nullptr) {
+                blockLookupTable[blockNum].store(new T[INITIALBLOCKSIZE << blockNum]);
+            }
+            slock.unlock();
+        }
+
+        this->get(index) = value;
+    }
+
+    void clear() {
+        freeList();
+        numElements.store(0);
+    }
+};
 
 template <class T>
 class PiggyList {
     const size_t BLOCKBITS = 16ul;
     const size_t BLOCKSIZE = (1ul << BLOCKBITS);
 
-    std::atomic<size_t> m_size;
-    // how large each new allocation will be 
+    // number of inserted 
+    std::atomic<size_t> num_containers;
     size_t allocsize = BLOCKSIZE;
     std::atomic<size_t> container_size;
-    std::atomic<size_t> num_containers;
+    std::atomic<size_t> m_size;
 
     // 2^64 elements can be stored (default initialise to nullptrs)
     static constexpr size_t max_conts = 64;
@@ -33,23 +113,13 @@ class PiggyList {
      * Free the arrays allocated within the linked list nodes
      */
     void freeList() {
-        for (size_t i = 0; i < num_containers.load(); ++i) delete[] blockLookupTable[i];
+        // we don't know which ones are taken up!
+        for (size_t i = 0; i < max_conts; ++i) delete[] blockLookupTable[i];
     }
 
 public:
-    PiggyList() {
-        for (size_t i = 0; i < max_conts; ++i) blockLookupTable[i] = nullptr;
-        m_size.store(0);
-        num_containers.store(0);
-        container_size.store(0);
-    }
-
-    PiggyList(size_t initialbitsize) : BLOCKBITS(initialbitsize) {
-        for (size_t i = 0; i < max_conts; ++i) blockLookupTable[i] = nullptr;
-        m_size.store(0);
-        container_size.store(0);
-        num_containers.store(0);
-    }
+    PiggyList() : num_containers(0), container_size(0), m_size(0)  { }
+    PiggyList(size_t initialbitsize) : BLOCKBITS(initialbitsize), num_containers(0), container_size(0), m_size(0) {}
 
     /** copy constructor */
     PiggyList(const PiggyList& other) = delete;
@@ -73,10 +143,6 @@ public:
         return m_size.load();
     };
     
-    inline size_t containerSize() const {
-        return container_size.load();
-    }
-
 
     inline T* getBlock(size_t blocknum) const {
         return this->blockLookupTable[blocknum];
@@ -84,6 +150,8 @@ public:
 
     size_t append(T element) {
         size_t new_index = m_size.fetch_add(1, std::memory_order_acquire);
+
+        
 
         // will this not fit?
         if (container_size < new_index + 1) {
@@ -155,57 +223,60 @@ public:
 //        return new_index;
 //    }
 //
-    ///**
-    // * Insert a value at a specific index, expanding the data structure if necessary.
-    // *  Warning: this will "waste" inbetween elements, if you do not know their index,
-    // *      and do not set them with insertAt
-    // * @param index  the index inside the blocklist
-    // * @param value  the value to set inside that index
-    // */
-    //void insertAt(size_t index, T value) {
-    //    //size_t new_index = m_size.fetch_add(1, std::memory_order_acquire);
+    /**
+     * Insert a value at a specific index, expanding the data structure if necessary.
+     *  Warning: this will "waste" inbetween elements, if you do not know their index,
+     *      and do not set them with insertAt
+     * @param index  the index inside the blocklist
+     * @param value  the value to set inside that index
+     */
+    void insertAt(size_t index, T value) {
+        //size_t new_index = m_size.fetch_add(1, std::memory_order_acquire);
 
-    //    //// will this not fit?
-    //    //if (container_size < new_index + 1) {
-    //    //    sl.lock();
-    //    //    // check and add as many containers as required
-    //    //    while (container_size < new_index + 1) {
-    //    //        blockLookupTable[num_containers] = new T[allocsize];
-    //    //        num_containers += 1;
-    //    //        container_size += allocsize;
-    //    //        // double the number elements that will be allocated next time
-    //    //        allocsize <<= 1;
-    //    //    }
-    //    //    sl.unlock();
-    //    //}
-    //    //
-    //    //return new_index;
-    //    
-    //    size_t nindex = index + BLOCKSIZE;
-    //    size_t blockNum = (63 - __builtin_clzll(nindex)) - BLOCKBITS;
+        //// will this not fit?
+        //if (container_size < new_index + 1) {
+        //    sl.lock();
+        //    // check and add as many containers as required
+        //    while (container_size < new_index + 1) {
+        //        blockLookupTable[num_containers] = new T[allocsize];
+        //        num_containers += 1;
+        //        container_size += allocsize;
+        //        // double the number elements that will be allocated next time
+        //        allocsize <<= 1;
+        //    }
+        //    sl.unlock();
+        //}
+        //
+        //return new_index;
+        
+        size_t nindex = index + BLOCKSIZE;
+        size_t blockNum = (63 - __builtin_clzll(nindex)) - BLOCKBITS;
 
-    //    if (blockLookupTable[blockNum] == nullptr) {
+        if (blockLookupTable[blockNum] == nullptr) {
+            sl.lock();
+            if (blockLookupTable[blockNum] == nullptr) {
+                blockLookupTable[blockNum] = new T[BLOCKSIZE << blockNum];
+            }
+        }
 
-    //    }
+        // exact same logic as createNode, but instead just cares about expanding til our index fits
+        // not if a newly added node will fit.
+        while (container_size.load() < index + 1) {
+            sl.lock();
+            // just in case
+            while (container_size.load() < index + 1) {
+                blockLookupTable[num_containers] = new T[allocsize];
+                num_containers += 1;
+                container_size += allocsize;
+                // double the number elements that will be allocated next time
+                allocsize <<= 1;
+            }
 
-    //    // exact same logic as createNode, but instead just cares about expanding til our index fits
-    //    // not if a newly added node will fit.
-    //    while (container_size.load() < index + 1) {
-    //        sl.lock();
-    //        // just in case
-    //        while (container_size.load() < index + 1) {
-    //            blockLookupTable[num_containers] = new T[allocsize];
-    //            num_containers += 1;
-    //            container_size += allocsize;
-    //            // double the number elements that will be allocated next time
-    //            allocsize <<= 1;
-    //        }
+            sl.unlock();
+        }
 
-    //        sl.unlock();
-    //    }
-
-    //    this->get(index) = value;
-    //}
+        this->get(index) = value;
+    }
 
 //    /** 
 //     * A function that you probably shouldn't be calling. (Used by the hashmap)

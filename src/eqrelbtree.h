@@ -1097,7 +1097,7 @@ public:
             // create new node
             leftmost = new leaf_node();
             leftmost->numElements = 1;
-            size_t c2 = f(k.first);
+            auto c2 = f(k.first);
             leftmost->keys[0] = std::make_pair(k.first, c2);
             root = leftmost;
 
@@ -1302,7 +1302,7 @@ public:
                 cur->keys[j] = cur->keys[j - 1];
             }
 
-            size_t c2 = f(k.first);
+            auto c2 = f(k.first);
             leftmost->keys[0] = std::make_pair(k.first, c2);
 
             // insert new element

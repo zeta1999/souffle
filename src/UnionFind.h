@@ -46,18 +46,12 @@ class SparseDisjointSet {
     template <typename TupleType>
     friend class BinaryRelation;
 
-#if defined BTREESTUFF
     typedef std::pair<SparseDomain, parent_t> PairStore;
     typedef souffle::IncrementingBTreeSet<PairStore, EqrelMapComparator<PairStore>> SparseMap;
-    typedef souffle::BlockList<SparseDomain> DenseMap;
+    typedef souffle::RandomInsertPiggyList<SparseDomain> DenseMap;
+    // TODO: do we use this?
     typename SparseMap::operation_hints last_ins;
-#elif defined SPARSETBB
-    typedef tbb::concurrent_hash_map<SparseDomain, parent_t> SparseMap;
-    typedef souffle::BlockList<SparseDomain> DenseMap;
-#else
-    typedef cuckoohash_map<SparseDomain, parent_t> SparseMap;
-    typedef souffle::BlockList<SparseDomain> DenseMap;
-#endif
+
     SparseMap sparseToDenseMap;
     // mapping from union-find val to souffle, union-find encoded as index
     DenseMap denseToSparseMap;
@@ -69,44 +63,14 @@ private:
      * @return the corresponding dense value
      */
     parent_t toDense(const SparseDomain in) {
-
-#if defined BTREESTUFF
-        // TODO:
-        //parent_t densi = sparseToDenseMap.insert({in, 0}, last_ins, denseToSparseMap, ds);
+        // insert into the mapping - if the key doesn't exist (in), the function will be called
+        // and a dense value will be created for it
         parent_t densi = sparseToDenseMap.insert({in, 0}, last_ins, [&](typename PairStore::first_type d){ 
-                size_t c2 = this->ds.makeNode(); 
+                parent_t c2 = DisjointSet::b2p(this->ds.makeNode()); 
                 this->denseToSparseMap.insertAt(c2, d);
                 return c2;
         });
-        // TODO: make the node in the dj set
-        //denseToSparseMap.insertAt(densi, in);
         return densi;
-#elif defined SPARSETBB
-
-        typename SparseMap::accessor a;
-        bool newItem = sparseToDenseMap.insert(a, in);
-        // create mapping if doesn't exist
-        if (newItem) {
-            // call b2p on this (makeNode returns a block_t, and we only care about its index)
-            parent_t dense = ds.b2p(ds.makeNode());
-            a->second = dense;
-
-            denseToSparseMap.insertAt(dense, in);
-        }
-
-        return a->second;
-#else
-        parent_t dense;
-        bool exists = sparseToDenseMap.find(in, dense);
-        if (!exists) {
-            // attempt to insert a new val
-            dense = ds.b2p(ds.makeNode());
-            sparseToDenseMap.upsert(in, [this,&dense](parent_t& v) { this->ds.delNode(dense); dense=v; }, dense);
-            denseToSparseMap.insertAt(dense, in);
-        }
-        return dense;
-#endif
-
     }
 
 public:
@@ -117,7 +81,7 @@ public:
 
         ds = old.ds;
         sparseToDenseMap = old.sparseToDenseMap;
-        //denseToSparseMap = old.denseToSparseMap;
+        denseToSparseMap = old.denseToSparseMap;
 
         return *this;
     }
@@ -152,16 +116,7 @@ public:
     // TODO: documentation
     void clear() {
         ds.clear();
-#if defined BTREESTUFF
-        //...
         sparseToDenseMap.clear();
-#elif defined SPARSETBB
-        sparseToDenseMap.clear();
-#else
-        // we can't clear the junction map.. so lets indiana jones it
-        SparseMap replacer;
-        std::swap(sparseToDenseMap, replacer);
-#endif
         denseToSparseMap.clear();
     }
 
@@ -173,13 +128,7 @@ public:
 
     /* whether we the supplied node exists */
     inline bool nodeExists(const SparseDomain val) const {
-#if defined SPARSETBB
-        return sparseToDenseMap.count(val);
-#elif defined BTREESTUFF
         return sparseToDenseMap.contains({val, 0});
-#else
-        return sparseToDenseMap.contains(val);
-#endif
     };
 
     inline bool contains(SparseDomain v1, SparseDomain v2) {

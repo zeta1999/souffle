@@ -409,119 +409,130 @@ TEST(BinRelTest, IterBasic) {
 //    EXPECT_EQ(count, 1);
 //}
 
-TEST(BinRelTest, IterPartition) {
-    // test that the union equals the input
+//TEST(BinRelTest, IterPartition) {
+//    // test that the union equals the input
+//
+//    // test single set binary rel
+//    BinRel br;
+//    std::vector<std::pair<RamDomain, RamDomain>> values;
+//    RamDomain N = 1000;
+//    for (RamDomain i = 0; i < N; ++i) {
+//        br.insert(i, i + 1);
+//    }
+//
+//    EXPECT_EQ(size_t((N + 1) * (N + 1)), br.size());
+//
+//    auto chunks = br.partition(400);
+//    // we can't make too many assumptions..
+//    EXPECT_TRUE(chunks.size() > 0);
+//
+//    for (auto chunk : chunks) {
+//        for (auto x = chunk.begin(); x != chunk.end(); ++x) {
+//            values.push_back(std::make_pair((*x)[0], (*x)[1]));
+//        }
+//    }
+//
+//    EXPECT_EQ(br.size(), values.size());
+//
+//    br.clear();
+//    values.clear();
+//    chunks.clear();
+//
+//    // many disjoint sets (note, can't use N, because even & odd numbers don't work the same..)
+//    for (RamDomain i = 0; i < 1000; i += 2) {
+//        br.insert(i, i + 1);
+//    }
+//    EXPECT_EQ((size_t)4 * 1000 / 2, br.size());
+//
+//    chunks = br.partition(400);
+//    for (auto chunk : chunks) {
+//        for (auto x = chunk.begin(); x != chunk.end(); ++x) {
+//            values.push_back(std::make_pair((*x)[0], (*x)[1]));
+//        }
+//    }
+//
+//     
+//    //std::sort(values.begin(), values.end());
+//    //std::for_each(values.begin(), values.end(), [](std::pair<RamDomain, RamDomain> i) { std::cout << i << std::endl; });
+//    
+//
+//    EXPECT_EQ(br.size(), values.size());
+//}
 
-    // test single set binary rel
-    BinRel br;
-    std::vector<std::pair<RamDomain, RamDomain>> values;
-    RamDomain N = 1000;
-    for (RamDomain i = 0; i < N; ++i) {
-        br.insert(i, i + 1);
-    }
+//TEST(BinRelTest, ParallelTest) {
+//    // insert a lot of times into a disjoint set over multiple std::threads
+//
+//    BinRel br;
+//    std::vector<std::thread> starts;
+//    // number of inserts per thread
+//    int N = 1000;
+//    // int N = 100000;
+//
+//    starts.push_back(std::thread([&]() {
+//        for (RamDomain i = 0; i < N * 4; i += 4) br.insert(i, i + 4);
+//    }));
+//
+//    starts.push_back(std::thread([&]() {
+//        for (RamDomain i = 1; i < N * 4; i += 4) br.insert(i, i + 4);
+//    }));
+//
+//    starts.push_back(std::thread([&]() {
+//        for (RamDomain i = 2; i < N * 4; i += 4) br.insert(i, i + 4);
+//    }));
+//
+//    starts.push_back(std::thread([&]() {
+//        for (RamDomain i = 3; i < N * 4; i += 4) br.insert(i, i + 4);
+//    }));
+//
+//    for (auto& r : starts) r.join();
+//
+//    EXPECT_EQ((size_t)(N + 1) * (N + 1) * 4, br.size());
+//
+//    size_t count = 0;
+//    for (auto x : br) {
+//        ++count;
+//        binreltest::ignore(x);
+//    }
+//
+//    EXPECT_EQ(count, br.size());
+//}
 
-    EXPECT_EQ(size_t((N + 1) * (N + 1)), br.size());
-
-    auto chunks = br.partition(400);
-    // we can't make too many assumptions..
-    EXPECT_TRUE(chunks.size() > 0);
-
-    for (auto chunk : chunks) {
-        for (auto x = chunk.begin(); x != chunk.end(); ++x) {
-            values.push_back(std::make_pair((*x)[0], (*x)[1]));
-        }
-    }
-
-    EXPECT_EQ(br.size(), values.size());
-
-    br.clear();
-    values.clear();
-    chunks.clear();
-
-    // many disjoint sets (note, can't use N, because even & odd numbers don't work the same..)
-    for (RamDomain i = 0; i < 1000; i += 2) {
-        br.insert(i, i + 1);
-    }
-    EXPECT_EQ((size_t)4 * 1000 / 2, br.size());
-
-    chunks = br.partition(400);
-    for (auto chunk : chunks) {
-        for (auto x = chunk.begin(); x != chunk.end(); ++x) {
-            values.push_back(std::make_pair((*x)[0], (*x)[1]));
-        }
-    }
-
-     
-    //std::sort(values.begin(), values.end());
-    //std::for_each(values.begin(), values.end(), [](std::pair<RamDomain, RamDomain> i) { std::cout << i << std::endl; });
-    
-
-    EXPECT_EQ(br.size(), values.size());
-}
-
-TEST(BinRelTest, ParallelTest) {
-    // insert a lot of times into a disjoint set over multiple std::threads
-
-    BinRel br;
-    std::vector<std::thread> starts;
-    // number of inserts per thread
-    int N = 1000;
-    // int N = 100000;
-
-    starts.push_back(std::thread([&]() {
-        for (RamDomain i = 0; i < N * 4; i += 4) br.insert(i, i + 4);
-    }));
-
-    starts.push_back(std::thread([&]() {
-        for (RamDomain i = 1; i < N * 4; i += 4) br.insert(i, i + 4);
-    }));
-
-    starts.push_back(std::thread([&]() {
-        for (RamDomain i = 2; i < N * 4; i += 4) br.insert(i, i + 4);
-    }));
-
-    starts.push_back(std::thread([&]() {
-        for (RamDomain i = 3; i < N * 4; i += 4) br.insert(i, i + 4);
-    }));
-
-    for (auto& r : starts) r.join();
-
-    EXPECT_EQ((size_t)(N + 1) * (N + 1) * 4, br.size());
-
-    size_t count = 0;
-    for (auto x : br) {
-        ++count;
-        binreltest::ignore(x);
-    }
-
-    EXPECT_EQ(count, br.size());
-}
-
-#ifdef _OPENMP
-TEST(BinRelTest, ParallelScaling) {
-    // use OpenMP this time
-
-    // test with varying number of threads
-    // const int N = 1000000;
-    const int N = 1000;
-    std::vector<int> data1;
-    std::vector<int> data2;
-    for (int i = 0; i < N; ++i) data1.push_back(i);
-    for (int i = 0; i < N; ++i) data2.push_back(i);
-
-    std::random_shuffle(data1.begin(), data1.end());
-    std::random_shuffle(data2.begin(), data2.end());
+TEST(BinRelTest, Scaling) {
+    const int N = 100000;
 
     BinRel br;
-#pragma omp parallel for
-    for (int i = 0; i < N; i++) {
-        // unfortunately, we can't do insert(data1, data2) as we won't know how many pairs...
-        br.insert(data1[i], data1[i]);
-        br.insert(data2[i], data2[i]);
+    for (int i = 0; i < N; ++i) {
+        br.insert(i,i);
     }
 
     EXPECT_EQ(N, br.size());
 }
-#endif
+
+//#ifdef _OPENMP
+//TEST(BinRelTest, ParallelScaling) {
+//    // use OpenMP this time
+//
+//    // test with varying number of threads
+//    // const int N = 1000000;
+//    const int N = 1000;
+//    std::vector<int> data1;
+//    std::vector<int> data2;
+//    for (int i = 0; i < N; ++i) data1.push_back(i);
+//    for (int i = 0; i < N; ++i) data2.push_back(i);
+//
+//    std::random_shuffle(data1.begin(), data1.end());
+//    std::random_shuffle(data2.begin(), data2.end());
+//
+//    BinRel br;
+//#pragma omp parallel for
+//    for (int i = 0; i < N; i++) {
+//        // unfortunately, we can't do insert(data1, data2) as we won't know how many pairs...
+//        br.insert(data1[i], data1[i]);
+//        br.insert(data2[i], data2[i]);
+//    }
+//
+//    EXPECT_EQ(N, br.size());
+//}
+//#endif
 }  // namespace test
 }  // namespace souffle

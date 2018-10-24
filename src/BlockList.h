@@ -82,26 +82,24 @@ public:
     }
 
     /** copy constructor */
-    BlockList(const BlockList& other) {
+    BlockList(const BlockList& other) : BLOCKBITS(other.BLOCKBITS) {
         freeList();
         listData.clear();
         this->m_size.store(other.m_size);
         this->container_size.store(other.container_size);
 
-        auto iterCopied = other.listData.begin();
-
-        // copy each linked node array into this list - be careful! the size doubles each node
-        size_t currAllocsize = BLOCKSIZE;
-        while (iterCopied != other.listData.end()) {
-            listData.push_back(new T[currAllocsize]);
-            memcpy(listData.back(), *iterCopied, currAllocsize);
-            // double the allocation size for the next block
-            currAllocsize <<= 1;
+        size_t currAllocSize = BLOCKSIZE;
+        for (auto& data : other.listData) {
+            listData.push_back(new T[currAllocSize]);
+            // copy their data into ours
+            memcpy(listData.back(), data, currAllocSize);
+            // double allocation size for the next block
+            currAllocSize <<= 1;
         }
 
         initLookupTable();
 
-        allocsize = currAllocsize;
+        allocsize = currAllocSize;
     }
 
     /** move constructor */
@@ -162,8 +160,8 @@ public:
     }
 
     /**
-     * Create a value in the blocklist & return the new Node & its position.
-     * @return std::pair<New Node, Index of New Node>
+     * Create a value in the blocklist & return its position.
+     * @return index of New Node
      */
     size_t createNode() {
         size_t new_index = m_size.fetch_add(1, std::memory_order_relaxed);
@@ -216,57 +214,6 @@ public:
             sl.unlock();
         }
         this->get(new_index) = val;
-    }
-
-    /**
-     * Insert a value at a specific index, expanding the data structure if necessary.
-     *  Warning: this will "waste" inbetween elements, if you do not know their index,
-     *      and do not set them with insertAt
-     * @param index  the index inside the blocklist
-     * @param value  the value to set inside that index
-     */
-    void insertAt(size_t index, const T& value) {
-        // exact same logic as createNode, but instead just cares about expanding til our index fits
-        // not if a newly added node will fit.
-        while (container_size.load() < index + 1) {
-            sl.lock();
-            // just in case
-            while (container_size.load() < index + 1) {
-                // create the new block
-                listData.push_back(new T[allocsize]);
-                this->blockLookupTable[listData.size() - 1] = listData.back();
-                container_size += allocsize;
-                // double the size of the next allocated block
-                allocsize <<= 1;
-            }
-
-            sl.unlock();
-        }
-
-        size_t nindex = index + BLOCKSIZE;
-        size_t blockNum = (63 - __builtin_clzll(nindex)) - BLOCKBITS;
-        size_t blockInd = (nindex) & ((1 << (blockNum+BLOCKBITS)) - 1);
-        // store the value in its correct location
-        this->getBlock(blockNum)[blockInd] = value;
-    }
-
-    /**
-     * A function that you probably shouldn't be calling. (Used by the hashmap)
-     * Adds another block to our underlying container
-     * @return the size of the container that it at least is
-     */
-    size_t addBlock() {
-        sl.lock();
-
-        listData.push_back(new T[allocsize]());
-        this->blockLookupTable[listData.size() - 1] = listData.back();
-        container_size += allocsize;
-        // double the size of the next allocated block
-        allocsize <<= 1;
-
-        sl.unlock();
-
-        return container_size.load();
     }
 
     /**

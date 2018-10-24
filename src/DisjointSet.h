@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "BlockList.h"
@@ -12,21 +11,6 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
-
-#define BTREESTUFF
-#ifndef BTREESTUFF
-    #define SPARSETBB
-
-    #ifdef SPARSETBB
-        #include <tbb/concurrent_hash_map.h>
-    #else
-        #define CUCKOOHASH
-        #include <libcuckoo/cuckoohash_map.hh>
-    //#include <junction/ConcurrentMap_Leapfrog.h>
-    #endif
-#else
-//    #include "eqrelbtree.h"
-#endif
 
 // branch predictor hacks
 #define unlikely(x) __builtin_expect((x), 0)
@@ -53,14 +37,7 @@ class DisjointSet {
     template <typename TupleType>
     friend class BinaryRelation;
 
-#if defined SPARSETBB || defined BTREESTUFF
-    //PiggyList<std::atomic<block_t>> a_blocks;
     BlockList<std::atomic<block_t>> a_blocks;
-#else
-    /* store blocks of atomics - needs removal for speculative inserts */
-    BlockListRemovable<std::atomic<block_t>> a_blocks;
-#endif
-
 public:
     DisjointSet(){};
 
@@ -190,12 +167,6 @@ public:
 
         return a_blocks.get(nodeDetails).load();
     };
-
-#if defined CUCKOOHASH
-    inline void delNode(parent_t node) {
-        a_blocks.remove(node);
-    }
-#endif
 
     /**
      * Extract parent from block

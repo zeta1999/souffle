@@ -162,7 +162,7 @@ protected:
             // check environment variable
             std::string fname = ::getenv("SOUFFLE_FUNCTOR_LIB");
             if (fname == "") {
-                fname = SOUFFLE__DLL;
+                fname = SOUFFLE_DLL;
             }
             dll = dlopen(SOUFFLE_DLL, RTLD_LAZY);
             if (dll == nullptr) {

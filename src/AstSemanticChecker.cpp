@@ -425,8 +425,8 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (const auto* ri = dynamic_cast<const AstRecordInit*>(arg)) {
         return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
-    if (const auto* ri = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-        return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
+    if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+        return any_of(udf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
     if (dynamic_cast<const AstAggregator*>(arg)) {
         return false;

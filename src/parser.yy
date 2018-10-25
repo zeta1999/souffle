@@ -185,7 +185,7 @@
 %type <AstExecutionOrder *>              exec_order exec_order_list
 %type <AstExecutionPlan *>               exec_plan exec_plan_list
 %type <AstRecordInit *>                  recordlist
-%type <AstUserDefinedFunctor *>          functorlist
+%type <AstUserDefinedFunctor *>          functor_list functor_args
 %type <AstRecordType *>                  recordtype
 %type <AstUnionType *>                   uniontype
 %type <std::vector<AstTypeIdentifier>>   type_params type_param_list
@@ -205,7 +205,7 @@
 %precedence BW_NOT L_NOT
 %precedence NEG
 %left CARET
-
+%left IDENT LPAREN
 
 %%
 %start program;
@@ -551,13 +551,9 @@ arg
         $$ = new AstCounter();
         $$->setSrcLoc(@$);
     }
-  | PERCENT IDENT LPAREN functorlist RPAREN {
-        $$ = $4;
-        $4->setName($2);
-        $$->setSrcLoc(@$);
-    }
-  | PERCENT IDENT LPAREN RPAREN {
-        $$ = new AstUserDefinedFunctor($2); 
+  | IDENT functor_list {
+        $$ = $2;
+        $2->setName($1);
         $$->setSrcLoc(@$);
     }
   | IDENT {
@@ -780,12 +776,21 @@ arg
         exit(1);
     }
 
-functorlist
+functor_list
+  : LPAREN RPAREN {
+       $$ = new AstUserDefinedFunctor(); 
+    }
+  | LPAREN functor_args RPAREN {
+       $$ = $2;
+    }
+  ;
+
+functor_args
   : arg {
        $$ = new AstUserDefinedFunctor(); 
        $$->add(std::unique_ptr<AstArgument>($1));
     }  
-  | functorlist COMMA arg { 
+  | functor_args COMMA arg { 
        $$ = $1;
        $$->add(std::unique_ptr<AstArgument>($3));
     } 
@@ -1007,8 +1012,8 @@ rule
 /* Type Parameters */
 
 type_param_list
-  : IDENT {
-        $$.push_back($1);
+  : IDENT { 
+        $$.push_back($1); 
     }
   | type_param_list COMMA type_id {
         $$ = $1;

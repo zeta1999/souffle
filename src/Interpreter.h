@@ -159,14 +159,17 @@ protected:
     /** Load dll */
     void* loadDLL() {
         if (dll == nullptr) {
+            // check environment variable
+            std::string fname = ::getenv("SOUFFLE_FUNCTOR_LIB");
+            if (fname == "") {
+                fname = SOUFFLE__DLL;
+            }
             dll = dlopen(SOUFFLE_DLL, RTLD_LAZY);
-            ;
             if (dll == nullptr) {
                 std::cerr << "Cannot find Souffle's DLL" << std::endl;
                 exit(1);
             }
         }
-
         return dll;
     }
 

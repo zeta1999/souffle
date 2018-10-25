@@ -1213,6 +1213,7 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         const auto& internOuts = sccGraph.getInternalOutputRelations(scc);
         const auto& externOutPreds = sccGraph.getExternalOutputPredecessorRelations(scc);
         const auto& externNonOutPreds = sccGraph.getExternalNonOutputPredecessorRelations(scc);
+
         // const auto& externPreds = sccGraph.getExternalPredecessorRelations(scc);
         // const auto& internsWithExternSuccs = sccGraph.getInternalRelationsWithExternalSuccessors(scc);
         const auto& internNonOutsWithExternSuccs =
@@ -1232,6 +1233,8 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
         }
 
 #ifdef USE_MPI
+        const auto& externPreds = sccGraph.getExternalPredecessorRelations(scc);
+        const auto& internsWithExternSuccs = sccGraph.getInternalRelationsWithExternalSuccessors(scc);
         // note that the order of receives is first by relation then second destination
         if (Global::config().get("engine") == "mpi") {
             // first, recv all internal input relations from the master process

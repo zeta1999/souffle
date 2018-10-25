@@ -252,14 +252,17 @@ DIST_PACKAGING([bsd],[BSD_PACKAGE],[PKGBUILD],[pkgbuild])
 
 dnl ============================libffi=========================================
 
-if test "$HOST_TYPE" = "darwin"; then
-PKG_PROG_PKG_CONFIG()
-PKG_CHECK_MODULES(FFI, [libffi])
-else
-AC_CHECK_LIB(ffi, ffi_call,,
-    [AC_MSG_ERROR([required library ffi missing])])
-AC_CHECK_HEADER(ffi.h,,[AC_MSG_ERROR([required headers ffi.h missing.])])
-fi
+case $host_os in
+  darwin* )
+    PKG_PROG_PKG_CONFIG()
+    PKG_CHECK_MODULES(FFI, [libffi])
+  ;;
+  *)
+    AC_CHECK_LIB(ffi, ffi_call,,
+        [AC_MSG_ERROR([required library ffi missing])])
+    AC_CHECK_HEADER(ffi.h,,[AC_MSG_ERROR([required headers ffi.h missing.])])
+  ;;
+esac
 
 dnl Enable pthread library
 AC_CHECK_LIB(pthread, pthread_create,,

@@ -251,7 +251,11 @@ DIST_PACKAGING([osx],[OSX_PACKAGE],[PKGBUILD],[pkgbuild])
 DIST_PACKAGING([bsd],[BSD_PACKAGE],[PKGBUILD],[pkgbuild])
 
 dnl ============================libffi=========================================
-
+m4_define_default([PKG_PROG_PKG_CONFIG],
+  [AC_MSG_ERROR([required pkg-config not installed])])
+m4_define_default([PKG_CHECK_MODULES],
+   [AC_MSG_ERROR(required pkg-config not installed)
+    $4])
 case $host_os in
   darwin* )
     PKG_PROG_PKG_CONFIG()

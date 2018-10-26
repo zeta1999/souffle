@@ -1,4 +1,4 @@
-FROM souffle/oraclelinux:7.3-base
+FROM souffle/oraclelinux:7-base
 
 ARG SOUFFLE_CC="gcc"
 ARG SOUFFLE_CXX="g++"

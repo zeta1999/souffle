@@ -26,7 +26,8 @@ make -j2 install
 #4.8 is all that's available on centos7 without workarounds
 fpm -t rpm -n souffle -v `git describe --tags --always` -d gcc-c++ \
     -d graphviz -d libgomp -d 'libstdc++ >= 4.8.1' -d mcpp -d ncurses-devel \
-    -d sqlite-devel -d zlib-devel -a native --description "$DESCRIPTION" \
+    -d sqlite-devel -d zlib-devel -d libffi-devel \
+    -a native --description "$DESCRIPTION" \
     --url 'http://souffle-lang.org/' --license UPL -s dir usr
 
 mkdir deploy

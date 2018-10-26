@@ -25,7 +25,7 @@ travis_retry() {
 travis_retry yum install -y https://dl.bintray.com/souffle-lang/rpm-unstable/centos/7/x86_64/souffle-repo-centos-1.0-1.x86_64.rpm
 
 # Build dependencies
-travis_retry yum install -y -q autoconf automake bison clang doxygen flex gcc gcc-c++ git kernel-devel ncurses-devel sqlite-devel libtool make mcpp python sqlite sudo zlib-devel
+travis_retry yum install -y -q autoconf automake bison clang doxygen flex gcc gcc-c++ git kernel-devel ncurses-devel sqlite-devel libtool make mcpp python sqlite sudo zlib-devel libffi-devel
 
 # Set up a more recent gcc that supports C++11
 travis_retry yum install -y centos-release-scl

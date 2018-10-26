@@ -18,6 +18,7 @@
 #pragma once
 
 #include "AstComponent.h"
+#include "AstFunctorDeclaration.h"
 #include "AstNode.h"
 #include "AstPragma.h"
 #include "AstRelationIdentifier.h"
@@ -52,6 +53,9 @@ class AstProgram : public AstNode {
 
     /** Program relations */
     std::map<AstRelationIdentifier, std::unique_ptr<AstRelation>> relations;
+
+    /** External Functors */
+    std::map<std::string, std::unique_ptr<AstFunctorDeclaration>> functors;
 
     /** The list of clauses provided by the user */
     std::vector<std::unique_ptr<AstClause>> clauses;
@@ -111,9 +115,15 @@ private:
     /** Add a pragma to the program */
     void addPragma(std::unique_ptr<AstPragma> r);
 
+    /** Add a functor to the program */
+    void addFunctorDeclaration(std::unique_ptr<souffle::AstFunctorDeclaration> f);
+
 public:
     /** Find and return the relation in the program given its name */
     AstRelation* getRelation(const AstRelationIdentifier& name) const;
+
+    /** Get functor declaration */
+    AstFunctorDeclaration* getFunctorDeclaration(const std::string& name) const;
 
     /** Get all relations in the program */
     std::vector<AstRelation*> getRelations() const;

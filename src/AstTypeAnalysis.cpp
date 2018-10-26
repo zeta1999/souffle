@@ -10,7 +10,8 @@
  *
  * @file AstTypeAnalysis.cpp
  *
- * A collection of type analyses operating on AST constructs.
+ * Implements an AST Constraint Analysis Infrastructure and contains
+ * a collection of type analyses operating on AST constructs.
  *
  ***********************************************************************/
 
@@ -40,10 +41,6 @@
 namespace souffle {
 
 namespace {
-
-// -----------------------------------------------------------------------------
-//                        AST Constraint Analysis Infrastructure
-// -----------------------------------------------------------------------------
 
 /**
  * A variable type to be utilized by AST constraint analysis. Each such variable is
@@ -261,86 +258,15 @@ BoolDisjunctConstraint imply(const std::vector<BoolDisjunctVar>& vars, const Boo
 }
 }  // namespace
 
-std::map<const AstArgument*, bool> getConstTerms(const AstClause& clause) {
-    // define analysis ..
-    struct Analysis : public AstConstraintAnalysis<BoolDisjunctVar> {
-        // #1 - constants are constant
-        void visitConstant(const AstConstant& cur) override {
-            // this is a constant value
-            addConstraint(isTrue(getVar(cur)));
-        }
-
-        // #2 - binary relations may propagate const
-        void visitBinaryConstraint(const AstBinaryConstraint& cur) override {
-            // only target equality
-            if (cur.getOperator() != BinaryConstraintOp::EQ) {
-                return;
-            }
-
-            // if equal, link right and left side
-            auto lhs = getVar(cur.getLHS());
-            auto rhs = getVar(cur.getRHS());
-
-            addConstraint(imply(lhs, rhs));
-            addConstraint(imply(rhs, lhs));
-        }
-
-        // #3 - const is propagated via unary functors
-        void visitUnaryFunctor(const AstUnaryFunctor& cur) override {
-            auto fun = getVar(cur);
-            auto op = getVar(cur.getOperand());
-
-            addConstraint(imply(op, fun));
-        }
-
-        // #4 - const is propagated via binary functors
-        void visitBinaryFunctor(const AstBinaryFunctor& cur) override {
-            auto fun = getVar(cur);
-            auto lhs = getVar(cur.getLHS());
-            auto rhs = getVar(cur.getRHS());
-
-            addConstraint(imply({lhs, rhs}, fun));
-            addConstraint(imply({fun, lhs}, rhs));
-            addConstraint(imply({fun, rhs}, lhs));
-        }
-
-        // #5 - const is propagated via ternary functors
-        void visitTernaryFunctor(const AstTernaryFunctor& cur) override {
-            auto fun = getVar(cur);
-            auto a0 = getVar(cur.getArg(0));
-            auto a1 = getVar(cur.getArg(1));
-            auto a2 = getVar(cur.getArg(2));
-
-            addConstraint(imply({a0, a1, a2}, fun));
-        }
-
-        // #6 - if pack nodes and its components
-        void visitRecordInit(const AstRecordInit& init) override {
-            auto pack = getVar(init);
-
-            std::vector<BoolDisjunctVar> subs;
-            for (const auto& cur : init.getArguments()) {
-                subs.push_back(getVar(cur));
-            }
-
-            // link vars in both directions
-            addConstraint(imply(subs, pack));
-            for (const auto& c : subs) {
-                addConstraint(imply(pack, c));
-            }
-        }
-    };
-
-    // run analysis on given clause
-    return Analysis().analyse(clause);
-}
+/***
+ * computes for variables in the clause whether they are grounded
+ */
 
 std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
-    // define analysis ..
     struct Analysis : public AstConstraintAnalysis<BoolDisjunctVar> {
         std::set<const AstAtom*> ignore;
 
-        // #1 - atoms are producing grounded variables
+        // atoms are producing grounded variables
         void visitAtom(const AstAtom& cur) override {
             // some atoms need to be skipped (head or negation)
             if (ignore.find(&cur) != ignore.end()) {
@@ -353,19 +279,19 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
             }
         }
 
-        // #2 - negations need to be skipped
+        // negations need to be skipped
         void visitNegation(const AstNegation& cur) override {
             // add nested atom to black-list
             ignore.insert(cur.getAtom());
         }
 
-        // #3 - also skip head
+        // also skip head
         void visitClause(const AstClause& clause) override {
             // ignore head
             ignore.insert(clause.getHead());
         }
 
-        // #4 - binary equality relations propagates groundness
+        // binary equality relations propagates groundness
         void visitBinaryConstraint(const AstBinaryConstraint& cur) override {
             // only target equality
             if (cur.getOperator() != BinaryConstraintOp::EQ) {
@@ -380,7 +306,7 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
             addConstraint(imply(rhs, lhs));
         }
 
-        // #5 - record init nodes
+        // record init nodes
         void visitRecordInit(const AstRecordInit& init) override {
             auto cur = getVar(init);
 
@@ -397,17 +323,17 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
             addConstraint(imply(vars, cur));
         }
 
-        // #6 - constants are also sources of grounded values
+        // constants are also sources of grounded values
         void visitConstant(const AstConstant& c) override {
             addConstraint(isTrue(getVar(c)));
         }
 
-        // #7 - aggregators are grounding values
+        // aggregators are grounding values
         void visitAggregator(const AstAggregator& c) override {
             addConstraint(isTrue(getVar(c)));
         }
 
-        // #8 - functors with grounded values are grounded values
+        // unary functors with grounded values are grounded values
         void visitUnaryFunctor(const AstUnaryFunctor& cur) override {
             auto fun = getVar(cur);
             auto arg = getVar(cur.getOperand());
@@ -415,6 +341,7 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
             addConstraint(imply(arg, fun));
         }
 
+        // binary functors with grounded values are grounded values
         void visitBinaryFunctor(const AstBinaryFunctor& cur) override {
             auto fun = getVar(cur);
             auto lhs = getVar(cur.getLHS());
@@ -423,6 +350,7 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
             addConstraint(imply({lhs, rhs}, fun));
         }
 
+        // ternary functors with grounded values are grounded values
         void visitTernaryFunctor(const AstTernaryFunctor& cur) override {
             auto fun = getVar(cur);
             auto a0 = getVar(cur.getArg(0));
@@ -430,6 +358,16 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
             auto a2 = getVar(cur.getArg(2));
 
             addConstraint(imply({a0, a1, a2}, fun));
+        }
+
+        // user-defined functors with grounded values are grounded values
+        void visitUserDefinedFunctor(const AstUserDefinedFunctor& cur) override {
+            auto fun = getVar(cur);
+            std::vector<BoolDisjunctVar> varArgs;
+            for (const auto& arg : cur.getArguments()) {
+                varArgs.push_back(getVar(arg));
+            }
+            addConstraint(imply(varArgs, fun));
         }
     };
 
@@ -584,58 +522,6 @@ TypeConstraint isSupertypeOf(const TypeVar& a, const Type& b) {
 
     return std::make_shared<C>(a, b);
 }
-
-/**
- * A constraint factory ensuring that all the types associated to the variable
- * a are subtypes of the least common super types of types associated to the variables {vars}.
- */
-// TypeConstraint isSubtypeOfSuperType(const TypeVar& a, const std::vector<TypeVar>& vars) {
-//    // TODO: this function is not used, so maybe it should be deleted
-//    assert(!vars.empty() && "Unsupported for no variables!");
-
-//    // if there is only one variable => chose easy way
-//    if (vars.size() == 1u) {
-//        return isSubtypeOf(a, vars[0]);
-//    }
-
-//    struct C : public Constraint<TypeVar> {
-//        TypeVar a;
-//        std::vector<TypeVar> vars;
-
-//        C(const TypeVar& a, const std::vector<TypeVar>& vars) : a(a), vars(vars) {}
-
-//        virtual bool update(Assignment<TypeVar>& ass) const {
-//            // get common super types of given variables
-//            TypeSet limit = ass[a];
-//            for (const TypeVar& cur : vars) {
-//                limit = getLeastCommonSupertypes(limit, ass[cur]);
-//            }
-
-//            // compute new value
-//            TypeSet res = getGreatestCommonSubtypes(ass[a], limit);
-
-//            // get current value of variable a
-//            TypeSet& s = ass[a];
-
-//            // check whether there was a change
-//            if (res == s) {
-//                return false;
-//            }
-//            s = res;
-//            return true;
-//        }
-
-//        virtual void print(std::ostream& out) const {
-//            if (vars.size() == 1) {
-//                out << a << " <: " << vars[0];
-//                return;
-//            }
-//            out << a << " <: super(" << join(vars, ",") << ")";
-//        }
-//    };
-
-//    return std::make_shared<C>(a, vars);
-//}
 
 TypeConstraint isSubtypeOfComponent(const TypeVar& a, const TypeVar& b, int index) {
     struct C : public Constraint<TypeVar> {
@@ -874,6 +760,10 @@ void TypeAnalysis::print(std::ostream& os) const {
     }
 }
 
+/**
+ * Generic type analysis framework for clauses
+ */
+
 std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         const TypeEnvironment& env, const AstClause& clause, const AstProgram* program, bool verbose) {
     struct Analysis : public AstConstraintAnalysis<TypeVar> {
@@ -911,7 +801,7 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             }
         }
 
-        // #2 - negations need to be skipped
+        // negations need to be skipped
         void visitNegation(const AstNegation& cur) override {
             // add nested atom to black-list
             negated.insert(cur.getAtom());
@@ -1028,6 +918,41 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             }
             if (fun.acceptsSymbols(2)) {
                 addConstraint(isSubtypeOf(a2, env.getSymbolType()));
+            }
+        }
+
+        // user-defined functors
+        void visitUserDefinedFunctor(const AstUserDefinedFunctor& fun) override {
+            auto cur = getVar(fun);
+
+            // get functor declaration
+            const AstFunctorDeclaration* funDecl = program->getFunctorDeclaration(fun.getName());
+            // check whether functor declaration exists
+            if (funDecl != nullptr) {
+                // add a constraint for the return type
+                if (funDecl->isNumerical()) {
+                    addConstraint(isSubtypeOf(cur, env.getNumberType()));
+                }
+                if (funDecl->isSymbolic()) {
+                    addConstraint(isSubtypeOf(cur, env.getSymbolType()));
+                }
+
+                // add constraints for arguments
+                for (size_t i = 0; i < fun.getArgCount(); i++) {
+                    auto arg = getVar(fun.getArg(i));
+
+                    // check that usage does not exceed
+                    // number of arguments in declaration
+                    if (i < funDecl->getArgCount()) {
+                        // add constraints for the i-th argument
+                        if (funDecl->acceptsNumbers(i)) {
+                            addConstraint(isSubtypeOf(arg, env.getNumberType()));
+                        }
+                        if (funDecl->acceptsSymbols(i)) {
+                            addConstraint(isSubtypeOf(arg, env.getSymbolType()));
+                        }
+                    }
+                }
             }
         }
 

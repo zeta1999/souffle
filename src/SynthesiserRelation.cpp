@@ -559,18 +559,12 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";  // end of insert(RamDomain x1, RamDomain x2, ...)
 
     // insertAll method
+    // do not use the specialized insertAll as it will copy references rather than tuples
     out << "template <typename T>\n";
     out << "void insertAll(T& other) {\n";
     out << "for (auto const& cur : other) {\n";
     out << "insert(cur);\n";
     out << "}\n";
-    out << "}\n";
-
-    // insertAll using the index method
-    out << "void insertAll(" << getTypeName() << "& other) {\n";
-    for (size_t i = 0; i < numIndexes; i++) {
-        out << "ind_" << i << ".insertAll(other.ind_" << i << ");\n";
-    }
     out << "}\n";
 
     // contains methods

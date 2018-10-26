@@ -351,6 +351,95 @@ protected:
 };
 
 /**
+ * Subclass of Argument that represents a unary function
+ */
+class AstUserDefinedFunctor : public AstFunctor {
+protected:
+    /** name of user-defined functor */
+    std::string name;
+
+    /** arguments of user-defined functor */
+    std::vector<std::unique_ptr<AstArgument>> args;
+
+public:
+    AstUserDefinedFunctor() {}
+
+    AstUserDefinedFunctor(const std::string& name) : name(name) {}
+
+    ~AstUserDefinedFunctor() override = default;
+
+    /** get name */
+    const std::string& getName() const {
+        return name;
+    }
+
+    /** set name */
+    void setName(const std::string& n) {
+        name = n;
+    }
+
+    /** get argument */
+    const AstArgument* getArg(size_t idx) const {
+        return args[idx].get();
+    }
+
+    /** get number of arguments */
+    size_t getArgCount() const {
+        return args.size();
+    }
+
+    /** get arguments */
+    std::vector<AstArgument*> getArguments() const {
+        return toPtrVector(args);
+    }
+
+    /** add argument to argument list */
+    void add(std::unique_ptr<AstArgument> arg) {
+        args.push_back(std::move(arg));
+    }
+
+    /** print user-defined functor */
+    void print(std::ostream& os) const override {
+        os << '#' << name << "(" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << ")";
+    }
+
+    /** Create clone */
+    AstUserDefinedFunctor* clone() const override {
+        auto res = new AstUserDefinedFunctor();
+        for (auto& cur : args) {
+            res->args.push_back(std::unique_ptr<AstArgument>(cur->clone()));
+        }
+        res->setSrcLoc(getSrcLoc());
+        res->setName(getName());
+        return res;
+    }
+
+    /** Mutates this node */
+    void apply(const AstNodeMapper& map) override {
+        for (auto& arg : args) {
+            arg = map(std::move(arg));
+        }
+    }
+
+    /** Obtains a list of all embedded child nodes */
+    std::vector<const AstNode*> getChildNodes() const override {
+        auto res = AstArgument::getChildNodes();
+        for (auto& cur : args) {
+            res.push_back(cur.get());
+        }
+        return res;
+    }
+
+protected:
+    /** Implements the node comparison for this node type */
+    bool equal(const AstNode& node) const override {
+        assert(nullptr != dynamic_cast<const AstUserDefinedFunctor*>(&node));
+        const auto& other = static_cast<const AstUserDefinedFunctor&>(node);
+        return name == other.name && equal_targets(args, other.args);
+    }
+};
+
+/**
  * Subclass of Argument that represents a binary function
  */
 class AstBinaryFunctor : public AstFunctor {

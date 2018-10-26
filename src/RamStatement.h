@@ -761,9 +761,13 @@ protected:
     /** logging message */
     std::string message;
 
+    /** Relation */
+    std::unique_ptr<RamRelation> relation;
+
 public:
-    RamLogTimer(std::unique_ptr<RamStatement> stmt, std::string msg)
-            : RamStatement(RN_LogTimer), statement(std::move(stmt)), message(std::move(msg)) {
+    RamLogTimer(std::unique_ptr<RamStatement> stmt, std::string msg, std::unique_ptr<RamRelation> relation)
+            : RamStatement(RN_LogTimer), statement(std::move(stmt)), message(std::move(msg)),
+              relation(std::move(relation)) {
         assert(statement);
     }
 
@@ -776,6 +780,11 @@ public:
     const RamStatement& getStatement() const {
         assert(statement);
         return *statement;
+    }
+
+    /** get logged relation */
+    const std::unique_ptr<RamRelation>& getRelation() const {
+        return relation;
     }
 
     /** Pretty print */
@@ -795,7 +804,8 @@ public:
 
     /** Create clone */
     RamLogTimer* clone() const override {
-        RamLogTimer* res = new RamLogTimer(std::unique_ptr<RamStatement>(statement->clone()), message);
+        RamLogTimer* res = new RamLogTimer(std::unique_ptr<RamStatement>(statement->clone()), message,
+                std::unique_ptr<RamRelation>(relation->clone()));
         return res;
     }
 

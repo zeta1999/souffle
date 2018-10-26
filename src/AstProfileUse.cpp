@@ -52,8 +52,8 @@ bool AstProfileUse::hasRelationSize(const AstRelationIdentifier& rel) {
  * Get relation size from profile
  */
 size_t AstProfileUse::getRelationSize(const AstRelationIdentifier& rel) {
-    if (profile::Relation* profRel = programRun->getRelation(rel.getName())) {
-        return profRel->getTotNum_tuples();
+    if (const auto* profRel = programRun->getRelation(rel.getName())) {
+        return profRel->size();
     } else {
         return INT_MAX;
     }

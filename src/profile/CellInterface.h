@@ -15,13 +15,13 @@ namespace profile {
 
 class CellInterface {
 public:
-    virtual std::string toString(int precision) = 0;
+    virtual std::string toString(int precision) const = 0;
 
-    virtual double getDoubVal() = 0;
+    virtual double getDoubleVal() const = 0;
 
-    virtual long getLongVal() = 0;
+    virtual long getLongVal() const = 0;
 
-    virtual std::string getStringVal() = 0;
+    virtual std::string getStringVal() const = 0;
 
     virtual ~CellInterface() = default;
 };

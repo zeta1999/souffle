@@ -48,6 +48,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
+#include <ffi.h>
 
 namespace souffle {
 
@@ -105,6 +106,70 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                     assert(false && "unsupported operator");
                     return 0;
             }
+        }
+
+        RamDomain visitUserDefinedOperator(const RamUserDefinedOperator& op) override {
+            // get name and type
+            const std::string& name = op.getName();
+            const std::string& type = op.getType();
+
+            // load DLL (if not done yet)
+            void* handle = interpreter.loadDLL();
+            void (*fn)() = (void (*)())dlsym(handle, name.c_str());
+            if (fn == nullptr) {
+                std::cerr << "Cannot find user-defined operator " << name << " in " << SOUFFLE_DLL
+                          << std::endl;
+                exit(1);
+            }
+
+            // prepare dynamic call environment
+            size_t arity = op.getArgCount();
+            ffi_cif cif;
+            ffi_type* args[arity];
+            void* values[arity];
+            RamDomain intVal[arity];
+            const char* strVal[arity];
+            ffi_arg rc;
+
+            /* Initialize arguments for ffi-call */
+            for (size_t i = 0; i < arity; i++) {
+                RamDomain arg = visit(op.getArg(i));
+                if (type[i] == 'S') {
+                    args[i] = &ffi_type_pointer;
+                    strVal[i] = interpreter.getSymbolTable().resolve(arg).c_str();
+                    values[i] = &strVal[i];
+                } else {
+                    args[i] = &ffi_type_uint32;
+                    intVal[i] = arg;
+                    values[i] = &intVal[i];
+                }
+            }
+
+            // call external function
+            if (type[arity] == 'N') {
+                // Initialize for numerical return value
+                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_uint32, args) != FFI_OK) {
+                    std::cerr << "Failed to prepare CIF for user-defined operator ";
+                    std::cerr << name << std::endl;
+                    exit(1);
+                }
+            } else {
+                // Initialize for string return value
+                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
+                    std::cerr << "Failed to prepare CIF for user-defined operator ";
+                    std::cerr << name << std::endl;
+                    exit(1);
+                }
+            }
+            ffi_call(&cif, fn, &rc, values);
+            RamDomain result;
+            if (type[arity] == 'N') {
+                result = ((RamDomain)rc);
+            } else {
+                result = interpreter.getSymbolTable().lookup(((const char*)rc));
+            }
+
+            return result;
         }
 
         // binary functors
@@ -197,7 +262,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
         // -- subroutine argument
         RamDomain visitArgument(const RamArgument& arg) override {
-            return ctxt.getArgument(arg.getArgNumber());
+            return ctxt.getArgument(arg.getArgCount());
         }
 
         // -- safety net --
@@ -678,8 +743,15 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
         }
 
         bool visitLogTimer(const RamLogTimer& timer) override {
-            Logger logger(timer.getMessage().c_str(), interpreter.getIterationNumber());
-            return visit(timer.getStatement());
+            if (timer.getRelation() == nullptr) {
+                Logger logger(timer.getMessage().c_str(), interpreter.getIterationNumber());
+                return visit(timer.getStatement());
+            } else {
+                const InterpreterRelation& rel = interpreter.getRelation(*timer.getRelation());
+                Logger logger(timer.getMessage().c_str(), interpreter.getIterationNumber(),
+                        std::bind(&InterpreterRelation::size, &rel));
+                return visit(timer.getStatement());
+            }
         }
 
         bool visitDebugInfo(const RamDebugInfo& dbg) override {
@@ -732,10 +804,10 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
             return true;
         }
 
-        bool visitLogSize(const RamLogSize& print) override {
-            const InterpreterRelation& rel = interpreter.getRelation(print.getRelation());
+        bool visitLogSize(const RamLogSize& size) override {
+            const InterpreterRelation& rel = interpreter.getRelation(size.getRelation());
             ProfileEventSingleton::instance().makeQuantityEvent(
-                    print.getMessage(), rel.size(), interpreter.getIterationNumber());
+                    size.getMessage(), rel.size(), interpreter.getIterationNumber());
             return true;
         }
 

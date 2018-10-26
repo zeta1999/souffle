@@ -196,6 +196,7 @@ public:
         microseconds end = va_arg(args, microseconds);
         size_t startMaxRSS = va_arg(args, size_t);
         size_t endMaxRSS = va_arg(args, size_t);
+        size_t size = va_arg(args, size_t);
         db.addSizeEntry(
                 {"program", "relation", relation, "non-recursive-rule", rule, "maxRSS", "pre"}, startMaxRSS);
         db.addSizeEntry(
@@ -204,6 +205,7 @@ public:
                 {"program", "relation", relation, "non-recursive-rule", rule, "source-locator"}, srcLocator);
         db.addDurationEntry(
                 {"program", "relation", relation, "non-recursive-rule", rule, "runtime"}, start, end);
+        db.addSizeEntry({"program", "relation", relation, "non-recursive-rule", rule, "num-tuples"}, size);
     }
 } nonRecursiveRuleTimingProcessor;
 
@@ -244,6 +246,7 @@ public:
         microseconds end = va_arg(args, microseconds);
         size_t startMaxRSS = va_arg(args, size_t);
         size_t endMaxRSS = va_arg(args, size_t);
+        size_t size = va_arg(args, size_t);
         std::string iteration = std::to_string(va_arg(args, size_t));
         db.addSizeEntry({"program", "relation", relation, "iteration", iteration, "recursive-rule", rule,
                                 version, "maxRSS", "pre"},
@@ -257,6 +260,9 @@ public:
         db.addDurationEntry({"program", "relation", relation, "iteration", iteration, "recursive-rule", rule,
                                     version, "runtime"},
                 start, end);
+        db.addSizeEntry({"program", "relation", relation, "iteration", iteration, "recursive-rule", rule,
+                                version, "num-tuples"},
+                size);
     }
 } recursiveRuleTimingProcessor;
 
@@ -300,8 +306,10 @@ public:
         microseconds end = va_arg(args, microseconds);
         size_t startMaxRSS = va_arg(args, size_t);
         size_t endMaxRSS = va_arg(args, size_t);
+        size_t size = va_arg(args, size_t);
         db.addSizeEntry({"program", "relation", relation, "maxRSS", "pre"}, startMaxRSS);
         db.addSizeEntry({"program", "relation", relation, "maxRSS", "post"}, endMaxRSS);
+        db.addSizeEntry({"program", "relation", relation, "num-tuples"}, size);
         db.addTextEntry({"program", "relation", relation, "source-locator"}, srcLocator);
         db.addDurationEntry({"program", "relation", relation, "runtime"}, start, end);
     }
@@ -341,6 +349,7 @@ public:
         microseconds end = va_arg(args, microseconds);
         size_t startMaxRSS = va_arg(args, size_t);
         size_t endMaxRSS = va_arg(args, size_t);
+        size_t size = va_arg(args, size_t);
         std::string iteration = std::to_string(va_arg(args, size_t));
         db.addTextEntry({"program", "relation", relation, "source-locator"}, srcLocator);
         db.addDurationEntry({"program", "relation", relation, "iteration", iteration, "runtime"}, start, end);
@@ -348,6 +357,7 @@ public:
                 {"program", "relation", relation, "iteration", iteration, "maxRSS", "pre"}, startMaxRSS);
         db.addSizeEntry(
                 {"program", "relation", relation, "iteration", iteration, "maxRSS", "post"}, endMaxRSS);
+        db.addSizeEntry({"program", "relation", relation, "iteration", iteration, "num-tuples"}, size);
     }
 } recursiveRelationTimingProcessor;
 
@@ -386,6 +396,7 @@ public:
         microseconds end = va_arg(args, microseconds);
         size_t startMaxRSS = va_arg(args, size_t);
         size_t endMaxRSS = va_arg(args, size_t);
+        va_arg(args, size_t);
         std::string iteration = std::to_string(va_arg(args, size_t));
         db.addSizeEntry(
                 {"program", "relation", relation, "iteration", iteration, "maxRSS", "pre"}, startMaxRSS);

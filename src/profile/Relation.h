@@ -30,14 +30,13 @@ private:
     double endtime = 0;
     double loadtime = 0;
     double savetime = 0;
-    long prev_num_tuples = 0;
-    long num_tuples = 0;
+    long nonRecTuples = 0;
     size_t preMaxRSS = 0;
     size_t postMaxRSS = 0;
     const std::string id;
     std::string locator;
-    int rul_id = 0;
-    int rec_id = 0;
+    int ruleId = 0;
+    int recursiveId = 0;
 
     std::vector<std::shared_ptr<Iteration>> iterations;
 
@@ -52,51 +51,41 @@ public:
     }
 
     std::string createID() {
-        return "N" + id.substr(1) + "." + std::to_string(++rul_id);
+        return "N" + id.substr(1) + "." + std::to_string(++ruleId);
     }
 
     std::string createRecID(std::string name) {
         for (auto& iter : iterations) {
-            for (auto& rul : iter->getRul_rec()) {
+            for (auto& rul : iter->getRules()) {
                 if (rul.second->getName().compare(name) == 0) {
                     return rul.second->getId();
                 }
             }
         }
-        return "C" + id.substr(1) + "." + std::to_string(++rec_id);
+        return "C" + id.substr(1) + "." + std::to_string(++recursiveId);
     }
 
-    inline double getLoadtime() {
+    double getLoadtime() const {
         return loadtime;
     }
 
-    inline double getSavetime() {
+    double getSavetime() const {
         return savetime;
     }
 
-    inline double getStarttime() {
-        for (auto& iteration : iterations) {
-            if (starttime == 0 || starttime > iteration->getStarttime()) {
-                starttime = iteration->getStarttime();
-            }
-        }
+    double getStarttime() const {
         return starttime;
     }
 
-    inline double getEndtime() {
-        for (auto& iteration : iterations) {
-            if (endtime < iteration->getEndtime()) {
-                endtime = iteration->getEndtime();
-            }
-        }
+    double getEndtime() const {
         return endtime;
     }
 
-    inline double getNonRecTime() {
+    double getNonRecTime() const {
         return endtime - starttime;
     }
 
-    double getRecTime() {
+    double getRecTime() const {
         double result = 0;
         for (auto& iter : iterations) {
             result += iter->getRuntime();
@@ -104,88 +93,71 @@ public:
         return result;
     }
 
-    double getCopyTime() {
+    double getCopyTime() const {
         double result = 0;
         for (auto& iter : iterations) {
-            result += iter->getCopy_time();
+            result += iter->getCopytime();
         }
         return result;
     }
 
-    size_t getNum_tuplesRel() {
+    size_t size() const {
         size_t result = 0;
         for (auto& iter : iterations) {
-            result += iter->getNum_tuples();
+            result += iter->size();
         }
-        return num_tuples + result;
+        return nonRecTuples + result;
     }
 
-    size_t getNum_tuplesRul() {
-        size_t result = 0;
-        for (auto& rul : ruleMap) {
-            result += rul.second->getNum_tuples();
-        }
-        for (auto& iter : iterations) {
-            for (auto& rul : iter->getRul_rec()) {
-                result += rul.second->getNum_tuples();
-            }
-        }
-        return result;
-    }
-
-    inline size_t getTotNum_tuples() {
-        return getNum_tuplesRel();
-    }
-
-    inline size_t getMaxRSSDiff() {
+    size_t getMaxRSSDiff() const {
         return postMaxRSS - preMaxRSS;
     }
 
-    size_t getTotNumRec_tuples() {
+    size_t getTotalRecursiveRuleSize() const {
         size_t result = 0;
         for (auto& iter : iterations) {
-            for (auto& rul : iter->getRul_rec()) {
-                result += rul.second->getNum_tuples();
+            for (auto& rul : iter->getRules()) {
+                result += rul.second->size();
             }
         }
         return result;
     }
 
-    inline void setLoadtime(double loadtime) {
+    void setLoadtime(double loadtime) {
         this->loadtime = loadtime;
     }
 
-    inline void setSavetime(double savetime) {
+    void setSavetime(double savetime) {
         this->savetime = savetime;
     }
 
-    inline void setStarttime(double time) {
+    void setStarttime(double time) {
         starttime = time;
     }
 
-    inline void setEndtime(double time) {
+    void setEndtime(double time) {
         endtime = time;
     }
 
-    inline void setNum_tuples(long num_tuples) {
-        this->num_tuples = num_tuples;
+    void setNumTuples(long numTuples) {
+        nonRecTuples = numTuples;
     }
 
-    inline void setPostMaxRSS(size_t maxRSS) {
-        this->postMaxRSS = maxRSS > postMaxRSS ? maxRSS : postMaxRSS;
+    void setPostMaxRSS(size_t maxRSS) {
+        postMaxRSS = std::max(maxRSS, postMaxRSS);
     }
 
-    inline void setPreMaxRSS(size_t maxRSS) {
+    void setPreMaxRSS(size_t maxRSS) {
         if (preMaxRSS == 0) {
             preMaxRSS = maxRSS;
             return;
         }
-        this->preMaxRSS = maxRSS < preMaxRSS ? maxRSS : postMaxRSS;
+        preMaxRSS = std::min(maxRSS, preMaxRSS);
     }
 
-    std::string toString() {
+    std::string toString() const {
         std::ostringstream output;
-        output << "{\n\"" << name << "\":[" << getNonRecTime() << "," << num_tuples
+        output << "{\n\"" << name << "\":[" << getNonRecTime() << "," << nonRecTuples
                << "],\n\n\"onRecRules\":[\n";
         for (auto& rul : ruleMap) {
             output << rul.second->toString();
@@ -204,7 +176,7 @@ public:
         return retStr.substr(0, retStr.size() - 2) + "]\n}";
     }
 
-    inline std::string getName() {
+    std::string getName() const {
         return name;
     }
 
@@ -213,50 +185,56 @@ public:
      *
      * @return the ruleMap
      */
-    inline std::unordered_map<std::string, std::shared_ptr<Rule>>& getRuleMap() {
-        return this->ruleMap;
+    const std::unordered_map<std::string, std::shared_ptr<Rule>>& getRuleMap() const {
+        return ruleMap;
     }
 
-    std::vector<std::shared_ptr<Rule>> getRuleRecList() {
+    void addRule(std::shared_ptr<Rule> rule) {
+        ruleMap[rule->getLocator()] = rule;
+    }
+
+    std::vector<std::shared_ptr<Rule>> getRuleRecList() const {
         std::vector<std::shared_ptr<Rule>> temp = std::vector<std::shared_ptr<Rule>>();
         for (auto& iter : iterations) {
-            for (auto& rul : iter->getRul_rec()) {
+            for (auto& rul : iter->getRules()) {
                 temp.push_back(rul.second);
             }
         }
         return temp;
     }
 
-    inline std::vector<std::shared_ptr<Iteration>>& getIterations() {
-        return this->iterations;
+    const std::vector<std::shared_ptr<Iteration>>& getIterations() const {
+        return iterations;
     }
 
-    inline std::string getId() {
+    void addIteration(std::shared_ptr<Iteration> iteration) {
+        iterations.push_back(iteration);
+        if (endtime < iteration->getEndtime()) {
+            endtime = iteration->getEndtime();
+        }
+        if (starttime == 0 || starttime > iteration->getStarttime()) {
+            starttime = iteration->getStarttime();
+        }
+    }
+
+    const std::string& getId() const {
         return id;
     }
 
-    inline std::string getLocator() {
+    const std::string& getLocator() const {
         return locator;
     }
 
-    inline void setLocator(std::string locator) {
+    void setLocator(std::string locator) {
         this->locator = locator;
     }
 
-    inline bool isReady() {
-        return this->ready;
+    bool isReady() {
+        return ready;
     }
 
-    inline void setReady(bool ready) {
+    void setReady(bool ready) {
         this->ready = ready;
-    }
-
-    inline long getPrev_num_tuples() {
-        return prev_num_tuples;
-    }
-
-    inline void setPrev_num_tuples(long prev_num_tuples) {
-        this->prev_num_tuples = prev_num_tuples;
     }
 };
 

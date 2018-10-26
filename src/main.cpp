@@ -447,15 +447,23 @@ int main(int argc, char** argv) {
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(), std::make_unique<AstSemanticChecker>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
+            std::make_unique<ResolveAliasesTransformer>(), std::make_unique<MinimiseProgramTransformer>(),
+            std::make_unique<InlineRelationsTransformer>(), std::make_unique<ResolveAliasesTransformer>(),
+            std::make_unique<RemoveRedundantRelationsTransformer>(),
+            std::make_unique<RemoveRelationCopiesTransformer>(),
+            std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<ReplaceSingletonVariablesTransformer>(),
-            std::make_unique<InlineRelationsTransformer>(), std::make_unique<ReduceExistentialsTransformer>(),
+            std::make_unique<FixpointTransformer>(
+                    std::make_unique<PipelineTransformer>(std::make_unique<ReduceExistentialsTransformer>(),
+                            std::make_unique<RemoveRedundantRelationsTransformer>())),
+            std::make_unique<RemoveRelationCopiesTransformer>(),
             std::make_unique<PartitionBodyLiteralsTransformer>(),
-            std::make_unique<ResolveAliasesTransformer>(),
-            std::make_unique<RemoveRelationCopiesTransformer>(), std::move(equivalencePipeline),
+            std::make_unique<MinimiseProgramTransformer>(),
+            std::make_unique<RemoveRelationCopiesTransformer>(),
+            std::make_unique<ReorderLiteralsTransformer>(),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
-            std::make_unique<ReorderLiteralsTransformer>(),
-            std::make_unique<RemoveRedundantRelationsTransformer>(), std::move(magicPipeline),
+            std::make_unique<ReorderLiteralsTransformer>(), std::move(magicPipeline),
             std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
 
     // Disable unwanted transformations

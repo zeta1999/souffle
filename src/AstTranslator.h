@@ -61,9 +61,9 @@ private:
      * Concrete attribute
      */
     struct Location {
-        int level;         // < the loop level
-        int element;       // < the element within the tuple created in the given level
-        std::string name;  // < name of the variable
+        int level;         // loop level
+        int element;       // element in a tuple
+        std::string name;  // name of associated attribute
 
         bool operator==(const Location& loc) const {
             return level == loc.level && element == loc.element;

@@ -10,7 +10,7 @@
  *
  * @file AstTranslator.h
  *
- * Defines utilities for translating AST structures into RAM constructs.
+ * Translator from AST into RAM
  *
  ***********************************************************************/
 
@@ -44,8 +44,7 @@ class RecursiveClauses;
 class TypeEnvironment;
 
 /**
- * A utility class capable of conducting the conversion between AST
- * and RAM structures.
+ * Main class for AST Translator 
  */
 class AstTranslator {
 private:
@@ -59,15 +58,15 @@ private:
     const TypeEnvironment* typeEnv;
 
     /**
-     * The location of some value in a loop nest.
+     * Concrete attribute
      */
     struct Location {
         int level;         // < the loop level
-        int component;     // < the component within the tuple created in the given level
+        int element;       // < the element within the tuple created in the given level
         std::string name;  // < name of the variable
 
         bool operator==(const Location& loc) const {
-            return level == loc.level && component == loc.component;
+            return level == loc.level && element == loc.element;
         }
 
         bool operator!=(const Location& loc) const {
@@ -75,11 +74,11 @@ private:
         }
 
         bool operator<(const Location& loc) const {
-            return level < loc.level || (level == loc.level && component < loc.component);
+            return level < loc.level || (level == loc.level && element < loc.element);
         }
 
         void print(std::ostream& out) const {
-            out << "(" << level << "," << component << ")";
+            out << "(" << level << "," << element << ")";
         }
 
         friend std::ostream& operator<<(std::ostream& out, const Location& loc) {
@@ -248,17 +247,21 @@ private:
     };
 
     /**
-     * A utility function assigning names to unnamed variables such that enclosing
-     * constructs may be cloned without losing the variable-identity.
+     * assigns names to unnamed variables such that enclosing
+     * constructs may be cloned without losing the variable-identity
      */
     void nameUnnamedVariables(AstClause* clause);
 
+    /** append statement to a list of statements */
     void appendStmt(std::unique_ptr<RamStatement>& stmtList, std::unique_ptr<RamStatement> stmt);
 
+    /** get symbol mask of a relation describing type attributes */ 
     SymbolMask getSymbolMask(const AstRelation& rel);
 
-    /* Converts the given relation identifier into a relation name.  */
-    std::string getRelationName(const AstRelationIdentifier& id);
+    /** converts the given relation identifier into a relation name */
+    std::string getRelationName(const AstRelationIdentifier& id) {
+         return toString(join(id.getNames(), "-"));
+    }
 
     void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,
             const std::string& fileExt, const bool isIntermediate);
@@ -269,37 +272,33 @@ private:
     std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
-    std::unique_ptr<RamRelation> getRamRelation(const AstRelation* rel, std::string name, size_t arity,
+    /** translate a AST relation to a RAM relation */ 
+    std::unique_ptr<RamRelation> translateRelation(const AstRelation* rel, std::string name, size_t arity,
             const bool istemp = false, const bool hashset = false);
 
-    std::string translateRelationName(const AstRelationIdentifier& id);
+    /** translate an AST argument to a RAM value */
+    std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueIndex& index);
 
-    std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueIndex& index = ValueIndex());
-
-    std::unique_ptr<RamValue> translateValue(const AstArgument& arg, const ValueIndex& index = ValueIndex()) {
-        return translateValue(&arg, index);
-    }
-
-    /** generate RAM code for a clause */
+    /** translate AST clause to RAM code */
     std::unique_ptr<RamStatement> translateClause(const AstClause& clause, const AstClause& originalClause,
             int version = 0, bool ret = false, bool hashset = false);
 
     /**
-     * Generates RAM code for the non-recursive clauses of the given relation.
+     * translate RAM code for the non-recursive clauses of the given relation.
      *
      * @return a corresponding statement or null if there are no non-recursive clauses.
      */
     std::unique_ptr<RamStatement> translateNonRecursiveRelation(
             const AstRelation& rel, const RecursiveClauses* recursiveClauses);
 
-    /** generate RAM code for recursive relations in a strongly-connected component */
+    /** translate RAM code for recursive relations in a strongly-connected component */
     std::unique_ptr<RamStatement> translateRecursiveRelation(
             const std::set<const AstRelation*>& scc, const RecursiveClauses* recursiveClauses);
 
-    /** generate RAM code for subroutine to get subproofs */
+    /** translate RAM code for subroutine to get subproofs */
     std::unique_ptr<RamStatement> makeSubproofSubroutine(const AstClause& clause);
 
-    /** Translate AST to RamProgram */
+    /** translate AST to RAM Program */
     std::unique_ptr<RamProgram> translateProgram(const AstTranslationUnit& translationUnit);
 
 public:

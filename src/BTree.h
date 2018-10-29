@@ -245,7 +245,7 @@ public:
     typedef Key key_type;
     typedef range<iterator> chunk;
 
-private:
+protected:
     /* ------------- static utilities ----------------- */
 
     const static SearchStrategy search;
@@ -1142,7 +1142,7 @@ public:
         }
     };
 
-private:
+protected:
 #if defined(IS_PARALLEL) && !defined(HAS_TSX)
     // a pointer to the root node of this tree
     node* volatile root;

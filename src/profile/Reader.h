@@ -316,6 +316,26 @@ public:
                 addRelation(*relation);
             }
         }
+        for (const auto& relation : relationMap) {
+            for (const auto& rule : relation.second->getRuleMap()) {
+                for (const auto& atom : rule.second->getAtoms()) {
+                    std::string relationName = atom.identifier.substr(0, atom.identifier.find('('));
+                    relationMap[relationName]->addReads(atom.frequency);
+                }
+            }
+            for (const auto& iteration : relation.second->getIterations()) {
+                for (const auto& rule : iteration->getRules()) {
+                    for (const auto& atom : rule.second->getAtoms()) {
+                        std::string relationName = atom.identifier.substr(0, atom.identifier.find('('));
+                        if (relationName.substr(0, 6) == "@delta") {
+                            relationName = relationName.substr(7);
+                        }
+                        assert(relationMap.count(relationName) > 0 || "Relation name for atom not found");
+                        relationMap[relationName]->addReads(atom.frequency);
+                    }
+                }
+            }
+        }
         run->setRelationMap(this->relationMap);
         loaded = true;
     }

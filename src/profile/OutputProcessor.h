@@ -65,6 +65,10 @@ public:
  * ROW[6] = ID
  * ROW[7] = SRC
  * ROW[8] = PERFOR
+ * ROW[9] = LOADTIME
+ * ROW[10] = SAVETIME
+ * ROW[11] = MAXRSSDIFF
+ * ROW[12] = READS/WRITES
  *
  */
 Table inline OutputProcessor::getRelTable() const {
@@ -73,7 +77,7 @@ Table inline OutputProcessor::getRelTable() const {
     Table table;
     for (auto& rel : relationMap) {
         std::shared_ptr<Relation> r = rel.second;
-        Row row(12);
+        Row row(13);
         double total_time = r->getNonRecTime() + r->getRecTime() + r->getCopyTime();
         row[0] = std::make_shared<Cell<double>>(total_time);
         row[1] = std::make_shared<Cell<double>>(r->getNonRecTime());
@@ -91,6 +95,11 @@ Table inline OutputProcessor::getRelTable() const {
         row[9] = std::make_shared<Cell<double>>(r->getLoadtime());
         row[10] = std::make_shared<Cell<double>>(r->getSavetime());
         row[11] = std::make_shared<Cell<long>>(r->getMaxRSSDiff());
+        if (r->size() == 0 || r->getReads() == 0) {
+            row[12] = std::make_shared<Cell<std::string>>("--");
+        } else {
+            row[12] = std::make_shared<Cell<long>>(std::log10(1.0 * r->getReads() / r->size()));
+        }
 
         table.addRow(std::make_shared<Row>(row));
     }

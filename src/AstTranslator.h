@@ -44,7 +44,7 @@ class RecursiveClauses;
 class TypeEnvironment;
 
 /**
- * Main class for AST Translator 
+ * Main class for AST Translator
  */
 class AstTranslator {
 private:
@@ -255,12 +255,12 @@ private:
     /** append statement to a list of statements */
     void appendStmt(std::unique_ptr<RamStatement>& stmtList, std::unique_ptr<RamStatement> stmt);
 
-    /** get symbol mask of a relation describing type attributes */ 
+    /** get symbol mask of a relation describing type attributes */
     SymbolMask getSymbolMask(const AstRelation& rel);
 
     /** converts the given relation identifier into a relation name */
     std::string getRelationName(const AstRelationIdentifier& id) {
-         return toString(join(id.getNames(), "-"));
+        return toString(join(id.getNames(), "-"));
     }
 
     void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,
@@ -272,7 +272,7 @@ private:
     std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
-    /** translate a AST relation to a RAM relation */ 
+    /** translate a AST relation to a RAM relation */
     std::unique_ptr<RamRelation> translateRelation(const AstRelation* rel, std::string name, size_t arity,
             const bool istemp = false, const bool hashset = false);
 

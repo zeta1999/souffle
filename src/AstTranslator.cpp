@@ -74,7 +74,6 @@ SymbolMask AstTranslator::getSymbolMask(const AstRelation& rel) {
     return res;
 }
 
-
 void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation* rel,
         const std::string& filePath, const std::string& fileExt, const bool isIntermediate) {
     // set relation name correctly
@@ -319,7 +318,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(
         // translate arguments
         std::vector<std::unique_ptr<RamValue>> values;
         for (auto& arg : clause.getHead()->getArguments()) {
-            values.push_back(translateValue(arg,ValueIndex()));
+            values.push_back(translateValue(arg, ValueIndex()));
         }
 
         // create a fact statement

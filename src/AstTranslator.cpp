@@ -225,55 +225,80 @@ std::unique_ptr<RamRelation> AstTranslator::translateRelation(
 }
 
 std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, const ValueIndex& index) {
-    std::unique_ptr<RamValue> val;
-    if (!arg) {
-        return val;
-    }
+    class ValueTranslator : public AstVisitor<std::unique_ptr<RamValue>> {
+        AstTranslator& translator;
+        const ValueIndex& index;
 
-    if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
-        assert(index.isDefined(*var) && "variable not grounded");
-        const Location& loc = index.getDefinitionPoint(*var);
-        val = std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name);
-    } else if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
-        return nullptr;  // utilised to identify _ values
-    } else if (const auto* c = dynamic_cast<const AstConstant*>(arg)) {
-        val = std::make_unique<RamNumber>(c->getIndex());
-    } else if (const auto* uf = dynamic_cast<const AstUnaryFunctor*>(arg)) {
-        val = std::make_unique<RamUnaryOperator>(uf->getFunction(), translateValue(uf->getOperand(), index));
-    } else if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-        std::vector<std::unique_ptr<RamValue>> values;
-        for (const auto& cur : udf->getArguments()) {
-            values.push_back(translateValue(cur, index));
-        }
-        const AstFunctorDeclaration* decl = program->getFunctorDeclaration(udf->getName());
-        std::string type = decl->getType();
-        val = std::make_unique<RamUserDefinedOperator>(udf->getName(), type, std::move(values));
-    } else if (const auto* bf = dynamic_cast<const AstBinaryFunctor*>(arg)) {
-        val = std::make_unique<RamBinaryOperator>(
-                bf->getFunction(), translateValue(bf->getLHS(), index), translateValue(bf->getRHS(), index));
-    } else if (const auto* tf = dynamic_cast<const AstTernaryFunctor*>(arg)) {
-        val = std::make_unique<RamTernaryOperator>(tf->getFunction(), translateValue(tf->getArg(0), index),
-                translateValue(tf->getArg(1), index), translateValue(tf->getArg(2), index));
-    } else if (dynamic_cast<const AstCounter*>(arg)) {
-        val = std::make_unique<RamAutoIncrement>();
-    } else if (const auto* init = dynamic_cast<const AstRecordInit*>(arg)) {
-        std::vector<std::unique_ptr<RamValue>> values;
-        for (const auto& cur : init->getArguments()) {
-            values.push_back(translateValue(cur, index));
-        }
-        val = std::make_unique<RamPack>(std::move(values));
-    } else if (const auto* agg = dynamic_cast<const AstAggregator*>(arg)) {
-        // here we look up the location the aggregation result gets bound
-        auto loc = index.getAggregatorLocation(*agg);
-        val = std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name);
-    } else if (const auto* subArg = dynamic_cast<const AstSubroutineArgument*>(arg)) {
-        val = std::make_unique<RamArgument>(subArg->getNumber());
-    } else {
-        std::cout << "Unsupported node type of " << arg << ": " << typeid(*arg).name() << "\n";
-        assert(false && "unknown AST node type not permissible");
-    }
+    public:
+        ValueTranslator(AstTranslator& translator, const ValueIndex& index)
+                : translator(translator), index(index) {}
 
-    return val;
+        std::unique_ptr<RamValue> visitVariable(const AstVariable& var) override {
+            assert(index.isDefined(var) && "variable not grounded");
+            const Location& loc = index.getDefinitionPoint(var);
+            return std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name);
+        }
+
+        std::unique_ptr<RamValue> visitUnnamedVariable(const AstUnnamedVariable& var) override {
+            return nullptr;  // utilised to identify _ values
+        }
+
+        std::unique_ptr<RamValue> visitConstant(const AstConstant& c) override {
+            return std::make_unique<RamNumber>(c.getIndex());
+        }
+
+        std::unique_ptr<RamValue> visitUnaryFunctor(const AstUnaryFunctor& uf) override {
+            return std::make_unique<RamUnaryOperator>(
+                    uf.getFunction(), translator.translateValue(uf.getOperand(), index));
+        }
+
+        std::unique_ptr<RamValue> visitUserDefinedFunctor(const AstUserDefinedFunctor& udf) override {
+            std::vector<std::unique_ptr<RamValue>> values;
+            for (const auto& cur : udf.getArguments()) {
+                values.push_back(translator.translateValue(cur, index));
+            }
+            const AstFunctorDeclaration* decl = translator.program->getFunctorDeclaration(udf.getName());
+            std::string type = decl->getType();
+            return std::make_unique<RamUserDefinedOperator>(udf.getName(), type, std::move(values));
+        }
+
+        std::unique_ptr<RamValue> visitBinaryFunctor(const AstBinaryFunctor& bf) override {
+            return std::make_unique<RamBinaryOperator>(bf.getFunction(),
+                    translator.translateValue(bf.getLHS(), index),
+                    translator.translateValue(bf.getRHS(), index));
+        }
+
+        std::unique_ptr<RamValue> visitTernaryFunctor(const AstTernaryFunctor& tf) override {
+            return std::make_unique<RamTernaryOperator>(tf.getFunction(),
+                    translator.translateValue(tf.getArg(0), index),
+                    translator.translateValue(tf.getArg(1), index),
+                    translator.translateValue(tf.getArg(2), index));
+        }
+
+        std::unique_ptr<RamValue> visitCounter(const AstCounter&) override {
+            return std::make_unique<RamAutoIncrement>();
+        }
+
+        std::unique_ptr<RamValue> visitRecordInit(const AstRecordInit& init) override {
+            std::vector<std::unique_ptr<RamValue>> values;
+            for (const auto& cur : init.getArguments()) {
+                values.push_back(translator.translateValue(cur, index));
+            }
+            return std::make_unique<RamPack>(std::move(values));
+        }
+
+        std::unique_ptr<RamValue> visitAggregator(const AstAggregator& agg) override {
+            // here we look up the location the aggregation result gets bound
+            auto loc = index.getAggregatorLocation(agg);
+            return std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name);
+        }
+
+        std::unique_ptr<RamValue> visitSubroutineArgument(const AstSubroutineArgument& subArg) override {
+            return std::make_unique<RamArgument>(subArg.getNumber());
+        }
+    };
+
+    return ValueTranslator(*this, index)(*arg);
 }
 
 /** generate RAM code for a clause */

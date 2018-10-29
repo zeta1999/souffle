@@ -8,13 +8,12 @@ RUN apt-get install -y \
         automake \
         bison \
         build-essential \
-        clang \
-        clang-format-4.0 \
         doxygen \
         flex \
         g++ \
         git \
         graphviz \
+        libffi-dev \
         libsqlite3-dev \
         libtool \
         lsb-release \

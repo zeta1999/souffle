@@ -29,6 +29,7 @@
 #include <cassert>
 #include <iostream>
 #include <iterator>
+#include <functional>
 #include <type_traits>
 #include <vector>
 
@@ -44,30 +45,32 @@ namespace detail {
  * @tparam blockSize    .. determines the number of bytes/block utilized by leaf nodes
  * @tparam SearchStrategy .. enables switching between linear, binary or any other search strategy
  * @tparam isSet        .. true = set, false = multiset
+ * @tparam Functor      .. a std::function that is called on successful (new) insert
  */
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
-        unsigned blockSize, typename SearchStrategy, bool isSet>
+        unsigned blockSize, typename SearchStrategy, bool isSet, typename Functor>
 class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet> {
-    typedef btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet> parenttype;
     public:
+    typedef btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet> parenttype;
+
+    LambdaBTree(const Comparator& comp = Comparator()) : parenttype(comp) {}
 
     /**
      * Inserts the given key into this tree.
      */
-    bool insert(const Key& k) {
-        // TODO: implement
-        assert(false);
+    //typename Key::second_type insert(const Key& k, std::function<typename Key::second_type(typename Key::first_type)> f){ 
+    typename Functor::result_type insert(Key& k, Functor f){ 
         typename parenttype::operation_hints hints;
-        return insert(k, hints);
+        return insert(k, hints, f);
     }
 
     /**
      * Inserts the given key into this tree.
      */
-    bool insert(const Key& k, typename parenttype::operation_hints& hints) {
+    //typename Key::second_type insert(const Key& k, typename parenttype::operation_hints& hints, std::function<typename Key::second_type(typename Key::first_type)> f) {
+    typename Functor::result_type insert(Key& k, typename parenttype::operation_hints& hints, Functor f) {
         // TODO: implement
-        assert(false);
 #if defined(IS_PARALLEL) && !defined(HAS_TSX)
         // special handling for inserting first element
         while (this->root == nullptr) {
@@ -84,9 +87,11 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                 break;
             }
 
+            // XXX: here
             // create new node
             this->leftmost = new typename parenttype::leaf_node();
             this->leftmost->numElements = 1;
+            typename Functor::result_type res = f(k);
             this->leftmost->keys[0] = k;
             this->root = this->leftmost;
 
@@ -95,7 +100,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
 
             hints.last_insert = this->leftmost;
 
-            return true;
+            return res;
         }
 
         // insert using iterative implementation
@@ -109,7 +114,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             // get a read lease on indicated node
             auto hint_lease = hints.last_insert->lock.start_read();
             // check whether it covers the key
-            if (covers(hints.last_insert, k)) {
+            if (this->covers(hints.last_insert, k)) {
                 // and if there was no concurrent modification
                 if (hints.last_insert->lock.validate(hint_lease)) {
                     // use hinted location
@@ -156,14 +161,15 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                 auto idx = pos - a;
 
                 // early exit for sets
-                if (isSet && pos != b && equal(*pos, k)) {
+                if (isSet && pos != b && this->equal(*pos, k)) {
                     // validate results
                     if (!cur->lock.validate(cur_lease)) {
                         // start over again
-                        return insert(k, hints);
+                        return insert(k, hints, f);
                     }
                     // we found the element => no check of lock necessary
-                    return false;
+                    // XXX: careful, pnappa has duck typed this (look for other XXXs for tips)
+                    return (*pos).second;
                 }
 
                 // get next pointer
@@ -175,7 +181,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                 // check whether there was a write
                 if (!cur->lock.end_read(cur_lease)) {
                     // start over
-                    return insert(k, hints);
+                    return insert(k, hints, f);
                 }
 
                 // go to next
@@ -199,24 +205,24 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             auto idx = pos - a;
 
             // early exit for sets
-            if (isSet && pos != a && equal(*(pos - 1), k)) {
+            if (isSet && pos != a && this->equal(*(pos - 1), k)) {
                 // validate result
                 if (!cur->lock.validate(cur_lease)) {
                     // start over again
-                    return insert(k, hints);
+                    return insert(k, hints, f);
                 }
                 // we found the element => done
-                return false;
+                return (*(pos-1)).second;
             }
 
             // upgrade to write-permission
             if (!cur->lock.try_upgrade_to_write(cur_lease)) {
                 // something has changed => restart
                 hints.last_insert = cur;
-                return insert(k, hints);
+                return insert(k, hints, f);
             }
 
-            if (cur->numElements >= typename parenttype::node::maxKeys) {
+            if (cur->numElements >= parenttype::node::maxKeys) {
                 // -- lock parents --
                 auto priv = cur;
                 auto parent = priv->parent;
@@ -275,12 +281,12 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                     cur->lock.end_write();
 
                     // insert in sibling
-                    return insert(k, hints);
+                    return insert(k, hints, f);
                 }
             }
 
             // ok - no split necessary
-            assert(cur->numElements < this->node::maxKeys && "Split required!");
+            assert(cur->numElements < parenttype::node::maxKeys && "Split required!");
 
             // move keys
             for (int j = cur->numElements; j > idx; --j) {
@@ -288,6 +294,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             }
 
             // insert new element
+            typename Functor::result_type res = f(k);
             cur->keys[idx] = k;
             cur->numElements++;
 
@@ -296,7 +303,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
 
             // remember last insertion position
             hints.last_insert = cur;
-            return true;
+            return res;
         }
 #else
 #ifdef HAS_TSX
@@ -314,6 +321,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             // create new node
             leftmost = new leaf_node();
             leftmost->numElements = 1;
+            typename Functor::result_type res = f(k);
             leftmost->keys[0] = k;
             root = leftmost;
 
@@ -323,7 +331,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             // end hardware transaction
             TX_END;
 #endif
-            return true;
+            return res;
         }
 
         // insert using iterative implementation
@@ -352,7 +360,9 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                     // end hardware transaction
                     TX_END;
 #endif
-                    return false;
+                    // XXX: if anyone but pnappa is using this, be careful of this - we don't actually use the functor
+                    // and rely on duck typing - so, if you get a template warning that points to here - heed this message
+                    return (*pos).second;
                 }
 
                 cur = cur->getChild(idx);
@@ -376,7 +386,8 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                 // end hardware transaction
                 TX_END;
 #endif
-                return false;
+                // XXX: likewise to the previous XXX post
+                return (*(pos-1)).second;
             }
 
             if (cur->numElements >= node::maxKeys) {
@@ -399,6 +410,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             }
 
             // insert new element
+            typename Functor::return_type res = f(k);
             cur->keys[idx] = k;
             cur->numElements++;
 
@@ -409,7 +421,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             // end hardware transaction
             TX_END;
 #endif
-            return true;
+            return res;
         }
 #endif
     }
@@ -452,217 +464,6 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
         insert(other.begin(), other.end());
     }
 
-    // Obtains an iterator referencing the first element of the tree.
-    typename parenttype::iterator begin() const {
-        return iterator(this->leftmost, 0);
-    }
-
-    // Obtains an iterator referencing the position after the last element of the tree.
-    typename parenttype::iterator end() const {
-        return this->iterator();
-    }
-
-    /**
-     * Partitions the full range of this set into up to a given number of chunks.
-     * The chunks will cover approximately the same number of elements. Also, the
-     * number of chunks will only approximate the desired number of chunks.
-     *
-     * @param num .. the number of chunks requested
-     * @return a list of chunks partitioning this tree
-     */
-    std::vector<typename parenttype::chunk> getChunks(typename parenttype::size_type num) const {
-        std::vector<typename parenttype::chunk> res;
-        if (this->empty()) {
-            return res;
-        }
-        return this->root->collectChunks(res, num, begin(), end());
-    }
-
-    /**
-     * Determines whether the given element is a member of this tree.
-     */
-    bool contains(const Key& k) const {
-        typename parenttype::operation_hints hints;
-        return contains(k, hints);
-    }
-
-    /**
-     * Determines whether the given element is a member of this tree.
-     */
-    bool contains(const Key& k, typename parenttype::operation_hints& hints) const {
-        return find(k, hints) != end();
-    }
-
-    /**
-     * Locates the given key within this tree and returns an iterator
-     * referencing its position. If not found, an end-iterator will be returned.
-     */
-    typename parenttype::iterator find(const Key& k) const {
-        operation_hints hints;
-        return find(k, hints);
-    }
-
-    /**
-     * Locates the given key within this tree and returns an iterator
-     * referencing its position. If not found, an end-iterator will be returned.
-     */
-    typename parenttype::iterator find(const Key& k, typename parenttype::operation_hints& hints) const {
-        if (empty()) {
-            return end();
-        }
-
-        node* cur = root;
-
-        // test last location searched (temporal locality)
-        if (hints.last_find_end && covers(hints.last_find_end, k)) {
-            cur = hints.last_find_end;
-            // register it as a hit
-            hint_stats.contains.addHit();
-        } else {
-            // register it as a miss
-            hint_stats.contains.addMiss();
-        }
-
-        // an iterative implementation (since 2/7 faster than recursive)
-
-        while (true) {
-            auto a = &(cur->keys[0]);
-            auto b = &(cur->keys[cur->numElements]);
-
-            auto pos = search(k, a, b, comp);
-
-            if (pos < b && equal(*pos, k)) {
-                hints.last_find_end = cur;
-                return iterator(cur, pos - a);
-            }
-
-            if (!cur->inner) {
-                hints.last_find_end = cur;
-                return end();
-            }
-
-            // continue search in child node
-            cur = cur->getChild(pos - a);
-        }
-    }
-
-    /**
-     * Obtains a lower boundary for the given key -- hence an iterator referencing
-     * the smallest value that is not less the given key. If there is no such element,
-     * an end-iterator will be returned.
-     */
-    typename parenttype::iterator lower_bound(const Key& k) const {
-        operation_hints hints;
-        return lower_bound(k, hints);
-    }
-
-    /**
-     * Obtains a lower boundary for the given key -- hence an iterator referencing
-     * the smallest value that is not less the given key. If there is no such element,
-     * an end-iterator will be returned.
-     */
-    typename parenttype::iterator lower_bound(const Key& k, typename parenttype::operation_hints& hints) const {
-        if (empty()) {
-            return end();
-        }
-
-        node* cur = root;
-
-        // test last searched node
-        if (hints.last_lower_bound_end && covers(hints.last_lower_bound_end, k)) {
-            cur = hints.last_lower_bound_end;
-            hint_stats.lower_bound.addHit();
-        } else {
-            hint_stats.lower_bound.addMiss();
-        }
-
-        typename parenttype::iterator res = end();
-        while (true) {
-            auto a = &(cur->keys[0]);
-            auto b = &(cur->keys[cur->numElements]);
-
-            auto pos = search.lower_bound(k, a, b, comp);
-            auto idx = pos - a;
-
-            if (!cur->inner) {
-                hints.last_lower_bound_end = cur;
-                return (pos != b) ? iterator(cur, idx) : res;
-            }
-
-            if (isSet && pos != b && equal(*pos, k)) {
-                return iterator(cur, idx);
-            }
-
-            if (pos != b) {
-                res = iterator(cur, idx);
-            }
-
-            cur = cur->getChild(idx);
-        }
-    }
-
-    /**
-     * Obtains an upper boundary for the given key -- hence an iterator referencing
-     * the first element that the given key is less than the referenced value. If
-     * there is no such element, an end-iterator will be returned.
-     */
-    typename parenttype::iterator upper_bound(const Key& k) const {
-        operation_hints hints;
-        return upper_bound(k, hints);
-    }
-
-    /**
-     * Obtains an upper boundary for the given key -- hence an iterator referencing
-     * the first element that the given key is less than the referenced value. If
-     * there is no such element, an end-iterator will be returned.
-     */
-    typename parenttype::iterator upper_bound(const Key& k, typename parenttype::operation_hints& hints) const {
-        if (empty()) {
-            return end();
-        }
-
-        node* cur = root;
-
-        // test last search node
-        if (hints.last_upper_bound_end && coversUpperBound(hints.last_upper_bound_end, k)) {
-            cur = hints.last_upper_bound_end;
-            hint_stats.upper_bound.addHit();
-        } else {
-            hint_stats.upper_bound.addMiss();
-        }
-
-        iterator res = end();
-        while (true) {
-            auto a = &(cur->keys[0]);
-            auto b = &(cur->keys[cur->numElements]);
-
-            auto pos = search.upper_bound(k, a, b, comp);
-            auto idx = pos - a;
-
-            if (!cur->inner) {
-                hints.last_upper_bound_end = cur;
-                return (pos != b) ? iterator(cur, idx) : res;
-            }
-
-            if (pos != b) {
-                res = iterator(cur, idx);
-            }
-
-            cur = cur->getChild(idx);
-        }
-    }
-
-    /**
-     * Clears this tree.
-     */
-    void clear() {
-        if (root) {
-            delete root;
-        }
-        root = nullptr;
-        leftmost = nullptr;
-    }
-
     /**
      * Swaps the content of this tree with the given tree. This
      * is a much more efficient operation than creating a copy and
@@ -670,8 +471,8 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
      */
     void swap(LambdaBTree& other) {
         // swap the content
-        std::swap(root, other.root);
-        std::swap(leftmost, other.leftmost);
+        std::swap(this->root, other.root);
+        std::swap(this->leftmost, other.leftmost);
     }
 
     // Implementation of the assignment operation for trees.
@@ -688,14 +489,14 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
         }
 
         // clone content (deep copy)
-        root = other.root->clone();
+        this->root = other.root->clone();
 
         // update leftmost reference
-        auto tmp = root;
+        auto tmp = this->root;
         while (!tmp->isLeaf()) {
             tmp = tmp->getChild(0);
         }
-        leftmost = static_cast<leaf_node*>(tmp);
+        this->leftmost = static_cast<typename parenttype::leaf_node*>(tmp);
 
         // done
         return *this;
@@ -709,10 +510,10 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
         }
 
         // check size
-        if (size() != other.size()) {
+        if (this->size() != other.size()) {
             return false;
         }
-        if (size() < other.size()) {
+        if (this->size() < other.size()) {
             return other == *this;
         }
 
@@ -731,29 +532,30 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
     }
 };
 
-// Instantiation of static member search.
-template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename SearchStrategy,
-        bool isSet>
-const SearchStrategy LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet>::search;
-
+//// Instantiation of static member search.
+//template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename SearchStrategy,
+//        bool isSet>
+//const SearchStrategy LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet>::parenttype::search;
+//
 }  // end namespace detail
 
 /**
  * A b-tree based set implementation.
  *
  * @tparam Key             .. the element type to be stored in this set
+ * @tparam Functor         .. a std::function that is invoked on successful insert
  * @tparam Comparator     .. a class defining an order on the stored elements
  * @tparam Allocator     .. utilized for allocating memory for required nodes
  * @tparam blockSize    .. determines the number of bytes/block utilized by leaf nodes
  * @tparam SearchStrategy .. enables switching between linear, binary or any other search strategy
  */
-template <typename Key, typename Comparator = detail::comparator<Key>,
+template <typename Key, typename Functor, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
         unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type>
-class LambdaBTreeSet: public detail::LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> {
-    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> super;
+class LambdaBTreeSet: public detail::LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, Functor> {
+    typedef detail::LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, Functor> super;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true>;
+    friend class detail::LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, Functor>;
 
 public:
     /**
@@ -770,15 +572,15 @@ public:
     }
 
     // A copy constructor.
-    LambdaBTreeSet(const LambdaBTreeSet& other) : super(other) {}
+    LambdaBTreeSet(const LambdaBTreeSet& other) : super::parenttype(other) {}
 
     // A move constructor.
-    LambdaBTreeSet(LambdaBTreeSet&& other) : super(std::move(other)) {}
+    LambdaBTreeSet(LambdaBTreeSet&& other) : super::parenttype(std::move(other)) {}
 
 private:
     // A constructor required by the bulk-load facility.
     template <typename s, typename n, typename l>
-    LambdaBTreeSet(s size, n* root, l* leftmost) : super(size, root, leftmost) {}
+    LambdaBTreeSet(s size, n* root, l* leftmost) : super::parenttype(size, root, leftmost) {}
 
 public:
     // Support for the assignment operator.

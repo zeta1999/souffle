@@ -14,7 +14,7 @@
 
 #include "DisjointSet.h"
 
-#include "eqrelbtree.h"
+#include "LambdaBTree.h"
 
 // branch predictor hacks
 #define unlikely(x) __builtin_expect((x), 0)
@@ -24,7 +24,7 @@ namespace souffle {
 
 template<typename StorePair>
 struct EqrelMapComparator {
-    int operator()(const StorePair a, const StorePair b) {
+    int operator()(const StorePair& a, const StorePair& b) {
         if (a.first < b.first) return -1;
         else if (b.first < a.first) return 1;
         else return 0;
@@ -47,7 +47,7 @@ class SparseDisjointSet {
     friend class BinaryRelation;
 
     typedef std::pair<SparseDomain, parent_t> PairStore;
-    typedef souffle::IncrementingBTreeSet<PairStore, EqrelMapComparator<PairStore>> SparseMap;
+    typedef souffle::LambdaBTreeSet<PairStore, std::function<parent_t(PairStore&)>, EqrelMapComparator<PairStore>> SparseMap;
     typedef souffle::RandomInsertPiggyList<SparseDomain> DenseMap;
     // TODO: do we use this?
     typename SparseMap::operation_hints last_ins;
@@ -65,12 +65,13 @@ private:
     parent_t toDense(const SparseDomain in) {
         // insert into the mapping - if the key doesn't exist (in), the function will be called
         // and a dense value will be created for it
-        parent_t densi = sparseToDenseMap.insert({in, 0}, last_ins, [&](typename PairStore::first_type d){ 
-                parent_t c2 = DisjointSet::b2p(this->ds.makeNode()); 
-                this->denseToSparseMap.insertAt(c2, d);
+        PairStore p = {in, -1};
+        return sparseToDenseMap.insert(p, last_ins, [&](PairStore& p){ 
+                parent_t c2 =  DisjointSet::b2p(this->ds.makeNode()); 
+                this->denseToSparseMap.insertAt(c2, p.first);
+                p.second = c2;
                 return c2;
-        });
-        return densi;
+                });
     }
 
 public:

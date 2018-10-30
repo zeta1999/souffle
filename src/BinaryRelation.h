@@ -2,6 +2,7 @@
 
 #include "UnionFind.h"
 #include "Util.h"
+#include "LambdaBTree.h"
 #include <algorithm>
 #include <exception>
 #include <unordered_map>
@@ -25,13 +26,16 @@ class BinaryRelation {
     typedef souffle::BlockList<DomainInt> StatesList;
     typedef StatesList* StatesBucket;
     typedef std::pair<DomainInt, StatesBucket> StorePair;
-    typedef souffle::IncrementingBTreeSet<StorePair, souffle::EqrelMapComparator<StorePair>> StatesMap;
+    typedef souffle::LambdaBTreeSet<StorePair, std::function<StatesBucket(StorePair&)>, souffle::EqrelMapComparator<StorePair>> StatesMap;
     mutable StatesMap equivalencePartition;
     // whether the cache is stale
     mutable std::atomic<bool> statesMapStale;
 
 public:
     BinaryRelation() : statesMapStale(false) {};
+    ~BinaryRelation() {
+        emptyPartition();
+    }
 
     /**
      * TODO: implement this operation_hint class
@@ -142,6 +146,17 @@ public:
         return sds.contains(x, y);
     }
 
+    void emptyPartition() const {
+        // delete the beautiful values inside (they're raw ptrs, so they need to be.)
+        for (auto& pair : equivalencePartition) {
+            delete pair.second;
+        }
+        // invalidate it my dude
+        this->statesMapStale.store(true, std::memory_order_relaxed);
+        
+        equivalencePartition.clear();
+    }
+
     /**
      * Empty the relation
      */
@@ -149,7 +164,7 @@ public:
         statesLock.lock();
 
         sds.clear();
-        equivalencePartition.clear();
+        emptyPartition();
 
         statesLock.unlock();
     }
@@ -188,20 +203,18 @@ private:
         }
 
         // btree version
-        equivalencePartition.clear();
+        emptyPartition();
 
         size_t dSetSize = this->sds.ds.a_blocks.size();
         for (size_t i = 0; i < dSetSize; ++i) {
             typename TupleType::value_type sparseVal = this->sds.toSparse(i);
             parent_t rep = this->sds.findNode(sparseVal);
 
-            // XXX: you fuckin idiot pnappa, of course these will leak - there's no cleanup of these in the clear()
-            // in the btree.....
-            // I guess a solution can be to use unique_ptrs?
-            
-            StatesList* mapList = equivalencePartition.insert({rep, nullptr}, [&](DomainInt) { 
+            StorePair p = {rep, nullptr};
+            StatesList* mapList = equivalencePartition.insert(p, [&](StorePair& sp) { 
                     StatesList* r = new StatesList(1); 
-                    return r; 
+                    sp.second = r;
+                    return r;
                     });
             mapList->append(sparseVal);
         }

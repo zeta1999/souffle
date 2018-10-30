@@ -286,33 +286,6 @@ public:
 };
 
 
-
-template<>
-void BlockList<std::atomic<size_t>>::insertAt(size_t index, const std::atomic<size_t>& value) {
-    // exact same logic as createNode, but instead just cares about expanding til our index fits
-    // not if a newly added node will fit.
-    while (container_size.load() < index + 1) {
-        sl.lock();
-        // just in case
-        while (container_size.load() < index + 1) {
-            // create the new block
-            listData.push_back(new std::atomic<size_t>[allocsize]);
-            this->blockLookupTable[listData.size() - 1] = listData.back();
-            container_size += allocsize;
-            // double the size of the next allocated block
-            allocsize <<= 1;
-        }
-
-        sl.unlock();
-    }
-
-        size_t nindex = index + BLOCKSIZE;
-        size_t blockNum = (63 - __builtin_clzll(nindex)) - BLOCKBITS;
-        size_t blockInd = (nindex) & ((1 << (blockNum+BLOCKBITS)) - 1);
-        // store the value in its correct location
-        this->getBlock(blockNum)[blockInd].store(value.load(std::memory_order_relaxed));
-    }
-
 ///* a blazin' fast concurrent vector. */
 //template <class T>
 //class BlockListRemovable {

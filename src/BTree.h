@@ -2061,7 +2061,7 @@ public:
         return R(b - a, root, static_cast<leaf_node*>(leftmost));
     }
 
-private:
+protected:
     /**
      * Determines whether the range covered by the given node is also
      * covering the given key value.
@@ -2074,6 +2074,8 @@ private:
         // in multi-sets the ends may not be completely covered
         return !node->isEmpty() && less(node->keys[0], k) && less(k, node->keys[node->numElements - 1]);
     }
+
+private:
 
     /**
      * Determines whether the range covered by this node covers

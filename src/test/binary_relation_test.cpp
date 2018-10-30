@@ -14,6 +14,7 @@
  *
  ***********************************************************************/
 
+
 #include "test.h"
 
 #include <algorithm>
@@ -33,15 +34,10 @@
 
 // TODO: replace findX tests with getBoundaries tests
 // TODO: insert some anteriorIt, and antpostit tests
+// TODO: add some extend tests
 
 namespace souffle {
 namespace test {
-
-// easy function to suppress unused var warnings (when we REALLY don't need to use them!)
-namespace binreltest {
-template <class T>
-void ignore(const T&) {}
-}  // namespace binreltest
 
 TEST(BinRelTest, Scoping) {
     // simply test that namespaces were setup correctly
@@ -74,7 +70,7 @@ TEST(BinRelTest, Basic) {
     size_t count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br.size());
 }
@@ -88,7 +84,7 @@ TEST(BinRelTest, Clear) {
     size_t count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br.size());
     br.clear();
@@ -96,7 +92,7 @@ TEST(BinRelTest, Clear) {
     count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br.size());
 }
@@ -130,7 +126,7 @@ TEST(BinRelTest, TransitivityTest) {
     size_t count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br.size());
     EXPECT_TRUE(br.contains(1, 1));
@@ -161,7 +157,7 @@ TEST(BinRelTest, PairwiseIncremental) {
     size_t count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br.size());
 }
@@ -184,7 +180,7 @@ TEST(BinRelTest, PairwiseDecremental) {
     size_t count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br.size());
 }
@@ -214,7 +210,7 @@ TEST(BinRelTest, Shuffled) {
     size_t count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br.size());
 }
@@ -315,7 +311,7 @@ TEST(BinRelTest, Merge) {
     size_t count = 0;
     for (auto x : br2) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br2.size());
 
@@ -325,7 +321,7 @@ TEST(BinRelTest, Merge) {
     count = 0;
     for (auto x : br2) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br2.size());
 
@@ -337,7 +333,7 @@ TEST(BinRelTest, Merge) {
     count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br.size());
 
@@ -348,7 +344,7 @@ TEST(BinRelTest, Merge) {
     count = 0;
     for (auto x : br2) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(count, br2.size());
 }
@@ -358,7 +354,7 @@ TEST(BinRelTest, IterEmpty) {
     BinRel br;
     for (auto x : br) {
         EXPECT_FALSE(true);
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
     EXPECT_EQ(0, br.size());
 }
@@ -372,7 +368,7 @@ TEST(BinRelTest, IterBasic) {
     size_t count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
 
     EXPECT_EQ(count, br.size());
@@ -381,7 +377,7 @@ TEST(BinRelTest, IterBasic) {
     count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
 
     EXPECT_EQ(count, br.size());
@@ -493,7 +489,7 @@ TEST(BinRelTest, ParallelTest) {
     size_t count = 0;
     for (auto x : br) {
         ++count;
-        binreltest::ignore(x);
+        testutil::ignore(x);
     }
 
     EXPECT_EQ(count, br.size());
@@ -535,5 +531,8 @@ TEST(BinRelTest, ParallelScaling) {
     EXPECT_EQ(N, br.size());
 }
 #endif
+
+
+
 }  // namespace test
 }  // namespace souffle

@@ -75,7 +75,7 @@ public:
 
     /**
      * inserts all nodes from the other relation into this one
-     * @param other the binary relation from which to add nodes from
+     * @param other the binary relation from which to add elements from
      */
     void insertAll(const BinaryRelation<TupleType>& other) {
         other.genAllDisjointSetLists();
@@ -84,7 +84,7 @@ public:
         for (typename StatesMap::chunk it : other.equivalencePartition.getChunks(MAX_THREADS)) {
             for (auto& p : it) {
                 DomainInt rep = p.first;
-                StatesList pl = *p.second;
+                StatesList& pl = *p.second;
                 const size_t ksize = pl.size();
                 for (size_t i = 0; i < ksize; ++i) {
                     this->sds.unionNodes(rep, pl.get(i));

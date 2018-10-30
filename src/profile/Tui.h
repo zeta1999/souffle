@@ -135,7 +135,7 @@ public:
             if (c.size() == 2) {
                 relRul(c[1]);
             } else if (c.size() == 1) {
-                rel();
+                rel(resultLimit);
             } else {
                 std::cout << "Invalid parameters to rel command.\n";
             }
@@ -152,7 +152,7 @@ public:
                     std::cout << "Invalid parameters to rul command.\n";
                 }
             } else {
-                rul();
+                rul(resultLimit);
             }
         } else if (c[0].compare("graph") == 0) {
             if (c.size() == 3 && c[1].find(".") == std::string::npos) {
@@ -812,9 +812,12 @@ public:
         return usages;
     }
 
-    void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
+    void usage(uint32_t height = 20) {
+        usage(0, 0, height);
+    }
+
+    void usage(uint64_t endTime, uint64_t startTime, uint32_t height = 20) {
         uint32_t width = getTermWidth() - 8;
-        uint32_t height = 20;
 
         std::set<Usage> usages = getUsageStats(width);
 
@@ -907,9 +910,12 @@ public:
         std::cout << std::endl;
     }
 
-    void memoryUsage(uint64_t endTime = 0, uint64_t startTime = 0) {
+    void memoryUsage(uint32_t height = 20) {
+        memoryUsage(0, 0, height);
+    }
+
+    void memoryUsage(uint64_t endTime, uint64_t startTime, uint32_t height = 20) {
         uint32_t width = getTermWidth() - 8;
-        uint32_t height = 20;
         uint64_t maxMaxRSS = 0;
 
         std::set<Usage> usages = getUsageStats(width);
@@ -1031,22 +1037,36 @@ public:
         }
         std::cout << std::endl;
 
-        usage();
+        std::cout << "Slowest relations to fully evaluate\n";
+        rel(3, false);
+        for (size_t i = relationTable.getRows().size(); i < 3; ++i) {
+            std::cout << "\n";
+        }
+        std::cout << "Slowest rules to fully evaluate\n";
+        rul(3, false);
+        for (size_t i = ruleTable.getRows().size(); i < 3; ++i) {
+            std::cout << "\n";
+        }
+
+        usage(10);
     }
 
     void setResultLimit(size_t limit) {
         resultLimit = limit;
     }
 
-    void rel() {
+    void rel(size_t limit, bool showLimit = true) {
         relationTable.sort(sortColumn);
         std::cout << " ----- Relation Table -----\n";
         std::printf("%8s%8s%8s%8s%8s%8s%15s%8s%12s%6s %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
                 "SAVE_T", "TUPLES", "READS", "kTUPLES/s", "ID", "NAME");
         size_t count = 0;
         for (auto& row : Tools::formatTable(relationTable, precision)) {
-            if (++count > resultLimit) {
-                std::cout << (relationTable.getRows().size() - resultLimit) << " rows not shown" << std::endl;
+            if (++count > limit) {
+                if (showLimit) {
+                    std::cout << (relationTable.getRows().size() - resultLimit) << " rows not shown"
+                              << std::endl;
+                }
                 break;
             }
             std::printf("%8s%8s%8s%8s%8s%8s%15s%8s%12s%6s %s\n", row[0].c_str(), row[1].c_str(),
@@ -1055,15 +1075,17 @@ public:
         }
     }
 
-    void rul() {
+    void rul(size_t limit, bool showLimit = true) {
         ruleTable.sort(sortColumn);
         std::cout << "  ----- Rule Table -----\n";
         std::printf("%8s%8s%8s%15s%12s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "kTUPLES/s", "ID",
                 "RELATION");
         size_t count = 0;
         for (auto& row : Tools::formatTable(ruleTable, precision)) {
-            if (++count > resultLimit) {
-                std::cout << (ruleTable.getRows().size() - resultLimit) << " rows not shown" << std::endl;
+            if (++count > limit) {
+                if (showLimit) {
+                    std::cout << (ruleTable.getRows().size() - resultLimit) << " rows not shown" << std::endl;
+                }
                 break;
             }
             std::printf("%8s%8s%8s%15s%12s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),

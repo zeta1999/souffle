@@ -68,7 +68,7 @@ public:
  * ROW[9] = LOADTIME
  * ROW[10] = SAVETIME
  * ROW[11] = MAXRSSDIFF
- * ROW[12] = READS/WRITES
+ * ROW[12] = READS
  *
  */
 Table inline OutputProcessor::getRelTable() const {
@@ -95,11 +95,7 @@ Table inline OutputProcessor::getRelTable() const {
         row[9] = std::make_shared<Cell<double>>(r->getLoadtime());
         row[10] = std::make_shared<Cell<double>>(r->getSavetime());
         row[11] = std::make_shared<Cell<long>>(r->getMaxRSSDiff());
-        if (r->size() == 0 || r->getReads() == 0) {
-            row[12] = std::make_shared<Cell<std::string>>("--");
-        } else {
-            row[12] = std::make_shared<Cell<long>>(std::log10(1.0 * r->getReads() / r->size()));
-        }
+        row[12] = std::make_shared<Cell<long>>(r->getReads());
 
         table.addRow(std::make_shared<Row>(row));
     }

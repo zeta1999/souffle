@@ -1042,7 +1042,7 @@ public:
         relationTable.sort(sortColumn);
         std::cout << " ----- Relation Table -----\n";
         std::printf("%8s%8s%8s%8s%8s%8s%15s%8s%12s%6s %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
-                "SAVE_T", "TUPLES", "LOG_R/W", "kTUPLES/s", "ID", "NAME");
+                "SAVE_T", "TUPLES", "READS", "kTUPLES/s", "ID", "NAME");
         size_t count = 0;
         for (auto& row : Tools::formatTable(relationTable, precision)) {
             if (++count > resultLimit) {

@@ -45,8 +45,8 @@ public:
     }
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            base.setStarttime(duration.getStart().count() / 1000000.0);
-            base.setEndtime(duration.getEnd().count() / 1000000.0);
+            base.setStarttime(duration.getStart());
+            base.setEndtime(duration.getEnd());
         }
     }
     void visit(SizeEntry& size) override {
@@ -176,7 +176,7 @@ public:
     IterationVisitor(Iteration& iteration, Relation& relation) : DSNVisitor(iteration), relation(relation) {}
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "copytime") {
-            auto copytime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            auto copytime = (duration.getEnd() - duration.getStart());
             base.setCopytime(copytime);
         }
         DSNVisitor::visit(duration);
@@ -229,10 +229,10 @@ public:
     RelationVisitor(Relation& relation) : DSNVisitor(relation) {}
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "loadtime") {
-            auto loadtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            auto loadtime = (duration.getEnd() - duration.getStart());
             base.setLoadtime(loadtime);
         } else if (duration.getKey() == "savetime") {
-            auto savetime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            auto savetime = (duration.getEnd() - duration.getStart());
             base.setSavetime(savetime);
         }
         DSNVisitor::visit(duration);

@@ -225,6 +225,9 @@ std::unique_ptr<RamRelation> AstTranslator::translateRelation(
 }
 
 std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, const ValueIndex& index) {
+    if (arg == nullptr) {
+        return std::unique_ptr<RamValue>();
+    }
     class ValueTranslator : public AstVisitor<std::unique_ptr<RamValue>> {
         AstTranslator& translator;
         const ValueIndex& index;

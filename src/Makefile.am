@@ -249,7 +249,7 @@ test_binary_relation_test_LDADD = libsouffle.la
 
 # pnappa's good ol fashioned data structure tests (auxilliary structures to binrel, and potentially useful outside)
 check_PROGRAMS += test/pnappa_datastructure_test
-test_pnappa_datastructure_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
+test_pnappa_datastructure_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test -g -O0
 test_pnappa_datastructure_test_SOURCES = test/pnappa_datastructure_test.cpp
 test_pnappa_datastructure_test_LDADD = libsouffle.la
 

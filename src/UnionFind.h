@@ -77,15 +77,15 @@ private:
 public:
     // warning! not thread safe, do not perform copy operations
     // XXX: is this actually a copy-op? Doesn't look like it...
-    SparseDisjointSet& operator=(const SparseDisjointSet& old) {
-        if (&old == this) return *this;
+    //SparseDisjointSet& operator=(const SparseDisjointSet& old) {
+    //    if (&old == this) return *this;
 
-        ds = old.ds;
-        sparseToDenseMap = old.sparseToDenseMap;
-        denseToSparseMap = old.denseToSparseMap;
+    //    ds = old.ds;
+    //    sparseToDenseMap = old.sparseToDenseMap;
+    //    denseToSparseMap = old.denseToSparseMap;
 
-        return *this;
-    }
+    //    return *this;
+    //}
 
     /**
      * For the given dense value, return the associated sparse value

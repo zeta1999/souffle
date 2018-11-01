@@ -1414,10 +1414,6 @@ public:
         }
     }
 
-    static bool string_sort(std::vector<std::string> a, std::vector<std::string> b) {
-        return a[0] > b[0];
-    }
-
 protected:
     void verAtoms(Table& atomTable, const std::string& ruleName = "") {
         // If there are no subrules then just print out any atoms found

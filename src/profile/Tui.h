@@ -897,7 +897,7 @@ public:
 
         // Print array
         for (int32_t row = height - 1; row >= 0; --row) {
-            printf("%6s%% ", Tools::formatNum(2, intervalUsagePercent * (row + 1) / height).c_str());
+            printf("%6d%% ", uint32_t(intervalUsagePercent * (row + 1) / height));
             for (uint32_t col = 0; col < width; ++col) {
                 std::cout << grid[row][col];
             }
@@ -1236,21 +1236,21 @@ public:
                         list.emplace_back(i->getRuntime());
                     }
                     std::printf("%4s   %s\n\n", "NO", "RUNTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("copy_t") == 0) {
                     std::vector<std::chrono::microseconds> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->getCopytime());
                     }
                     std::printf("%4s   %s\n\n", "NO", "COPYTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("tuples") == 0) {
-                    std::vector<uint64_t> list;
+                    std::vector<size_t> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->size());
                     }
                     std::printf("%4s   %s\n\n", "NO", "TUPLES");
-                    graphL(list);
+                    graphBySize(list);
                 }
                 return;
             }
@@ -1266,21 +1266,21 @@ public:
                         list.emplace_back(i->getRuntime());
                     }
                     std::printf("%4s   %s\n\n", "NO", "RUNTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("copy_t") == 0) {
                     std::vector<std::chrono::microseconds> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->getCopytime());
                     }
                     std::printf("%4s   %s\n\n", "NO", "COPYTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("tuples") == 0) {
-                    std::vector<uint64_t> list;
+                    std::vector<size_t> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->size());
                     }
                     std::printf("%4s   %s\n\n", "NO", "TUPLES");
-                    graphL(list);
+                    graphBySize(list);
                 }
                 return;
             }
@@ -1311,12 +1311,12 @@ public:
                         }
                     }
                     std::printf("%4s   %s\n\n", "NO", "RUNTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("tuples") == 0) {
-                    std::vector<uint64_t> list;
+                    std::vector<size_t> list;
                     for (auto& i : iter) {
                         bool add = false;
-                        uint64_t totalSize = 0L;
+                        size_t totalSize = 0L;
                         for (auto& rul : i->getRules()) {
                             if (rul.second->getId().compare(c) == 0) {
                                 totalSize += rul.second->size();
@@ -1328,7 +1328,7 @@ public:
                         }
                     }
                     std::printf("%4s   %s\n\n", "NO", "TUPLES");
-                    graphL(list);
+                    graphBySize(list);
                 }
                 break;
             }
@@ -1353,25 +1353,25 @@ public:
                 list.emplace_back((*row)[0]->getTimeVal());
             }
             std::printf("%4s   %s\n\n", "NO", "RUNTIME");
-            graphD(list);
+            graphByTime(list);
         } else if (col.compare("copy_t") == 0) {
             std::vector<std::chrono::microseconds> list;
             for (auto& row : versionTable.rows) {
                 list.emplace_back((*row)[3]->getTimeVal());
             }
             std::printf("%4s   %s\n\n", "NO", "COPYTIME");
-            graphD(list);
+            graphByTime(list);
         } else if (col.compare("tuples") == 0) {
-            std::vector<uint64_t> list;
+            std::vector<size_t> list;
             for (auto& row : versionTable.rows) {
                 list.emplace_back((*row)[4]->getLongVal());
             }
             std::printf("%4s   %s\n\n", "NO", "TUPLES");
-            graphL(list);
+            graphBySize(list);
         }
     }
 
-    void graphD(std::vector<std::chrono::microseconds> list) {
+    void graphByTime(std::vector<std::chrono::microseconds> list) {
         std::chrono::microseconds max{};
         for (auto& d : list) {
             if (d > max) {
@@ -1393,8 +1393,8 @@ public:
         }
     }
 
-    void graphL(std::vector<uint64_t> list) {
-        uint64_t max = 0;
+    void graphBySize(std::vector<size_t> list) {
+        size_t max = 0;
         for (auto& l : list) {
             if (l > max) {
                 max = l;
@@ -1402,9 +1402,9 @@ public:
         }
         std::sort(list.begin(), list.end());
         std::reverse(list.begin(), list.end());
-        int i = 0;
+        uint32_t i = 0;
         for (auto& l : list) {
-            uint32_t len = 64 * ((double)l / (double)max);
+            size_t len = max == 0 ? 0 : 64.0 * l / max;
             std::string bar = "";
             for (uint32_t j = 0; j < len; j++) {
                 bar += "*";

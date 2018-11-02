@@ -23,7 +23,7 @@ class BinaryRelation {
 
     // mapping from representative to disjoint set
     // just a cache, essentially, used for iteration over
-    typedef souffle::BlockList<DomainInt> StatesList;
+    typedef souffle::PiggyList<DomainInt> StatesList;
     typedef StatesList* StatesBucket;
     typedef std::pair<DomainInt, StatesBucket> StorePair;
     typedef souffle::LambdaBTreeSet<StorePair, std::function<StatesBucket(StorePair&)>, souffle::EqrelMapComparator<StorePair>> StatesMap;

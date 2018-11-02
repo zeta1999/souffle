@@ -11,6 +11,7 @@
  * @file pnappa_datastructure_test.cpp
  *
  * A test case testing the miscellaneous auxilliary data structures that pnappa introduced
+ * PiggyList, RandomInsertPiggyList, DisjointSet, SparseDisjointSet, and LambdaBTree
  *
  ***********************************************************************/
 
@@ -30,7 +31,6 @@
 #endif
 
 #include "PiggyList.h"
-#include "BlockList.h"
 #include "UnionFind.h"
 #include "DisjointSet.h"
 
@@ -60,11 +60,6 @@ TEST(RandomInsertPiggyTest, Insertion) {
     pl.insertAt(1000, 33);
     EXPECT_EQ(pl.get(1000), 33);
     EXPECT_EQ(pl.size(), 2);
-}
-
-TEST(RandomInsertPiggyTest, InsertionExpansion) {
-    EXPECT_FALSE(true);
-    // insert a bunch of stuff and check whether it expanded properly, idk?
 }
 
 // XXX: fuck, i've deleted the copy and move ctors lol
@@ -112,60 +107,6 @@ TEST(RandomInsertPiggyTest, DoubleClear) {
     pl.insertAt(0, 1);
     EXPECT_EQ(pl.size(), 1);
 }
-
-//TEST(RandomInsertPiggyTest, MoveCtor) {
-//    souffle::RandomInsertPiggyList<size_t> pl;
-//    pl.insertAt(1000, 33);
-//    pl.insertAt(0, 32);
-//    pl.insertAt(998, 31);
-//    pl.insertAt(997, 30);
-//    pl.insertAt(996, 29);
-//
-//    souffle::RandomInsertPiggyList<size_t> pl2(std::move(pl));
-//    EXPECT_EQ(pl2.size(), 5);
-//    EXPECT_EQ(pl2.get(1000), 33);
-//    EXPECT_EQ(pl2.get(0), 32);
-//    EXPECT_EQ(pl2.get(998), 31);
-//    EXPECT_EQ(pl2.get(997), 30);
-//    EXPECT_EQ(pl2.get(996), 29);
-//}
-
-//TEST(RandomInsertPiggyTest, CopyAssign) {
-//
-//    souffle::RandomInsertPiggyList<size_t> pl;
-//    pl.insertAt(1000, 33);
-//    pl.insertAt(0, 32);
-//    pl.insertAt(998, 31);
-//    pl.insertAt(997, 30);
-//    pl.insertAt(996, 29);
-//
-//    souffle::RandomInsertPiggyList<size_t> pl2;
-//    pl2 = pl;
-//    EXPECT_EQ(pl2.size(), pl.size());
-//    EXPECT_EQ(pl2.get(1000), 33);
-//    EXPECT_EQ(pl2.get(0), 32);
-//    EXPECT_EQ(pl2.get(998), 31);
-//    EXPECT_EQ(pl2.get(997), 30);
-//    EXPECT_EQ(pl2.get(996), 29);
-//}
-
-//TEST(RandomInsertPiggyTest, MoveAssign) {
-//    souffle::RandomInsertPiggyList<size_t> pl;
-//    pl.insertAt(1000, 33);
-//    pl.insertAt(0, 32);
-//    pl.insertAt(998, 31);
-//    pl.insertAt(997, 30);
-//    pl.insertAt(996, 29);
-//
-//    souffle::RandomInsertPiggyList<size_t> pl2;
-//    pl2 = std::move(pl);
-//    EXPECT_EQ(pl2.size(), 5);
-//    EXPECT_EQ(pl2.get(1000), 33);
-//    EXPECT_EQ(pl2.get(0), 32);
-//    EXPECT_EQ(pl2.get(998), 31);
-//    EXPECT_EQ(pl2.get(997), 30);
-//    EXPECT_EQ(pl2.get(996), 29);
-//}
 
 #ifdef _OPENMP
 TEST(RandomInsertPiggyTest, ParallelInsert) {
@@ -400,24 +341,6 @@ TEST(DjTest, TestUnion) {
     EXPECT_EQ(ds.size(), 5);
 }
 
-// XXX: d'oh, the ds doesn't have iteration any more
-//TEST(DjTest, Iteration) {
-//    souffle::DisjointSet ds;
-//
-//    constexpr size_t N = 10000;
-//
-//    std::vector<block_t> verifier;
-//    for (size_t i = 0; i < N; ++i) {
-//        verifier.push_back(ds.makeNode());
-//    }
-//
-//    // iterate through and expect them in the right order
-//    size_t counter = 0;
-//    for (block_t e : ds) {
-//        EXPECT_EQ(e, verifier.at(counter++));
-//    }
-//}
-
 TEST(DjTest, CopyCtor) {
     // insert a bunch into the disjoint set, then make a another one, and ensure that changes don't cross contaminate
     souffle::DisjointSet ds;
@@ -467,19 +390,6 @@ TEST(DjTest, CopyCtor) {
 
     EXPECT_EQ(ds2.size(), N+2);
     EXPECT_FALSE(ds2.sameSet(5,6));
-}
-
-TEST(DjTest, MoveCtor) {
-    //TODO: idk how to test this?
-    EXPECT_FALSE(true);
-}
-
-TEST(DjTest, CopyAssign) {
-    EXPECT_FALSE(true);
-}
-
-TEST(DjTest, MoveAssign) {
-    EXPECT_FALSE(true);
 }
 
 TEST(DjTest, Clear) {
@@ -581,64 +491,44 @@ TEST(SparseDjTest, SignedData) {
     EXPECT_EQ(sds.size(), 1);
 }
 
-// no iteration atm
-// TEST(SparseDjTest, Iteration) {
-//     EXPECT_FALSE(true);
-// }
+TEST(SparseDjTest, CopyCtor) {
+    // test whether the copy ctor properly isolates them all
+    souffle::SparseDisjointSet<size_t> sds;
+    sds.makeNode(22);
+    sds.makeNode(23);
+    sds.makeNode(24);
+    sds.makeNode(25);
+    sds.unionNodes(23, 24);
 
-//TEST(SparseDjTest, CopyCtor) {
-//    // test whether the copy ctor properly isolates them all
-//    souffle::SparseDisjointSet<size_t> sds;
-//    sds.makeNode(22);
-//    sds.makeNode(23);
-//    sds.makeNode(24);
-//    sds.makeNode(25);
-//    sds.unionNodes(23, 24);
-//
-//    souffle::SparseDisjointSet<size_t> sds2(sds);
-//    EXPECT_TRUE(sds2.contains(23, 24));
-//    sds2.unionNodes(23, 25);
-//    EXPECT_TRUE(sds2.contains(23, 25));
-//    EXPECT_FALSE(sds.contains(23, 25));
-//
-//    // check unioning a scoped djsset doesn't mess up others (on dtor)
-//    {
-//        souffle::SparseDisjointSet<size_t> sds3(sds);
-//        // somehow unioning sds2 might mess with sds3?    
-//        EXPECT_FALSE(sds3.contains(23, 25));
-//        sds3.unionNodes(25, 22);
-//
-//        // check that unioning this doesn't affect the others
-//        EXPECT_TRUE(sds3.contains(22, 25));
-//        EXPECT_FALSE(sds2.contains(22, 25));
-//        EXPECT_FALSE(sds.contains(22, 25));
-//    }
-//    // check afterward everything still works
-//    EXPECT_FALSE(sds2.contains(22, 25));
-//    EXPECT_FALSE(sds.contains(22, 25));
-//
-//    EXPECT_EQ(sds.size(), 4);
-//    EXPECT_EQ(sds2.size(), 4);
-//}
+    souffle::SparseDisjointSet<size_t> sds2(sds);
+    EXPECT_TRUE(sds2.contains(23, 24));
+    sds2.unionNodes(23, 25);
+    EXPECT_TRUE(sds2.contains(23, 25));
+    EXPECT_FALSE(sds.contains(23, 25));
 
-// TODO: are we doing these?
-TEST(SparseDjTest, MoveCtor) {
-    EXPECT_FALSE(true);
-}
+    // check unioning a scoped djsset doesn't mess up others (on dtor)
+    {
+        souffle::SparseDisjointSet<size_t> sds3(sds);
+        // somehow unioning sds2 might mess with sds3?    
+        EXPECT_FALSE(sds3.contains(23, 25));
+        sds3.unionNodes(25, 22);
 
-TEST(SparseDjTest, CopyAssign) {
-    EXPECT_FALSE(true);
-}
+        // check that unioning this doesn't affect the others
+        EXPECT_TRUE(sds3.contains(22, 25));
+        EXPECT_FALSE(sds2.contains(22, 25));
+        EXPECT_FALSE(sds.contains(22, 25));
+    }
+    // check afterward everything still works
+    EXPECT_FALSE(sds2.contains(22, 25));
+    EXPECT_FALSE(sds.contains(22, 25));
 
-TEST(SparseDjTest, MoveAssign) {
-    EXPECT_FALSE(true);
+    EXPECT_EQ(sds.size(), 4);
+    EXPECT_EQ(sds2.size(), 4);
 }
 
 #ifdef _OPENMP
 TEST(SparseDjTest, ParallelScaling) {
     // insert, union, and stuff in parallel, then check things are in the valid sets
-    EXPECT_FALSE(true);
-
     souffle::SparseDisjointSet<size_t> sds;
     constexpr size_t N = 10000;
 
@@ -663,22 +553,143 @@ TEST(SparseDjTest, ParallelScaling) {
 }
 #endif // ifdef _OPENMP
 
-
+typedef std::pair<size_t, size_t> TestPair;
+typedef souffle::LambdaBTreeSet<TestPair, std::function<TestPair::second_type(TestPair&)>, souffle::EqrelMapComparator<TestPair>> TestLambdaTree;
 
 /** The LambdaBTree - essentially a ripoff to the Btree, but allows a function to be called on successful insert. I just am gonna test a subset of it, because I can argue that BTree already tests the basic stuff **/
 TEST(LambdaBTreeTest, Scoping) {
-    EXPECT_FALSE(true);
+    // lambda btree set current has some hard coded stuff h1
+    TestLambdaTree t;
 }
 
 TEST(LambdaBTreeTest, Insert) {
     // insert some stuff and make sure the sideeffects are correct (as observed within the lambda), and also that the elements are contained
-    EXPECT_FALSE(true);
+
+    // the ticket machine that sets the second argument (for now our functor will just postincrent to assign)
+    std::atomic<size_t> assigner(0); 
+
+    TestLambdaTree t;
+    EXPECT_EQ(t.size(), 0);
+
+    std::function<TestPair::second_type(TestPair&)> update_fn = [&](TestPair& tp) { 
+        tp.second = assigner.fetch_add(1);
+        return tp.second;
+    };
+
+    TestPair toInsert = {55, -1};
+    // inserting the ticketed value
+    EXPECT_EQ(t.insert(toInsert, update_fn), 0);
+
+    EXPECT_EQ(t.size(), 1);
+
+    // the second argument should be ignored because its unknown until you fetch it!
+    EXPECT_TRUE(t.contains({55, 1329139123}));
+
+    // post increment of 0 is zero.
+    EXPECT_EQ(((*t.find({55, 3232})).second), 0);
+
+
+    TestPair insert2 = {43, 22};
+    // insert should also return the value
+    EXPECT_EQ(t.insert(insert2, update_fn), 1);
+    EXPECT_TRUE(t.contains({43, 1329139123}));
+    // post increment now should equal 1
+    EXPECT_EQ(((*t.find({43, 3232})).second), 1);
+    EXPECT_EQ(t.size(), 2);
+
+    // now lets insert something that already exists (the anterior is all that matters)
+    TestPair alreadyExistsPair = {55, 12313123};
+    EXPECT_EQ(t.insert(alreadyExistsPair, [&](TestPair& tp) {
+               EXPECT_TRUE(false && "newly inserted function called for an element that already exists!");
+               // some dummy value 
+               return 3223;
+               }), 0);
+
+    EXPECT_EQ(t.size(), 2);
 }
 
+#ifdef _OPENMP
 TEST(LambdaBTreeTest, ParallelInsert) {
     // check whether doing the above works, but in parallel
-    EXPECT_FALSE(true);
+    // we must ensure that duplicate elements inserted in parallel stiiilll should only result in singly elements inserted
+
+    constexpr size_t N = 10000;
+    {
+        // the ticket machine that sets the second argument (for now our functor will just postincrent to assign)
+        std::atomic<size_t> assigner(0); 
+        std::function<TestPair::second_type(TestPair&)> update_fn = [&](TestPair& tp) { 
+            tp.second = assigner.fetch_add(1);
+            return tp.second;
+        };
+
+        TestLambdaTree t;
+
+#pragma omp parallel for
+        for (size_t i = 0; i < N; ++i) {
+            TestPair tp = {i, 123132};
+            t.insert(tp, update_fn);
+        }
+
+        // assert that every number in [0, N) are covered in the posterior of the stored pairs
+        std::set<TestPair::second_type> covering;
+
+        // iterating through the tree should be in order
+        size_t i = 0;
+        for (auto p : t) {
+            EXPECT_EQ(p.first, i++);
+            covering.emplace(p.second);
+        }
+        // and have the right number of elements
+        EXPECT_EQ(i, N);
+
+        // assert that everything is unique (i.e. a set)
+        EXPECT_EQ(covering.size(), N);
+        for (size_t i = 0; i < N; ++i) {
+            EXPECT_EQ(covering.count(i), 1);
+        }
+    }
+
+    // now our second test is setting duplicates concurrently (we try and maximise the potentiality of duplication, by trying to make the threads make the same number at the same time)
+    size_t num_threads = omp_get_max_threads();
+    {
+        std::atomic<size_t> assigner(0); 
+        std::function<TestPair::second_type(TestPair&)> update_fn = [&](TestPair& tp) { 
+            tp.second = assigner.fetch_add(1);
+            return tp.second;
+        };
+
+
+        TestLambdaTree t;
+        #pragma omp parallel for 
+        for (size_t i = 0; i < N; ++i) {
+            TestPair tp = {i/num_threads, 213812309};
+            // by doing this, we pretty much make the same insertion num_thread times, for the next num_thread loops
+            t.insert(tp, update_fn);
+        }
+    
+        EXPECT_EQ(t.size(), N/num_threads);
+        // iterating through the tree should be in order
+        size_t i = 0;
+        for (auto p : t) {
+            EXPECT_EQ(p.first, i++);
+        }
+
+        // we check the assigner atomic, and see if its not larger than the number of times it should have been called (N/8) times.
+        // a violation of this would occur when we try and call the functor twice for the number of threads
+        EXPECT_EQ(assigner.load(), N/num_threads);
+
+        // unfortunately, the above test couuuuld fail if two were called for the same element, then skipped for another... so I go through and check anyway.
+        std::vector<bool> verifier(N/num_threads, false);
+        for (auto p : t) {
+            if (verifier.at(p.second) == true) {
+                EXPECT_TRUE(false && "duplicate posteriors found within the lambdatree");
+            }
+            // set it to true unconditionally to indicate that we've seen a set value for this posterior.
+            verifier.at(p.second) = true;
+        }
+    }
 }
+#endif // ifdef _OPENMP
 
 
 }  // namespace test

@@ -37,9 +37,19 @@ class DisjointSet {
     template <typename TupleType>
     friend class BinaryRelation;
 
-    BlockList<std::atomic<block_t>> a_blocks;
+    PiggyList<std::atomic<block_t>> a_blocks;
 public:
     DisjointSet(){};
+
+    // copy ctor
+    DisjointSet(DisjointSet& other) : a_blocks(other.a_blocks) {}
+    // move ctor
+    DisjointSet(DisjointSet&& other) = delete;
+
+    // copy assign ctor
+    DisjointSet& operator=(DisjointSet& ds) = delete;
+    // move assign ctor
+    DisjointSet& operator=(DisjointSet&& ds) = delete;
 
     inline size_t size() {
         auto sz = a_blocks.size();

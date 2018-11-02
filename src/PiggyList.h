@@ -66,31 +66,10 @@ class RandomInsertPiggyList {
         }
     }
 
-    // TODO: implement these ctors (...maybe not the move ones..?)
+    // move ctr
     RandomInsertPiggyList(RandomInsertPiggyList&& other) = delete;
-    /** move constructor (fastest move ctor is a copy, due to atomics) */
-    //RandomInsertPiggyList(RandomInsertPiggyList&& other) : BLOCKBITS(other.BLOCKBITS) {
-        //this->numElements.store(other.numElements.load());
-
-        //for (size_t i = 0; i < maxContainers; ++i) {
-            //this->blockLookupTable[i].store(other.blockLookupTable[i].load());
-        //}
-    //}
-
-    // copy assign ctor (can't actually be legit done, as we contain const data)
+    // copy assign ctor 
     RandomInsertPiggyList& operator=(RandomInsertPiggyList& other) = delete;
-    //RandomInsertPiggyList& operator=(RandomInsertPiggyList& other) {
-    //    if (&other == this) return *this;
-
-    //    freeList();
-
-    //    this->numElements.store(other.numElements.load());
-    //    for (size_t i = 0; i < maxContainers; ++i) {
-    //        this->blockLookupTable[i].store(other.blockLookupTable[i].load());
-    //    }
-    //    return *this;
-    //}
-
     // move assign ctor
     RandomInsertPiggyList& operator=(RandomInsertPiggyList&& other) = delete;
 

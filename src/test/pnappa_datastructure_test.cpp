@@ -652,6 +652,9 @@ TEST(LambdaBTreeTest, ParallelInsert) {
     // now our second test is setting duplicates concurrently (we try and maximise the potentiality of duplication, by trying to make the threads make the same number at the same time)
     size_t num_threads = omp_get_max_threads();
     {
+        // shadowing the N to make one that's trimmed by thread number (don't want things non-divisible by the thread count!)
+        const size_t N2 = (N/num_threads)*num_threads;
+
         std::atomic<size_t> assigner(0); 
         std::function<TestPair::second_type(TestPair&)> update_fn = [&](TestPair& tp) { 
             tp.second = assigner.fetch_add(1);
@@ -661,25 +664,25 @@ TEST(LambdaBTreeTest, ParallelInsert) {
 
         TestLambdaTree t;
         #pragma omp parallel for 
-        for (size_t i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N2; ++i) {
             TestPair tp = {i/num_threads, 213812309};
             // by doing this, we pretty much make the same insertion num_thread times, for the next num_thread loops
             t.insert(tp, update_fn);
         }
     
-        EXPECT_EQ(t.size(), N/num_threads);
+        EXPECT_EQ(t.size(), N2/num_threads);
         // iterating through the tree should be in order
         size_t i = 0;
         for (auto p : t) {
             EXPECT_EQ(p.first, i++);
         }
 
-        // we check the assigner atomic, and see if its not larger than the number of times it should have been called (N/8) times.
+        // we check the assigner atomic, and see if its not larger than the number of times it should have been called (N2/8) times.
         // a violation of this would occur when we try and call the functor twice for the number of threads
-        EXPECT_EQ(assigner.load(), N/num_threads);
+        EXPECT_EQ(assigner.load(), N2/num_threads);
 
         // unfortunately, the above test couuuuld fail if two were called for the same element, then skipped for another... so I go through and check anyway.
-        std::vector<bool> verifier(N/num_threads, false);
+        std::vector<bool> verifier(N2/num_threads, false);
         for (auto p : t) {
             if (verifier.at(p.second) == true) {
                 EXPECT_TRUE(false && "duplicate posteriors found within the lambdatree");

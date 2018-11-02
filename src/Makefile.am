@@ -161,6 +161,7 @@ soufflepublic_HEADERS = CompiledRamOptions.h    \
                         Trie.h                  \
                         UnionFind.h             \
                         DisjointSet.h           \
+                        LambdaBTree.h           \
                         BinaryRelation.h        \
                         PiggyList.h             \
                         Table.h                 \

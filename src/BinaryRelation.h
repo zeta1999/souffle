@@ -108,7 +108,7 @@ public:
         other.genAllDisjointSetLists();
 
         BinaryRelation<TupleType> synthesised;
-        BlockList<DomainInt> worklist;
+        PiggyList<DomainInt> worklist;
 
         // add elements that exist in both sets to our worklist
         for (DomainInt& el : other.sds) {

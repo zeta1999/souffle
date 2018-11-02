@@ -99,6 +99,18 @@ void ParserDriver::addPragma(std::unique_ptr<AstPragma> p) {
     translationUnit->getProgram()->addPragma(std::move(p));
 }
 
+void ParserDriver::addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> f) {
+    const std::string& name = f->getName();
+    if (AstFunctorDeclaration* prev = translationUnit->getProgram()->getFunctorDeclaration(name)) {
+        Diagnostic err(Diagnostic::ERROR,
+                DiagnosticMessage("Redefinition of functor " + toString(name), f->getSrcLoc()),
+                {DiagnosticMessage("Previous definition", prev->getSrcLoc())});
+        translationUnit->getErrorReport().addDiagnostic(err);
+    } else {
+        translationUnit->getProgram()->addFunctorDeclaration(std::move(f));
+    }
+}
+
 void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
     const auto& name = r->getName();
     if (AstRelation* prev = translationUnit->getProgram()->getRelation(name)) {

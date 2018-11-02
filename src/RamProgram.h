@@ -33,12 +33,10 @@ public:
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> children;
         children.push_back(main.get());
-
         // add subroutines
         for (auto& s : subroutines) {
             children.push_back(s.second.get());
         }
-
         return children;
     }
 

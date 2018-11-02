@@ -8,6 +8,7 @@ aliases:
     - bison
     - build-essential
     - flex
+      libffi-dev
     - libncurses5-dev
     - libtool
     - lsb-release

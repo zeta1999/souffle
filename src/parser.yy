@@ -27,6 +27,7 @@
     #include <cassert>
     #include <cstdarg>
     #include <cstdio>
+    #include <memory.h>
     #include <cstdlib>
     #include <stack>
     #include <string>
@@ -35,6 +36,7 @@
     #include "AstArgument.h"
     #include "AstClause.h"
     #include "AstComponent.h"
+    #include "AstFunctorDeclaration.h"
     #include "AstIODirective.h"
     #include "AstNode.h"
     #include "AstParserUtils.h"
@@ -116,6 +118,7 @@
 %token PLAN                      "plan keyword"
 %token IF                        ":-"
 %token DECL                      "relation declaration"
+%token FUNCTOR                   "functor declaration"
 %token INPUT_DECL                "input directives declaration"
 %token OUTPUT_DECL               "output directives declaration"
 %token PRINTSIZE_DECL            "printsize directives declaration"
@@ -167,8 +170,11 @@
 %type <AstComponent *>                   component component_head component_body
 %type <AstComponentType *>               comp_type
 %type <AstComponentInit *>               comp_init
+%type <AstFunctorDeclaration *>          functor_decl
+%type <std::string>                      functor_type
+%type <std::string>                      functor_typeargs
 %type <AstRelation *>                    attributes non_empty_attributes relation_body
-%type <std::vector<AstRelation *>>       relation_list relation_head
+%type <std::vector<AstRelation *>>       relation_list relation_decl
 %type <AstArgument *>                    arg
 %type <AstAtom *>                        arg_list non_empty_arg_list atom
 %type <std::vector<AstAtom*>>            head
@@ -179,6 +185,7 @@
 %type <AstExecutionOrder *>              exec_order exec_order_list
 %type <AstExecutionPlan *>               exec_plan exec_plan_list
 %type <AstRecordInit *>                  recordlist
+%type <AstUserDefinedFunctor *>          functor_list functor_args
 %type <AstRecordType *>                  recordtype
 %type <AstUnionType *>                   uniontype
 %type <std::vector<AstTypeIdentifier>>   type_params type_param_list
@@ -198,6 +205,7 @@
 %precedence BW_NOT L_NOT
 %precedence NEG
 %left CARET
+%left IDENT LPAREN
 
 %%
 %start program;
@@ -211,7 +219,10 @@ unit
   : unit type {
         driver.addType(std::unique_ptr<AstType>($2));
     }
-  | unit relation_head {
+  | unit functor_decl {
+        driver.addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration>($2));
+    } 
+  | unit relation_decl {
         for(const auto& cur : $2) driver.addRelation(std::unique_ptr<AstRelation>(cur));
     }
   | unit iodirective_head {
@@ -392,7 +403,33 @@ qualifiers
         $$ = 0;
     }
 
-relation_head
+functor_decl 
+  : FUNCTOR IDENT LPAREN functor_typeargs RPAREN COLON functor_type {
+        $$ = new AstFunctorDeclaration($2, $4+$7);
+        $$->setSrcLoc(@$);
+    }
+  | FUNCTOR IDENT LPAREN RPAREN COLON functor_type {
+        $$ = new AstFunctorDeclaration($2, $6);
+        $$->setSrcLoc(@$);
+    }
+  ;
+
+functor_type
+  : IDENT {
+     if ($1 == "number") {
+        $$ = "N";
+     } else if ($1 == "symbol") {
+        $$ = "S";
+     } else driver.error(@1, "number or symbol identifier expected");
+    } 
+  ;
+
+functor_typeargs
+  : functor_type COMMA functor_typeargs { $$ = $3 + $1; }
+  | functor_type { $$ = $1;  }
+  ;
+
+relation_decl
   : DECL relation_list {
       $$.swap($2);
     }
@@ -512,6 +549,11 @@ arg
     }
   | DOLLAR {
         $$ = new AstCounter();
+        $$->setSrcLoc(@$);
+    }
+  | IDENT functor_list {
+        $$ = $2;
+        $2->setName($1);
         $$->setSrcLoc(@$);
     }
   | IDENT {
@@ -734,6 +776,26 @@ arg
         exit(1);
     }
 
+functor_list
+  : LPAREN RPAREN {
+       $$ = new AstUserDefinedFunctor(); 
+    }
+  | LPAREN functor_args RPAREN {
+       $$ = $2;
+    }
+  ;
+
+functor_args
+  : arg {
+       $$ = new AstUserDefinedFunctor(); 
+       $$->add(std::unique_ptr<AstArgument>($1));
+    }  
+  | functor_args COMMA arg { 
+       $$ = $1;
+       $$->add(std::unique_ptr<AstArgument>($3));
+    } 
+  ;
+
 recordlist
   : arg {
         $$ = new AstRecordInit();
@@ -950,8 +1012,8 @@ rule
 /* Type Parameters */
 
 type_param_list
-  : IDENT {
-        $$.push_back($1);
+  : IDENT { 
+        $$.push_back($1); 
     }
   | type_param_list COMMA type_id {
         $$ = $1;
@@ -994,7 +1056,7 @@ component_body
         $$ = $1;
         $$->addType(std::unique_ptr<AstType>($2));
     }
-  | component_body relation_head {
+  | component_body relation_decl {
         $$ = $1;
         for(const auto& cur : $2) $$->addRelation(std::unique_ptr<AstRelation>(cur));
     }

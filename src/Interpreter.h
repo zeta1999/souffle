@@ -28,6 +28,9 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <dlfcn.h>
+
+#define SOUFFLE_DLL "libfunctors.so"
 
 namespace souffle {
 
@@ -61,6 +64,9 @@ private:
 
     /** iteration number (in a fix-point calculation) */
     size_t iteration;
+
+    /** Dynamic library for user-defined functors */
+    void* dll;
 
 protected:
     /** Evaluate value */
@@ -150,8 +156,25 @@ protected:
         environment[ramRel2.getName()] = rel1;
     }
 
+    /** Load dll */
+    void* loadDLL() {
+        if (dll == nullptr) {
+            // check environment variable
+            std::string fname = ::getenv("SOUFFLE_FUNCTOR_LIB");
+            if (fname == "") {
+                fname = SOUFFLE_DLL;
+            }
+            dll = dlopen(SOUFFLE_DLL, RTLD_LAZY);
+            if (dll == nullptr) {
+                std::cerr << "Cannot find Souffle's DLL" << std::endl;
+                exit(1);
+            }
+        }
+        return dll;
+    }
+
 public:
-    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0), iteration(0) {}
+    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0), iteration(0), dll(nullptr) {}
     virtual ~Interpreter() {
         for (auto& x : environment) {
             delete x.second;

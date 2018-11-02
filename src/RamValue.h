@@ -125,6 +125,104 @@ protected:
 };
 
 /**
+ * Unary user-defined function
+ */
+// TODO (#541): have a single n-ary function
+class RamUserDefinedOperator : public RamValue {
+private:
+    /** Argument of unary function */
+    std::vector<std::unique_ptr<RamValue>> arguments;
+
+    /** Name of user-defined unary functor */
+    const std::string name;
+
+    /** Argument type */
+    const std::string type;
+
+public:
+    RamUserDefinedOperator(
+            const std::string& n, const std::string& t, std::vector<std::unique_ptr<RamValue>> args)
+            : RamValue(RN_UserDefinedOperator,
+                      all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
+              arguments(std::move(args)), name(n), type(t) {}
+
+    /** Print */
+    void print(std::ostream& os) const override {
+        os << "%" << name << "_" << type << "(";
+        os << join(
+                arguments, ",", [](std::ostream& out, const std::unique_ptr<RamValue>& arg) { out << *arg; });
+        os << ")";
+    }
+
+    /** Get values */
+    std::vector<RamValue*> getArguments() const {
+        return toPtrVector(arguments);
+    }
+
+    const RamValue* getArg(size_t i) const {
+        return arguments[i].get();
+    }
+
+    size_t getArgCount() const {
+        return arguments.size();
+    }
+
+    const std::string& getName() const {
+        return name;
+    }
+
+    const std::string& getType() const {
+        return type;
+    }
+
+    /** Get level */
+    // TODO (#541): move to an analysis
+    size_t getLevel() const override {
+        size_t level = 0;
+        for (const auto& arg : arguments) {
+            if (arg) {
+                level = std::max(level, arg->getLevel());
+            }
+        }
+        return level;
+    }
+
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        std::vector<const RamNode*> res;
+        for (const auto& cur : arguments) {
+            res.push_back(cur.get());
+        }
+        return res;
+    }
+
+    /** Create clone */
+    RamUserDefinedOperator* clone() const override {
+        RamUserDefinedOperator* res = new RamUserDefinedOperator(name, type, {});
+        for (auto& cur : arguments) {
+            RamValue* arg = cur->clone();
+            res->arguments.push_back(std::unique_ptr<RamValue>(arg));
+        }
+        return res;
+    }
+
+    /** Apply mapper */
+    void apply(const RamNodeMapper& map) override {
+        for (auto& arg : arguments) {
+            arg = map(std::move(arg));
+        }
+    }
+
+protected:
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
+        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
+        return name == other.name && type == other.type && equal_targets(arguments, other.arguments);
+    }
+};
+
+/**
  * Binary function
  */
 // TODO (#541): have a single n-ary function
@@ -572,7 +670,7 @@ public:
     RamArgument(size_t number) : RamValue(RN_Argument, false), number(number) {}
 
     /** Get argument number */
-    size_t getArgNumber() const {
+    size_t getArgCount() const {
         return number;
     }
 
@@ -594,7 +692,7 @@ public:
 
     /** Create clone */
     RamArgument* clone() const override {
-        auto* res = new RamArgument(getArgNumber());
+        auto* res = new RamArgument(getArgCount());
         return res;
     }
 
@@ -606,7 +704,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamArgument*>(&node));
         const auto& other = static_cast<const RamArgument&>(node);
-        return getArgNumber() == other.getArgNumber();
+        return getArgCount() == other.getArgCount();
     }
 };
 

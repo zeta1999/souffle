@@ -280,6 +280,36 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
+    // - user-defined functors -
+    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
+        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+        if (funDecl == nullptr) {
+            report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
+        } else {
+            if (funDecl->getArgCount() != fun.getArgCount()) {
+                report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
+            }
+            // check return values of user-defined functor
+            if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
+                report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
+            }
+            if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
+                report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
+            }
+            for (size_t i = 0; i < fun.getArgCount(); i++) {
+                const AstArgument* arg = fun.getArg(i);
+                if (i < funDecl->getArgCount()) {
+                    if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
+                        report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+                    }
+                    if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
+                        report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+                    }
+                }
+            }
+        }
+    });
+
     // - binary relation -
     visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
         // only interested in non-equal constraints
@@ -360,6 +390,7 @@ void AstSemanticChecker::checkAtom(ErrorReport& report, const AstProgram& progra
 }
 
 /* Check whether an unnamed variable occurs in an argument (expression) */
+// TODO: convert to an AstVisitor
 static bool hasUnnamedVariable(const AstArgument* arg) {
     if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
         return true;
@@ -383,8 +414,19 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
         return hasUnnamedVariable(tf->getArg(0)) || hasUnnamedVariable(tf->getArg(1)) ||
                hasUnnamedVariable(tf->getArg(2));
     }
+    if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+        for (size_t i = 0; i < udf->getArgCount(); i++) {
+            if (hasUnnamedVariable(udf->getArg(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
     if (const auto* ri = dynamic_cast<const AstRecordInit*>(arg)) {
         return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
+    }
+    if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+        return any_of(udf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
     if (dynamic_cast<const AstAggregator*>(arg)) {
         return false;
@@ -461,6 +503,10 @@ void AstSemanticChecker::checkArgument(
         checkArgument(report, program, *ternFunc->getArg(0));
         checkArgument(report, program, *ternFunc->getArg(1));
         checkArgument(report, program, *ternFunc->getArg(2));
+    } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
+        for (size_t i = 0; i < userDefFunc->getArgCount(); i++) {
+            checkArgument(report, program, *userDefFunc->getArg(i));
+        }
     }
 }
 
@@ -499,12 +545,18 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         if (!isConstantArithExpr(argument)) {
             report.addError("Ternary function in fact", argument.getSrcLoc());
         }
+    } else if (dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
+        report.addError("User-defined functor in fact", argument.getSrcLoc());
     } else if (dynamic_cast<const AstCounter*>(&argument)) {
         report.addError("Counter in fact", argument.getSrcLoc());
     } else if (dynamic_cast<const AstConstant*>(&argument)) {
         // this one is fine - type checker will make sure of number and symbol constants
     } else if (auto* ri = dynamic_cast<const AstRecordInit*>(&argument)) {
         for (auto* arg : ri->getArguments()) {
+            checkConstant(report, *arg);
+        }
+    } else if (auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
+        for (auto* arg : udf->getArguments()) {
             checkConstant(report, *arg);
         }
     } else {

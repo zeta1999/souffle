@@ -1232,7 +1232,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
     // All other relations are necessarily existential
     std::set<AstRelationIdentifier> existentialRelations;
     for (AstRelation* relation : program.getRelations()) {
-        if (!relation->getClauses().empty() &&
+        if (!relation->getClauses().empty() && relation->getArity() != 0 &&
                 irreducibleRelations.find(relation->getName()) == irreducibleRelations.end()) {
             existentialRelations.insert(relation->getName());
         }

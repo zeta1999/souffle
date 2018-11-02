@@ -34,16 +34,6 @@ class AstTranslationUnit;
 
 /**
  * Analyse the given clause and computes for each contained argument
- * whether it is a constant value or not.
- *
- * @param clause the clause to be analyzed
- * @return a map mapping each contained argument to a boolean indicating
- *      whether the argument represents a constant value or not
- */
-std::map<const AstArgument*, bool> getConstTerms(const AstClause& clause);
-
-/**
- * Analyse the given clause and computes for each contained argument
  * whether it is a grounded value or not.
  *
  * @param clause the clause to be analyzed

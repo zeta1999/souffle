@@ -15,6 +15,7 @@
 #include "Table.h"
 #include "UserInputReader.h"
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -43,7 +44,7 @@ private:
     bool alive = false;
     std::thread updater;
     int sortColumn = 0;
-    int precision = -1;
+    int precision = 3;
     Table relationTable;
     Table ruleTable;
     std::shared_ptr<Reader> reader;
@@ -52,10 +53,10 @@ private:
     size_t resultLimit = 20000;
 
     struct Usage {
-        uint64_t time;
+        std::chrono::microseconds time;
         uint64_t maxRSS;
-        uint64_t systemtime;
-        uint64_t usertime;
+        std::chrono::microseconds systemtime;
+        std::chrono::microseconds usertime;
         bool operator<(const Usage& other) const {
             return time < other.time;
         }
@@ -135,7 +136,7 @@ public:
             if (c.size() == 2) {
                 relRul(c[1]);
             } else if (c.size() == 1) {
-                rel();
+                rel(resultLimit);
             } else {
                 std::cout << "Invalid parameters to rel command.\n";
             }
@@ -152,7 +153,7 @@ public:
                     std::cout << "Invalid parameters to rul command.\n";
                 }
             } else {
-                rul();
+                rul(resultLimit);
             }
         } else if (c[0].compare("graph") == 0) {
             if (c.size() == 3 && c[1].find(".") == std::string::npos) {
@@ -243,7 +244,8 @@ public:
         auto beginTime = run->getStarttime();
         auto endTime = run->getEndtime();
         ss << R"_({"top":[)_" << (endTime - beginTime).count() / 1000000.0 << "," << run->getTotalSize()
-           << "," << run->getTotalLoadtime() << "," << run->getTotalSavetime() << "]";
+           << "," << run->getTotalLoadtime().count() / 1000000.0 << ","
+           << run->getTotalSavetime().count() / 1000000.0 << "]";
         return ss;
     }
 
@@ -289,13 +291,13 @@ public:
             firstCol = true;
             for (auto& i : iter) {
                 comma(firstCol);
-                ss << i->getRuntime();
+                ss << i->getRuntime().count();
             }
             ss << R"_(], "copy_t": [)_";
             firstCol = true;
             for (auto& i : iter) {
                 comma(firstCol);
-                ss << i->getCopytime();
+                ss << i->getCopytime().count();
             }
             ss << R"_(], "tuples": [)_";
             firstCol = true;
@@ -386,7 +388,7 @@ public:
                 bool firstCol = true;
                 for (auto& i : run->getRelation(row[7]->toString(0))->getIterations()) {
                     bool add = false;
-                    double totalTime = 0.0;
+                    std::chrono::microseconds totalTime{};
                     uint64_t totalSize = 0L;
                     for (auto& rul : i->getRules()) {
                         if (rul.second->getId() == row[6]->toString(0)) {
@@ -398,7 +400,7 @@ public:
                     }
                     if (add) {
                         comma(firstCol);
-                        ss << totalTime;
+                        ss << totalTime.count();
                         iteration_tuples.push_back(totalSize);
                     }
                 }
@@ -478,11 +480,11 @@ public:
         ss << R"_("usage": [)_";
         bool firstRow = true;
         Usage previousUsage = *usages.begin();
-        previousUsage.time = beginTime.count();
+        previousUsage.time = beginTime;
         for (auto usage : usages) {
             comma(firstRow);
             ss << '[';
-            ss << (usage.time - beginTime.count()) / 1000000.0 << ", ";
+            ss << (usage.time - beginTime).count() / 1000000.0 << ", ";
             ss << 100.0 * (usage.usertime - previousUsage.usertime) / (usage.time - previousUsage.time)
                << ", ";
             ss << 100.0 * (usage.systemtime - previousUsage.systemtime) / (usage.time - previousUsage.time)
@@ -490,8 +492,7 @@ public:
             ss << usage.maxRSS * 1024 << ", ";
             ss << '"';
             bool firstCol = true;
-            for (auto& cur : out.getProgramRun()->getRelationsAtTime(
-                         previousUsage.time / 1000000.0, usage.time / 1000000.0)) {
+            for (auto& cur : out.getProgramRun()->getRelationsAtTime(previousUsage.time, usage.time)) {
                 comma(firstCol);
                 ss << cur->getName();
             }
@@ -704,7 +705,7 @@ public:
         }
 
         const Relation* rel = out.getProgramRun()->getRelation(name);
-        usage(rel->getEndtime() * 1000000, rel->getStarttime() * 1000000);
+        usage(rel->getEndtime(), rel->getStarttime());
     }
 
     void usageRule(std::string id) {
@@ -736,7 +737,7 @@ public:
         }
 
         auto& rul = rel->getRuleMap().at(srcLocator);
-        usage(rul->getEndtime() * 1000000, rul->getStarttime() * 1000000);
+        usage(rul->getEndtime(), rul->getStarttime());
     }
 
     std::set<Usage> getUsageStats(size_t width = size_t(-1)) {
@@ -746,20 +747,22 @@ public:
         if (usageStats == nullptr || usageStats->getKeys().size() < 2) {
             return usages;
         }
-        uint64_t endTime = 0;
-        uint64_t startTime = 0;
-        uint64_t timeStep = 0;
+        std::chrono::microseconds endTime{};
+        std::chrono::microseconds startTime{};
+        std::chrono::microseconds timeStep{};
         // Translate the string ordered text usage stats to a time ordered binary form.
         std::set<Usage> allUsages;
         for (auto& currentKey : usageStats->getKeys()) {
             Usage currentUsage;
-            currentUsage.time = std::stol(currentKey);
-            currentUsage.systemtime = dynamic_cast<SizeEntry*>(
+            uint64_t cur = std::stoul(currentKey);
+            currentUsage.time = std::chrono::duration<uint64_t, std::micro>(cur);
+            cur = dynamic_cast<SizeEntry*>(
                     usageStats->readDirectoryEntry(currentKey)->readEntry("systemtime"))
-                                              ->getSize();
-            currentUsage.usertime = dynamic_cast<SizeEntry*>(
-                    usageStats->readDirectoryEntry(currentKey)->readEntry("usertime"))
-                                            ->getSize();
+                          ->getSize();
+            currentUsage.systemtime = std::chrono::duration<uint64_t, std::micro>(cur);
+            cur = dynamic_cast<SizeEntry*>(usageStats->readDirectoryEntry(currentKey)->readEntry("usertime"))
+                          ->getSize();
+            currentUsage.usertime = std::chrono::duration<uint64_t, std::micro>(cur);
             currentUsage.maxRSS =
                     dynamic_cast<SizeEntry*>(usageStats->readDirectoryEntry(currentKey)->readEntry("maxRSS"))
                             ->getSize();
@@ -786,12 +789,8 @@ public:
         }
 
         // Extract our overall stats
-        if (startTime == 0) {
-            startTime = allUsages.begin()->time;
-        }
-        if (endTime == 0) {
-            endTime = allUsages.rbegin()->time;
-        }
+        startTime = allUsages.begin()->time;
+        endTime = allUsages.rbegin()->time;
 
         // If we don't have enough records, just return what we can
         if (allUsages.size() < width) {
@@ -812,9 +811,12 @@ public:
         return usages;
     }
 
-    void usage(uint64_t endTime = 0, uint64_t startTime = 0) {
+    void usage(uint32_t height = 20) {
+        usage({}, {}, height);
+    }
+
+    void usage(std::chrono::microseconds endTime, std::chrono::microseconds startTime, uint32_t height = 20) {
         uint32_t width = getTermWidth() - 8;
-        uint32_t height = 20;
 
         std::set<Usage> usages = getUsageStats(width);
 
@@ -829,10 +831,10 @@ public:
         double maxIntervalUsage = 0;
 
         // Extract our overall stats
-        if (startTime == 0) {
+        if (startTime.count() == 0) {
             startTime = usages.begin()->time;
         }
-        if (endTime == 0) {
+        if (endTime.count() == 0) {
             endTime = usages.rbegin()->time;
         }
 
@@ -841,20 +843,22 @@ public:
         }
 
         // Find maximum so we can normalise the graph
-        Usage previousUsage{0, 0, 0, 0};
+        Usage previousUsage{{}, 0, {}, {}};
         for (auto& currentUsage : usages) {
-            double usageDiff = currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
-                               previousUsage.usertime;
-            usageDiff /= (currentUsage.time - previousUsage.time);
+            double usageDiff = (currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
+                                previousUsage.usertime)
+                                       .count();
+            usageDiff /= (currentUsage.time - previousUsage.time).count();
             if (usageDiff > maxIntervalUsage) {
                 maxIntervalUsage = usageDiff;
             }
+
             previousUsage = currentUsage;
         }
 
         double intervalUsagePercent = 100.0 * maxIntervalUsage;
         std::printf("%11s\n", "cpu total");
-        std::printf("%11s\n", Tools::formatTime(usages.rbegin()->usertime / 1000000.0).c_str());
+        std::printf("%11s\n", Tools::formatTime(usages.rbegin()->usertime).c_str());
 
         // Add columns to the graph
         char grid[height][width];
@@ -864,7 +868,7 @@ public:
             }
         }
 
-        previousUsage = {0, 0, 0, 0};
+        previousUsage = {{}, 0, {}, {}};
         uint32_t col = 0;
         for (const Usage& currentUsage : usages) {
             uint64_t curHeight = 0;
@@ -872,12 +876,13 @@ public:
             // Usage may be 0
             if (maxIntervalUsage != 0) {
                 curHeight = (currentUsage.systemtime - previousUsage.systemtime + currentUsage.usertime -
-                             previousUsage.usertime);
-                curHeight /= currentUsage.time - previousUsage.time;
+                             previousUsage.usertime)
+                                    .count();
+                curHeight /= (currentUsage.time - previousUsage.time).count();
                 curHeight *= height / maxIntervalUsage;
 
-                curSystemHeight = currentUsage.systemtime - previousUsage.systemtime;
-                curSystemHeight /= currentUsage.time - previousUsage.time;
+                curSystemHeight = (currentUsage.systemtime - previousUsage.systemtime).count();
+                curSystemHeight /= (currentUsage.time - previousUsage.time).count();
                 curSystemHeight *= height / maxIntervalUsage;
             }
             for (uint32_t row = 0; row < curHeight; ++row) {
@@ -892,7 +897,7 @@ public:
 
         // Print array
         for (int32_t row = height - 1; row >= 0; --row) {
-            printf("%6s%% ", Tools::formatNum(0, intervalUsagePercent * (row + 1) / height).c_str());
+            printf("%6d%% ", uint32_t(intervalUsagePercent * (row + 1) / height));
             for (uint32_t col = 0; col < width; ++col) {
                 std::cout << grid[row][col];
             }
@@ -907,9 +912,13 @@ public:
         std::cout << std::endl;
     }
 
-    void memoryUsage(uint64_t endTime = 0, uint64_t startTime = 0) {
+    void memoryUsage(uint32_t height = 20) {
+        memoryUsage({}, {}, height);
+    }
+
+    void memoryUsage(
+            std::chrono::microseconds endTime, std::chrono::microseconds startTime, uint32_t height = 20) {
         uint32_t width = getTermWidth() - 8;
-        uint32_t height = 20;
         uint64_t maxMaxRSS = 0;
 
         std::set<Usage> usages = getUsageStats(width);
@@ -1031,42 +1040,58 @@ public:
         }
         std::cout << std::endl;
 
-        usage();
+        std::cout << "Slowest relations to fully evaluate\n";
+        rel(3, false);
+        for (size_t i = relationTable.getRows().size(); i < 3; ++i) {
+            std::cout << "\n";
+        }
+        std::cout << "Slowest rules to fully evaluate\n";
+        rul(3, false);
+        for (size_t i = ruleTable.getRows().size(); i < 3; ++i) {
+            std::cout << "\n";
+        }
+
+        usage(10);
     }
 
     void setResultLimit(size_t limit) {
         resultLimit = limit;
     }
 
-    void rel() {
+    void rel(size_t limit, bool showLimit = true) {
         relationTable.sort(sortColumn);
         std::cout << " ----- Relation Table -----\n";
-        std::printf("%8s%8s%8s%8s%8s%8s%15s%12s%6s %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
-                "SAVE_T", "TUPLES", "kTUPLES/s", "ID", "NAME");
+        std::printf("%8s%8s%8s%8s%8s%8s%8s%8s%8s%6s %s\n\n", "TOT_T", "NREC_T", "REC_T", "COPY_T", "LOAD_T",
+                "SAVE_T", "TUPLES", "READS", "TUP/s", "ID", "NAME");
         size_t count = 0;
         for (auto& row : Tools::formatTable(relationTable, precision)) {
-            if (++count > resultLimit) {
-                std::cout << (relationTable.getRows().size() - resultLimit) << " rows not shown" << std::endl;
+            if (++count > limit) {
+                if (showLimit) {
+                    std::cout << (relationTable.getRows().size() - resultLimit) << " rows not shown"
+                              << std::endl;
+                }
                 break;
             }
-            std::printf("%8s%8s%8s%8s%8s%8s%15s%12s%6s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
-                    row[3].c_str(), row[9].c_str(), row[10].c_str(), row[4].c_str(), row[8].c_str(),
-                    row[6].c_str(), row[5].c_str());
+            std::printf("%8s%8s%8s%8s%8s%8s%8s%8s%8s%6s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                    row[3].c_str(), row[9].c_str(), row[10].c_str(), row[4].c_str(), row[12].c_str(),
+                    row[8].c_str(), row[6].c_str(), row[5].c_str());
         }
     }
 
-    void rul() {
+    void rul(size_t limit, bool showLimit = true) {
         ruleTable.sort(sortColumn);
         std::cout << "  ----- Rule Table -----\n";
-        std::printf("%8s%8s%8s%15s%12s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "kTUPLES/s", "ID",
-                "RELATION");
+        std::printf(
+                "%8s%8s%8s%8s%8s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "TUP/s", "ID", "RELATION");
         size_t count = 0;
         for (auto& row : Tools::formatTable(ruleTable, precision)) {
-            if (++count > resultLimit) {
-                std::cout << (ruleTable.getRows().size() - resultLimit) << " rows not shown" << std::endl;
+            if (++count > limit) {
+                if (showLimit) {
+                    std::cout << (ruleTable.getRows().size() - resultLimit) << " rows not shown" << std::endl;
+                }
                 break;
             }
-            std::printf("%8s%8s%8s%15s%12s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+            std::printf("%8s%8s%8s%8s%8s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                     row[4].c_str(), row[9].c_str(), row[6].c_str(), row[7].c_str());
         }
     }
@@ -1097,12 +1122,12 @@ public:
                 Tools::formatTable(relationTable, precision);
 
         std::cout << "  ----- Rules of a Relation -----\n";
-        std::printf("%8s%8s%8s%16s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID", "NAME");
+        std::printf("%8s%8s%8s%8s%8s %s\n\n", "TOT_T", "NREC_T", "REC_T", "TUPLES", "ID", "NAME");
         std::string name = "";
         for (auto& row : formattedRelationTable) {
             // Test for relation name or relation id
             if (row[5].compare(str) == 0 || row[6].compare(str) == 0) {
-                std::printf("%8s%8s%8s%16s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                std::printf("%8s%8s%8s%8s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                         row[4].c_str(), row[6].c_str(), row[5].c_str());
                 name = row[5];
                 break;
@@ -1111,7 +1136,7 @@ public:
         std::cout << " ---------------------------------------------------------\n";
         for (auto& row : formattedRuleTable) {
             if (row[7].compare(name) == 0) {
-                std::printf("%8s%8s%8s%16s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
+                std::printf("%8s%8s%8s%8s%8s %s\n", row[0].c_str(), row[1].c_str(), row[2].c_str(),
                         row[4].c_str(), row[6].c_str(), row[7].c_str());
             }
         }
@@ -1206,26 +1231,26 @@ public:
                 std::printf("%4s%2s%s\n\n", row[6].c_str(), "", row[5].c_str());
                 iter = run->getRelation(row[5])->getIterations();
                 if (col.compare("tot_t") == 0) {
-                    std::vector<double> list;
+                    std::vector<std::chrono::microseconds> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->getRuntime());
                     }
                     std::printf("%4s   %s\n\n", "NO", "RUNTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("copy_t") == 0) {
-                    std::vector<double> list;
+                    std::vector<std::chrono::microseconds> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->getCopytime());
                     }
                     std::printf("%4s   %s\n\n", "NO", "COPYTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("tuples") == 0) {
-                    std::vector<uint64_t> list;
+                    std::vector<size_t> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->size());
                     }
                     std::printf("%4s   %s\n\n", "NO", "TUPLES");
-                    graphL(list);
+                    graphBySize(list);
                 }
                 return;
             }
@@ -1236,26 +1261,26 @@ public:
                 const std::shared_ptr<ProgramRun>& run = out.getProgramRun();
                 iter = run->getRelation(row[5])->getIterations();
                 if (col.compare("tot_t") == 0) {
-                    std::vector<double> list;
+                    std::vector<std::chrono::microseconds> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->getRuntime());
                     }
                     std::printf("%4s   %s\n\n", "NO", "RUNTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("copy_t") == 0) {
-                    std::vector<double> list;
+                    std::vector<std::chrono::microseconds> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->getCopytime());
                     }
                     std::printf("%4s   %s\n\n", "NO", "COPYTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("tuples") == 0) {
-                    std::vector<uint64_t> list;
+                    std::vector<size_t> list;
                     for (auto& i : iter) {
                         list.emplace_back(i->size());
                     }
                     std::printf("%4s   %s\n\n", "NO", "TUPLES");
-                    graphL(list);
+                    graphBySize(list);
                 }
                 return;
             }
@@ -1271,10 +1296,10 @@ public:
                 const std::shared_ptr<ProgramRun>& run = out.getProgramRun();
                 iter = run->getRelation(row[7])->getIterations();
                 if (col.compare("tot_t") == 0) {
-                    std::vector<double> list;
+                    std::vector<std::chrono::microseconds> list;
                     for (auto& i : iter) {
                         bool add = false;
-                        double totalTime = 0.0;
+                        std::chrono::microseconds totalTime{};
                         for (auto& rul : i->getRules()) {
                             if (rul.second->getId().compare(c) == 0) {
                                 totalTime += rul.second->getRuntime();
@@ -1286,12 +1311,12 @@ public:
                         }
                     }
                     std::printf("%4s   %s\n\n", "NO", "RUNTIME");
-                    graphD(list);
+                    graphByTime(list);
                 } else if (col.compare("tuples") == 0) {
-                    std::vector<uint64_t> list;
+                    std::vector<size_t> list;
                     for (auto& i : iter) {
                         bool add = false;
-                        uint64_t totalSize = 0L;
+                        size_t totalSize = 0L;
                         for (auto& rul : i->getRules()) {
                             if (rul.second->getId().compare(c) == 0) {
                                 totalSize += rul.second->size();
@@ -1303,7 +1328,7 @@ public:
                         }
                     }
                     std::printf("%4s   %s\n\n", "NO", "TUPLES");
-                    graphL(list);
+                    graphBySize(list);
                 }
                 break;
             }
@@ -1323,31 +1348,31 @@ public:
         std::printf("%6s%2s%s\n\n", (*versionTable.rows[0])[6]->toString(0).c_str(), "",
                 (*versionTable.rows[0])[5]->toString(0).c_str());
         if (col.compare("tot_t") == 0) {
-            std::vector<double> list;
+            std::vector<std::chrono::microseconds> list;
             for (auto& row : versionTable.rows) {
-                list.emplace_back((*row)[0]->getDoubleVal());
+                list.emplace_back((*row)[0]->getTimeVal());
             }
             std::printf("%4s   %s\n\n", "NO", "RUNTIME");
-            graphD(list);
+            graphByTime(list);
         } else if (col.compare("copy_t") == 0) {
-            std::vector<double> list;
+            std::vector<std::chrono::microseconds> list;
             for (auto& row : versionTable.rows) {
-                list.emplace_back((*row)[3]->getDoubleVal());
+                list.emplace_back((*row)[3]->getTimeVal());
             }
             std::printf("%4s   %s\n\n", "NO", "COPYTIME");
-            graphD(list);
+            graphByTime(list);
         } else if (col.compare("tuples") == 0) {
-            std::vector<uint64_t> list;
+            std::vector<size_t> list;
             for (auto& row : versionTable.rows) {
                 list.emplace_back((*row)[4]->getLongVal());
             }
             std::printf("%4s   %s\n\n", "NO", "TUPLES");
-            graphL(list);
+            graphBySize(list);
         }
     }
 
-    void graphD(std::vector<double> list) {
-        double max = 0;
+    void graphByTime(std::vector<std::chrono::microseconds> list) {
+        std::chrono::microseconds max{};
         for (auto& d : list) {
             if (d > max) {
                 max = d;
@@ -1358,22 +1383,18 @@ public:
         std::reverse(list.begin(), list.end());
         int i = 0;
         for (auto& d : list) {
-            uint32_t len = 67 * (d / max);
+            uint32_t len = 67.0 * d.count() / max.count();
             std::string bar = "";
             for (uint32_t j = 0; j < len; j++) {
                 bar += "*";
             }
 
-            if (std::isnan(d)) {
-                std::printf("%4d        NaN | %s\n", i++, bar.c_str());
-            } else {
-                std::printf("%4d %10.8f | %s\n", i++, d, bar.c_str());
-            }
+            std::printf("%4d %10.8f | %s\n", i++, (d.count() / 1000000.0), bar.c_str());
         }
     }
 
-    void graphL(std::vector<uint64_t> list) {
-        uint64_t max = 0;
+    void graphBySize(std::vector<size_t> list) {
+        size_t max = 0;
         for (auto& l : list) {
             if (l > max) {
                 max = l;
@@ -1381,9 +1402,9 @@ public:
         }
         std::sort(list.begin(), list.end());
         std::reverse(list.begin(), list.end());
-        int i = 0;
+        uint32_t i = 0;
         for (auto& l : list) {
-            uint32_t len = 64 * ((double)l / (double)max);
+            size_t len = max == 0 ? 0 : 64.0 * l / max;
             std::string bar = "";
             for (uint32_t j = 0; j < len; j++) {
                 bar += "*";
@@ -1391,10 +1412,6 @@ public:
 
             std::printf("%4d %8s | %s\n", i++, Tools::formatNum(precision, l).c_str(), bar.c_str());
         }
-    }
-
-    static bool string_sort(std::vector<std::string> a, std::vector<std::string> b) {
-        return a[0] > b[0];
     }
 
 protected:

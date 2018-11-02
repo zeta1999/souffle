@@ -45,8 +45,8 @@ public:
     }
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "runtime") {
-            base.setStarttime(duration.getStart().count() / 1000000.0);
-            base.setEndtime(duration.getEnd().count() / 1000000.0);
+            base.setStarttime(duration.getStart());
+            base.setEndtime(duration.getEnd());
         }
     }
     void visit(SizeEntry& size) override {
@@ -176,7 +176,7 @@ public:
     IterationVisitor(Iteration& iteration, Relation& relation) : DSNVisitor(iteration), relation(relation) {}
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "copytime") {
-            auto copytime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            auto copytime = (duration.getEnd() - duration.getStart());
             base.setCopytime(copytime);
         }
         DSNVisitor::visit(duration);
@@ -229,10 +229,10 @@ public:
     RelationVisitor(Relation& relation) : DSNVisitor(relation) {}
     void visit(DurationEntry& duration) override {
         if (duration.getKey() == "loadtime") {
-            auto loadtime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            auto loadtime = (duration.getEnd() - duration.getStart());
             base.setLoadtime(loadtime);
         } else if (duration.getKey() == "savetime") {
-            auto savetime = (duration.getEnd() - duration.getStart()).count() / 1000000.0;
+            auto savetime = (duration.getEnd() - duration.getStart());
             base.setSavetime(savetime);
         }
         DSNVisitor::visit(duration);
@@ -314,6 +314,26 @@ public:
             auto relation = dynamic_cast<DirectoryEntry*>(db.lookupEntry({"program", "relation", cur}));
             if (relation != nullptr) {
                 addRelation(*relation);
+            }
+        }
+        for (const auto& relation : relationMap) {
+            for (const auto& rule : relation.second->getRuleMap()) {
+                for (const auto& atom : rule.second->getAtoms()) {
+                    std::string relationName = atom.identifier.substr(0, atom.identifier.find('('));
+                    relationMap[relationName]->addReads(atom.frequency);
+                }
+            }
+            for (const auto& iteration : relation.second->getIterations()) {
+                for (const auto& rule : iteration->getRules()) {
+                    for (const auto& atom : rule.second->getAtoms()) {
+                        std::string relationName = atom.identifier.substr(0, atom.identifier.find('('));
+                        if (relationName.substr(0, 6) == "@delta") {
+                            relationName = relationName.substr(7);
+                        }
+                        assert(relationMap.count(relationName) > 0 || "Relation name for atom not found");
+                        relationMap[relationName]->addReads(atom.frequency);
+                    }
+                }
             }
         }
         run->setRelationMap(this->relationMap);

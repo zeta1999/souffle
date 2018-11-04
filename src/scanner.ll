@@ -131,6 +131,7 @@
 "."                                   { return yy::parser::make_DOT(yylloc); }
 "="                                   { return yy::parser::make_EQUALS(yylloc); }
 "*"                                   { return yy::parser::make_STAR(yylloc); }
+"@"                                   { return yy::parser::make_AT(yylloc); }
 "/"                                   { return yy::parser::make_SLASH(yylloc); }
 "^"                                   { return yy::parser::make_CARET(yylloc); }
 "%"                                   { return yy::parser::make_PERCENT(yylloc); }

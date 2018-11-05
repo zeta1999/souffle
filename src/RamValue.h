@@ -148,7 +148,7 @@ public:
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << "%" << name << "_" << type << "(";
+        os << "@" << name << "_" << type << "(";
         os << join(
                 arguments, ",", [](std::ostream& out, const std::unique_ptr<RamValue>& arg) { out << *arg; });
         os << ")";

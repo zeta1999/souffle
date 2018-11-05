@@ -148,6 +148,7 @@
 %token DOT                       "."
 %token EQUALS                    "="
 %token STAR                      "*"
+%token AT                        "@"
 %token SLASH                     "/"
 %token CARET                     "^"
 %token PERCENT                   "%"
@@ -205,7 +206,6 @@
 %precedence BW_NOT L_NOT
 %precedence NEG
 %left CARET
-%left IDENT LPAREN
 
 %%
 %start program;
@@ -551,9 +551,9 @@ arg
         $$ = new AstCounter();
         $$->setSrcLoc(@$);
     }
-  | IDENT functor_list {
-        $$ = $2;
-        $2->setName($1);
+  | AT IDENT functor_list {
+        $$ = $3;
+        $3->setName($2);
         $$->setSrcLoc(@$);
     }
   | IDENT {

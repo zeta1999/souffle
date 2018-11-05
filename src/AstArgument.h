@@ -400,7 +400,7 @@ public:
 
     /** print user-defined functor */
     void print(std::ostream& os) const override {
-        os << '#' << name << "(" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << ")";
+        os << '@' << name << "(" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << ")";
     }
 
     /** Create clone */

@@ -346,6 +346,20 @@ function gen_rul_table() {
         "rul");
 }
 
+function gen_top_rel_table() {
+    generate_table([["text",0],["id",1],["time",2],["time",3],["time",4],
+        ["time",5],["int",6],["perc","float",2],["perc","int",6],["code_loc",7]],
+        "top_rel_table_body",
+    "topRel");
+}
+
+function gen_top_rul_table() {
+    generate_table([["text",0],["id",1],["time",2],["time",3],["time",4],
+            ["time",5],["int",6],["perc","float",2],["perc","int",6],["code_loc",7]],
+        "top_rul_table_body",
+        "topRul");
+}
+
 
 function genRulesOfRelations() {
     var data_format = [["text",0],["id",1],["time",2],["time",3],["time",4],
@@ -517,6 +531,8 @@ function gen_top() {
     graphUsages();
 
     document.getElementById("top-config").appendChild(genConfig());
+    gen_top_rel_table();
+    gen_top_rul_table();
 }
 
 function view_code_snippet(value) {

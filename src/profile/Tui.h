@@ -249,7 +249,7 @@ public:
         return ss;
     }
 
-    std::stringstream& genJsonRelations(std::stringstream& ss) {
+    std::stringstream& genJsonRelations(std::stringstream& ss, const std::string& name, size_t maxRows) {
         const std::shared_ptr<ProgramRun>& run = out.getProgramRun();
 
         auto comma = [&ss](bool& first, const std::string& delimiter = ", ") {
@@ -260,12 +260,18 @@ public:
             }
         };
 
-        ss << R"_("rel":{)_";
+        ss << '"' << name << R"_(":{)_";
         bool firstRow = true;
-        for (auto& _row : relationTable.getRows()) {
+        auto rows = relationTable.getRows();
+        std::stable_sort(rows.begin(), rows.end(), [](std::shared_ptr<Row> left, std::shared_ptr<Row> right) {
+            return (*left)[0]->getDoubleVal() > (*right)[0]->getDoubleVal();
+        });
+        maxRows = std::min(rows.size(), maxRows);
+
+        for (size_t i = 0; i < maxRows; ++i) {
             comma(firstRow, ",\n");
 
-            Row row = *_row;
+            Row& row = *rows[i];
             ss << '"' << row[6]->toString(0) << R"_(": [)_";
             ss << '"' << Tools::cleanJsonOut(row[5]->toString(0)) << R"_(", )_";
             ss << '"' << Tools::cleanJsonOut(row[6]->toString(0)) << R"_(", )_";
@@ -312,7 +318,7 @@ public:
         return ss;
     }
 
-    std::stringstream& genJsonRules(std::stringstream& ss) {
+    std::stringstream& genJsonRules(std::stringstream& ss, const std::string& name, size_t maxRows) {
         const std::shared_ptr<ProgramRun>& run = out.getProgramRun();
 
         auto comma = [&ss](bool& first, const std::string& delimiter = ", ") {
@@ -323,11 +329,17 @@ public:
             }
         };
 
-        ss << R"_("rul": {)_";
+        ss << '"' << name << R"_(":{)_";
 
         bool firstRow = true;
-        for (auto& _row : ruleTable.getRows()) {
-            Row row = *_row;
+        auto rows = ruleTable.getRows();
+        std::stable_sort(rows.begin(), rows.end(), [](std::shared_ptr<Row> left, std::shared_ptr<Row> right) {
+            return (*left)[0]->getDoubleVal() > (*right)[0]->getDoubleVal();
+        });
+        maxRows = std::min(rows.size(), maxRows);
+
+        for (size_t i = 0; i < maxRows; ++i) {
+            Row& row = *rows[i];
 
             std::vector<std::string> part = Tools::split(row[6]->toString(0), ".");
             std::string strRel = "R" + part[0].substr(1);
@@ -592,9 +604,13 @@ public:
 
         genJsonTop(ss);
         ss << ",\n";
-        genJsonRelations(ss);
+        genJsonRelations(ss, "topRel", 3);
         ss << ",\n";
-        genJsonRules(ss);
+        genJsonRules(ss, "topRul", 3);
+        ss << ",\n";
+        genJsonRelations(ss, "rel", relationTable.rows.size());
+        ss << ",\n";
+        genJsonRules(ss, "rul", ruleTable.rows.size());
         ss << ",\n";
         genJsonUsage(ss);
         ss << ",\n";

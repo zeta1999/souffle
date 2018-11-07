@@ -334,7 +334,7 @@ function generate_table(data_format,body_id,data_key) {
 
 function gen_rel_table() {
     generate_table([["text",0],["id",1],["time",2],["time",3],["time",4],
-        ["time",5],["int",6],["perc","float",2],["perc","int",6],["code_loc",7]],
+        ["time",5],["int",6],["int", 7],["perc","float",2],["perc","int",6],["code_loc",8]],
         "Rel_table_body",
     "rel");
 }
@@ -348,7 +348,7 @@ function gen_rul_table() {
 
 function gen_top_rel_table() {
     generate_table([["text",0],["id",1],["time",2],["time",3],["time",4],
-        ["time",5],["int",6],["perc","float",2],["perc","int",6],["code_loc",7]],
+        ["time",5],["int",6],["int",7],["perc","float",2],["perc","int",6],["code_loc",8]],
         "top_rel_table_body",
     "topRel");
 }

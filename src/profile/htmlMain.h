@@ -75,6 +75,7 @@ std::string htmlBodyTop = R"___(
                     <th data-sort-method="time">Rec Time</th>
                     <th data-sort-method="time">Copy Time</th>
                     <th data-sort-method="number">Tuples</th>
+                    <th data-sort-method="number">Reads</th>
                     <th data-sort-method="number">% of Time</th>
                     <th data-sort-method="number">% of Tuples</th>
                     <th data-sort-method="text">Source</th>
@@ -120,6 +121,7 @@ std::string htmlBodyTop = R"___(
                 <th data-sort-method="time">Rec Time</th>
                 <th data-sort-method="time">Copy Time</th>
                 <th data-sort-method="number">Tuples</th>
+                <th data-sort-method="number">Reads</th>
                 <th data-sort-method="number">% of Time</th>
                 <th data-sort-method="number">% of Tuples</th>
                 <th data-sort-method="text">Source</th>
@@ -144,7 +146,6 @@ std::string htmlBodyTop = R"___(
                     <th data-sort-method="number">Tuples</th>
                     <th data-sort-method="number">% of Time</th>
                     <th data-sort-method="number">% of Tuples</th>
-                    <th data-sort-method="number">R/W ratio</th>
                     <th data-sort-method="text" style="width:20%;">Source</th>
                 </tr>
                 </thead>

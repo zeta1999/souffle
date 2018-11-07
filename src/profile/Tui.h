@@ -280,6 +280,7 @@ public:
             ss << row[2]->getDoubleVal() << ", ";
             ss << row[3]->getDoubleVal() << ", ";
             ss << row[4]->getLongVal() << ", ";
+            ss << row[12]->getLongVal() << ", ";
             ss << '"' << Tools::cleanJsonOut(row[7]->toString(0)) << R"_(", [)_";
 
             bool firstCol = true;

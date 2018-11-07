@@ -373,23 +373,19 @@ function genRulesOfRelations() {
     for (i in data_format) {
         if (!data_format.hasOwnProperty(i)) continue;
         if (data_format[i][0] === "perc") {
-            if (!isNaN(data.rel[selected.rel][data_format[i][2]])) {
-                perc_totals.push([data_format[i][1], data_format[i][2], data.rel[selected.rel][data_format[i][2]]]);
-            }
+            perc_totals.push([data_format[i][1],data_format[i][2],0]);
         }
     }
 
-    row = document.createElement("tr");
-    for (i in data_format) {
-        if (!data_format.hasOwnProperty(i)) continue;
-        if (data_format[i][0] === "perc") {
-            cell = create_cell(data_format[i][0], 1, 1);
-        } else {
-            cell = create_cell(data_format[i][0], data.rel[selected.rel][data_format[i][1]]);
+    for (item in rules) {
+        if (data.rul[rules[item]].hasOwnProperty(item)) {
+            for (i in perc_totals) {
+                if (!isNaN(data.rul[rules[item]][perc_totals[i][1]])) {
+                    perc_totals[i][2] += data.rul[rules[item]][perc_totals[i][1]];
+                }
+            }
         }
-        row.appendChild(cell);
     }
-    table_body.appendChild(row);
 
     for (j=0; j<rules.length; j++) {
         row = document.createElement("tr");

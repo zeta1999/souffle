@@ -56,13 +56,6 @@ std::string htmlBodyTop = R"___(
     <div id="Top" class="tabcontent" style="margin-left: auto;margin-right: auto;">
         <h3>Top</h3>
         <div id="top-stats"></div>
-        <div id="top-config"></div>
-        <div id="top-graphs">
-            <h3>CPU time</h1>
-            <div class="ct-chart-cpu"></div>
-            <h3>Maximum Resident Set Size</h1>
-            <div class="ct-chart-rss"></div>
-        </div>
         <h3>Slowest relations to compute</h1>
         <div class="table_wrapper">
             <table id='top_rel_table'>
@@ -105,6 +98,13 @@ std::string htmlBodyTop = R"___(
                 </tbody>
             </table>
         </div>
+        <div id="top-graphs">
+            <h3>CPU time</h1>
+            <div class="ct-chart-cpu"></div>
+            <h3>Maximum Resident Set Size</h1>
+            <div class="ct-chart-rss"></div>
+        </div>
+        <div id="top-config"></div>
     </div>
     <div id="Relations" class="tabcontent">
         <h3>Relations table</h3>

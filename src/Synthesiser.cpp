@@ -1695,9 +1695,13 @@ void Synthesiser::generateCode(
         os << "SignalHandler::instance()->enableLogging();\n";
     }
 
+    bool hasIncrement = false;
+    visitDepthFirst(*(prog.getMain()), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
     // initialize counter
-    os << "// -- initialize counter --\n";
-    os << "std::atomic<RamDomain> ctr(0);\n\n";
+    if (hasIncrement) {
+        os << "// -- initialize counter --\n";
+        os << "std::atomic<RamDomain> ctr(0);\n\n";
+    }
     os << "std::atomic<size_t> iter(0);\n\n";
 
     // set default threads (in embedded mode)

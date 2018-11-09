@@ -255,6 +255,13 @@ public:
             base.setPostMaxRSS(postMaxRSS->getSize());
         }
     }
+    void visit(SizeEntry& size) override {
+        if (size.getKey() == "reads") {
+            base.addReads(size.getSize());
+        } else {
+            DSNVisitor::visit(size);
+        }
+    }
 };
 }  // namespace
 

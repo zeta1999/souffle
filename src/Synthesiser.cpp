@@ -59,6 +59,17 @@ unsigned Synthesiser::lookupFreqIdx(const std::string& txt) {
     }
 }
 
+/** Lookup frequency counter */
+size_t Synthesiser::lookupReadIdx(const std::string& txt) {
+    static unsigned counter;
+    auto pos = neIdxMap.find(txt);
+    if (pos == neIdxMap.end()) {
+        return neIdxMap[txt] = counter++;
+    } else {
+        return neIdxMap[txt];
+    }
+}
+
 /** Convert RAM identifier */
 const std::string Synthesiser::convertRamIdent(const std::string& name) {
     auto it = identifiers.find(name);
@@ -1012,14 +1023,19 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto arity = rel.getArity();
+            std::string before, after;
+            if (Global::config().has("profile")) {
+                out << R"_((reads[)_" << synthesiser.lookupReadIdx(rel.getName()) << R"_(]++,)_";
+                after = ")";
+            }
 
             // if it is total we use the contains function
             if (ne.isTotal()) {
                 out << "!" << relName << "->"
                     << "contains(Tuple<RamDomain," << arity << ">({{" << join(ne.getValues(), ",", rec)
-                    << "}})," << ctxName << ")";
-                return;
+                    << "}})," << ctxName << ")" << after;
                 PRINT_END_COMMENT(out);
+                return;
             }
 
             // else we conduct a range query
@@ -1034,7 +1050,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(*value, out);
                 }
             });
-            out << "}})," << ctxName << ").empty()";
+            out << "}})," << ctxName << ").empty()" << after;
             PRINT_END_COMMENT(out);
         }
 
@@ -1593,6 +1609,11 @@ void Synthesiser::generateCode(
         size_t numFreq = 0;
         visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
+        size_t numRead = 0;
+        visitDepthFirst(*(prog.getMain()), [&](const RamCreate& node) {
+            if (!node.getRelation().isTemp()) numRead++;
+        });
+        os << "  size_t reads[" << numRead << "]{};\n";
     }
 
     // print relation definitions
@@ -1865,6 +1886,10 @@ void Synthesiser::generateCode(
         for (auto const& cur : idxMap) {
             os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(" << cur.first << ")_\", freqs["
                << cur.second << "],0);\n";
+        }
+        for (auto const& cur : neIdxMap) {
+            os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(@relation-reads;" << cur.first
+               << ")_\", reads[" << cur.second << "],0);\n";
         }
         os << "}\n";  // end of dumpFreqs() method
     }

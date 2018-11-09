@@ -308,7 +308,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             auto arity = rel.getArity();
             auto values = ne.getValues();
 
-            if (Global::config().has("profile")) {
+            if (Global::config().has("profile") && !ne.getRelation().isTemp()) {
                 interpreter.reads[ne.getRelation().getName()]++;
             }
             // for total we use the exists test

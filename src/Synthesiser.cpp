@@ -1024,7 +1024,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto arity = rel.getArity();
             std::string before, after;
-            if (Global::config().has("profile")) {
+            if (Global::config().has("profile") && !ne.getRelation().isTemp()) {
                 out << R"_((reads[)_" << synthesiser.lookupReadIdx(rel.getName()) << R"_(]++,)_";
                 after = ")";
             }

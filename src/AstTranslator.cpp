@@ -337,8 +337,13 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(
 
     // a utility to translate atoms to relations
     auto getRelation = [&](const AstAtom* atom) {
-        return translateRelation((program ? getAtomRelation(atom, program) : nullptr),
-                getRelationName(atom->getName()), atom->getArity(), false, hashset);
+        std::string name = getRelationName(atom->getName());
+        bool isTemp = name.at(0) == '@';
+        if (isTemp) {
+            name = name.substr(1);
+        }
+        return translateRelation((program ? getAtomRelation(atom, program) : nullptr), name, atom->getArity(),
+                isTemp, hashset);
     };
 
     // handle facts

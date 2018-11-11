@@ -19,6 +19,7 @@
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstRelationIdentifier.h"
+#include "AstUtils.h"
 #include "IODirectives.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
@@ -263,6 +264,17 @@ private:
         return toString(join(id.getNames(), "-"));
     }
 
+    /** a utility to translate atoms to relations */
+    std::unique_ptr<RamRelation> getRelation(const AstAtom* atom, bool hashset) {
+        std::string name = getRelationName(atom->getName());
+        bool isTemp = name.at(0) == '@';
+        if (isTemp) {
+            name = name.substr(1);
+        }
+        return translateRelation((program ? getAtomRelation(atom, program) : nullptr), name, atom->getArity(),
+                isTemp, hashset);
+    }
+
     void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,
             const std::string& fileExt, const bool isIntermediate);
 
@@ -278,6 +290,10 @@ private:
 
     /** translate an AST argument to a RAM value */
     std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueIndex& index);
+
+    /** translate an AST constraint to a RAM condition */
+    std::unique_ptr<RamCondition> translateConstraint(
+            const AstLiteral* arg, const ValueIndex& index, bool hashset);
 
     /** translate AST clause to RAM code */
     std::unique_ptr<RamStatement> translateClause(const AstClause& clause, const AstClause& originalClause,

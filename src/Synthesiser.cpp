@@ -61,12 +61,18 @@ unsigned Synthesiser::lookupFreqIdx(const std::string& txt) {
 
 /** Lookup frequency counter */
 size_t Synthesiser::lookupReadIdx(const std::string& txt) {
+    std::string modifiedTxt = txt;
+    for (auto& cur : modifiedTxt) {
+        if (cur == '-') {
+            cur = '.';
+        }
+    }
     static unsigned counter;
-    auto pos = neIdxMap.find(txt);
+    auto pos = neIdxMap.find(modifiedTxt);
     if (pos == neIdxMap.end()) {
-        return neIdxMap[txt] = counter++;
+        return neIdxMap[modifiedTxt] = counter++;
     } else {
-        return neIdxMap[txt];
+        return neIdxMap[modifiedTxt];
     }
 }
 

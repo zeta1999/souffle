@@ -593,15 +593,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(
             if (Global::config().has("profile")) {
                 std::stringstream ss;
                 ss << clause.getHead()->getName();
-                std::string relName = ss.str();
                 ss.str("");
-
-                if (modifiedIdMap.find(relName) != modifiedIdMap.end()) {
-                    relName = modifiedIdMap[relName];
-                }
-
                 ss << "@frequency-atom" << ';';
-                ss << relName << ';';
+                ss << originalClause.getHead()->getName() << ';';
                 ss << version << ';';
                 ss << stringify(toString(clause)) << ';';
                 ss << stringify(toString(*atom)) << ';';

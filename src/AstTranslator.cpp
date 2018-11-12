@@ -886,10 +886,6 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         relDelta[rel] = translateRelation(rel, "delta_" + relName, rel->getArity(), true, rel->isHashset());
         relNew[rel] = translateRelation(rel, "new_" + relName, rel->getArity(), true, rel->isHashset());
 
-        modifiedIdMap[relName] = relName;
-        modifiedIdMap[relDelta[rel]->getName()] = relName;
-        modifiedIdMap[relNew[rel]->getName()] = relName;
-
         /* create update statements for fixpoint (even iteration) */
         appendStmt(updateRelTable,
                 std::make_unique<RamSequence>(

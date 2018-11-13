@@ -326,14 +326,14 @@ public:
         for (const auto& relation : relationMap) {
             for (const auto& rule : relation.second->getRuleMap()) {
                 for (const auto& atom : rule.second->getAtoms()) {
-                    std::string relationName = atom.identifier.substr(0, atom.identifier.find('('));
+                    std::string relationName = extractRelationNameFromAtom(atom);
                     relationMap[relationName]->addReads(atom.frequency);
                 }
             }
             for (const auto& iteration : relation.second->getIterations()) {
                 for (const auto& rule : iteration->getRules()) {
                     for (const auto& atom : rule.second->getAtoms()) {
-                        std::string relationName = atom.identifier.substr(0, atom.identifier.find('('));
+                        std::string relationName = extractRelationNameFromAtom(atom);
                         if (relationName.substr(0, 6) == "@delta") {
                             relationName = relationName.substr(7);
                         }
@@ -354,7 +354,7 @@ public:
     }
 
     void addRelation(const DirectoryEntry& relation) {
-        const std::string& name = relation.getKey();
+        const std::string& name = cleanRelationName(relation.getKey());
 
         relationMap.emplace(name, std::make_shared<Relation>(name, createId()));
         auto& rel = *relationMap[name];
@@ -375,6 +375,20 @@ public:
 
     std::string createId() {
         return "R" + std::to_string(++rel_id);
+    }
+
+protected:
+    std::string cleanRelationName(const std::string& relationName) {
+        std::string cleanName = relationName;
+        for (auto& cur : cleanName) {
+            if (cur == '-') {
+                cur = '.';
+            }
+        }
+        return cleanName;
+    }
+    std::string extractRelationNameFromAtom(const Atom& atom) {
+        return cleanRelationName(atom.identifier.substr(0, atom.identifier.find('(')));
     }
 };
 

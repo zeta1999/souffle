@@ -1155,8 +1155,8 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
                         relation->getArity(), false, relation->isHashset())),
                 getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
         if (Global::config().has("profile")) {
-            const std::string logTimerStatement = LogStatement::tRelationLoadTime(
-                    getRelationName(relation->getName()), relation->getSrcLoc());
+            const std::string logTimerStatement =
+                    LogStatement::tRelationLoadTime(toString(relation->getName()), relation->getSrcLoc());
             statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement,
                     std::unique_ptr<RamRelation>(
                             translateRelation(relation, getRelationName(relation->getName()),

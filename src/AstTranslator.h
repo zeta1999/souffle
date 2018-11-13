@@ -49,9 +49,6 @@ class TypeEnvironment;
  */
 class AstTranslator {
 private:
-    /** Map modified relation identifiers to original relation identifiers */
-    std::map<std::string, std::string> modifiedIdMap;
-
     /** AST program */
     const AstProgram* program;
 

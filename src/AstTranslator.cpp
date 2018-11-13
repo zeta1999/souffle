@@ -677,15 +677,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateClause(
             if (Global::config().has("profile")) {
                 std::stringstream ss;
                 ss << clause.getHead()->getName();
-                std::string relName = ss.str();
                 ss.str("");
-
-                if (modifiedIdMap.find(relName) != modifiedIdMap.end()) {
-                    relName = modifiedIdMap[relName];
-                }
-
                 ss << "@frequency-atom" << ';';
-                ss << relName << ';';
+                ss << originalClause.getHead()->getName() << ';';
                 ss << version << ';';
                 ss << stringify(toString(clause)) << ';';
                 ss << stringify(toString(*atom)) << ';';
@@ -905,10 +899,6 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         rrel[rel] = translateRelation(rel, relName, rel->getArity(), false, rel->isHashset());
         relDelta[rel] = translateRelation(rel, "delta_" + relName, rel->getArity(), true, rel->isHashset());
         relNew[rel] = translateRelation(rel, "new_" + relName, rel->getArity(), true, rel->isHashset());
-
-        modifiedIdMap[relName] = relName;
-        modifiedIdMap[relDelta[rel]->getName()] = relName;
-        modifiedIdMap[relNew[rel]->getName()] = relName;
 
         /* create update statements for fixpoint (even iteration) */
         appendStmt(updateRelTable,
@@ -1165,8 +1155,8 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
                         relation->getArity(), false, relation->isHashset())),
                 getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
         if (Global::config().has("profile")) {
-            const std::string logTimerStatement = LogStatement::tRelationLoadTime(
-                    getRelationName(relation->getName()), relation->getSrcLoc());
+            const std::string logTimerStatement =
+                    LogStatement::tRelationLoadTime(toString(relation->getName()), relation->getSrcLoc());
             statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement,
                     std::unique_ptr<RamRelation>(
                             translateRelation(relation, getRelationName(relation->getName()),
@@ -1190,8 +1180,8 @@ std::unique_ptr<RamProgram> AstTranslator::translateProgram(const AstTranslation
                         relation->getArity(), false, relation->isHashset())),
                 getOutputIODirectives(relation, Global::config().get(outputDirectory), fileExtension));
         if (Global::config().has("profile")) {
-            const std::string logTimerStatement = LogStatement::tRelationSaveTime(
-                    getRelationName(relation->getName()), relation->getSrcLoc());
+            const std::string logTimerStatement =
+                    LogStatement::tRelationSaveTime(toString(relation->getName()), relation->getSrcLoc());
             statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement,
                     std::unique_ptr<RamRelation>(
                             translateRelation(relation, getRelationName(relation->getName()),

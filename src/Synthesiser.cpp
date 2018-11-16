@@ -889,8 +889,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (project.getValues().empty()) {
                 out << "Tuple<RamDomain," << arity << "> tuple({{}});\n";
             } else {
-                out << "Tuple<RamDomain," << arity << "> tuple({{(RamDomain)("
-                    << join(project.getValues(), "),(RamDomain)(", rec) << ")}});\n";
+                out << "Tuple<RamDomain," << arity << "> tuple({{" << join(project.getValues(), ",", rec)
+                    << "}});\n";
             }
 
             // check filter
@@ -1121,9 +1121,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(op.getValue(), out);
                     break;
                 case UnaryOp::STRLEN:
-                    out << "symTable.resolve((size_t)";
+                    out << "static_cast<RamDomain>(symTable.resolve(";
                     visit(op.getValue(), out);
-                    out << ").size()";
+                    out << ").size())";
                     break;
                 case UnaryOp::NEG:
                     out << "(-(";

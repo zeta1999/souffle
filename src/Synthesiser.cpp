@@ -1195,9 +1195,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 }
                 case BinaryOp::EXP: {
-                    out << "(AstDomain)(std::pow((AstDomain)";
+                    // Cast as int64, then back to RamDomain of int32 to avoid wrapping to negative
+                    // when using int32 RamDomains
+                    out << "static_cast<int64_t>(std::pow(";
                     visit(op.getLHS(), out);
-                    out << ",(AstDomain)";
+                    out << ",";
                     visit(op.getRHS(), out);
                     out << "))";
                     break;
@@ -1251,19 +1253,19 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 }
                 case BinaryOp::MAX: {
-                    out << "(AstDomain)(std::max((AstDomain)";
+                    out << "std::max(";
                     visit(op.getLHS(), out);
-                    out << ",(AstDomain)";
+                    out << ",";
                     visit(op.getRHS(), out);
-                    out << "))";
+                    out << ")";
                     break;
                 }
                 case BinaryOp::MIN: {
-                    out << "(AstDomain)(std::min((AstDomain)";
+                    out << "std::min(";
                     visit(op.getLHS(), out);
-                    out << ",(AstDomain)";
+                    out << ",";
                     visit(op.getRHS(), out);
-                    out << "))";
+                    out << ")";
                     break;
                 }
 

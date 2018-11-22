@@ -889,8 +889,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (project.getValues().empty()) {
                 out << "Tuple<RamDomain," << arity << "> tuple({{}});\n";
             } else {
-                out << "Tuple<RamDomain," << arity << "> tuple({{" << join(project.getValues(), ",", rec)
-                    << "}});\n";
+                out << "Tuple<RamDomain," << arity << "> tuple({{static_cast<RamDomain>("
+                    << join(project.getValues(), "),static_cast<RamDomain>(", rec) << ")}});\n";
             }
 
             // check filter

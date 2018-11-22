@@ -215,6 +215,66 @@ TEST(BinRelTest, Shuffled) {
     EXPECT_EQ(count, br.size());
 }
 
+TEST(BinRelTest, Extend) {
+    // TODO, test running extend for a relation
+    BinRel br;
+    
+    br.insert(0,1);
+    br.insert(0,2);
+    br.insert(0,3);
+    br.insert(0,4);
+    br.insert(0,5);
+    br.insert(0,6);
+
+    br.insert(8,9);
+
+    br.insert(44, 70);
+    
+    br.insert(11,11);
+    EXPECT_EQ(br.size(), (7*7) + (2*2) + (2*2) + (1*1));
+
+    BinRel br2;
+    br2.insert(33, 8);
+    br2.insert(33, 99);
+    br2.insert(33, 0);
+
+    br2.insert(69, 68);
+    br2.insert(69, 70);
+
+    br2.insert(101, 102);
+    EXPECT_EQ(br2.size(), (4*4) + (3*3) + (2*2));
+
+    br2.extend(br);
+    // br2 now should contain djsets: {0,1,2,3,4,5,6,8,9,33,99}, {68,69,70,44}, {11}
+    // djset {0..6} merged with {33,8,99,0}, and {8,9} should also merge with that djset
+    // djset {44,70} should be merged with {68,69,70}
+    // dj set is on its own {11}, but IS new knowledge! so it's in the extended domain
+    // shouldn't contain 101,102! this is not new delta knowledge
+    EXPECT_TRUE(br2.contains(0,0));
+    EXPECT_TRUE(br2.contains(0,1));
+    EXPECT_TRUE(br2.contains(1,8));
+    EXPECT_TRUE(br2.contains(9,4));
+    EXPECT_TRUE(br2.contains(33,4));
+    EXPECT_TRUE(br2.contains(33,99));
+
+    EXPECT_TRUE(br2.contains(68,69));
+    EXPECT_TRUE(br2.contains(70,44));
+
+    EXPECT_TRUE(br2.contains(11,11));
+
+    EXPECT_FALSE(br2.contains(0,69));
+    EXPECT_FALSE(br2.contains(101,102));
+
+    // check this hasn't changed size
+    EXPECT_EQ(br.size(), (7*7) + (2*2) + (2*2) + (1*1));
+    // check that it was properly extended 
+    EXPECT_EQ(br2.size(), (11*11)+(4*4)+(1*1));
+}
+
+TEST(BinRelTest, Copy) {
+    // TODO: test copy ctor (or assign? idk)
+}
+
 // TODO: rewrite this to not use .find (it is deprecated)
 ////TEST(BinRelTest, Copy) {
 //
@@ -284,6 +344,7 @@ TEST(BinRelTest, Shuffled) {
 ////     EXPECT_EQ(5000, br1.size());
 //// }
 //
+
 TEST(BinRelTest, Merge) {
     // test insertAll isolates data
     BinRel br;
@@ -407,6 +468,106 @@ TEST(BinRelTest, IterBasic) {
 //    EXPECT_EQ(count, 1);
 //}
 
+TEST(BinRelTest, IterRange) {
+    // TODO: write some tests to use that templated range for different indexes too
+    BinRel br;
+    br.insert(0,1);
+    br.insert(0,2);
+    br.insert(0,3);
+    br.insert(0,4);
+    br.insert(0,5);
+    br.insert(0,6);
+
+    br.insert(8,9);
+    br.insert(8,10);
+
+    // this should return an iterator covering (3, 0), (3, 1), ..., (3, 6), it's a (3, *) iterator
+    auto rangeIt = br.getBoundaries<1>({3, 18293018});
+
+    std::vector<size_t> posteriorsCovered;
+    for (auto tup : rangeIt) {
+        posteriorsCovered.push_back(tup[1]); 
+    }
+    EXPECT_EQ(posteriorsCovered.size(), 7);
+
+    // this should be of everything, so doesn't matter the args
+    rangeIt = br.getBoundaries<0>({332, 888});
+    posteriorsCovered.clear();
+    for (auto tup : rangeIt) {
+        posteriorsCovered.push_back(tup[1]); 
+    }
+    EXPECT_EQ(posteriorsCovered.size(), (7*7)+(3*3));
+
+    // and now iterate over two levels (exactly one pretty much)
+    rangeIt = br.getBoundaries<2>({2,3});
+    posteriorsCovered.clear();
+    for (auto tup : rangeIt) {
+        posteriorsCovered.push_back(tup[1]); 
+    }
+    EXPECT_EQ(posteriorsCovered.size(), 1);
+    EXPECT_EQ(posteriorsCovered.front(), 3);
+
+    // and now the same, but for levels 1 and two, stuff that doesn't exist
+    rangeIt = br.getBoundaries<1>({99, 99});
+    posteriorsCovered.clear();
+    for (auto tup : rangeIt) {
+        posteriorsCovered.push_back(tup[1]); 
+    }
+    EXPECT_EQ(posteriorsCovered.size(), 0);
+
+    rangeIt = br.getBoundaries<2>({8, 1});
+    posteriorsCovered.clear();
+    for (auto tup : rangeIt) {
+        posteriorsCovered.push_back(tup[1]); 
+    }
+    EXPECT_EQ(posteriorsCovered.size(), 0);
+
+    // and now the same for an empty binary relation
+    br.clear();
+    // repeat the same, but notice that we expect the size to be 0 always
+    {
+        auto rangeIt = br.getBoundaries<1>({3, 18293018});
+
+        std::vector<size_t> posteriorsCovered;
+        for (auto tup : rangeIt) {
+            posteriorsCovered.push_back(tup[1]); 
+        }
+        EXPECT_EQ(posteriorsCovered.size(), 0);
+
+        // this should be of everything, so doesn't matter the args
+        rangeIt = br.getBoundaries<0>({332, 888});
+        posteriorsCovered.clear();
+        for (auto tup : rangeIt) {
+            posteriorsCovered.push_back(tup[1]); 
+        }
+        EXPECT_EQ(posteriorsCovered.size(), 0);
+
+        // and now iterate over two levels (exactly one pretty much)
+        rangeIt = br.getBoundaries<2>({2,3});
+        posteriorsCovered.clear();
+        for (auto tup : rangeIt) {
+            posteriorsCovered.push_back(tup[1]); 
+        }
+        EXPECT_EQ(posteriorsCovered.size(), 0);
+
+        // and now the same, but for levels 1 and two, stuff that doesn't exist
+        rangeIt = br.getBoundaries<1>({99, 99});
+        posteriorsCovered.clear();
+        for (auto tup : rangeIt) {
+            posteriorsCovered.push_back(tup[1]); 
+        }
+        EXPECT_EQ(posteriorsCovered.size(), 0);
+
+        rangeIt = br.getBoundaries<2>({8, 1});
+        posteriorsCovered.clear();
+        for (auto tup : rangeIt) {
+            posteriorsCovered.push_back(tup[1]); 
+        }
+        EXPECT_EQ(posteriorsCovered.size(), 0);
+
+    }
+}
+
 TEST(BinRelTest, IterPartition) {
     // test that the union equals the input
 
@@ -448,11 +609,6 @@ TEST(BinRelTest, IterPartition) {
             values.push_back(std::make_pair((*x)[0], (*x)[1]));
         }
     }
-
-     
-    //std::sort(values.begin(), values.end());
-    //std::for_each(values.begin(), values.end(), [](std::pair<RamDomain, RamDomain> i) { std::cout << i << std::endl; });
-    
 
     EXPECT_EQ(br.size(), values.size());
 }

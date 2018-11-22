@@ -13,6 +13,7 @@
  * An implementation of a generic B-tree data structure including
  * interfaces for utilizing instances as set or multiset containers.
  * Allows the user to provide a function to execute on successful insert
+ * Be careful using this, it currently expects a pair as the key.
  *
  ***********************************************************************/
 

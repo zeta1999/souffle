@@ -111,24 +111,31 @@ public:
         PiggyList<DomainInt> worklist;
 
         // add elements that exist in both sets to our worklist
-        for (DomainInt& el : other.sds) {
+        for (const std::pair<DomainInt, parent_t>& pair : other.sds.sparseToDenseMap) {
+            DomainInt el = pair.first; 
             if (this->sds.nodeExists(el)) {
                 worklist.append(el);
             }
         }
+
         // from the old relation, insert all disjoint sets that intersect with something in the worklist
-        for (DomainInt& el : worklist) {
+        for (const DomainInt& el : worklist) {
             if (!synthesised.sds.nodeExists(el)) {
-                for (TupleType& i : this->anteriorit(el)) {
-                    synthesised.insert(el, i.second);
+                auto it = this->anteriorIt(el);
+                for (; it != this->end(); ++it){ 
+                    synthesised.insert(el, (*it)[1]);
                 }
             }
         }
 
-        // insert all relations from the new relation into this one
-        synthesised.insertAll(other);
+        this->clear();
+        this->insertAll(synthesised);
 
-        std::swap(synthesised, *this);
+        // insert all relations from the new relation into this one
+        this->insertAll(other);
+
+        // hm, we haven't specialised this, and i can't be bothered
+        //std::swap(synthesised, *this);
     }
 
 protected:
@@ -457,7 +464,7 @@ public:
      * @return the corresponding range of matching elements
      */
     template <unsigned levels>
-    range<iterator> getBoundaries(const operation_hints& entry) const {
+    range<iterator> getBoundaries(const TupleType& entry) const {
         operation_hints ctxt;
         return getBoundaries<levels>(entry, ctxt);
     }

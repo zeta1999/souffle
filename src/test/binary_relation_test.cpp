@@ -217,6 +217,8 @@ TEST(BinRelTest, Shuffled) {
 
 TEST(BinRelTest, Extend) {
     // TODO, test running extend for a relation
+
+    // br is {{0,1,2,3,4,5,6}, {8,9}, {44, 70}, {11}}
     BinRel br;
     
     br.insert(0,1);
@@ -233,6 +235,7 @@ TEST(BinRelTest, Extend) {
     br.insert(11,11);
     EXPECT_EQ(br.size(), (7*7) + (2*2) + (2*2) + (1*1));
 
+    // br2 is {{0,8,33,99}, {68,69,70}, {101, 102}}
     BinRel br2;
     br2.insert(33, 8);
     br2.insert(33, 99);
@@ -244,12 +247,13 @@ TEST(BinRelTest, Extend) {
     br2.insert(101, 102);
     EXPECT_EQ(br2.size(), (4*4) + (3*3) + (2*2));
 
+
+
+    // let's say br2 the new knowledge, so we must extend it to actually contain the implied knowledge from new
     br2.extend(br);
-    // br2 now should contain djsets: {0,1,2,3,4,5,6,8,9,33,99}, {68,69,70,44}, {11}
-    // djset {0..6} merged with {33,8,99,0}, and {8,9} should also merge with that djset
-    // djset {44,70} should be merged with {68,69,70}
-    // dj set is on its own {11}, but IS new knowledge! so it's in the extended domain
-    // shouldn't contain 101,102! this is not new delta knowledge
+
+    // it should contain {0,1,2,3,4,5,6,8,9,33,99}, {44, 68, 69, 70}, {101, 102}
+    // shouldn't contain {11}.
     EXPECT_TRUE(br2.contains(0,0));
     EXPECT_TRUE(br2.contains(0,1));
     EXPECT_TRUE(br2.contains(1,8));
@@ -260,15 +264,15 @@ TEST(BinRelTest, Extend) {
     EXPECT_TRUE(br2.contains(68,69));
     EXPECT_TRUE(br2.contains(70,44));
 
-    EXPECT_TRUE(br2.contains(11,11));
+    EXPECT_FALSE(br2.contains(11,11));
 
     EXPECT_FALSE(br2.contains(0,69));
-    EXPECT_FALSE(br2.contains(101,102));
+    EXPECT_TRUE(br2.contains(101,102));
 
     // check this hasn't changed size
     EXPECT_EQ(br.size(), (7*7) + (2*2) + (2*2) + (1*1));
     // check that it was properly extended 
-    EXPECT_EQ(br2.size(), (11*11)+(4*4)+(1*1));
+    EXPECT_EQ(br2.size(), (11*11)+(4*4)+(2*2));
 }
 
 TEST(BinRelTest, Copy) {

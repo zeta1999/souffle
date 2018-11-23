@@ -5,6 +5,7 @@
 #include "LambdaBTree.h"
 #include <algorithm>
 #include <exception>
+#include <set>
 #include <unordered_map>
 #include <utility>
 
@@ -96,46 +97,48 @@ public:
     }
 
     /**
-     * Conditionally inserts from another BinaryRelation to this one
-     *  if any disjoint sets intersect across the two (i.e. if A is in both
-     *  this and the other one, insert everything that is alongside A in
-     *  the second BR into this one.
-     *  @param the other binaryrelation to read and insert from
-     *  @return the newly synthesised extended relation
+     * TODO: docstring
      */
     void extend(const BinaryRelation<TupleType>& other) {
+        // nothing to extend if there's no new/original knowledge
+        if (other.size() == 0 || this->size() == 0) return;
+
         this->genAllDisjointSetLists();
         other.genAllDisjointSetLists();
 
-        BinaryRelation<TupleType> synthesised;
-        PiggyList<DomainInt> worklist;
+        std::set<DomainInt> repsCovered;
 
-        // add elements that exist in both sets to our worklist
-        for (const std::pair<DomainInt, parent_t>& pair : other.sds.sparseToDenseMap) {
-            DomainInt el = pair.first; 
-            if (this->sds.nodeExists(el)) {
-                worklist.append(el);
-            }
-        }
-
-        // from the old relation, insert all disjoint sets that intersect with something in the worklist
-        for (const DomainInt& el : worklist) {
-            if (!synthesised.sds.nodeExists(el)) {
-                auto it = this->anteriorIt(el);
-                for (; it != this->end(); ++it){ 
-                    synthesised.insert(el, (*it)[1]);
+        // find all the disjoint sets that need to be added to this relation
+        // that exist in other (and exist in this)
+        {
+            auto it = this->sds.sparseToDenseMap.begin();
+            auto end = this->sds.sparseToDenseMap.end();
+            DomainInt el;
+            for (; it != end; ++it) {
+                std::tie(el, std::ignore) = *it;
+                if (other.containsElement(el)) {
+                    DomainInt rep = other.sds.findNode(el);
+                    if (repsCovered.count(rep) == 0) {
+                        repsCovered.emplace(rep);
+                    }
                 }
             }
         }
 
-        this->clear();
-        this->insertAll(synthesised);
-
-        // insert all relations from the new relation into this one
-        this->insertAll(other);
-
-        // hm, we haven't specialised this, and i can't be bothered
-        //std::swap(synthesised, *this);
+        // add the intersecting dj sets into this one
+        {
+            DomainInt el;
+            DomainInt rep;
+            auto it = other.sds.sparseToDenseMap.begin();
+            auto end = other.sds.sparseToDenseMap.end();
+            for (; it != end; ++it) {
+                std::tie(el, std::ignore) = *it;
+                rep = other.sds.findNode(el);
+                if (repsCovered.count(rep) != 0) {
+                    this->insert(el, rep);
+                }
+            }
+        }
     }
 
 protected:

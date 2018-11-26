@@ -55,6 +55,9 @@ private:
     /** Type environment */
     const TypeEnvironment* typeEnv;
 
+    /** RAM program */
+    std::unique_ptr<RamProgram> ramProg;
+
     /**
      * Concrete attribute
      */
@@ -261,17 +264,6 @@ private:
         return toString(join(id.getNames(), "-"));
     }
 
-    /** a utility to translate atoms to relations */
-    std::unique_ptr<RamRelation> getRelation(const AstAtom* atom, bool hashset) {
-        std::string name = getRelationName(atom->getName());
-        bool isTemp = name.at(0) == '@';
-        if (isTemp) {
-            name = name.substr(1);
-        }
-        return translateRelation((program ? getAtomRelation(atom, program) : nullptr), name, atom->getArity(),
-                isTemp, hashset);
-    }
-
     void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,
             const std::string& fileExt, const bool isIntermediate);
 
@@ -281,20 +273,30 @@ private:
     std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
+    /** a utility to translate atoms to relations */
+    std::unique_ptr<RamRelationReference> translateRelation(const AstAtom* atom) {
+        std::string name = getRelationName(atom->getName());
+        bool isTemp = name.at(0) == '@';
+        if (isTemp) {
+            name = name.substr(1);
+        }
+        return translateRelation(
+                (program ? getAtomRelation(atom, program) : nullptr), name, atom->getArity(), isTemp);
+    }
+
     /** translate a AST relation to a RAM relation */
-    std::unique_ptr<RamRelation> translateRelation(const AstRelation* rel, std::string name, size_t arity,
-            const bool istemp = false, const bool hashset = false);
+    std::unique_ptr<RamRelationReference> translateRelation(
+            const AstRelation* rel, std::string name, size_t arity, const bool istemp = false);
 
     /** translate an AST argument to a RAM value */
     std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueIndex& index);
 
     /** translate an AST constraint to a RAM condition */
-    std::unique_ptr<RamCondition> translateConstraint(
-            const AstLiteral* arg, const ValueIndex& index, bool hashset);
+    std::unique_ptr<RamCondition> translateConstraint(const AstLiteral* arg, const ValueIndex& index);
 
     /** translate AST clause to RAM code */
-    std::unique_ptr<RamStatement> translateClause(const AstClause& clause, const AstClause& originalClause,
-            int version = 0, bool ret = false, bool hashset = false);
+    std::unique_ptr<RamStatement> translateClause(
+            const AstClause& clause, const AstClause& originalClause, int version = 0, bool ret = false);
 
     /**
      * translate RAM code for the non-recursive clauses of the given relation.
@@ -312,7 +314,7 @@ private:
     std::unique_ptr<RamStatement> makeSubproofSubroutine(const AstClause& clause);
 
     /** translate AST to RAM Program */
-    std::unique_ptr<RamProgram> translateProgram(const AstTranslationUnit& translationUnit);
+    void translateProgram(const AstTranslationUnit& translationUnit);
 
 public:
     AstTranslator() : program(nullptr){};

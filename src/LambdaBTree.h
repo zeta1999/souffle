@@ -19,8 +19,6 @@
 
 #pragma once
 
-#define IS_PARALLEL
-
 #include "ParallelUtils.h"
 #include "Util.h"
 #include "BTree.h"
@@ -50,29 +48,25 @@ namespace detail {
  */
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
-        unsigned blockSize, typename SearchStrategy, bool isSet, typename Functor>
-class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet> {
+        unsigned blockSize, typename SearchStrategy, bool isSet, typename Functor, typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator, Updater> {
     public:
-    typedef btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet> parenttype;
+    typedef btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator, Updater> parenttype;
 
-    LambdaBTree(const Comparator& comp = Comparator()) : parenttype(comp) {}
+    LambdaBTree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : parenttype(comp, weak_comp) {}
 
     /**
      * Inserts the given key into this tree.
      */
-    //typename Key::second_type insert(const Key& k, std::function<typename Key::second_type(typename Key::first_type)> f){ 
     typename Functor::result_type insert(Key& k, Functor f){ 
         typename parenttype::operation_hints hints;
         return insert(k, hints, f);
     }
 
-    /**
-     * Inserts the given key into this tree.
-     */
-    //typename Key::second_type insert(const Key& k, typename parenttype::operation_hints& hints, std::function<typename Key::second_type(typename Key::first_type)> f) {
+    // rewriting this because of david's changes
     typename Functor::result_type insert(Key& k, typename parenttype::operation_hints& hints, Functor f) {
-        // TODO: implement
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
+
         // special handling for inserting first element
         while (this->root == nullptr) {
             // try obtaining root-lock
@@ -88,10 +82,10 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                 break;
             }
 
-            // XXX: here
             // create new node
             this->leftmost = new typename parenttype::leaf_node();
             this->leftmost->numElements = 1;
+            // call the functor as we've successfully inserted
             typename Functor::result_type res = f(k);
             this->leftmost->keys[0] = k;
             this->root = this->leftmost;
@@ -99,7 +93,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             // operation complete => we can release the root lock
             this->root_lock.end_write();
 
-            hints.last_insert = this->leftmost;
+            hints.last_insert.access(this->leftmost);
 
             return res;
         }
@@ -108,30 +102,32 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
 
         typename parenttype::node* cur = nullptr;
 
-        // test last insert
+        // test last insert hints
         typename parenttype::lock_type::Lease cur_lease;
 
-        if (hints.last_insert) {
+        auto checkHint = [&](typename parenttype::node* last_insert) {
+            // ignore null pointer
+            if (!last_insert) return false;
             // get a read lease on indicated node
-            auto hint_lease = hints.last_insert->lock.start_read();
+            auto hint_lease = last_insert->lock.start_read();
             // check whether it covers the key
-            if (this->covers(hints.last_insert, k)) {
-                // and if there was no concurrent modification
-                if (hints.last_insert->lock.validate(hint_lease)) {
-                    // use hinted location
-                    cur = hints.last_insert;
-                    // and keep lease
-                    cur_lease = hint_lease;
-                    // register this as a hit
-                    this->hint_stats.inserts.addHit();
-                } else {
-                    // register this as a miss
-                    this->hint_stats.inserts.addMiss();
-                }
-            } else {
-                // register this as a miss
-                this->hint_stats.inserts.addMiss();
-            }
+            if (!this->weak_covers(last_insert, k)) return false;
+            // and if there was no concurrent modification
+            if (!last_insert->lock.validate(hint_lease)) return false;
+            // use hinted location
+            cur = last_insert;
+            // and keep lease
+            cur_lease = hint_lease;
+            // we found a hit
+            return true;
+        };
+
+        if (hints.last_insert.any(checkHint)) {
+            // register this as a hit
+            this->hint_stats.inserts.addHit();
+        } else {
+            // register this as a miss
+            this->hint_stats.inserts.addMiss();
         }
 
         // if there is no valid hint ..
@@ -158,18 +154,30 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                 auto a = &(cur->keys[0]);
                 auto b = &(cur->keys[cur->numElements]);
 
-                auto pos = this->search.lower_bound(k, a, b, this->comp);
+                auto pos = this->search.lower_bound(k, a, b, this->weak_comp);
                 auto idx = pos - a;
 
                 // early exit for sets
-                if (isSet && pos != b && this->equal(*pos, k)) {
+                if (isSet && pos != b && this->weak_equal(*pos, k)) {
                     // validate results
                     if (!cur->lock.validate(cur_lease)) {
                         // start over again
                         return insert(k, hints, f);
                     }
+
+                    // update provenance information
+                    if (typeid(Comparator) != typeid(WeakComparator) && this->less(k, *pos)) {
+                        if (!cur->lock.try_upgrade_to_write(cur_lease)) {
+                            // start again
+                            return insert(k, hints, f);
+                        }
+                        this->update(*pos, k);
+                        cur->lock.end_write();
+                        // XXX (pnappa): is this correct..?
+                        return (*pos).second;
+                    }
+
                     // we found the element => no check of lock necessary
-                    // XXX: careful, pnappa has duck typed this (look for other XXXs for tips)
                     return (*pos).second;
                 }
 
@@ -202,16 +210,28 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             auto a = &(cur->keys[0]);
             auto b = &(cur->keys[cur->numElements]);
 
-            auto pos = this->search.upper_bound(k, a, b, this->comp);
+            auto pos = this->search.upper_bound(k, a, b, this->weak_comp);
             auto idx = pos - a;
 
             // early exit for sets
-            if (isSet && pos != a && this->equal(*(pos - 1), k)) {
+            if (isSet && pos != a && this->weak_equal(*(pos - 1), k)) {
                 // validate result
                 if (!cur->lock.validate(cur_lease)) {
                     // start over again
                     return insert(k, hints, f);
                 }
+
+                // update provenance information
+                if (typeid(Comparator) != typeid(WeakComparator) && this->less(k, *(pos - 1))) {
+                    if (!cur->lock.try_upgrade_to_write(cur_lease)) {
+                        // start again
+                        return insert(k, hints, f);
+                    }
+                    this->update(*(pos - 1), k);
+                    cur->lock.end_write();
+                    return (*(pos-1)).second;
+                }
+
                 // we found the element => done
                 return (*(pos-1)).second;
             }
@@ -219,7 +239,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             // upgrade to write-permission
             if (!cur->lock.try_upgrade_to_write(cur_lease)) {
                 // something has changed => restart
-                hints.last_insert = cur;
+                hints.last_insert.access(cur);
                 return insert(k, hints, f);
             }
 
@@ -303,47 +323,41 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             cur->lock.end_write();
 
             // remember last insertion position
-            hints.last_insert = cur;
+            hints.last_insert.access(cur);
             return res;
         }
+
 #else
-#ifdef HAS_TSX
-        // set retry parameter
-        TX_RETRIES(maxRetries());
-        // begin hardware transactionm, enabling transaction logging if enabled
-        if (isTransactionProfilingEnabled()) {
-            TX_START_INST(NL, (&tdata));
-        } else {
-            TX_START(NL);
-        }
-#endif
         // special handling for inserting first element
-        if (empty()) {
+        if (this->empty()) {
             // create new node
-            leftmost = new leaf_node();
-            leftmost->numElements = 1;
+            this->leftmost = new typename parenttype::leaf_node();
+            this->leftmost->numElements = 1;
+            // call the functor as we've successfully inserted
             typename Functor::result_type res = f(k);
-            leftmost->keys[0] = k;
-            root = leftmost;
+            this->leftmost->keys[0] = k;
+            this->root = this->leftmost;
 
-            hints.last_insert = leftmost;
+            hints.last_insert.access(this->leftmost);
 
-#ifdef HAS_TSX
-            // end hardware transaction
-            TX_END;
-#endif
             return res;
         }
 
         // insert using iterative implementation
-        node* cur = root;
+        typename parenttype::node* cur = this->root;
+
+        auto checkHints = [&](typename parenttype::node* last_insert) {
+            if (!last_insert) return false;
+            if (!this->weak_covers(last_insert, k)) return false;
+            cur = last_insert;
+            return true;
+        };
 
         // test last insert
-        if (hints.last_insert && covers(hints.last_insert, k)) {
-            cur = hints.last_insert;
-            hint_stats.inserts.addHit();
+        if (hints.last_insert.any(checkHints)) {
+            this->hint_stats.inserts.addHit();
         } else {
-            hint_stats.inserts.addMiss();
+            this->hint_stats.inserts.addMiss();
         }
 
         while (true) {
@@ -352,17 +366,17 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                 auto a = &(cur->keys[0]);
                 auto b = &(cur->keys[cur->numElements]);
 
-                auto pos = search.lower_bound(k, a, b, comp);
+                auto pos = this->search.lower_bound(k, a, b, this->weak_comp);
                 auto idx = pos - a;
 
                 // early exit for sets
-                if (isSet && pos != b && equal(*pos, k)) {
-#ifdef HAS_TSX
-                    // end hardware transaction
-                    TX_END;
-#endif
-                    // XXX: if anyone but pnappa is using this, be careful of this - we don't actually use the functor
-                    // and rely on duck typing - so, if you get a template warning that points to here - heed this message
+                if (isSet && pos != b && this->weak_equal(*pos, k)) {
+                    // update provenance information
+                    if (typeid(Comparator) != typeid(WeakComparator) && this->less(k, *pos)) {
+                        this->update(*pos, k);
+                        return (*pos).second;
+                    }
+
                     return (*pos).second;
                 }
 
@@ -378,22 +392,23 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             auto a = &(cur->keys[0]);
             auto b = &(cur->keys[cur->numElements]);
 
-            auto pos = search.upper_bound(k, a, b, comp);
+            auto pos = this->search.upper_bound(k, a, b, this->weak_comp);
             auto idx = pos - a;
 
             // early exit for sets
-            if (isSet && pos != a && equal(*(pos - 1), k)) {
-#ifdef HAS_TSX
-                // end hardware transaction
-                TX_END;
-#endif
-                // XXX: likewise to the previous XXX post
+            if (isSet && pos != a && this->weak_equal(*(pos - 1), k)) {
+                // update provenance information
+                if (typeid(Comparator) != typeid(WeakComparator) && this->less(k, *(pos - 1))) {
+                    this->update(*(pos - 1), k);
+                    return (*(pos - 1)).second;
+                }
+
                 return (*(pos-1)).second;
             }
 
-            if (cur->numElements >= node::maxKeys) {
+            if (cur->numElements >= parenttype::node::maxKeys) {
                 // split this node
-                idx -= cur->rebalance_or_split(&root, root_lock, idx);
+                idx -= cur->rebalance_or_split(const_cast<typename parenttype::node**>(&this->root), this->root_lock, idx);
 
                 // insert element in right fragment
                 if (((typename parenttype::size_type)idx) > cur->numElements) {
@@ -403,25 +418,22 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             }
 
             // ok - no split necessary
-            assert(cur->numElements < node::maxKeys && "Split required!");
+            assert(cur->numElements < parenttype::node::maxKeys && "Split required!");
 
             // move keys
             for (int j = cur->numElements; j > idx; --j) {
                 cur->keys[j] = cur->keys[j - 1];
             }
 
+            
+            // call the functor as we've successfully inserted
+            typename Functor::result_type res = f(k);
             // insert new element
-            typename Functor::return_type res = f(k);
             cur->keys[idx] = k;
             cur->numElements++;
 
             // remember last insertion position
-            hints.last_insert = cur;
-
-#ifdef HAS_TSX
-            // end hardware transaction
-            TX_END;
-#endif
+            hints.last_insert.access(cur);
             return res;
         }
 #endif

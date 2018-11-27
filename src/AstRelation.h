@@ -30,7 +30,7 @@
 #include <string>
 #include <vector>
 
-#include <ctype.h>
+#include <cctype>
 
 /** Types of relation qualifiers defined as bits in a word */
 
@@ -46,19 +46,26 @@
 /* Rules of a relation defined in a component can be overwritten by sub-component */
 #define OVERRIDABLE_RELATION (0x8)
 
-#define DATA_RELATION (0x10)
+/* Relation is inlined */
+#define INLINE_RELATION (0x20)
 
 /* Relation uses a brie data structure */
-#define BRIE_RELATION (0x20)
+#define BRIE_RELATION (0x40)
 
 /* Relation uses a btree data structure */
-#define BTREE_RELATION (0x40)
+#define BTREE_RELATION (0x80)
 
 /* Relation uses a union relation */
-#define EQREL_RELATION (0x80)
+#define EQREL_RELATION (0x100)
 
-/* Relation is inlined */
-#define INLINE_RELATION (0x100)
+/* Relation uses a red-black tree set */
+#define RBTSET_RELATION (0x200)
+
+/* Relation uses a hash set */
+#define HASHSET_RELATION (0x400)
+
+/* Relation warnings are suppressed */
+#define SUPPRESSED_RELATION (0x800)
 
 namespace souffle {
 
@@ -80,7 +87,7 @@ protected:
 
     /** Qualifier of relation (i.e., output or not an output relation) */
     // TODO: Change to a set of qualifiers
-    int qualifier;
+    int qualifier = 0;
 
     /** Clauses associated with this relation. Clauses could be
      * either facts or rules.
@@ -92,7 +99,7 @@ protected:
     std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
 
 public:
-    AstRelation() : qualifier(0) {}
+    AstRelation() = default;
 
     ~AstRelation() override = default;
 
@@ -108,7 +115,7 @@ public:
 
     /** Add a new used type to this relation */
     void addAttribute(std::unique_ptr<AstAttribute> attr) {
-        ASSERT(attr && "Undefined attribute");
+        assert(attr && "Undefined attribute");
         attributes.push_back(std::move(attr));
     }
 
@@ -147,11 +154,6 @@ public:
         return (qualifier & INPUT_RELATION) != 0;
     }
 
-    /** Check whether relation is to/from memory */
-    bool isData() const {
-        return (qualifier & DATA_RELATION) != 0;
-    }
-
     /** Check whether relation is a brie relation */
     bool isBrie() const {
         return (qualifier & BRIE_RELATION) != 0;
@@ -167,6 +169,16 @@ public:
         return (qualifier & EQREL_RELATION) != 0;
     }
 
+    /** Check whether relation is a red-black tree set relation */
+    bool isRbtset() const {
+        return (qualifier & RBTSET_RELATION) != 0;
+    }
+
+    /** Check whether relation is a hash set relation */
+    bool isHashset() const {
+        return (qualifier & HASHSET_RELATION) != 0;
+    }
+
     /** Check whether relation is an input relation */
     bool isPrintSize() const {
         return (qualifier & PRINTSIZE_RELATION) != 0;
@@ -180,6 +192,11 @@ public:
     /** Check whether relation is an overridable relation */
     bool isOverridable() const {
         return (qualifier & OVERRIDABLE_RELATION) != 0;
+    }
+
+    /** Check whether relation warnings are suppressed */
+    bool isSuppressed() const {
+        return (qualifier & SUPPRESSED_RELATION) != 0;
     }
 
     /** Check whether relation is an inlined relation */
@@ -228,9 +245,6 @@ public:
         if (isOutput()) {
             os << "output ";
         }
-        if (isData()) {
-            os << "output ";
-        }
         if (isPrintSize()) {
             os << "printsize ";
         }
@@ -240,9 +254,24 @@ public:
         if (isInline()) {
             os << "inline ";
         }
+        if (isBTree()) {
+            os << "btree ";
+        }
+        if (isBrie()) {
+            os << "brie ";
+        }
+        if (isRbtset()) {
+            os << "rbtset ";
+        }
+        if (isHashset()) {
+            os << "hashset ";
+        }
+        if (isEqRel()) {
+            os << "eqrel ";
+        }
     }
 
-    /** Creates a clone if this AST sub-structure */
+    /** Creates a clone of this AST sub-structure */
     AstRelation* clone() const override {
         auto res = new AstRelation();
         res->name = name;
@@ -285,9 +314,9 @@ public:
 
     /** Add a clause to the relation */
     void addClause(std::unique_ptr<AstClause> clause) {
-        ASSERT(clause && "Undefined clause");
-        ASSERT(clause->getHead() && "Undefined head of the clause");
-        ASSERT(clause->getHead()->getName() == name &&
+        assert(clause && "Undefined clause");
+        assert(clause->getHead() && "Undefined head of the clause");
+        assert(clause->getHead()->getName() == name &&
                 "Name of the atom in the head of the clause and the relation do not match");
         clauses.push_back(std::move(clause));
     }
@@ -324,7 +353,7 @@ public:
     }
 
     void addIODirectives(std::unique_ptr<AstIODirective> directive) {
-        ASSERT(directive && "Undefined directive");
+        assert(directive && "Undefined directive");
         // Make sure the old style qualifiers still work.
         if (directive->isInput()) {
             qualifier |= INPUT_RELATION;
@@ -333,10 +362,7 @@ public:
         } else if (directive->isPrintSize()) {
             qualifier |= PRINTSIZE_RELATION;
         }
-        // Fall back on default behaviour for empty directives.
-        if (!directive->getIODirectiveMap().empty()) {
-            ioDirectives.push_back(std::move(directive));
-        }
+        ioDirectives.push_back(std::move(directive));
     }
 
     std::vector<AstIODirective*> getIODirectives() const {
@@ -346,8 +372,8 @@ public:
 protected:
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
-        assert(dynamic_cast<const AstRelation*>(&node));
-        const AstRelation& other = static_cast<const AstRelation&>(node);
+        assert(nullptr != dynamic_cast<const AstRelation*>(&node));
+        const auto& other = static_cast<const AstRelation&>(node);
         return name == other.name && equal_targets(attributes, other.attributes) &&
                equal_targets(clauses, other.clauses);
     }
@@ -362,6 +388,6 @@ struct AstNameComparison {
     }
 };
 
-typedef std::set<const AstRelation*, AstNameComparison> AstRelationSet;
+using AstRelationSet = std::set<const AstRelation*, AstNameComparison>;
 
 }  // end of namespace souffle

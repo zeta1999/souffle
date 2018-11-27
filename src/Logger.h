@@ -18,18 +18,20 @@
 #pragma once
 
 #include "ParallelUtils.h"
+#include "ProfileEvent.h"
 
 #include <chrono>
+#include <functional>
 #include <iostream>
+#include <utility>
 
 namespace souffle {
-
 /**
  * Obtains a reference to the lock synchronizing output operations.
  */
 inline Lock& getOutputLock() {
-    static Lock output_lock;
-    return output_lock;
+    static Lock outputLock;
+    return outputLock;
 }
 
 /**
@@ -41,32 +43,29 @@ inline Lock& getOutputLock() {
  * processed tuples may be added in the future.
  */
 class Logger {
-    // the type of clock to be utilized by this class
-    typedef std::chrono::steady_clock clock;
-    typedef clock::time_point time;
-
-    // a label to be printed when reporting the execution time
-    const char* label;
-
-    // the start time
-    time start;
-
-    // an output stream to report to
-    std::ostream& out;
+private:
+    std::string label;
+    time_point start;
+    size_t startMaxRSS;
+    size_t iteration;
+    std::function<size_t()> size;
+    size_t preSize;
 
 public:
-    Logger(const char* label, std::ostream& out = std::cout) : label(label), out(out) {
-        start = clock::now();
+    Logger(std::string label, size_t iteration, std::function<size_t()> size = []() { return 0; })
+            : label(std::move(label)), start(now()), iteration(iteration), size(size), preSize(size()) {
+        struct rusage ru;
+        getrusage(RUSAGE_SELF, &ru);
+        startMaxRSS = ru.ru_maxrss;
+        // Assume that if we are logging the progress of an event then we care about usage during that time.
+        ProfileEventSingleton::instance().resetTimerInterval();
     }
-
     ~Logger() {
-        auto duration = clock::now() - start;
-
-        auto leas = getOutputLock().acquire();
-        (void)leas;  // avoid warning
-        out << label << std::chrono::duration_cast<std::chrono::duration<double>>(duration).count()
-            << std::endl;
+        struct rusage ru;
+        getrusage(RUSAGE_SELF, &ru);
+        size_t endMaxRSS = ru.ru_maxrss;
+        ProfileEventSingleton::instance().makeTimingEvent(
+                label, start, now(), startMaxRSS, endMaxRSS, size() - preSize, iteration);
     }
 };
-
 }  // end of namespace souffle

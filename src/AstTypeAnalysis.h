@@ -13,30 +13,24 @@
  * A collection of type analyses operating on AST constructs.
  *
  ***********************************************************************/
+
 #pragma once
 
 #include "AstAnalysis.h"
-#include "AstTranslationUnit.h"
 #include "TypeSystem.h"
+#include <cassert>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 
-class AstNode;
-class AstProgram;
 class AstArgument;
 class AstClause;
-class AstVariable;
-class AstRelation;
-
-/**
- * Analyse the given clause and computes for each contained argument
- * whether it is a constant value or not.
- *
- * @param clause the clause to be analyzed
- * @return a map mapping each contained argument to a boolean indicating
- *      whether the argument represents a constant value or not
- */
-std::map<const AstArgument*, bool> getConstTerms(const AstClause& clause);
+class AstProgram;
+class AstTranslationUnit;
 
 /**
  * Analyse the given clause and computes for each contained argument
@@ -67,11 +61,14 @@ public:
 class TypeAnalysis : public AstAnalysis {
 private:
     std::map<const AstArgument*, TypeSet> argumentTypes;
+    std::vector<std::unique_ptr<AstClause>> annotatedClauses;
 
 public:
     static constexpr const char* name = "type-analysis";
 
     void run(const AstTranslationUnit& translationUnit) override;
+
+    void print(std::ostream& os) const override;
 
     /**
      * Get the computed types for the given argument.

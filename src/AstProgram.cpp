@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstProgram.h
+ * @file AstProgram.cpp
  *
  * Implement methods for class Program that represents a Datalog
  * program consisting of types, relations, and clauses.
@@ -18,19 +18,11 @@
 #include "AstProgram.h"
 #include "AstClause.h"
 #include "AstComponent.h"
+#include "AstLiteral.h"
 #include "AstRelation.h"
-#include "AstTypeAnalysis.h"
-#include "AstUtils.h"
-#include "AstVisitor.h"
 #include "ErrorReport.h"
-#include "GraphUtils.h"
 #include "Util.h"
-
-#include <list>
 #include <sstream>
-
-#include <stdarg.h>
-#include <stdlib.h>
 
 namespace souffle {
 
@@ -83,6 +75,13 @@ void AstProgram::appendRelation(std::unique_ptr<AstRelation> r) {
     rel = std::move(r);
 }
 
+/* Add a functor declaration to the program */
+void AstProgram::addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> f) {
+    const auto& name = f->getName();
+    assert(functors.find(name) == functors.end() && "Redefinition of relation!");
+    functors[name] = std::move(f);
+}
+
 /* Remove a relation from the program */
 void AstProgram::removeRelation(const AstRelationIdentifier& name) {
     /* Remove relation from map */
@@ -114,21 +113,26 @@ AstRelation* AstProgram::getRelation(const AstRelationIdentifier& name) const {
     return (pos == relations.end()) ? nullptr : pos->second.get();
 }
 
+AstFunctorDeclaration* AstProgram::getFunctorDeclaration(const std::string& name) const {
+    auto pos = functors.find(name);
+    return (pos == functors.end()) ? nullptr : pos->second.get();
+}
+
 /* Add a clause to the program */
 void AstProgram::addClause(std::unique_ptr<AstClause> clause) {
-    ASSERT(clause && "NULL clause");
+    assert(clause && "NULL clause");
     clauses.push_back(std::move(clause));
 }
 
 /* Add a clause to the program */
 void AstProgram::addIODirective(std::unique_ptr<AstIODirective> directive) {
-    ASSERT(directive && "NULL IO directive");
+    assert(directive && "NULL IO directive");
     ioDirectives.push_back(std::move(directive));
 }
 
 /* Add a pragma to the program */
 void AstProgram::addPragma(std::unique_ptr<AstPragma> pragma) {
-    ASSERT(pragma && "NULL IO directive");
+    assert(pragma && "NULL IO directive");
     pragmaDirectives.push_back(std::move(pragma));
 }
 
@@ -172,6 +176,15 @@ void AstProgram::print(std::ostream& os) const {
         for (const auto& cur : instantiations) {
             os << *cur << "\n";
         }
+    }
+
+    /* Print functors */
+    os << "\n// ----- Functors -----\n";
+    for (const auto& cur : functors) {
+        const std::unique_ptr<AstFunctorDeclaration>& f = cur.second;
+        os << "\n\n// -- " << f->getName() << " --\n";
+        f->print(os);
+        os << "\n";
     }
 
     /* Print relations */

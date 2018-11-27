@@ -20,12 +20,14 @@
 #include "RamCondition.h"
 #include "RamNode.h"
 #include "RamOperation.h"
+#include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamValue.h"
 
 #include <functional>
 #include <typeinfo>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -80,6 +82,7 @@ struct RamVisitor : public ram_visitor_tag {
             FORWARD(ElementAccess);
             FORWARD(Number);
             FORWARD(UnaryOperator);
+            FORWARD(UserDefinedOperator);
             FORWARD(BinaryOperator);
             FORWARD(TernaryOperator);
             FORWARD(AutoIncrement);
@@ -89,6 +92,7 @@ struct RamVisitor : public ram_visitor_tag {
             // conditions
             FORWARD(Empty);
             FORWARD(NotExists);
+            FORWARD(ProvenanceNotExists);
             FORWARD(And);
             FORWARD(BinaryRelation);
 
@@ -121,6 +125,15 @@ struct RamVisitor : public ram_visitor_tag {
             FORWARD(Exit);
             FORWARD(LogTimer);
             FORWARD(DebugInfo);
+            FORWARD(Stratum);
+
+#ifdef USE_MPI
+            // mpi
+            FORWARD(Send);
+            FORWARD(Recv);
+            FORWARD(Notify);
+            FORWARD(Wait);
+#endif
 
 #undef FORWARD
         }
@@ -164,6 +177,7 @@ protected:
     LINK(Exit, Statement);
     LINK(LogTimer, Statement);
     LINK(DebugInfo, Statement);
+    LINK(Stratum, Statement);
 
     LINK(Statement, Node);
 
@@ -181,6 +195,7 @@ protected:
     LINK(And, Condition)
     LINK(BinaryRelation, Condition)
     LINK(NotExists, Condition)
+    LINK(ProvenanceNotExists, Condition)
     LINK(Empty, Condition)
 
     LINK(Condition, Node)
@@ -189,6 +204,7 @@ protected:
     LINK(Number, Value)
     LINK(ElementAccess, Value)
     LINK(UnaryOperator, Value)
+    LINK(UserDefinedOperator, Value)
     LINK(BinaryOperator, Value)
     LINK(TernaryOperator, Value)
     LINK(AutoIncrement, Value)
@@ -203,6 +219,13 @@ protected:
     // -- relation
     LINK(Relation, Node)
     LINK(RelationRef, Node)
+
+#ifdef USE_MPI
+    LINK(Send, RelationStatement);
+    LINK(Recv, RelationStatement);
+    LINK(Notify, Statement);
+    LINK(Wait, Statement);
+#endif
 
 #undef LINK
 
@@ -273,9 +296,9 @@ namespace detail {
 template <typename R, typename N>
 struct LambdaRamVisitor : public RamVisitor<void> {
     std::function<R(const N&)> lambda;
-    LambdaRamVisitor(const std::function<R(const N&)>& lambda) : lambda(lambda) {}
+    LambdaRamVisitor(std::function<R(const N&)> lambda) : lambda(std::move(lambda)) {}
     void visit(const RamNode& node) override {
-        if (const N* n = dynamic_cast<const N*>(&node)) {
+        if (const auto* n = dynamic_cast<const N*>(&node)) {
             lambda(*n);
         }
     }

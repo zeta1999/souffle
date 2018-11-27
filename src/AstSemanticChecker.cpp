@@ -15,31 +15,47 @@
  ***********************************************************************/
 
 #include "AstSemanticChecker.h"
+#include "AstArgument.h"
+#include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstIODirective.h"
+#include "AstLiteral.h"
+#include "AstNode.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
+#include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
+#include "AstType.h"
 #include "AstTypeAnalysis.h"
+#include "AstTypes.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
+#include "BinaryConstraintOps.h"
+#include "ErrorReport.h"
 #include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
+#include "SrcLocation.h"
+#include "TypeSystem.h"
 #include "Util.h"
-
+#include <cassert>
+#include <cstddef>
+#include <iostream>
+#include <map>
+#include <memory>
 #include <set>
+#include <typeinfo>
+#include <utility>
 #include <vector>
 
 namespace souffle {
 
-class AstTranslationUnit;
-
 bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
     const TypeEnvironment& typeEnv =
             translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
-    TypeAnalysis* typeAnalysis = translationUnit.getAnalysis<TypeAnalysis>();
-    PrecedenceGraph* precedenceGraph = translationUnit.getAnalysis<PrecedenceGraph>();
-    RecursiveClauses* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
+    auto* typeAnalysis = translationUnit.getAnalysis<TypeAnalysis>();
+    auto* precedenceGraph = translationUnit.getAnalysis<PrecedenceGraph>();
+    auto* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
     checkProgram(translationUnit.getErrorReport(), *translationUnit.getProgram(), typeEnv, *typeAnalysis,
             *precedenceGraph, *recursiveClauses);
     return false;
@@ -48,6 +64,37 @@ bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
 void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& program,
         const TypeEnvironment& typeEnv, const TypeAnalysis& typeAnalysis,
         const PrecedenceGraph& precedenceGraph, const RecursiveClauses& recursiveClauses) {
+    // suppress warnings for given relations
+    if (Global::config().has("suppress-warnings")) {
+        std::vector<std::string> suppressedRelations =
+                splitString(Global::config().get("suppress-warnings"), ',');
+
+        if (std::find(suppressedRelations.begin(), suppressedRelations.end(), "*") !=
+                suppressedRelations.end()) {
+            // mute all relations
+            for (AstRelation* rel : program.getRelations()) {
+                rel->setQualifier(rel->getQualifier() | SUPPRESSED_RELATION);
+            }
+        } else {
+            // mute only the given relations (if they exist)
+            for (auto& relname : suppressedRelations) {
+                const std::vector<std::string> comps = splitString(relname, '.');
+                if (!comps.empty()) {
+                    // generate the relation identifier
+                    AstRelationIdentifier relid(comps[0]);
+                    for (size_t i = 1; i < comps.size(); i++) {
+                        relid.append(comps[i]);
+                    }
+
+                    // update suppressed qualifier if the relation is found
+                    if (AstRelation* rel = program.getRelation(relid)) {
+                        rel->setQualifier(rel->getQualifier() | SUPPRESSED_RELATION);
+                    }
+                }
+            }
+        }
+    }
+
     // -- conduct checks --
     // TODO: re-write to use visitors
     checkTypes(report, program);
@@ -82,7 +129,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                 report.addError("Ungrounded variable " + cur->getName(), cur->getSrcLoc());
             }
         }
-
     });
 
     // -- type checks --
@@ -111,27 +157,29 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             report.addError("Number constant (type mismatch)", cnst.getSrcLoc());
         }
         AstDomain idx = cnst.getIndex();
-        if (idx > 2147483647 || idx < -2147483648) {
-            report.addError("Number constant not in range [-2^31, 2^31-1]", cnst.getSrcLoc());
+        if (idx > MAX_AST_DOMAIN || idx < MIN_AST_DOMAIN) {
+            report.addError("Number constant not in range [" + std::to_string(MIN_AST_DOMAIN) + ", " +
+                                    std::to_string(MAX_AST_DOMAIN) + "]",
+                    cnst.getSrcLoc());
         }
     });
 
     // all null constants are used as records
     visitDepthFirst(nodes, [&](const AstNullConstant& cnst) {
+        // TODO (#467) remove the next line to enable subprogram compilation for record types
+        Global::config().unset("engine");
         TypeSet types = typeAnalysis.getTypes(&cnst);
         if (!isRecordType(types)) {
-            // TODO (#467) remove the next line to enable subprogram compilation for record types
-            if (Global::config().has("stratify")) Global::config().unset("stratify");
             report.addError("Null constant used as a non-record", cnst.getSrcLoc());
         }
     });
 
     // record initializations have the same size as their types
     visitDepthFirst(nodes, [&](const AstRecordInit& cnst) {
+        // TODO (#467) remove the next line to enable subprogram compilation for record types
+        Global::config().unset("engine");
         TypeSet types = typeAnalysis.getTypes(&cnst);
         if (isRecordType(types)) {
-            // TODO (#467) remove the next line to enable subprogram compilation for record types
-            if (Global::config().has("stratify")) Global::config().unset("stratify");
             for (const Type& type : types) {
                 if (cnst.getArguments().size() !=
                         dynamic_cast<const RecordType*>(&type)->getFields().size()) {
@@ -143,7 +191,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // - unary functors -
     visitDepthFirst(nodes, [&](const AstUnaryFunctor& fun) {
-
         // check arg
         auto arg = fun.getOperand();
 
@@ -170,7 +217,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // - binary functors -
     visitDepthFirst(nodes, [&](const AstBinaryFunctor& fun) {
-
         // check left and right side
         auto lhs = fun.getLHS();
         auto rhs = fun.getRHS();
@@ -196,12 +242,10 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         if (fun.acceptsSymbols(1) && !isSymbolType(typeAnalysis.getTypes(rhs))) {
             report.addError("Non-symbolic second argument for functor", rhs->getSrcLoc());
         }
-
     });
 
     // - ternary functors -
     visitDepthFirst(nodes, [&](const AstTernaryFunctor& fun) {
-
         // check left and right side
         auto a0 = fun.getArg(0);
         auto a1 = fun.getArg(1);
@@ -234,12 +278,40 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         if (fun.acceptsSymbols(2) && !isSymbolType(typeAnalysis.getTypes(a2))) {
             report.addError("Non-symbolic third argument for functor", a2->getSrcLoc());
         }
+    });
 
+    // - user-defined functors -
+    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
+        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+        if (funDecl == nullptr) {
+            report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
+        } else {
+            if (funDecl->getArgCount() != fun.getArgCount()) {
+                report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
+            }
+            // check return values of user-defined functor
+            if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
+                report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
+            }
+            if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
+                report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
+            }
+            for (size_t i = 0; i < fun.getArgCount(); i++) {
+                const AstArgument* arg = fun.getArg(i);
+                if (i < funDecl->getArgCount()) {
+                    if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
+                        report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+                    }
+                    if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
+                        report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+                    }
+                }
+            }
+        }
     });
 
     // - binary relation -
-    visitDepthFirst(nodes, [&](const AstConstraint& constraint) {
-
+    visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
         // only interested in non-equal constraints
         auto op = constraint.getOperator();
         if (op == BinaryConstraintOp::EQ || op == BinaryConstraintOp::NE) {
@@ -318,6 +390,7 @@ void AstSemanticChecker::checkAtom(ErrorReport& report, const AstProgram& progra
 }
 
 /* Check whether an unnamed variable occurs in an argument (expression) */
+// TODO: convert to an AstVisitor
 static bool hasUnnamedVariable(const AstArgument* arg) {
     if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
         return true;
@@ -331,39 +404,55 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (dynamic_cast<const AstCounter*>(arg)) {
         return false;
     }
-    if (const AstUnaryFunctor* uf = dynamic_cast<const AstUnaryFunctor*>(arg)) {
+    if (const auto* uf = dynamic_cast<const AstUnaryFunctor*>(arg)) {
         return hasUnnamedVariable(uf->getOperand());
     }
-    if (const AstBinaryFunctor* bf = dynamic_cast<const AstBinaryFunctor*>(arg)) {
+    if (const auto* bf = dynamic_cast<const AstBinaryFunctor*>(arg)) {
         return hasUnnamedVariable(bf->getLHS()) || hasUnnamedVariable(bf->getRHS());
     }
-    if (const AstTernaryFunctor* tf = dynamic_cast<const AstTernaryFunctor*>(arg)) {
+    if (const auto* tf = dynamic_cast<const AstTernaryFunctor*>(arg)) {
         return hasUnnamedVariable(tf->getArg(0)) || hasUnnamedVariable(tf->getArg(1)) ||
                hasUnnamedVariable(tf->getArg(2));
     }
-    if (const AstRecordInit* ri = dynamic_cast<const AstRecordInit*>(arg)) {
+    if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+        for (size_t i = 0; i < udf->getArgCount(); i++) {
+            if (hasUnnamedVariable(udf->getArg(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+    if (const auto* ri = dynamic_cast<const AstRecordInit*>(arg)) {
         return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
+    }
+    if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+        return any_of(udf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
     if (dynamic_cast<const AstAggregator*>(arg)) {
         return false;
     }
     std::cout << "Unsupported Argument type: " << typeid(*arg).name() << "\n";
-    ASSERT(false && "Unsupported Argument Type!");
+    assert(false && "Unsupported Argument Type!");
     return false;
 }
 
 static bool hasUnnamedVariable(const AstLiteral* lit) {
-    if (const AstAtom* at = dynamic_cast<const AstAtom*>(lit)) {
+    if (const auto* at = dynamic_cast<const AstAtom*>(lit)) {
         return any_of(at->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
-    if (const AstNegation* neg = dynamic_cast<const AstNegation*>(lit)) {
+    if (const auto* neg = dynamic_cast<const AstNegation*>(lit)) {
         return hasUnnamedVariable(neg->getAtom());
     }
-    if (const AstConstraint* br = dynamic_cast<const AstConstraint*>(lit)) {
-        return hasUnnamedVariable(br->getLHS()) || hasUnnamedVariable(br->getRHS());
+    if (dynamic_cast<const AstConstraint*>(lit)) {
+        if (dynamic_cast<const AstBooleanConstraint*>(lit)) {
+            return false;
+        }
+        if (const auto* br = dynamic_cast<const AstBinaryConstraint*>(lit)) {
+            return hasUnnamedVariable(br->getLHS()) || hasUnnamedVariable(br->getRHS());
+        }
     }
     std::cout << "Unsupported Literal type: " << typeid(lit).name() << "\n";
-    ASSERT(false && "Unsupported Argument Type!");
+    assert(false && "Unsupported Argument Type!");
     return false;
 }
 
@@ -374,7 +463,7 @@ void AstSemanticChecker::checkLiteral(
         checkAtom(report, program, *atom);
     }
 
-    if (const AstConstraint* constraint = dynamic_cast<const AstConstraint*>(&literal)) {
+    if (const auto* constraint = dynamic_cast<const AstBinaryConstraint*>(&literal)) {
         checkArgument(report, program, *constraint->getLHS());
         checkArgument(report, program, *constraint->getRHS());
     }
@@ -385,11 +474,11 @@ void AstSemanticChecker::checkLiteral(
             // nothing to check since underscores are allowed
         } else if (dynamic_cast<const AstNegation*>(&literal)) {
             // nothing to check since underscores are allowed
-        } else if (dynamic_cast<const AstConstraint*>(&literal)) {
+        } else if (dynamic_cast<const AstBinaryConstraint*>(&literal)) {
             report.addError("Underscore in binary relation", literal.getSrcLoc());
         } else {
             std::cout << "Unsupported Literal type: " << typeid(literal).name() << "\n";
-            ASSERT(false && "Unsupported Argument Type!");
+            assert(false && "Unsupported Argument Type!");
         }
     }
 }
@@ -403,17 +492,21 @@ void AstSemanticChecker::checkAggregator(
 
 void AstSemanticChecker::checkArgument(
         ErrorReport& report, const AstProgram& program, const AstArgument& arg) {
-    if (const AstAggregator* agg = dynamic_cast<const AstAggregator*>(&arg)) {
+    if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg)) {
         checkAggregator(report, program, *agg);
-    } else if (const AstUnaryFunctor* unaryFunc = dynamic_cast<const AstUnaryFunctor*>(&arg)) {
+    } else if (const auto* unaryFunc = dynamic_cast<const AstUnaryFunctor*>(&arg)) {
         checkArgument(report, program, *unaryFunc->getOperand());
-    } else if (const AstBinaryFunctor* binFunc = dynamic_cast<const AstBinaryFunctor*>(&arg)) {
+    } else if (const auto* binFunc = dynamic_cast<const AstBinaryFunctor*>(&arg)) {
         checkArgument(report, program, *binFunc->getLHS());
         checkArgument(report, program, *binFunc->getRHS());
-    } else if (const AstTernaryFunctor* ternFunc = dynamic_cast<const AstTernaryFunctor*>(&arg)) {
+    } else if (const auto* ternFunc = dynamic_cast<const AstTernaryFunctor*>(&arg)) {
         checkArgument(report, program, *ternFunc->getArg(0));
         checkArgument(report, program, *ternFunc->getArg(1));
         checkArgument(report, program, *ternFunc->getArg(2));
+    } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
+        for (size_t i = 0; i < userDefFunc->getArgCount(); i++) {
+            checkArgument(report, program, *userDefFunc->getArg(i));
+        }
     }
 }
 
@@ -421,14 +514,14 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     if (dynamic_cast<const AstNumberConstant*>(&argument)) {
         return true;
     }
-    if (const AstUnaryFunctor* unOp = dynamic_cast<const AstUnaryFunctor*>(&argument)) {
+    if (const auto* unOp = dynamic_cast<const AstUnaryFunctor*>(&argument)) {
         return unOp->isNumerical() && isConstantArithExpr(*unOp->getOperand());
     }
-    if (const AstBinaryFunctor* binOp = dynamic_cast<const AstBinaryFunctor*>(&argument)) {
+    if (const auto* binOp = dynamic_cast<const AstBinaryFunctor*>(&argument)) {
         return binOp->isNumerical() && isConstantArithExpr(*binOp->getLHS()) &&
                isConstantArithExpr(*binOp->getRHS());
     }
-    if (const AstTernaryFunctor* ternOp = dynamic_cast<const AstTernaryFunctor*>(&argument)) {
+    if (const auto* ternOp = dynamic_cast<const AstTernaryFunctor*>(&argument)) {
         return ternOp->isNumerical() && isConstantArithExpr(*ternOp->getArg(0)) &&
                isConstantArithExpr(*ternOp->getArg(1)) && isConstantArithExpr(*ternOp->getArg(2));
     }
@@ -436,7 +529,7 @@ static bool isConstantArithExpr(const AstArgument& argument) {
 }
 
 void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& argument) {
-    if (const AstVariable* var = dynamic_cast<const AstVariable*>(&argument)) {
+    if (const auto* var = dynamic_cast<const AstVariable*>(&argument)) {
         report.addError("Variable " + var->getName() + " in fact", var->getSrcLoc());
     } else if (dynamic_cast<const AstUnnamedVariable*>(&argument)) {
         report.addError("Underscore in fact", argument.getSrcLoc());
@@ -452,6 +545,8 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         if (!isConstantArithExpr(argument)) {
             report.addError("Ternary function in fact", argument.getSrcLoc());
         }
+    } else if (dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
+        report.addError("User-defined functor in fact", argument.getSrcLoc());
     } else if (dynamic_cast<const AstCounter*>(&argument)) {
         report.addError("Counter in fact", argument.getSrcLoc());
     } else if (dynamic_cast<const AstConstant*>(&argument)) {
@@ -460,9 +555,13 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         for (auto* arg : ri->getArguments()) {
             checkConstant(report, *arg);
         }
+    } else if (auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
+        for (auto* arg : udf->getArguments()) {
+            checkConstant(report, *arg);
+        }
     } else {
         std::cout << "Unsupported Argument: " << typeid(argument).name() << "\n";
-        ASSERT(false && "Unknown case");
+        assert(false && "Unknown case");
     }
 }
 
@@ -573,6 +672,9 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
         if (typeEnv.isType(typeName)) {
             const Type& type = typeEnv.getType(typeName);
             if (isRecordType(type)) {
+                // TODO (#467) remove the next line to enable subprogram compilation for record types
+                Global::config().unset("engine");
+
                 if (relation.isInput()) {
                     report.addError(
                             "Input relations must not have record types. "
@@ -617,7 +719,7 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     }
 
     // check whether this relation is empty
-    if (relation.clauseSize() == 0 && !relation.isInput()) {
+    if (relation.clauseSize() == 0 && !relation.isInput() && !relation.isSuppressed()) {
         report.addWarning(
                 "No rules/facts defined for relation " + toString(relation.getName()), relation.getSrcLoc());
     }
@@ -675,9 +777,9 @@ void AstSemanticChecker::checkRecordType(
 }
 
 void AstSemanticChecker::checkType(ErrorReport& report, const AstProgram& program, const AstType& type) {
-    if (const AstUnionType* u = dynamic_cast<const AstUnionType*>(&type)) {
+    if (const auto* u = dynamic_cast<const AstUnionType*>(&type)) {
         checkUnionType(report, program, *u);
-    } else if (const AstRecordType* r = dynamic_cast<const AstRecordType*>(&type)) {
+    } else if (const auto* r = dynamic_cast<const AstRecordType*>(&type)) {
         checkRecordType(report, program, *r);
     }
 }
@@ -691,6 +793,13 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
 
 void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram& program) {
     for (const auto& directive : program.getIODirectives()) {
+#ifdef USE_MPI
+        // TODO (lyndonhenry): should permit sqlite as an io directive for use with mpi
+        auto it = directive->getIODirectiveMap().find("IO");
+        if (it != directive->getIODirectiveMap().end() && it->second == "sqlite") {
+            Global::config().unset("engine");
+        }
+#endif
         auto* r = program.getRelation(directive->getName());
         if (r == nullptr) {
             report.addError("Undefined relation " + toString(directive->getName()), directive->getSrcLoc());
@@ -698,7 +807,7 @@ void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram
     }
 }
 
-static const std::vector<AstSrcLocation> usesInvalidWitness(const std::vector<AstLiteral*>& literals,
+static const std::vector<SrcLocation> usesInvalidWitness(const std::vector<AstLiteral*>& literals,
         const std::set<std::unique_ptr<AstArgument>>& groundedArguments) {
     // Node-mapper that replaces aggregators with new (unique) variables
     struct M : public AstNodeMapper {
@@ -711,7 +820,7 @@ static const std::vector<AstSrcLocation> usesInvalidWitness(const std::vector<As
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             static int numReplaced = 0;
-            if (AstAggregator* aggr = dynamic_cast<AstAggregator*>(node.get())) {
+            if (dynamic_cast<AstAggregator*>(node.get())) {
                 // Replace the aggregator with a variable
                 std::stringstream newVariableName;
                 newVariableName << "+aggr_var_" << numReplaced++;
@@ -726,7 +835,7 @@ static const std::vector<AstSrcLocation> usesInvalidWitness(const std::vector<As
         }
     };
 
-    std::vector<AstSrcLocation> result;
+    std::vector<SrcLocation> result;
 
     // Create two versions of the original clause
 
@@ -752,7 +861,7 @@ static const std::vector<AstSrcLocation> usesInvalidWitness(const std::vector<As
         std::vector<const AstArgument*> secondCloneArguments;
         visitDepthFirst(*secondClone, [&](const AstArgument& arg) { secondCloneArguments.push_back(&arg); });
 
-        for (int i = 0; i < firstCloneArguments.size(); i++) {
+        for (size_t i = 0; i < firstCloneArguments.size(); i++) {
             identicalSubnodeMap[secondCloneArguments[i]] = firstCloneArguments[i];
         }
 
@@ -812,9 +921,8 @@ static const std::vector<AstSrcLocation> usesInvalidWitness(const std::vector<As
         visitDepthFirst(*lit, [&](const AstAggregator& aggr) {
             // Check recursively if an invalid witness is used
             std::vector<AstLiteral*> aggrBodyLiterals = aggr.getBodyLiterals();
-            std::vector<AstSrcLocation> subresult =
-                    usesInvalidWitness(aggrBodyLiterals, newlyGroundedArguments);
-            for (AstSrcLocation argloc : subresult) {
+            std::vector<SrcLocation> subresult = usesInvalidWitness(aggrBodyLiterals, newlyGroundedArguments);
+            for (SrcLocation argloc : subresult) {
                 result.push_back(argloc);
             }
         });
@@ -839,8 +947,8 @@ void AstSemanticChecker::checkWitnessProblem(ErrorReport& report, const AstProgr
 
         // Perform the check
         std::set<std::unique_ptr<AstArgument>> groundedArguments;
-        std::vector<AstSrcLocation> invalidArguments = usesInvalidWitness(bodyLiterals, groundedArguments);
-        for (AstSrcLocation invalidArgument : invalidArguments) {
+        std::vector<SrcLocation> invalidArguments = usesInvalidWitness(bodyLiterals, groundedArguments);
+        for (SrcLocation invalidArgument : invalidArguments) {
             report.addError(
                     "Witness problem: argument grounded by an aggregator's inner scope is used ungrounded in "
                     "outer scope",
@@ -1060,7 +1168,8 @@ void AstSemanticChecker::checkInlining(
     // Check that these relations never appear negated
     visitDepthFirst(program, [&](const AstNegation& neg) {
         AstRelation* associatedRelation = program.getRelation(neg.getAtom()->getName());
-        if (nonNegatableRelations.find(associatedRelation) != nonNegatableRelations.end()) {
+        if (associatedRelation != nullptr &&
+                nonNegatableRelations.find(associatedRelation) != nonNegatableRelations.end()) {
             report.addError(
                     "Cannot inline negated relation which may introduce new variables", neg.getSrcLoc());
         }
@@ -1085,11 +1194,64 @@ void AstSemanticChecker::checkInlining(
             }
         });
     });
+
+    // Check 5:
+    // Suppose a relation `a` is inlined, appears negated in a clause, and contains a
+    // (possibly nested) unnamed variable in its arguments. Then, the atom can't be
+    // inlined, as unnamed variables are named during inlining (since they may appear
+    // multiple times in an inlined-clause's body) => ungroundedness!
+
+    // Exception: It's fine if the unnamed variable appears in a nested aggregator, as
+    // the entire aggregator will automatically be grounded.
+
+    // TODO (azreika): special case where all rules defined for `a` use the
+    // underscored-argument exactly once: can workaround by remapping the variable
+    // back to an underscore - involves changes to the actual inlining algo, though
+
+    // Returns the pair (isValid, lastSrcLoc) where:
+    //  - isValid is true if and only if the node contains an invalid underscore, and
+    //  - lastSrcLoc is the source location of the last visited node
+    std::function<std::pair<bool, SrcLocation>(const AstNode*)> checkInvalidUnderscore =
+            [&](const AstNode* node) {
+                if (dynamic_cast<const AstUnnamedVariable*>(node)) {
+                    // Found an invalid underscore
+                    return std::make_pair(true, node->getSrcLoc());
+                } else if (dynamic_cast<const AstAggregator*>(node)) {
+                    // Don't care about underscores within aggregators
+                    return std::make_pair(false, node->getSrcLoc());
+                }
+
+                // Check if any children nodes use invalid underscores
+                for (const AstNode* child : node->getChildNodes()) {
+                    std::pair<bool, SrcLocation> childStatus = checkInvalidUnderscore(child);
+                    if (childStatus.first) {
+                        // Found an invalid underscore
+                        return childStatus;
+                    }
+                }
+
+                return std::make_pair(false, node->getSrcLoc());
+            };
+
+    // Perform the check
+    visitDepthFirst(program, [&](const AstNegation& negation) {
+        const AstAtom* associatedAtom = negation.getAtom();
+        const AstRelation* associatedRelation = program.getRelation(associatedAtom->getName());
+        if (associatedRelation != nullptr && associatedRelation->isInline()) {
+            std::pair<bool, SrcLocation> atomStatus = checkInvalidUnderscore(associatedAtom);
+            if (atomStatus.first) {
+                report.addError(
+                        "Cannot inline negated atom containing an unnamed variable unless the variable is "
+                        "within an aggregator",
+                        atomStatus.second);
+            }
+        }
+    });
 }
 
 // Check that type and relation names are disjoint sets.
 void AstSemanticChecker::checkNamespaces(ErrorReport& report, const AstProgram& program) {
-    std::map<std::string, AstSrcLocation> names;
+    std::map<std::string, SrcLocation> names;
 
     // Find all names and report redeclarations as we go.
     for (const auto& type : program.getTypes()) {
@@ -1112,8 +1274,8 @@ void AstSemanticChecker::checkNamespaces(ErrorReport& report, const AstProgram& 
 }
 
 bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
-    RelationSchedule* relationSchedule = translationUnit.getAnalysis<RelationSchedule>();
-    RecursiveClauses* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
+    auto* relationSchedule = translationUnit.getAnalysis<RelationSchedule>();
+    auto* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
 
     for (const RelationScheduleStep& step : relationSchedule->schedule()) {
         const std::set<const AstRelation*>& scc = step.computed();

@@ -28,6 +28,7 @@
 
 #include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -63,7 +64,7 @@ struct AstVisitor : public ast_visitor_tag {
      * @param args a list of extra parameters to be forwarded
      */
     virtual R visit(const AstNode& node, Params... args) {
-// dispatch node processing based on dynamic type
+        // dispatch node processing based on dynamic type
 
 #define FORWARD(Kind) \
     if (const auto* n = dynamic_cast<const Ast##Kind*>(&node)) return visit##Kind(*n, args...);
@@ -77,6 +78,7 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(Variable)
         FORWARD(UnnamedVariable)
         FORWARD(UnaryFunctor)
+        FORWARD(UserDefinedFunctor)
         FORWARD(BinaryFunctor)
         FORWARD(TernaryFunctor)
         FORWARD(Counter)
@@ -86,11 +88,19 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(TypeCast)
         FORWARD(RecordInit)
         FORWARD(Aggregator)
+        FORWARD(SubroutineArgument)
 
         // literals
         FORWARD(Atom)
         FORWARD(Negation)
-        FORWARD(Constraint)
+        FORWARD(ProvenanceNegation)
+        FORWARD(BooleanConstraint)
+        FORWARD(BinaryConstraint)
+
+        // components
+        FORWARD(ComponentType);
+        FORWARD(ComponentInit);
+        FORWARD(Component);
 
         // rest
         FORWARD(Attribute);
@@ -127,6 +137,7 @@ protected:
     LINK(Counter, Argument)
     LINK(TypeCast, Argument)
     LINK(RecordInit, Argument)
+    LINK(SubroutineArgument, Argument)
 
     LINK(NumberConstant, Constant)
     LINK(StringConstant, Constant)
@@ -134,6 +145,7 @@ protected:
     LINK(Constant, Argument)
 
     LINK(UnaryFunctor, Functor)
+    LINK(UserDefinedFunctor, Functor)
     LINK(BinaryFunctor, Functor)
     LINK(TernaryFunctor, Functor)
     LINK(Functor, Argument)
@@ -145,8 +157,17 @@ protected:
     // literals
     LINK(Atom, Literal)
     LINK(Negation, Literal)
-    LINK(Constraint, Literal)
+    LINK(ProvenanceNegation, Literal)
     LINK(Literal, Node);
+
+    LINK(BooleanConstraint, Constraint)
+    LINK(BinaryConstraint, Constraint)
+    LINK(Constraint, Literal)
+
+    // components
+    LINK(ComponentType, Node);
+    LINK(ComponentInit, Node);
+    LINK(Component, Node);
 
     // -- others --
     LINK(Program, Node);
@@ -225,9 +246,9 @@ namespace detail {
 template <typename R, typename N>
 struct LambdaAstVisitor : public AstVisitor<void> {
     std::function<R(const N&)> lambda;
-    LambdaAstVisitor(const std::function<R(const N&)>& lambda) : lambda(lambda) {}
+    LambdaAstVisitor(std::function<R(const N&)> lambda) : lambda(std::move(lambda)) {}
     void visit(const AstNode& node) override {
-        if (const N* n = dynamic_cast<const N*>(&node)) {
+        if (const auto* n = dynamic_cast<const N*>(&node)) {
             lambda(*n);
         }
     }

@@ -50,38 +50,6 @@ TEST(Ast, CloneAndEquals) {
     delete clone;
 }
 
-TEST(AstUtils, Const) {
-    // TODO: add test for records
-
-    SymbolTable sym;
-    ErrorReport e;
-    DebugReport d;
-    // load some test program
-    std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
-            R"(
-                 .decl r(a:number,b:number,c:number,d:number)
-                 r(X,Y,Z,W) :- a(X), 10 = Y, Y = Z, 8 + W = 12 + 14. 
-            )",
-            sym, e, d);
-
-    AstProgram& program = *tu->getProgram();
-
-    AstClause* clause = program.getRelation("r")->getClause(0);
-
-    // check construction
-    EXPECT_EQ("r(X,Y,Z,W) :- \n   a(X),\n   10 = Y,\n   Y = Z,\n   (8+W) = (12+14).", toString(*clause));
-
-    // obtain analyse constness
-    auto isConst = getConstTerms(*clause);
-
-    // check selected sub-terms
-    auto head = clause->getHead();
-    EXPECT_FALSE(isConst[head->getArgument(0)]);  // X
-    EXPECT_TRUE(isConst[head->getArgument(1)]);   // Y
-    EXPECT_TRUE(isConst[head->getArgument(2)]);   // Z
-    EXPECT_TRUE(isConst[head->getArgument(3)]);   // W
-}
-
 TEST(AstUtils, Grounded) {
     // create an example clause:
     AstClause* clause = new AstClause();
@@ -102,7 +70,7 @@ TEST(AstUtils, Grounded) {
     clause->addToBody(std::unique_ptr<AstLiteral>(a));
 
     // X = Y
-    AstLiteral* e1 = new AstConstraint("=", std::unique_ptr<AstArgument>(new AstVariable("X")),
+    AstLiteral* e1 = new AstBinaryConstraint("=", std::unique_ptr<AstArgument>(new AstVariable("X")),
             std::unique_ptr<AstArgument>(new AstVariable("Y")));
     clause->addToBody(std::unique_ptr<AstLiteral>(e1));
 

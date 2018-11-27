@@ -24,18 +24,27 @@ namespace souffle {
 class WriteStream {
 public:
     WriteStream(const SymbolMask& symbolMask, const SymbolTable& symbolTable, const bool prov)
-            : symbolMask(symbolMask), symbolTable(symbolTable), isProvenance(prov) {}
+            : symbolMask(symbolMask), symbolTable(symbolTable), isProvenance(prov),
+              arity(symbolMask.getArity() - (prov ? 2 : 0)) {}
     template <typename T>
     void writeAll(const T& relation) {
         auto lease = symbolTable.acquireLock();
         (void)lease;
+        if (arity == 0) {
+            if (relation.begin() != relation.end()) {
+                writeNullary();
+            }
+            return;
+        }
         for (const auto& current : relation) {
             writeNext(current);
         }
     }
+
     virtual ~WriteStream() = default;
 
 protected:
+    virtual void writeNullary() = 0;
     virtual void writeNextTuple(const RamDomain* tuple) = 0;
     template <typename Tuple>
     void writeNext(const Tuple tuple) {
@@ -44,6 +53,7 @@ protected:
     const SymbolMask& symbolMask;
     const SymbolTable& symbolTable;
     const bool isProvenance;
+    const uint8_t arity;
 };
 
 class WriteStreamFactory {

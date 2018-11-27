@@ -32,7 +32,6 @@
 
 #include "PiggyList.h"
 #include "UnionFind.h"
-#include "DisjointSet.h"
 
 namespace souffle {
 namespace test {

@@ -44,7 +44,7 @@ public:
     WriteFileCSV(const SymbolMask& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const bool provenance = false)
             : WriteStream(symbolMask, symbolTable, provenance), delimiter(getDelimiter(ioDirectives)),
-              file(ioDirectives.getFileName()) {
+              file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
         }
@@ -53,28 +53,22 @@ public:
     ~WriteFileCSV() override = default;
 
 protected:
+    void writeNullary() override {
+        file << "()\n";
+    }
+
     void writeNextTuple(const RamDomain* tuple) override {
-        size_t arity = symbolMask.getArity();
-        if (isProvenance) {
-            arity -= 2;
-        }
-
-        if (arity == 0) {
-            file << "()\n";
-            return;
-        }
-
         if (symbolMask.isSymbol(0)) {
             file << symbolTable.unsafeResolve(tuple[0]);
         } else {
-            file << static_cast<int32_t>(tuple[0]);
+            file << tuple[0];
         }
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
             if (symbolMask.isSymbol(col)) {
                 file << symbolTable.unsafeResolve(tuple[col]);
             } else {
-                file << static_cast<int32_t>(tuple[col]);
+                file << tuple[col];
             }
         }
         file << "\n";
@@ -91,7 +85,7 @@ public:
     WriteGZipFileCSV(const SymbolMask& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const bool provenance = false)
             : WriteStream(symbolMask, symbolTable, provenance), delimiter(getDelimiter(ioDirectives)),
-              file(ioDirectives.getFileName()) {
+              file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
         }
@@ -100,30 +94,22 @@ public:
     ~WriteGZipFileCSV() override = default;
 
 protected:
+    void writeNullary() override {
+        file << "()\n";
+    }
+
     void writeNextTuple(const RamDomain* tuple) override {
-        size_t arity = symbolMask.getArity();
-
-        // do not print last two provenance columns if provenance
-        if (isProvenance) {
-            arity -= 2;
-        }
-
-        if (arity == 0) {
-            file << "()\n";
-            return;
-        }
-
         if (symbolMask.isSymbol(0)) {
             file << symbolTable.unsafeResolve(tuple[0]);
         } else {
-            file << static_cast<int32_t>(tuple[0]);
+            file << tuple[0];
         }
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
             if (symbolMask.isSymbol(col)) {
                 file << symbolTable.unsafeResolve(tuple[col]);
             } else {
-                file << static_cast<int32_t>(tuple[col]);
+                file << tuple[col];
             }
         }
         file << "\n";
@@ -151,29 +137,22 @@ public:
     }
 
 protected:
+    void writeNullary() override {
+        std::cout << "()\n";
+    }
+
     void writeNextTuple(const RamDomain* tuple) override {
-        size_t arity = symbolMask.getArity();
-
-        if (isProvenance) {
-            arity -= 2;
-        }
-
-        if (arity == 0) {
-            std::cout << "()\n";
-            return;
-        }
-
         if (symbolMask.isSymbol(0)) {
             std::cout << symbolTable.unsafeResolve(tuple[0]);
         } else {
-            std::cout << static_cast<int32_t>(tuple[0]);
+            std::cout << tuple[0];
         }
         for (size_t col = 1; col < arity; ++col) {
             std::cout << delimiter;
             if (symbolMask.isSymbol(col)) {
                 std::cout << symbolTable.unsafeResolve(tuple[col]);
             } else {
-                std::cout << static_cast<int32_t>(tuple[col]);
+                std::cout << tuple[col];
             }
         }
         std::cout << "\n";

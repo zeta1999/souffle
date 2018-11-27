@@ -19,7 +19,9 @@
 #include "ExplainProvenance.h"
 #include "Util.h"
 
+#include <chrono>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -32,7 +34,7 @@ private:
     std::map<std::pair<std::string, size_t>, std::string> rules;
     std::vector<std::vector<RamDomain>> subproofs;
 
-    std::pair<int, int> findTuple(std::string relName, std::vector<RamDomain> tup) {
+    std::pair<int, int> findTuple(const std::string& relName, std::vector<RamDomain> tup) {
         auto rel = prog.getRelation(relName);
 
         if (rel == nullptr) {
@@ -49,7 +51,7 @@ private:
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
                     tuple >> s;
-                    n = prog.getSymbolTable().lookupExisting(s.c_str());
+                    n = prog.getSymbolTable().lookupExisting(s);
                 } else {
                     tuple >> n;
                 }
@@ -192,11 +194,13 @@ public:
                 std::stringstream joinedTuple;
                 joinedTuple << join(numsToArgs(bodyRelAtomName, subproofTuple, &subproofTupleError), ", ");
                 auto joinedTupleStr = joinedTuple.str();
-                internalNode->add_child(
-                        std::unique_ptr<TreeNode>(new LeafNode(bodyRel + "(" + joinedTupleStr + ")")));
+                internalNode->add_child(std::make_unique<LeafNode>(bodyRel + "(" + joinedTupleStr + ")"));
+                internalNode->setSize(internalNode->getSize() + 1);
             } else {
-                internalNode->add_child(
-                        explain(bodyRel, subproofTuple, subproofRuleNum, subproofLevelNum, depthLimit - 1));
+                auto child =
+                        explain(bodyRel, subproofTuple, subproofRuleNum, subproofLevelNum, depthLimit - 1);
+                internalNode->setSize(internalNode->getSize() + child->getSize());
+                internalNode->add_child(std::move(child));
             }
 
             tupleCurInd = tupleEnd;
@@ -208,7 +212,7 @@ public:
     std::unique_ptr<TreeNode> explain(
             std::string relName, std::vector<std::string> args, size_t depthLimit) override {
         auto tuple = argsToNums(relName, args);
-        if (tuple == std::vector<RamDomain>()) {
+        if (tuple.empty()) {
             return std::make_unique<LeafNode>("Relation not found");
         }
 
@@ -247,6 +251,87 @@ public:
         } else {
             return rule->second;
         }
+    }
+
+    std::string measureRelation(std::string relName) override {
+        auto rel = prog.getRelation(relName);
+
+        if (rel == nullptr) {
+            return "No relation found\n";
+        }
+
+        auto size = rel->size();
+        int skip = size / 10;
+
+        if (skip == 0) skip = 1;
+
+        std::stringstream ss;
+
+        auto before_time = std::chrono::high_resolution_clock::now();
+
+        int numTuples = 0;
+        int proc = 0;
+        for (auto& tuple : *rel) {
+            auto tupleStart = std::chrono::high_resolution_clock::now();
+
+            if (numTuples % skip != 0) {
+                numTuples++;
+                continue;
+            }
+
+            std::vector<RamDomain> currentTuple;
+            for (size_t i = 0; i < rel->getArity() - 2; i++) {
+                RamDomain n;
+                if (*rel->getAttrType(i) == 's') {
+                    std::string s;
+                    tuple >> s;
+                    n = prog.getSymbolTable().lookupExisting(s.c_str());
+                } else {
+                    tuple >> n;
+                }
+
+                currentTuple.push_back(n);
+            }
+
+            RamDomain ruleNum;
+            tuple >> ruleNum;
+
+            RamDomain levelNum;
+            tuple >> levelNum;
+
+            std::cout << "Tuples expanded: "
+                      << explain(relName, currentTuple, ruleNum, levelNum, 20)->getSize();
+            numTuples++;
+            proc++;
+
+            auto tupleEnd = std::chrono::high_resolution_clock::now();
+            auto tupleDuration =
+                    std::chrono::duration_cast<std::chrono::duration<double>>(tupleEnd - tupleStart);
+
+            std::cout << ", Time: " << tupleDuration.count() << "\n";
+        }
+
+        auto after_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(after_time - before_time);
+
+        ss << "total: " << proc << " ";
+        ss << duration.count() << std::endl;
+
+        return ss.str();
+    }
+
+    void printRulesJSON(std::ostream& os) override {
+        os << "\"rules\": [\n";
+        bool first = true;
+        for (auto const& cur : rules) {
+            if (first)
+                first = false;
+            else
+                os << ",\n";
+            os << "\t{ \"rule-number\": \"(R" << cur.first.second << ")\", \"rule\": \""
+               << stringify(cur.second) << "\"}";
+        }
+        os << "\n]\n";
     }
 };
 

@@ -1,3 +1,19 @@
+/*
+ * Souffle - A Datalog Compiler
+ * Copyright (c) 2017 The Souffle Developers. All Rights reserved
+ * Licensed under the Universal Permissive License v 1.0 as shown at:
+ * - https://opensource.org/licenses/UPL
+ * - <souffle root>/licenses/SOUFFLE-UPL.txt
+ */
+
+/************************************************************************
+ *
+ * @file BinaryRelation.h
+ *
+ * Defines a binary relation interface
+ *
+ ***********************************************************************/
+
 #pragma once
 
 #include "UnionFind.h"
@@ -12,7 +28,7 @@
 namespace souffle {
 template <typename TupleType>
 class BinaryRelation {
-    typedef typename TupleType::value_type DomainInt;
+    using DomainInt = typename TupleType::value_type;
     enum { arity = TupleType::arity };
 
     // marked as mutable due to difficulties with the const enforcement via the Relation API
@@ -606,6 +622,16 @@ public:
         }
 
         return ret;
+    }
+
+    iterator find(TupleType&, operation_hints&) const {
+        throw std::runtime_error("error: find() is not compatible with equivalence relations");
+        return begin();
+    }
+
+    iterator find(TupleType& t) const {
+        operation_hints context;
+        return find(t, context);
     }
 };
 }  // namespace souffle

@@ -17,13 +17,9 @@
 
 #pragma once
 
-#define IS_PARALLEL
-
 #include "ParallelUtils.h"
 #include "Util.h"
-#ifdef HAS_TSX
-#include "htmx86.h"
-#endif
+
 #include <cassert>
 #include <iostream>
 #include <iterator>
@@ -208,7 +204,7 @@ struct binary_search : public search_strategy {
  */
 template <typename S>
 struct strategy_selection {
-    typedef S type;
+    using type = S;
 };
 
 struct linear : public strategy_selection<linear_search> {};
@@ -225,6 +221,14 @@ template <typename... Ts>
 struct default_strategy<std::tuple<Ts...>> : public linear {};
 
 /**
+ * The default non-updater
+ */
+template <typename T>
+struct updater {
+    void update(T& /* old_t */, const T& /* new_t */) {}
+};
+
+/**
  * The actual implementation of a b-tree data structure.
  *
  * @tparam Key             .. the element type to be stored in this tree
@@ -236,14 +240,15 @@ struct default_strategy<std::tuple<Ts...>> : public linear {};
  */
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
-        unsigned blockSize, typename SearchStrategy, bool isSet>
+        unsigned blockSize, typename SearchStrategy, bool isSet, typename WeakComparator = Comparator,
+        typename Updater = detail::updater<Key>>
 class btree {
 public:
     class iterator;
-    typedef iterator const_iterator;
+    using const_iterator = iterator;
 
-    typedef Key key_type;
-    typedef range<iterator> chunk;
+    using key_type = Key;
+    using chunk = range<iterator>;
 
 protected:
     /* ------------- static utilities ----------------- */
@@ -262,11 +267,28 @@ protected:
         return comp.equal(a, b);
     }
 
+    mutable WeakComparator weak_comp;
+
+    bool weak_less(const Key& a, const Key& b) const {
+        return weak_comp.less(a, b);
+    }
+
+    bool weak_equal(const Key& a, const Key& b) const {
+        return weak_comp.equal(a, b);
+    }
+
+    /* -------------- updater utilities ------------- */
+
+    mutable Updater upd;
+    void update(Key& old_k, const Key& new_k) {
+        upd.update(old_k, new_k);
+    }
+
     /* -------------- the node type ----------------- */
 
-    typedef std::size_t size_type;
-    typedef uint8_t field_index_type;
-    typedef OptimisticReadWriteLock lock_type;
+    using size_type = std::size_t;
+    using field_index_type = uint8_t;
+    using lock_type = OptimisticReadWriteLock;
 
     struct node;
 
@@ -275,7 +297,7 @@ protected:
      * book-keeping information.
      */
     struct base {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
 
         // the parent node
         node* volatile parent;
@@ -383,7 +405,7 @@ protected:
             }
 
             // copy child nodes recursively
-            inner_node* ires = (inner_node*)res;
+            auto* ires = (inner_node*)res;
             for (size_type i = 0; i <= this->numElements; ++i) {
                 ires->children[i] = this->getChild(i)->clone();
                 ires->children[i]->parent = res;
@@ -523,7 +545,7 @@ protected:
          * @param idx  .. the position of the insert causing the split
          */
         void split(node** root, lock_type& root_lock, int idx) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             assert(this->lock.is_write_locked());
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
@@ -537,7 +559,7 @@ protected:
             node* sibling = (this->inner) ? static_cast<node*>(new inner_node())
                                           : static_cast<node*>(new leaf_node());
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             // lock sibling
             sibling->lock.start_write();
 #endif
@@ -550,7 +572,7 @@ protected:
             // move child pointers
             if (this->inner) {
                 // move pointers to sibling
-                inner_node* other = static_cast<inner_node*>(sibling);
+                auto* other = static_cast<inner_node*>(sibling);
                 for (unsigned i = split_point + 1, j = 0; i <= maxKeys; ++i, ++j) {
                     other->children[j] = getChildren()[i];
                     other->children[j]->parent = other;
@@ -565,7 +587,7 @@ protected:
             // update parent
             grow_parent(root, root_lock, sibling);
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             // unlock sibling
             sibling->lock.end_write();
 #endif
@@ -584,7 +606,7 @@ protected:
          */
         // TODO: remove root_lock ... no longer needed
         int rebalance_or_split(node** root, lock_type& root_lock, int idx) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             assert(this->lock.is_write_locked());
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
@@ -601,7 +623,7 @@ protected:
             if (parent && pos > 0) {
                 node* left = parent->getChild(pos - 1);
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                 // lock access to left sibling
                 if (!left->lock.try_start_write()) {
                     // left node is currently updated => skip balancing and split
@@ -632,8 +654,8 @@ protected:
 
                     // .. and children if necessary
                     if (this->isInner()) {
-                        inner_node* ileft = static_cast<inner_node*>(left);
-                        inner_node* iright = static_cast<inner_node*>(this);
+                        auto* ileft = static_cast<inner_node*>(left);
+                        auto* iright = static_cast<inner_node*>(this);
 
                         // move children
                         for (size_type i = 0; i < num; ++i) {
@@ -661,7 +683,7 @@ protected:
                     left->numElements += num;
                     this->numElements -= num;
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                     left->lock.end_write();
 #endif
 
@@ -669,7 +691,7 @@ protected:
                     return num;
                 }
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                 left->lock.abort_write();
 #endif
             }
@@ -689,7 +711,7 @@ protected:
          * @param sibling .. the new right-sibling to be add to the parent node
          */
         void grow_parent(node** root, lock_type& root_lock, node* sibling) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             assert(this->lock.is_write_locked());
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
@@ -699,7 +721,7 @@ protected:
                 assert(*root == this);
 
                 // create a new root node
-                inner_node* new_root = new inner_node();
+                auto* new_root = new inner_node();
                 new_root->numElements = 1;
                 new_root->keys[0] = keys[this->numElements];
 
@@ -733,13 +755,13 @@ protected:
          */
         void insert_inner(node** root, lock_type& root_lock, unsigned pos, node* predecessor, const Key& key,
                 node* newNode) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             assert(this->lock.is_write_locked());
 #endif
 
             // check capacity
             if (this->numElements >= maxKeys) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                 assert(!this->parent || this->parent->lock.is_write_locked());
                 assert((this->parent) || root_lock.is_write_locked());
 #endif
@@ -755,7 +777,7 @@ protected:
                     // get new sibling
                     auto other = this->parent->getChild(this->position + 1);
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                     // lock other side
                     other->lock.start_write();
 
@@ -767,7 +789,7 @@ protected:
                     pos = (i > other->numElements) ? 0 : i;
 #endif
                     other->insert_inner(root, root_lock, pos, predecessor, key, newNode);
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
                     other->lock.end_write();
 #endif
                     return;
@@ -825,7 +847,7 @@ protected:
                 out << "]";
             }
 
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
             // print the lock state
             if (this->lock.is_write_locked()) std::cout << " locked";
 #endif
@@ -1037,11 +1059,11 @@ public:
         node const* cur;
 
         // the index of the element currently addressed within the referenced node
-        field_index_type pos;
+        field_index_type pos = 0;
 
     public:
         // default constructor -- creating an end-iterator
-        iterator() : cur(nullptr), pos(0) {}
+        iterator() : cur(nullptr) {}
 
         // creates an iterator referencing a specific element within a given node
         iterator(node const* cur, field_index_type pos) : cur(cur), pos(pos) {}
@@ -1115,35 +1137,38 @@ public:
      * A collection of operation hints speeding up some of the involved operations
      * by exploiting temporal locality.
      */
-    struct operation_hints {
+    template <unsigned size = 1>
+    struct btree_operation_hints {
+        using node_cache = LRUCache<node*, size>;
+
         // the node where the last insertion terminated
-        node* last_insert;
+        node_cache last_insert;
 
         // the node where the last find-operation terminated
-        node* last_find_end;
+        node_cache last_find_end;
 
         // the node where the last lower-bound operation terminated
-        node* last_lower_bound_end;
+        node_cache last_lower_bound_end;
 
         // the node where the last upper-bound operation terminated
-        node* last_upper_bound_end;
+        node_cache last_upper_bound_end;
 
         // default constructor
-        operation_hints()
-                : last_insert(nullptr), last_find_end(nullptr), last_lower_bound_end(nullptr),
-                  last_upper_bound_end(nullptr) {}
+        btree_operation_hints() {}
 
         // resets all hints (to be triggered e.g. when deleting nodes)
         void clear() {
-            last_insert = nullptr;
-            last_find_end = nullptr;
-            last_lower_bound_end = nullptr;
-            last_upper_bound_end = nullptr;
+            last_insert.clear(nullptr);
+            last_find_end.clear(nullptr);
+            last_lower_bound_end.clear(nullptr);
+            last_upper_bound_end.clear(nullptr);
         }
     };
 
+    using operation_hints = btree_operation_hints<1>;
+
 protected:
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
     // a pointer to the root node of this tree
     node* volatile root;
 
@@ -1159,37 +1184,6 @@ protected:
 
     // a pointer to the left-most node of this tree (initial note for iteration)
     leaf_node* leftmost;
-
-    // an aggregation of statistical values for hardware transactions, if enabled
-    struct tdata_t {
-        // the counter for transaction operations
-        std::atomic<int> nb_transactions;
-
-        // the counter for total aborts
-        std::atomic<int> nb_aborts;
-
-        // the counter for aborts caused by thread conflicts
-        std::atomic<int> nb_aborts_conflict;
-
-        // the counter for aborts caused by exceeding capacity of hardware
-        std::atomic<int> nb_aborts_capacity;
-
-        // the counter for explicit aborts
-        std::atomic<int> nb_aborts_fallback_locked;
-
-        // the counter for aborts caused by other factors
-        std::atomic<int> nb_aborts_unknown;
-
-        // the counter for number of software fallbacks
-        std::atomic<int> nb_fallbacks;
-
-        tdata_t()
-                : nb_transactions(0), nb_aborts(0), nb_aborts_conflict(0), nb_aborts_capacity(0),
-                  nb_aborts_fallback_locked(0), nb_aborts_unknown(0), nb_fallbacks(0) {}
-    };
-
-    // the transaction statistic of this b-tree instance
-    tdata_t tdata;
 
     /* -------------- operator hint statistics ----------------- */
 
@@ -1220,7 +1214,8 @@ public:
     // -- ctors / dtors --
 
     // the default constructor creating an empty tree
-    btree(const Comparator& comp = Comparator()) : comp(comp), root(nullptr), leftmost(nullptr) {}
+    btree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator())
+            : comp(comp), weak_comp(weak_comp), root(nullptr), leftmost(nullptr) {}
 
     // a constructor creating a tree from the given iterator range
     template <typename Iter>
@@ -1229,13 +1224,14 @@ public:
     }
 
     // a move constructor
-    btree(btree&& other) : comp(other.comp), root(other.root), leftmost(other.leftmost) {
+    btree(btree&& other)
+            : comp(other.comp), weak_comp(other.weak_comp), root(other.root), leftmost(other.leftmost) {
         other.root = nullptr;
         other.leftmost = nullptr;
     }
 
     // a copy constructor
-    btree(const btree& set) : comp(set.comp), root(nullptr), leftmost(nullptr) {
+    btree(const btree& set) : comp(set.comp), weak_comp(set.weak_comp), root(nullptr), leftmost(nullptr) {
         // use assignment operator for a deep copy
         *this = set;
     }
@@ -1277,7 +1273,8 @@ public:
      * Inserts the given key into this tree.
      */
     bool insert(const Key& k, operation_hints& hints) {
-#if defined(IS_PARALLEL) && !defined(HAS_TSX)
+#ifdef IS_PARALLEL
+
         // special handling for inserting first element
         while (root == nullptr) {
             // try obtaining root-lock
@@ -1302,7 +1299,7 @@ public:
             // operation complete => we can release the root lock
             root_lock.end_write();
 
-            hints.last_insert = leftmost;
+            hints.last_insert.access(leftmost);
 
             return true;
         }
@@ -1311,30 +1308,32 @@ public:
 
         node* cur = nullptr;
 
-        // test last insert
+        // test last insert hints
         lock_type::Lease cur_lease;
 
-        if (hints.last_insert) {
+        auto checkHint = [&](node* last_insert) {
+            // ignore null pointer
+            if (!last_insert) return false;
             // get a read lease on indicated node
-            auto hint_lease = hints.last_insert->lock.start_read();
+            auto hint_lease = last_insert->lock.start_read();
             // check whether it covers the key
-            if (covers(hints.last_insert, k)) {
-                // and if there was no concurrent modification
-                if (hints.last_insert->lock.validate(hint_lease)) {
-                    // use hinted location
-                    cur = hints.last_insert;
-                    // and keep lease
-                    cur_lease = hint_lease;
-                    // register this as a hit
-                    hint_stats.inserts.addHit();
-                } else {
-                    // register this as a miss
-                    hint_stats.inserts.addMiss();
-                }
-            } else {
-                // register this as a miss
-                hint_stats.inserts.addMiss();
-            }
+            if (!weak_covers(last_insert, k)) return false;
+            // and if there was no concurrent modification
+            if (!last_insert->lock.validate(hint_lease)) return false;
+            // use hinted location
+            cur = last_insert;
+            // and keep lease
+            cur_lease = hint_lease;
+            // we found a hit
+            return true;
+        };
+
+        if (hints.last_insert.any(checkHint)) {
+            // register this as a hit
+            hint_stats.inserts.addHit();
+        } else {
+            // register this as a miss
+            hint_stats.inserts.addMiss();
         }
 
         // if there is no valid hint ..
@@ -1361,16 +1360,28 @@ public:
                 auto a = &(cur->keys[0]);
                 auto b = &(cur->keys[cur->numElements]);
 
-                auto pos = search.lower_bound(k, a, b, comp);
+                auto pos = search.lower_bound(k, a, b, weak_comp);
                 auto idx = pos - a;
 
                 // early exit for sets
-                if (isSet && pos != b && equal(*pos, k)) {
+                if (isSet && pos != b && weak_equal(*pos, k)) {
                     // validate results
                     if (!cur->lock.validate(cur_lease)) {
                         // start over again
                         return insert(k, hints);
                     }
+
+                    // update provenance information
+                    if (typeid(Comparator) != typeid(WeakComparator) && less(k, *pos)) {
+                        if (!cur->lock.try_upgrade_to_write(cur_lease)) {
+                            // start again
+                            return insert(k, hints);
+                        }
+                        update(*pos, k);
+                        cur->lock.end_write();
+                        return true;
+                    }
+
                     // we found the element => no check of lock necessary
                     return false;
                 }
@@ -1404,16 +1415,28 @@ public:
             auto a = &(cur->keys[0]);
             auto b = &(cur->keys[cur->numElements]);
 
-            auto pos = search.upper_bound(k, a, b, comp);
+            auto pos = search.upper_bound(k, a, b, weak_comp);
             auto idx = pos - a;
 
             // early exit for sets
-            if (isSet && pos != a && equal(*(pos - 1), k)) {
+            if (isSet && pos != a && weak_equal(*(pos - 1), k)) {
                 // validate result
                 if (!cur->lock.validate(cur_lease)) {
                     // start over again
                     return insert(k, hints);
                 }
+
+                // update provenance information
+                if (typeid(Comparator) != typeid(WeakComparator) && less(k, *(pos - 1))) {
+                    if (!cur->lock.try_upgrade_to_write(cur_lease)) {
+                        // start again
+                        return insert(k, hints);
+                    }
+                    update(*(pos - 1), k);
+                    cur->lock.end_write();
+                    return true;
+                }
+
                 // we found the element => done
                 return false;
             }
@@ -1421,7 +1444,7 @@ public:
             // upgrade to write-permission
             if (!cur->lock.try_upgrade_to_write(cur_lease)) {
                 // something has changed => restart
-                hints.last_insert = cur;
+                hints.last_insert.access(cur);
                 return insert(k, hints);
             }
 
@@ -1504,20 +1527,11 @@ public:
             cur->lock.end_write();
 
             // remember last insertion position
-            hints.last_insert = cur;
+            hints.last_insert.access(cur);
             return true;
         }
+
 #else
-#ifdef HAS_TSX
-        // set retry parameter
-        TX_RETRIES(maxRetries());
-        // begin hardware transactionm, enabling transaction logging if enabled
-        if (isTransactionProfilingEnabled()) {
-            TX_START_INST(NL, (&tdata));
-        } else {
-            TX_START(NL);
-        }
-#endif
         // special handling for inserting first element
         if (empty()) {
             // create new node
@@ -1526,21 +1540,23 @@ public:
             leftmost->keys[0] = k;
             root = leftmost;
 
-            hints.last_insert = leftmost;
+            hints.last_insert.access(leftmost);
 
-#ifdef HAS_TSX
-            // end hardware transaction
-            TX_END;
-#endif
             return true;
         }
 
         // insert using iterative implementation
         node* cur = root;
 
+        auto checkHints = [&](node* last_insert) {
+            if (!last_insert) return false;
+            if (!weak_covers(last_insert, k)) return false;
+            cur = last_insert;
+            return true;
+        };
+
         // test last insert
-        if (hints.last_insert && covers(hints.last_insert, k)) {
-            cur = hints.last_insert;
+        if (hints.last_insert.any(checkHints)) {
             hint_stats.inserts.addHit();
         } else {
             hint_stats.inserts.addMiss();
@@ -1552,15 +1568,17 @@ public:
                 auto a = &(cur->keys[0]);
                 auto b = &(cur->keys[cur->numElements]);
 
-                auto pos = search.lower_bound(k, a, b, comp);
+                auto pos = search.lower_bound(k, a, b, weak_comp);
                 auto idx = pos - a;
 
                 // early exit for sets
-                if (isSet && pos != b && equal(*pos, k)) {
-#ifdef HAS_TSX
-                    // end hardware transaction
-                    TX_END;
-#endif
+                if (isSet && pos != b && weak_equal(*pos, k)) {
+                    // update provenance information
+                    if (typeid(Comparator) != typeid(WeakComparator) && less(k, *pos)) {
+                        update(*pos, k);
+                        return true;
+                    }
+
                     return false;
                 }
 
@@ -1576,15 +1594,17 @@ public:
             auto a = &(cur->keys[0]);
             auto b = &(cur->keys[cur->numElements]);
 
-            auto pos = search.upper_bound(k, a, b, comp);
+            auto pos = search.upper_bound(k, a, b, weak_comp);
             auto idx = pos - a;
 
             // early exit for sets
-            if (isSet && pos != a && equal(*(pos - 1), k)) {
-#ifdef HAS_TSX
-                // end hardware transaction
-                TX_END;
-#endif
+            if (isSet && pos != a && weak_equal(*(pos - 1), k)) {
+                // update provenance information
+                if (typeid(Comparator) != typeid(WeakComparator) && less(k, *(pos - 1))) {
+                    update(*(pos - 1), k);
+                    return true;
+                }
+
                 return false;
             }
 
@@ -1612,7 +1632,7 @@ public:
             cur->numElements++;
 
             // remember last insertion position
-            hints.last_insert = cur;
+            hints.last_insert.access(cur);
 
 #ifdef HAS_TSX
             // end hardware transaction
@@ -1722,9 +1742,15 @@ public:
 
         node* cur = root;
 
+        auto checkHints = [&](node* last_find_end) {
+            if (!last_find_end) return false;
+            if (!covers(last_find_end, k)) return false;
+            cur = last_find_end;
+            return true;
+        };
+
         // test last location searched (temporal locality)
-        if (hints.last_find_end && covers(hints.last_find_end, k)) {
-            cur = hints.last_find_end;
+        if (hints.last_find_end.any(checkHints)) {
             // register it as a hit
             hint_stats.contains.addHit();
         } else {
@@ -1741,12 +1767,12 @@ public:
             auto pos = search(k, a, b, comp);
 
             if (pos < b && equal(*pos, k)) {
-                hints.last_find_end = cur;
+                hints.last_find_end.access(cur);
                 return iterator(cur, pos - a);
             }
 
             if (!cur->inner) {
-                hints.last_find_end = cur;
+                hints.last_find_end.access(cur);
                 return end();
             }
 
@@ -1777,9 +1803,15 @@ public:
 
         node* cur = root;
 
+        auto checkHints = [&](node* last_lower_bound_end) {
+            if (!last_lower_bound_end) return false;
+            if (!covers(last_lower_bound_end, k)) return false;
+            cur = last_lower_bound_end;
+            return true;
+        };
+
         // test last searched node
-        if (hints.last_lower_bound_end && covers(hints.last_lower_bound_end, k)) {
-            cur = hints.last_lower_bound_end;
+        if (hints.last_lower_bound_end.any(checkHints)) {
             hint_stats.lower_bound.addHit();
         } else {
             hint_stats.lower_bound.addMiss();
@@ -1794,7 +1826,7 @@ public:
             auto idx = pos - a;
 
             if (!cur->inner) {
-                hints.last_lower_bound_end = cur;
+                hints.last_lower_bound_end.access(cur);
                 return (pos != b) ? iterator(cur, idx) : res;
             }
 
@@ -1832,9 +1864,15 @@ public:
 
         node* cur = root;
 
+        auto checkHints = [&](node* last_upper_bound_end) {
+            if (!last_upper_bound_end) return false;
+            if (!coversUpperBound(last_upper_bound_end, k)) return false;
+            cur = last_upper_bound_end;
+            return true;
+        };
+
         // test last search node
-        if (hints.last_upper_bound_end && coversUpperBound(hints.last_upper_bound_end, k)) {
-            cur = hints.last_upper_bound_end;
+        if (hints.last_upper_bound_end.any(checkHints)) {
             hint_stats.upper_bound.addHit();
         } else {
             hint_stats.upper_bound.addMiss();
@@ -1849,7 +1887,7 @@ public:
             auto idx = pos - a;
 
             if (!cur->inner) {
-                hints.last_upper_bound_end = cur;
+                hints.last_upper_bound_end.access(cur);
                 return (pos != b) ? iterator(cur, idx) : res;
             }
 
@@ -1865,9 +1903,7 @@ public:
      * Clears this tree.
      */
     void clear() {
-        if (root) {
-            delete root;
-        }
+        delete root;
         root = nullptr;
         leftmost = nullptr;
     }
@@ -1996,16 +2032,6 @@ public:
         out << "  avg keys / node:  " << (size() / (double)nodes) << "\n";
         out << "  avg filling rate: " << ((size() / (double)nodes) / node::maxKeys) << "\n";
         out << "---------------------------------\n";
-        if (isTransactionProfilingEnabled()) {
-            out << "  Transactions: " << tdata.nb_transactions << "\n";
-            out << "  Aborts:       " << tdata.nb_aborts << "\n";
-            out << "    Capacity:   " << tdata.nb_aborts_capacity << "\n";
-            out << "    Conflict:   " << tdata.nb_aborts_conflict << "\n";
-            out << "    Fallback:   " << tdata.nb_aborts_fallback_locked << "\n";
-            out << "    Unknown:    " << tdata.nb_aborts_unknown << "\n";
-            out << "  Fallback:     " << tdata.nb_fallbacks << "\n";
-            out << "---------------------------------\n";
-        }
         if (isHintsProfilingEnabled()) {
             out << "         insert hint hits: " << hint_stats.inserts.getHits() << "\n";
             out << "       insert hint misses: " << hint_stats.inserts.getMisses() << "\n";
@@ -2075,6 +2101,21 @@ protected:
         return !node->isEmpty() && less(node->keys[0], k) && less(k, node->keys[node->numElements - 1]);
     }
 
+
+    /**
+     * Determines whether the range covered by the given node is also
+     * covering the given key value.
+     */
+    bool weak_covers(const node* node, const Key& k) const {
+        if (isSet) {
+            // in sets we can include the ends as covered elements
+            return !node->isEmpty() && !weak_less(k, node->keys[0]) &&
+                   !weak_less(node->keys[node->numElements - 1], k);
+        }
+        // in multi-sets the ends may not be completely covered
+        return !node->isEmpty() && weak_less(node->keys[0], k) &&
+               weak_less(k, node->keys[node->numElements - 1]);
+    }
 private:
 
     /**
@@ -2147,8 +2188,9 @@ private:
 
 // Instantiation of static member search.
 template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename SearchStrategy,
-        bool isSet>
-const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet>::search;
+        bool isSet, typename WeakComparator, typename Updater>
+const SearchStrategy
+        btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator, Updater>::search;
 
 }  // end namespace detail
 
@@ -2163,17 +2205,22 @@ const SearchStrategy btree<Key, Comparator, Allocator, blockSize, SearchStrategy
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type>
-class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> {
-    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true> super;
+        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type,
+        typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true,
+                          WeakComparator, Updater> {
+    using super = detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator,
+            Updater>;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true>;
+    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator,
+            Updater>;
 
 public:
     /**
      * A default constructor creating an empty set.
      */
-    btree_set(const Comparator& comp = Comparator()) : super(comp) {}
+    btree_set(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator())
+            : super(comp, weak_comp) {}
 
     /**
      * A constructor creating a set based on the given range.
@@ -2219,17 +2266,22 @@ public:
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type>
-class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false> {
-    typedef detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false> super;
+        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type,
+        typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false,
+                               WeakComparator, Updater> {
+    using super = detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator,
+            Updater>;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false>;
+    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator,
+            Updater>;
 
 public:
     /**
      * A default constructor creating an empty set.
      */
-    btree_multiset(const Comparator& comp = Comparator()) : super(comp) {}
+    btree_multiset(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator())
+            : super(comp, weak_comp) {}
 
     /**
      * A constructor creating a set based on the given range.

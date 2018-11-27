@@ -27,7 +27,7 @@
 #include <sstream>
 #include <string>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 namespace souffle {
 
@@ -63,13 +63,13 @@ public:
 
     /** Get left-hand side of conjunction */
     const RamCondition& getLHS() const {
-        ASSERT(lhs);
+        assert(lhs);
         return *lhs;
     }
 
     /** Get right-hand side of conjunction */
     const RamCondition& getRHS() const {
-        ASSERT(rhs);
+        assert(rhs);
         return *rhs;
     }
 
@@ -106,8 +106,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(dynamic_cast<const RamAnd*>(&node));
-        const RamAnd& other = static_cast<const RamAnd&>(node);
+        assert(nullptr != dynamic_cast<const RamAnd*>(&node));
+        const auto& other = static_cast<const RamAnd&>(node);
         return getLHS() == other.getLHS() && getRHS() == other.getRHS();
     }
 };
@@ -197,8 +197,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(dynamic_cast<const RamBinaryRelation*>(&node));
-        const RamBinaryRelation& other = static_cast<const RamBinaryRelation&>(node);
+        assert(nullptr != dynamic_cast<const RamBinaryRelation*>(&node));
+        const auto& other = static_cast<const RamBinaryRelation&>(node);
         return getOperator() == other.getOperator() && getLHS() == other.getLHS() &&
                getRHS() == other.getRHS();
     }
@@ -245,14 +245,15 @@ public:
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << "(" << join(values, ",",
-                             [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
-                                 if (!value) {
-                                     out << "_";
-                                 } else {
-                                     out << *value;
-                                 }
-                             })
+        os << "("
+           << join(values, ",",
+                      [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
+                          if (!value) {
+                              out << "_";
+                          } else {
+                              out << *value;
+                          }
+                      })
            << ") ∉ " << relation->getName();
     }
 
@@ -312,8 +313,126 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(dynamic_cast<const RamNotExists*>(&node));
-        const RamNotExists& other = static_cast<const RamNotExists&>(node);
+        assert(nullptr != dynamic_cast<const RamNotExists*>(&node));
+        const auto& other = static_cast<const RamNotExists&>(node);
+        return getRelation() == other.getRelation() && equal_targets(values, other.values);
+    }
+};
+
+/** Not existence check for a relation for provenance existence check */
+class RamProvenanceNotExists : public RamCondition {
+protected:
+    /* Relation */
+    std::unique_ptr<RamRelation> relation;
+
+    /** Pattern -- nullptr if undefined */
+    // TODO (#541): rename to argument
+    std::vector<std::unique_ptr<RamValue>> values;
+
+public:
+    RamProvenanceNotExists(std::unique_ptr<RamRelation> rel)
+            : RamCondition(RN_ProvenanceNotExists), relation(std::move(rel)) {}
+
+    /** Get relation */
+    const RamRelation& getRelation() const {
+        return *relation;
+    }
+
+    /** Get arguments */
+    std::vector<RamValue*> getValues() const {
+        return toPtrVector(values);
+    }
+
+    /** Add argument */
+    void addArg(std::unique_ptr<RamValue> v) {
+        values.push_back(std::move(v));
+    }
+
+    /** Get level */
+    size_t getLevel() override {
+        size_t level = 0;
+        for (const auto& cur : values) {
+            if (cur) {
+                level = std::max(level, cur->getLevel());
+            }
+        }
+        return level;
+    }
+
+    /** Print */
+    void print(std::ostream& os) const override {
+        os << "("
+           << join(values, ",",
+                      [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
+                          if (!value) {
+                              out << "_";
+                          } else {
+                              out << *value;
+                          }
+                      })
+           << ") prov∉ " << relation->getName();
+    }
+
+    /** Get key */
+    SearchColumns getKey() const {
+        SearchColumns res = 0;
+        // values.size() - 1 because we discard the height annotation
+        for (unsigned i = 0; i < values.size() - 1; i++) {
+            if (values[i]) {
+                res |= (1 << i);
+            }
+        }
+        return res;
+    }
+
+    /** Is key total */
+    bool isTotal() const {
+        for (const auto& cur : values) {
+            if (!cur) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        std::vector<const RamNode*> res = {relation.get()};
+        for (const auto& cur : values) {
+            res.push_back(cur.get());
+        }
+        return res;
+    }
+
+    /** Create clone */
+    RamProvenanceNotExists* clone() const override {
+        RamProvenanceNotExists* res =
+                new RamProvenanceNotExists(std::unique_ptr<RamRelation>(relation->clone()));
+        for (auto& cur : values) {
+            RamValue* val = nullptr;
+            if (cur != nullptr) {
+                val = cur->clone();
+            }
+            res->values.push_back(std::unique_ptr<RamValue>(val));
+        }
+        return res;
+    }
+
+    /** Apply */
+    void apply(const RamNodeMapper& map) override {
+        relation = map(std::move(relation));
+        for (auto& val : values) {
+            if (val != nullptr) {
+                val = map(std::move(val));
+            }
+        }
+    }
+
+protected:
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(dynamic_cast<const RamProvenanceNotExists*>(&node));
+        const RamProvenanceNotExists& other = static_cast<const RamProvenanceNotExists&>(node);
         return getRelation() == other.getRelation() && equal_targets(values, other.values);
     }
 };
@@ -341,7 +460,7 @@ public:
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << relation->getName() << " ≠ ∅";
+        os << relation->getName() << " = ∅";
     }
 
     /** Obtain list of child nodes */
@@ -363,8 +482,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(dynamic_cast<const RamEmpty*>(&node));
-        const RamEmpty& other = static_cast<const RamEmpty&>(node);
+        assert(nullptr != dynamic_cast<const RamEmpty*>(&node));
+        const auto& other = static_cast<const RamEmpty&>(node);
         return getRelation() == other.getRelation();
     }
 };

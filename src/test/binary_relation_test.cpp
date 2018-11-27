@@ -30,7 +30,7 @@
 #endif
 
 #include "BinaryRelation.h"
-#include "CompiledRamTuple.h"
+#include "CompiledTuple.h"
 
 // TODO: replace findX tests with getBoundaries tests
 // TODO: insert some anteriorIt, and antpostit tests
@@ -44,7 +44,7 @@ TEST(BinRelTest, Scoping) {
     souffle::BinaryRelation<souffle::ram::Tuple<RamDomain, 2>> br;
 }
 
-typedef BinaryRelation<ram::Tuple<RamDomain, 2>> BinRel;
+using BinRel = BinaryRelation<ram::Tuple<RamDomain, 2>>;
 
 TEST(BinRelTest, Basic) {
     BinRel br;

@@ -41,16 +41,16 @@ protected:
     const std::string name;
 
     /** Arity, i.e., number of attributes */
-    const unsigned arity = 0;
+    const size_t arity;
 
     /** Name of attributes */
-    std::vector<std::string> attributeNames;
+    const std::vector<std::string> attributeNames;
 
     /** Type of attributes */
-    std::vector<std::string> attributeTypeQualifiers;
+    const std::vector<std::string> attributeTypeQualifiers;
 
     /** TODO (#541): legacy, i.e., duplicated information */
-    SymbolMask mask;
+    const SymbolMask mask;
 
     /** Relation qualifiers */
     // TODO: Simplify interface
@@ -62,21 +62,14 @@ protected:
     const bool brie;   // brie data-structure
     const bool eqrel;  // equivalence relation
 
-    const bool istemp;  // Temporary relation for semi-naive evaluation
-
 public:
-    RamRelation(const std::string& name, unsigned arity, const bool istemp)
-            : RamRelation(
-                      name, arity, {}, {}, SymbolMask(0), false, false, false, false, false, false, istemp) {}
-
-    RamRelation(std::string name, unsigned arity, std::vector<std::string> attributeNames,
-            std::vector<std::string> attributeTypeQualifiers, SymbolMask mask, bool input, bool computed,
-            bool output, bool btree, bool brie, bool eqrel, bool istemp)
+    RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
+            const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
+            const bool computed, const bool output, const bool btree, const bool brie, const bool eqrel)
             : RamNode(RN_Relation), name(std::move(name)), arity(arity),
               attributeNames(std::move(attributeNames)),
               attributeTypeQualifiers(std::move(attributeTypeQualifiers)), mask(std::move(mask)),
-              input(input), output(output), computed(computed), btree(btree), brie(brie), eqrel(eqrel),
-              istemp(istemp) {
+              input(input), output(output), computed(computed), btree(btree), brie(brie), eqrel(eqrel) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
     }
@@ -141,9 +134,9 @@ public:
         return true;
     }
 
-    /** Is temporary relation */
+    /** Is temporary relation (for semi-naive evaluation) */
     const bool isTemp() const {
-        return istemp;
+        return name.at(0) == '@';
     }
 
     /* Get arity of relation */
@@ -179,7 +172,7 @@ public:
     /** Create clone */
     RamRelation* clone() const override {
         RamRelation* res = new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, mask, input,
-                computed, output, btree, brie, eqrel, istemp);
+                computed, output, btree, brie, eqrel);
         return res;
     }
 

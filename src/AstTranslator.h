@@ -273,20 +273,27 @@ private:
     std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
-    /** a utility to translate atoms to relations */
-    std::unique_ptr<RamRelationReference> translateRelation(const AstAtom* atom) {
-        std::string name = getRelationName(atom->getName());
-        bool isTemp = name.at(0) == '@';
-        if (isTemp) {
-            name = name.substr(1);
-        }
-        return translateRelation(
-                (program ? getAtomRelation(atom, program) : nullptr), name, atom->getArity(), isTemp);
-    }
+    /** create a reference to a RAM relation */
+    std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity,
+            const std::vector<std::string> attributeNames,
+            const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
+            const bool computed, const bool output, const bool btree, const bool brie, const bool eqrel);
 
-    /** translate a AST relation to a RAM relation */
+    /** create a reference to a RAM relation */
+    std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity);
+
+    /** a utility to translate atoms to relations */
+    std::unique_ptr<RamRelationReference> translateRelation(const AstAtom* atom);
+
+    /** translate an AST relation to a RAM relation */
     std::unique_ptr<RamRelationReference> translateRelation(
-            const AstRelation* rel, std::string name, size_t arity, const bool istemp = false);
+            const AstRelation* rel, const std::string relationNamePrefix = "");
+
+    /** translate a temporary `delta` relation to a RAM relation for semi-naive evaluation */
+    std::unique_ptr<RamRelationReference> translateDeltaRelation(const AstRelation* rel);
+
+    /** translate a temporary `new` relation to a RAM relation for semi-naive evaluation */
+    std::unique_ptr<RamRelationReference> translateNewRelation(const AstRelation* rel);
 
     /** translate an AST argument to a RAM value */
     std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueIndex& index);

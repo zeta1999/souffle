@@ -196,29 +196,39 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
     return outputDirectives;
 }
 
+std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
+        const size_t arity, const std::vector<std::string> attributeNames,
+        const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
+        const bool computed, const bool output, const bool btree, const bool brie, const bool eqrel) {
+    const RamRelation* ramRel = ramProg->getRelation(name);
+    if (ramRel == nullptr) {
+        ramProg->addRelation(std::make_unique<RamRelation>(name, arity, attributeNames,
+                attributeTypeQualifiers, mask, input, computed, output, btree, brie, eqrel));
+        ramRel = ramProg->getRelation(name);
+        assert(ramRel != nullptr && "cannot find relation");
+    }
+    return std::make_unique<RamRelationReference>(ramRel);
+}
+
+std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(
+        const std::string name, const size_t arity) {
+    return createRelationReference(
+            name, arity, {}, {}, SymbolMask(arity), false, false, false, false, false, false);
+}
+
+std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const AstAtom* atom) {
+    if (const auto rel = getAtomRelation(atom, program)) {
+        return translateRelation(rel);
+    } else {
+        return createRelationReference(getRelationName(atom->getName()), atom->getArity());
+    }
+}
+
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
-        const AstRelation* rel, std::string name, size_t arity, const bool istemp) {
-    assert(ramProg != nullptr);
-
-    // avoid name conflicts for temporary identifiers
-    if (istemp) {
-        name.insert(0, "@");
-    }
-
-    if (!rel) {
-        const RamRelation* ramRel = ramProg->getRelation(name);
-        if (ramRel == nullptr) {
-            ramProg->addRelation(std::make_unique<RamRelation>(name, arity, istemp));
-            ramRel = ramProg->getRelation(name);
-            assert(ramRel != nullptr && "cannot find relations");
-        }
-        return std::make_unique<RamRelationReference>(ramRel);
-    }
-
-    assert(arity == rel->getArity());
+        const AstRelation* rel, const std::string relationNamePrefix) {
     std::vector<std::string> attributeNames;
     std::vector<std::string> attributeTypeQualifiers;
-    for (unsigned int i = 0; i < arity; i++) {
+    for (size_t i = 0; i < rel->getArity(); ++i) {
         attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
         if (typeEnv) {
             attributeTypeQualifiers.push_back(
@@ -226,15 +236,17 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
         }
     }
 
-    const RamRelation* ramRel = ramProg->getRelation(name);
-    if (ramRel == nullptr) {
-        ramProg->addRelation(std::make_unique<RamRelation>(name, arity, attributeNames,
-                attributeTypeQualifiers, getSymbolMask(*rel), rel->isInput(), rel->isComputed(),
-                rel->isOutput(), rel->isBTree(), rel->isBrie(), rel->isEqRel(), istemp));
-        ramRel = ramProg->getRelation(name);
-        assert(ramRel != nullptr && "cannot find relations");
-    }
-    return std::make_unique<RamRelationReference>(ramRel);
+    return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
+            attributeNames, attributeTypeQualifiers, getSymbolMask(*rel), rel->isInput(), rel->isComputed(),
+            rel->isOutput(), rel->isBTree(), rel->isBrie(), rel->isEqRel());
+}
+
+std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {
+    return translateRelation(rel, "@delta_");
+}
+
+std::unique_ptr<RamRelationReference> AstTranslator::translateNewRelation(const AstRelation* rel) {
+    return translateRelation(rel, "@new_");
 }
 
 std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, const ValueIndex& index) {
@@ -793,8 +805,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(
     std::unique_ptr<RamStatement> res;
 
     // the ram table reference
-    std::unique_ptr<RamRelationReference> rrel =
-            translateRelation(&rel, getRelationName(rel.getName()), rel.getArity(), false);
+    std::unique_ptr<RamRelationReference> rrel = translateRelation(&rel);
 
     /* iterate over all clauses that belong to the relation */
     for (AstClause* clause : rel.getClauses()) {
@@ -906,10 +917,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         std::unique_ptr<RamStatement> updateRelTable;
 
         /* create two temporary tables for relaxed semi-naive evaluation */
-        auto relName = getRelationName(rel->getName());
-        rrel[rel] = translateRelation(rel, relName, rel->getArity(), false);
-        relDelta[rel] = translateRelation(rel, "delta_" + relName, rel->getArity(), true);
-        relNew[rel] = translateRelation(rel, "new_" + relName, rel->getArity(), true);
+        rrel[rel] = translateRelation(rel);
+        relDelta[rel] = translateDeltaRelation(rel);
+        relNew[rel] = translateNewRelation(rel);
 
         /* create update statements for fixpoint (even iteration) */
         appendStmt(updateRelTable,
@@ -1153,77 +1163,56 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // handle the case of an empty SCC graph
     if (sccGraph.getNumberOfSCCs() == 0) return;
 
-    // a function to create relations
-    const auto& makeRamCreate = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
-                                        const std::string relationNamePrefix) {
-        appendStmt(current,
-                std::make_unique<RamCreate>(std::unique_ptr<RamRelationReference>(
-                        translateRelation(relation, relationNamePrefix + getRelationName(relation->getName()),
-                                relation->getArity(), !relationNamePrefix.empty()))));
-    };
-
     // a function to load relations
     const auto& makeRamLoad = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const std::string& inputDirectory, const std::string& fileExtension) {
-        std::unique_ptr<RamStatement> statement = std::make_unique<RamLoad>(
-                std::unique_ptr<RamRelationReference>(translateRelation(
-                        relation, getRelationName(relation->getName()), relation->getArity(), false)),
-                getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
+        std::unique_ptr<RamStatement> statement =
+                std::make_unique<RamLoad>(std::unique_ptr<RamRelationReference>(translateRelation(relation)),
+                        getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
         if (Global::config().has("profile")) {
             const std::string logTimerStatement =
                     LogStatement::tRelationLoadTime(toString(relation->getName()), relation->getSrcLoc());
             statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement,
-                    std::unique_ptr<RamRelationReference>(translateRelation(
-                            relation, getRelationName(relation->getName()), relation->getArity(), false)));
+                    std::unique_ptr<RamRelationReference>(translateRelation(relation)));
         }
         appendStmt(current, std::move(statement));
     };
 
     // a function to print the size of relations
     const auto& makeRamPrintSize = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
-        appendStmt(current,
-                std::make_unique<RamPrintSize>(std::unique_ptr<RamRelationReference>(translateRelation(
-                        relation, getRelationName(relation->getName()), relation->getArity(), false))));
+        appendStmt(current, std::make_unique<RamPrintSize>(
+                                    std::unique_ptr<RamRelationReference>(translateRelation(relation))));
     };
 
     // a function to store relations
     const auto& makeRamStore = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                        const std::string& outputDirectory, const std::string& fileExtension) {
         std::unique_ptr<RamStatement> statement = std::make_unique<RamStore>(
-                std::unique_ptr<RamRelationReference>(translateRelation(
-                        relation, getRelationName(relation->getName()), relation->getArity(), false)),
+                std::unique_ptr<RamRelationReference>(translateRelation(relation)),
                 getOutputIODirectives(relation, Global::config().get(outputDirectory), fileExtension));
         if (Global::config().has("profile")) {
             const std::string logTimerStatement =
                     LogStatement::tRelationSaveTime(toString(relation->getName()), relation->getSrcLoc());
             statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement,
-                    std::unique_ptr<RamRelationReference>(translateRelation(
-                            relation, getRelationName(relation->getName()), relation->getArity(), false)));
+                    std::unique_ptr<RamRelationReference>(translateRelation(relation)));
         }
         appendStmt(current, std::move(statement));
     };
 
     // a function to drop relations
     const auto& makeRamDrop = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
-        appendStmt(current, std::make_unique<RamDrop>(translateRelation(relation,
-                                    getRelationName(relation->getName()), relation->getArity(), false)));
+        appendStmt(current, std::make_unique<RamDrop>(translateRelation(relation)));
     };
 
 #ifdef USE_MPI
     const auto& makeRamSend = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const std::set<size_t> destinationStrata) {
-        appendStmt(current,
-                std::make_unique<RamSend>(translateRelation(relation, getRelationName(relation->getName()),
-                                                  relation->getArity(), false),
-                        destinationStrata));
+        appendStmt(current, std::make_unique<RamSend>(translateRelation(relation), destinationStrata));
     };
 
     const auto& makeRamRecv = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const size_t sourceStrata) {
-        appendStmt(current,
-                std::make_unique<RamRecv>(translateRelation(relation, getRelationName(relation->getName()),
-                                                  relation->getArity(), false),
-                        sourceStrata));
+        appendStmt(current, std::make_unique<RamRecv>(translateRelation(relation), sourceStrata));
     };
 
     const auto& makeRamNotify = [&](std::unique_ptr<RamStatement>& current) {
@@ -1264,11 +1253,14 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
         // create all internal relations of the current scc
         for (const auto& relation : allInterns) {
-            makeRamCreate(current, relation, "");
+            appendStmt(current, std::make_unique<RamCreate>(
+                                        std::unique_ptr<RamRelationReference>(translateRelation(relation))));
             // create new and delta relations if required
             if (isRecursive) {
-                makeRamCreate(current, relation, "delta_");
-                makeRamCreate(current, relation, "new_");
+                appendStmt(current, std::make_unique<RamCreate>(std::unique_ptr<RamRelationReference>(
+                                            translateDeltaRelation(relation))));
+                appendStmt(current, std::make_unique<RamCreate>(std::unique_ptr<RamRelationReference>(
+                                            translateNewRelation(relation))));
             }
         }
 

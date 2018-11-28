@@ -22,9 +22,6 @@
 #include "ParallelUtils.h"
 #include "Util.h"
 #include "BTree.h"
-#ifdef HAS_TSX
-#include "htmx86.h"
-#endif
 #include <cassert>
 #include <iostream>
 #include <iterator>

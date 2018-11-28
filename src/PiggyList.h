@@ -34,12 +34,14 @@ class RandomInsertPiggyList {
      * Free the arrays allocated within the linked list nodes
      */
     void freeList() {
+        slock.lock();
         // delete all - deleting a nullptr is a no-op
         for (size_t i = 0; i < maxContainers; ++i) {
             delete[] blockLookupTable[i].load();
             // reset the container within to be empty.
             blockLookupTable[i].store(nullptr);
         }
+        slock.unlock();
     }
 
     public:
@@ -135,10 +137,12 @@ class PiggyList {
      * Free the arrays allocated within the linked list nodes
      */
     void freeList() {
+        sl.lock();
         // we don't know which ones are taken up!
         for (size_t i = 0; i < num_containers; ++i) {
             delete[] blockLookupTable[i];
         }
+        sl.unlock();
     }
 
 public:
@@ -233,7 +237,6 @@ public:
      * @param index position to search
      * @return the value at index
      */
-    // XXX: in another commit i made this const size_t&  - is this really that beneficial?
     inline T& get(size_t index) const {
         // supa fast 2^16 size first block
         size_t nindex = index + BLOCKSIZE;

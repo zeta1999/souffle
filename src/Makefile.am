@@ -66,7 +66,7 @@ souffle_sources = \
               AstConstraintAnalysis.h                   \
               AstFunctorDeclaration.h                   \
               AstGroundAnalysis.cpp AstGroundAnalysis.h \
-              AstIODirective.h                          \
+              AstIO.h                                   \
               AstIOTypeAnalysis.cpp AstIOTypeAnalysis.h \
               AstLiteral.h                              \
               AstNode.h                                 \

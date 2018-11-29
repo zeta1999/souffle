@@ -17,7 +17,7 @@
 #pragma once
 
 #include "AstClause.h"
-#include "AstIODirective.h"
+#include "AstIO.h"
 #include "AstNode.h"
 #include "AstRelation.h"
 #include "AstType.h"
@@ -225,20 +225,28 @@ public:
         return toPtrVector(clauses);
     }
 
-    void addIODirective(std::unique_ptr<AstIODirective> c) {
-        ioDirectives.push_back(std::move(c));
+    void addLoad(std::unique_ptr<AstLoad> load) {
+        loads.push_back(std::move(load));
     }
 
-    void addIODirectiveChain(std::unique_ptr<AstIODirective> c) {
-        for (auto& currentName : c->getNames()) {
-            std::unique_ptr<AstIODirective> clone(c->clone());
-            clone->setName(currentName);
-            ioDirectives.push_back(std::move(clone));
-        }
+    void addPrintSize(std::unique_ptr<AstPrintSize> printSize) {
+        printSizes.push_back(std::move(printSize));
     }
 
-    std::vector<AstIODirective*> getIODirectives() const {
-        return toPtrVector(ioDirectives);
+    void addStore(std::unique_ptr<AstStore> store) {
+        stores.push_back(std::move(store));
+    }
+
+    std::vector<AstLoad*> getLoads() const {
+        return toPtrVector(loads);
+    }
+
+    std::vector<AstPrintSize*> getPrintSizes() const {
+        return toPtrVector(printSizes);
+    }
+
+    std::vector<AstStore*> getStores() const {
+        return toPtrVector(stores);
     }
 
     void addComponent(std::unique_ptr<AstComponent> c) {
@@ -288,8 +296,14 @@ public:
         for (const auto& cur : clauses) {
             res->clauses.emplace_back(cur->clone());
         }
-        for (const auto& cur : ioDirectives) {
-            res->ioDirectives.emplace_back(cur->clone());
+        for (const auto& cur : loads) {
+            res->loads.emplace_back(cur->clone());
+        }
+        for (const auto& cur : printSizes) {
+            res->printSizes.emplace_back(cur->clone());
+        }
+        for (const auto& cur : stores) {
+            res->stores.emplace_back(cur->clone());
         }
         for (const auto& cur : overrideRules) {
             res->overrideRules.insert(cur);
@@ -320,7 +334,13 @@ public:
         for (auto& cur : clauses) {
             cur = mapper(std::move(cur));
         }
-        for (auto& cur : ioDirectives) {
+        for (auto& cur : loads) {
+            cur = mapper(std::move(cur));
+        }
+        for (auto& cur : printSizes) {
+            cur = mapper(std::move(cur));
+        }
+        for (auto& cur : stores) {
             cur = mapper(std::move(cur));
         }
     }
@@ -348,7 +368,13 @@ public:
         for (const auto& cur : clauses) {
             res.push_back(cur.get());
         }
-        for (const auto& cur : ioDirectives) {
+        for (const auto& cur : loads) {
+            res.push_back(cur.get());
+        }
+        for (const auto& cur : printSizes) {
+            res.push_back(cur.get());
+        }
+        for (const auto& cur : stores) {
             res.push_back(cur.get());
         }
 
@@ -382,8 +408,14 @@ public:
         if (!clauses.empty()) {
             os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
         }
-        if (!ioDirectives.empty()) {
-            os << join(ioDirectives, "\n\n", print_deref<std::unique_ptr<AstIODirective>>()) << "\n";
+        if (!loads.empty()) {
+            os << join(loads, "\n\n", print_deref<std::unique_ptr<AstLoad>>()) << "\n";
+        }
+        if (!printSizes.empty()) {
+            os << join(printSizes, "\n\n", print_deref<std::unique_ptr<AstPrintSize>>()) << "\n";
+        }
+        if (!stores.empty()) {
+            os << join(stores, "\n\n", print_deref<std::unique_ptr<AstStore>>()) << "\n";
         }
 
         os << "}\n";
@@ -398,7 +430,8 @@ protected:
         // compare all fields
         return type == other.type && baseComponents == other.baseComponents &&
                equal_targets(types, other.types) && equal_targets(relations, other.relations) &&
-               equal_targets(clauses, other.clauses) && equal_targets(ioDirectives, other.ioDirectives) &&
+               equal_targets(clauses, other.clauses) && equal_targets(loads, other.loads) &&
+               equal_targets(printSizes, other.printSizes) && equal_targets(stores, other.stores) &&
                equal_targets(components, other.components) &&
                equal_targets(instantiations, other.instantiations);
     }
@@ -420,7 +453,9 @@ private:
     std::vector<std::unique_ptr<AstClause>> clauses;
 
     /** A list of IO directives defined in this component. */
-    std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
+    std::vector<std::unique_ptr<AstLoad>> loads;
+    std::vector<std::unique_ptr<AstPrintSize>> printSizes;
+    std::vector<std::unique_ptr<AstStore>> stores;
 
     /** A list of nested components. */
     std::vector<std::unique_ptr<AstComponent>> components;

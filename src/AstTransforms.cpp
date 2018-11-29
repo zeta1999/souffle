@@ -72,7 +72,7 @@ bool FixpointTransformer::transform(AstTranslationUnit& translationUnit) {
     return changed;
 }
 
-bool RemoveRelationCopiesTransformer::removeRelationCopies(AstProgram& program) {
+bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& translationUnit) {
     using alias_map = std::map<AstRelationIdentifier, AstRelationIdentifier>;
 
     // tests whether something is a variable
@@ -84,9 +84,13 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstProgram& program) 
     // collect aliases
     alias_map isDirectAliasOf;
 
+    IOType* ioType = translationUnit.getAnalysis<IOType>();
+
+    AstProgram& program = *translationUnit.getProgram();
+
     // search for relations only defined by a single rule ..
     for (AstRelation* rel : program.getRelations()) {
-        if (rel->getIODirectives().empty() && rel->getClauses().size() == 1u) {
+        if (!ioType->isIO(rel) && rel->getClauses().size() == 1u) {
             // .. of shape r(x,y,..) :- s(x,y,..)
             AstClause* cl = rel->getClause(0);
             if (!cl->isFact() && cl->getBodySize() == 1u && cl->getAtoms().size() == 1u) {
@@ -800,9 +804,11 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
     // Keep track of all relations that cannot be transformed
     std::set<AstRelationIdentifier> minimalIrreducibleRelations;
 
+    IOType* ioType = translationUnit.getAnalysis<IOType>();
+
     for (AstRelation* relation : program.getRelations()) {
         // No I/O relations can be transformed
-        if (!relation->getIODirectives().empty()) {
+        if (ioType->isIO(relation)) {
             minimalIrreducibleRelations.insert(relation->getName());
         }
         for (AstClause* clause : relation->getClauses()) {

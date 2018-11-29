@@ -465,7 +465,7 @@ TEST(AstUtils, RemoveRelationCopies) {
 
     EXPECT_EQ(4, program.getRelations().size());
 
-    RemoveRelationCopiesTransformer::removeRelationCopies(program);
+    RemoveRelationCopiesTransformer::removeRelationCopies(*tu);
 
     EXPECT_EQ(2, program.getRelations().size());
 }
@@ -496,7 +496,7 @@ TEST(AstUtils, RemoveRelationCopiesOutput) {
 
     EXPECT_EQ(4, program.getRelations().size());
 
-    RemoveRelationCopiesTransformer::removeRelationCopies(program);
+    RemoveRelationCopiesTransformer::removeRelationCopies(*tu);
 
     EXPECT_EQ(3, program.getRelations().size());
 }

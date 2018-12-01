@@ -751,7 +751,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& t
     bool changed = false;
     for (auto rel : program.getRelations()) {
         if (rel->clauseSize() == 0 && !rel->isInput()) {
-            removeEmptyRelationUses(translationUnit, rel);
+            changed |= removeEmptyRelationUses(translationUnit, rel);
 
             bool usedInAggregate = false;
             visitDepthFirst(program, [&](const AstAggregator& agg) {
@@ -766,16 +766,17 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& t
 
             if (!usedInAggregate && !rel->isComputed()) {
                 program.removeRelation(rel->getName());
+                changed = true;
             }
-            changed = true;
         }
     }
     return changed;
 }
 
-void RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
+bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
         AstTranslationUnit& translationUnit, AstRelation* emptyRelation) {
     AstProgram& program = *translationUnit.getProgram();
+    bool changed = false;
 
     //
     // (1) drop rules from the program that have empty relations in their bodies.
@@ -790,12 +791,12 @@ void RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
         // check for an atom whose relation is the empty relation
 
         bool removed = false;
-        ;
         for (AstLiteral* lit : cl->getBodyLiterals()) {
             if (auto* arg = dynamic_cast<AstAtom*>(lit)) {
                 if (getAtomRelation(arg, &program) == emptyRelation) {
                     program.removeClause(cl);
                     removed = true;
+                    changed = true;
                     break;
                 }
             }
@@ -831,9 +832,12 @@ void RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
 
                 program.removeClause(cl);
                 program.appendClause(std::move(res));
+                changed = true;
             }
         }
     }
+
+    return changed;
 }
 
 bool RemoveRedundantRelationsTransformer::transform(AstTranslationUnit& translationUnit) {

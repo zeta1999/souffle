@@ -74,6 +74,8 @@ bool FixpointTransformer::transform(AstTranslationUnit& translationUnit) {
     return changed;
 }
 
+// TODO (azreika): move out ResolveAliases transformer into separate file
+
 void ResolveAliasesTransformer::resolveAliases(AstProgram& program) {
     // get all clauses
     std::vector<const AstClause*> clauses;
@@ -267,7 +269,7 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
 
     // -- utilities --
 
-    // tests whether something is a ungrounded variable
+    // tests whether something is a variable
     auto isVar = [&](const AstArgument& arg) { return dynamic_cast<const AstVariable*>(&arg); };
 
     // tests whether something is a record
@@ -279,6 +281,16 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
         visitDepthFirst(b, [&](const AstArgument& cur) { res = res || cur == a; });
         return res;
     };
+
+    // find all variables appearing as functorless arguments in grounding atoms
+    std::set<std::string> baseGroundedVariables;
+    for (const AstAtom* atom : clause.getAtoms()) {
+        for (const AstArgument* arg : atom->getArguments()) {
+            if (const AstVariable* var = dynamic_cast<const AstVariable*>(arg)) {
+                baseGroundedVariables.insert(var->getName());
+            }
+        }
+    }
 
     // I) extract equations
     std::vector<Equation> equations;
@@ -367,6 +379,15 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
         }
 
         assert(!occurs(v, t));
+
+        // #5:   v is already grounded
+        if (baseGroundedVariables.find(v.getName()) != baseGroundedVariables.end()) {
+            // v = t, where v is already intrinsically grounded
+            // should not resolve this constraint here, unless t is a record type
+            if (!dynamic_cast<const AstRecordInit*>(&t)) {
+                continue;
+            }
+        }
 
         // add new maplet
         newMapping(v.getName(), &t);

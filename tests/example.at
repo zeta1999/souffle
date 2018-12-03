@@ -1,5 +1,5 @@
 # Souffle - A Datalog Compiler
-# Copyright (c) 2018, The Souffle Developers. All rights reserved.
+# Copyright (c) 2017, The Souffle Developers. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at:
 # - https://opensource.org/licenses/UPL
 # - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -30,8 +30,8 @@ POSITIVE_TEST([degree],[example])
 POSITIVE_TEST([dfa],[example])
 POSITIVE_TEST([dfa_live_vars],[example])
 POSITIVE_TEST([dfa_min],[example])
-POSITIVE_TEST([dfa_summary_function],[example])
 POSITIVE_TEST([dfa_parse],[example])
+POSITIVE_TEST([dfa_summary_function],[example])
 POSITIVE_TEST([disconnected],[example])
 POSITIVE_TEST([dnf],[example])
 POSITIVE_TEST([dominance],[example])

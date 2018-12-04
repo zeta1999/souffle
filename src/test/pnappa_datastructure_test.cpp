@@ -62,33 +62,33 @@ TEST(RandomInsertPiggyTest, Insertion) {
 }
 
 // XXX: fuck, i've deleted the copy and move ctors lol
-TEST(RandomInsertPiggyTest, CopyCtor) {
-    souffle::RandomInsertPiggyList<size_t> pl;
-    pl.insertAt(1000, 33);
-    pl.insertAt(0, 32);
-    pl.insertAt(998, 31);
-    pl.insertAt(997, 30);
-    pl.insertAt(996, 29);
-
-    souffle::RandomInsertPiggyList<size_t> pl2(pl);
-    EXPECT_EQ(pl2.size(), pl.size());
-    EXPECT_EQ(pl2.get(1000), 33);
-    EXPECT_EQ(pl2.get(0), 32);
-    EXPECT_EQ(pl2.get(998), 31);
-    EXPECT_EQ(pl2.get(997), 30);
-    EXPECT_EQ(pl2.get(996), 29);
-
-    // change vice versa
-    pl2.get(996) = 1;
-    EXPECT_EQ(pl2.get(996), 1);
-    // check it hasn't changed in pl1
-    EXPECT_EQ(pl.get(996), 29);
-
-    // and the reverse...
-    pl.get(998) = 22;
-    EXPECT_EQ(pl.get(998), 22);
-    EXPECT_EQ(pl2.get(998), 31);
-}
+// TEST(RandomInsertPiggyTest, CopyCtor) {
+//     souffle::RandomInsertPiggyList<size_t> pl;
+//     pl.insertAt(1000, 33);
+//     pl.insertAt(0, 32);
+//     pl.insertAt(998, 31);
+//     pl.insertAt(997, 30);
+//     pl.insertAt(996, 29);
+// 
+//     souffle::RandomInsertPiggyList<size_t> pl2(pl);
+//     EXPECT_EQ(pl2.size(), pl.size());
+//     EXPECT_EQ(pl2.get(1000), 33);
+//     EXPECT_EQ(pl2.get(0), 32);
+//     EXPECT_EQ(pl2.get(998), 31);
+//     EXPECT_EQ(pl2.get(997), 30);
+//     EXPECT_EQ(pl2.get(996), 29);
+// 
+//     // change vice versa
+//     pl2.get(996) = 1;
+//     EXPECT_EQ(pl2.get(996), 1);
+//     // check it hasn't changed in pl1
+//     EXPECT_EQ(pl.get(996), 29);
+// 
+//     // and the reverse...
+//     pl.get(998) = 22;
+//     EXPECT_EQ(pl.get(998), 22);
+//     EXPECT_EQ(pl2.get(998), 31);
+// }
 
 TEST(RandomInsertPiggyTest, DoubleClear) {
     // err.. prior versions have had the bug where clear caused double-free errors (as we don't set the container to null)
@@ -174,52 +174,52 @@ TEST(PiggyTest, Iteration) {
     }
 }
 
-TEST(PiggyTest, CopyCtor) {
-    souffle::PiggyList<size_t> pl;
-    constexpr size_t N = 10000;
-    for (size_t i = 0; i < N; ++i) {
-        pl.append(i);
-    }
-
-    souffle::PiggyList<size_t> pl2(pl);
-    EXPECT_EQ(pl.size(), pl2.size());
-
-    // check every element is equal and same order
-    for (size_t i = 0; i < N; ++i) {
-        EXPECT_EQ(pl.get(i), pl2.get(i));
-        EXPECT_EQ(pl.get(i), i);
-    }
-
-    // TODO: check iterators still work in both
-    auto pl1It = pl.begin();
-    auto pl2It = pl2.begin();
-
-    while (true) {
-        // yep, they both finished at the same time
-        if (pl1It == pl.end() && pl2It == pl2.end()) { break; }
-        
-        // uhoh, they didn't both finish at the same time
-        if (pl1It == pl.end() || pl2It == pl2.end()) { EXPECT_FALSE(true && "whoops, looks like the iterators are broken"); }
-
-        EXPECT_EQ(*pl1It, *pl2It);
-
-        ++pl1It;
-        ++pl2It;
-    }
-    
-    // change contents of pl1 and makesure they don't change in pl2
-    pl.get(2) = 99;
-    EXPECT_EQ(pl.get(2), 99);
-    EXPECT_EQ(pl2.get(2), 2);
-
-    // check clearing one doesn't invalidate the other
-    pl.clear();
-    EXPECT_EQ(pl.size(), 0);
-    EXPECT_EQ(pl2.size(), N);
-    pl2.clear();
-    EXPECT_EQ(pl.size(), 0);
-    EXPECT_EQ(pl2.size(), 0);
-}
+// TEST(PiggyTest, CopyCtor) {
+//     souffle::PiggyList<size_t> pl;
+//     constexpr size_t N = 10000;
+//     for (size_t i = 0; i < N; ++i) {
+//         pl.append(i);
+//     }
+// 
+//     souffle::PiggyList<size_t> pl2(pl);
+//     EXPECT_EQ(pl.size(), pl2.size());
+// 
+//     // check every element is equal and same order
+//     for (size_t i = 0; i < N; ++i) {
+//         EXPECT_EQ(pl.get(i), pl2.get(i));
+//         EXPECT_EQ(pl.get(i), i);
+//     }
+// 
+//     // TODO: check iterators still work in both
+//     auto pl1It = pl.begin();
+//     auto pl2It = pl2.begin();
+// 
+//     while (true) {
+//         // yep, they both finished at the same time
+//         if (pl1It == pl.end() && pl2It == pl2.end()) { break; }
+//         
+//         // uhoh, they didn't both finish at the same time
+//         if (pl1It == pl.end() || pl2It == pl2.end()) { EXPECT_FALSE(true && "whoops, looks like the iterators are broken"); }
+// 
+//         EXPECT_EQ(*pl1It, *pl2It);
+// 
+//         ++pl1It;
+//         ++pl2It;
+//     }
+//     
+//     // change contents of pl1 and makesure they don't change in pl2
+//     pl.get(2) = 99;
+//     EXPECT_EQ(pl.get(2), 99);
+//     EXPECT_EQ(pl2.get(2), 2);
+// 
+//     // check clearing one doesn't invalidate the other
+//     pl.clear();
+//     EXPECT_EQ(pl.size(), 0);
+//     EXPECT_EQ(pl2.size(), N);
+//     pl2.clear();
+//     EXPECT_EQ(pl.size(), 0);
+//     EXPECT_EQ(pl2.size(), 0);
+// }
 
 TEST(PiggyTest, DoubleClear) {
     // err.. prior versions have had the bug where clear caused double-free errors (as we don't set the container to null)
@@ -340,56 +340,56 @@ TEST(DjTest, TestUnion) {
     EXPECT_EQ(ds.size(), 5);
 }
 
-TEST(DjTest, CopyCtor) {
-    // insert a bunch into the disjoint set, then make a another one, and ensure that changes don't cross contaminate
-    souffle::DisjointSet ds;
-
-    constexpr size_t N = 10000;
-    std::vector<block_t> verifier;
-    for (size_t i = 0; i < N; ++i) {
-        verifier.push_back(ds.makeNode());
-    }
-
-    souffle::DisjointSet ds2(ds);
-    // all elements copied?
-    EXPECT_EQ(ds2.size(), N);
-    // original one wasn't impacted
-    EXPECT_EQ(ds.size(), N);
-
-    // union and check same set settings
-    EXPECT_FALSE(ds.sameSet(0, 1));
-    EXPECT_FALSE(ds2.sameSet(0, 1));
-
-    ds.unionNodes(0,1);
-    EXPECT_TRUE(ds.sameSet(0, 1));
-    EXPECT_FALSE(ds2.sameSet(0, 1));
-
-    ds2.unionNodes(2, 3);
-    EXPECT_FALSE(ds.sameSet(2, 3));
-    EXPECT_TRUE(ds2.sameSet(2, 3));
-
-    EXPECT_EQ(ds2.size(), ds.size());
-
-    ds.makeNode();
-    EXPECT_EQ(ds.size(), N+1);
-    EXPECT_EQ(ds2.size(), N);
-
-    ds2.makeNode();
-    ds2.makeNode();
-    EXPECT_EQ(ds2.size(), N+2);
-    EXPECT_EQ(ds.size(), N+1);
-
-    // make a djset that will dtor before the original
-    {
-        souffle::DisjointSet ds3(ds2);
-        ds3.makeNode();
-        ds3.unionNodes(5, 6);
-        EXPECT_EQ(ds3.size(), N+3);
-    }
-
-    EXPECT_EQ(ds2.size(), N+2);
-    EXPECT_FALSE(ds2.sameSet(5,6));
-}
+// TEST(DjTest, CopyCtor) {
+//     // insert a bunch into the disjoint set, then make a another one, and ensure that changes don't cross contaminate
+//     souffle::DisjointSet ds;
+// 
+//     constexpr size_t N = 10000;
+//     std::vector<block_t> verifier;
+//     for (size_t i = 0; i < N; ++i) {
+//         verifier.push_back(ds.makeNode());
+//     }
+// 
+//     souffle::DisjointSet ds2(ds);
+//     // all elements copied?
+//     EXPECT_EQ(ds2.size(), N);
+//     // original one wasn't impacted
+//     EXPECT_EQ(ds.size(), N);
+// 
+//     // union and check same set settings
+//     EXPECT_FALSE(ds.sameSet(0, 1));
+//     EXPECT_FALSE(ds2.sameSet(0, 1));
+// 
+//     ds.unionNodes(0,1);
+//     EXPECT_TRUE(ds.sameSet(0, 1));
+//     EXPECT_FALSE(ds2.sameSet(0, 1));
+// 
+//     ds2.unionNodes(2, 3);
+//     EXPECT_FALSE(ds.sameSet(2, 3));
+//     EXPECT_TRUE(ds2.sameSet(2, 3));
+// 
+//     EXPECT_EQ(ds2.size(), ds.size());
+// 
+//     ds.makeNode();
+//     EXPECT_EQ(ds.size(), N+1);
+//     EXPECT_EQ(ds2.size(), N);
+// 
+//     ds2.makeNode();
+//     ds2.makeNode();
+//     EXPECT_EQ(ds2.size(), N+2);
+//     EXPECT_EQ(ds.size(), N+1);
+// 
+//     // make a djset that will dtor before the original
+//     {
+//         souffle::DisjointSet ds3(ds2);
+//         ds3.makeNode();
+//         ds3.unionNodes(5, 6);
+//         EXPECT_EQ(ds3.size(), N+3);
+//     }
+// 
+//     EXPECT_EQ(ds2.size(), N+2);
+//     EXPECT_FALSE(ds2.sameSet(5,6));
+// }
 
 TEST(DjTest, Clear) {
     souffle::DisjointSet ds;
@@ -490,46 +490,46 @@ TEST(SparseDjTest, SignedData) {
     EXPECT_EQ(sds.size(), 1);
 }
 
-TEST(SparseDjTest, CopyCtor) {
-    // test whether the copy ctor properly isolates them all
-    souffle::SparseDisjointSet<size_t> sds;
-    sds.makeNode(22);
-    sds.makeNode(23);
-    sds.makeNode(24);
-    sds.makeNode(25);
-    sds.unionNodes(23, 24);
-
-    souffle::SparseDisjointSet<size_t> sds2(sds);
-    EXPECT_TRUE(sds2.contains(23, 24));
-    sds2.unionNodes(23, 25);
-    EXPECT_TRUE(sds2.contains(23, 25));
-    EXPECT_FALSE(sds.contains(23, 25));
-
-    // check unioning a scoped djsset doesn't mess up others (on dtor)
-    {
-        souffle::SparseDisjointSet<size_t> sds3(sds);
-        // somehow unioning sds2 might mess with sds3?    
-        EXPECT_FALSE(sds3.contains(23, 25));
-        sds3.unionNodes(25, 22);
-
-        // check that unioning this doesn't affect the others
-        EXPECT_TRUE(sds3.contains(22, 25));
-        EXPECT_FALSE(sds2.contains(22, 25));
-        EXPECT_FALSE(sds.contains(22, 25));
-    }
-    // check afterward everything still works
-    EXPECT_FALSE(sds2.contains(22, 25));
-    EXPECT_FALSE(sds.contains(22, 25));
-
-    EXPECT_EQ(sds.size(), 4);
-    EXPECT_EQ(sds2.size(), 4);
-}
+// TEST(SparseDjTest, CopyCtor) {
+//     // test whether the copy ctor properly isolates them all
+//     souffle::SparseDisjointSet<size_t> sds;
+//     sds.makeNode(22);
+//     sds.makeNode(23);
+//     sds.makeNode(24);
+//     sds.makeNode(25);
+//     sds.unionNodes(23, 24);
+// 
+//     souffle::SparseDisjointSet<size_t> sds2(sds);
+//     EXPECT_TRUE(sds2.contains(23, 24));
+//     sds2.unionNodes(23, 25);
+//     EXPECT_TRUE(sds2.contains(23, 25));
+//     EXPECT_FALSE(sds.contains(23, 25));
+// 
+//     // check unioning a scoped djsset doesn't mess up others (on dtor)
+//     {
+//         souffle::SparseDisjointSet<size_t> sds3(sds);
+//         // somehow unioning sds2 might mess with sds3?    
+//         EXPECT_FALSE(sds3.contains(23, 25));
+//         sds3.unionNodes(25, 22);
+// 
+//         // check that unioning this doesn't affect the others
+//         EXPECT_TRUE(sds3.contains(22, 25));
+//         EXPECT_FALSE(sds2.contains(22, 25));
+//         EXPECT_FALSE(sds.contains(22, 25));
+//     }
+//     // check afterward everything still works
+//     EXPECT_FALSE(sds2.contains(22, 25));
+//     EXPECT_FALSE(sds.contains(22, 25));
+// 
+//     EXPECT_EQ(sds.size(), 4);
+//     EXPECT_EQ(sds2.size(), 4);
+// }
 
 #ifdef _OPENMP
 TEST(SparseDjTest, ParallelScaling) {
     // insert, union, and stuff in parallel, then check things are in the valid sets
     souffle::SparseDisjointSet<size_t> sds;
-    constexpr size_t N = 10000;
+    constexpr size_t N = 1000000;
 
 #pragma omp parallel for
     for (size_t i = 0; i < N; ++i) {
@@ -550,6 +550,19 @@ TEST(SparseDjTest, ParallelScaling) {
     }
     EXPECT_EQ(sds.size(), N);
 }
+
+TEST(SparseDjTest, ParallelTest) {
+    souffle::SparseDisjointSet<size_t> sds;
+    constexpr size_t N = 1000000;
+
+#pragma omp parallel for
+    for (size_t i = 0; i < N; ++i) {
+        sds.unionNodes(i, i); 
+    }
+
+    EXPECT_EQ(sds.size(), N);
+}
+
 #endif // ifdef _OPENMP
 
 typedef std::pair<size_t, size_t> TestPair;

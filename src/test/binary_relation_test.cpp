@@ -680,6 +680,8 @@ TEST(BinRelTest, ParallelScaling) {
     std::random_shuffle(data1.begin(), data1.end());
     std::random_shuffle(data2.begin(), data2.end());
 
+    std::cout << "number of threads: " << omp_get_max_threads() << std::endl;
+
     BinRel br;
 #pragma omp parallel for
     for (int i = 0; i < N; i++) {
@@ -689,6 +691,9 @@ TEST(BinRelTest, ParallelScaling) {
     }
 
     EXPECT_EQ(N, br.size());
+    if (N != br.size()) {
+        throw std::runtime_error("here's a gdb trap");
+    }
 }
 #endif
 

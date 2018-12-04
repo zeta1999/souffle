@@ -58,7 +58,7 @@ public:
     DisjointSet(){};
 
     // copy ctor
-    DisjointSet(DisjointSet& other) : a_blocks(other.a_blocks) {}
+    DisjointSet(DisjointSet& other) = delete;
     // move ctor
     DisjointSet(DisjointSet&& other) = delete;
 
@@ -263,6 +263,23 @@ private:
      * @param in the sparse value
      * @return the corresponding dense value
      */
+    //parent_t toDense(const SparseDomain in) {
+    //    // insert into the mapping - if the key doesn't exist (in), the function will be called
+    //    // and a dense value will be created for it
+    //    parent_t res = -1;
+    //    PairStore p = {in, res};
+    //    // spin until we have an up to date version
+    //    while (res == -1) {
+    //        res = sparseToDenseMap.insert(p, last_ins, [&](PairStore& p){ 
+    //                parent_t c2 =  DisjointSet::b2p(this->ds.makeNode()); 
+    //                this->denseToSparseMap.insertAt(c2, p.first);
+    //                p.second = c2;
+    //                return c2;
+    //                });
+    //    }
+
+    //    return res;
+    //}
     parent_t toDense(const SparseDomain in) {
         // insert into the mapping - if the key doesn't exist (in), the function will be called
         // and a dense value will be created for it
@@ -278,11 +295,14 @@ private:
 public:
     SparseDisjointSet() { }
 
+
+    SparseDisjointSet(SparseDisjointSet& other) = delete;
+
     // copy ctor
-    SparseDisjointSet(SparseDisjointSet& other) : ds(other.ds), 
-            sparseToDenseMap(other.sparseToDenseMap),
-            denseToSparseMap(other.denseToSparseMap) {
-    }
+    //SparseDisjointSet(SparseDisjointSet& other) : ds(other.ds), 
+    //        sparseToDenseMap(other.sparseToDenseMap),
+    //        denseToSparseMap(other.denseToSparseMap) {
+    //}
 
     // move ctor
     SparseDisjointSet(SparseDisjointSet&& other) = delete;

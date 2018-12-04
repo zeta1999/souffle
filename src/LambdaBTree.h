@@ -55,13 +55,13 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
     /**
      * Inserts the given key into this tree.
      */
-    typename Functor::result_type insert(Key& k, Functor f){ 
+    typename Functor::result_type insert(Key& k, const Functor& f){ 
         typename parenttype::operation_hints hints;
         return insert(k, hints, f);
     }
 
     // rewriting this because of david's changes
-    typename Functor::result_type insert(Key& k, typename parenttype::operation_hints& hints, Functor f) {
+    typename Functor::result_type insert(Key& k, typename parenttype::operation_hints& hints, const Functor& f) {
 #ifdef IS_PARALLEL
 
         // special handling for inserting first element

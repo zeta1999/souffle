@@ -149,23 +149,25 @@ public:
     PiggyList() : num_containers(0), container_size(0), m_size(0)  { }
     PiggyList(size_t initialbitsize) : BLOCKBITS(initialbitsize), num_containers(0), container_size(0), m_size(0) {}
 
-    /** copy constructor */
-    PiggyList(const PiggyList& other) : BLOCKBITS(other.BLOCKBITS) {
 
-        num_containers.store(other.num_containers.load());
-        container_size.store(other.container_size.load());
-        m_size.store(other.m_size.load());
-        // copy each chunk from other into this
-        // the size of the next container to allocate
-        size_t cSize = BLOCKSIZE;
-        for (size_t i = 0; i < other.num_containers; ++i) {
-            this->blockLookupTable[i] = new T[cSize];
-            std::memcpy(this->blockLookupTable[i], other.blockLookupTable[i], cSize*sizeof(T));
-            cSize <<= 1;
-        }
-        // if this isn't the case, uhh
-        assert((cSize >> 1) == container_size.load());
-    }
+    PiggyList(const PiggyList& other) = delete;
+//    /** copy constructor */
+//    PiggyList(const PiggyList& other) : BLOCKBITS(other.BLOCKBITS) {
+//
+//        num_containers.store(other.num_containers.load());
+//        container_size.store(other.container_size.load());
+//        m_size.store(other.m_size.load());
+//        // copy each chunk from other into this
+//        // the size of the next container to allocate
+//        size_t cSize = BLOCKSIZE;
+//        for (size_t i = 0; i < other.num_containers; ++i) {
+//            this->blockLookupTable[i] = new T[cSize];
+//            std::memcpy(this->blockLookupTable[i], other.blockLookupTable[i], cSize*sizeof(T));
+//            cSize <<= 1;
+//        }
+//        // if this isn't the case, uhh
+//        assert((cSize >> 1) == container_size.load());
+//    }
 
     /** move constructor */
     PiggyList(PiggyList&& other) = delete;

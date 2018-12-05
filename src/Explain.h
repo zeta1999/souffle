@@ -300,7 +300,7 @@ public:
                 } else {
                     printStr("Usage: format json/proof\n");
                 }
-            } else if (command[0] == "exit") {
+            } else if (command[0] == "exit" || command[0] == "q" || command[0] == "quit") {
                 printStr("Exiting explain\n");
                 break;
             } else {

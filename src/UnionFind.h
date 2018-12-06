@@ -257,7 +257,7 @@ class SparseDisjointSet {
     // mapping from union-find val to souffle, union-find encoded as index
     DenseMap denseToSparseMap;
 
-private:
+public:
     /**
      * Retrieve dense encoding, adding it in if non-existent
      * @param in the sparse value
@@ -284,7 +284,7 @@ private:
         // insert into the mapping - if the key doesn't exist (in), the function will be called
         // and a dense value will be created for it
         PairStore p = {in, -1};
-        return sparseToDenseMap.insert(p, last_ins, [&](PairStore& p){ 
+        return sparseToDenseMap.insert(p, [&](PairStore& p){ 
                 parent_t c2 =  DisjointSet::b2p(this->ds.makeNode()); 
                 this->denseToSparseMap.insertAt(c2, p.first);
                 p.second = c2;
@@ -355,7 +355,7 @@ public:
 
     /* whether we the supplied node exists */
     inline bool nodeExists(const SparseDomain val) const {
-        return sparseToDenseMap.contains({val, 0});
+        return sparseToDenseMap.contains({val, -1});
     };
 
     inline bool contains(SparseDomain v1, SparseDomain v2) {

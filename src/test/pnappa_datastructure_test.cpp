@@ -547,7 +547,7 @@ TEST(LambdaBTree, ContendParallel) {
     souffle::PiggyList<std::pair<size_t, size_t>> pl;
 
     constexpr size_t N = 1000000;
-    auto fun = [&](PairStore& p){ p.second = counter++; };
+    auto fun = [&](TestPair& p){ p.second = counter++; };
 
     std::vector<size_t> data_source;
     for (size_t i = 0; i < N; ++i) {

@@ -95,9 +95,9 @@ class RandomInsertPiggyList {
         size_t blockNum = (63 - __builtin_clzll(index + INITIALBLOCKSIZE)) - BLOCKBITS;
 
         // allocate the block if not allocated
-        if (blockLookupTable[blockNum].load(std::memory_order_relaxed) == nullptr) {
+        if (blockLookupTable[blockNum].load() == nullptr) {
             slock.lock();
-            if (blockLookupTable[blockNum].load(std::memory_order_relaxed) == nullptr) {
+            if (blockLookupTable[blockNum].load() == nullptr) {
                 blockLookupTable[blockNum].store(new T[INITIALBLOCKSIZE << blockNum]);
             }
             slock.unlock();

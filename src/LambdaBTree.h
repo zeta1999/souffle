@@ -171,6 +171,9 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                         this->update(*pos, k);
                         cur->lock.end_write();
                         // XXX (pnappa): is this correct..?
+                        // XXX: i think it should throw. updating providence for 
+                        // a dynamic key doesn't make sense... tbh providence stuff should be
+                        // ignored in this version.
                         return (*pos).second;
                     }
 
@@ -226,6 +229,8 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                     }
                     this->update(*(pos - 1), k);
                     cur->lock.end_write();
+                    // XXX: this provenance code should probably be removed, doesn't make
+                    // sense to run update on a dynamic key
                     return (*(pos-1)).second;
                 }
 

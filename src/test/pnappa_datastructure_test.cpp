@@ -490,13 +490,64 @@ namespace test {
 //     EXPECT_EQ(sds.size(), 1);
 // }
 
+//#ifdef _OPENMP
+//TEST(SparseDjTest, ParallelDense) {
+//    souffle::SparseDisjointSet<size_t> sds;
+//    // store the dense and sparse values
+//    souffle::PiggyList<std::pair<size_t, size_t>> pl;
+//
+//    constexpr size_t N = 1000000;
+//
+//    std::vector<size_t> data_source;
+//    for (size_t i = 0; i < N; ++i) {
+//        data_source.push_back(i);
+//    }
+//    std::random_shuffle(data_source.begin(), data_source.end());
+//
+//    // call toDense for a load of sparse values, and hope to god they're the same
+//#pragma omp parallel for
+//    for (size_t i = 0; i < N; ++i) {
+//        size_t val = data_source[i];
+//        size_t a = sds.toDense(val);
+//        size_t b = sds.toDense(val);
+//        pl.append(std::make_pair(a, val));
+//        pl.append(std::make_pair(b, val));
+//    }
+//
+//    // check each sparse value (pair.second) maps to a single dense value as per the piggylist
+//    std::unordered_map<size_t, size_t> mapper;
+//    for (size_t i = 0; i < pl.size(); ++i) {
+//
+//        size_t sparse = pl[i].second;
+//        size_t dense = pl[i].first;
+//
+//        if (mapper.count(sparse) == 1) {
+//            if (mapper[sparse] != dense) {
+//                // GDB trap 
+//                throw std::runtime_error("invalid state detected, different dense values for same sparse values");
+//            }
+//        } else {
+//            mapper.emplace(sparse, dense);
+//        }
+//    }
+//
+//    EXPECT_EQ(N, mapper.size());
+//}
+//#endif
+
+typedef std::pair<size_t, size_t> TestPair;
+typedef souffle::LambdaBTreeSet<TestPair, std::function<TestPair::second_type(TestPair&)>, souffle::EqrelMapComparator<TestPair>> TestLambdaTree;
 #ifdef _OPENMP
-TEST(SparseDjTest, ParallelDense) {
-    souffle::SparseDisjointSet<size_t> sds;
+TEST(LambdaBTree, ContendParallel) {
+    TestLambdaTree tlt;
+
+    std::atomic<size_t> counter;
+
     // store the dense and sparse values
     souffle::PiggyList<std::pair<size_t, size_t>> pl;
 
     constexpr size_t N = 1000000;
+    auto fun = [&](PairStore& p){ p.second = counter++; };
 
     std::vector<size_t> data_source;
     for (size_t i = 0; i < N; ++i) {
@@ -504,15 +555,18 @@ TEST(SparseDjTest, ParallelDense) {
     }
     std::random_shuffle(data_source.begin(), data_source.end());
 
-#pragma omp parallel for
+    #pragma omp parallel for
     for (size_t i = 0; i < N; ++i) {
         size_t val = data_source[i];
-        size_t a = sds.toDense(val);
-        size_t b = sds.toDense(val);
+        std::pair<size_t, size_t> paira = {val, -1};
+        std::pair<size_t, size_t> pairb = {val, -1};
+        size_t a = tlt.insert(paira, fun);
+        size_t b = tlt.insert(pairb, fun);
+
         pl.append(std::make_pair(a, val));
         pl.append(std::make_pair(b, val));
     }
-
+    
     // check each sparse value (pair.second) maps to a single dense value as per the piggylist
     std::unordered_map<size_t, size_t> mapper;
     for (size_t i = 0; i < pl.size(); ++i) {
@@ -522,6 +576,7 @@ TEST(SparseDjTest, ParallelDense) {
 
         if (mapper.count(sparse) == 1) {
             if (mapper[sparse] != dense) {
+                // GDB trap 
                 throw std::runtime_error("invalid state detected, different dense values for same sparse values");
             }
         } else {

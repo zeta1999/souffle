@@ -571,8 +571,8 @@ TEST(LambdaBTree, ContendParallel) {
     std::unordered_map<size_t, size_t> mapper;
     for (size_t i = 0; i < pl.size(); ++i) {
 
-        size_t sparse = pl[i].second;
-        size_t dense = pl[i].first;
+        size_t sparse = pl.get(i).second;
+        size_t dense = pl.get(i).first;
 
         if (mapper.count(sparse) == 1) {
             if (mapper[sparse] != dense) {

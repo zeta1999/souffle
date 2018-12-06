@@ -770,6 +770,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                     op->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
                             std::make_unique<RamElementAccess>(level, pos),
                             std::make_unique<RamNumber>(c->getIndex())));
+                } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
+                    op->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                            std::make_unique<RamElementAccess>(level, pos),
+                            translator.translateValue(func, valueIndex)));
                 }
             }
         } else {

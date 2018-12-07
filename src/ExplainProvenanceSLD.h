@@ -115,8 +115,8 @@ public:
                 std::string rule;
                 tuple >> rule;
 
-                info.insert({std::make_pair(name.substr(0, name.find("-@info")), ruleNum), bodyRels});
-                rules.insert({std::make_pair(name.substr(0, name.find("-@info")), ruleNum), rule});
+                info.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), bodyRels});
+                rules.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), rule});
             }
         }
     }
@@ -172,11 +172,6 @@ public:
             auto bodyRelAtomName = bodyRel;
             if (bodyRel[0] == '!') {
                 bodyRelAtomName = bodyRel.substr(1);
-            }
-            for (auto& cur : bodyRelAtomName) {
-                if (cur == '.') {
-                    cur = '-';
-                }
             }
 
             // traverse subroutine return

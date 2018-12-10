@@ -397,7 +397,8 @@ public:
      */
     bool validate(const Lease& lease) {
         // check whether version number has changed in the mean-while
-        return lease.version == version.load(std::memory_order_consume);
+        std::atomic_thread_fence(std::memory_order_acquire);
+        return lease.version == version.load(std::memory_order_relaxed);
     }
 
     /**

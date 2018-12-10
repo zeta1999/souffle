@@ -231,11 +231,11 @@ struct EqrelMapComparator {
         else return 0;
     }   
 
-    bool less(const StorePair a, const StorePair b) {
+    bool less(const StorePair& a, const StorePair& b) {
         return operator()(a,b) < 0;
     }
 
-    bool equal(const StorePair a, const StorePair b) {
+    bool equal(const StorePair& a, const StorePair& b) {
         return operator()(a,b) == 0;
     }
 };

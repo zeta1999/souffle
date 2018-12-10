@@ -539,16 +539,19 @@ typedef std::pair<size_t, size_t> TestPair;
 typedef souffle::LambdaBTreeSet<TestPair, std::function<TestPair::second_type(TestPair&)>, souffle::EqrelMapComparator<TestPair>> TestLambdaTree;
 #ifdef _OPENMP
 TEST(LambdaBTree, ContendParallel) {
+    // in this tree, we store a mapping from a sparse to a dense value
+    // a dense value is uniquely allocated to a sparse value (which is the anterior of the pair passed into insert).
     TestLambdaTree tlt;
 
-    std::atomic<size_t> counter;
+    std::atomic<size_t> counter{0};
 
-    // store the dense and sparse values
+    // store the dense and sparse values (and ensure that they're consistent)
     souffle::PiggyList<std::pair<size_t, size_t>> pl;
 
     constexpr size_t N = 1000000;
-    auto fun = [&](TestPair& p){ p.second = counter++; };
+    const std::function<size_t(TestPair&)> fun = [&](TestPair& p){ p.second = counter++; };
 
+    // shuffle the vector around to make us insert non-incremental pairs (seems to make it more common...?)
     std::vector<size_t> data_source;
     for (size_t i = 0; i < N; ++i) {
         data_source.push_back(i);
@@ -558,14 +561,20 @@ TEST(LambdaBTree, ContendParallel) {
     #pragma omp parallel for
     for (size_t i = 0; i < N; ++i) {
         size_t val = data_source[i];
+        // two pairs, the second part of the pair is updated within the functor if it doesn't exist
+        // in both cases, the now-existing value is returned.
         std::pair<size_t, size_t> paira = {val, -1};
         std::pair<size_t, size_t> pairb = {val, -1};
         size_t a = tlt.insert(paira, fun);
         size_t b = tlt.insert(pairb, fun);
 
+        // store the observed value for the first pair insert
         pl.append(std::make_pair(a, val));
+        // store the observed value for the second pair insert
         pl.append(std::make_pair(b, val));
     }
+
+    std::cout << "number of times the functor has been called: " << counter.load() << std::endl;
     
     // check each sparse value (pair.second) maps to a single dense value as per the piggylist
     std::unordered_map<size_t, size_t> mapper;
@@ -576,7 +585,9 @@ TEST(LambdaBTree, ContendParallel) {
 
         if (mapper.count(sparse) == 1) {
             if (mapper[sparse] != dense) {
-                // GDB trap 
+                std::cout << "observed multiple dense values for the same sparse value: " << sparse << "-> {" << dense << "," << mapper[sparse] << "}" << std::endl;
+                // GDB trap - breakpoints seem to slow down the code enough that this scenario doesn't exist
+                // I could be wrong on that measurment, but this just makes it easier to observe the stack in this case
                 throw std::runtime_error("invalid state detected, different dense values for same sparse values");
             }
         } else {
@@ -587,6 +598,29 @@ TEST(LambdaBTree, ContendParallel) {
     EXPECT_EQ(N, mapper.size());
 }
 #endif
+
+// #ifdef _OPENMP
+// 
+// TEST(BTree, PairBTreeTest) {
+//     souffle::btree_set<TestPair, souffle::EqrelMapComparator<TestPair>> bts;
+// 
+//     std::atomic<size_t> counter(0);
+//     constexpr size_t N = 1000000;
+// 
+//     souffle::PiggyList<std::pair<size_t, size_t>> pl;
+// 
+// #pragma omp parallel for
+//     for (size_t i = 0; i < N; ++i) {
+//         TestPair p1;
+//         TestPair p2;
+// 
+//         bts.insert(
+//     }
+// 
+//     EXPECT_EQ(1, bts.size());
+// 
+// }
+// #endif
 
 // TEST(SparseDjTest, CopyCtor) {
 //     // test whether the copy ctor properly isolates them all

@@ -549,7 +549,7 @@ TEST(LambdaBTree, ContendParallel) {
     souffle::PiggyList<std::pair<size_t, size_t>> pl;
 
     constexpr size_t N = 1000000;
-    const std::function<size_t(TestPair&)> fun = [&](TestPair& p){ p.second = counter++; };
+    const std::function<size_t(TestPair&)> fun = [&](TestPair& p){ p.second = counter++; return p.second; };
 
     // shuffle the vector around to make us insert non-incremental pairs (seems to make it more common...?)
     std::vector<size_t> data_source;

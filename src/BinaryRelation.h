@@ -624,12 +624,12 @@ public:
         return ret;
     }
 
-    iterator find(TupleType&, operation_hints&) const {
+    iterator find(const TupleType&, operation_hints&) const {
         throw std::runtime_error("error: find() is not compatible with equivalence relations");
         return begin();
     }
 
-    iterator find(TupleType& t) const {
+    iterator find(const TupleType& t) const {
         operation_hints context;
         return find(t, context);
     }

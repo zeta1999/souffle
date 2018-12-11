@@ -115,8 +115,8 @@ public:
                 std::string rule;
                 tuple >> rule;
 
-                info.insert({std::make_pair(name.substr(0, name.find("-@info")), ruleNum), bodyRels});
-                rules.insert({std::make_pair(name.substr(0, name.find("-@info")), ruleNum), rule});
+                info.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), bodyRels});
+                rules.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), rule});
             }
         }
     }

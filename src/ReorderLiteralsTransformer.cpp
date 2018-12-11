@@ -8,9 +8,10 @@
 
 /************************************************************************
  *
- * @file MinimiseProgramTransformer.cpp
+ * @file ReorderLiteralsTransformer.cpp
  *
- * Define classes and functionality related to program minimisation.
+ * Define classes and functionality related to the ReorderLiterals
+ * transformer.
  *
  ***********************************************************************/
 
@@ -20,6 +21,11 @@
 #include "Global.h"
 
 namespace souffle {
+
+// Type for SIPS functions
+// - Take in a vector of atoms to choose from and a set of bound variables
+// - Return the best atom based on a SIPS-specific cost metric
+using sips_t = std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>;
 
 inline bool isProposition(const AstAtom* atom) {
     return atom->getArguments().empty();
@@ -51,8 +57,6 @@ unsigned int numBoundArguments(const AstAtom* atom, const std::set<std::string>&
     return count;
 }
 
-// TODO (azreika): typedef for SIPS function signature
-
 /**
  * Returns a SIPS function based on the SIPS option provided.
  * The SIPS function will return the index of the appropriate atom in a clause
@@ -61,16 +65,15 @@ unsigned int numBoundArguments(const AstAtom* atom, const std::set<std::string>&
  * E.g. the 'max-bound' SIPS function will return the atom in the clause with
  * the maximum number of bound arguments.
  */
-std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getSipsFunction(
-        const std::string& sipsChosen) {
+sips_t getSipsFunction(const std::string& sipsChosen) {
     // --- Create the appropriate SIPS function ---
 
     // Each SIPS function has a priority metric (e.g. max-bound atoms).
     // Arguments:
     //      - a vector of atoms to choose from (nullpointers in the vector will be ignored)
     //      - the set of variables bound so far
-    // Returns: the index of the atom maximising the priority metri
-    std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSips;
+    // Returns: the index of the atom maximising the priority metric
+    sips_t getNextAtomSips;
 
     if (sipsChosen == "naive") {
         // Goal: choose the first atom with at least one bound argument, or with no arguments
@@ -290,9 +293,7 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
 /**
  * Finds the new ordering of a vector of atoms after the given SIPS is applied.
  */
-std::vector<unsigned int> applySips(
-        std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> sipsFunction,
-        std::vector<AstAtom*> atoms) {
+std::vector<unsigned int> applySips(sips_t sipsFunction, std::vector<AstAtom*> atoms) {
     std::set<std::string> boundVariables;
     std::vector<unsigned int> newOrder(atoms.size());
 
@@ -318,9 +319,7 @@ std::vector<unsigned int> applySips(
     return newOrder;
 }
 
-bool reorderClauseWithSips(
-        std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> sipsFunction,
-        AstClause* clause) {
+bool reorderClauseWithSips(sips_t sipsFunction, AstClause* clause) {
     // ignore clauses with fixed execution plans
     if (clause->hasFixedExecutionPlan()) {
         return false;

@@ -353,8 +353,8 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     // TODO (azreika): check that all-bound works (like does a+b mean it is actually bound i.e. an O(1)
     // check??)
 
-    // TODO (azreika): change default SIPS to 'all-bound'
-    std::string sipsChosen = "NONE";
+    // default SIPS to choose is 'all-bound'
+    std::string sipsChosen = "all-bound";
     if (Global::config().has("SIPS")) {
         sipsChosen = Global::config().get("SIPS");
     }

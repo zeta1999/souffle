@@ -21,6 +21,10 @@
 
 namespace souffle {
 
+inline bool isProposition(const AstAtom* atom) {
+    return atom->getArguments().empty();
+}
+
 /**
  * Counts the number of bound arguments in a given atom.
  */
@@ -28,13 +32,17 @@ unsigned int numBoundArguments(const AstAtom* atom, const std::set<std::string>&
     int count = 0;
 
     for (const AstArgument* arg : atom->getArguments()) {
-        // Argument is bound iff all contained variables are bound
+        // argument is bound iff all contained variables are bound
+        // TODO (azreika): decide: (a+b) s.t. a,b \in bound => (a+b) \in bound?
         bool isBound = true;
+
         visitDepthFirst(*arg, [&](const AstVariable& var) {
             if (boundVariables.find(var.getName()) == boundVariables.end()) {
+                // found an unbound variable, so argument is unbound
                 isBound = false;
             }
         });
+
         if (isBound) {
             count++;
         }
@@ -43,82 +51,114 @@ unsigned int numBoundArguments(const AstAtom* atom, const std::set<std::string>&
     return count;
 }
 
-/**
- * Checks that the given literal is a proposition - that is,
- * an atom with no arguments, which is hence independent of the
- * rest of the clause.
- */
-bool isProposition(const AstLiteral* literal) {
-    const AstAtom* correspondingAtom = dynamic_cast<const AstAtom*>(literal);
-    if (correspondingAtom == nullptr) {
-        // Just a constraint with no associated atom
-        return false;
-    }
-
-    // Check that it has no arguments
-    return correspondingAtom->getArguments().empty();
-}
+// TODO (azreika): typedef for SIPS function signature
 
 /**
  * Returns a SIPS function based on the SIPS option provided.
  * The SIPS function will return the index of the appropriate atom in a clause
  * given a goal.
  *
- * For example, the 'max-bound' SIPS function will return the
- * atom in the clause with the maximum number of bound arguments.
+ * E.g. the 'max-bound' SIPS function will return the atom in the clause with
+ * the maximum number of bound arguments.
  */
-std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getSIPSfunction(
-        const std::string& SIPSchosen) {
-    // --- Create the appropriate SIPS function. ---
+std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getSipsFunction(
+        const std::string& sipsChosen) {
+    // --- Create the appropriate SIPS function ---
 
-    // Each SIPS function has a priority metric (e.g. max-bound atoms). The function will typically
-    // take in the atom, and a set of variables bound so far, and return the index of the atom that
-    // maximises the priority metric.
+    // Each SIPS function has a priority metric (e.g. max-bound atoms).
+    // Arguments:
+    //      - a vector of atoms to choose from (nullpointers in the vector will be ignored)
+    //      - the set of variables bound so far
+    // Returns: the index of the atom maximising the priority metri
+    std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSips;
 
-    // If an atom in the vector should be ignored, set it to be the nullpointer.
-    std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSIPS;
-
-    if (SIPSchosen == "naive") {
-        // Choose the first predicate with at least one bound argument
-        getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+    if (sipsChosen == "naive") {
+        // Goal: choose the first atom with at least one bound argument, or with no arguments
+        getNextAtomSips = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
             for (unsigned int i = 0; i < atoms.size(); i++) {
-                if (atoms[i] == nullptr) {
-                    // Already processed, move on
+                const AstAtom* currAtom = atoms[i];
+
+                if (currAtom == nullptr) {
+                    // already processed - move on
                     continue;
                 }
 
-                if (isProposition(atoms[i]) || (numBoundArguments(atoms[i], boundVariables) >= 1)) {
+                if (isProposition(currAtom)) {
+                    // no arguments
+                    return i;
+                }
+
+                if (numBoundArguments(currAtom, boundVariables) >= 1) {
+                    // at least one bound argument
                     return i;
                 }
             }
 
-            // None found, so just return the first non-null
+            // none found; choose the first non-null
             for (unsigned int i = 0; i < atoms.size(); i++) {
                 if (atoms[i] != nullptr) {
                     return i;
                 }
             }
 
-            // Fall back to the first
+            // fall back to the first
             return 0U;
         };
-    } else if (SIPSchosen == "max-bound") {
-        // Order based on maximum number of bound variables
-        getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
-            int currMaxBound = -1;
-            unsigned int currMaxIdx = 0;
-
+    } else if (sipsChosen == "all-bound") {
+        // Goal: prioritise atoms with all arguments bound
+        getNextAtomSips = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
             for (unsigned int i = 0; i < atoms.size(); i++) {
-                if (atoms[i] == nullptr) {
-                    // Already processed, move on
+                const AstAtom* currAtom = atoms[i];
+
+                if (currAtom == nullptr) {
+                    // already processed - move on
                     continue;
                 }
 
-                if (isProposition(atoms[i])) {
+                if (isProposition(currAtom)) {
+                    // no arguments, so all are trivially bound
                     return i;
                 }
 
-                int numBound = numBoundArguments(atoms[i], boundVariables);
+                int arity = currAtom->getArity();
+                int numBound = numBoundArguments(currAtom, boundVariables);
+                if (numBound == arity) {
+                    // all arguments are bound!
+                    return i;
+                }
+            }
+
+            // none found; choose the first non-null
+            for (unsigned int i = 0; i < atoms.size(); i++) {
+                if (atoms[i] != nullptr) {
+                    return i;
+                }
+            }
+
+            // fall back to the first
+            return 0U;
+        };
+    } else if (sipsChosen == "max-bound") {
+        // Goal: choose the atom with the maximum number of bound variables
+        //       - exception: propositions should be prioritised
+        getNextAtomSips = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+            int currMaxBound = -1;
+            unsigned int currMaxIdx = 0U;
+
+            for (unsigned int i = 0; i < atoms.size(); i++) {
+                const AstAtom* currAtom = atoms[i];
+
+                if (currAtom == nullptr) {
+                    // already processed - move on
+                    continue;
+                }
+
+                if (isProposition(currAtom)) {
+                    // propositions should be prioritised
+                    return i;
+                }
+
+                int numBound = numBoundArguments(currAtom, boundVariables);
                 if (numBound > currMaxBound) {
                     currMaxBound = numBound;
                     currMaxIdx = i;
@@ -127,87 +167,61 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
 
             return currMaxIdx;
         };
-    } else if (SIPSchosen == "max-ratio") {
-        // Order based on maximum ratio of bound to unbound
-        getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+    } else if (sipsChosen == "max-ratio") {
+        // Goal: choose the atom with the maximum ratio of bound to unbound
+        getNextAtomSips = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
             auto isLargerRatio = [&](std::pair<int, int> lhs, std::pair<int, int> rhs) {
                 return (lhs.first * rhs.second > lhs.second * rhs.first);
             };
 
-            std::pair<int, int> currMaxRatio = std::pair<int, int>(-1, 1);
-            unsigned int currMaxIdx = 0;
+            auto currMaxRatio = std::pair<int, int>(-1, 1);  // set to -1
+            unsigned int currMaxIdx = 0U;
 
             for (unsigned int i = 0; i < atoms.size(); i++) {
-                if (atoms[i] == nullptr) {
-                    // Already processed, move on
+                const AstAtom* currAtom = atoms[i];
+
+                if (currAtom == nullptr) {
+                    // already processed - move on
                     continue;
                 }
 
-                if (isProposition(atoms[i])) {
+                if (isProposition(currAtom)) {
+                    // propositions are as bound as possible
                     return i;
                 }
 
-                int numBound = numBoundArguments(atoms[i], boundVariables);
-                int numArgs = atoms[i]->getArity();
-                if (isLargerRatio(std::make_pair(numBound, numArgs), currMaxRatio)) {
-                    currMaxRatio = std::make_pair(numBound, numArgs);
+                int numBound = numBoundArguments(currAtom, boundVariables);
+                int numArgs = currAtom->getArity();
+                auto currRatio = std::pair<int, int>(numBound, numArgs);
+                if (isLargerRatio(currRatio, currMaxRatio)) {
+                    currMaxRatio = currRatio;
                     currMaxIdx = i;
                 }
             }
 
             return currMaxIdx;
         };
-    } else if (SIPSchosen == "all-bound") {
-        // Prioritise those with all arguments bound; otherwise, left to right
-        getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
-            unsigned int currFirst = 0;
-            bool seen = false;
+    } else if (sipsChosen == "least-free") {
+        // Goal: choose the atom with the least number of unbound arguments
+        getNextAtomSips = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+            int currLeastFree = -1;
+            unsigned int currLeastIdx = 0U;
 
             for (unsigned int i = 0; i < atoms.size(); i++) {
                 const AstAtom* currAtom = atoms[i];
 
                 if (currAtom == nullptr) {
-                    // Already processed, move on
+                    // already processed - move on
                     continue;
                 }
 
                 if (isProposition(currAtom)) {
-                    // Propositions are the best
+                    // propositions have 0 unbound arguments, which is minimal
                     return i;
                 }
 
-                if (numBoundArguments(currAtom, boundVariables) == currAtom->getArity()) {
-                    // All arguments are bound!
-                    return i;
-                }
-
-                if (!seen) {
-                    // First valid atom, set as default priority
-                    seen = true;
-                    currFirst = i;
-                }
-            }
-
-            return currFirst;
-        };
-    } else if (SIPSchosen == "least-free") {
-        // Order based on the least amount of non-bound arguments in the atom
-        getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
-            int currLeastFree = -1;
-            unsigned int currLeastIdx = 0;
-
-            for (unsigned int i = 0; i < atoms.size(); i++) {
-                if (atoms[i] == nullptr) {
-                    // Already processed, move on
-                    continue;
-                }
-
-                if (isProposition(atoms[i])) {
-                    return i;
-                }
-
-                int numBound = numBoundArguments(atoms[i], boundVariables);
-                int numFree = atoms[i]->getArity() - numBound;
+                int numBound = numBoundArguments(currAtom, boundVariables);
+                int numFree = currAtom->getArity() - numBound;
                 if (currLeastFree == -1 || numFree < currLeastFree) {
                     currLeastFree = numFree;
                     currLeastIdx = i;
@@ -216,24 +230,28 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
 
             return currLeastIdx;
         };
-    } else if (SIPSchosen == "least-free-vars") {
-        // Order based on the least amount of free variables in the atom
-        getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+    } else if (sipsChosen == "least-free-vars") {
+        // Goal: choose the atom with the least amount of unbound variables
+        getNextAtomSips = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
             int currLeastFree = -1;
-            unsigned int currLeastIdx = 0;
+            unsigned int currLeastIdx = 0U;
 
             for (unsigned int i = 0; i < atoms.size(); i++) {
-                if (atoms[i] == nullptr) {
-                    // Already processed, move on
+                const AstAtom* currAtom = atoms[i];
+
+                if (currAtom == nullptr) {
+                    // already processed - move on
                     continue;
                 }
 
-                if (isProposition(atoms[i])) {
+                if (isProposition(currAtom)) {
+                    // propositions have 0 unbound variables, which is minimal
                     return i;
                 }
 
+                // use a set to hold all free variables to avoid double-counting
                 std::set<std::string> freeVars;
-                visitDepthFirst(*atoms[i], [&](const AstVariable& var) {
+                visitDepthFirst(*currAtom, [&](const AstVariable& var) {
                     if (boundVariables.find(var.getName()) == boundVariables.end()) {
                         freeVars.insert(var.getName());
                     }
@@ -249,41 +267,43 @@ std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
             return currLeastIdx;
         };
     } else {
-        // Keep the same order - leftmost takes precedence
-        getNextAtomSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+        // chosen SIPS is not implemented, so keep the same order
+        // Goal: leftmost atom first
+        getNextAtomSips = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
             for (unsigned int i = 0; i < atoms.size(); i++) {
                 if (atoms[i] == nullptr) {
-                    // Already processed, move on
+                    // already processed - move on
                     continue;
                 }
 
                 return i;
             }
 
+            // fall back to the first
             return 0U;
         };
     }
 
-    return getNextAtomSIPS;
+    return getNextAtomSips;
 }
 
 /**
- * Finds the new ordering of a given vector of atoms after the given SIPS is applied.
+ * Finds the new ordering of a vector of atoms after the given SIPS is applied.
  */
-std::vector<unsigned int> applySIPS(
-        std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> getNextAtomSIPS,
+std::vector<unsigned int> applySips(
+        std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> sipsFunction,
         std::vector<AstAtom*> atoms) {
     std::set<std::string> boundVariables;
     std::vector<unsigned int> newOrder(atoms.size());
 
     unsigned int numAdded = 0;
     while (numAdded < atoms.size()) {
-        // Grab the next atom, based on the SIPS priority
-        unsigned int nextIdx = getNextAtomSIPS(atoms, boundVariables);
+        // grab the next atom, based on the SIPS function
+        unsigned int nextIdx = sipsFunction(atoms, boundVariables);
         AstAtom* nextAtom = atoms[nextIdx];
 
-        // Set all arguments that are variables as bound
-        // Arguments that are functors, etc. should not bind anything
+        // set all arguments that are variables as bound
+        // note: arguments that are functors, etc., do not newly bind anything
         for (AstArgument* arg : nextAtom->getArguments()) {
             if (AstVariable* var = dynamic_cast<AstVariable*>(arg)) {
                 boundVariables.insert(var->getName());
@@ -298,100 +318,95 @@ std::vector<unsigned int> applySIPS(
     return newOrder;
 }
 
+bool reorderClauseWithSips(
+        std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)> sipsFunction,
+        AstClause* clause) {
+    // ignore clauses with fixed execution plans
+    if (clause->hasFixedExecutionPlan()) {
+        return false;
+    }
+
+    // get the ordering corresponding to the SIPS
+    std::vector<unsigned int> newOrdering = applySips(sipsFunction, clause->getAtoms());
+
+    // reorder the clause accordingly
+    clause->reorderAtoms(newOrdering);
+
+    // check if we have a change
+    for (unsigned int i = 0; i < newOrdering.size(); i++) {
+        if (newOrdering[i] != i) {
+            // changed
+            return true;
+        }
+    }
+
+    // unchanged
+    return false;
+}
+
 bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
     AstProgram& program = *translationUnit.getProgram();
 
-    // --- Reordering --- : Prepend Propositions
-    auto prependPropositions = [&](AstClause* clause) {
-        const std::vector<AstAtom*>& atoms = clause->getAtoms();
+    // --- SIPS-based static reordering ---
+    // ordering is based on the given SIPS
 
-        // Calculate the new ordering
-        std::vector<unsigned int> nonPropositionIndices;
-        std::vector<unsigned int> newOrder;
+    // TODO (azreika): check that all-bound works (like does a+b mean it is actually bound i.e. an O(1)
+    // check??)
 
-        bool seenNonProp = false;
-        for (unsigned int i = 0; i < atoms.size(); i++) {
-            if (isProposition(atoms[i])) {
-                newOrder.push_back(i);
-                if (seenNonProp) {
-                    changed = true;
-                }
-            } else {
-                nonPropositionIndices.push_back(i);
-                seenNonProp = true;
-            }
-        }
-        for (unsigned int idx : nonPropositionIndices) {
-            newOrder.push_back(idx);
-        }
+    // TODO (azreika): change default SIPS to 'all-bound'
+    std::string sipsChosen = "NONE";
+    if (Global::config().has("SIPS")) {
+        sipsChosen = Global::config().get("SIPS");
+    }
+    auto sipsFunction = getSipsFunction(sipsChosen);
 
-        // Reorder the clause accordingly
-        clause->reorderAtoms(newOrder);
-    };
-
-    // Literal reordering is a rule-local transformation
+    // literal reordering is a rule-local transformation
+    // TODO (azreika): abstract away into the reordering function
     for (const AstRelation* rel : program.getRelations()) {
         for (AstClause* clause : rel->getClauses()) {
-            // Ignore clauses with fixed execution plans
-            if (clause->hasFixedExecutionPlan()) {
-                continue;
-            }
-
-            // Prepend propositions
-            prependPropositions(clause);
-
-            if (Global::config().has("SIPS")) {
-                // Grab the atoms in the clause
-                std::vector<AstAtom*> atoms = clause->getAtoms();
-
-                // Decide which SIPS to use
-                std::function<unsigned int(std::vector<AstAtom*>, const std::set<std::string>&)>
-                        getNextAtomSIPS = getSIPSfunction(Global::config().get("SIPS"));
-
-                // Apply the SIPS to get a new ordering
-                std::vector<unsigned int> newOrdering = applySIPS(getNextAtomSIPS, atoms);
-
-                // Check if we have a change
-                for (unsigned int i = 0; !changed && i < newOrdering.size(); i++) {
-                    if (newOrdering[i] != i) {
-                        changed = true;
-                    }
-                }
-
-                // Reorder the clause accordingly
-                clause->reorderAtoms(newOrdering);
-            }
+            changed |= reorderClauseWithSips(sipsFunction, clause);
         }
     }
 
-    // Profile-Guided Reordering
+    // --- profile-guided reordering ---
     if (Global::config().has("profile-use")) {
+        // parse supplied profile information
         auto* profileUse = translationUnit.getAnalysis<AstProfileUse>();
 
-        auto profilerSIPS = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+        auto profilerSips = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+            // Goal: reorder based on the given profiling information
+            // Metric: cost(atom_R) = log(|atom_R|) * #free/#args
+            //         - exception: propositions are prioritised
+
+            // TODO (azreika): fix up this metric
+
+            // TODO (azreika): make sure relation size is okay if nonexistent?
+
             double currOptimalVal = -1;
-            unsigned int currOptimalIdx = 0;
+            unsigned int currOptimalIdx = 0U;
             bool set = false;
 
             for (unsigned int i = 0; i < atoms.size(); i++) {
-                if (atoms[i] == nullptr) {
-                    // Already processed, move on
+                const AstAtom* currAtom = atoms[i];
+
+                if (currAtom == nullptr) {
+                    // already processed - move on
                     continue;
                 }
 
-                AstAtom* atom = atoms[i];
-
-                if (isProposition(atom)) {
+                if (isProposition(currAtom)) {
+                    // prioritise propositions
                     return i;
                 }
 
-                int numBound = numBoundArguments(atoms[i], boundVariables);
-                int numArgs = atoms[i]->getArity();
+                // calculate log(|R|) * #free/#args
+                int numBound = numBoundArguments(currAtom, boundVariables);
+                int numArgs = currAtom->getArity();
                 int numFree = numArgs - numBound;
-
-                double value = log(profileUse->getRelationSize(atom->getName()));
+                double value = log(profileUse->getRelationSize(currAtom->getName()));
                 value *= (numFree * 1.0) / numArgs;
+
                 if (!set || value < currOptimalVal) {
                     set = true;
                     currOptimalVal = value;
@@ -402,25 +417,9 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
             return currOptimalIdx;
         };
 
-        // TODO (azreika): pull out to a function
-        for (AstRelation* rel : program.getRelations()) {
+        for (const AstRelation* rel : program.getRelations()) {
             for (AstClause* clause : rel->getClauses()) {
-                if (clause->hasFixedExecutionPlan()) {
-                    continue;
-                }
-
-                std::vector<AstAtom*> atoms = clause->getAtoms();
-                std::vector<unsigned int> newOrdering = applySIPS(profilerSIPS, atoms);
-
-                // Check if we have a change
-                for (unsigned int i = 0; !changed && i < newOrdering.size(); i++) {
-                    if (newOrdering[i] != i) {
-                        changed = true;
-                    }
-                }
-
-                // Reorder the clause accordingly
-                clause->reorderAtoms(newOrdering);
+                changed |= reorderClauseWithSips(profilerSips, clause);
             }
         }
     }

@@ -55,7 +55,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
     /**
      * Inserts the given key into this tree.
      */
-    typename Functor::result_type insert(Key& k, const Functor& f){ 
+    typename Functor::result_type insert(Key& k, const Functor& f){
         typename parenttype::operation_hints hints;
         return insert(k, hints, f);
     }
@@ -75,7 +75,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             // check loop condition again
             if (this->root != nullptr) {
                 // somebody else was faster => normal insert
-                this->root_lock.end_write();
+                this->root_lock.abort_write();
                 break;
             }
 
@@ -84,6 +84,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             this->leftmost->numElements = 1;
             // call the functor as we've successfully inserted
             typename Functor::result_type res = f(k);
+
             this->leftmost->keys[0] = k;
             this->root = this->leftmost;
 
@@ -169,16 +170,30 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                             return insert(k, hints, f);
                         }
                         this->update(*pos, k);
+
+                        // get result before releasing lock
+                        auto res = (*pos).second;
+
                         cur->lock.end_write();
                         // XXX (pnappa): is this correct..?
-                        // XXX: i think it should throw. updating providence for 
+                        // XXX: i think it should throw. updating providence for
                         // a dynamic key doesn't make sense... tbh providence stuff should be
                         // ignored in this version.
-                        return (*pos).second;
+                        return res;
                     }
 
-                    // we found the element => no check of lock necessary
-                    return (*pos).second;
+                    // read result (atomic) -- just as a proof of concept, this is actually not valid!!
+                    std::atomic<typename Functor::result_type>& loc = *reinterpret_cast<std::atomic<typename Functor::result_type>*>(&(*pos).second);
+                    auto res = loc.load(std::memory_order_relaxed);
+
+                    // check validity
+                    if (!cur->lock.validate(cur_lease)) {
+                      // start over again
+                      return insert(k,hints,f);
+                    }
+
+                    // we found the element => return the result
+                    return res;
                 }
 
                 // get next pointer
@@ -228,14 +243,30 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                         return insert(k, hints, f);
                     }
                     this->update(*(pos - 1), k);
+
+                    // retrieve result before releasing lock
+                    auto res = (*(pos-1)).second;
+
                     cur->lock.end_write();
                     // XXX: this provenance code should probably be removed, doesn't make
                     // sense to run update on a dynamic key
-                    return (*(pos-1)).second;
+                    return res;
+                }
+
+
+                // read result (atomic) -- just as a proof of concept, this is actually not valid!!
+                std::atomic<typename Functor::result_type>& loc = *reinterpret_cast<std::atomic<typename Functor::result_type>*>(&(*(pos-1)).second);
+                auto res = loc.load(std::memory_order_relaxed);
+
+                // check validity
+                if (!cur->lock.validate(cur_lease)) {
+                  // start over again
+                  return insert(k,hints,f);
                 }
 
                 // we found the element => done
-                return (*(pos-1)).second;
+                return res;
+
             }
 
             // upgrade to write-permission
@@ -246,6 +277,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             }
 
             if (cur->numElements >= parenttype::node::maxKeys) {
+
                 // -- lock parents --
                 auto priv = cur;
                 auto parent = priv->parent;
@@ -427,7 +459,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                 cur->keys[j] = cur->keys[j - 1];
             }
 
-            
+
             // call the functor as we've successfully inserted
             typename Functor::result_type res = f(k);
             // insert new element

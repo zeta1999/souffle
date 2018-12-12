@@ -13,6 +13,8 @@ brew update
 brew install md5sha1sum bison libtool gcc@7 mcpp libffi
 brew link bison --force
 brew link libffi --force
+
+export PATH="/usr/local/opt/bison/bin:$PATH"
 export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig/
 
 # Using 'g++' will call the xcode link to clang

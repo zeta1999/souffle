@@ -39,7 +39,6 @@ unsigned int numBoundArguments(const AstAtom* atom, const std::set<std::string>&
 
     for (const AstArgument* arg : atom->getArguments()) {
         // argument is bound iff all contained variables are bound
-        // TODO (azreika): decide: (a+b) s.t. a,b \in bound => (a+b) \in bound?
         bool isBound = true;
 
         visitDepthFirst(*arg, [&](const AstVariable& var) {
@@ -350,9 +349,6 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     // --- SIPS-based static reordering ---
     // ordering is based on the given SIPS
 
-    // TODO (azreika): check that all-bound works (like does a+b mean it is actually bound i.e. an O(1)
-    // check??)
-
     // default SIPS to choose is 'all-bound'
     std::string sipsChosen = "all-bound";
     if (Global::config().has("SIPS")) {
@@ -361,7 +357,6 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     auto sipsFunction = getSipsFunction(sipsChosen);
 
     // literal reordering is a rule-local transformation
-    // TODO (azreika): abstract away into the reordering function
     for (const AstRelation* rel : program.getRelations()) {
         for (AstClause* clause : rel->getClauses()) {
             changed |= reorderClauseWithSips(sipsFunction, clause);
@@ -377,10 +372,6 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
             // Goal: reorder based on the given profiling information
             // Metric: cost(atom_R) = log(|atom_R|) * #free/#args
             //         - exception: propositions are prioritised
-
-            // TODO (azreika): fix up this metric
-
-            // TODO (azreika): make sure relation size is okay if nonexistent?
 
             double currOptimalVal = -1;
             unsigned int currOptimalIdx = 0U;

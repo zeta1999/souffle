@@ -39,10 +39,8 @@ class AstRelation;
  */
 class ResolveAliasesTransformer : public AstTransformer {
 private:
-    bool transform(AstTranslationUnit& translationUnit) override {
-        resolveAliases(*translationUnit.getProgram());
-        return true;
-    }
+    bool transform(AstTranslationUnit& translationUnit) override;
+
     static void removeComplexTermsInAtoms(AstClause& clause);
 
 public:

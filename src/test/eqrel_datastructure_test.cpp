@@ -15,7 +15,6 @@
  *
  ***********************************************************************/
 
-
 #include "test.h"
 
 #include <algorithm>
@@ -57,8 +56,9 @@ TEST(RandomInsertPiggyTest, Insertion) {
 }
 
 TEST(RandomInsertPiggyTest, DoubleClear) {
-    // err.. prior versions have had the bug where clear caused double-free errors (as we don't set the container to null)
-    // This should *crash* the test-suite if this is the case, but I also try to check the contents here
+    // err.. prior versions have had the bug where clear caused double-free errors (as we don't set the
+    // container to null) This should *crash* the test-suite if this is the case, but I also try to check the
+    // contents here
     souffle::RandomInsertPiggyList<size_t> pl;
     pl.insertAt(0, 3213);
     pl.insertAt(1, 3213);
@@ -78,8 +78,8 @@ TEST(RandomInsertPiggyTest, ParallelInsert) {
     constexpr size_t limit = 10000;
     souffle::RandomInsertPiggyList<size_t> pl;
 
-    // insert in parallel (no element should be overridden, because this breaks the datastructure)
-    #pragma omp parallel for
+// insert in parallel (no element should be overridden, because this breaks the datastructure)
+#pragma omp parallel for
     for (size_t i = 0; i < limit; ++i) {
         pl.insertAt(i, i);
     }
@@ -90,8 +90,6 @@ TEST(RandomInsertPiggyTest, ParallelInsert) {
     }
 }
 #endif
-
-
 
 /** Regular Old Piggy List **/
 TEST(PiggyTest, Scoping) {
@@ -115,9 +113,9 @@ TEST(PiggyTest, Append) {
     constexpr size_t N = 10000;
 
     for (size_t i = 0; i < N; ++i) pl.append(2);
-    EXPECT_EQ(pl.size(), N+3);
+    EXPECT_EQ(pl.size(), N + 3);
     // make sure that all of our inserties are exacties
-    for (size_t i = 3; i < N+3; ++i) EXPECT_EQ(pl.get(i), 2);
+    for (size_t i = 3; i < N + 3; ++i) EXPECT_EQ(pl.get(i), 2);
 }
 
 TEST(PiggyTest, ElementCreation) {
@@ -161,10 +159,14 @@ TEST(PiggyTest, CopyCtor) {
 
     while (true) {
         // yep, they both finished at the same time
-        if (pl1It == pl.end() && pl2It == pl2.end()) { break; }
+        if (pl1It == pl.end() && pl2It == pl2.end()) {
+            break;
+        }
 
         // uhoh, they didn't both finish at the same time
-        if (pl1It == pl.end() || pl2It == pl2.end()) { EXPECT_FALSE(true && "whoops, looks like the iterators are broken"); }
+        if (pl1It == pl.end() || pl2It == pl2.end()) {
+            EXPECT_FALSE(true && "whoops, looks like the iterators are broken");
+        }
 
         EXPECT_EQ(*pl1It, *pl2It);
 
@@ -187,8 +189,9 @@ TEST(PiggyTest, CopyCtor) {
 }
 
 TEST(PiggyTest, DoubleClear) {
-    // err.. prior versions have had the bug where clear caused double-free errors (as we don't set the container to null)
-    // This should *crash* the test-suite if this is the case, but I also try to check the contents here
+    // err.. prior versions have had the bug where clear caused double-free errors (as we don't set the
+    // container to null) This should *crash* the test-suite if this is the case, but I also try to check the
+    // contents here
     souffle::PiggyList<size_t> pl;
     pl.append(3213);
     pl.append(3213);
@@ -208,7 +211,7 @@ TEST(PiggyTest, ParallelElementSpawning) {
     constexpr size_t N = 10000;
     souffle::PiggyList<size_t> pl;
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (size_t i = 0; i < N; ++i) {
         size_t pos = pl.createNode();
         pl.get(pos) = pos;
@@ -224,7 +227,7 @@ TEST(PiggyTest, ParallelAppend) {
     constexpr size_t N = 10000;
     souffle::PiggyList<size_t> pl;
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (size_t i = 0; i < N; ++i) {
         pl.append(i);
     }
@@ -242,10 +245,7 @@ TEST(PiggyTest, ParallelAppend) {
     }
 }
 
-#endif // ifdef _OPENMP
-
-
-
+#endif  // ifdef _OPENMP
 
 /** The underlying Disjoint Set (essentially Anderson '91 Find-Union, but dynamic) **/
 TEST(DjTest, Scoping) {
@@ -287,7 +287,6 @@ TEST(DjTest, TestUnion) {
     EXPECT_FALSE(ds.sameSet(n1, n2));
     EXPECT_FALSE(ds.sameSet(n1, n2));
 
-
     ds.unionNodes(n1, n2);
     EXPECT_TRUE(ds.sameSet(n1, n2));
     EXPECT_FALSE(ds.sameSet(n3, n2));
@@ -313,7 +312,7 @@ TEST(DjTest, Clear) {
 
     // get ready 2 double free y'all
     for (size_t i = 0; i < 10000; ++i) ds.makeNode();
-    ds.unionNodes(1,2);
+    ds.unionNodes(1, 2);
     ds.clear();
     ds.clear();
 }
@@ -325,17 +324,17 @@ TEST(DjTest, ParallelScaling) {
     souffle::DisjointSet ds;
     constexpr size_t N = 10000;
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (size_t i = 0; i < N; ++i) {
         ds.makeNode();
     }
     // check we didn't miss any
     EXPECT_EQ(ds.size(), N);
 
-    // union everything
-    #pragma omp parallel for
-    for (size_t i = 0; i < N-1; ++i) {
-        ds.unionNodes(i, i+1);
+// union everything
+#pragma omp parallel for
+    for (size_t i = 0; i < N - 1; ++i) {
+        ds.unionNodes(i, i + 1);
     }
     EXPECT_EQ(ds.size(), N);
 
@@ -345,7 +344,7 @@ TEST(DjTest, ParallelScaling) {
         EXPECT_EQ(rep, ds.findNode(i));
     }
 }
-#endif // ifdef _OPENMP
+#endif  // ifdef _OPENMP
 
 /** The SparseDisjointSet that is used by the EquivalenceRelation **/
 TEST(SparseDjTest, Scoping) {
@@ -427,14 +426,14 @@ TEST(SparseDjTest, ParallelDense) {
     // check each sparse value (pair.second) maps to a single dense value as per the piggylist
     std::unordered_map<size_t, size_t> mapper;
     for (size_t i = 0; i < pl.size(); ++i) {
-
         size_t sparse = pl.get(i).second;
         size_t dense = pl.get(i).first;
 
         if (mapper.count(sparse) == 1) {
             if (mapper[sparse] != dense) {
                 // GDB trap
-                throw std::runtime_error("invalid state detected, different dense values for same sparse values");
+                throw std::runtime_error(
+                        "invalid state detected, different dense values for same sparse values");
             }
         } else {
             mapper.emplace(sparse, dense);
@@ -454,19 +453,19 @@ TEST(SparseDjTest, ParallelScaling) {
 #pragma omp parallel for
     for (size_t i = 0; i < N; ++i) {
         // make things which are relatively sparse (hence why we mul by 50)
-        sds.makeNode(i*50);
+        sds.makeNode(i * 50);
     }
 
     EXPECT_EQ(sds.size(), N);
     // union everything
 #pragma omp parallel for
-    for (size_t i = 0 ; i < N-1; ++i) {
-        sds.unionNodes(i*50, (i+1)*50);
+    for (size_t i = 0; i < N - 1; ++i) {
+        sds.unionNodes(i * 50, (i + 1) * 50);
     }
 
     EXPECT_EQ(sds.size(), N);
-    for (size_t i = 0; i < N-1; ++i) {
-        EXPECT_TRUE(sds.contains(i*50, (i+1)*50));
+    for (size_t i = 0; i < N - 1; ++i) {
+        EXPECT_TRUE(sds.contains(i * 50, (i + 1) * 50));
     }
     EXPECT_EQ(sds.size(), N);
 }
@@ -483,19 +482,24 @@ TEST(SparseDjTest, ParallelTest) {
     EXPECT_EQ(sds.size(), N);
 }
 
-#endif // ifdef _OPENMP
+#endif  // ifdef _OPENMP
 
 typedef std::pair<size_t, size_t> TestPair;
-typedef souffle::LambdaBTreeSet<TestPair, std::function<TestPair::second_type(TestPair&)>, souffle::EqrelMapComparator<TestPair>> TestLambdaTree;
+typedef souffle::LambdaBTreeSet<TestPair, std::function<TestPair::second_type(TestPair&)>,
+        souffle::EqrelMapComparator<TestPair>>
+        TestLambdaTree;
 
-/** The LambdaBTree - essentially a ripoff to the Btree, but allows a function to be called on successful insert. I just am gonna test a subset of it, because I can argue that BTree already tests the basic stuff **/
+/** The LambdaBTree - essentially a ripoff to the Btree, but allows a function to be called on successful
+ * insert. I just am gonna test a subset of it, because I can argue that BTree already tests the basic stuff
+ * **/
 TEST(LambdaBTreeTest, Scoping) {
     // lambda btree set current has some hard coded stuff h1
     TestLambdaTree t;
 }
 
 TEST(LambdaBTreeTest, Insert) {
-    // insert some stuff and make sure the sideeffects are correct (as observed within the lambda), and also that the elements are contained
+    // insert some stuff and make sure the sideeffects are correct (as observed within the lambda), and also
+    // that the elements are contained
 
     // the ticket machine that sets the second argument (for now our functor will just postincrent to assign)
     std::atomic<size_t> assigner(0);
@@ -520,7 +524,6 @@ TEST(LambdaBTreeTest, Insert) {
     // post increment of 0 is zero.
     EXPECT_EQ(((*t.find({55, 3232})).second), 0);
 
-
     TestPair insert2 = {43, 22};
     // insert should also return the value
     EXPECT_EQ(t.insert(insert2, update_fn), 1);
@@ -531,11 +534,14 @@ TEST(LambdaBTreeTest, Insert) {
 
     // now lets insert something that already exists (the anterior is all that matters)
     TestPair alreadyExistsPair = {55, 12313123};
-    EXPECT_EQ(t.insert(alreadyExistsPair, [&](TestPair& tp) {
-               EXPECT_TRUE(false && "newly inserted function called for an element that already exists!");
-               // some dummy value
-               return 3223;
-               }), 0);
+    EXPECT_EQ(t.insert(alreadyExistsPair,
+                      [&](TestPair& tp) {
+                          EXPECT_TRUE(false &&
+                                      "newly inserted function called for an element that already exists!");
+                          // some dummy value
+                          return 3223;
+                      }),
+            0);
 
     EXPECT_EQ(t.size(), 2);
 }
@@ -543,11 +549,13 @@ TEST(LambdaBTreeTest, Insert) {
 #ifdef _OPENMP
 TEST(LambdaBTreeTest, ParallelInsert) {
     // check whether doing the above works, but in parallel
-    // we must ensure that duplicate elements inserted in parallel stiiilll should only result in singly elements inserted
+    // we must ensure that duplicate elements inserted in parallel stiiilll should only result in singly
+    // elements inserted
 
     constexpr size_t N = 10000;
     {
-        // the ticket machine that sets the second argument (for now our functor will just postincrent to assign)
+        // the ticket machine that sets the second argument (for now our functor will just postincrent to
+        // assign)
         std::atomic<size_t> assigner(0);
         std::function<TestPair::second_type(TestPair&)> update_fn = [&](TestPair& tp) {
             tp.second = assigner.fetch_add(1);
@@ -581,11 +589,13 @@ TEST(LambdaBTreeTest, ParallelInsert) {
         }
     }
 
-    // now our second test is setting duplicates concurrently (we try and maximise the potentiality of duplication, by trying to make the threads make the same number at the same time)
+    // now our second test is setting duplicates concurrently (we try and maximise the potentiality of
+    // duplication, by trying to make the threads make the same number at the same time)
     size_t num_threads = omp_get_max_threads();
     {
-        // shadowing the N to make one that's trimmed by thread number (don't want things non-divisible by the thread count!)
-        const size_t N2 = (N/num_threads)*num_threads;
+        // shadowing the N to make one that's trimmed by thread number (don't want things non-divisible by the
+        // thread count!)
+        const size_t N2 = (N / num_threads) * num_threads;
 
         std::atomic<size_t> assigner(0);
         std::function<TestPair::second_type(TestPair&)> update_fn = [&](TestPair& tp) {
@@ -593,28 +603,30 @@ TEST(LambdaBTreeTest, ParallelInsert) {
             return tp.second;
         };
 
-
         TestLambdaTree t;
-        #pragma omp parallel for
+#pragma omp parallel for
         for (size_t i = 0; i < N2; ++i) {
-            TestPair tp = {i/num_threads, 213812309};
-            // by doing this, we pretty much make the same insertion num_thread times, for the next num_thread loops
+            TestPair tp = {i / num_threads, 213812309};
+            // by doing this, we pretty much make the same insertion num_thread times, for the next num_thread
+            // loops
             t.insert(tp, update_fn);
         }
 
-        EXPECT_EQ(t.size(), N2/num_threads);
+        EXPECT_EQ(t.size(), N2 / num_threads);
         // iterating through the tree should be in order
         size_t i = 0;
         for (auto p : t) {
             EXPECT_EQ(p.first, i++);
         }
 
-        // we check the assigner atomic, and see if its not larger than the number of times it should have been called (N2/8) times.
-        // a violation of this would occur when we try and call the functor twice for the number of threads
-        EXPECT_EQ(assigner.load(), N2/num_threads);
+        // we check the assigner atomic, and see if its not larger than the number of times it should have
+        // been called (N2/8) times. a violation of this would occur when we try and call the functor twice
+        // for the number of threads
+        EXPECT_EQ(assigner.load(), N2 / num_threads);
 
-        // unfortunately, the above test couuuuld fail if two were called for the same element, then skipped for another... so I go through and check anyway.
-        std::vector<bool> verifier(N2/num_threads, false);
+        // unfortunately, the above test couuuuld fail if two were called for the same element, then skipped
+        // for another... so I go through and check anyway.
+        std::vector<bool> verifier(N2 / num_threads, false);
         for (auto p : t) {
             if (verifier.at(p.second) == true) {
                 EXPECT_TRUE(false && "duplicate posteriors found within the lambdatree");
@@ -624,18 +636,22 @@ TEST(LambdaBTreeTest, ParallelInsert) {
         }
     }
 }
-#endif // ifdef _OPENMP
+#endif  // ifdef _OPENMP
 
 #ifdef _OPENMP
 TEST(LambdaBTree, ContendParallel) {
     // in this tree, we store a mapping from a sparse to a dense value
-    // a dense value is uniquely allocated to a sparse value (which is the anterior of the pair passed into insert).
+    // a dense value is uniquely allocated to a sparse value (which is the anterior of the pair passed into
+    // insert).
     TestLambdaTree tlt;
 
     std::atomic<size_t> counter{0};
 
     constexpr size_t N = 100;
-    const std::function<size_t(TestPair&)> fun = [&](TestPair& p){ p.second = counter++; return p.second; };
+    const std::function<size_t(TestPair&)> fun = [&](TestPair& p) {
+        p.second = counter++;
+        return p.second;
+    };
 
     // shuffle the vector around to make us insert non-incremental pairs (seems to make it more common...?)
     std::vector<size_t> data_source;
@@ -644,7 +660,7 @@ TEST(LambdaBTree, ContendParallel) {
     }
     std::random_shuffle(data_source.begin(), data_source.end());
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (size_t i = 0; i < N; ++i) {
         size_t val = data_source[i];
         // two pairs, the second part of the pair is updated within the functor if it doesn't exist
@@ -655,22 +671,20 @@ TEST(LambdaBTree, ContendParallel) {
         size_t b = tlt.insert(pairb, fun);
 
         if (a != b) {
-          std::cout << "Different values observed for key " << val << ": " << a << " vs. " << b << "\n";
-          tlt.printTree();
-          throw std::runtime_error("Error detected!");
+            std::cout << "Different values observed for key " << val << ": " << a << " vs. " << b << "\n";
+            tlt.printTree();
+            throw std::runtime_error("Error detected!");
         }
-
     }
 
     if (N != tlt.size()) {
-      throw std::runtime_error("Wrong tree size!");
+        throw std::runtime_error("Wrong tree size!");
     }
 
-    EXPECT_EQ(N,tlt.size());
+    EXPECT_EQ(N, tlt.size());
 
     std::cout << "number of times the functor has been called: " << counter.load() << std::endl;
     EXPECT_EQ(N, counter.load());
-
 }
 #endif
 

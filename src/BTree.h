@@ -2097,7 +2097,6 @@ protected:
         return !node->isEmpty() && less(node->keys[0], k) && less(k, node->keys[node->numElements - 1]);
     }
 
-
     /**
      * Determines whether the range covered by the given node is also
      * covering the given key value.
@@ -2112,8 +2111,8 @@ protected:
         return !node->isEmpty() && weak_less(node->keys[0], k) &&
                weak_less(k, node->keys[node->numElements - 1]);
     }
-private:
 
+private:
     /**
      * Determines whether the range covered by this node covers
      * the upper bound of the given key.

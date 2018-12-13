@@ -883,7 +883,7 @@ public:
         data.extend(other.getData());
     }
 
-    template<typename... Idxs>
+    template <typename... Idxs>
     void insertAll(const Relation<souffle::ram::EqRel, arity, Idxs...>& other) {
         data.insertAll(other.getData());
     }

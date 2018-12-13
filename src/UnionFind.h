@@ -54,6 +54,7 @@ class DisjointSet {
     friend class EquivalenceRelation;
 
     PiggyList<std::atomic<block_t>> a_blocks;
+
 public:
     DisjointSet(){};
 
@@ -226,20 +227,23 @@ public:
     };
 };
 
-template<typename StorePair>
+template <typename StorePair>
 struct EqrelMapComparator {
     int operator()(const StorePair& a, const StorePair& b) {
-        if (a.first < b.first) return -1;
-        else if (b.first < a.first) return 1;
-        else return 0;
-    }   
+        if (a.first < b.first)
+            return -1;
+        else if (b.first < a.first)
+            return 1;
+        else
+            return 0;
+    }
 
     bool less(const StorePair& a, const StorePair& b) {
-        return operator()(a,b) < 0;
+        return operator()(a, b) < 0;
     }
 
     bool equal(const StorePair& a, const StorePair& b) {
-        return operator()(a,b) == 0;
+        return operator()(a, b) == 0;
     }
 };
 
@@ -251,7 +255,8 @@ class SparseDisjointSet {
     friend class EquivalenceRelation;
 
     typedef std::pair<SparseDomain, parent_t> PairStore;
-    typedef LambdaBTreeSet<PairStore, std::function<parent_t(PairStore&)>, EqrelMapComparator<PairStore>> SparseMap;
+    typedef LambdaBTreeSet<PairStore, std::function<parent_t(PairStore&)>, EqrelMapComparator<PairStore>>
+            SparseMap;
     typedef RandomInsertPiggyList<SparseDomain> DenseMap;
     typename SparseMap::operation_hints last_ins;
 
@@ -269,17 +274,16 @@ public:
         // insert into the mapping - if the key doesn't exist (in), the function will be called
         // and a dense value will be created for it
         PairStore p = {in, -1};
-        return sparseToDenseMap.insert(p, [&](PairStore& p){ 
-                parent_t c2 =  DisjointSet::b2p(this->ds.makeNode()); 
-                this->denseToSparseMap.insertAt(c2, p.first);
-                p.second = c2;
-                return c2;
-                });
+        return sparseToDenseMap.insert(p, [&](PairStore& p) {
+            parent_t c2 = DisjointSet::b2p(this->ds.makeNode());
+            this->denseToSparseMap.insertAt(c2, p.first);
+            p.second = c2;
+            return c2;
+        });
     }
 
 public:
-    SparseDisjointSet() { }
-
+    SparseDisjointSet() {}
 
     // copy ctor
     SparseDisjointSet(SparseDisjointSet& other) = delete;
@@ -347,4 +351,4 @@ public:
         return false;
     }
 };
-}
+}  // namespace souffle

@@ -14,7 +14,6 @@
  *
  ***********************************************************************/
 
-
 #include "test.h"
 
 #include <algorithm>
@@ -29,8 +28,8 @@
 #include <omp.h>
 #endif
 
-#include "EquivalenceRelation.h"
 #include "CompiledTuple.h"
+#include "EquivalenceRelation.h"
 
 namespace souffle {
 namespace test {
@@ -216,20 +215,20 @@ TEST(EqRelTest, Extend) {
 
     // br is {{0,1,2,3,4,5,6}, {8,9}, {44, 70}, {11}}
     EqRel br;
-    
-    br.insert(0,1);
-    br.insert(0,2);
-    br.insert(0,3);
-    br.insert(0,4);
-    br.insert(0,5);
-    br.insert(0,6);
 
-    br.insert(8,9);
+    br.insert(0, 1);
+    br.insert(0, 2);
+    br.insert(0, 3);
+    br.insert(0, 4);
+    br.insert(0, 5);
+    br.insert(0, 6);
+
+    br.insert(8, 9);
 
     br.insert(44, 70);
-    
-    br.insert(11,11);
-    EXPECT_EQ(br.size(), (7*7) + (2*2) + (2*2) + (1*1));
+
+    br.insert(11, 11);
+    EXPECT_EQ(br.size(), (7 * 7) + (2 * 2) + (2 * 2) + (1 * 1));
 
     // br2 is {{0,8,33,99}, {68,69,70}, {101, 102}}
     EqRel br2;
@@ -241,32 +240,33 @@ TEST(EqRelTest, Extend) {
     br2.insert(69, 70);
 
     br2.insert(101, 102);
-    EXPECT_EQ(br2.size(), (4*4) + (3*3) + (2*2));
+    EXPECT_EQ(br2.size(), (4 * 4) + (3 * 3) + (2 * 2));
 
-    // let's say br2 the new knowledge, so we must extend it to actually contain the implied knowledge from new
+    // let's say br2 the new knowledge, so we must extend it to actually contain the implied knowledge from
+    // new
     br2.extend(br);
 
     // it should contain {0,1,2,3,4,5,6,8,9,33,99}, {44, 68, 69, 70}, {101, 102}
     // shouldn't contain {11}.
-    EXPECT_TRUE(br2.contains(0,0));
-    EXPECT_TRUE(br2.contains(0,1));
-    EXPECT_TRUE(br2.contains(1,8));
-    EXPECT_TRUE(br2.contains(9,4));
-    EXPECT_TRUE(br2.contains(33,4));
-    EXPECT_TRUE(br2.contains(33,99));
+    EXPECT_TRUE(br2.contains(0, 0));
+    EXPECT_TRUE(br2.contains(0, 1));
+    EXPECT_TRUE(br2.contains(1, 8));
+    EXPECT_TRUE(br2.contains(9, 4));
+    EXPECT_TRUE(br2.contains(33, 4));
+    EXPECT_TRUE(br2.contains(33, 99));
 
-    EXPECT_TRUE(br2.contains(68,69));
-    EXPECT_TRUE(br2.contains(70,44));
+    EXPECT_TRUE(br2.contains(68, 69));
+    EXPECT_TRUE(br2.contains(70, 44));
 
-    EXPECT_FALSE(br2.contains(11,11));
+    EXPECT_FALSE(br2.contains(11, 11));
 
-    EXPECT_FALSE(br2.contains(0,69));
-    EXPECT_TRUE(br2.contains(101,102));
+    EXPECT_FALSE(br2.contains(0, 69));
+    EXPECT_TRUE(br2.contains(101, 102));
 
     // check this hasn't changed size
-    EXPECT_EQ(br.size(), (7*7) + (2*2) + (2*2) + (1*1));
-    // check that it was properly extended 
-    EXPECT_EQ(br2.size(), (11*11)+(4*4)+(2*2));
+    EXPECT_EQ(br.size(), (7 * 7) + (2 * 2) + (2 * 2) + (1 * 1));
+    // check that it was properly extended
+    EXPECT_EQ(br2.size(), (11 * 11) + (4 * 4) + (2 * 2));
 }
 
 TEST(EqRelTest, Merge) {
@@ -368,26 +368,25 @@ TEST(EqRelTest, IterBasic) {
     EXPECT_EQ(count, br.size());
 }
 
-
 TEST(EqRelTest, IterRange) {
     // write some tests to use that templated range for different indexes too
     EqRel br;
-    br.insert(0,1);
-    br.insert(0,2);
-    br.insert(0,3);
-    br.insert(0,4);
-    br.insert(0,5);
-    br.insert(0,6);
+    br.insert(0, 1);
+    br.insert(0, 2);
+    br.insert(0, 3);
+    br.insert(0, 4);
+    br.insert(0, 5);
+    br.insert(0, 6);
 
-    br.insert(8,9);
-    br.insert(8,10);
+    br.insert(8, 9);
+    br.insert(8, 10);
 
     // this should return an iterator covering (3, 0), (3, 1), ..., (3, 6), it's a (3, *) iterator
     auto rangeIt = br.getBoundaries<1>({3, 18293018});
 
     std::vector<size_t> posteriorsCovered;
     for (auto tup : rangeIt) {
-        posteriorsCovered.push_back(tup[1]); 
+        posteriorsCovered.push_back(tup[1]);
     }
     EXPECT_EQ(posteriorsCovered.size(), 7);
 
@@ -395,15 +394,15 @@ TEST(EqRelTest, IterRange) {
     rangeIt = br.getBoundaries<0>({332, 888});
     posteriorsCovered.clear();
     for (auto tup : rangeIt) {
-        posteriorsCovered.push_back(tup[1]); 
+        posteriorsCovered.push_back(tup[1]);
     }
-    EXPECT_EQ(posteriorsCovered.size(), (7*7)+(3*3));
+    EXPECT_EQ(posteriorsCovered.size(), (7 * 7) + (3 * 3));
 
     // and now iterate over two levels (exactly one pretty much)
-    rangeIt = br.getBoundaries<2>({2,3});
+    rangeIt = br.getBoundaries<2>({2, 3});
     posteriorsCovered.clear();
     for (auto tup : rangeIt) {
-        posteriorsCovered.push_back(tup[1]); 
+        posteriorsCovered.push_back(tup[1]);
     }
     EXPECT_EQ(posteriorsCovered.size(), 1);
     EXPECT_EQ(posteriorsCovered.front(), 3);
@@ -412,14 +411,14 @@ TEST(EqRelTest, IterRange) {
     rangeIt = br.getBoundaries<1>({99, 99});
     posteriorsCovered.clear();
     for (auto tup : rangeIt) {
-        posteriorsCovered.push_back(tup[1]); 
+        posteriorsCovered.push_back(tup[1]);
     }
     EXPECT_EQ(posteriorsCovered.size(), 0);
 
     rangeIt = br.getBoundaries<2>({8, 1});
     posteriorsCovered.clear();
     for (auto tup : rangeIt) {
-        posteriorsCovered.push_back(tup[1]); 
+        posteriorsCovered.push_back(tup[1]);
     }
     EXPECT_EQ(posteriorsCovered.size(), 0);
 
@@ -431,7 +430,7 @@ TEST(EqRelTest, IterRange) {
 
         std::vector<size_t> posteriorsCovered;
         for (auto tup : rangeIt) {
-            posteriorsCovered.push_back(tup[1]); 
+            posteriorsCovered.push_back(tup[1]);
         }
         EXPECT_EQ(posteriorsCovered.size(), 0);
 
@@ -439,15 +438,15 @@ TEST(EqRelTest, IterRange) {
         rangeIt = br.getBoundaries<0>({332, 888});
         posteriorsCovered.clear();
         for (auto tup : rangeIt) {
-            posteriorsCovered.push_back(tup[1]); 
+            posteriorsCovered.push_back(tup[1]);
         }
         EXPECT_EQ(posteriorsCovered.size(), 0);
 
         // and now iterate over two levels (exactly one pretty much)
-        rangeIt = br.getBoundaries<2>({2,3});
+        rangeIt = br.getBoundaries<2>({2, 3});
         posteriorsCovered.clear();
         for (auto tup : rangeIt) {
-            posteriorsCovered.push_back(tup[1]); 
+            posteriorsCovered.push_back(tup[1]);
         }
         EXPECT_EQ(posteriorsCovered.size(), 0);
 
@@ -455,17 +454,16 @@ TEST(EqRelTest, IterRange) {
         rangeIt = br.getBoundaries<1>({99, 99});
         posteriorsCovered.clear();
         for (auto tup : rangeIt) {
-            posteriorsCovered.push_back(tup[1]); 
+            posteriorsCovered.push_back(tup[1]);
         }
         EXPECT_EQ(posteriorsCovered.size(), 0);
 
         rangeIt = br.getBoundaries<2>({8, 1});
         posteriorsCovered.clear();
         for (auto tup : rangeIt) {
-            posteriorsCovered.push_back(tup[1]); 
+            posteriorsCovered.push_back(tup[1]);
         }
         EXPECT_EQ(posteriorsCovered.size(), 0);
-
     }
 }
 
@@ -557,7 +555,7 @@ TEST(EqRelTest, Scaling) {
 
     EqRel br;
     for (int i = 0; i < N; ++i) {
-        br.insert(i,i);
+        br.insert(i, i);
     }
 
     EXPECT_EQ(N, br.size());
@@ -593,8 +591,6 @@ TEST(EqRelTest, ParallelScaling) {
     }
 }
 #endif
-
-
 
 }  // namespace test
 }  // namespace souffle

@@ -19,13 +19,13 @@
 
 #pragma once
 
+#include "BTree.h"
 #include "ParallelUtils.h"
 #include "Util.h"
-#include "BTree.h"
 #include <cassert>
+#include <functional>
 #include <iostream>
 #include <iterator>
-#include <functional>
 #include <type_traits>
 #include <vector>
 
@@ -45,23 +45,28 @@ namespace detail {
  */
 template <typename Key, typename Comparator,
         typename Allocator,  // is ignored so far - TODO: add support
-        unsigned blockSize, typename SearchStrategy, bool isSet, typename Functor, typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
-class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator, Updater> {
-    public:
-    typedef btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator, Updater> parenttype;
+        unsigned blockSize, typename SearchStrategy, bool isSet, typename Functor,
+        typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator,
+                            Updater> {
+public:
+    typedef btree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet, WeakComparator, Updater>
+            parenttype;
 
-    LambdaBTree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator()) : parenttype(comp, weak_comp) {}
+    LambdaBTree(const Comparator& comp = Comparator(), const WeakComparator& weak_comp = WeakComparator())
+            : parenttype(comp, weak_comp) {}
 
     /**
      * Inserts the given key into this tree.
      */
-    typename Functor::result_type insert(Key& k, const Functor& f){
+    typename Functor::result_type insert(Key& k, const Functor& f) {
         typename parenttype::operation_hints hints;
         return insert(k, hints, f);
     }
 
     // rewriting this because of david's changes
-    typename Functor::result_type insert(Key& k, typename parenttype::operation_hints& hints, const Functor& f) {
+    typename Functor::result_type insert(
+            Key& k, typename parenttype::operation_hints& hints, const Functor& f) {
 #ifdef IS_PARALLEL
 
         // special handling for inserting first element
@@ -183,13 +188,14 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                     }
 
                     // read result (atomic) -- just as a proof of concept, this is actually not valid!!
-                    std::atomic<typename Functor::result_type>& loc = *reinterpret_cast<std::atomic<typename Functor::result_type>*>(&(*pos).second);
+                    std::atomic<typename Functor::result_type>& loc =
+                            *reinterpret_cast<std::atomic<typename Functor::result_type>*>(&(*pos).second);
                     auto res = loc.load(std::memory_order_relaxed);
 
                     // check validity
                     if (!cur->lock.validate(cur_lease)) {
-                      // start over again
-                      return insert(k,hints,f);
+                        // start over again
+                        return insert(k, hints, f);
                     }
 
                     // we found the element => return the result
@@ -245,7 +251,7 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                     this->update(*(pos - 1), k);
 
                     // retrieve result before releasing lock
-                    auto res = (*(pos-1)).second;
+                    auto res = (*(pos - 1)).second;
 
                     cur->lock.end_write();
                     // XXX: this provenance code should probably be removed, doesn't make
@@ -253,20 +259,19 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                     return res;
                 }
 
-
                 // read result (atomic) -- just as a proof of concept, this is actually not valid!!
-                std::atomic<typename Functor::result_type>& loc = *reinterpret_cast<std::atomic<typename Functor::result_type>*>(&(*(pos-1)).second);
+                std::atomic<typename Functor::result_type>& loc =
+                        *reinterpret_cast<std::atomic<typename Functor::result_type>*>(&(*(pos - 1)).second);
                 auto res = loc.load(std::memory_order_relaxed);
 
                 // check validity
                 if (!cur->lock.validate(cur_lease)) {
-                  // start over again
-                  return insert(k,hints,f);
+                    // start over again
+                    return insert(k, hints, f);
                 }
 
                 // we found the element => done
                 return res;
-
             }
 
             // upgrade to write-permission
@@ -277,7 +282,6 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             }
 
             if (cur->numElements >= parenttype::node::maxKeys) {
-
                 // -- lock parents --
                 auto priv = cur;
                 auto parent = priv->parent;
@@ -312,7 +316,8 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
 
                 // split this node
                 auto old_root = this->root;
-                idx -= cur->rebalance_or_split(const_cast<typename parenttype::node**>(&this->root), this->root_lock, idx);
+                idx -= cur->rebalance_or_split(
+                        const_cast<typename parenttype::node**>(&this->root), this->root_lock, idx);
 
                 // release parent lock
                 for (auto it = parents.rbegin(); it != parents.rend(); ++it) {
@@ -437,12 +442,13 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
                     return (*(pos - 1)).second;
                 }
 
-                return (*(pos-1)).second;
+                return (*(pos - 1)).second;
             }
 
             if (cur->numElements >= parenttype::node::maxKeys) {
                 // split this node
-                idx -= cur->rebalance_or_split(const_cast<typename parenttype::node**>(&this->root), this->root_lock, idx);
+                idx -= cur->rebalance_or_split(
+                        const_cast<typename parenttype::node**>(&this->root), this->root_lock, idx);
 
                 // insert element in right fragment
                 if (((typename parenttype::size_type)idx) > cur->numElements) {
@@ -458,7 +464,6 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
             for (int j = cur->numElements; j > idx; --j) {
                 cur->keys[j] = cur->keys[j - 1];
             }
-
 
             // call the functor as we've successfully inserted
             typename Functor::result_type res = f(k);
@@ -580,9 +585,11 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
 };
 
 //// Instantiation of static member search.
-//template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename SearchStrategy,
+// template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename
+// SearchStrategy,
 //        bool isSet>
-//const SearchStrategy LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, isSet>::parenttype::search;
+// const SearchStrategy LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy,
+// isSet>::parenttype::search;
 //
 }  // end namespace detail
 
@@ -599,7 +606,8 @@ class LambdaBTree : public btree<Key, Comparator, Allocator, blockSize, SearchSt
 template <typename Key, typename Functor, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
         unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type>
-class LambdaBTreeSet: public detail::LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, Functor> {
+class LambdaBTreeSet
+        : public detail::LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, Functor> {
     typedef detail::LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, Functor> super;
 
     friend class detail::LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, Functor>;

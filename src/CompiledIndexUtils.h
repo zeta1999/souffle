@@ -18,8 +18,8 @@
 #pragma once
 
 #include "BTree.h"
-#include "EquivalenceRelation.h"
 #include "CompiledTuple.h"
+#include "EquivalenceRelation.h"
 #include "IterUtils.h"
 #include "RamTypes.h"
 #include "Trie.h"

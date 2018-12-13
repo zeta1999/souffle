@@ -139,7 +139,6 @@
 
 #ifdef IS_PARALLEL
 
-
 #include <mutex>
 
 namespace souffle {

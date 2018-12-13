@@ -1,11 +1,11 @@
 #pragma once
 
-#include <iostream>
+#include "ParallelUtils.h"
+#include <array>
 #include <atomic>
 #include <cstring>
-#include <array>
+#include <iostream>
 #include <list>
-#include "ParallelUtils.h"
 
 using std::size_t;
 namespace souffle {
@@ -26,7 +26,7 @@ class RandomInsertPiggyList {
     // 2^64 - 1 elements can be stored (default initialised to nullptrs)
     static constexpr size_t maxContainers = 64;
     std::array<std::atomic<T*>, maxContainers> blockLookupTable = {};
-    
+
     // for parallel node insertions
     mutable SpinLock slock;
 
@@ -44,9 +44,10 @@ class RandomInsertPiggyList {
         slock.unlock();
     }
 
-    public:
-    RandomInsertPiggyList() : numElements(0) { }
-    // an instance where the initial size is not 65k, and instead is user settable (to a power of initialbitsize)
+public:
+    RandomInsertPiggyList() : numElements(0) {}
+    // an instance where the initial size is not 65k, and instead is user settable (to a power of
+    // initialbitsize)
     RandomInsertPiggyList(size_t initialbitsize) : BLOCKBITS(initialbitsize), numElements(0) {}
 
     /** copy constructor */
@@ -63,14 +64,15 @@ class RandomInsertPiggyList {
                 this->blockLookupTable[i].store(new T[blockSize]);
 
                 // then copy the stuff over
-                std::memcpy(this->blockLookupTable[i].load(), other.blockLookupTable[i].load(), blockSize * sizeof(T));
+                std::memcpy(this->blockLookupTable[i].load(), other.blockLookupTable[i].load(),
+                        blockSize * sizeof(T));
             }
         }
     }
 
     // move ctr
     RandomInsertPiggyList(RandomInsertPiggyList&& other) = delete;
-    // copy assign ctor 
+    // copy assign ctor
     RandomInsertPiggyList& operator=(RandomInsertPiggyList& other) = delete;
     // move assign ctor
     RandomInsertPiggyList& operator=(RandomInsertPiggyList&& other) = delete;
@@ -79,19 +81,24 @@ class RandomInsertPiggyList {
         freeList();
     }
 
-    inline size_t size() const { return numElements.load(); }
+    inline size_t size() const {
+        return numElements.load();
+    }
 
-    inline T* getBlock(size_t blockNum) const { return blockLookupTable[blockNum]; }
+    inline T* getBlock(size_t blockNum) const {
+        return blockLookupTable[blockNum];
+    }
 
     inline T& get(size_t index) const {
         size_t nindex = index + INITIALBLOCKSIZE;
         size_t blockNum = (63 - __builtin_clzll(nindex));
         size_t blockInd = (nindex) & ((1 << blockNum) - 1);
-        return this->getBlock(blockNum-BLOCKBITS)[blockInd];
+        return this->getBlock(blockNum - BLOCKBITS)[blockInd];
     }
 
     void insertAt(size_t index, T value) {
-        // starting with an initial blocksize requires some shifting to transform into a nice powers of two series
+        // starting with an initial blocksize requires some shifting to transform into a nice powers of two
+        // series
         size_t blockNum = (63 - __builtin_clzll(index + INITIALBLOCKSIZE)) - BLOCKBITS;
 
         // allocate the block if not allocated
@@ -120,7 +127,7 @@ class PiggyList {
     const size_t BLOCKBITS = 16ul;
     const size_t BLOCKSIZE = (1ul << BLOCKBITS);
 
-    // number of inserted 
+    // number of inserted
     std::atomic<size_t> num_containers;
     size_t allocsize = BLOCKSIZE;
     std::atomic<size_t> container_size;
@@ -146,13 +153,12 @@ class PiggyList {
     }
 
 public:
-    PiggyList() : num_containers(0), container_size(0), m_size(0)  { }
-    PiggyList(size_t initialbitsize) : BLOCKBITS(initialbitsize), num_containers(0), container_size(0), m_size(0) {}
-
+    PiggyList() : num_containers(0), container_size(0), m_size(0) {}
+    PiggyList(size_t initialbitsize)
+            : BLOCKBITS(initialbitsize), num_containers(0), container_size(0), m_size(0) {}
 
     /** copy constructor */
     PiggyList(const PiggyList& other) : BLOCKBITS(other.BLOCKBITS) {
-
         num_containers.store(other.num_containers.load());
         container_size.store(other.container_size.load());
         m_size.store(other.m_size.load());
@@ -161,7 +167,7 @@ public:
         size_t cSize = BLOCKSIZE;
         for (size_t i = 0; i < other.num_containers; ++i) {
             this->blockLookupTable[i] = new T[cSize];
-            std::memcpy(this->blockLookupTable[i], other.blockLookupTable[i], cSize*sizeof(T));
+            std::memcpy(this->blockLookupTable[i], other.blockLookupTable[i], cSize * sizeof(T));
             cSize <<= 1;
         }
         // if this isn't the case, uhh
@@ -186,7 +192,6 @@ public:
     inline size_t size() const {
         return m_size.load();
     };
-    
 
     inline T* getBlock(size_t blocknum) const {
         return this->blockLookupTable[blocknum];
@@ -208,7 +213,7 @@ public:
             }
             sl.unlock();
         }
-        
+
         this->get(new_index) = element;
         return new_index;
     }
@@ -229,7 +234,7 @@ public:
             }
             sl.unlock();
         }
-        
+
         return new_index;
     }
 
@@ -243,7 +248,7 @@ public:
         size_t nindex = index + BLOCKSIZE;
         size_t blockNum = (63 - __builtin_clzll(nindex));
         size_t blockInd = (nindex) & ((1 << blockNum) - 1);
-        return this->getBlock(blockNum-BLOCKBITS)[blockInd];
+        return this->getBlock(blockNum - BLOCKBITS)[blockInd];
     }
 
     /**
@@ -253,7 +258,7 @@ public:
         freeList();
         m_size = 0;
         num_containers = 0;
-        
+
         allocsize = BLOCKSIZE;
         container_size = 0;
     }
@@ -306,4 +311,4 @@ public:
     };
 };
 
-}
+}  // namespace souffle

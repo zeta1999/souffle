@@ -26,7 +26,7 @@ namespace testutil {
 // easy function to suppress unused var warnings (when we REALLY don't need to use them!)
 template <class T>
 void ignore(const T&) {}
-} // namespace testutil
+}  // namespace testutil
 
 /* singly linked list for linking test caes */
 

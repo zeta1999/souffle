@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include "LambdaBTree.h"
 #include "UnionFind.h"
 #include "Util.h"
-#include "LambdaBTree.h"
 #include <algorithm>
 #include <exception>
 #include <set>
@@ -37,7 +37,7 @@ class EquivalenceRelation {
     // const operations *may* safely change internal state (i.e. collapse djset forest)
     mutable souffle::SparseDisjointSet<DomainInt> sds;
 
-    // read/write lock on equivalencePartition 
+    // read/write lock on equivalencePartition
     mutable souffle::shared_mutex statesLock;
 
     // mapping from representative to disjoint set
@@ -45,13 +45,15 @@ class EquivalenceRelation {
     typedef souffle::PiggyList<DomainInt> StatesList;
     typedef StatesList* StatesBucket;
     typedef std::pair<DomainInt, StatesBucket> StorePair;
-    typedef souffle::LambdaBTreeSet<StorePair, std::function<StatesBucket(StorePair&)>, souffle::EqrelMapComparator<StorePair>> StatesMap;
+    typedef souffle::LambdaBTreeSet<StorePair, std::function<StatesBucket(StorePair&)>,
+            souffle::EqrelMapComparator<StorePair>>
+            StatesMap;
     mutable StatesMap equivalencePartition;
     // whether the cache is stale
     mutable std::atomic<bool> statesMapStale;
 
 public:
-    EquivalenceRelation() : statesMapStale(false) {};
+    EquivalenceRelation() : statesMapStale(false){};
     ~EquivalenceRelation() {
         emptyPartition();
     }
@@ -185,7 +187,7 @@ public:
         }
         // invalidate it my dude
         this->statesMapStale.store(true, std::memory_order_relaxed);
-        
+
         equivalencePartition.clear();
     }
 
@@ -213,7 +215,7 @@ public:
         size_t retVal = 0;
         for (auto& e : this->equivalencePartition) {
             const size_t s = e.second->size();
-            retVal += s*s;
+            retVal += s * s;
         }
 
         statesLock.unlock_shared();
@@ -243,11 +245,11 @@ private:
             parent_t rep = this->sds.findNode(sparseVal);
 
             StorePair p = {rep, nullptr};
-            StatesList* mapList = equivalencePartition.insert(p, [&](StorePair& sp) { 
-                    StatesList* r = new StatesList(1); 
-                    sp.second = r;
-                    return r;
-                    });
+            StatesList* mapList = equivalencePartition.insert(p, [&](StorePair& sp) {
+                StatesList* r = new StatesList(1);
+                sp.second = r;
+                return r;
+            });
             mapList->append(sparseVal);
         }
 
@@ -286,21 +288,21 @@ public:
         explicit iterator(const EquivalenceRelation* br, bool /* signalIsEndIterator */)
                 : br(br), isEndVal(true){};
 
-        explicit iterator(const EquivalenceRelation* br) : 
-            br(br), ityp(IterType::ALL), 
-            djSetMapListIt(br->equivalencePartition.begin()), djSetMapListEnd(br->equivalencePartition.end()) {
-                // no need to fast forward if this iterator is empty
-                if (djSetMapListIt == djSetMapListEnd) {
-                    isEndVal = true;
-                    return;
-                }
-                // grab the pointer to the list, and make it our current list
-                djSetList = (*djSetMapListIt).second;
-                assert(djSetList->size() != 0);
-
-                updateAnterior();
-                updatePosterior();
+        explicit iterator(const EquivalenceRelation* br)
+                : br(br), ityp(IterType::ALL), djSetMapListIt(br->equivalencePartition.begin()),
+                  djSetMapListEnd(br->equivalencePartition.end()) {
+            // no need to fast forward if this iterator is empty
+            if (djSetMapListIt == djSetMapListEnd) {
+                isEndVal = true;
+                return;
             }
+            // grab the pointer to the list, and make it our current list
+            djSetList = (*djSetMapListIt).second;
+            assert(djSetList->size() != 0);
+
+            updateAnterior();
+            updatePosterior();
+        }
 
         // WITHIN: iterator for everything within the same DJset (used for EquivalenceRelation.partition())
         explicit iterator(const EquivalenceRelation* br, const StatesBucket within)
@@ -327,8 +329,8 @@ public:
 
         // ANTPOST: iterator that yields all (former, latter) \in djset(former), (djset(former) ==
         // djset(latter) == within)
-        explicit iterator(
-                const EquivalenceRelation* br, const DomainInt former, DomainInt latter, const StatesBucket within)
+        explicit iterator(const EquivalenceRelation* br, const DomainInt former, DomainInt latter,
+                const StatesBucket within)
                 : br(br), ityp(IterType::ANTPOST), djSetList(within) {
             if (djSetList->size() == 0) {
                 isEndVal = true;
@@ -403,7 +405,8 @@ public:
 
                             // we can't iterate along this djset if it is empty
                             djSetList = (*djSetMapListIt).second;
-                            if (djSetList->size() == 0) throw std::out_of_range("error: encountered a zero size djset");
+                            if (djSetList->size() == 0)
+                                throw std::out_of_range("error: encountered a zero size djset");
 
                             // update our cAnterior and cPosterior
                             cAnteriorIndex = 0;
@@ -542,7 +545,6 @@ public:
      * @return the iterator representing this.
      */
     iterator anteriorIt(DomainInt anteriorVal) const {
-        
         genAllDisjointSetLists();
 
         // locate the blocklist that the anterior val resides in
@@ -563,7 +565,7 @@ public:
     iterator antpostit(DomainInt anteriorVal, DomainInt posteriorVal) const {
         // obv if they're in diff sets, then iteration for this pair just ends.
         if (!sds.sameSet(anteriorVal, posteriorVal)) return end();
-        
+
         genAllDisjointSetLists();
 
         // locate the blocklist that the val resides in
@@ -611,12 +613,13 @@ public:
             return ret;
         }
 
-        // keep it simple stupid 
-        // just go through and if the size of the binrel is > numpairs/chunks, then generate an anteriorIt for each
-        const size_t perchunk = numPairs/chunks;
+        // keep it simple stupid
+        // just go through and if the size of the binrel is > numpairs/chunks, then generate an anteriorIt for
+        // each
+        const size_t perchunk = numPairs / chunks;
         for (const auto& itp : equivalencePartition) {
             const size_t s = itp.second->size();
-            if (s*s > perchunk) {
+            if (s * s > perchunk) {
                 for (const auto& i : *itp.second) {
                     ret.push_back(souffle::make_range(anteriorIt(i), end()));
                 }

@@ -62,15 +62,15 @@
     /* Macro to update locations as parsing proceeds */
     # define YYLLOC_DEFAULT(Cur, Rhs, N)                       \
     do {                                                       \
-       if (N) {                                                \
-           (Cur).start        = YYRHSLOC(Rhs, 1).start;        \
-           (Cur).end          = YYRHSLOC(Rhs, N).end;          \
-           (Cur).filename     = YYRHSLOC(Rhs, N).filename;     \
-       } else {                                                \
-           (Cur).start    = YYRHSLOC(Rhs, 0).end;              \
-           (Cur).end      = YYRHSLOC(Rhs, 0).end;              \
-           (Cur).filename = YYRHSLOC(Rhs, 0).filename;         \
-       }                                                       \
+        if (N) {                                               \
+            (Cur).start        = YYRHSLOC(Rhs, 1).start;       \
+            (Cur).end          = YYRHSLOC(Rhs, N).end;         \
+            (Cur).filename     = YYRHSLOC(Rhs, N).filename;    \
+        } else {                                               \
+            (Cur).start    = YYRHSLOC(Rhs, 0).end;             \
+            (Cur).end      = YYRHSLOC(Rhs, 0).end;             \
+            (Cur).filename = YYRHSLOC(Rhs, 0).filename;        \
+        }                                                      \
     } while (0)
 }
 
@@ -220,7 +220,7 @@ unit
     }
   | unit functor_decl {
         driver.addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration>($2));
-    } 
+    }
   | unit relation_decl {
         for(const auto& cur : $2) driver.addRelation(std::unique_ptr<AstRelation>(cur));
     }
@@ -305,7 +305,7 @@ recordtype
         $$->add($1, *$3); delete $3;
     }
   | recordtype COMMA IDENT COLON type_id {
-         $$ = $1;
+        $$ = $1;
         $1->add($3, *$5); delete $5;
     }
 
@@ -394,7 +394,7 @@ qualifiers
         $$ = 0;
     }
 
-functor_decl 
+functor_decl
   : FUNCTOR IDENT LPAREN functor_typeargs RPAREN COLON functor_type {
         $$ = new AstFunctorDeclaration($2, $4+$7);
         $$->setSrcLoc(@$);
@@ -407,12 +407,12 @@ functor_decl
 
 functor_type
   : IDENT {
-     if ($1 == "number") {
-        $$ = "N";
-     } else if ($1 == "symbol") {
-        $$ = "S";
-     } else driver.error(@1, "number or symbol identifier expected");
-    } 
+      if ($1 == "number") {
+          $$ = "N";
+      } else if ($1 == "symbol") {
+          $$ = "S";
+      } else driver.error(@1, "number or symbol identifier expected");
+    }
   ;
 
 functor_typeargs
@@ -470,11 +470,11 @@ non_empty_key_value_pairs
         $$ = $1;
         $$->addKVP($3, "true");
     }
- | IDENT EQUALS FALSE {
+  | IDENT EQUALS FALSE {
         $$ = new AstIODirective();
         $$->addKVP($1, "false");
     }
- | key_value_pairs COMMA IDENT EQUALS FALSE {
+  | key_value_pairs COMMA IDENT EQUALS FALSE {
         $$ = $1;
         $$->addKVP($3, "false");
     }
@@ -769,22 +769,22 @@ arg
 
 functor_list
   : LPAREN RPAREN {
-       $$ = new AstUserDefinedFunctor(); 
+        $$ = new AstUserDefinedFunctor();
     }
   | LPAREN functor_args RPAREN {
-       $$ = $2;
+        $$ = $2;
     }
   ;
 
 functor_args
   : arg {
-       $$ = new AstUserDefinedFunctor(); 
-       $$->add(std::unique_ptr<AstArgument>($1));
-    }  
-  | functor_args COMMA arg { 
-       $$ = $1;
-       $$->add(std::unique_ptr<AstArgument>($3));
-    } 
+        $$ = new AstUserDefinedFunctor();
+        $$->add(std::unique_ptr<AstArgument>($1));
+    }
+  | functor_args COMMA arg {
+        $$ = $1;
+        $$->add(std::unique_ptr<AstArgument>($3));
+    }
   ;
 
 recordlist
@@ -1003,8 +1003,8 @@ rule
 /* Type Parameters */
 
 type_param_list
-  : IDENT { 
-        $$.push_back($1); 
+  : IDENT {
+        $$.push_back($1);
     }
   | type_param_list COMMA type_id {
         $$ = $1;
@@ -1107,5 +1107,5 @@ comp_override
 
 %%
 void yy::parser::error(const location_type &l, const std::string &m) {
-   driver.error(l, m);
+    driver.error(l, m);
 }

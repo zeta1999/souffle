@@ -32,10 +32,6 @@
 #include "BinaryRelation.h"
 #include "CompiledTuple.h"
 
-// TODO: replace findX tests with getBoundaries tests
-// TODO: insert some anteriorIt, and antpostit tests
-// TODO: add some extend tests
-
 namespace souffle {
 namespace test {
 
@@ -216,7 +212,7 @@ TEST(BinRelTest, Shuffled) {
 }
 
 TEST(BinRelTest, Extend) {
-    // TODO, test running extend for a relation
+    // test running extend for a relation
 
     // br is {{0,1,2,3,4,5,6}, {8,9}, {44, 70}, {11}}
     BinRel br;
@@ -247,8 +243,6 @@ TEST(BinRelTest, Extend) {
     br2.insert(101, 102);
     EXPECT_EQ(br2.size(), (4*4) + (3*3) + (2*2));
 
-
-
     // let's say br2 the new knowledge, so we must extend it to actually contain the implied knowledge from new
     br2.extend(br);
 
@@ -274,80 +268,6 @@ TEST(BinRelTest, Extend) {
     // check that it was properly extended 
     EXPECT_EQ(br2.size(), (11*11)+(4*4)+(2*2));
 }
-
-TEST(BinRelTest, Copy) {
-    // TODO: test copy ctor (or assign? idk)
-}
-
-// TODO: rewrite this to not use .find (it is deprecated)
-////TEST(BinRelTest, Copy) {
-//
-////    // test =assign keeps copy independence
-////    BinRel br;
-////
-////    int N = 100;
-////
-////    std::vector<int> data;
-////    for (int i = 0; i < N; i++) {
-////        data.push_back(i);
-////    }
-////    std::random_shuffle(data.begin(), data.end());
-////
-////    for (int i = 0; i < N; i++) {
-////        br.insert(data[i], data[i]);
-////    }
-////
-////    EXPECT_EQ((size_t)N, br.size());
-////
-////    for (int i = 0; i < N; i++) {
-////        ram::Tuple<RamDomain, 2> t;
-////        t[0] = i;
-////        t[1] = i;
-////        EXPECT_TRUE(br.find(t) != br.end()) << "i=" << i;
-////    }
-////
-////    BinRel br2;
-////    EXPECT_EQ(0, br2.size());
-////    EXPECT_FALSE(br2.contains(0, 0));
-////
-////    br2 = br;
-////    EXPECT_EQ((size_t)N, br.size());
-////    EXPECT_EQ((size_t)N, br2.size());
-////
-////    for (int i = 0; i < N; ++i) {
-////        ram::Tuple<RamDomain, 2> t;
-////        t[0] = i;
-////        t[1] = i;
-////        EXPECT_TRUE(br.find(t) != br.end());
-////        EXPECT_TRUE(br2.find(t) != br2.end());
-////    }
-////
-////    // construct a new one an insert into only one
-////    ram::Tuple<RamDomain, 2> t;
-////    t[0] = N + 1;
-////    t[1] = N + 1;
-////    EXPECT_FALSE(br.find(t) != br.end());
-////    EXPECT_FALSE(br2.find(t) != br2.end());
-////    br2.insert(t[0], t[1]);
-////    EXPECT_FALSE(br.find(t) != br.end());
-////    EXPECT_TRUE(br2.find(t) != br2.end());
-////}
-//
-//// TEST(BinRelTest, CopyScope) {
-////     //simply test whether scope is fine in scope changes
-////     BinRel br1;
-////     {
-////         BinRel br2;
-////         for (int i = 0; i < 5000; ++i) {
-////             br2.insert(i,i);
-////         }
-//
-////         br1 = br2;
-////     }
-//
-////     EXPECT_EQ(5000, br1.size());
-//// }
-//
 
 TEST(BinRelTest, Merge) {
     // test insertAll isolates data
@@ -449,31 +369,8 @@ TEST(BinRelTest, IterBasic) {
 }
 
 
-// XXX: doesn't exist anymore
-// TODO (pnappa): make some tests for the range splices and shit
-//TEST(BinRelTest, IterFindBetween) {
-//    BinRel br;
-//    br.insert(0, 1);
-//    br.insert(1, 2);
-//    br.insert(2, 3);
-//
-//    // try and perform findBetween on a single
-//    ram::Tuple<RamDomain, 2> t1;
-//    t1[0] = 1;
-//    t1[1] = 0;
-//    ram::Tuple<RamDomain, 2> t2;
-//    t2[0] = 1;
-//    t2[1] = 0;
-//
-//    size_t count = 0;
-//    for (auto x = br.findBetween(t1, t2); x != br.end(); ++x) {
-//        ++count;
-//    }
-//    EXPECT_EQ(count, 1);
-//}
-
 TEST(BinRelTest, IterRange) {
-    // TODO: write some tests to use that templated range for different indexes too
+    // write some tests to use that templated range for different indexes too
     BinRel br;
     br.insert(0,1);
     br.insert(0,2);

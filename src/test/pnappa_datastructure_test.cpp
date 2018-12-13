@@ -185,7 +185,6 @@ TEST(PiggyTest, CopyCtor) {
         EXPECT_EQ(pl.get(i), i);
     }
 
-    // TODO: check iterators still work in both
     auto pl1It = pl.begin();
     auto pl2It = pl2.begin();
 

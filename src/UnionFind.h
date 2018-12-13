@@ -67,6 +67,9 @@ public:
     // move assign ctor
     DisjointSet& operator=(DisjointSet&& ds) = delete;
 
+    /**
+     * Return the number of elements in this disjoint set (not the number of pairs)
+     */
     inline size_t size() {
         auto sz = a_blocks.size();
         return sz;
@@ -250,7 +253,6 @@ class SparseDisjointSet {
     typedef std::pair<SparseDomain, parent_t> PairStore;
     typedef LambdaBTreeSet<PairStore, std::function<parent_t(PairStore&)>, EqrelMapComparator<PairStore>> SparseMap;
     typedef RandomInsertPiggyList<SparseDomain> DenseMap;
-    // TODO: do we use this?
     typename SparseMap::operation_hints last_ins;
 
     SparseMap sparseToDenseMap;
@@ -318,7 +320,9 @@ public:
         return ds.size();
     };
 
-    // TODO: documentation
+    /**
+     * Remove all elements from this disjoint set
+     */
     void clear() {
         ds.clear();
         sparseToDenseMap.clear();

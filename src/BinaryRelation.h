@@ -55,9 +55,10 @@ public:
     }
 
     /**
-     * TODO: implement this operation_hint class
      * A collection of operation hints speeding up some of the involved operations
      * by exploiting temporal locality.
+     * Unused in this class, as there is no speedup to be gained.
+     * This is just defined as the class expects it.
      */
     struct operation_hints {
         // resets all hints (to be triggered e.g. when deleting nodes)
@@ -113,7 +114,10 @@ public:
     }
 
     /**
-     * TODO: docstring
+     * Extend this relation with another relation, expanding this equivalence relation
+     * The supplied relation is the old knowledge, whilst this relation only contains
+     * explicitly new knowledge. After this operation the "implicitly new tuples" are now
+     * explicitly inserted this relation.
      */
     void extend(const BinaryRelation<TupleType>& other) {
         // nothing to extend if there's no new/original knowledge
@@ -215,10 +219,10 @@ public:
     }
 
 private:
-    // TODO: documentation (i.e. that this lazily makes the rep lists)
-    // also, warning: if this is called during insertion, this will break... probably
-    // all this function does, is insert each disjoint set into a separate key in a hashmap. We want this to
-    // be as lazy as possible too.
+    /**
+     * Generate a cache of the sets such that they can be iterated over efficiently.
+     * Each set is partitioned into a PiggyList.
+     */
     void genAllDisjointSetLists() const {
         statesLock.lock();
 
@@ -500,8 +504,6 @@ public:
      */
     template <unsigned levels>
     range<iterator> getBoundaries(const TupleType& entry, operation_hints&) const {
-        // TODO: use ctxt to exploit locality - does this really matter
-
         // if nothing is bound => just use begin and end
         if (levels == 0) return make_range(begin(), end());
 

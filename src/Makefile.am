@@ -167,7 +167,6 @@ soufflepublicdir = $(includedir)/souffle
 soufflepublic_HEADERS = \
 						CompiledOptions.h       \
                         BTree.h                 \
-                        BinaryRelation.h        \
                         CompiledIndexUtils.h    \
                         CompiledRecord.h        \
                         CompiledRelation.h      \
@@ -178,6 +177,7 @@ soufflepublic_HEADERS = \
                         ExplainProvenance.h     \
                         ExplainProvenanceSLD.h  \
                         ExplainTree.h           \
+                        EquivalenceRelation.h 	\
                         IODirectives.h          \
                         IOSystem.h              \
                         IterUtils.h             \

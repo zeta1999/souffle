@@ -119,7 +119,7 @@ ADD_EXECUTABLE(souffle
         ./src/RamStatement.h
         ./src/AstTransforms.h
         ./src/AstClause.h
-        ./src/BinaryRelation.h
+        ./src/EquivalenceRelation.h
         ./src/ParserDriver.cpp
         ./src/AstTransformer.cpp
         ./src/PrecedenceGraph.cpp

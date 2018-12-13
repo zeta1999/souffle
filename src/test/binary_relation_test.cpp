@@ -29,21 +29,21 @@
 #include <omp.h>
 #endif
 
-#include "BinaryRelation.h"
+#include "EquivalenceRelation.h"
 #include "CompiledTuple.h"
 
 namespace souffle {
 namespace test {
 
-TEST(BinRelTest, Scoping) {
+TEST(EqRelTest, Scoping) {
     // simply test that namespaces were setup correctly
-    souffle::BinaryRelation<souffle::ram::Tuple<RamDomain, 2>> br;
+    souffle::EquivalenceRelation<souffle::ram::Tuple<RamDomain, 2>> br;
 }
 
-using BinRel = BinaryRelation<ram::Tuple<RamDomain, 2>>;
+using EqRel = souffle::EquivalenceRelation<ram::Tuple<RamDomain, 2>>;
 
-TEST(BinRelTest, Basic) {
-    BinRel br;
+TEST(EqRelTest, Basic) {
+    EqRel br;
     // empty bin rel should be exactly that
     EXPECT_EQ(br.size(), 0);
     EXPECT_FALSE(br.contains(1, 2));
@@ -71,8 +71,8 @@ TEST(BinRelTest, Basic) {
     EXPECT_EQ(count, br.size());
 }
 
-TEST(BinRelTest, Clear) {
-    BinRel br;
+TEST(EqRelTest, Clear) {
+    EqRel br;
     br.insert(0, 44);
     br.insert(0, 1);
 
@@ -93,8 +93,8 @@ TEST(BinRelTest, Clear) {
     EXPECT_EQ(count, br.size());
 }
 
-TEST(BinRelTest, Duplicates) {
-    BinRel br;
+TEST(EqRelTest, Duplicates) {
+    EqRel br;
     // test inserting same pair
     for (int i = 0; i < 10; ++i) br.insert(0, 0);
     EXPECT_EQ(br.size(), 1);
@@ -113,9 +113,9 @@ TEST(BinRelTest, Duplicates) {
     EXPECT_EQ(x, br.end());
 }
 
-TEST(BinRelTest, TransitivityTest) {
+TEST(EqRelTest, TransitivityTest) {
     // test (a,b) && (b, c) => (a,c) etc
-    BinRel br;
+    EqRel br;
     br.insert(1, 2);
     br.insert(2, 3);
     EXPECT_EQ(br.size(), 9);
@@ -136,8 +136,8 @@ TEST(BinRelTest, TransitivityTest) {
     EXPECT_TRUE(br.contains(3, 3));
 }
 
-TEST(BinRelTest, PairwiseIncremental) {
-    BinRel br;
+TEST(EqRelTest, PairwiseIncremental) {
+    EqRel br;
 
     const size_t N = 100;
     // test inserting ascending pairs still isolates them
@@ -158,8 +158,8 @@ TEST(BinRelTest, PairwiseIncremental) {
     EXPECT_EQ(count, br.size());
 }
 
-TEST(BinRelTest, PairwiseDecremental) {
-    BinRel br;
+TEST(EqRelTest, PairwiseDecremental) {
+    EqRel br;
 
     const size_t N = 100;
     // test inserting descending pairs still isolates them
@@ -181,8 +181,8 @@ TEST(BinRelTest, PairwiseDecremental) {
     EXPECT_EQ(count, br.size());
 }
 
-TEST(BinRelTest, Shuffled) {
-    BinRel br;
+TEST(EqRelTest, Shuffled) {
+    EqRel br;
 
     size_t N = 100;
     // test inserting data "out of order" keeps isolation
@@ -211,11 +211,11 @@ TEST(BinRelTest, Shuffled) {
     EXPECT_EQ(count, br.size());
 }
 
-TEST(BinRelTest, Extend) {
+TEST(EqRelTest, Extend) {
     // test running extend for a relation
 
     // br is {{0,1,2,3,4,5,6}, {8,9}, {44, 70}, {11}}
-    BinRel br;
+    EqRel br;
     
     br.insert(0,1);
     br.insert(0,2);
@@ -232,7 +232,7 @@ TEST(BinRelTest, Extend) {
     EXPECT_EQ(br.size(), (7*7) + (2*2) + (2*2) + (1*1));
 
     // br2 is {{0,8,33,99}, {68,69,70}, {101, 102}}
-    BinRel br2;
+    EqRel br2;
     br2.insert(33, 8);
     br2.insert(33, 99);
     br2.insert(33, 0);
@@ -269,9 +269,9 @@ TEST(BinRelTest, Extend) {
     EXPECT_EQ(br2.size(), (11*11)+(4*4)+(2*2));
 }
 
-TEST(BinRelTest, Merge) {
+TEST(EqRelTest, Merge) {
     // test insertAll isolates data
-    BinRel br;
+    EqRel br;
 
     int N = 100;
 
@@ -290,7 +290,7 @@ TEST(BinRelTest, Merge) {
 
     EXPECT_EQ((size_t)N + 3, br.size());
 
-    BinRel br2;
+    EqRel br2;
     EXPECT_EQ(0, br2.size());
 
     size_t count = 0;
@@ -334,9 +334,9 @@ TEST(BinRelTest, Merge) {
     EXPECT_EQ(count, br2.size());
 }
 
-TEST(BinRelTest, IterEmpty) {
+TEST(EqRelTest, IterEmpty) {
     // test iterating over an empty binrel fails
-    BinRel br;
+    EqRel br;
     for (auto x : br) {
         EXPECT_FALSE(true);
         testutil::ignore(x);
@@ -344,8 +344,8 @@ TEST(BinRelTest, IterEmpty) {
     EXPECT_EQ(0, br.size());
 }
 
-TEST(BinRelTest, IterBasic) {
-    BinRel br;
+TEST(EqRelTest, IterBasic) {
+    EqRel br;
     br.insert(0, 0);
     br.insert(1, 1);
     br.insert(2, 2);
@@ -369,9 +369,9 @@ TEST(BinRelTest, IterBasic) {
 }
 
 
-TEST(BinRelTest, IterRange) {
+TEST(EqRelTest, IterRange) {
     // write some tests to use that templated range for different indexes too
-    BinRel br;
+    EqRel br;
     br.insert(0,1);
     br.insert(0,2);
     br.insert(0,3);
@@ -469,11 +469,11 @@ TEST(BinRelTest, IterRange) {
     }
 }
 
-TEST(BinRelTest, IterPartition) {
+TEST(EqRelTest, IterPartition) {
     // test that the union equals the input
 
     // test single set binary rel
-    BinRel br;
+    EqRel br;
     std::vector<std::pair<RamDomain, RamDomain>> values;
     RamDomain N = 1000;
     for (RamDomain i = 0; i < N; ++i) {
@@ -514,10 +514,10 @@ TEST(BinRelTest, IterPartition) {
     EXPECT_EQ(br.size(), values.size());
 }
 
-TEST(BinRelTest, ParallelTest) {
+TEST(EqRelTest, ParallelTest) {
     // insert a lot of times into a disjoint set over multiple std::threads
 
-    BinRel br;
+    EqRel br;
     std::vector<std::thread> starts;
     // number of inserts per thread
     int N = 1000;
@@ -552,10 +552,10 @@ TEST(BinRelTest, ParallelTest) {
     EXPECT_EQ(count, br.size());
 }
 
-TEST(BinRelTest, Scaling) {
+TEST(EqRelTest, Scaling) {
     const int N = 10000;
 
-    BinRel br;
+    EqRel br;
     for (int i = 0; i < N; ++i) {
         br.insert(i,i);
     }
@@ -564,7 +564,7 @@ TEST(BinRelTest, Scaling) {
 }
 
 #ifdef _OPENMP
-TEST(BinRelTest, ParallelScaling) {
+TEST(EqRelTest, ParallelScaling) {
     // use OpenMP this time
 
     // test with varying number of threads (100000 will likely catch a race condition)
@@ -579,7 +579,7 @@ TEST(BinRelTest, ParallelScaling) {
 
     std::cout << "number of threads: " << omp_get_max_threads() << std::endl;
 
-    BinRel br;
+    EqRel br;
 #pragma omp parallel for
     for (int i = 0; i < N; i++) {
         // unfortunately, we can't do insert(data1, data2) as we won't know how many pairs...

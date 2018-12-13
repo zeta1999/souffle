@@ -51,7 +51,7 @@ constexpr block_t rank_mask = (1ul << split_size) - 1;
  */
 class DisjointSet {
     template <typename TupleType>
-    friend class BinaryRelation;
+    friend class EquivalenceRelation;
 
     PiggyList<std::atomic<block_t>> a_blocks;
 public:
@@ -248,7 +248,7 @@ class SparseDisjointSet {
     DisjointSet ds;
 
     template <typename TupleType>
-    friend class BinaryRelation;
+    friend class EquivalenceRelation;
 
     typedef std::pair<SparseDomain, parent_t> PairStore;
     typedef LambdaBTreeSet<PairStore, std::function<parent_t(PairStore&)>, EqrelMapComparator<PairStore>> SparseMap;

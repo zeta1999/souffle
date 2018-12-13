@@ -8,9 +8,11 @@
 
 /************************************************************************
  *
- * @file BinaryRelation.h
+ * @file EquivalenceRelation.h
  *
- * Defines a binary relation interface
+ * Defines a binary relation interface to be used with Souffle as a relational store.
+ * Pairs inserted into this relation implicitly store a reflexive, symmetric, and transitive relation
+ * with each other.
  *
  ***********************************************************************/
 
@@ -27,7 +29,7 @@
 
 namespace souffle {
 template <typename TupleType>
-class BinaryRelation {
+class EquivalenceRelation {
     using DomainInt = typename TupleType::value_type;
     enum { arity = TupleType::arity };
 
@@ -49,8 +51,8 @@ class BinaryRelation {
     mutable std::atomic<bool> statesMapStale;
 
 public:
-    BinaryRelation() : statesMapStale(false) {};
-    ~BinaryRelation() {
+    EquivalenceRelation() : statesMapStale(false) {};
+    ~EquivalenceRelation() {
         emptyPartition();
     }
 
@@ -95,7 +97,7 @@ public:
      * inserts all nodes from the other relation into this one
      * @param other the binary relation from which to add elements from
      */
-    void insertAll(const BinaryRelation<TupleType>& other) {
+    void insertAll(const EquivalenceRelation<TupleType>& other) {
         other.genAllDisjointSetLists();
 
         // iterate over partitions at a time
@@ -119,7 +121,7 @@ public:
      * explicitly new knowledge. After this operation the "implicitly new tuples" are now
      * explicitly inserted this relation.
      */
-    void extend(const BinaryRelation<TupleType>& other) {
+    void extend(const EquivalenceRelation<TupleType>& other) {
         // nothing to extend if there's no new/original knowledge
         if (other.size() == 0 || this->size() == 0) return;
 
@@ -259,7 +261,7 @@ public:
     //   - we don't deal with pointers (so no virtual)
     //   - and a single iter type is expected (see Relation::iterator e.g.) (i think)
     class iterator : public std::iterator<std::forward_iterator_tag, TupleType> {
-        const BinaryRelation* br = nullptr;
+        const EquivalenceRelation* br = nullptr;
         // special tombstone value to notify that this iter represents the end
         bool isEndVal = false;
 
@@ -281,10 +283,10 @@ public:
 
     public:
         // one iterator for signalling the end (simplifies)
-        explicit iterator(const BinaryRelation* br, bool /* signalIsEndIterator */)
+        explicit iterator(const EquivalenceRelation* br, bool /* signalIsEndIterator */)
                 : br(br), isEndVal(true){};
 
-        explicit iterator(const BinaryRelation* br) : 
+        explicit iterator(const EquivalenceRelation* br) : 
             br(br), ityp(IterType::ALL), 
             djSetMapListIt(br->equivalencePartition.begin()), djSetMapListEnd(br->equivalencePartition.end()) {
                 // no need to fast forward if this iterator is empty
@@ -300,8 +302,8 @@ public:
                 updatePosterior();
             }
 
-        // WITHIN: iterator for everything within the same DJset (used for BinaryRelation.partition())
-        explicit iterator(const BinaryRelation* br, const StatesBucket within)
+        // WITHIN: iterator for everything within the same DJset (used for EquivalenceRelation.partition())
+        explicit iterator(const EquivalenceRelation* br, const StatesBucket within)
                 : br(br), ityp(IterType::WITHIN), djSetList(within) {
             // empty dj set
             if (djSetList->size() == 0) {
@@ -313,7 +315,7 @@ public:
         }
 
         // ANTERIOR: iterator that yields all (former, _) \in djset(former) (djset(former) === within)
-        explicit iterator(const BinaryRelation* br, const DomainInt former, const StatesBucket within)
+        explicit iterator(const EquivalenceRelation* br, const DomainInt former, const StatesBucket within)
                 : br(br), ityp(IterType::ANTERIOR), djSetList(within) {
             if (djSetList->size() == 0) {
                 isEndVal = true;
@@ -326,7 +328,7 @@ public:
         // ANTPOST: iterator that yields all (former, latter) \in djset(former), (djset(former) ==
         // djset(latter) == within)
         explicit iterator(
-                const BinaryRelation* br, const DomainInt former, DomainInt latter, const StatesBucket within)
+                const EquivalenceRelation* br, const DomainInt former, DomainInt latter, const StatesBucket within)
                 : br(br), ityp(IterType::ANTPOST), djSetList(within) {
             if (djSetList->size() == 0) {
                 isEndVal = true;

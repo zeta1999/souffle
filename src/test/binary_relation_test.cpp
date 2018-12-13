@@ -512,46 +512,8 @@ TEST(EqRelTest, IterPartition) {
     EXPECT_EQ(br.size(), values.size());
 }
 
-TEST(EqRelTest, ParallelTest) {
-    // insert a lot of times into a disjoint set over multiple std::threads
-
-    EqRel br;
-    std::vector<std::thread> starts;
-    // number of inserts per thread
-    int N = 1000;
-    // int N = 100000;
-
-    starts.push_back(std::thread([&]() {
-        for (RamDomain i = 0; i < N * 4; i += 4) br.insert(i, i + 4);
-    }));
-
-    starts.push_back(std::thread([&]() {
-        for (RamDomain i = 1; i < N * 4; i += 4) br.insert(i, i + 4);
-    }));
-
-    starts.push_back(std::thread([&]() {
-        for (RamDomain i = 2; i < N * 4; i += 4) br.insert(i, i + 4);
-    }));
-
-    starts.push_back(std::thread([&]() {
-        for (RamDomain i = 3; i < N * 4; i += 4) br.insert(i, i + 4);
-    }));
-
-    for (auto& r : starts) r.join();
-
-    EXPECT_EQ((size_t)(N + 1) * (N + 1) * 4, br.size());
-
-    size_t count = 0;
-    for (auto x : br) {
-        ++count;
-        testutil::ignore(x);
-    }
-
-    EXPECT_EQ(count, br.size());
-}
-
 TEST(EqRelTest, Scaling) {
-    const int N = 10000;
+    const int N = 100;
 
     EqRel br;
     for (int i = 0; i < N; ++i) {

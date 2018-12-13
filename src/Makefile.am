@@ -271,10 +271,10 @@ test_binary_relation_test_SOURCES = test/binary_relation_test.cpp
 test_binary_relation_test_LDADD = libsouffle.la 
 
 # pnappa's good ol fashioned data structure tests (auxilliary structures to binrel, and potentially useful outside)
-check_PROGRAMS += test/pnappa_datastructure_test
-test_pnappa_datastructure_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
-test_pnappa_datastructure_test_SOURCES = test/pnappa_datastructure_test.cpp
-test_pnappa_datastructure_test_LDADD = libsouffle.la
+check_PROGRAMS += test/eqrel_datastructure_test
+test_eqrel_datastructure_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
+test_eqrel_datastructure_test_SOURCES = test/eqrel_datastructure_test.cpp
+test_eqrel_datastructure_test_LDADD = libsouffle.la
 
 # compiled ram tuple test
 check_PROGRAMS += test/compiled_tuple_test

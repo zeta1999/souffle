@@ -5,10 +5,11 @@ aliases:
   -  &linux_deps
     - automake
     - autoconf
+    - bash-completion
     - bison
     - build-essential
     - flex
-      libffi-dev
+    - libffi-dev
     - libncurses5-dev
     - libtool
     - lsb-release

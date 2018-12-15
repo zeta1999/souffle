@@ -5,7 +5,6 @@ aliases:
   -  &linux_deps
     - automake
     - autoconf
-    - bash-completion
     - bison
     - build-essential
     - flex

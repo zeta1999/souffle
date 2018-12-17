@@ -23,7 +23,7 @@ _souffle()
             return
             ;;
         --jobs|-j)
-            _ncpus
+            COMPREPLY=( $(compgen -W $(_ncpus) -- "$cur" ) )
             return
             ;;
         --provenance|-t)

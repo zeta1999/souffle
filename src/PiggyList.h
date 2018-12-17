@@ -294,11 +294,11 @@ public:
             return ret;
         };
 
-        bool operator==(const iterator& x) {
+        bool operator==(const iterator& x) const {
             return x.cIndex == this->cIndex && x.bl == this->bl;
         };
 
-        bool operator!=(const iterator& x) {
+        bool operator!=(const iterator& x) const {
             return !(x == *this);
         };
     };

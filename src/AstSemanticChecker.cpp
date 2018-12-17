@@ -112,7 +112,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     }
 
-    // -- check grounded variables --
+    // -- check grounded variables and records --
     visitDepthFirst(nodes, [&](const AstClause& clause) {
         // only interested in rules
         if (clause.isFact()) {
@@ -127,6 +127,13 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         for (const AstVariable* cur : getVariables(clause)) {
             if (!isGrounded[cur] && reportedVars.insert(cur->getName()).second) {
                 report.addError("Ungrounded variable " + cur->getName(), cur->getSrcLoc());
+            }
+        }
+
+        // all records need to be grounded
+        for (const AstRecordInit* cur : getRecords(clause)) {
+            if (!isGrounded[cur]) {
+                report.addError("Ungrounded record", cur->getSrcLoc());
             }
         }
     });

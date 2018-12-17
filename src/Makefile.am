@@ -123,6 +123,7 @@ souffle_sources = \
               RamVisitor.h                              \
               ReadStream.h                              \
               ReadStreamCSV.h                           \
+              ReorderLiteralsTransformer.cpp            \
               SignalHandler.h                           \
               SrcLocation.cpp    SrcLocation.h          \
               StringPool.h                              \

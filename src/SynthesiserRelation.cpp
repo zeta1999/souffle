@@ -1030,7 +1030,7 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
 
     // eqrel is only for binary relations
     out << "using t_tuple = ram::Tuple<RamDomain, 2>;\n";
-    out << "using t_ind_" << masterIndex << " = BinaryRelation<t_tuple>;\n";
+    out << "using t_ind_" << masterIndex << " = EquivalenceRelation<t_tuple>;\n";
     out << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
 
     // generate auxiliary iterators that reorder tuples according to index orders

@@ -111,13 +111,6 @@ public:
         num_tuples++;
     }
 
-    /** Insert tuple via arguments */
-    template <typename... Args>
-    void insert(RamDomain first, Args... rest) {
-        RamDomain tuple[] = {first, RamDomain(rest)...};
-        insert(tuple);
-    }
-
     /** Merge another relation into this relation */
     void insert(const InterpreterRelation& other) {
         assert(getArity() == other.getArity());

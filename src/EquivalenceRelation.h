@@ -41,14 +41,15 @@ class EquivalenceRelation {
 
     // mapping from representative to disjoint set
     // just a cache, essentially, used for iteration over
-    using StatesList =  souffle::PiggyList<value_type>;
+    using StatesList = souffle::PiggyList<value_type>;
     using StatesBucket = StatesList*;
     using StorePair = std::pair<value_type, StatesBucket>;
-    using StatesMap =  souffle::LambdaBTreeSet<StorePair, std::function<StatesBucket(StorePair&)>,
+    using StatesMap = souffle::LambdaBTreeSet<StorePair, std::function<StatesBucket(StorePair&)>,
             souffle::EqrelMapComparator<StorePair>>;
     mutable StatesMap equivalencePartition;
     // whether the cache is stale
     mutable std::atomic<bool> statesMapStale;
+
 public:
     EquivalenceRelation() : statesMapStale(false){};
     ~EquivalenceRelation() {

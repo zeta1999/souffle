@@ -255,7 +255,8 @@ class SparseDisjointSet {
     friend class EquivalenceRelation;
 
     using PairStore = std::pair<SparseDomain, parent_t>;
-    using SparseMap = LambdaBTreeSet<PairStore, std::function<parent_t(PairStore&)>, EqrelMapComparator<PairStore>>;
+    using SparseMap =
+            LambdaBTreeSet<PairStore, std::function<parent_t(PairStore&)>, EqrelMapComparator<PairStore>>;
     using DenseMap = RandomInsertPiggyList<SparseDomain>;
 
     typename SparseMap::operation_hints last_ins;

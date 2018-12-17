@@ -883,6 +883,11 @@ public:
         data.extend(other.getData());
     }
 
+    template <typename... Idxs>
+    void insertAll(const Relation<souffle::ram::EqRel, arity, Idxs...>& other) {
+        data.insertAll(other.getData());
+    }
+
     template <typename Setup, typename... Idxs>
     void insertAll(const Relation<Setup, arity, Idxs...>& other) {
         operation_context ctxt;

@@ -250,7 +250,7 @@ public:
     using key_type = Key;
     using chunk = range<iterator>;
 
-private:
+protected:
     /* ------------- static utilities ----------------- */
 
     const static SearchStrategy search;
@@ -1167,7 +1167,7 @@ public:
 
     using operation_hints = btree_operation_hints<1>;
 
-private:
+protected:
 #ifdef IS_PARALLEL
     // a pointer to the root node of this tree
     node* volatile root;
@@ -2083,7 +2083,7 @@ public:
         return R(b - a, root, static_cast<leaf_node*>(leftmost));
     }
 
-private:
+protected:
     /**
      * Determines whether the range covered by the given node is also
      * covering the given key value.
@@ -2112,6 +2112,7 @@ private:
                weak_less(k, node->keys[node->numElements - 1]);
     }
 
+private:
     /**
      * Determines whether the range covered by this node covers
      * the upper bound of the given key.

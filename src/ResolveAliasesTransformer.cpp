@@ -41,10 +41,90 @@ std::unique_ptr<AstClause> resolveAliases(const AstClause& clause);
 // TODO: should be static?
 std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause);
 
-// TODO: add commenting
+// TODO: add commenting: restore temporary variables for expressions in atoms
 // TODO: should be static?
-// TODO: fill out thsi function
-void removeComplexTermsInAtoms(AstClause& clause);
+void removeComplexTermsInAtoms(AstClause& clause) {
+    // get list of atoms
+    // TODO: why not a set?
+    std::vector<AstAtom*> atoms;
+    for (AstLiteral* literal : clause.getBodyLiterals()) {
+        if (auto* atom = dynamic_cast<AstAtom*>(literal)) {
+            atoms.push_back(atom);
+        }
+    }
+
+    // find all functors in atoms
+    std::vector<const AstArgument*> terms;
+    for (const AstAtom* atom : atoms) {
+        for (const AstArgument* arg : atom->getArguments()) {
+            // ignore if not a functor
+            // TODO: why is it like this and not a visitdepthfirst?
+            // TODO: this means that record functors arent fixed up, is this ok?
+            if (!dynamic_cast<const AstFunctor*>(arg)) {
+                continue;
+            }
+
+            // add this functor if not seen yet
+            if (!any_of(terms, [&](const AstArgument* curr) { return *curr == *arg; })) {
+                terms.push_back(arg);
+            }
+        }
+    }
+
+    // substitute them with new variables (a real map would compare pointers)
+    // TODO: why not just use a map?
+    using substitution_map =
+            std::vector<std::pair<std::unique_ptr<AstArgument>, std::unique_ptr<AstVariable>>>;
+    substitution_map map;
+
+    int varCounter = 0;
+    for (const AstArgument* arg : terms) {
+        // create a new mapping for this term
+        auto term = std::unique_ptr<AstArgument>(arg->clone());
+        auto newVariable = std::make_unique<AstVariable>(" _tmp_" + toString(varCounter++));
+        map.push_back(std::make_pair(std::move(term), std::move(newVariable)));
+    }
+
+    // apply mapping to replace the terms with the variables
+    struct Update : public AstNodeMapper {
+        const substitution_map& map;
+
+        Update(const substitution_map& map) : map(map) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // check whether node needs to be replaced
+            for (const auto& pair : map) {
+                auto& term = pair.first;
+                auto& variable = pair.second;
+
+                // TODO: using find instead?
+                if (*term == *node) {
+                    return std::unique_ptr<AstNode>(variable->clone());
+                }
+            }
+
+            // continue recursively
+            node->apply(*this);
+            return node;
+        }
+    };
+
+    // update atoms
+    Update update(map);
+    for (AstAtom* atom : atoms) {
+        atom->apply(update);
+    }
+
+    // add the necessary variable constraints to the clause
+    for (const auto& pair : map) {
+        auto& term = pair.first;
+        auto& variable = pair.second;
+
+        clause.addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                std::unique_ptr<AstArgument>(variable->clone()),
+                std::unique_ptr<AstArgument>(term->clone())));
+    }
+}
 
 bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
@@ -52,16 +132,16 @@ bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
     // get all clauses
     std::vector<const AstClause*> clauses;
     visitDepthFirst(program, [&](const AstRelation& rel) {
-        for (const auto& cur : rel.getClauses()) {
-            clauses.push_back(cur);
+        for (const auto& clause : rel.getClauses()) {
+            clauses.push_back(clause);
         }
     });
 
     // clean all clauses
-    for (const AstClause* cur : clauses) {
+    for (const AstClause* clause : clauses) {
         // -- Step 1 --
         // get rid of aliases
-        std::unique_ptr<AstClause> noAlias = resolveAliases(*cur);
+        std::unique_ptr<AstClause> noAlias = resolveAliases(*clause);
 
         // clean up equalities
         std::unique_ptr<AstClause> cleaned = removeTrivialEquality(*noAlias);
@@ -72,7 +152,7 @@ bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
         removeComplexTermsInAtoms(*cleaned);
 
         // exchange the rules
-        program.removeClause(cur);
+        program.removeClause(clause);
         program.appendClause(std::move(cleaned));
     }
 
@@ -396,75 +476,6 @@ std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause) {
 
     // done
     return res;
-}
-
-void removeComplexTermsInAtoms(AstClause& clause) {
-    // restore temporary variables for expressions in atoms
-
-    // get list of atoms
-    std::vector<AstAtom*> atoms;
-    for (AstLiteral* cur : clause.getBodyLiterals()) {
-        if (auto* arg = dynamic_cast<AstAtom*>(cur)) {
-            atoms.push_back(arg);
-        }
-    }
-
-    // find all binary operations in atoms
-    std::vector<const AstArgument*> terms;
-    for (const AstAtom* cur : atoms) {
-        for (const AstArgument* arg : cur->getArguments()) {
-            // only interested in functions
-            if (!(dynamic_cast<const AstFunctor*>(arg))) {
-                continue;
-            }
-            // add this one if not yet registered
-            if (!any_of(terms, [&](const AstArgument* cur) { return *cur == *arg; })) {
-                terms.push_back(arg);
-            }
-        }
-    }
-
-    // substitute them with variables (a real map would compare pointers)
-    using substitution_map =
-            std::vector<std::pair<std::unique_ptr<AstArgument>, std::unique_ptr<AstVariable>>>;
-    substitution_map map;
-
-    int var_counter = 0;
-    for (const AstArgument* arg : terms) {
-        map.push_back(std::make_pair(std::unique_ptr<AstArgument>(arg->clone()),
-                std::make_unique<AstVariable>(" _tmp_" + toString(var_counter++))));
-    }
-
-    // apply mapping to replace terms with variables
-    struct Update : public AstNodeMapper {
-        const substitution_map& map;
-        Update(const substitution_map& map) : map(map) {}
-        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
-            // check whether node needs to be replaced
-            for (const auto& cur : map) {
-                if (*cur.first == *node) {
-                    return std::unique_ptr<AstNode>(cur.second->clone());
-                }
-            }
-            // continue recursively
-            node->apply(*this);
-            return node;
-        }
-    };
-
-    Update update(map);
-
-    // update atoms
-    for (AstAtom* atom : atoms) {
-        atom->apply(update);
-    }
-
-    // add variable constraints to clause
-    for (const auto& cur : map) {
-        clause.addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
-                std::unique_ptr<AstArgument>(cur.second->clone()),
-                std::unique_ptr<AstArgument>(cur.first->clone())));
-    }
 }
 
 }  // namespace souffle

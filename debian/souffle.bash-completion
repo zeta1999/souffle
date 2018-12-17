@@ -5,9 +5,6 @@ _souffle()
     local cur prev opts
     _init_completion -s || return
 
-    local dlFile="*.@(dl)"
-    local profileFile="*.@(json)"
-
     case "$prev" in
         --fact-dir|-F|--output-dir|-D|--include-dir)
             _filedir -d

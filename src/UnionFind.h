@@ -34,15 +34,15 @@ namespace souffle {
 #define unlikely(x) __builtin_expect((x), 0)
 #define likely(x) __builtin_expect((x), 1)
 
-typedef uint8_t rank_t;
+using rank_t = uint8_t;
 /* technically uint56_t, but, doesn't exist. Just be careful about storing > 2^56 elements. */
-typedef uint64_t parent_t;
+using parent_t = uint64_t;
 
 // number of bits that the rank is
 constexpr uint8_t split_size = 8u;
 
 // block_t stores parent in the upper half, rank in the lower half
-typedef uint64_t block_t;
+using block_t = uint64_t;
 // block_t & rank_mask extracts the rank
 constexpr block_t rank_mask = (1ul << split_size) - 1;
 
@@ -254,10 +254,10 @@ class SparseDisjointSet {
     template <typename TupleType>
     friend class EquivalenceRelation;
 
-    typedef std::pair<SparseDomain, parent_t> PairStore;
-    typedef LambdaBTreeSet<PairStore, std::function<parent_t(PairStore&)>, EqrelMapComparator<PairStore>>
-            SparseMap;
-    typedef RandomInsertPiggyList<SparseDomain> DenseMap;
+    using PairStore = std::pair<SparseDomain, parent_t>;
+    using SparseMap = LambdaBTreeSet<PairStore, std::function<parent_t(PairStore&)>, EqrelMapComparator<PairStore>>;
+    using DenseMap = RandomInsertPiggyList<SparseDomain>;
+
     typename SparseMap::operation_hints last_ins;
 
     SparseMap sparseToDenseMap;

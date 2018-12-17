@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2018, Souffle Developers
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -180,17 +180,11 @@ public:
                         auto res = (*pos).second;
 
                         cur->lock.end_write();
-                        // XXX (pnappa): is this correct..?
-                        // XXX: i think it should throw. updating providence for
-                        // a dynamic key doesn't make sense... tbh providence stuff should be
-                        // ignored in this version.
                         return res;
                     }
 
-                    // read result (atomic) -- just as a proof of concept, this is actually not valid!!
-                    std::atomic<typename Functor::result_type>& loc =
-                            *reinterpret_cast<std::atomic<typename Functor::result_type>*>(&(*pos).second);
-                    auto res = loc.load(std::memory_order_relaxed);
+                    // get the result before releasing lock
+                    auto res = (*pos).second;
 
                     // check validity
                     if (!cur->lock.validate(cur_lease)) {
@@ -242,6 +236,7 @@ public:
                     return insert(k, hints, f);
                 }
 
+                // TODO (pnappa): remove provenance from LambdaBTree - no use for it
                 // update provenance information
                 if (typeid(Comparator) != typeid(WeakComparator) && this->less(k, *(pos - 1))) {
                     if (!cur->lock.try_upgrade_to_write(cur_lease)) {
@@ -254,8 +249,6 @@ public:
                     auto res = (*(pos - 1)).second;
 
                     cur->lock.end_write();
-                    // XXX: this provenance code should probably be removed, doesn't make
-                    // sense to run update on a dynamic key
                     return res;
                 }
 
@@ -584,13 +577,6 @@ public:
     }
 };
 
-//// Instantiation of static member search.
-// template <typename Key, typename Comparator, typename Allocator, unsigned blockSize, typename
-// SearchStrategy,
-//        bool isSet>
-// const SearchStrategy LambdaBTree<Key, Comparator, Allocator, blockSize, SearchStrategy,
-// isSet>::parenttype::search;
-//
 }  // end namespace detail
 
 /**

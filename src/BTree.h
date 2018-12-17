@@ -550,7 +550,7 @@ protected:
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
 #endif
-            assert(this->numElements == maxKeys && true);
+            assert(this->numElements == maxKeys);
 
             // get middle element
             int split_point = getSplitPoint(idx);

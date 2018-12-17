@@ -21,7 +21,7 @@ class RandomInsertPiggyList {
     const size_t INITIALBLOCKSIZE = (1ul << BLOCKBITS);
 
     // number of elements currently stored within
-    std::atomic<size_t> numElements;
+    std::atomic<size_t> numElements{0};
 
     // 2^64 - 1 elements can be stored (default initialised to nullptrs)
     static constexpr size_t maxContainers = 64;
@@ -45,10 +45,10 @@ class RandomInsertPiggyList {
     }
 
 public:
-    RandomInsertPiggyList() : numElements(0) {}
+    RandomInsertPiggyList() {}
     // an instance where the initial size is not 65k, and instead is user settable (to a power of
     // initialbitsize)
-    RandomInsertPiggyList(size_t initialbitsize) : BLOCKBITS(initialbitsize), numElements(0) {}
+    RandomInsertPiggyList(size_t initialbitsize) : BLOCKBITS(initialbitsize) {}
 
     /** copy constructor */
     RandomInsertPiggyList(const RandomInsertPiggyList& other) : BLOCKBITS(other.BLOCKBITS) {
@@ -294,12 +294,12 @@ public:
             return ret;
         };
 
-        friend bool operator==(const iterator& x, const iterator& y) {
-            return x.cIndex == y.cIndex && x.bl == y.bl;
+        bool operator==(const iterator& x) {
+            return x.cIndex == this->cIndex && x.bl == this->bl;
         };
 
-        friend bool operator!=(const iterator& x, const iterator& y) {
-            return !(x == y);
+        bool operator!=(const iterator& x) {
+            return !(x == *this);
         };
     };
 

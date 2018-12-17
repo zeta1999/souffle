@@ -30,28 +30,25 @@
 namespace souffle {
 template <typename TupleType>
 class EquivalenceRelation {
-    using DomainInt = typename TupleType::value_type;
-    enum { arity = TupleType::arity };
+    using value_type = typename TupleType::value_type;
 
     // marked as mutable due to difficulties with the const enforcement via the Relation API
     // const operations *may* safely change internal state (i.e. collapse djset forest)
-    mutable souffle::SparseDisjointSet<DomainInt> sds;
+    mutable souffle::SparseDisjointSet<value_type> sds;
 
     // read/write lock on equivalencePartition
     mutable souffle::shared_mutex statesLock;
 
     // mapping from representative to disjoint set
     // just a cache, essentially, used for iteration over
-    typedef souffle::PiggyList<DomainInt> StatesList;
-    typedef StatesList* StatesBucket;
-    typedef std::pair<DomainInt, StatesBucket> StorePair;
-    typedef souffle::LambdaBTreeSet<StorePair, std::function<StatesBucket(StorePair&)>,
-            souffle::EqrelMapComparator<StorePair>>
-            StatesMap;
+    using StatesList =  souffle::PiggyList<value_type>;
+    using StatesBucket = StatesList*;
+    using StorePair = std::pair<value_type, StatesBucket>;
+    using StatesMap =  souffle::LambdaBTreeSet<StorePair, std::function<StatesBucket(StorePair&)>,
+            souffle::EqrelMapComparator<StorePair>>;
     mutable StatesMap equivalencePartition;
     // whether the cache is stale
     mutable std::atomic<bool> statesMapStale;
-
 public:
     EquivalenceRelation() : statesMapStale(false){};
     ~EquivalenceRelation() {
@@ -75,7 +72,7 @@ public:
      * @param y node to be added/paired
      * @return true if the pair is new to the data structure
      */
-    bool insert(DomainInt x, DomainInt y) {
+    bool insert(value_type x, value_type y) {
         operation_hints z;
         return insert(x, y, z);
     };
@@ -87,7 +84,7 @@ public:
      * @param z the hints to where the pair should be inserted (not applicable atm)
      * @return true if the pair is new to the data structure
      */
-    bool insert(DomainInt x, DomainInt y, operation_hints) {
+    bool insert(value_type x, value_type y, operation_hints) {
         // indicate that iterators will have to generate on request
         this->statesMapStale.store(true, std::memory_order_relaxed);
         bool retval = contains(x, y);
@@ -105,7 +102,7 @@ public:
         // iterate over partitions at a time
         for (typename StatesMap::chunk it : other.equivalencePartition.getChunks(MAX_THREADS)) {
             for (auto& p : it) {
-                DomainInt rep = p.first;
+                value_type rep = p.first;
                 StatesList& pl = *p.second;
                 const size_t ksize = pl.size();
                 for (size_t i = 0; i < ksize; ++i) {
@@ -130,18 +127,18 @@ public:
         this->genAllDisjointSetLists();
         other.genAllDisjointSetLists();
 
-        std::set<DomainInt> repsCovered;
+        std::set<value_type> repsCovered;
 
         // find all the disjoint sets that need to be added to this relation
         // that exist in other (and exist in this)
         {
             auto it = this->sds.sparseToDenseMap.begin();
             auto end = this->sds.sparseToDenseMap.end();
-            DomainInt el;
+            value_type el;
             for (; it != end; ++it) {
                 std::tie(el, std::ignore) = *it;
                 if (other.containsElement(el)) {
-                    DomainInt rep = other.sds.findNode(el);
+                    value_type rep = other.sds.findNode(el);
                     if (repsCovered.count(rep) == 0) {
                         repsCovered.emplace(rep);
                     }
@@ -151,8 +148,8 @@ public:
 
         // add the intersecting dj sets into this one
         {
-            DomainInt el;
-            DomainInt rep;
+            value_type el;
+            value_type rep;
             auto it = other.sds.sparseToDenseMap.begin();
             auto end = other.sds.sparseToDenseMap.end();
             for (; it != end; ++it) {
@@ -166,7 +163,7 @@ public:
     }
 
 protected:
-    bool containsElement(DomainInt e) const {
+    bool containsElement(value_type e) const {
         return this->sds.nodeExists(e);
     }
 
@@ -176,7 +173,7 @@ public:
      * @param x front of pair
      * @param y back of pair
      */
-    bool contains(DomainInt x, DomainInt y) const {
+    bool contains(value_type x, value_type y) const {
         return sds.contains(x, y);
     }
 
@@ -317,7 +314,7 @@ public:
         }
 
         // ANTERIOR: iterator that yields all (former, _) \in djset(former) (djset(former) === within)
-        explicit iterator(const EquivalenceRelation* br, const DomainInt former, const StatesBucket within)
+        explicit iterator(const EquivalenceRelation* br, const value_type former, const StatesBucket within)
                 : br(br), ityp(IterType::ANTERIOR), djSetList(within) {
             if (djSetList->size() == 0) {
                 isEndVal = true;
@@ -329,7 +326,7 @@ public:
 
         // ANTPOST: iterator that yields all (former, latter) \in djset(former), (djset(former) ==
         // djset(latter) == within)
-        explicit iterator(const EquivalenceRelation* br, const DomainInt former, DomainInt latter,
+        explicit iterator(const EquivalenceRelation* br, const value_type former, value_type latter,
                 const StatesBucket within)
                 : br(br), ityp(IterType::ANTPOST), djSetList(within) {
             if (djSetList->size() == 0) {
@@ -341,7 +338,7 @@ public:
         }
 
         /** explicit set first half of cPair */
-        inline void setAnterior(const DomainInt a) {
+        inline void setAnterior(const value_type a) {
             this->cPair[0] = a;
         }
 
@@ -351,7 +348,7 @@ public:
         }
 
         /** explicit set second half of cPair */
-        inline void setPosterior(const DomainInt b) {
+        inline void setPosterior(const value_type b) {
             this->cPair[1] = b;
         }
 
@@ -544,7 +541,7 @@ public:
      * @param anteriorVal: The first value of the tuple to be generated for
      * @return the iterator representing this.
      */
-    iterator anteriorIt(DomainInt anteriorVal) const {
+    iterator anteriorIt(value_type anteriorVal) const {
         genAllDisjointSetLists();
 
         // locate the blocklist that the anterior val resides in
@@ -562,7 +559,7 @@ public:
      * @param posteriorVal: the B value of the tuple
      * @return the iterator representing this
      */
-    iterator antpostit(DomainInt anteriorVal, DomainInt posteriorVal) const {
+    iterator antpostit(value_type anteriorVal, value_type posteriorVal) const {
         // obv if they're in diff sets, then iteration for this pair just ends.
         if (!sds.sameSet(anteriorVal, posteriorVal)) return end();
 
@@ -580,7 +577,7 @@ public:
      * @param rep the representative of (or element within) a disjoint set of which to generate all pairs
      * @return an iterator that will generate all pairs within the disjoint set
      */
-    iterator closure(DomainInt rep) const {
+    iterator closure(value_type rep) const {
         genAllDisjointSetLists();
 
         // locate the blocklist that the val resides in

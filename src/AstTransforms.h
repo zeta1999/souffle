@@ -35,42 +35,17 @@ class AstRelation;
 
 /**
  * Transformation pass to eliminate grounded aliases.
- * e.g. resolve  a(r) , r = [x,y]    =>    a(x,y)
+ * e.g. resolve  a(r) , r = [x,y]   =>    a(x,y)
+ * e.g. resolve  a(x) , !b(y) , y = x    =>  a(x) , !b(x)
  */
 class ResolveAliasesTransformer : public AstTransformer {
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 
-    static void removeComplexTermsInAtoms(AstClause& clause);
-
 public:
     std::string getName() const override {
         return "ResolveAliasesTransformer";
     }
-
-    /**
-     * Converts the given clause into a version without variables aliasing
-     * grounded variables.
-     *
-     * @param clause the clause to be processed
-     * @return a clone of the processed clause
-     */
-    static std::unique_ptr<AstClause> resolveAliases(const AstClause& clause);
-
-    /**
-     * Removes trivial equalities of the form t = t from the given clause.
-     *
-     * @param clause the clause to be processed
-     * @return a modified clone of the given clause
-     */
-    static std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause);
-
-    /**
-     * Eliminate grounded aliases in the given program.
-     *
-     * @param program the program to be processed
-     */
-    static void resolveAliases(AstProgram& program);
 };
 
 /**

@@ -20,6 +20,8 @@
 
 namespace souffle {
 
+// TODO: maybe move these back into static methods for testing purposes
+
 /**
  * Converts the given clause into a version without variables aliasing
  * grounded variables.
@@ -37,9 +39,26 @@ std::unique_ptr<AstClause> resolveAliases(const AstClause& clause);
  * @param clause the clause to be processed
  * @return a modified clone of the given clause
  */
-// TODO: fill out this function
 // TODO: should be static?
 std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause);
+    std::unique_ptr<AstClause> res(clause.cloneHead());
+
+    // add all literals, except filtering out t = t constraints
+    for (AstLiteral* literal : clause.getBodyLiterals()) {
+        if (auto* constraint = dynamic_cast<AstBinaryConstraint*>(literal)) {
+            if (constraint->getOperator() == BinaryConstraintOp::EQ) {
+                if (*constraint->getLHS() == *constraint->getRHS()) {
+                    continue;  // skip this one
+                }
+            }
+        }
+
+        res->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
+    }
+
+    // done
+    return res;
+}
 
 // TODO: add commenting: restore temporary variables for expressions in atoms
 // TODO: should be static?
@@ -457,25 +476,6 @@ std::unique_ptr<AstClause> resolveAliases(const AstClause& clause) {
 
     // III) compute resulting clause
     return substitution(std::unique_ptr<AstClause>(clause.clone()));
-}
-
-std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause) {
-    // finally: remove t = t constraints
-    std::unique_ptr<AstClause> res(clause.cloneHead());
-    for (AstLiteral* cur : clause.getBodyLiterals()) {
-        // filter out t = t
-        if (auto* rel = dynamic_cast<AstBinaryConstraint*>(cur)) {
-            if (rel->getOperator() == BinaryConstraintOp::EQ) {
-                if (*rel->getLHS() == *rel->getRHS()) {
-                    continue;  // skip this one
-                }
-            }
-        }
-        res->addToBody(std::unique_ptr<AstLiteral>(cur->clone()));
-    }
-
-    // done
-    return res;
 }
 
 }  // namespace souffle

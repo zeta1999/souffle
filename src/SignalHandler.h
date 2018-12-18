@@ -95,9 +95,6 @@ public:
                 char& c = outputMessage[pos];
                 if (c == '\n' || c == '\t') {
                     c = ' ';
-                } else if (c == '.') {
-                    outputMessage = outputMessage.substr(0, pos + 1);
-                    break;
                 }
             }
             std::lock_guard<std::mutex> guard(outputMutex);

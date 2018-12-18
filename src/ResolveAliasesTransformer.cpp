@@ -353,13 +353,9 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
     std::unique_ptr<AstClause> res(clause.clone());
 
     // get list of atoms
-    // TODO: why not a set?
-    std::vector<AstAtom*> atoms;
-    for (AstLiteral* literal : res->getBodyLiterals()) {
-        if (auto* atom = dynamic_cast<AstAtom*>(literal)) {
-            atoms.push_back(atom);
-        }
-    }
+    std::vector<AstAtom*> atoms = res->getAtoms();
+
+    // TODO: what about functors apearing in negations, etc.?
 
     // find all functors in atoms
     std::vector<const AstArgument*> terms;
@@ -405,7 +401,6 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
                 auto& term = pair.first;
                 auto& variable = pair.second;
 
-                // TODO: using find instead?
                 if (*term == *node) {
                     return std::unique_ptr<AstNode>(variable->clone());
                 }
@@ -437,6 +432,7 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
 }
 
 bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
+    bool changed = false;
     AstProgram& program = *translationUnit.getProgram();
 
     // get all clauses
@@ -461,12 +457,13 @@ bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
         std::unique_ptr<AstClause> normalised = removeComplexTermsInAtoms(*cleaned);
 
         // exchange the rules
+        // TODO: fix up how changed is done? return values for each?
+        changed |= (*normalised != *clause);
         program.removeClause(clause);
         program.appendClause(std::move(normalised));
     }
 
-    // TODO: change from return true to actually return whether any changes were made
-    return true;
+    return changed;
 }
 
 }  // namespace souffle

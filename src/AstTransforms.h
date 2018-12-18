@@ -57,7 +57,7 @@ public:
      * grounded variables.
      *
      * @param clause the clause to be processed
-     * @return a clone of the processed clause
+     * @return a modified clone of the processed clause
      */
     static std::unique_ptr<AstClause> resolveAliases(const AstClause& clause);
 
@@ -69,7 +69,12 @@ public:
      */
     static std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause);
 
-    // TODO: add commenting: restore temporary variables for expressions in atoms
+    /**
+     * Removes complex terms in atoms, replacing them with constrained variables.
+     *
+     * @param clause the clause to be processed
+     * @return a modified clone of the processed clause
+     */
     static std::unique_ptr<AstClause> removeComplexTermsInAtoms(const AstClause& clause);
 };
 

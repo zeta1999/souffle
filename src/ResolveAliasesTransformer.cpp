@@ -40,7 +40,7 @@ std::unique_ptr<AstClause> resolveAliases(const AstClause& clause);
  * @return a modified clone of the given clause
  */
 // TODO: should be static?
-std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause);
+std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause) {
     std::unique_ptr<AstClause> res(clause.cloneHead());
 
     // add all literals, except filtering out t = t constraints
@@ -53,7 +53,7 @@ std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause);
             }
         }
 
-        res->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
+        res->addToBody(std::unique_ptr<AstLiteral>(literal->clone()));
     }
 
     // done
@@ -62,11 +62,14 @@ std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause);
 
 // TODO: add commenting: restore temporary variables for expressions in atoms
 // TODO: should be static?
-void removeComplexTermsInAtoms(AstClause& clause) {
+// TODO: change to return a new clause
+std::unique_ptr<AstClause> removeComplexTermsInAtoms(const AstClause& clause) {
+    std::unique_ptr<AstClause> res(clause.clone());
+
     // get list of atoms
     // TODO: why not a set?
     std::vector<AstAtom*> atoms;
-    for (AstLiteral* literal : clause.getBodyLiterals()) {
+    for (AstLiteral* literal : res->getBodyLiterals()) {
         if (auto* atom = dynamic_cast<AstAtom*>(literal)) {
             atoms.push_back(atom);
         }
@@ -139,10 +142,12 @@ void removeComplexTermsInAtoms(AstClause& clause) {
         auto& term = pair.first;
         auto& variable = pair.second;
 
-        clause.addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+        res->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
                 std::unique_ptr<AstArgument>(variable->clone()),
                 std::unique_ptr<AstArgument>(term->clone())));
     }
+
+    return res;
 }
 
 bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
@@ -167,12 +172,11 @@ bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
 
         // -- Step 2 --
         // restore simple terms in atoms
-        // TODO: make it return a new clause instead of changing
-        removeComplexTermsInAtoms(*cleaned);
+        std::unique_ptr<AstClause> normalised = removeComplexTermsInAtoms(*cleaned);
 
         // exchange the rules
         program.removeClause(clause);
-        program.appendClause(std::move(cleaned));
+        program.appendClause(std::move(normalised));
     }
 
     // TODO: change from return true to actually return whether any changes were made

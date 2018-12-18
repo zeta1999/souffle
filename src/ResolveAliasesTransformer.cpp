@@ -54,7 +54,7 @@ public:
      * Applies this substitution to the given argument and returns a pointer
      * to the modified argument.
      *
-     * @param node: the node to be transformed
+     * @param node the node to be transformed
      * @return a pointer to the modified or replaced node
      */
     virtual std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const {
@@ -192,18 +192,7 @@ struct Equation {
 
 }  // namespace
 
-// TODO: maybe move these back into static methods for testing purposes
-
-/**
- * Converts the given clause into a version without variables aliasing
- * grounded variables.
- *
- * @param clause the clause to be processed
- * @return a clone of the processed clause
- */
-// TODO: fill out this function
-// TODO: should be static?
-std::unique_ptr<AstClause> resolveAliases(const AstClause& clause) {
+std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstClause& clause) {
     // -- utilities --
 
     // tests whether something is a variable
@@ -340,14 +329,7 @@ std::unique_ptr<AstClause> resolveAliases(const AstClause& clause) {
     return substitution(std::unique_ptr<AstClause>(clause.clone()));
 }
 
-/**
- * Removes trivial equalities of the form t = t from the given clause.
- *
- * @param clause the clause to be processed
- * @return a modified clone of the given clause
- */
-// TODO: should be static?
-std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause) {
+std::unique_ptr<AstClause> ResolveAliasesTransformer::removeTrivialEquality(const AstClause& clause) {
     std::unique_ptr<AstClause> res(clause.cloneHead());
 
     // add all literals, except filtering out t = t constraints
@@ -367,10 +349,7 @@ std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause) {
     return res;
 }
 
-// TODO: add commenting: restore temporary variables for expressions in atoms
-// TODO: should be static?
-// TODO: change to return a new clause
-std::unique_ptr<AstClause> removeComplexTermsInAtoms(const AstClause& clause) {
+std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(const AstClause& clause) {
     std::unique_ptr<AstClause> res(clause.clone());
 
     // get list of atoms

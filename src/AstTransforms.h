@@ -46,6 +46,31 @@ public:
     std::string getName() const override {
         return "ResolveAliasesTransformer";
     }
+
+    // TODO: should these be pulled out from being static methods?
+
+    // TODO: check this explanation
+
+    // TODO: argument names needed?
+    /**
+     * Converts the given clause into a version without variables aliasing
+     * grounded variables.
+     *
+     * @param clause the clause to be processed
+     * @return a clone of the processed clause
+     */
+    static std::unique_ptr<AstClause> resolveAliases(const AstClause& clause);
+
+    /**
+     * Removes trivial equalities of the form t = t from the given clause.
+     *
+     * @param clause the clause to be processed
+     * @return a modified clone of the given clause
+     */
+    static std::unique_ptr<AstClause> removeTrivialEquality(const AstClause& clause);
+
+    // TODO: add commenting: restore temporary variables for expressions in atoms
+    static std::unique_ptr<AstClause> removeComplexTermsInAtoms(const AstClause& clause);
 };
 
 /**

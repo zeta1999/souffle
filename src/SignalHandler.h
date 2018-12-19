@@ -19,6 +19,7 @@
 #include <atomic>
 #include <cassert>
 #include <csignal>
+#include <cstring>
 #include <iostream>
 #include <mutex>
 #include <string>
@@ -90,15 +91,24 @@ public:
     void setMsg(const char* m) {
         if (logMessages && m != nullptr) {
             static std::mutex outputMutex;
-            std::string outputMessage(m);
-            for (size_t pos = 0; pos < outputMessage.size(); ++pos) {
-                char& c = outputMessage[pos];
-                if (c == '\n' || c == '\t') {
-                    c = ' ';
-                }
-            }
+            static bool sameLine = false;
             std::lock_guard<std::mutex> guard(outputMutex);
-            std::cout << "Starting work on " << outputMessage << std::endl;
+            if (msg != nullptr && strcmp(m, msg) == 0) {
+                std::cout << ".";
+                sameLine = true;
+            } else {
+                if (sameLine) {
+                    sameLine = false;
+                    std::cout << std::endl;
+                }
+                std::string outputMessage(m);
+                for (char& c : outputMessage) {
+                    if (c == '\n' || c == '\t') {
+                        c = ' ';
+                    }
+                }
+                std::cout << "Starting work on " << outputMessage << std::endl;
+            }
         }
         msg = m;
     }

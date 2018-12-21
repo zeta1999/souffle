@@ -544,11 +544,17 @@ protected:
          *                 (might have to be updated if the root-node needs to be split)
          * @param idx  .. the position of the insert causing the split
          */
-        void split(node** root, lock_type& root_lock, int idx) {
-#ifdef IS_PARALLEL
+        void split(node** root, lock_type& root_lock, int idx
+#ifndef IS_PARALLEL
+        		) {
+#else
+        		, std::vector<node*>& locked_nodes) {
+
             assert(this->lock.is_write_locked());
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
+            assert(this->isLeaf() || souffle::contains(locked_nodes,this));
+            assert(!this->parent || souffle::contains(locked_nodes,const_cast<node*>(this->parent)));
 #endif
             assert(this->numElements == maxKeys);
 
@@ -562,6 +568,7 @@ protected:
 #ifdef IS_PARALLEL
             // lock sibling
             sibling->lock.start_write();
+            locked_nodes.push_back(sibling);
 #endif
 
             // move data over to the new node
@@ -585,11 +592,10 @@ protected:
             sibling->numElements = maxKeys - split_point - 1;
 
             // update parent
-            grow_parent(root, root_lock, sibling);
-
 #ifdef IS_PARALLEL
-            // unlock sibling
-            sibling->lock.end_write();
+            grow_parent(root, root_lock, sibling, locked_nodes);
+#else
+            grow_parent(root, root_lock, sibling);
 #endif
         }
 
@@ -605,11 +611,17 @@ protected:
          * @param idx  .. the position of the insert triggering this operation
          */
         // TODO: remove root_lock ... no longer needed
-        int rebalance_or_split(node** root, lock_type& root_lock, int idx) {
-#ifdef IS_PARALLEL
+        int rebalance_or_split(node** root, lock_type& root_lock, int idx
+#ifndef IS_PARALLEL
+        		) {
+#else
+        		, std::vector<node*>& locked_nodes) {
+
             assert(this->lock.is_write_locked());
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
+            assert(this->isLeaf() || souffle::contains(locked_nodes,this));
+			assert(!this->parent || souffle::contains(locked_nodes,const_cast<node*>(this->parent)));
 #endif
 
             // this node is full ... and needs some space
@@ -627,7 +639,7 @@ protected:
                 // lock access to left sibling
                 if (!left->lock.try_start_write()) {
                     // left node is currently updated => skip balancing and split
-                    split(root, root_lock, idx);
+                    split(root, root_lock, idx, locked_nodes);
                     return 0;
                 }
 #endif
@@ -697,7 +709,11 @@ protected:
             }
 
             // Option B) split node
+#ifdef IS_PARALLEL
+            split(root, root_lock, idx, locked_nodes);
+#else
             split(root, root_lock, idx);
+#endif
             return 0;  // = no re-balancing
         }
 
@@ -710,11 +726,18 @@ protected:
          * @param root .. a pointer to the root-pointer of the containing tree
          * @param sibling .. the new right-sibling to be add to the parent node
          */
-        void grow_parent(node** root, lock_type& root_lock, node* sibling) {
-#ifdef IS_PARALLEL
+        void grow_parent(node** root, lock_type& root_lock, node* sibling
+#ifndef IS_PARALLEL
+        		) {
+#else
+        		, std::vector<node*>& locked_nodes) {
+
+
             assert(this->lock.is_write_locked());
             assert(!this->parent || this->parent->lock.is_write_locked());
             assert((this->parent != nullptr) || root_lock.is_write_locked());
+            assert(this->isLeaf() || souffle::contains(locked_nodes,this));
+            assert(!this->parent || souffle::contains(locked_nodes,const_cast<node*>(this->parent)));
 #endif
 
             if (this->parent == nullptr) {
@@ -741,7 +764,12 @@ protected:
                 auto parent = this->parent;
                 auto pos = this->position;
 
-                parent->insert_inner(root, root_lock, pos, this, keys[this->numElements], sibling);
+                parent->insert_inner(root, root_lock, pos, this, keys[this->numElements], sibling
+#ifdef IS_PARALLEL
+                		, locked_nodes
+#endif
+                );
+
             }
         }
 
@@ -754,9 +782,13 @@ protected:
          * @param newNode .. the new right-child of the inserted key
          */
         void insert_inner(node** root, lock_type& root_lock, unsigned pos, node* predecessor, const Key& key,
-                node* newNode) {
-#ifdef IS_PARALLEL
+                node* newNode
+#ifndef IS_PARALLEL
+        		) {
+#else
+        		, std::vector<node*>& locked_nodes) {
             assert(this->lock.is_write_locked());
+            assert(souffle::contains(locked_nodes,this));
 #endif
 
             // check capacity
@@ -764,10 +796,15 @@ protected:
 #ifdef IS_PARALLEL
                 assert(!this->parent || this->parent->lock.is_write_locked());
                 assert((this->parent) || root_lock.is_write_locked());
+                assert(!this->parent || souffle::contains(locked_nodes,const_cast<node*>(this->parent)));
 #endif
 
                 // split this node
-                pos -= rebalance_or_split(root, root_lock, pos);
+                pos -= rebalance_or_split(root, root_lock, pos
+#ifdef IS_PARALLEL
+                		, locked_nodes
+#endif
+                );
 
                 // complete insertion within new sibling if necessary
                 if (pos > this->numElements) {
@@ -778,8 +815,9 @@ protected:
                     auto other = this->parent->getChild(this->position + 1);
 
 #ifdef IS_PARALLEL
-                    // lock other side
-                    other->lock.start_write();
+                    // make sure other side is write locked
+                    assert(other->lock.is_write_locked());
+                    assert(souffle::contains(locked_nodes,other));
 
                     // search for new position (since other may have been altered in the meanwhile)
                     size_type i = 0;
@@ -788,10 +826,11 @@ protected:
 
                     pos = (i > other->numElements) ? 0 : i;
 #endif
-                    other->insert_inner(root, root_lock, pos, predecessor, key, newNode);
+                    other->insert_inner(root, root_lock, pos, predecessor, key, newNode
 #ifdef IS_PARALLEL
-                    other->lock.end_write();
+                		, locked_nodes
 #endif
+                    );
                     return;
                 }
             }
@@ -1483,7 +1522,7 @@ public:
 
                 // split this node
                 auto old_root = root;
-                idx -= cur->rebalance_or_split(const_cast<node**>(&root), root_lock, idx);
+                idx -= cur->rebalance_or_split(const_cast<node**>(&root), root_lock, idx, parents);
 
                 // release parent lock
                 for (auto it = parents.rbegin(); it != parents.rend(); ++it) {

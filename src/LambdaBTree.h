@@ -310,7 +310,7 @@ public:
                 // split this node
                 auto old_root = this->root;
                 idx -= cur->rebalance_or_split(
-                        const_cast<typename parenttype::node**>(&this->root), this->root_lock, idx);
+                        const_cast<typename parenttype::node**>(&this->root), this->root_lock, idx, parents);
 
                 // release parent lock
                 for (auto it = parents.rbegin(); it != parents.rend(); ++it) {

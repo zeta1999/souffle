@@ -384,6 +384,29 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
                 const_cast<AstIODirective&>(ioDirective).setName(pos->second);
             }
         });
+
+        // rename field types in records
+        visitDepthFirst(node, [&](const AstRecordType& recordType) {
+            auto& fields = recordType.getFields();
+            for (size_t i = 0; i < fields.size(); i++) {
+                auto& field = fields[i];
+                auto pos = typeNameMapping.find(field.type);
+                if (pos != typeNameMapping.end()) {
+                    const_cast<AstRecordType&>(recordType).setFieldType(i, pos->second);
+                }
+            }
+        });
+
+        // rename variant types in unions
+        visitDepthFirst(node, [&](const AstUnionType& unionType) {
+            auto& variants = unionType.getTypes();
+            for (size_t i = 0; i < variants.size(); i++) {
+                auto pos = typeNameMapping.find(variants[i]);
+                if (pos != typeNameMapping.end()) {
+                    const_cast<AstUnionType&>(unionType).setVariantType(i, pos->second);
+                }
+            }
+        });
     };
 
     // rename attribute type in headers and atoms in clauses of the relation
@@ -398,6 +421,11 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
 
     // rename orphans
     for (const auto& cur : res.ioDirectives) {
+        fixNames(*cur);
+    }
+
+    // rename subtypes
+    for (const auto& cur : res.types) {
         fixNames(*cur);
     }
 

@@ -212,6 +212,11 @@ public:
         types.push_back(type);
     }
 
+    void setVariantType(size_t idx, const AstTypeIdentifier& type) {
+        assert(idx < types.size() && "union variant index out of bounds");
+        types[idx] = type;
+    }
+
     /** Prints a summary of this type to the given stream */
     void print(std::ostream& os) const override {
         os << ".type " << getName() << " = " << join(types, " | ");
@@ -268,6 +273,11 @@ public:
     /** Obtains the list of field constituting this record type */
     const std::vector<Field>& getFields() const {
         return fields;
+    }
+
+    void setFieldType(size_t idx, const AstTypeIdentifier& type) {
+        assert(idx < fields.size() && "record field index out of bounds");
+        fields[idx].type = type;
     }
 
     /** Prints a summary of this type to the given stream */

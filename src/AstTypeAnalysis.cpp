@@ -596,6 +596,10 @@ void TypeEnvironmentAnalysis::run(const AstTranslationUnit& translationUnit) {
     updateTypeEnvironment(*translationUnit.getProgram());
 }
 
+void TypeEnvironmentAnalysis::print(std::ostream& os) const {
+    env.print(os);
+}
+
 /**
  * A utility function utilized by the finishParsing member function to update a type environment
  * out of a given list of types in the AST

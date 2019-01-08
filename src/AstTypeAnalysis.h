@@ -53,6 +53,8 @@ public:
 
     void run(const AstTranslationUnit& translationUnit) override;
 
+    void print(std::ostream& os) const override;
+
     const TypeEnvironment& getTypeEnvironment() {
         return env;
     }

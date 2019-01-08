@@ -790,28 +790,24 @@ void AstSemanticChecker::checkUnionType(
     // check all element types are based on the same primitive
     bool primitive = getUnionPrimitive(program, type);
     for (const AstTypeIdentifier& sub : type.getTypes()) {
-        if (sub == "number" && !primitive) {
-            report.addError("Union type " + toString(type.getName()) +
-                            " contains a mixture of symbol and number types", type.getSrcLoc());
+        bool thisprim = primitive;
+        if (sub == "number") {
+            thisprim = true;
         }
-        if (sub == "symbol" && primitive) {
-            report.addError("Union type " + toString(type.getName()) +
-                            " contains a mixture of symbol and number types", type.getSrcLoc());
+        if (sub == "symbol") {
+            thisprim = false;
         }
         const AstType* subt = program.getType(sub);
         if (const auto* u = dynamic_cast<const AstUnionType*>(subt)) {
-            if (primitive != getUnionPrimitive(program, *u)) {
-                report.addError("Union type " + toString(type.getName()) +
-                                " contains a mixture of symbol and number types", type.getSrcLoc());
-                break;
-            }
+            thisprim = getUnionPrimitive(program, *u);
         }
         if (const auto* u = dynamic_cast<const AstPrimitiveType*>(subt)) {
-            if (primitive != u->isNumeric()) {
-                report.addError("Union type " + toString(type.getName()) +
-                                " contains a mixture of symbol and number types", type.getSrcLoc());
-                break;
-            }
+            thisprim = u->isNumeric();
+        }
+        if (thisprim != primitive) {
+            report.addError("Union type " + toString(type.getName()) +
+                            " contains a mixture of symbol and number types", type.getSrcLoc());
+            break;
         }
     }
 }

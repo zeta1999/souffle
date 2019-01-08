@@ -745,26 +745,48 @@ void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& 
 
 // ----- types --------
 
-// get the primitive type that all elements of a union are based on
-static bool getUnionPrimitive(
-    const AstProgram& program, const AstUnionType& type) {
-        assert(!type.getTypes().empty() && "Union contains some types");
-        AstTypeIdentifier head = type.getTypes().front();
-        if (head == "number") {
+// check if a union contains a number primitive
+static bool unionContainsNumber(
+        const AstProgram& program, const AstUnionType& type) {
+    for (const AstTypeIdentifier& sub : type.getTypes()) {
+        if (sub == "number") {
             return true;
         }
-        if (head == "symbol") {
-            return false;
+        const AstType* subt = program.getType(sub);
+        if (const auto* u = dynamic_cast<const AstUnionType*>(subt)) {
+            if (unionContainsNumber(program, *u)) {
+                return true;
+            }
         }
-        const AstType* head_type = program.getType(head);
-        if (const auto* u = dynamic_cast<const AstUnionType*>(head_type)) {
-            return getUnionPrimitive(program, *u);
+        if (const auto* p = dynamic_cast<const AstPrimitiveType*>(subt)) {
+            if (p->isNumeric()) {
+                return true;
+            }
         }
-        if (const auto* u = dynamic_cast<const AstPrimitiveType*>(head_type)) {
-            return u->isNumeric();
+    }
+    return false;
+}
+
+// check if a union contains a symbol primitive
+static bool unionContainsSymbol(
+        const AstProgram& program, const AstUnionType& type) {
+    for (const AstTypeIdentifier& sub : type.getTypes()) {
+        if (sub == "symbol") {
+            return true;
         }
-        // Should only get to this point for invalid unions
-        return false;
+        const AstType* subt = program.getType(sub);
+        if (const auto* u = dynamic_cast<const AstUnionType*>(subt)) {
+            if (unionContainsSymbol(program, *u)) {
+                return true;
+            }
+        }
+        if (const auto* p = dynamic_cast<const AstPrimitiveType*>(subt)) {
+            if (p->isSymbolic()) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void AstSemanticChecker::checkUnionType(
@@ -775,40 +797,22 @@ void AstSemanticChecker::checkUnionType(
             const AstType* subt = program.getType(sub);
             if (!subt) {
                 report.addError("Undefined type " + toString(sub) + " in definition of union type " +
-                                toString(type.getName()),
+                                        toString(type.getName()),
                         type.getSrcLoc());
             }
             else if (!dynamic_cast<const AstUnionType*>(subt) &&
                     !dynamic_cast<const AstPrimitiveType*>(subt)) {
-                report.addError("Union type " + toString(type.getName()) +
-                                " contains the non-primitive type " + toString(sub),
+                report.addError("Union type " + toString(type.getName()) + " contains the non-primitive type " +
+                                        toString(sub),
                         type.getSrcLoc());
             }
         }
     }
 
     // check all element types are based on the same primitive
-    bool primitive = getUnionPrimitive(program, type);
-    for (const AstTypeIdentifier& sub : type.getTypes()) {
-        bool thisprim = primitive;
-        if (sub == "number") {
-            thisprim = true;
-        }
-        if (sub == "symbol") {
-            thisprim = false;
-        }
-        const AstType* subt = program.getType(sub);
-        if (const auto* u = dynamic_cast<const AstUnionType*>(subt)) {
-            thisprim = getUnionPrimitive(program, *u);
-        }
-        if (const auto* u = dynamic_cast<const AstPrimitiveType*>(subt)) {
-            thisprim = u->isNumeric();
-        }
-        if (thisprim != primitive) {
-            report.addError("Union type " + toString(type.getName()) +
-                            " contains a mixture of symbol and number types", type.getSrcLoc());
-            break;
-        }
+    if (unionContainsSymbol(program, type) && unionContainsNumber(program, type)) {
+        report.addError("Union type " + toString(type.getName()) + " contains a mixture of symbol and number types",
+                    type.getSrcLoc());
     }
 }
 

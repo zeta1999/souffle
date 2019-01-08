@@ -746,8 +746,7 @@ void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& 
 // ----- types --------
 
 // check if a union contains a number primitive
-static bool unionContainsNumber(
-        const AstProgram& program, const AstUnionType& type) {
+static bool unionContainsNumber(const AstProgram& program, const AstUnionType& type) {
     for (const AstTypeIdentifier& sub : type.getTypes()) {
         if (sub == "number") {
             return true;
@@ -768,8 +767,7 @@ static bool unionContainsNumber(
 }
 
 // check if a union contains a symbol primitive
-static bool unionContainsSymbol(
-        const AstProgram& program, const AstUnionType& type) {
+static bool unionContainsSymbol(const AstProgram& program, const AstUnionType& type) {
     for (const AstTypeIdentifier& sub : type.getTypes()) {
         if (sub == "symbol") {
             return true;
@@ -799,11 +797,10 @@ void AstSemanticChecker::checkUnionType(
                 report.addError("Undefined type " + toString(sub) + " in definition of union type " +
                                         toString(type.getName()),
                         type.getSrcLoc());
-            }
-            else if (!dynamic_cast<const AstUnionType*>(subt) &&
-                    !dynamic_cast<const AstPrimitiveType*>(subt)) {
-                report.addError("Union type " + toString(type.getName()) + " contains the non-primitive type " +
-                                        toString(sub),
+            } else if (!dynamic_cast<const AstUnionType*>(subt) &&
+                       !dynamic_cast<const AstPrimitiveType*>(subt)) {
+                report.addError("Union type " + toString(type.getName()) +
+                                        " contains the non-primitive type " + toString(sub),
                         type.getSrcLoc());
             }
         }
@@ -811,8 +808,9 @@ void AstSemanticChecker::checkUnionType(
 
     // check all element types are based on the same primitive
     if (unionContainsSymbol(program, type) && unionContainsNumber(program, type)) {
-        report.addError("Union type " + toString(type.getName()) + " contains a mixture of symbol and number types",
-                    type.getSrcLoc());
+        report.addError(
+                "Union type " + toString(type.getName()) + " contains a mixture of symbol and number types",
+                type.getSrcLoc());
     }
 }
 

@@ -745,15 +745,80 @@ void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& 
 
 // ----- types --------
 
+// check if a union contains a number primitive
+static bool unionContainsNumber(const AstProgram& program, const AstUnionType& type) {
+    // check if any of the elements of the union are or contain a number primitive
+    for (const AstTypeIdentifier& elemTypeID : type.getTypes()) {
+        if (elemTypeID == "number") {
+            return true;
+        }
+        const AstType* elemType = program.getType(elemTypeID);
+        if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
+            if (unionContainsNumber(program, *unionT)) {
+                return true;
+            }
+            // if union does not contain a number, continue looking
+        }
+        if (const auto* primitive = dynamic_cast<const AstPrimitiveType*>(elemType)) {
+            if (primitive->isNumeric()) {
+                return true;
+            }
+            // if this primitive is not numeric, continue looking
+        }
+    }
+    // no elements returned true, so no numbers
+    return false;
+}
+
+// check if a union contains a symbol primitive
+static bool unionContainsSymbol(const AstProgram& program, const AstUnionType& type) {
+    // check if any of the elements of the union are or contain a symbol primitive
+    for (const AstTypeIdentifier& elemTypeID : type.getTypes()) {
+        if (elemTypeID == "symbol") {
+            return true;
+        }
+        const AstType* elemType = program.getType(elemTypeID);
+        if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
+            if (unionContainsSymbol(program, *unionT)) {
+                return true;
+            }
+            // if the union does not contain a symbol, continue looking
+        }
+        if (const auto* primitive = dynamic_cast<const AstPrimitiveType*>(elemType)) {
+            if (primitive->isSymbolic()) {
+                return true;
+            }
+            // if this primitive is not a symbol, continue looking
+        }
+    }
+    // no elements returned true, so no symbols
+    return false;
+}
+
 void AstSemanticChecker::checkUnionType(
         ErrorReport& report, const AstProgram& program, const AstUnionType& type) {
-    // check presence of all the element types
+    // check presence of all the element types and that all element types are based off a primitive
     for (const AstTypeIdentifier& sub : type.getTypes()) {
-        if (sub != "number" && sub != "symbol" && !program.getType(sub)) {
-            report.addError("Undefined type " + toString(sub) + " in definition of union type " +
-                                    toString(type.getName()),
-                    type.getSrcLoc());
+        if (sub != "number" && sub != "symbol") {
+            const AstType* subt = program.getType(sub);
+            if (!subt) {
+                report.addError("Undefined type " + toString(sub) + " in definition of union type " +
+                                        toString(type.getName()),
+                        type.getSrcLoc());
+            } else if (!dynamic_cast<const AstUnionType*>(subt) &&
+                       !dynamic_cast<const AstPrimitiveType*>(subt)) {
+                report.addError("Union type " + toString(type.getName()) +
+                                        " contains the non-primitive type " + toString(sub),
+                        type.getSrcLoc());
+            }
         }
+    }
+
+    // check all element types are based on the same primitive
+    if (unionContainsSymbol(program, type) && unionContainsNumber(program, type)) {
+        report.addError(
+                "Union type " + toString(type.getName()) + " contains a mixture of symbol and number types",
+                type.getSrcLoc());
     }
 }
 

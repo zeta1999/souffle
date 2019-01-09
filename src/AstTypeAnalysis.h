@@ -16,7 +16,9 @@
 
 #pragma once
 
+// TODO tidy includes
 #include "AstAnalysis.h"
+#include "AstTypeEnvironmentAnalysis.h"
 #include "TypeSystem.h"
 #include <cassert>
 #include <iosfwd>
@@ -41,24 +43,6 @@ class AstTranslationUnit;
  *      whether the argument represents a grounded value or not
  */
 std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause);
-
-class TypeEnvironmentAnalysis : public AstAnalysis {
-private:
-    TypeEnvironment env;
-
-    void updateTypeEnvironment(const AstProgram& program);
-
-public:
-    static constexpr const char* name = "type-environment";
-
-    void run(const AstTranslationUnit& translationUnit) override;
-
-    void print(std::ostream& os) const override;
-
-    const TypeEnvironment& getTypeEnvironment() {
-        return env;
-    }
-};
 
 class TypeAnalysis : public AstAnalysis {
 private:

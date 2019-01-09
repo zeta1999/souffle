@@ -747,43 +747,51 @@ void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& 
 
 // check if a union contains a number primitive
 static bool unionContainsNumber(const AstProgram& program, const AstUnionType& type) {
-    for (const AstTypeIdentifier& sub : type.getTypes()) {
-        if (sub == "number") {
+    // check if any of the elements of the union are or contain a number primitive
+    for (const AstTypeIdentifier& elemTypeID : type.getTypes()) {
+        if (elemTypeID == "number") {
             return true;
         }
-        const AstType* subt = program.getType(sub);
-        if (const auto* u = dynamic_cast<const AstUnionType*>(subt)) {
-            if (unionContainsNumber(program, *u)) {
+        const AstType* elemType = program.getType(elemTypeID);
+        if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
+            if (unionContainsNumber(program, *unionT)) {
                 return true;
             }
+            // if union does not contain a number, continue looking
         }
-        if (const auto* p = dynamic_cast<const AstPrimitiveType*>(subt)) {
-            if (p->isNumeric()) {
+        if (const auto* primitive = dynamic_cast<const AstPrimitiveType*>(elemType)) {
+            if (primitive->isNumeric()) {
                 return true;
             }
+            // if this primitive is not numeric, continue looking
         }
     }
+    // no elements returned true, so no numbers
     return false;
 }
 
 // check if a union contains a symbol primitive
 static bool unionContainsSymbol(const AstProgram& program, const AstUnionType& type) {
-    for (const AstTypeIdentifier& sub : type.getTypes()) {
-        if (sub == "symbol") {
+    // check if any of the elements of the union are or contain a symbol primitive
+    for (const AstTypeIdentifier& elemTypeID : type.getTypes()) {
+        if (elemTypeID == "symbol") {
             return true;
         }
-        const AstType* subt = program.getType(sub);
-        if (const auto* u = dynamic_cast<const AstUnionType*>(subt)) {
-            if (unionContainsSymbol(program, *u)) {
+        const AstType* elemType = program.getType(elemTypeID);
+        if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
+            if (unionContainsSymbol(program, *unionT)) {
                 return true;
             }
+            // if the union does not contain a symbol, continue looking
         }
-        if (const auto* p = dynamic_cast<const AstPrimitiveType*>(subt)) {
-            if (p->isSymbolic()) {
+        if (const auto* primitive = dynamic_cast<const AstPrimitiveType*>(elemType)) {
+            if (primitive->isSymbolic()) {
                 return true;
             }
+            // if this primitive is not a symbol, continue looking
         }
     }
+    // no elements returned true, so no symbols
     return false;
 }
 

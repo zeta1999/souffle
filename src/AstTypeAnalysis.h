@@ -93,7 +93,7 @@ public:
      * @return a map mapping each contained argument to a a set of types
      */
     static std::map<const AstArgument*, TypeSet> analyseTypes(const TypeEnvironment& env,
-            const AstClause& clause, const AstProgram* program, std::ostream* logs = NULL);
+            const AstClause& clause, const AstProgram* program, std::ostream* logs = nullptr);
 };
 
 }  // end of namespace souffle

@@ -741,22 +741,21 @@ AstClause* createAnnotatedClause(
 }
 
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
+    // Check if debugging information is being generated and note where logs should be sent
+    std::ostream* debugStream = nullptr;
+    if (!Global::config().get("debug-report").empty()) {
+        debugStream = &analysisLogs;
+    }
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
     for (const AstRelation* rel : translationUnit.getProgram()->getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {
-            // Set location to send logs to
-            std::ostream* debugStream = nullptr;
-            if (!Global::config().get("debug-report").empty()) {
-                debugStream = &analysisLogs;
-            }
-
             // Perform the type analysis
             std::map<const AstArgument*, TypeSet> clauseArgumentTypes =
                     analyseTypes(typeEnvAnalysis->getTypeEnvironment(), *clause, translationUnit.getProgram(),
                             debugStream);
             argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
 
-            if (!Global::config().get("debug-report").empty()) {
+            if (debugStream != nullptr) {
                 // Store an annotated clause for printing purposes
                 AstClause* annotatedClause = createAnnotatedClause(clause, clauseArgumentTypes);
                 annotatedClauses.push_back(std::unique_ptr<AstClause>(annotatedClause));

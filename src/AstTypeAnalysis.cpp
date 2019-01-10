@@ -15,11 +15,9 @@
  *
  ***********************************************************************/
 
-// TODO tidy includes
 #include "AstTypeAnalysis.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
-#include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
@@ -31,14 +29,9 @@
 #include "BinaryConstraintOps.h"
 #include "Constraints.h"
 #include "Global.h"
-#include "Util.h"
-#include <cstddef>
-#include <iostream>
-#include <memory>
+#include <ostream>
 #include <set>
 #include <string>
-#include <typeinfo>
-#include <utility>
 
 namespace souffle {
 

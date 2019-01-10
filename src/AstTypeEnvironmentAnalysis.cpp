@@ -14,30 +14,11 @@
  *
  ***********************************************************************/
 
-// TODO remove unnecessary includes
 #include "AstTypeEnvironmentAnalysis.h"
-#include "AstArgument.h"
-#include "AstAttribute.h"
-#include "AstLiteral.h"
-#include "AstNode.h"
 #include "AstProgram.h"
-#include "AstRelation.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
-#include "AstTypeAnalysis.h"
-#include "AstUtils.h"
-#include "AstVisitor.h"
-#include "BinaryConstraintOps.h"
-#include "Constraints.h"
-#include "Global.h"
-#include "Util.h"
-#include <cstddef>
-#include <iostream>
-#include <memory>
-#include <set>
-#include <string>
-#include <typeinfo>
-#include <utility>
+#include <ostream>
 
 namespace souffle {
 

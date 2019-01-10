@@ -16,15 +16,11 @@
 
 #pragma once
 
-// TODO tidy includes
 #include "AstAnalysis.h"
 #include "AstTypeEnvironmentAnalysis.h"
 #include "TypeSystem.h"
-#include <cassert>
-#include <iosfwd>
 #include <map>
-#include <memory>
-#include <utility>
+#include <ostream>
 #include <vector>
 
 namespace souffle {

@@ -30,16 +30,6 @@ class AstClause;
 class AstProgram;
 class AstTranslationUnit;
 
-/**
- * Analyse the given clause and computes for each contained argument
- * whether it is a grounded value or not.
- *
- * @param clause the clause to be analyzed
- * @return a map mapping each contained argument to a boolean indicating
- *      whether the argument represents a grounded value or not
- */
-std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause);
-
 class TypeAnalysis : public AstAnalysis {
 private:
     std::map<const AstArgument*, TypeSet> argumentTypes;

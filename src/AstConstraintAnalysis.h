@@ -10,9 +10,11 @@
  *
  * @file AstConstraintAnalysis.h
  *
- * Utilities for doing constraint analysis on Ast objects
+ * Contains AST Constraint Analysis Infrastructure for doing constraint analysis on AST objects
  *
  ***********************************************************************/
+
+#pragma once
 
 #include "AstArgument.h"
 #include "AstVisitor.h"

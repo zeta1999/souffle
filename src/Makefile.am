@@ -65,6 +65,7 @@ souffle_sources = \
               AstComponentChecker.h                     \
               AstConstraintAnalysis.h                   \
               AstFunctorDeclaration.h                   \
+              AstGroundAnalysis.cpp AstGroundAnalysis.h \
               AstIODirective.h                          \
               AstLiteral.h                              \
               AstNode.h                                 \

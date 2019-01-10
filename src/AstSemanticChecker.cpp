@@ -18,6 +18,7 @@
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstGroundAnalysis.h"
 #include "AstIODirective.h"
 #include "AstLiteral.h"
 #include "AstNode.h"

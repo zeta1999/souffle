@@ -120,7 +120,7 @@ public:
      * @param debug a flag enabling the printing of debug information
      * @return an assignment mapping a property to each argument in the given clause
      */
-    solution_type analyse(const AstClause& clause, std::ostream* debug = NULL) {
+    solution_type analyse(const AstClause& clause, std::ostream* debugOutput = nullptr) {
         // collect constraints
         visitDepthFirstPreOrder(clause, *this);
 
@@ -128,10 +128,10 @@ public:
         auto ass = constraints.solve();
 
         // print debug information if desired
-        if (debug) {
-            *debug << "Clause: " << clause << "\n";
-            *debug << "Problem:\n" << constraints << "\n";
-            *debug << "Solution:\n" << ass << "\n";
+        if (debugOutput != nullptr) {
+            *debugOutput << "Clause: " << clause << "\n";
+            *debugOutput << "Problem:\n" << constraints << "\n";
+            *debugOutput << "Solution:\n" << ass << "\n";
         }
 
         // convert assignment to result
@@ -652,23 +652,24 @@ AstClause* createAnnotatedClause(
 }
 
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
+    // Check if debugging information is being generated and note where logs should be sent
+    std::ostream* debugStream = nullptr;
+    if (!Global::config().get("debug-report").empty()) {
+        debugStream = &analysisLogs;
+    }
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
     for (const AstRelation* rel : translationUnit.getProgram()->getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {
-            if (!Global::config().get("debug-report").empty()) {
-                // Perform the type analysis and keep logs
-                std::map<const AstArgument*, TypeSet> clauseArgumentTypes =
-                        analyseTypes(typeEnvAnalysis->getTypeEnvironment(), *clause,
-                                translationUnit.getProgram(), &analysisLogs);
-                argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+            // Perform the type analysis
+            std::map<const AstArgument*, TypeSet> clauseArgumentTypes =
+                    analyseTypes(typeEnvAnalysis->getTypeEnvironment(), *clause, translationUnit.getProgram(),
+                            debugStream);
+            argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+
+            if (debugStream != nullptr) {
                 // Store an annotated clause for printing purposes
                 AstClause* annotatedClause = createAnnotatedClause(clause, clauseArgumentTypes);
                 annotatedClauses.push_back(std::unique_ptr<AstClause>(annotatedClause));
-            } else {
-                // Perform the type analysis
-                std::map<const AstArgument*, TypeSet> clauseArgumentTypes = analyseTypes(
-                        typeEnvAnalysis->getTypeEnvironment(), *clause, translationUnit.getProgram());
-                argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
             }
         }
     }

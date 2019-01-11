@@ -25,8 +25,8 @@ std::vector<RamCondition*> getConditions(const RamCondition* condition) {
     std::vector<RamCondition*> conditions;
     while (condition != nullptr) {
         if (const RamAnd* ramAnd = dynamic_cast<const RamAnd*>(condition)) {
-            conditions.push_back(ramAnd->getLHS().clone());
-            condition = &ramAnd->getRHS();
+            conditions.push_back(ramAnd->getRHS().clone());
+            condition = &ramAnd->getLHS();
         } else {
             conditions.push_back(condition->clone());
             break;

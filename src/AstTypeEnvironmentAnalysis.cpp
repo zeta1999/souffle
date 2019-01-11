@@ -108,4 +108,4 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
     }
 }
 
-} // end of namespace souffle
+}  // end of namespace souffle

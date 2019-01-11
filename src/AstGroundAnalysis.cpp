@@ -258,4 +258,4 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
     return Analysis().analyse(clause);
 }
 
-} // end of namespace souffle
+}  // end of namespace souffle

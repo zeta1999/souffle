@@ -463,6 +463,12 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             // get the targeted relation
             const InterpreterRelation& rel = interpreter.getRelation(scan.getRelation());
 
+            // if scan is not binding anything => check for emptiness
+            if (scan.isPureExistenceCheck() && !rel.empty()) {
+                visitSearch(scan);
+                return;
+            }
+
             // use simple iterator
             for (const RamDomain* cur : rel) {
                 ctxt[scan.getIdentifier()] = cur;
@@ -494,6 +500,17 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
+
+            // if this scan is not binding anything ...
+            if (scan.isPureExistenceCheck()) {
+                if (range.first != range.second) {
+                    visitSearch(scan);
+                }
+                if (Global::config().has("profile") && !scan.getProfileText().empty()) {
+                    interpreter.frequencies[scan.getProfileText()][interpreter.getIterationNumber()]++;
+                }
+                return;
+            }
 
             // conduct range query
             for (auto ip = range.first; ip != range.second; ++ip) {

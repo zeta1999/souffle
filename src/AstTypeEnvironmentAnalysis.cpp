@@ -18,7 +18,9 @@
 #include "AstProgram.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
-#include <ostream>
+#include "TypeSystem.h"
+#include <cassert>
+#include <iostream>
 
 namespace souffle {
 

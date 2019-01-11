@@ -16,16 +16,18 @@
 
 #include "AstGroundAnalysis.h"
 #include "AstArgument.h"
+#include "AstClause.h"
 #include "AstConstraintAnalysis.h"
+#include "AstLiteral.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
+#include "Constraints.h"
 #include <map>
 #include <memory>
 #include <ostream>
 #include <set>
 #include <utility>
 #include <vector>
-
 
 namespace souffle {
 

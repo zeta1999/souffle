@@ -20,7 +20,8 @@
 #include "AstTypeEnvironmentAnalysis.h"
 #include "TypeSystem.h"
 #include <map>
-#include <ostream>
+#include <memory>
+#include <sstream>
 #include <vector>
 
 namespace souffle {

@@ -17,7 +17,9 @@
 #include "AstTypeAnalysis.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
+#include "AstClause.h"
 #include "AstConstraintAnalysis.h"
+#include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
@@ -26,9 +28,13 @@
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
+#include "Constraints.h"
 #include "Global.h"
+#include "TypeSystem.h"
+#include <cassert>
 #include <map>
-#include <ostream>
+#include <memory>
+#include <sstream>
 #include <set>
 #include <string>
 #include <utility>

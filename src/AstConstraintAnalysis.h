@@ -17,9 +17,14 @@
 #pragma once
 
 #include "AstArgument.h"
+#include "AstClause.h"
 #include "AstVisitor.h"
 #include "Constraints.h"
+#include <map>
+#include <memory>
 #include <ostream>
+#include <string>
+#include <utility>
 
 namespace souffle {
 

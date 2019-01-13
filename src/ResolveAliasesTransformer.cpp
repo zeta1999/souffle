@@ -60,7 +60,6 @@ public:
 
             M(const map_t& map) : map(map) {}
 
-            // TODO: point of this?
             using AstNodeMapper::operator();
 
             std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
@@ -297,15 +296,16 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
 
         assert(!occurs(v, t));
 
-        // #7:  v is already grounded   => skip
+        // #7:  t is a record   => add mapping
+        if (isRec(t)) {
+            newMapping(v.getName(), &t);
+            continue;
+        }
+
+        // #8:  v is already grounded   => skip
         auto pos = baseGroundedVariables.find(v.getName());
         if (pos != baseGroundedVariables.end()) {
-            // v = t, where v is intrinsically grounded
-            // should not resolve this constraint here, unless t is a record type
-            // TODO: WHY unless record type????? hmm?? check the other arguments
-            if (!dynamic_cast<const AstRecordInit*>(&t)) {
-                continue;
-            }
+            continue;
         }
 
         // add new mapping

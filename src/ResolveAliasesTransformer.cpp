@@ -20,7 +20,6 @@
 
 namespace souffle {
 
-// TODO: why is this in a namespace?
 namespace {
 
 /**
@@ -39,17 +38,14 @@ class Substitution {
 public:
     // -- Constructors/Destructors --
 
-    // TODO: what is this
     Substitution() = default;
 
     Substitution(const std::string& var, const AstArgument* arg) {
         map.insert(std::make_pair(var, std::unique_ptr<AstArgument>(arg->clone())));
     }
 
-    // TODO: what is this
-    virtual ~Substitution() = default;
+    ~Substitution() = default;
 
-    // TODO: check out style convention for @param and stuff
     /**
      * Applies this substitution to the given argument and returns a pointer
      * to the modified argument.
@@ -57,14 +53,14 @@ public:
      * @param node the node to be transformed
      * @return a pointer to the modified or replaced node
      */
-    virtual std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const {
+    std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const {
         // create a substitution mapper
         struct M : public AstNodeMapper {
             const map_t& map;
 
             M(const map_t& map) : map(map) {}
 
-            // TODO: whats the point of this?
+            // TODO: point of this?
             using AstNodeMapper::operator();
 
             std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
@@ -86,24 +82,23 @@ public:
         return M(map)(std::move(node));
     }
 
-    // TODO: honestly what iS THIS
     /**
      * A generic, type consistent wrapper of the transformation operation above.
      */
     template <typename T>
     std::unique_ptr<T> operator()(std::unique_ptr<T> node) const {
-        // TODO: WHAT does this mean
         std::unique_ptr<AstNode> resPtr =
                 (*this)(std::unique_ptr<AstNode>(static_cast<AstNode*>(node.release())));
         assert(nullptr != dynamic_cast<T*>(resPtr.get()) && "Invalid node type mapping.");
         return std::unique_ptr<T>(dynamic_cast<T*>(resPtr.release()));
     }
 
-    // TODO: fix this explanation
     /**
-     * Appends the given substitution p to this substitution q such that q' = p o q
-     * That is, the current substitution is now equivalent to applying the original substitution
-     * followed by the given substitution.
+     * Appends the given substitution s to this substitution t such that the
+     * result t' is s composed with t (s o t).
+     * i.e.,
+     *      - if t(x) = y, then t'(x) = s(y)
+     *      - if s(x) = y, and x is not mapped by t, then t'(x) = y
      */
     void append(const Substitution& s) {
         // apply substitution on the rhs of all current mappings
@@ -131,24 +126,22 @@ public:
             << "}";
     }
 
-    // TODO: what does this mean :(
     friend std::ostream& operator<<(std::ostream& out, const Substitution& s) __attribute__((unused)) {
         s.print(out);
         return out;
     }
 };
 
-// TODO: why not class?
 /**
  * An equality constraint between two AstArguments utilised by the unification
  * algorithm required by the alias resolution.
  */
-struct Equation {
+class Equation {
+public:
     // the two terms to be equivalent
     std::unique_ptr<AstArgument> lhs;
     std::unique_ptr<AstArgument> rhs;
 
-    // TODO: which of these are actually used?
     Equation(const AstArgument& lhs, const AstArgument& rhs)
             : lhs(std::unique_ptr<AstArgument>(lhs.clone())), rhs(std::unique_ptr<AstArgument>(rhs.clone())) {
     }
@@ -161,10 +154,8 @@ struct Equation {
             : lhs(std::unique_ptr<AstArgument>(other.lhs->clone())),
               rhs(std::unique_ptr<AstArgument>(other.rhs->clone())) {}
 
-    // TODO: what does this one even mean
-    Equation(Equation&& other) : lhs(std::move(other.lhs)), rhs(std::move(other.rhs)) {}
+    Equation(Equation&& other) = default;
 
-    // TODO: needed?
     ~Equation() = default;
 
     /**
@@ -182,8 +173,6 @@ struct Equation {
         out << *lhs << " = " << *rhs;
     }
 
-    // TODO: literally what is this / friend?
-    // TODO: this vs the print thing?
     friend std::ostream& operator<<(std::ostream& out, const Equation& e) __attribute__((unused)) {
         e.print(out);
         return out;
@@ -231,8 +220,6 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
     // II) compute unifying substitution
     Substitution substitution;
 
-    // TODO: understand what this is doing
-    // TODO: also understand what append is doing up there
     // a utility for processing newly identified mappings
     auto newMapping = [&](const std::string& var, const AstArgument* term) {
         // found a new substitution
@@ -376,7 +363,6 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
     }
 
     // substitute them with new variables (a real map would compare pointers)
-    // TODO: why not just use a map?
     using substitution_map =
             std::vector<std::pair<std::unique_ptr<AstArgument>, std::unique_ptr<AstVariable>>>;
     substitution_map map;
@@ -456,9 +442,9 @@ bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
         // restore simple terms in atoms
         std::unique_ptr<AstClause> normalised = removeComplexTermsInAtoms(*cleaned);
 
-        // exchange the rules
-        // TODO: fix up how changed is done? return values for each?
         changed |= (*normalised != *clause);
+
+        // exchange the rules
         program.removeClause(clause);
         program.appendClause(std::move(normalised));
     }

@@ -65,5 +65,8 @@ clean-local:
 	-rm -f $(abs_top_builddir)/$(distdir).pkg
 endif
 
+completionsdir=$(datadir)/bash-completion/completions
+completions_DATA=utilities/bash-completion/completions/souffle
+
 # Man pages
 dist_man1_MANS = $(wildcard $(srcdir)/man/*.1)

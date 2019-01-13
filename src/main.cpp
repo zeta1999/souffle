@@ -368,7 +368,7 @@ int main(int argc, char** argv) {
         throw std::runtime_error("failed to locate mcpp pre-processor");
     }
 
-    cmd += " -W0 " + Global::config().get("include-dir");
+    cmd += " -e utf8 -W0 " + Global::config().get("include-dir");
     if (Global::config().has("macro")) {
         cmd += " " + Global::config().get("macro");
     }

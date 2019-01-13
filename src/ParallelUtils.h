@@ -132,6 +132,12 @@
 #endif
 
 #ifdef IS_PARALLEL
+#define MAX_THREADS (omp_get_max_threads())
+#else
+#define MAX_THREADS (1)
+#endif
+
+#ifdef IS_PARALLEL
 
 #include <mutex>
 
@@ -390,7 +396,8 @@ public:
      */
     bool validate(const Lease& lease) {
         // check whether version number has changed in the mean-while
-        return lease.version == version.load(std::memory_order_consume);
+        std::atomic_thread_fence(std::memory_order_acquire);
+        return lease.version == version.load(std::memory_order_relaxed);
     }
 
     /**

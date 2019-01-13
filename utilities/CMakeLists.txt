@@ -43,7 +43,6 @@ ADD_EXECUTABLE(souffle
         ./src/json11.h
         ./src/Util.h
         ./src/ErrorReport.h
-        ./src/BlockList.h
         ./src/AstTransformer.h
         ./src/WriteStreamCSV.h
         ./src/AstTypeAnalysis.h
@@ -116,10 +115,11 @@ ADD_EXECUTABLE(souffle
         ./src/AstRelation.h
         ./src/AstComponent.h
         ./src/UnionFind.h
+        ./src/LambdaBTree.h
         ./src/RamStatement.h
         ./src/AstTransforms.h
         ./src/AstClause.h
-        ./src/BinaryRelation.h
+        ./src/EquivalenceRelation.h
         ./src/ParserDriver.cpp
         ./src/AstTransformer.cpp
         ./src/PrecedenceGraph.cpp

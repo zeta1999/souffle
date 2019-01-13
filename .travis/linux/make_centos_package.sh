@@ -17,7 +17,7 @@ set -x
 git fetch --tags --unshallow
 
 ./bootstrap
-./configure --prefix=`pwd`/usr/local
+./configure --prefix=`pwd`/usr
 
 make -j2 install
 

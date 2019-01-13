@@ -342,15 +342,11 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
     // get list of atoms
     std::vector<AstAtom*> atoms = res->getAtoms();
 
-    // TODO: what about functors apearing in negations, etc.?
-
     // find all functors in atoms
     std::vector<const AstArgument*> terms;
     for (const AstAtom* atom : atoms) {
         for (const AstArgument* arg : atom->getArguments()) {
             // ignore if not a functor
-            // TODO: why is it like this and not a visitdepthfirst?
-            // TODO: this means that record functors arent fixed up, is this ok?
             if (!dynamic_cast<const AstFunctor*>(arg)) {
                 continue;
             }

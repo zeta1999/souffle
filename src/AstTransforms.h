@@ -47,11 +47,6 @@ public:
         return "ResolveAliasesTransformer";
     }
 
-    // TODO: should these be pulled out from being static methods?
-
-    // TODO: check this explanation
-
-    // TODO: argument names needed?
     /**
      * Converts the given clause into a version without variables aliasing
      * grounded variables.

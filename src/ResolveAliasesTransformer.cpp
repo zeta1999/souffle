@@ -438,11 +438,12 @@ bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
         // restore simple terms in atoms
         std::unique_ptr<AstClause> normalised = removeComplexTermsInAtoms(*cleaned);
 
-        changed |= (*normalised != *clause);
-
-        // exchange the rules
-        program.removeClause(clause);
-        program.appendClause(std::move(normalised));
+        // swap if changed
+        if (*normalised != *clause) {
+            changed = true;
+            program.removeClause(clause);
+            program.appendClause(std::move(normalised));
+        }
     }
 
     return changed;

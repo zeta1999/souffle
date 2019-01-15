@@ -33,7 +33,7 @@ class Substitution {
     using map_t = std::map<std::string, std::unique_ptr<AstArgument>>;
 
     // the mapping of variables to terms
-    map_t map;
+    map_t varToTerm;
 
 public:
     // -- Constructors/Destructors --
@@ -41,7 +41,7 @@ public:
     Substitution() = default;
 
     Substitution(const std::string& var, const AstArgument* arg) {
-        map.insert(std::make_pair(var, std::unique_ptr<AstArgument>(arg->clone())));
+        varToTerm.insert(std::make_pair(var, std::unique_ptr<AstArgument>(arg->clone())));
     }
 
     ~Substitution() = default;
@@ -78,7 +78,7 @@ public:
         };
 
         // apply the mapper
-        return M(map)(std::move(node));
+        return M(varToTerm)(std::move(node));
     }
 
     /**
@@ -100,15 +100,16 @@ public:
      */
     void append(const Substitution& sub) {
         // apply substitution on the rhs of all current mappings
-        for (auto& pair : map) {
+        for (auto& pair : varToTerm) {
             pair.second = sub(std::move(pair.second));
         }
 
         // append unseen variables to the end
-        for (const auto& pair : sub.map) {
-            if (map.find(pair.first) == map.end()) {
+        for (const auto& pair : sub.varToTerm) {
+            if (varToTerm.find(pair.first) == varToTerm.end()) {
                 // not seen yet, add it in
-                map.insert(std::make_pair(pair.first, std::unique_ptr<AstArgument>(pair.second->clone())));
+                varToTerm.insert(
+                        std::make_pair(pair.first, std::unique_ptr<AstArgument>(pair.second->clone())));
             }
         }
     }
@@ -116,7 +117,7 @@ public:
     /** A print function (for debugging) */
     void print(std::ostream& out) const {
         out << "{"
-            << join(map, ",",
+            << join(varToTerm, ",",
                        [](std::ostream& out,
                                const std::pair<const std::string, std::unique_ptr<AstArgument>>& cur) {
                            out << cur.first << " -> " << *cur.second;
@@ -360,14 +361,14 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
     // substitute them with new variables (a real map would compare pointers)
     using substitution_map =
             std::vector<std::pair<std::unique_ptr<AstArgument>, std::unique_ptr<AstVariable>>>;
-    substitution_map map;
+    substitution_map termToVar;
 
     int varCounter = 0;
     for (const AstArgument* arg : terms) {
         // create a new mapping for this term
         auto term = std::unique_ptr<AstArgument>(arg->clone());
         auto newVariable = std::make_unique<AstVariable>(" _tmp_" + toString(varCounter++));
-        map.push_back(std::make_pair(std::move(term), std::move(newVariable)));
+        termToVar.push_back(std::make_pair(std::move(term), std::move(newVariable)));
     }
 
     // apply mapping to replace the terms with the variables
@@ -394,13 +395,13 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
     };
 
     // update atoms
-    Update update(map);
+    Update update(termToVar);
     for (AstAtom* atom : atoms) {
         atom->apply(update);
     }
 
     // add the necessary variable constraints to the clause
-    for (const auto& pair : map) {
+    for (const auto& pair : termToVar) {
         auto& term = pair.first;
         auto& variable = pair.second;
 

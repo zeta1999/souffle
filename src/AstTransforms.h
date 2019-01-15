@@ -35,8 +35,8 @@ class AstRelation;
 
 /**
  * Transformation pass to eliminate grounded aliases.
- * e.g. resolve  a(r) , r = [x,y]   =>    a(x,y)
- * e.g. resolve  a(x) , !b(y) , y = x    =>  a(x) , !b(x)
+ * e.g. resolve: a(r) , r = [x,y]       => a(x,y)
+ * e.g. resolve: a(x) , !b(y) , y = x   => a(x) , !b(x)
  */
 class ResolveAliasesTransformer : public AstTransformer {
 private:

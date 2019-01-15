@@ -86,8 +86,7 @@ public:
      */
     template <typename T>
     std::unique_ptr<T> operator()(std::unique_ptr<T> node) const {
-        std::unique_ptr<AstNode> resPtr =
-                (*this)(std::unique_ptr<AstNode>(static_cast<AstNode*>(node.release())));
+        std::unique_ptr<AstNode> resPtr = (*this)(std::unique_ptr<AstNode>(node.release()));
         assert(nullptr != dynamic_cast<T*>(resPtr.get()) && "Invalid node type mapping.");
         return std::unique_ptr<T>(dynamic_cast<T*>(resPtr.release()));
     }
@@ -99,14 +98,14 @@ public:
      *      - if t(x) = y, then t'(x) = s(y)
      *      - if s(x) = y, and x is not mapped by t, then t'(x) = y
      */
-    void append(const Substitution& s) {
+    void append(const Substitution& sub) {
         // apply substitution on the rhs of all current mappings
         for (auto& pair : map) {
-            pair.second = s(std::move(pair.second));
+            pair.second = sub(std::move(pair.second));
         }
 
         // append unseen variables to the end
-        for (const auto& pair : s.map) {
+        for (const auto& pair : sub.map) {
             if (map.find(pair.first) == map.end()) {
                 // not seen yet, add it in
                 map.insert(std::make_pair(pair.first, std::unique_ptr<AstArgument>(pair.second->clone())));
@@ -160,9 +159,9 @@ public:
     /**
      * Applies the given substitution to both sides of the equation.
      */
-    void apply(const Substitution& s) {
-        lhs = s(std::move(lhs));
-        rhs = s(std::move(rhs));
+    void apply(const Substitution& sub) {
+        lhs = sub(std::move(lhs));
+        rhs = sub(std::move(rhs));
     }
 
     /**
@@ -225,8 +224,8 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
         Substitution newMapping(var, term);
 
         // apply substitution to all remaining equations
-        for (auto& eqn : equations) {
-            eqn.apply(newMapping);
+        for (auto& equation : equations) {
+            equation.apply(newMapping);
         }
 
         // add mapping v -> t to substitution
@@ -235,12 +234,12 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
 
     while (!equations.empty()) {
         // get next equation to compute
-        Equation eqn = equations.back();
+        Equation equation = equations.back();
         equations.pop_back();
 
         // shortcuts for left/right
-        const AstArgument& lhs = *eqn.lhs;
-        const AstArgument& rhs = *eqn.rhs;
+        const AstArgument& lhs = *equation.lhs;
+        const AstArgument& rhs = *equation.rhs;
 
         // #1:  t = t   => skip
         if (lhs == rhs) {
@@ -347,12 +346,12 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
     for (const AstAtom* atom : atoms) {
         for (const AstArgument* arg : atom->getArguments()) {
             // ignore if not a functor
-            if (!dynamic_cast<const AstFunctor*>(arg)) {
+            if (dynamic_cast<const AstFunctor*>(arg) == nullptr) {
                 continue;
             }
 
             // add this functor if not seen yet
-            if (!any_of(terms, [&](const AstArgument* curr) { return *curr == *arg; })) {
+            if (!any_of(terms, [&](const AstArgument* cur) { return *cur == *arg; })) {
                 terms.push_back(arg);
             }
         }

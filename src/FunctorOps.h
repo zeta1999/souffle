@@ -53,6 +53,9 @@ enum class FunctorOp {
     SUBSTR,  // addition
 };
 
+/**
+ * Gets expected arity of functor
+ */
 inline size_t getFunctorOpArity(FunctorOp op) {
     switch (op) {
         /** Unary Functor Operators */
@@ -90,51 +93,75 @@ inline size_t getFunctorOpArity(FunctorOp op) {
         default:
             break;
     }
-    assert(false && "undefined operator");
+
+    assert(false && "unsupported operator");
+    return 0U;
+}
+
+inline std::string getSymbolForFunctorOp(FunctorOp op) {
+    switch (op) {
+        /** Unary Functor Operators */
+        case FunctorOp::ORD:
+            return "ord";
+        case FunctorOp::STRLEN:
+            return "strlen";
+        case FunctorOp::NEG:
+            return "-";
+        case FunctorOp::BNOT:
+            return "bnot";
+        case FunctorOp::LNOT:
+            return "lnot";
+        case FunctorOp::TONUMBER:
+            return "to_number";
+        case FunctorOp::TOSTRING:
+            return "to_string";
+
+        /** Binary Functor Operators */
+        case FunctorOp::ADD:
+            return "+";
+        case FunctorOp::SUB:
+            return "-";
+        case FunctorOp::MUL:
+            return "*";
+        case FunctorOp::DIV:
+            return "/";
+        case FunctorOp::EXP:
+            return "^";
+        case FunctorOp::MOD:
+            return "%";
+        case FunctorOp::BAND:
+            return "band";
+        case FunctorOp::BOR:
+            return "bor";
+        case FunctorOp::BXOR:
+            return "bxor";
+        case FunctorOp::LAND:
+            return "land";
+        case FunctorOp::LOR:
+            return "lor";
+        case FunctorOp::MAX:
+            return "max";
+        case FunctorOp::MIN:
+            return "min";
+        case FunctorOp::CAT:
+            return "cat";
+
+        /** Ternary Functor Operators */
+        case FunctorOp::SUBSTR:
+            return "substr";
+
+        /** Undefined */
+        default:
+            break;
+    }
+
+    assert(false && "unsupported operator");
+    return "?";
 }
 
 // TODO: CONVERT THESE TO PROPER FUNCTIONS FOR THIS NEW ENUM
 // TODO: MAKE SURE YOU CATCH everything from each type (should be consistent)
 // TODO: add a function to check arity
-///**
-// * Converts operator to its symbolic representation
-// */
-// inline std::string getSymbolForBinaryOp(BinaryOp op) {
-//    switch (op) {
-//        case BinaryOp::ADD:
-//            return "+";
-//        case BinaryOp::SUB:
-//            return "-";
-//        case BinaryOp::MUL:
-//            return "*";
-//        case BinaryOp::DIV:
-//            return "/";
-//        case BinaryOp::EXP:
-//            return "^";
-//        case BinaryOp::MOD:
-//            return "%";
-//        case BinaryOp::BAND:
-//            return "band";
-//        case BinaryOp::BOR:
-//            return "bor";
-//        case BinaryOp::BXOR:
-//            return "bxor";
-//        case BinaryOp::LAND:
-//            return "land";
-//        case BinaryOp::LOR:
-//            return "lor";
-//        case BinaryOp::MAX:
-//            return "max";
-//        case BinaryOp::MIN:
-//            return "min";
-//        case BinaryOp::CAT:
-//            return "cat";
-//        default:
-//            break;
-//    }
-//    assert(false && "Unsupported Operator!");
-//    return "?";
-//}
 //
 ///**
 // * Converts symbolic representation of an operator to the operator
@@ -230,4 +257,133 @@ inline size_t getFunctorOpArity(FunctorOp op) {
 //    return !binaryOpAcceptsNumbers(arg, op);
 //}
 //
-}  // end of namespace souffle
+// UNARYYYYY::::
+//
+// /**
+//  * Returns the corresponding operator for the given symbol.
+//  */
+// inline UnaryOp getUnaryOpForSymbol(const std::string& symbol) {
+//     if (symbol == "ord") return UnaryOp::ORD;
+//     if (symbol == "strlen") return UnaryOp::STRLEN;
+//     if (symbol == "-") return UnaryOp::NEG;
+//     if (symbol == "bnot") return UnaryOp::BNOT;
+//     if (symbol == "lnot") return UnaryOp::LNOT;
+//     if (symbol == "to_number") return UnaryOp::TONUMBER;
+//     if (symbol == "to_string") return UnaryOp::TOSTRING;
+//     std::cout << "Unrecognised operator: " << symbol << "\n";
+//     assert(false && "Unsupported Operator!");
+//     return UnaryOp::__UNDEFINED__;
+// }
+//
+// /**
+//  * Returns whether the given operator has a numeric return value.
+//  */
+// inline bool isNumericUnaryOp(const UnaryOp op) {
+//     switch (op) {
+//         case UnaryOp::ORD:
+//         case UnaryOp::STRLEN:
+//         case UnaryOp::NEG:
+//         case UnaryOp::BNOT:
+//         case UnaryOp::LNOT:
+//         case UnaryOp::TONUMBER:
+//             return true;
+//         case UnaryOp::TOSTRING:
+//             return false;
+//         default:
+//             break;
+//     }
+//     assert(false && "Uncovered case!");
+//     return false;
+// }
+//
+// /**
+//  * Returns whether the given operator has a symbolic return value.
+//  */
+// inline bool isSymbolicUnaryOp(const UnaryOp op) {
+//     return !isNumericUnaryOp(op);
+// }
+//
+// /**
+//  * Returns whether the given operator takes a numeric argument.
+//  */
+// inline bool unaryOpAcceptsNumbers(const UnaryOp op) {
+//     switch (op) {
+//         case UnaryOp::NEG:
+//         case UnaryOp::BNOT:
+//         case UnaryOp::LNOT:
+//         case UnaryOp::TOSTRING:
+//             return true;
+//         case UnaryOp::ORD:
+//         case UnaryOp::STRLEN:
+//         case UnaryOp::TONUMBER:
+//             return false;
+//         default:
+//             break;
+//     }
+//     assert(false && "Unsupported operator encountered!");
+//     return false;
+// }
+//
+// /**
+//  * Returns whether the given operator takes a symbolic argument.
+//  */
+// inline bool unaryOpAcceptsSymbols(const UnaryOp op) {
+//     return !unaryOpAcceptsNumbers(op);
+// }
+//
+//  TERNARYYYYYYYYYYYYYY
+//
+// /**
+//  * Converts symbolic representation of an operator to the operator
+//  */
+// inline TernaryOp getTernaryOpForSymbol(const std::string& symbol) {
+//     if (symbol == "substr") return TernaryOp::SUBSTR;
+//     std::cout << "Unrecognised operator: " << symbol << "\n";
+//     assert(false && "Unsupported Operator!");
+//     return TernaryOp::__UNDEFINED__;
+// }
+//
+// /**
+//  * Determines whether the given operator has a numeric return value.
+//  */
+// inline bool isNumericTernaryOp(const TernaryOp op) {
+//     switch (op) {
+//         case TernaryOp::SUBSTR:
+//             return false;
+//         default:
+//             break;
+//     }
+//     assert(false && "Uncovered case!");
+//     return false;
+// }
+//
+// /**
+//  * Determines whether the operator has a symbolic return value.
+//  */
+// inline bool isSymbolicTernaryOp(const TernaryOp op) {
+//     return !isNumericTernaryOp(op);
+// }
+//
+// /**
+//  * Determines whether an argument has a number value.
+//  */
+// inline bool ternaryOpAcceptsNumbers(int arg, const TernaryOp op) {
+//     assert(arg >= 0 && arg < 3 && "argument out of range");
+//     switch (op) {
+//         case TernaryOp::SUBSTR:
+//             return arg == 1 || arg == 2;
+//         default:
+//             break;
+//     }
+//     assert(false && "Uncovered case!");
+//     return false;
+// }
+//
+// /**
+//  * Determines whether an argument has a symbolic value
+//  */
+// inline bool ternaryOpAcceptsSymbols(int arg, const TernaryOp op) {
+//     return !ternaryOpAcceptsNumbers(arg, op);
+// }
+//
+// }  // end of namespace souffle

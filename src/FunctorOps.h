@@ -242,6 +242,7 @@ inline bool isNumericFunctorOp(const FunctorOp op) {
     }
 
     assert(false && "unsupported operator");
+    return false;
 }
 
 /*
@@ -252,97 +253,61 @@ inline bool isSymbolicFunctorOp(const FunctorOp op) {
     return !isNumericFunctorOp(op);
 }
 
-// TODO: CONVERT THESE TO PROPER FUNCTIONS FOR THIS NEW ENUM
-// TODO: MAKE SURE YOU CATCH everything from each type (should be consistent)
-//
-///**
-// * Determines whether an argument has a number value.
-// */
-// inline bool binaryOpAcceptsNumbers(int arg, const BinaryOp op) {
-//    assert(arg >= 0 && arg < 2 && "argument out of range");
-//    switch (op) {
-//        case BinaryOp::ADD:
-//        case BinaryOp::SUB:
-//        case BinaryOp::MUL:
-//        case BinaryOp::DIV:
-//        case BinaryOp::EXP:
-//        case BinaryOp::BAND:
-//        case BinaryOp::BOR:
-//        case BinaryOp::BXOR:
-//        case BinaryOp::LAND:
-//        case BinaryOp::LOR:
-//        case BinaryOp::MOD:
-//        case BinaryOp::MAX:
-//        case BinaryOp::MIN:
-//            return true;
-//        case BinaryOp::CAT:
-//            return false;
-//        default:
-//            break;
-//    }
-//    assert(false && "Uncovered case!");
-//    return false;
-//}
-//
-///**
-// * Determines whether an argument has a symbolic value
-// */
-// inline bool binaryOpAcceptsSymbols(int arg, const BinaryOp op) {
-//    return !binaryOpAcceptsNumbers(arg, op);
-//}
-//
-// UNARYYYYY::::
-//
-// /**
-//  * Returns whether the given operator takes a numeric argument.
-//  */
-// inline bool unaryOpAcceptsNumbers(const UnaryOp op) {
-//     switch (op) {
-//         case UnaryOp::NEG:
-//         case UnaryOp::BNOT:
-//         case UnaryOp::LNOT:
-//         case UnaryOp::TOSTRING:
-//             return true;
-//         case UnaryOp::ORD:
-//         case UnaryOp::STRLEN:
-//         case UnaryOp::TONUMBER:
-//             return false;
-//         default:
-//             break;
-//     }
-//     assert(false && "Unsupported operator encountered!");
-//     return false;
-// }
-//
-// /**
-//  * Returns whether the given operator takes a symbolic argument.
-//  */
-// inline bool unaryOpAcceptsSymbols(const UnaryOp op) {
-//     return !unaryOpAcceptsNumbers(op);
-// }
-//
-//  TERNARYYYYYYYYYYYYYY
-//
-// /**
-//  * Determines whether an argument has a number value.
-//  */
-// inline bool ternaryOpAcceptsNumbers(int arg, const TernaryOp op) {
-//     assert(arg >= 0 && arg < 3 && "argument out of range");
-//     switch (op) {
-//         case TernaryOp::SUBSTR:
-//             return arg == 1 || arg == 2;
-//         default:
-//             break;
-//     }
-//     assert(false && "Uncovered case!");
-//     return false;
-// }
-//
-// /**
-//  * Determines whether an argument has a symbolic value
-//  */
-// inline bool ternaryOpAcceptsSymbols(int arg, const TernaryOp op) {
-//     return !ternaryOpAcceptsNumbers(arg, op);
-// }
-//
-// }  // end of namespace souffle
+/**
+ * Determines whether an argument has a number value
+ */
+inline bool functorOpAcceptsNumbers(int arg, const FunctorOp op) {
+    size_t expectedArity = getFunctorOpArity(op);
+    assert(arg >= 0 && arg < op && "argument out of range");
+
+    switch (op) {
+        /** Unary Functor Operators */
+        case FunctorOp::NEG:
+        case FunctorOp::BNOT:
+        case FunctorOp::LNOT:
+        case FunctorOp::TOSTRING:
+            return true;
+        case FunctorOp::ORD:
+        case FunctorOp::STRLEN:
+        case FunctorOp::TONUMBER:
+            return false;
+
+        /** Binary Functor Operators */
+        case FunctorOp::ADD:
+        case FunctorOp::SUB:
+        case FunctorOp::MUL:
+        case FunctorOp::DIV:
+        case FunctorOp::EXP:
+        case FunctorOp::BAND:
+        case FunctorOp::BOR:
+        case FunctorOp::BXOR:
+        case FunctorOp::LAND:
+        case FunctorOp::LOR:
+        case FunctorOp::MOD:
+        case FunctorOp::MAX:
+        case FunctorOp::MIN:
+            return true;
+        case FunctorOp::CAT:
+            return false;
+
+        /** Ternary Functor Operators */
+        case FunctorOp::SUBSTR:
+            return arg == 1 || arg == 2;
+
+        /** Undefined */
+        default:
+            break;
+    }
+
+    assert(false && "unsupported operator");
+    return false;
+}
+
+/**
+ * Determines whether an argument has a symbolic value
+ */
+inline bool functorOpAcceptsSymbols(int arg, const FunctorOp op) {
+    return !functorOpAcceptsNumbers(arg, op);
+}
+
+}  // end of namespace souffle

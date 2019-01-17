@@ -256,9 +256,9 @@ inline bool isSymbolicFunctorOp(const FunctorOp op) {
 /**
  * Determines whether an argument has a number value
  */
-inline bool functorOpAcceptsNumbers(int arg, const FunctorOp op) {
+inline bool functorOpAcceptsNumbers(size_t arg, const FunctorOp op) {
     size_t expectedArity = getFunctorOpArity(op);
-    assert(arg >= 0 && arg < op && "argument out of range");
+    assert(arg >= 0 && arg < expectedArity && "argument out of range");
 
     switch (op) {
         /** Unary Functor Operators */
@@ -306,7 +306,7 @@ inline bool functorOpAcceptsNumbers(int arg, const FunctorOp op) {
 /**
  * Determines whether an argument has a symbolic value
  */
-inline bool functorOpAcceptsSymbols(int arg, const FunctorOp op) {
+inline bool functorOpAcceptsSymbols(size_t arg, const FunctorOp op) {
     return !functorOpAcceptsNumbers(arg, op);
 }
 

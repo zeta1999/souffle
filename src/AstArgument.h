@@ -296,68 +296,64 @@ public:
  * Subclass of Argument that represents a unary function
  */
 class AstUnaryFunctor : public AstFunctor {
-protected:
-    UnaryOp fun;
-
-    std::unique_ptr<AstArgument> operand;
-
 public:
-    AstUnaryFunctor(UnaryOp fun, std::unique_ptr<AstArgument> o) : fun(fun), operand(std::move(o)) {}
+    AstUnaryFunctor(UnaryOp fun, std::unique_ptr<AstArgument> o) : AstFunctor(getFunctorOpForSymbol(getSymbolForUnaryOp(fun)), std::move(o)) {}
+    AstUnaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> o) : AstFunctor(fun, std::move(o)) {}
 
     ~AstUnaryFunctor() override = default;
 
     AstArgument* getOperand() const {
-        return operand.get();
+        return args[0].get();
     }
 
     UnaryOp getFunction() const {
-        return fun;
+        return getUnaryOpForSymbol(getSymbolForFunctorOp(op));
     }
 
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {
-        return isNumericUnaryOp(fun);
+        return isNumericFunctorOp(op);
     }
 
     /** Check if the return value of this functor is a symbol type. */
     bool isSymbolic() const {
-        return isSymbolicUnaryOp(fun);
+        return isSymbolicFunctorOp(op);
     }
 
     /** Check if the argument of this functor is a number type. */
     bool acceptsNumbers() const {
-        return unaryOpAcceptsNumbers(fun);
+        return functorOpAcceptsNumbers(0, op);
     }
 
     /** Check if the argument of this functor is a symbol type. */
     bool acceptsSymbols() const {
-        return unaryOpAcceptsSymbols(fun);
+        return functorOpAcceptsSymbols(0, op);
     }
 
     /** Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        os << getSymbolForUnaryOp(fun);
+        os << getSymbolForFunctorOp(op);
         os << "(";
-        operand->print(os);
+        args[0]->print(os);
         os << ")";
     }
 
     /** Creates a clone */
     AstUnaryFunctor* clone() const override {
-        auto res = new AstUnaryFunctor(fun, std::unique_ptr<AstArgument>(operand->clone()));
+        auto res = new AstUnaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
     /** Mutates this node */
     void apply(const AstNodeMapper& map) override {
-        operand = map(std::move(operand));
+        args[0] = map(std::move(args[0]));
     }
 
     /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         auto res = AstArgument::getChildNodes();
-        res.push_back(operand.get());
+        res.push_back(args[0].get());
         return res;
     }
 
@@ -366,7 +362,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstUnaryFunctor*>(&node));
         const auto& other = static_cast<const AstUnaryFunctor&>(node);
-        return fun == other.fun && *operand == *other.operand;
+        return op == other.op && *args[0] == *other.args[0];
     }
 };
 
@@ -464,86 +460,84 @@ protected:
  * Subclass of Argument that represents a binary function
  */
 class AstBinaryFunctor : public AstFunctor {
-protected:
-    BinaryOp fun;                      // binary operator
-    std::unique_ptr<AstArgument> lhs;  // first argument
-    std::unique_ptr<AstArgument> rhs;  // second argument
-
 public:
     AstBinaryFunctor(BinaryOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
-            : fun(fun), lhs(std::move(l)), rhs(std::move(r)) {}
+            : AstFunctor(getFunctorOpForSymbol(getSymbolForBinaryOp(fun)), std::move(l), std::move(r)) {}
+    AstBinaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
+            : AstFunctor(fun, std::move(l), std::move(r)) {}
 
     ~AstBinaryFunctor() override = default;
 
     AstArgument* getLHS() const {
-        return lhs.get();
+        return args[0].get();
     }
 
     AstArgument* getRHS() const {
-        return rhs.get();
+        return args[1].get();
     }
 
     BinaryOp getFunction() const {
-        return fun;
+        return getBinaryOpForSymbol(getSymbolForFunctorOp(op));
     }
 
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {
-        return isNumericBinaryOp(fun);
+        return isNumericFunctorOp(op);
     }
 
     /** Check if the return value of this functor is a symbol type. */
     bool isSymbolic() const {
-        return isSymbolicBinaryOp(fun);
+        return isSymbolicFunctorOp(op);
     }
 
     /** Check if the arguments of this functor are number types. */
     bool acceptsNumbers(int arg) const {
-        return binaryOpAcceptsNumbers(arg, fun);
+        return functorOpAcceptsNumbers(arg, op);
     }
 
     /** Check if the arguments of this functor are symbol types. */
     bool acceptsSymbols(int arg) const {
-        return binaryOpAcceptsSymbols(arg, fun);
+        return functorOpAcceptsSymbols(arg, op);
     }
 
     /** Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        if (fun < BinaryOp::MAX) {
+        // TODO: LOL FIX THIS for new version
+        if (op < FunctorOp::MAX) {
             os << "(";
-            lhs->print(os);
-            os << getSymbolForBinaryOp(fun);
-            rhs->print(os);
+            args[0]->print(os);
+            os << getSymbolForFunctorOp(op);
+            args[1]->print(os);
             os << ")";
         } else {
-            os << getSymbolForBinaryOp(fun);
+            os << getSymbolForFunctorOp(op);
             os << "(";
-            lhs->print(os);
+            args[0]->print(os);
             os << ",";
-            rhs->print(os);
+            args[1]->print(os);
             os << ")";
         }
     }
 
     /** Creates a clone */
     AstBinaryFunctor* clone() const override {
-        auto res = new AstBinaryFunctor(
-                fun, std::unique_ptr<AstArgument>(lhs->clone()), std::unique_ptr<AstArgument>(rhs->clone()));
+        auto res = new AstBinaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()),
+                std::unique_ptr<AstArgument>(args[1]->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
     /** Mutates this node */
     void apply(const AstNodeMapper& map) override {
-        lhs = map(std::move(lhs));
-        rhs = map(std::move(rhs));
+        args[0] = map(std::move(args[0]));
+        args[1] = map(std::move(args[1]));
     }
 
     /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         auto res = AstArgument::getChildNodes();
-        res.push_back(lhs.get());
-        res.push_back(rhs.get());
+        res.push_back(args[0].get());
+        res.push_back(args[1].get());
         return res;
     }
 
@@ -552,7 +546,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstBinaryFunctor*>(&node));
         const auto& other = static_cast<const AstBinaryFunctor&>(node);
-        return fun == other.fun && *lhs == *other.lhs && *rhs == *other.rhs;
+        return op == other.op && *args[0] == *other.args[0] && *args[1] == *other.args[1];
     }
 };
 
@@ -562,79 +556,80 @@ protected:
  */
 // TODO: REPRESETNS A BINARY FUNCTOR?
 class AstTernaryFunctor : public AstFunctor {
-protected:
-    TernaryOp fun;
-    std::array<std::unique_ptr<AstArgument>, 3> arg;
-
 public:
+    AstTernaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> a1, std::unique_ptr<AstArgument> a2,
+            std::unique_ptr<AstArgument> a3)
+            : AstFunctor(fun, std::move(a1), std::move(a2), std::move(a3)) {}
     AstTernaryFunctor(TernaryOp fun, std::unique_ptr<AstArgument> a1, std::unique_ptr<AstArgument> a2,
             std::unique_ptr<AstArgument> a3)
-            : fun(fun), arg({{std::move(a1), std::move(a2), std::move(a3)}}) {}
+            : AstFunctor(getFunctorOpForSymbol(getSymbolForTernaryOp(fun)), std::move(a1), std::move(a2),
+                      std::move(a3)) {}
 
     ~AstTernaryFunctor() override = default;
 
     AstArgument* getArg(int idx) const {
         assert(idx >= 0 && idx < 3 && "wrong argument");
-        return arg[idx].get();
+        return args[idx].get();
     }
 
     TernaryOp getFunction() const {
-        return fun;
+        return getTernaryOpForSymbol(getSymbolForFunctorOp(op));
     }
 
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {
-        return isNumericTernaryOp(fun);
+        return isNumericFunctorOp(op);
     }
 
     /** Check if the return value of this functor is a symbol type. */
     bool isSymbolic() const {
-        return isSymbolicTernaryOp(fun);
+        return isSymbolicFunctorOp(op);
     }
 
     /** Check if the arguments of this functor are number types. */
     bool acceptsNumbers(int arg) const {
-        return ternaryOpAcceptsNumbers(arg, fun);
+        return functorOpAcceptsNumbers(arg, op);
     }
 
     /** Check if the arguments of this functor are symbol types. */
     bool acceptsSymbols(int arg) const {
-        return ternaryOpAcceptsSymbols(arg, fun);
+        return functorOpAcceptsSymbols(arg, op);
     }
 
     /** Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        os << getSymbolForTernaryOp(fun);
+        os << getSymbolForFunctorOp(op);
         os << "(";
-        arg[0]->print(os);
+        args[0]->print(os);
         os << ",";
-        arg[1]->print(os);
+        args[1]->print(os);
         os << ",";
-        arg[2]->print(os);
+        args[2]->print(os);
         os << ")";
     }
 
     /** Clone this node  */
     AstTernaryFunctor* clone() const override {
-        auto res = new AstTernaryFunctor(fun, std::unique_ptr<AstArgument>(arg[0]->clone()),
-                std::unique_ptr<AstArgument>(arg[1]->clone()), std::unique_ptr<AstArgument>(arg[2]->clone()));
+        auto res = new AstTernaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()),
+                std::unique_ptr<AstArgument>(args[1]->clone()),
+                std::unique_ptr<AstArgument>(args[2]->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
     /** Mutates this node */
     void apply(const AstNodeMapper& map) override {
-        arg[0] = map(std::move(arg[0]));
-        arg[1] = map(std::move(arg[1]));
-        arg[2] = map(std::move(arg[2]));
+        args[0] = map(std::move(args[0]));
+        args[1] = map(std::move(args[1]));
+        args[2] = map(std::move(args[2]));
     }
 
     /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         auto res = AstArgument::getChildNodes();
-        res.push_back(arg[0].get());
-        res.push_back(arg[1].get());
-        res.push_back(arg[2].get());
+        res.push_back(args[0].get());
+        res.push_back(args[1].get());
+        res.push_back(args[2].get());
         return res;
     }
 
@@ -643,8 +638,8 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstTernaryFunctor*>(&node));
         const auto& other = static_cast<const AstTernaryFunctor&>(node);
-        return fun == other.fun && *arg[0] == *other.arg[0] && *arg[1] == *other.arg[1] &&
-               *arg[2] == *other.arg[2];
+        return op == other.op && *args[0] == *other.args[0] && *args[1] == *other.args[1] &&
+               *args[2] == *other.args[2];
     }
 };
 

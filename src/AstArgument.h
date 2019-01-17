@@ -282,12 +282,13 @@ public:
     AstFunctor() = default;
 
     template <typename... Operands>
-    AstFunctor(FunctorOp op, Operands... operands) : op (op) {
-        // TODO: add an assert for arity
+    AstFunctor(FunctorOp op, Operands... operands) : op(op) {
         std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
         for (auto& cur : tmp) {
             args.push_back(std::move(cur));
         }
+
+        assert(getFunctorOpArity(op) == args.size() && "invalid number of arguments for functor");
     }
 };
 

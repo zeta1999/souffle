@@ -53,6 +53,46 @@ enum class FunctorOp {
     SUBSTR,     // addition
 };
 
+inline size_t getFunctorOpArity(FunctorOp op) {
+    switch (op) {
+        /** Unary Functor Operators */
+        case FunctorOp::ORD:
+        case FunctorOp::STRLEN:
+        case FunctorOp::NEG:
+        case FunctorOp::BNOT:
+        case FunctorOp::LNOT:
+        case FunctorOp::TONUMBER:
+        case FunctorOp::TOSTRING:
+            return 1U;
+
+        /** Binary Functor Operators */
+        case FunctorOp::ADD:
+        case FunctorOp::SUB:
+        case FunctorOp::MUL:
+        case FunctorOp::DIV:
+        case FunctorOp::EXP:
+        case FunctorOp::MOD:
+        case FunctorOp::BAND:
+        case FunctorOp::BOR:
+        case FunctorOp::BXOR:
+        case FunctorOp::LAND:
+        case FunctorOp::LOR:
+        case FunctorOp::MAX:
+        case FunctorOp::MIN:
+        case FunctorOp::CAT:
+            return 2U;
+
+        /** Ternary Functor Operators */
+        case FunctorOp::SUBSTR:
+            return 3U;
+
+        /** Undefined */
+        default:
+            break;
+    }
+    assert(false && "undefined operator");
+}
+
 // TODO: CONVERT THESE TO PROPER FUNCTIONS FOR THIS NEW ENUM
 // TODO: MAKE SURE YOU CATCH everything from each type (should be consistent)
 // TODO: add a function to check arity

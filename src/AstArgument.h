@@ -21,6 +21,7 @@
 #include "AstNode.h"
 #include "AstTypes.h"
 #include "BinaryFunctorOps.h"
+#include "FunctorOps.h"
 #include "SymbolTable.h"
 #include "TernaryFunctorOps.h"
 #include "UnaryFunctorOps.h"

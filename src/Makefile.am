@@ -93,6 +93,7 @@ souffle_sources = \
               Constraints.h                             \
               DebugReport.cpp       DebugReport.h       \
               EventProcessor.h                          \
+              FunctorOps.h                              \
               Global.cpp            Global.h            \
               GraphUtils.h                              \
               IODirectives.h                            \
@@ -127,7 +128,7 @@ souffle_sources = \
               ReadStream.h                              \
               ReadStreamCSV.h                           \
               ReorderLiteralsTransformer.cpp            \
-              ResolveAliasesTransformer.cpp	            \
+              ResolveAliasesTransformer.cpp             \
               SignalHandler.h                           \
               SrcLocation.cpp    SrcLocation.h          \
               StringPool.h                              \

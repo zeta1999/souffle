@@ -159,32 +159,45 @@ inline std::string getSymbolForFunctorOp(FunctorOp op) {
     return "?";
 }
 
+/**
+ * Converts symbolic representation of an operator to the operator
+ */
+inline FunctorOp getFunctorOpForSymbol(const std::string& symbol) {
+    /** Unary Functor Operators */
+    if (symbol == "ord") return FunctorOp::ORD;
+    if (symbol == "strlen") return FunctorOp::STRLEN;
+    if (symbol == "-") return FunctorOp::NEG;
+    if (symbol == "bnot") return FunctorOp::BNOT;
+    if (symbol == "lnot") return FunctorOp::LNOT;
+    if (symbol == "to_number") return FunctorOp::TONUMBER;
+    if (symbol == "to_string") return FunctorOp::TOSTRING;
+
+    /** Binary Functor Operators */
+    if (symbol == "+") return FunctorOp::ADD;
+    if (symbol == "-") return FunctorOp::SUB;
+    if (symbol == "*") return FunctorOp::MUL;
+    if (symbol == "/") return FunctorOp::DIV;
+    if (symbol == "^") return FunctorOp::EXP;
+    if (symbol == "%") return FunctorOp::MOD;
+    if (symbol == "band") return FunctorOp::BAND;
+    if (symbol == "bor") return FunctorOp::BOR;
+    if (symbol == "bxor") return FunctorOp::BXOR;
+    if (symbol == "land") return FunctorOp::LAND;
+    if (symbol == "lor") return FunctorOp::LOR;
+    if (symbol == "max") return FunctorOp::MAX;
+    if (symbol == "min") return FunctorOp::MIN;
+    if (symbol == "cat") return FunctorOp::CAT;
+
+    /** Ternary Functor Operators */
+    if (symbol == "substr") return FunctorOp::SUBSTR;
+
+    assert(false && "unrecognised operator");
+    return FunctorOp::__UNDEFINED__;
+}
+
 // TODO: CONVERT THESE TO PROPER FUNCTIONS FOR THIS NEW ENUM
 // TODO: MAKE SURE YOU CATCH everything from each type (should be consistent)
 // TODO: add a function to check arity
-//
-///**
-// * Converts symbolic representation of an operator to the operator
-// */
-// inline BinaryOp getBinaryOpForSymbol(const std::string& symbol) {
-//    if (symbol == "+") return BinaryOp::ADD;
-//    if (symbol == "-") return BinaryOp::SUB;
-//    if (symbol == "*") return BinaryOp::MUL;
-//    if (symbol == "/") return BinaryOp::DIV;
-//    if (symbol == "^") return BinaryOp::EXP;
-//    if (symbol == "%") return BinaryOp::MOD;
-//    if (symbol == "band") return BinaryOp::BAND;
-//    if (symbol == "bor") return BinaryOp::BOR;
-//    if (symbol == "bxor") return BinaryOp::BXOR;
-//    if (symbol == "land") return BinaryOp::LAND;
-//    if (symbol == "lor") return BinaryOp::LOR;
-//    if (symbol == "max") return BinaryOp::MAX;
-//    if (symbol == "min") return BinaryOp::MIN;
-//    if (symbol == "cat") return BinaryOp::CAT;
-//    std::cout << "Unrecognised operator: " << symbol << "\n";
-//    assert(false && "Unsupported Operator!");
-//    return BinaryOp::__UNDEFINED__;
-//}
 //
 ///**
 // * Determines whether the given operator has a numeric return value.
@@ -260,22 +273,6 @@ inline std::string getSymbolForFunctorOp(FunctorOp op) {
 // UNARYYYYY::::
 //
 // /**
-//  * Returns the corresponding operator for the given symbol.
-//  */
-// inline UnaryOp getUnaryOpForSymbol(const std::string& symbol) {
-//     if (symbol == "ord") return UnaryOp::ORD;
-//     if (symbol == "strlen") return UnaryOp::STRLEN;
-//     if (symbol == "-") return UnaryOp::NEG;
-//     if (symbol == "bnot") return UnaryOp::BNOT;
-//     if (symbol == "lnot") return UnaryOp::LNOT;
-//     if (symbol == "to_number") return UnaryOp::TONUMBER;
-//     if (symbol == "to_string") return UnaryOp::TOSTRING;
-//     std::cout << "Unrecognised operator: " << symbol << "\n";
-//     assert(false && "Unsupported Operator!");
-//     return UnaryOp::__UNDEFINED__;
-// }
-//
-// /**
 //  * Returns whether the given operator has a numeric return value.
 //  */
 // inline bool isNumericUnaryOp(const UnaryOp op) {
@@ -332,17 +329,6 @@ inline std::string getSymbolForFunctorOp(FunctorOp op) {
 // }
 //
 //  TERNARYYYYYYYYYYYYYY
-//
-// /**
-//  * Converts symbolic representation of an operator to the operator
-//  */
-// inline TernaryOp getTernaryOpForSymbol(const std::string& symbol) {
-//     if (symbol == "substr") return TernaryOp::SUBSTR;
-//     std::cout << "Unrecognised operator: " << symbol << "\n";
-//     assert(false && "Unsupported Operator!");
-//     return TernaryOp::__UNDEFINED__;
-// }
-//
 // /**
 //  * Determines whether the given operator has a numeric return value.
 //  */

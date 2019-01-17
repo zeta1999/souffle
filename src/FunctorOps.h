@@ -191,48 +191,69 @@ inline FunctorOp getFunctorOpForSymbol(const std::string& symbol) {
     /** Ternary Functor Operators */
     if (symbol == "substr") return FunctorOp::SUBSTR;
 
+    /** Undefined */
     assert(false && "unrecognised operator");
     return FunctorOp::__UNDEFINED__;
 }
 
+// TODO: change all the asserts to have consistent errors
+
+/**
+ * Determines whether the given operator has a numeric return value
+ */
+inline bool isNumericFunctorOp(const FunctorOp op) {
+    switch (op) {
+        /** Unary Functor Operators */
+        case FunctorOp::ORD:
+        case FunctorOp::STRLEN:
+        case FunctorOp::NEG:
+        case FunctorOp::BNOT:
+        case FunctorOp::LNOT:
+        case FunctorOp::TONUMBER:
+            return true;
+        case FunctorOp::TOSTRING:
+            return false;
+
+        /** Binary Functor Operators */
+        case FunctorOp::ADD:
+        case FunctorOp::SUB:
+        case FunctorOp::MUL:
+        case FunctorOp::DIV:
+        case FunctorOp::EXP:
+        case FunctorOp::BAND:
+        case FunctorOp::BOR:
+        case FunctorOp::BXOR:
+        case FunctorOp::LAND:
+        case FunctorOp::LOR:
+        case FunctorOp::MOD:
+        case FunctorOp::MAX:
+        case FunctorOp::MIN:
+            return true;
+        case FunctorOp::CAT:
+            return false;
+
+        /** Ternary Functor Operators */
+        case FunctorOp::SUBSTR:
+            return false;
+
+        /** Undefined */
+        default:
+            break;
+    }
+
+    assert(false && "unsupported operator");
+}
+
+/*
+ * Determines whether the operator has a symbolic return value.
+ */
+inline bool isSymbolicFunctorOp(const FunctorOp op) {
+    // TODO: maybe write it out explicitly in case more types are added later on
+    return !isNumericFunctorOp(op);
+}
+
 // TODO: CONVERT THESE TO PROPER FUNCTIONS FOR THIS NEW ENUM
 // TODO: MAKE SURE YOU CATCH everything from each type (should be consistent)
-// TODO: add a function to check arity
-//
-///**
-// * Determines whether the given operator has a numeric return value.
-// */
-// inline bool isNumericBinaryOp(const BinaryOp op) {
-//    switch (op) {
-//        case BinaryOp::ADD:
-//        case BinaryOp::SUB:
-//        case BinaryOp::MUL:
-//        case BinaryOp::DIV:
-//        case BinaryOp::EXP:
-//        case BinaryOp::BAND:
-//        case BinaryOp::BOR:
-//        case BinaryOp::BXOR:
-//        case BinaryOp::LAND:
-//        case BinaryOp::LOR:
-//        case BinaryOp::MOD:
-//        case BinaryOp::MAX:
-//        case BinaryOp::MIN:
-//            return true;
-//        case BinaryOp::CAT:
-//            return false;
-//        default:
-//            break;
-//    }
-//    assert(false && "Uncovered case!");
-//    return false;
-//}
-//
-///**
-// * Determines whether the operator has a symbolic return value.
-// */
-// inline bool isSymbolicBinaryOp(const BinaryOp op) {
-//    return !isNumericBinaryOp(op);
-//}
 //
 ///**
 // * Determines whether an argument has a number value.
@@ -273,34 +294,6 @@ inline FunctorOp getFunctorOpForSymbol(const std::string& symbol) {
 // UNARYYYYY::::
 //
 // /**
-//  * Returns whether the given operator has a numeric return value.
-//  */
-// inline bool isNumericUnaryOp(const UnaryOp op) {
-//     switch (op) {
-//         case UnaryOp::ORD:
-//         case UnaryOp::STRLEN:
-//         case UnaryOp::NEG:
-//         case UnaryOp::BNOT:
-//         case UnaryOp::LNOT:
-//         case UnaryOp::TONUMBER:
-//             return true;
-//         case UnaryOp::TOSTRING:
-//             return false;
-//         default:
-//             break;
-//     }
-//     assert(false && "Uncovered case!");
-//     return false;
-// }
-//
-// /**
-//  * Returns whether the given operator has a symbolic return value.
-//  */
-// inline bool isSymbolicUnaryOp(const UnaryOp op) {
-//     return !isNumericUnaryOp(op);
-// }
-//
-// /**
 //  * Returns whether the given operator takes a numeric argument.
 //  */
 // inline bool unaryOpAcceptsNumbers(const UnaryOp op) {
@@ -329,26 +322,6 @@ inline FunctorOp getFunctorOpForSymbol(const std::string& symbol) {
 // }
 //
 //  TERNARYYYYYYYYYYYYYY
-// /**
-//  * Determines whether the given operator has a numeric return value.
-//  */
-// inline bool isNumericTernaryOp(const TernaryOp op) {
-//     switch (op) {
-//         case TernaryOp::SUBSTR:
-//             return false;
-//         default:
-//             break;
-//     }
-//     assert(false && "Uncovered case!");
-//     return false;
-// }
-//
-// /**
-//  * Determines whether the operator has a symbolic return value.
-//  */
-// inline bool isSymbolicTernaryOp(const TernaryOp op) {
-//     return !isNumericTernaryOp(op);
-// }
 //
 // /**
 //  * Determines whether an argument has a number value.

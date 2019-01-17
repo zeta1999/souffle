@@ -25,32 +25,32 @@ enum class FunctorOp {
     __UNDEFINED__,  // undefined operator
 
     /** Unary Functor Operators */
-    ORD,        // ordinal number of a string
-    STRLEN,     // length of a string
-    NEG,        // numeric negation
-    BNOT,       // bitwise negation
-    LNOT,       // logical negation
-    TONUMBER,   // convert string to number
-    TOSTRING,    // convert number to string
+    ORD,       // ordinal number of a string
+    STRLEN,    // length of a string
+    NEG,       // numeric negation
+    BNOT,      // bitwise negation
+    LNOT,      // logical negation
+    TONUMBER,  // convert string to number
+    TOSTRING,  // convert number to string
 
     /** Binary Functor Operators */
-    ADD,        // addition
-    SUB,        // subtraction
-    MUL,        // multiplication
-    DIV,        // division
-    EXP,        // exponent
-    MOD,        // modulus
-    BAND,       // bitwise and
-    BOR,        // bitwise or
-    BXOR,       // bitwise exclusive or
-    LAND,       // logical and
-    LOR,        // logical or
-    MAX,        // max of two numbers
-    MIN,        // min of two numbers
-    CAT,        // string concatenation
+    ADD,   // addition
+    SUB,   // subtraction
+    MUL,   // multiplication
+    DIV,   // division
+    EXP,   // exponent
+    MOD,   // modulus
+    BAND,  // bitwise and
+    BOR,   // bitwise or
+    BXOR,  // bitwise exclusive or
+    LAND,  // logical and
+    LOR,   // logical or
+    MAX,   // max of two numbers
+    MIN,   // min of two numbers
+    CAT,   // string concatenation
 
     /** Ternary Functor Operators */
-    SUBSTR,     // addition
+    SUBSTR,  // addition
 };
 
 inline size_t getFunctorOpArity(FunctorOp op) {
@@ -99,7 +99,7 @@ inline size_t getFunctorOpArity(FunctorOp op) {
 ///**
 // * Converts operator to its symbolic representation
 // */
-//inline std::string getSymbolForBinaryOp(BinaryOp op) {
+// inline std::string getSymbolForBinaryOp(BinaryOp op) {
 //    switch (op) {
 //        case BinaryOp::ADD:
 //            return "+";
@@ -139,7 +139,7 @@ inline size_t getFunctorOpArity(FunctorOp op) {
 ///**
 // * Converts symbolic representation of an operator to the operator
 // */
-//inline BinaryOp getBinaryOpForSymbol(const std::string& symbol) {
+// inline BinaryOp getBinaryOpForSymbol(const std::string& symbol) {
 //    if (symbol == "+") return BinaryOp::ADD;
 //    if (symbol == "-") return BinaryOp::SUB;
 //    if (symbol == "*") return BinaryOp::MUL;
@@ -162,7 +162,7 @@ inline size_t getFunctorOpArity(FunctorOp op) {
 ///**
 // * Determines whether the given operator has a numeric return value.
 // */
-//inline bool isNumericBinaryOp(const BinaryOp op) {
+// inline bool isNumericBinaryOp(const BinaryOp op) {
 //    switch (op) {
 //        case BinaryOp::ADD:
 //        case BinaryOp::SUB:
@@ -190,14 +190,14 @@ inline size_t getFunctorOpArity(FunctorOp op) {
 ///**
 // * Determines whether the operator has a symbolic return value.
 // */
-//inline bool isSymbolicBinaryOp(const BinaryOp op) {
+// inline bool isSymbolicBinaryOp(const BinaryOp op) {
 //    return !isNumericBinaryOp(op);
 //}
 //
 ///**
 // * Determines whether an argument has a number value.
 // */
-//inline bool binaryOpAcceptsNumbers(int arg, const BinaryOp op) {
+// inline bool binaryOpAcceptsNumbers(int arg, const BinaryOp op) {
 //    assert(arg >= 0 && arg < 2 && "argument out of range");
 //    switch (op) {
 //        case BinaryOp::ADD:
@@ -226,7 +226,7 @@ inline size_t getFunctorOpArity(FunctorOp op) {
 ///**
 // * Determines whether an argument has a symbolic value
 // */
-//inline bool binaryOpAcceptsSymbols(int arg, const BinaryOp op) {
+// inline bool binaryOpAcceptsSymbols(int arg, const BinaryOp op) {
 //    return !binaryOpAcceptsNumbers(arg, op);
 //}
 //

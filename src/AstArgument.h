@@ -271,7 +271,25 @@ public:
 /**
  * A common base class for AST functors
  */
-class AstFunctor : public AstArgument {};
+// TODO: fix up the comments on all these bc they seem messed in general
+class AstFunctor : public AstArgument {
+protected:
+    FunctorOp op;
+    std::vector<std::unique_ptr<AstArgument>> args;
+
+public:
+    // TODO: remove this once subclasses are gone
+    AstFunctor() = default;
+
+    template <typename... Operands>
+    AstFunctor(FunctorOp op, Operands... operands) : op (op) {
+        // TODO: add an assert for arity
+        std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
+        for (auto& cur : tmp) {
+            args.push_back(std::move(cur));
+        }
+    }
+};
 
 /**
  * Subclass of Argument that represents a unary function
@@ -354,6 +372,7 @@ protected:
 /**
  * Subclass of Argument that represents a unary function
  */
+// TODO: SUBCLASS OF UNARY FUCNTION?
 class AstUserDefinedFunctor : public AstFunctor {
 protected:
     /** name of user-defined functor */
@@ -540,6 +559,7 @@ protected:
  * @class TernaryFunctor
  * @brief Subclass of Argument that represents a binary functor
  */
+// TODO: REPRESETNS A BINARY FUNCTOR?
 class AstTernaryFunctor : public AstFunctor {
 protected:
     TernaryOp fun;

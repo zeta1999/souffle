@@ -256,6 +256,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // - ternary functors -
     visitDepthFirst(nodes, [&](const AstTernaryFunctor& fun) {
         // check left and right side
+        // TODO: LEFT AND RIGHT SIDE???
         auto a0 = fun.getArg(0);
         auto a1 = fun.getArg(1);
         auto a2 = fun.getArg(2);

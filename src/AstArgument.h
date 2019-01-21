@@ -294,6 +294,9 @@ public:
         assert(getFunctorOpArity(op) == args.size() && "invalid number of arguments for functor");
     }
 
+    // TODO: necessary?
+    AstBuiltInFunctor(FunctorOp op, std::vector<std::unique_ptr<AstArgument>> operands) : op(op), args(std::move(operands)) {};
+
     AstArgument* getArg(size_t idx) const {
         assert(idx >= 0 && idx < getFunctorOpArity(op) && "wrong argument");
         return args[idx].get();
@@ -329,7 +332,18 @@ public:
         os << ")";
     }
 
-    // TODO: clone
+    // TODO: uncomment when no longer pure
+    // /** Clone this node */
+    // AstBuiltInFunctor* clone() const override {
+    //     auto argsCopy = std::vector<std::unique_ptr<AstArgument>>(args.size());
+    //     for (auto& arg : args) {
+    //         argsCopy.push_back(std::unique_ptr<AstArgument>(arg->clone()));
+    //     }
+    //     auto res = new AstBuiltInFunctor(op, std::move(argsCopy));
+    //     res->setSrcLoc(getSrcLoc());
+    //     return res;
+    // }
+
 
     /** Mutates this node */
     void apply(const AstNodeMapper& map) override {

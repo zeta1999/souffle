@@ -22,6 +22,7 @@
 namespace souffle {
 
 enum class FunctorOp {
+    // TODO: is this needed?
     __UNDEFINED__,  // undefined operator
 
     /** Unary Functor Operators */
@@ -159,6 +160,7 @@ inline std::string getSymbolForFunctorOp(FunctorOp op) {
     return "?";
 }
 
+// TODO: NOT ONE TO ONE!!! SO get rid of this maybe? or somehow get around this?
 /**
  * Converts symbolic representation of an operator to the operator
  */

@@ -290,6 +290,8 @@ public:
             args.push_back(std::move(cur));
         }
 
+        // TODO: NOTE THAT THIS CAN POSSIBLY FAIL ATM!!! Because of non-uniquness of getfunctorop for '-'
+        // std::cout << getSymbolForFunctorOp(op) << " HAS ARITY " << getFunctorOpArity(op) << " WHILE ARGS HAS SIZE " << args.size()  << std::endl;
         assert(getFunctorOpArity(op) == args.size() && "invalid number of arguments for functor");
     }
 

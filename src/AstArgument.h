@@ -273,7 +273,6 @@ public:
  */
 class AstFunctor : public AstArgument {};
 
-
 // TODO: fix up the comments on all these bc they seem messed in general
 class AstBuiltInFunctor : public AstFunctor {
 protected:
@@ -295,7 +294,8 @@ public:
     }
 
     // TODO: necessary?
-    AstBuiltInFunctor(FunctorOp op, std::vector<std::unique_ptr<AstArgument>> operands) : op(op), args(std::move(operands)) {};
+    AstBuiltInFunctor(FunctorOp op, std::vector<std::unique_ptr<AstArgument>> operands)
+            : op(op), args(std::move(operands)){};
 
     AstArgument* getArg(size_t idx) const {
         assert(idx >= 0 && idx < getFunctorOpArity(op) && "wrong argument");
@@ -349,7 +349,6 @@ public:
         return res;
     }
 
-
     /** Mutates this node */
     void apply(const AstNodeMapper& map) override {
         for (size_t i = 0; i < args.size(); i++) {
@@ -381,7 +380,8 @@ protected:
  */
 class AstUnaryFunctor : public AstBuiltInFunctor {
 public:
-    AstUnaryFunctor(UnaryOp fun, std::unique_ptr<AstArgument> o) : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForUnaryOp(fun)), std::move(o)) {}
+    AstUnaryFunctor(UnaryOp fun, std::unique_ptr<AstArgument> o)
+            : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForUnaryOp(fun)), std::move(o)) {}
     AstUnaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> o) : AstBuiltInFunctor(fun, std::move(o)) {}
 
     ~AstUnaryFunctor() override = default;
@@ -412,7 +412,8 @@ protected:
 class AstBinaryFunctor : public AstBuiltInFunctor {
 public:
     AstBinaryFunctor(BinaryOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
-            : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForBinaryOp(fun)), std::move(l), std::move(r)) {}
+            : AstBuiltInFunctor(
+                      getFunctorOpForSymbol(getSymbolForBinaryOp(fun)), std::move(l), std::move(r)) {}
     AstBinaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
             : AstBuiltInFunctor(fun, std::move(l), std::move(r)) {}
 
@@ -451,8 +452,8 @@ public:
             : AstBuiltInFunctor(fun, std::move(a1), std::move(a2), std::move(a3)) {}
     AstTernaryFunctor(TernaryOp fun, std::unique_ptr<AstArgument> a1, std::unique_ptr<AstArgument> a2,
             std::unique_ptr<AstArgument> a3)
-            : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForTernaryOp(fun)), std::move(a1), std::move(a2),
-                      std::move(a3)) {}
+            : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForTernaryOp(fun)), std::move(a1),
+                      std::move(a2), std::move(a3)) {}
 
     ~AstTernaryFunctor() override = default;
 

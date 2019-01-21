@@ -435,6 +435,7 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (const auto* ri = dynamic_cast<const AstRecordInit*>(arg)) {
         return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
+    // TODO: get rid of this unnecessary conditionanl
     if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
         return any_of(udf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
@@ -566,6 +567,7 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
             checkConstant(report, *arg);
         }
     } else if (auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
+        // TODO: seems like another useless conditional?
         for (auto* arg : udf->getArguments()) {
             checkConstant(report, *arg);
         }

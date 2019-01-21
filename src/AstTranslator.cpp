@@ -281,16 +281,6 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
                     uf.getFunction(), translator.translateValue(uf.getArg(0), index));
         }
 
-        std::unique_ptr<RamValue> visitUserDefinedFunctor(const AstUserDefinedFunctor& udf) override {
-            std::vector<std::unique_ptr<RamValue>> values;
-            for (const auto& cur : udf.getArguments()) {
-                values.push_back(translator.translateValue(cur, index));
-            }
-            const AstFunctorDeclaration* decl = translator.program->getFunctorDeclaration(udf.getName());
-            std::string type = decl->getType();
-            return std::make_unique<RamUserDefinedOperator>(udf.getName(), type, std::move(values));
-        }
-
         std::unique_ptr<RamValue> visitBinaryFunctor(const AstBinaryFunctor& bf) override {
             return std::make_unique<RamBinaryOperator>(bf.getFunction(),
                     translator.translateValue(bf.getArg(0), index),
@@ -302,6 +292,16 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
                     translator.translateValue(tf.getArg(0), index),
                     translator.translateValue(tf.getArg(1), index),
                     translator.translateValue(tf.getArg(2), index));
+        }
+
+        std::unique_ptr<RamValue> visitUserDefinedFunctor(const AstUserDefinedFunctor& udf) override {
+            std::vector<std::unique_ptr<RamValue>> values;
+            for (const auto& cur : udf.getArguments()) {
+                values.push_back(translator.translateValue(cur, index));
+            }
+            const AstFunctorDeclaration* decl = translator.program->getFunctorDeclaration(udf.getName());
+            std::string type = decl->getType();
+            return std::make_unique<RamUserDefinedOperator>(udf.getName(), type, std::move(values));
         }
 
         std::unique_ptr<RamValue> visitCounter(const AstCounter&) override {

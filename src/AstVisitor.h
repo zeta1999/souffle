@@ -144,10 +144,11 @@ protected:
     LINK(NullConstant, Constant)
     LINK(Constant, Argument)
 
-    LINK(UnaryFunctor, Functor)
+    LINK(UnaryFunctor, BuiltInFunctor)
     LINK(UserDefinedFunctor, Functor)
-    LINK(BinaryFunctor, Functor)
-    LINK(TernaryFunctor, Functor)
+    LINK(BinaryFunctor, BuiltInFunctor)
+    LINK(TernaryFunctor, BuiltInFunctor)
+    LINK(BuiltInFunctor, Functor)
     LINK(Functor, Argument)
 
     LINK(Aggregator, Argument)

@@ -271,18 +271,21 @@ public:
 /**
  * A common base class for AST functors
  */
+class AstFunctor : public AstArgument {};
+
+
 // TODO: fix up the comments on all these bc they seem messed in general
-class AstFunctor : public AstArgument {
+class AstBuiltInFunctor : public AstFunctor {
 protected:
     FunctorOp op;
     std::vector<std::unique_ptr<AstArgument>> args;
 
 public:
     // TODO: remove this once subclasses are gone
-    AstFunctor() = default;
+    AstBuiltInFunctor() = default;
 
     template <typename... Operands>
-    AstFunctor(FunctorOp op, Operands... operands) : op(op) {
+    AstBuiltInFunctor(FunctorOp op, Operands... operands) : op(op) {
         std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
         for (auto& cur : tmp) {
             args.push_back(std::move(cur));
@@ -295,10 +298,10 @@ public:
 /**
  * Subclass of Argument that represents a unary function
  */
-class AstUnaryFunctor : public AstFunctor {
+class AstUnaryFunctor : public AstBuiltInFunctor {
 public:
-    AstUnaryFunctor(UnaryOp fun, std::unique_ptr<AstArgument> o) : AstFunctor(getFunctorOpForSymbol(getSymbolForUnaryOp(fun)), std::move(o)) {}
-    AstUnaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> o) : AstFunctor(fun, std::move(o)) {}
+    AstUnaryFunctor(UnaryOp fun, std::unique_ptr<AstArgument> o) : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForUnaryOp(fun)), std::move(o)) {}
+    AstUnaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> o) : AstBuiltInFunctor(fun, std::move(o)) {}
 
     ~AstUnaryFunctor() override = default;
 
@@ -459,12 +462,12 @@ protected:
 /**
  * Subclass of Argument that represents a binary function
  */
-class AstBinaryFunctor : public AstFunctor {
+class AstBinaryFunctor : public AstBuiltInFunctor {
 public:
     AstBinaryFunctor(BinaryOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
-            : AstFunctor(getFunctorOpForSymbol(getSymbolForBinaryOp(fun)), std::move(l), std::move(r)) {}
+            : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForBinaryOp(fun)), std::move(l), std::move(r)) {}
     AstBinaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
-            : AstFunctor(fun, std::move(l), std::move(r)) {}
+            : AstBuiltInFunctor(fun, std::move(l), std::move(r)) {}
 
     ~AstBinaryFunctor() override = default;
 
@@ -555,14 +558,14 @@ protected:
  * @brief Subclass of Argument that represents a binary functor
  */
 // TODO: REPRESETNS A BINARY FUNCTOR?
-class AstTernaryFunctor : public AstFunctor {
+class AstTernaryFunctor : public AstBuiltInFunctor {
 public:
     AstTernaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> a1, std::unique_ptr<AstArgument> a2,
             std::unique_ptr<AstArgument> a3)
-            : AstFunctor(fun, std::move(a1), std::move(a2), std::move(a3)) {}
+            : AstBuiltInFunctor(fun, std::move(a1), std::move(a2), std::move(a3)) {}
     AstTernaryFunctor(TernaryOp fun, std::unique_ptr<AstArgument> a1, std::unique_ptr<AstArgument> a2,
             std::unique_ptr<AstArgument> a3)
-            : AstFunctor(getFunctorOpForSymbol(getSymbolForTernaryOp(fun)), std::move(a1), std::move(a2),
+            : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForTernaryOp(fun)), std::move(a1), std::move(a2),
                       std::move(a3)) {}
 
     ~AstTernaryFunctor() override = default;

@@ -293,6 +293,20 @@ public:
 
         assert(getFunctorOpArity(op) == args.size() && "invalid number of arguments for functor");
     }
+
+    // TODO: GET OPERANDS GO HERE
+
+    // TODO: GET FUNCTION GOES HERE
+
+    /** Check if the return value of this functor is a number type. */
+    bool isNumerical() const {
+        return isNumericFunctorOp(op);
+    }
+
+    /** Check if the return value of this functor is a symbol type. */
+    bool isSymbolic() const {
+        return isSymbolicFunctorOp(op);
+    }
 };
 
 /**
@@ -311,16 +325,6 @@ public:
 
     UnaryOp getFunction() const {
         return getUnaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
-    /** Check if the return value of this functor is a number type. */
-    bool isNumerical() const {
-        return isNumericFunctorOp(op);
-    }
-
-    /** Check if the return value of this functor is a symbol type. */
-    bool isSymbolic() const {
-        return isSymbolicFunctorOp(op);
     }
 
     /** Check if the argument of this functor is a number type. */
@@ -483,16 +487,6 @@ public:
         return getBinaryOpForSymbol(getSymbolForFunctorOp(op));
     }
 
-    /** Check if the return value of this functor is a number type. */
-    bool isNumerical() const {
-        return isNumericFunctorOp(op);
-    }
-
-    /** Check if the return value of this functor is a symbol type. */
-    bool isSymbolic() const {
-        return isSymbolicFunctorOp(op);
-    }
-
     /** Check if the arguments of this functor are number types. */
     bool acceptsNumbers(int arg) const {
         return functorOpAcceptsNumbers(arg, op);
@@ -577,16 +571,6 @@ public:
 
     TernaryOp getFunction() const {
         return getTernaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
-    /** Check if the return value of this functor is a number type. */
-    bool isNumerical() const {
-        return isNumericFunctorOp(op);
-    }
-
-    /** Check if the return value of this functor is a symbol type. */
-    bool isSymbolic() const {
-        return isSymbolicFunctorOp(op);
     }
 
     /** Check if the arguments of this functor are number types. */

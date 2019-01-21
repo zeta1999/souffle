@@ -326,7 +326,19 @@ public:
         os << ")";
     }
 
-    // TODO: clone stuff etc.
+    // TODO: clone
+
+    /** Mutates this node */
+    void apply(const AstNodeMapper& map) override {
+        for (size_t i = 0; i < args.size(); i++) {
+            args[i] = map(std::move(args[i]));
+        }
+    }
+
+    // TODO: get child nodes
+
+protected:
+    // TODO: EQUAL
 };
 
 /**
@@ -352,11 +364,6 @@ public:
         auto res = new AstUnaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
-    }
-
-    /** Mutates this node */
-    void apply(const AstNodeMapper& map) override {
-        args[0] = map(std::move(args[0]));
     }
 
     /** Obtains a list of all embedded child nodes */
@@ -402,6 +409,7 @@ public:
     /** Print argument to the given output stream */
     void print(std::ostream& os) const override {
         // TODO: FIX THIS for new version - just really need to add an IF statmenet for CAT? BUT ALSO CHECK IF MIN WAS DONE
+        // TODO: maybe add infix method
         if (op < FunctorOp::MAX) {
             os << "(";
             args[0]->print(os);
@@ -424,12 +432,6 @@ public:
                 std::unique_ptr<AstArgument>(args[1]->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
-    }
-
-    /** Mutates this node */
-    void apply(const AstNodeMapper& map) override {
-        args[0] = map(std::move(args[0]));
-        args[1] = map(std::move(args[1]));
     }
 
     /** Obtains a list of all embedded child nodes */
@@ -482,13 +484,6 @@ public:
                 std::unique_ptr<AstArgument>(args[2]->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
-    }
-
-    /** Mutates this node */
-    void apply(const AstNodeMapper& map) override {
-        args[0] = map(std::move(args[0]));
-        args[1] = map(std::move(args[1]));
-        args[2] = map(std::move(args[2]));
     }
 
     /** Obtains a list of all embedded child nodes */

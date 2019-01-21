@@ -298,12 +298,16 @@ public:
             : op(op), args(std::move(operands)){};
 
     AstArgument* getArg(size_t idx) const {
-        assert(idx >= 0 && idx < getFunctorOpArity(op) && "wrong argument");
+        assert(idx >= 0 && idx < args.size() && "wrong argument");
         return args[idx].get();
     }
 
     FunctorOp getFunction() const {
         return op;
+    }
+
+    size_t getArity() const {
+        return args.size();
     }
 
     /** Check if the return value of this functor is a number type. */
@@ -361,8 +365,8 @@ public:
     /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         auto res = AstArgument::getChildNodes();
-        for (size_t i = 0; i < args.size(); i++) {
-            res.push_back(args[i].get());
+        for (auto& arg : args) {
+            res.push_back(arg.get());
         }
         return res;
     }

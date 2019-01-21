@@ -332,17 +332,16 @@ public:
         os << ")";
     }
 
-    // TODO: uncomment when no longer pure
-    // /** Clone this node */
-    // AstBuiltInFunctor* clone() const override {
-    //     auto argsCopy = std::vector<std::unique_ptr<AstArgument>>(args.size());
-    //     for (auto& arg : args) {
-    //         argsCopy.push_back(std::unique_ptr<AstArgument>(arg->clone()));
-    //     }
-    //     auto res = new AstBuiltInFunctor(op, std::move(argsCopy));
-    //     res->setSrcLoc(getSrcLoc());
-    //     return res;
-    // }
+    /** Clone this node */
+    AstBuiltInFunctor* clone() const override {
+        auto argsCopy = std::vector<std::unique_ptr<AstArgument>>(args.size());
+        for (auto& arg : args) {
+            argsCopy.push_back(std::unique_ptr<AstArgument>(arg->clone()));
+        }
+        auto res = new AstBuiltInFunctor(op, std::move(argsCopy));
+        res->setSrcLoc(getSrcLoc());
+        return res;
+    }
 
 
     /** Mutates this node */

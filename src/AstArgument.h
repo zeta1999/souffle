@@ -294,7 +294,10 @@ public:
         assert(getFunctorOpArity(op) == args.size() && "invalid number of arguments for functor");
     }
 
-    // TODO: GET OPERANDS GO HERE
+    AstArgument* getArg(size_t idx) const {
+        assert(idx >= 0 && idx < getFunctorOpArity(op) && "wrong argument");
+        return args[idx].get();
+    }
 
     // TODO: GET FUNCTION GOES HERE
 
@@ -335,7 +338,14 @@ public:
         }
     }
 
-    // TODO: get child nodes
+    /** Obtains a list of all embedded child nodes */
+    std::vector<const AstNode*> getChildNodes() const override {
+        auto res = AstArgument::getChildNodes();
+        for (size_t i = 0; i < args.size(); i++) {
+            res.push_back(args[i].get());
+        }
+        return res;
+    }
 
 protected:
     // TODO: EQUAL
@@ -351,10 +361,6 @@ public:
 
     ~AstUnaryFunctor() override = default;
 
-    AstArgument* getOperand() const {
-        return args[0].get();
-    }
-
     UnaryOp getFunction() const {
         return getUnaryOpForSymbol(getSymbolForFunctorOp(op));
     }
@@ -363,13 +369,6 @@ public:
     AstUnaryFunctor* clone() const override {
         auto res = new AstUnaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()));
         res->setSrcLoc(getSrcLoc());
-        return res;
-    }
-
-    /** Obtains a list of all embedded child nodes */
-    std::vector<const AstNode*> getChildNodes() const override {
-        auto res = AstArgument::getChildNodes();
-        res.push_back(args[0].get());
         return res;
     }
 
@@ -394,10 +393,12 @@ public:
 
     ~AstBinaryFunctor() override = default;
 
+    // TODO: move this out
     AstArgument* getLHS() const {
         return args[0].get();
     }
 
+    // TODO: move this out
     AstArgument* getRHS() const {
         return args[1].get();
     }
@@ -434,14 +435,6 @@ public:
         return res;
     }
 
-    /** Obtains a list of all embedded child nodes */
-    std::vector<const AstNode*> getChildNodes() const override {
-        auto res = AstArgument::getChildNodes();
-        res.push_back(args[0].get());
-        res.push_back(args[1].get());
-        return res;
-    }
-
 protected:
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
@@ -468,11 +461,6 @@ public:
 
     ~AstTernaryFunctor() override = default;
 
-    AstArgument* getArg(int idx) const {
-        assert(idx >= 0 && idx < 3 && "wrong argument");
-        return args[idx].get();
-    }
-
     TernaryOp getFunction() const {
         return getTernaryOpForSymbol(getSymbolForFunctorOp(op));
     }
@@ -483,15 +471,6 @@ public:
                 std::unique_ptr<AstArgument>(args[1]->clone()),
                 std::unique_ptr<AstArgument>(args[2]->clone()));
         res->setSrcLoc(getSrcLoc());
-        return res;
-    }
-
-    /** Obtains a list of all embedded child nodes */
-    std::vector<const AstNode*> getChildNodes() const override {
-        auto res = AstArgument::getChildNodes();
-        res.push_back(args[0].get());
-        res.push_back(args[1].get());
-        res.push_back(args[2].get());
         return res;
     }
 

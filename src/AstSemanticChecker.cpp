@@ -201,7 +201,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // - unary functors -
     visitDepthFirst(nodes, [&](const AstUnaryFunctor& fun) {
         // check arg
-        auto arg = fun.getOperand();
+        auto arg = fun.getArg(0);
 
         // check appropriate use use of a numeric functor
         if (fun.isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
@@ -415,7 +415,7 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
         return false;
     }
     if (const auto* uf = dynamic_cast<const AstUnaryFunctor*>(arg)) {
-        return hasUnnamedVariable(uf->getOperand());
+        return hasUnnamedVariable(uf->getArg(0));
     }
     if (const auto* bf = dynamic_cast<const AstBinaryFunctor*>(arg)) {
         return hasUnnamedVariable(bf->getLHS()) || hasUnnamedVariable(bf->getRHS());
@@ -505,7 +505,7 @@ void AstSemanticChecker::checkArgument(
     if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg)) {
         checkAggregator(report, program, *agg);
     } else if (const auto* unaryFunc = dynamic_cast<const AstUnaryFunctor*>(&arg)) {
-        checkArgument(report, program, *unaryFunc->getOperand());
+        checkArgument(report, program, *unaryFunc->getArg(0));
     } else if (const auto* binFunc = dynamic_cast<const AstBinaryFunctor*>(&arg)) {
         checkArgument(report, program, *binFunc->getLHS());
         checkArgument(report, program, *binFunc->getRHS());
@@ -525,7 +525,7 @@ static bool isConstantArithExpr(const AstArgument& argument) {
         return true;
     }
     if (const auto* unOp = dynamic_cast<const AstUnaryFunctor*>(&argument)) {
-        return unOp->isNumerical() && isConstantArithExpr(*unOp->getOperand());
+        return unOp->isNumerical() && isConstantArithExpr(*unOp->getArg(0));
     }
     if (const auto* binOp = dynamic_cast<const AstBinaryFunctor*>(&argument)) {
         return binOp->isNumerical() && isConstantArithExpr(*binOp->getLHS()) &&

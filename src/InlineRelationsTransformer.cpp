@@ -610,7 +610,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
         // Each type of functor (unary, binary, ternary) must be handled differently.
         if (const auto* functor = dynamic_cast<const AstUnaryFunctor*>(arg)) {
             NullableVector<AstArgument*> argumentVersions =
-                    getInlinedArgument(program, functor->getOperand());
+                    getInlinedArgument(program, functor->getArg(0));
             if (argumentVersions.isValid()) {
                 changed = true;
                 for (AstArgument* newArg : argumentVersions.getVector()) {

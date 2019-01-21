@@ -219,7 +219,7 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
         // unary functors with grounded values are grounded values
         void visitUnaryFunctor(const AstUnaryFunctor& cur) override {
             auto fun = getVar(cur);
-            auto arg = getVar(cur.getOperand());
+            auto arg = getVar(cur.getArg(0));
 
             addConstraint(imply(arg, fun));
         }

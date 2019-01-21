@@ -425,7 +425,7 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         // unary functor
         void visitUnaryFunctor(const AstUnaryFunctor& fun) override {
             auto out = getVar(fun);
-            auto in = getVar(fun.getOperand());
+            auto in = getVar(fun.getArg(0));
 
             // add a constraint for the return type of the unary functor
             if (fun.isNumerical()) {

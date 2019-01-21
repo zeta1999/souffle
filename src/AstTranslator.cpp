@@ -278,7 +278,7 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
 
         std::unique_ptr<RamValue> visitUnaryFunctor(const AstUnaryFunctor& uf) override {
             return std::make_unique<RamUnaryOperator>(
-                    uf.getFunction(), translator.translateValue(uf.getOperand(), index));
+                    uf.getFunction(), translator.translateValue(uf.getArg(0), index));
         }
 
         std::unique_ptr<RamValue> visitUserDefinedFunctor(const AstUserDefinedFunctor& udf) override {

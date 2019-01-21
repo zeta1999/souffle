@@ -828,12 +828,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
     }
 
-    if (auto condition = createCondition(originalClause)) {
-        op = std::make_unique<RamFilter>(std::move(condition), std::move(op));
-    }
-
     /* generate the final RAM Insert statement */
-    return std::make_unique<RamInsert>(std::move(op));
+    return std::make_unique<RamInsert>(std::move(op), createCondition(originalClause));
 }
 
 /* utility for appending statements */

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "BinaryFunctorOps.h"
+#include "FunctorOps.h"
 #include "RamNode.h"
 #include "RamRelation.h"
 #include "SymbolTable.h"
@@ -54,6 +55,30 @@ public:
 
     /** Create clone */
     RamValue* clone() const override = 0;
+};
+
+class RamBuiltInOperator : public RamValue {
+private:
+    /** Operation symbol */
+    FunctorOp operation;
+
+    /** Arguments of the function */
+    std::vector<std::unique_ptr<RamValue>> arguments;
+
+public:
+    // TODO: remove this once subclasses are gone
+    RamBuiltInOperator() = default;
+
+    template <typename... Args>
+    RamBuiltInOperator(FunctorOp op, Args... args) : RamValue(RN_BuiltInOperator, all_of(args..., [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), operation(op) {
+        std::unique_ptr<RamValue> tmp[] = { std::move(args)... };
+        for (auto& cur : tmp) {
+            arguments.push_back(std::move(cur));
+        }
+    }
+
+    // TODO: necessary?
+    RamBuiltInOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_BuiltInOperator, all_of(args, [](const std::unique_ptr<RamValue>&a) { return a && a->isConstant(); })), operation(op), arguments(std::move(args)) {}
 };
 
 /**

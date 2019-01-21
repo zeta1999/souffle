@@ -81,10 +81,11 @@ struct RamVisitor : public ram_visitor_tag {
             // values
             FORWARD(ElementAccess);
             FORWARD(Number);
+            FORWARD(BuiltInOperator);
             FORWARD(UnaryOperator);
-            FORWARD(UserDefinedOperator);
             FORWARD(BinaryOperator);
             FORWARD(TernaryOperator);
+            FORWARD(UserDefinedOperator);
             FORWARD(AutoIncrement);
             FORWARD(Pack);
             FORWARD(Argument);
@@ -203,10 +204,11 @@ protected:
     // -- values --
     LINK(Number, Value)
     LINK(ElementAccess, Value)
+    LINK(BuiltInOperator, Value)
     LINK(UnaryOperator, Value)
-    LINK(UserDefinedOperator, Value)
     LINK(BinaryOperator, Value)
     LINK(TernaryOperator, Value)
+    LINK(UserDefinedOperator, Value)
     LINK(AutoIncrement, Value)
     LINK(Pack, Value)
     LINK(Argument, Value)

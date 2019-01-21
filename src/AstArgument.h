@@ -292,6 +292,7 @@ public:
 
         // TODO: NOTE THAT THIS CAN POSSIBLY FAIL ATM!!! Because of non-uniquness of getfunctorop for '-'
         // std::cout << getSymbolForFunctorOp(op) << " HAS ARITY " << getFunctorOpArity(op) << " WHILE ARGS HAS SIZE " << args.size()  << std::endl;
+        // TODO: CAREFUL with this as well because in the future may want (max(1,2,3)) to be a thing etc.
         assert(getFunctorOpArity(op) == args.size() && "invalid number of arguments for functor");
     }
 

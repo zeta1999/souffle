@@ -302,7 +302,9 @@ public:
         return args[idx].get();
     }
 
-    // TODO: GET FUNCTION GOES HERE
+    FunctorOp getFunction() const {
+        return op;
+    }
 
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {

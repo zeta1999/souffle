@@ -238,9 +238,9 @@ private:
             // binary functors are not supported
             throw UnsupportedConstructException("Unsupported function: " + toString(fun));
         } else if (const auto* binary = dynamic_cast<const AstBinaryFunctor*>(&fun)) {
-            visit(*binary->getLHS(), binding);
+            visit(*binary->getArg(0), binding);
             binding << getSymbolForBinaryOp(binary->getFunction());
-            visit(*binary->getRHS(), binding);
+            visit(*binary->getArg(1), binding);
         } else {
             assert(false && "Unsupported functor!");
         }

@@ -447,8 +447,8 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         // binary functor
         void visitBinaryFunctor(const AstBinaryFunctor& fun) override {
             auto cur = getVar(fun);
-            auto lhs = getVar(fun.getLHS());
-            auto rhs = getVar(fun.getRHS());
+            auto lhs = getVar(fun.getArg(0));
+            auto rhs = getVar(fun.getArg(1));
 
             // add a constraint for the return type of the binary functor
             if (fun.isNumerical()) {

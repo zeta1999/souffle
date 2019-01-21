@@ -393,16 +393,6 @@ public:
 
     ~AstBinaryFunctor() override = default;
 
-    // TODO: move this out
-    AstArgument* getLHS() const {
-        return args[0].get();
-    }
-
-    // TODO: move this out
-    AstArgument* getRHS() const {
-        return args[1].get();
-    }
-
     BinaryOp getFunction() const {
         return getBinaryOpForSymbol(getSymbolForFunctorOp(op));
     }

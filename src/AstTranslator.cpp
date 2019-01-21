@@ -293,8 +293,8 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
 
         std::unique_ptr<RamValue> visitBinaryFunctor(const AstBinaryFunctor& bf) override {
             return std::make_unique<RamBinaryOperator>(bf.getFunction(),
-                    translator.translateValue(bf.getLHS(), index),
-                    translator.translateValue(bf.getRHS(), index));
+                    translator.translateValue(bf.getArg(0), index),
+                    translator.translateValue(bf.getArg(1), index));
         }
 
         std::unique_ptr<RamValue> visitTernaryFunctor(const AstTernaryFunctor& tf) override {

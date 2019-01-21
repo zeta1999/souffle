@@ -257,9 +257,9 @@ private:
         } else if (const auto* binary = dynamic_cast<const AstBinaryFunctor*>(&fun)) {
             std::string sym = getSymbolForBinaryOp(binary->getFunction());
             out << "(";
-            visit(*binary->getLHS(), out);
+            visit(*binary->getArg(0), out);
             out << sym;
-            visit(*binary->getRHS(), out);
+            visit(*binary->getArg(1), out);
             out << ")";
         } else {
             assert(false && "Unsupported functor!");

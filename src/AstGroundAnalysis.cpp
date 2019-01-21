@@ -227,8 +227,8 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
         // binary functors with grounded values are grounded values
         void visitBinaryFunctor(const AstBinaryFunctor& cur) override {
             auto fun = getVar(cur);
-            auto lhs = getVar(cur.getLHS());
-            auto rhs = getVar(cur.getRHS());
+            auto lhs = getVar(cur.getArg(0));
+            auto rhs = getVar(cur.getArg(1));
 
             addConstraint(imply({lhs, rhs}, fun));
         }

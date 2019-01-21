@@ -227,8 +227,8 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // - binary functors -
     visitDepthFirst(nodes, [&](const AstBinaryFunctor& fun) {
         // check left and right side
-        auto lhs = fun.getLHS();
-        auto rhs = fun.getRHS();
+        auto lhs = fun.getArg(0);
+        auto rhs = fun.getArg(1);
 
         // check numeric types of result, first and second argument
         if (fun.isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
@@ -418,7 +418,7 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
         return hasUnnamedVariable(uf->getArg(0));
     }
     if (const auto* bf = dynamic_cast<const AstBinaryFunctor*>(arg)) {
-        return hasUnnamedVariable(bf->getLHS()) || hasUnnamedVariable(bf->getRHS());
+        return hasUnnamedVariable(bf->getArg(0)) || hasUnnamedVariable(bf->getArg(1));
     }
     if (const auto* tf = dynamic_cast<const AstTernaryFunctor*>(arg)) {
         return hasUnnamedVariable(tf->getArg(0)) || hasUnnamedVariable(tf->getArg(1)) ||
@@ -507,8 +507,8 @@ void AstSemanticChecker::checkArgument(
     } else if (const auto* unaryFunc = dynamic_cast<const AstUnaryFunctor*>(&arg)) {
         checkArgument(report, program, *unaryFunc->getArg(0));
     } else if (const auto* binFunc = dynamic_cast<const AstBinaryFunctor*>(&arg)) {
-        checkArgument(report, program, *binFunc->getLHS());
-        checkArgument(report, program, *binFunc->getRHS());
+        checkArgument(report, program, *binFunc->getArg(0));
+        checkArgument(report, program, *binFunc->getArg(1));
     } else if (const auto* ternFunc = dynamic_cast<const AstTernaryFunctor*>(&arg)) {
         checkArgument(report, program, *ternFunc->getArg(0));
         checkArgument(report, program, *ternFunc->getArg(1));
@@ -528,8 +528,8 @@ static bool isConstantArithExpr(const AstArgument& argument) {
         return unOp->isNumerical() && isConstantArithExpr(*unOp->getArg(0));
     }
     if (const auto* binOp = dynamic_cast<const AstBinaryFunctor*>(&argument)) {
-        return binOp->isNumerical() && isConstantArithExpr(*binOp->getLHS()) &&
-               isConstantArithExpr(*binOp->getRHS());
+        return binOp->isNumerical() && isConstantArithExpr(*binOp->getArg(0)) &&
+               isConstantArithExpr(*binOp->getArg(1));
     }
     if (const auto* ternOp = dynamic_cast<const AstTernaryFunctor*>(&argument)) {
         return ternOp->isNumerical() && isConstantArithExpr(*ternOp->getArg(0)) &&

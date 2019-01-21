@@ -620,22 +620,22 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                 }
             }
         } else if (const auto* functor = dynamic_cast<const AstBinaryFunctor*>(arg)) {
-            NullableVector<AstArgument*> lhsVersions = getInlinedArgument(program, functor->getLHS());
+            NullableVector<AstArgument*> lhsVersions = getInlinedArgument(program, functor->getArg(0));
             if (lhsVersions.isValid()) {
                 changed = true;
                 for (AstArgument* newLhs : lhsVersions.getVector()) {
                     AstArgument* newFunctor =
                             new AstBinaryFunctor(functor->getFunction(), std::unique_ptr<AstArgument>(newLhs),
-                                    std::unique_ptr<AstArgument>(functor->getRHS()->clone()));
+                                    std::unique_ptr<AstArgument>(functor->getArg(1)->clone()));
                     versions.push_back(newFunctor);
                 }
             } else {
-                NullableVector<AstArgument*> rhsVersions = getInlinedArgument(program, functor->getRHS());
+                NullableVector<AstArgument*> rhsVersions = getInlinedArgument(program, functor->getArg(1));
                 if (rhsVersions.isValid()) {
                     changed = true;
                     for (AstArgument* newRhs : rhsVersions.getVector()) {
                         AstArgument* newFunctor = new AstBinaryFunctor(functor->getFunction(),
-                                std::unique_ptr<AstArgument>(functor->getLHS()->clone()),
+                                std::unique_ptr<AstArgument>(functor->getArg(0)->clone()),
                                 std::unique_ptr<AstArgument>(newRhs));
                         versions.push_back(newFunctor);
                     }

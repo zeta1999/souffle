@@ -318,7 +318,15 @@ public:
         return functorOpAcceptsSymbols(arg, op);
     }
 
-    // TODO: print stuff etc.
+    /** Print argument to the given output stream */
+    void print(std::ostream& os) const override {
+        os << getSymbolForFunctorOp(op);
+        os << "(";
+        os << join(args, ",", print_deref<std::unique_ptr<AstArgument>>());
+        os << ")";
+    }
+
+    // TODO: clone stuff etc.
 };
 
 /**
@@ -337,14 +345,6 @@ public:
 
     UnaryOp getFunction() const {
         return getUnaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
-    /** Print argument to the given output stream */
-    void print(std::ostream& os) const override {
-        os << getSymbolForFunctorOp(op);
-        os << "(";
-        args[0]->print(os);
-        os << ")";
     }
 
     /** Creates a clone */
@@ -401,7 +401,7 @@ public:
 
     /** Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        // TODO: LOL FIX THIS for new version
+        // TODO: FIX THIS for new version - just really need to add an IF statmenet for CAT? BUT ALSO CHECK IF MIN WAS DONE
         if (op < FunctorOp::MAX) {
             os << "(";
             args[0]->print(os);
@@ -473,18 +473,6 @@ public:
 
     TernaryOp getFunction() const {
         return getTernaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
-    /** Print argument to the given output stream */
-    void print(std::ostream& os) const override {
-        os << getSymbolForFunctorOp(op);
-        os << "(";
-        args[0]->print(os);
-        os << ",";
-        args[1]->print(os);
-        os << ",";
-        args[2]->print(os);
-        os << ")";
     }
 
     /** Clone this node  */

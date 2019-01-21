@@ -307,6 +307,18 @@ public:
     bool isSymbolic() const {
         return isSymbolicFunctorOp(op);
     }
+
+    /** Check if the argument of this functor is a number type. */
+    bool acceptsNumbers(size_t arg) const {
+        return functorOpAcceptsNumbers(arg, op);
+    }
+
+    /** Check if the argument of this functor is a symbol type. */
+    bool acceptsSymbols(size_t arg) const {
+        return functorOpAcceptsSymbols(arg, op);
+    }
+
+    // TODO: print stuff etc.
 };
 
 /**
@@ -325,16 +337,6 @@ public:
 
     UnaryOp getFunction() const {
         return getUnaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
-    /** Check if the argument of this functor is a number type. */
-    bool acceptsNumbers() const {
-        return functorOpAcceptsNumbers(0, op);
-    }
-
-    /** Check if the argument of this functor is a symbol type. */
-    bool acceptsSymbols() const {
-        return functorOpAcceptsSymbols(0, op);
     }
 
     /** Print argument to the given output stream */
@@ -395,16 +397,6 @@ public:
 
     BinaryOp getFunction() const {
         return getBinaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
-    /** Check if the arguments of this functor are number types. */
-    bool acceptsNumbers(int arg) const {
-        return functorOpAcceptsNumbers(arg, op);
-    }
-
-    /** Check if the arguments of this functor are symbol types. */
-    bool acceptsSymbols(int arg) const {
-        return functorOpAcceptsSymbols(arg, op);
     }
 
     /** Print argument to the given output stream */
@@ -481,16 +473,6 @@ public:
 
     TernaryOp getFunction() const {
         return getTernaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
-    /** Check if the arguments of this functor are number types. */
-    bool acceptsNumbers(int arg) const {
-        return functorOpAcceptsNumbers(arg, op);
-    }
-
-    /** Check if the arguments of this functor are symbol types. */
-    bool acceptsSymbols(int arg) const {
-        return functorOpAcceptsSymbols(arg, op);
     }
 
     /** Print argument to the given output stream */

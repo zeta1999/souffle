@@ -209,7 +209,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
 
         // check argument type of a numeric functor
-        if (fun.acceptsNumbers() && !isNumberType(typeAnalysis.getTypes(arg))) {
+        if (fun.acceptsNumbers(0) && !isNumberType(typeAnalysis.getTypes(arg))) {
             report.addError("Non-numeric argument for numeric functor", arg->getSrcLoc());
         }
 
@@ -219,7 +219,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
 
         // check symbolic operands
-        if (fun.acceptsSymbols() && !isSymbolType(typeAnalysis.getTypes(arg))) {
+        if (fun.acceptsSymbols(0) && !isSymbolType(typeAnalysis.getTypes(arg))) {
             report.addError("Non-symbolic argument for symbolic functor", arg->getSrcLoc());
         }
     });

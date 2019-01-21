@@ -436,10 +436,10 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             }
 
             // add a constraint for the argument type of the unary functor
-            if (fun.acceptsNumbers()) {
+            if (fun.acceptsNumbers(0)) {
                 addConstraint(isSubtypeOf(in, env.getNumberType()));
             }
-            if (fun.acceptsSymbols()) {
+            if (fun.acceptsSymbols(0)) {
                 addConstraint(isSubtypeOf(in, env.getSymbolType()));
             }
         }

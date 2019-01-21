@@ -326,10 +326,16 @@ public:
 
     /** Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        os << getSymbolForFunctorOp(op);
-        os << "(";
-        os << join(args, ",", print_deref<std::unique_ptr<AstArgument>>());
-        os << ")";
+        if (isInfixFunctorOp(op)) {
+            os << "(";
+            os << join(args, getSymbolForFunctorOp(op), print_deref<std::unique_ptr<AstArgument>>());
+            os << ")";
+        } else {
+            os << getSymbolForFunctorOp(op);
+            os << "(";
+            os << join(args, ",", print_deref<std::unique_ptr<AstArgument>>());
+            os << ")";
+        }
     }
 
     /** Clone this node */
@@ -414,26 +420,6 @@ public:
 
     BinaryOp getFunction() const {
         return getBinaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
-    /** Print argument to the given output stream */
-    void print(std::ostream& os) const override {
-        // TODO: FIX THIS for new version - just really need to add an IF statmenet for CAT? BUT ALSO CHECK IF MIN WAS DONE
-        // TODO: maybe add infix method
-        if (op < FunctorOp::MAX) {
-            os << "(";
-            args[0]->print(os);
-            os << getSymbolForFunctorOp(op);
-            args[1]->print(os);
-            os << ")";
-        } else {
-            os << getSymbolForFunctorOp(op);
-            os << "(";
-            args[0]->print(os);
-            os << ",";
-            args[1]->print(os);
-            os << ")";
-        }
     }
 
     /** Creates a clone */

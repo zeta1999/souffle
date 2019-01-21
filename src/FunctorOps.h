@@ -310,4 +310,27 @@ inline bool functorOpAcceptsSymbols(size_t arg, const FunctorOp op) {
     return !functorOpAcceptsNumbers(arg, op);
 }
 
+/**
+ * Determines whether a functor should be written using infix notation (e.g. `a + b + c`)
+ * or prefix notation (e.g. `+(a,b,c)`)
+ */
+inline bool isInfixFunctorOp(const FunctorOp op) {
+    switch (op) {
+        case FunctorOp::ADD:
+        case FunctorOp::SUB:
+        case FunctorOp::MUL:
+        case FunctorOp::DIV:
+        case FunctorOp::EXP:
+        case FunctorOp::BAND:
+        case FunctorOp::BOR:
+        case FunctorOp::BXOR:
+        case FunctorOp::LAND:
+        case FunctorOp::LOR:
+        case FunctorOp::MOD:
+            return true;
+        default:
+            return false;
+    }
+}
+
 }  // end of namespace souffle

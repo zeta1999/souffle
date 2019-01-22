@@ -155,43 +155,6 @@ protected:
     }
 };
 
-/**
- * Binary function
- */
-// TODO (#541): have a single n-ary function
-class RamBinaryOperator : public RamIntrinsicOperator {
-public:
-    // TODO: change these to use n-ary constructor
-    RamBinaryOperator(FunctorOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
-            : RamIntrinsicOperator(op, {}) {
-            arguments.push_back(std::move(l)); arguments.push_back(std::move(r));}
-
-    RamBinaryOperator(BinaryOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
-            : RamIntrinsicOperator(getFunctorOpForSymbol(getSymbolForBinaryOp(op)), {}) {arguments.push_back(std::move(l)); arguments.push_back(std::move(r)); }
-
-    /** Get operator symbol */
-    BinaryOp getOperator() const {
-        return getBinaryOpForSymbol(getSymbolForFunctorOp(operation));
-    }
-
-    /** Create clone */
-    RamBinaryOperator* clone() const override {
-        RamBinaryOperator* res =
-                new RamBinaryOperator(operation, std::unique_ptr<RamValue>(arguments[0]->clone()),
-                        std::unique_ptr<RamValue>(arguments[1]->clone()));
-        return res;
-    }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamBinaryOperator*>(&node));
-        const auto& other = static_cast<const RamBinaryOperator&>(node);
-        return getOperator() == other.getOperator() && getArgument(0) == other.getArgument(0) &&
-               getArgument(1) == other.getArgument(1);
-    }
-};
-
 // TODO: fix up these comments
 /**
  * Unary user-defined function

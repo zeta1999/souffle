@@ -36,7 +36,6 @@ enum RamNodeType {
     RN_ElementAccess,
     RN_Number,
     RN_IntrinsicOperator,
-    RN_BinaryOperator,
     RN_UserDefinedOperator,
     RN_AutoIncrement,
     RN_Pack,

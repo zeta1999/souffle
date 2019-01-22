@@ -17,7 +17,7 @@
 #include "Interpreter.h"
 #include "BinaryConstraintOps.h"
 #include "BinaryFunctorOps.h"
-#include "FunctorOps.h" // TODO: is this necessary?
+#include "FunctorOps.h"  // TODO: is this necessary?
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"
@@ -74,115 +74,127 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             return interpreter.incCounter();
         }
 
-        // unary operators
-        RamDomain visitUnaryOperator(const RamUnaryOperator& op) override {
-            RamDomain arg = visit(op.getArg(0));
-            switch (op.getOperator()) {
-                case UnaryOp::NEG:
-                    return -arg;
-                case UnaryOp::BNOT:
-                    return ~arg;
-                case UnaryOp::LNOT:
-                    return !arg;
-                case UnaryOp::ORD:
-                    return arg;
-                case UnaryOp::STRLEN:
-                    return interpreter.getSymbolTable().resolve(arg).size();
-                case UnaryOp::TONUMBER: {
-                    RamDomain result = 0;
-                    try {
-                        result = stord(interpreter.getSymbolTable().resolve(arg));
-                    } catch (...) {
-                        std::cerr << "error: wrong string provided by to_number(\"";
-                        std::cerr << interpreter.getSymbolTable().resolve(arg);
-                        std::cerr << "\") functor.\n";
-                        raise(SIGFPE);
-                    }
-                    return result;
-                }
-                case UnaryOp::TOSTRING:
-                    return interpreter.getSymbolTable().lookup(std::to_string(arg));
-                default:
-                    assert(false && "unsupported operator");
-                    return 0;
-            }
-        }
+        // intrinsic functors
+        RamDomain visitIntrinsicOperator(const RamIntrinsicOperator& op) override {
+            // TODO: HANDLE THESE BETTER/MORE NEATLY, INSTEAD OF SPLITTING UP
+            // TODO: do it how its done in the synthesiser
 
-        // binary functors
-        RamDomain visitBinaryOperator(const RamBinaryOperator& op) override {
-            RamDomain lhs = visit(op.getArg(0));
-            RamDomain rhs = visit(op.getArg(1));
-            switch (op.getOperator()) {
-                case BinaryOp::ADD: {
-                    return lhs + rhs;
-                }
-                case BinaryOp::SUB: {
-                    return lhs - rhs;
-                }
-                case BinaryOp::MUL: {
-                    return lhs * rhs;
-                }
-                case BinaryOp::DIV: {
-                    return lhs / rhs;
-                }
-                case BinaryOp::EXP: {
-                    return std::pow(lhs, rhs);
-                }
-                case BinaryOp::MOD: {
-                    return lhs % rhs;
-                }
-                case BinaryOp::BAND: {
-                    return lhs & rhs;
-                }
-                case BinaryOp::BOR: {
-                    return lhs | rhs;
-                }
-                case BinaryOp::BXOR: {
-                    return lhs ^ rhs;
-                }
-                case BinaryOp::LAND: {
-                    return lhs && rhs;
-                }
-                case BinaryOp::LOR: {
-                    return lhs || rhs;
-                }
-                case BinaryOp::MAX: {
-                    return std::max(lhs, rhs);
-                }
-                case BinaryOp::MIN: {
-                    return std::min(lhs, rhs);
-                }
-                case BinaryOp::CAT: {
-                    return interpreter.getSymbolTable().lookup(interpreter.getSymbolTable().resolve(lhs) +
-                                                               interpreter.getSymbolTable().resolve(rhs));
-                }
-                default:
-                    assert(false && "unsupported operator");
-                    return 0;
-            }
-        }
+            /** Unary Functor Operators */
+            if (getFunctorOpArity(op.getOperator()) == 1) {
+                RamDomain arg = visit(op.getArg(0));
 
-        // ternary operators
-        RamDomain visitTernaryOperator(const RamTernaryOperator& op) override {
-            switch (op.getOperator()) {
-                case TernaryOp::SUBSTR: {
-                    auto symbol = visit(op.getArg(0));
-                    const std::string& str = interpreter.getSymbolTable().resolve(symbol);
-                    auto idx = visit(op.getArg(1));
-                    auto len = visit(op.getArg(2));
-                    std::string sub_str;
-                    try {
-                        sub_str = str.substr(idx, len);
-                    } catch (...) {
-                        std::cerr << "warning: wrong index position provided by substr(\"";
-                        std::cerr << str << "\"," << (int32_t)idx << "," << (int32_t)len << ") functor.\n";
+                switch (op.getOperator()) {
+                    case FunctorOp::ORD:
+                        return arg;
+                    case FunctorOp::STRLEN:
+                        return interpreter.getSymbolTable().resolve(arg).size();
+                    case FunctorOp::NEG:
+                        return -arg;
+                    case FunctorOp::BNOT:
+                        return ~arg;
+                    case FunctorOp::LNOT:
+                        return !arg;
+                    case FunctorOp::TONUMBER: {
+                        RamDomain result = 0;
+                        try {
+                            result = stord(interpreter.getSymbolTable().resolve(arg));
+                        } catch (...) {
+                            std::cerr << "error: wrong string provided by to_number(\"";
+                            std::cerr << interpreter.getSymbolTable().resolve(arg);
+                            std::cerr << "\") functor.\n";
+                            raise(SIGFPE);
+                        }
+                        return result;
                     }
-                    return interpreter.getSymbolTable().lookup(sub_str);
+                    case FunctorOp::TOSTRING:
+                        return interpreter.getSymbolTable().lookup(std::to_string(arg));
+                    default:
+                        assert(false && "unsupported unary operator");
+                        return 0;
                 }
-                default:
-                    assert(false && "unsupported operator");
-                    return 0;
             }
+
+            /** Binary Functor Operators */
+            if (getFunctorOpArity(op.getOperator()) == 2) {
+                RamDomain lhs = visit(op.getArg(0));
+                RamDomain rhs = visit(op.getArg(1));
+
+                switch (op.getOperator()) {
+                    case FunctorOp::ADD: {
+                        return lhs + rhs;
+                    }
+                    case FunctorOp::SUB: {
+                        return lhs - rhs;
+                    }
+                    case FunctorOp::MUL: {
+                        return lhs * rhs;
+                    }
+                    case FunctorOp::DIV: {
+                        return lhs / rhs;
+                    }
+                    case FunctorOp::EXP: {
+                        return std::pow(lhs, rhs);
+                    }
+                    case FunctorOp::MOD: {
+                        return lhs % rhs;
+                    }
+                    case FunctorOp::BAND: {
+                        return lhs & rhs;
+                    }
+                    case FunctorOp::BOR: {
+                        return lhs | rhs;
+                    }
+                    case FunctorOp::BXOR: {
+                        return lhs ^ rhs;
+                    }
+                    case FunctorOp::LAND: {
+                        return lhs && rhs;
+                    }
+                    case FunctorOp::LOR: {
+                        return lhs || rhs;
+                    }
+                    case FunctorOp::MAX: {
+                        return std::max(lhs, rhs);
+                    }
+                    case FunctorOp::MIN: {
+                        return std::min(lhs, rhs);
+                    }
+                    case FunctorOp::CAT: {
+                        return interpreter.getSymbolTable().lookup(interpreter.getSymbolTable().resolve(lhs) +
+                                                                   interpreter.getSymbolTable().resolve(rhs));
+                    }
+                    default:
+                        assert(false && "unsupported binary operator");
+                        return 0;
+                }
+            }
+
+            /** Ternary Functor Operators */
+            if (getFunctorOpArity(op.getOperator()) == 3) {
+                switch (op.getOperator()) {
+                    case FunctorOp::SUBSTR: {
+                        auto symbol = visit(op.getArg(0));
+                        const std::string& str = interpreter.getSymbolTable().resolve(symbol);
+                        auto idx = visit(op.getArg(1));
+                        auto len = visit(op.getArg(2));
+                        std::string sub_str;
+                        try {
+                            sub_str = str.substr(idx, len);
+                        } catch (...) {
+                            std::cerr << "warning: wrong index position provided by substr(\"";
+                            std::cerr << str << "\"," << (int32_t)idx << "," << (int32_t)len
+                                      << ") functor.\n";
+                        }
+                        return interpreter.getSymbolTable().lookup(sub_str);
+                    }
+                    default:
+                        assert(false && "unsupported ternary operator");
+                        return 0;
+                }
+            }
+
+            assert(false && "unsupported operator");
+            return 0;
         }
 
         RamDomain visitUserDefinedOperator(const RamUserDefinedOperator& op) override {

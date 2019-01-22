@@ -118,6 +118,16 @@ public:
         }
         return level;
     }
+
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        std::vector<const RamNode*> res;
+        for (const auto& cur : arguments) {
+            res.push_back(cur.get());
+        }
+        return res;
+    }
+
 };
 
 /**
@@ -139,11 +149,6 @@ public:
     /** Get operator */
     UnaryOp getOperator() const {
         return getUnaryOpForSymbol(getSymbolForFunctorOp(operation));
-    }
-
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(arguments[0].get());
     }
 
     /** Create clone */
@@ -183,11 +188,6 @@ public:
     /** Get operator symbol */
     BinaryOp getOperator() const {
         return getBinaryOpForSymbol(getSymbolForFunctorOp(operation));
-    }
-
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(arguments[0].get(), arguments[1].get());
     }
 
     /** Create clone */
@@ -240,11 +240,6 @@ public:
     /** Get operation symbol */
     TernaryOp getOperator() const {
         return getTernaryOpForSymbol(getSymbolForFunctorOp(operation));
-    }
-
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(arguments[0].get(), arguments[1].get(), arguments[2].get());
     }
 
     /** Create clone */
@@ -310,6 +305,7 @@ public:
     }
 
     const RamValue* getArg(size_t i) const {
+        // TODO: add an assert here?
         return arguments[i].get();
     }
 

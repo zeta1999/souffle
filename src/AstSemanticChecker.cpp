@@ -198,95 +198,27 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
-    // - unary functors -
-    visitDepthFirst(nodes, [&](const AstUnaryFunctor& fun) {
-        // check arg
-        auto arg = fun.getArg(0);
-
-        // check appropriate use use of a numeric functor
+    // - intrinsic functors -
+    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
+        // check type of result
         if (fun.isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
             report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
         }
 
-        // check argument type of a numeric functor
-        if (fun.acceptsNumbers(0) && !isNumberType(typeAnalysis.getTypes(arg))) {
-            report.addError("Non-numeric argument for numeric functor", arg->getSrcLoc());
-        }
-
-        // check symbolic operators
         if (fun.isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
             report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
         }
 
-        // check symbolic operands
-        if (fun.acceptsSymbols(0) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-            report.addError("Non-symbolic argument for symbolic functor", arg->getSrcLoc());
-        }
-    });
-
-    // - binary functors -
-    visitDepthFirst(nodes, [&](const AstBinaryFunctor& fun) {
-        // check left and right side
-        auto lhs = fun.getArg(0);
-        auto rhs = fun.getArg(1);
-
-        // check numeric types of result, first and second argument
-        if (fun.isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-        }
-        if (fun.acceptsNumbers(0) && !isNumberType(typeAnalysis.getTypes(lhs))) {
-            report.addError("Non-numeric first argument for functor", lhs->getSrcLoc());
-        }
-        if (fun.acceptsNumbers(1) && !isNumberType(typeAnalysis.getTypes(rhs))) {
-            report.addError("Non-numeric second argument for functor", rhs->getSrcLoc());
-        }
-
-        // check symbolic types of result, first and second argument
-        if (fun.isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-        }
-        if (fun.acceptsSymbols(0) && !isSymbolType(typeAnalysis.getTypes(lhs))) {
-            report.addError("Non-symbolic first argument for functor", lhs->getSrcLoc());
-        }
-        if (fun.acceptsSymbols(1) && !isSymbolType(typeAnalysis.getTypes(rhs))) {
-            report.addError("Non-symbolic second argument for functor", rhs->getSrcLoc());
-        }
-    });
-
-    // - ternary functors -
-    visitDepthFirst(nodes, [&](const AstTernaryFunctor& fun) {
-        // check left and right side
-        // TODO: LEFT AND RIGHT SIDE???
-        auto a0 = fun.getArg(0);
-        auto a1 = fun.getArg(1);
-        auto a2 = fun.getArg(2);
-
-        // check numeric types of result, first and second argument
-        if (fun.isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-        }
-        if (fun.acceptsNumbers(0) && !isNumberType(typeAnalysis.getTypes(a0))) {
-            report.addError("Non-numeric first argument for functor", a0->getSrcLoc());
-        }
-        if (fun.acceptsNumbers(1) && !isNumberType(typeAnalysis.getTypes(a1))) {
-            report.addError("Non-numeric second argument for functor", a1->getSrcLoc());
-        }
-        if (fun.acceptsNumbers(2) && !isNumberType(typeAnalysis.getTypes(a2))) {
-            report.addError("Non-numeric third argument for functor", a2->getSrcLoc());
-        }
-
-        // check symbolic types of result, first and second argument
-        if (fun.isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-        }
-        if (fun.acceptsSymbols(0) && !isSymbolType(typeAnalysis.getTypes(a0))) {
-            report.addError("Non-symbolic first argument for functor", a0->getSrcLoc());
-        }
-        if (fun.acceptsSymbols(1) && !isSymbolType(typeAnalysis.getTypes(a1))) {
-            report.addError("Non-symbolic second argument for functor", a1->getSrcLoc());
-        }
-        if (fun.acceptsSymbols(2) && !isSymbolType(typeAnalysis.getTypes(a2))) {
-            report.addError("Non-symbolic third argument for functor", a2->getSrcLoc());
+        // check types of arguments
+        // TODO: ERROR MESSAGES? HAVE NOW CHANGED!!!
+        for (size_t i = 0; i < fun.getArity(); i++) {
+            auto arg = fun.getArg(i);
+            if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
+                report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+            }
+            if (fun.acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
+                report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+            }
         }
     });
 

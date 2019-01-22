@@ -404,10 +404,6 @@ public:
 
     ~AstUnaryFunctor() override = default;
 
-    UnaryOp getFunction() const {
-        return getUnaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
     /** Creates a clone */
     AstUnaryFunctor* clone() const override {
         auto res = new AstUnaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()));
@@ -474,10 +470,6 @@ public:
                       std::move(a2), std::move(a3)) {}
 
     ~AstTernaryFunctor() override = default;
-
-    TernaryOp getFunction() const {
-        return getTernaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
 
     /** Clone this node  */
     AstTernaryFunctor* clone() const override {

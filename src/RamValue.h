@@ -156,42 +156,6 @@ protected:
 };
 
 /**
- * Unary function
- */
-// TODO (#541): have a single n-ary function
-class RamUnaryOperator : public RamIntrinsicOperator {
-public:
-    // TODO: change these to use n-ary constructor
-    RamUnaryOperator(UnaryOp op, std::unique_ptr<RamValue> v)
-            : RamIntrinsicOperator(getFunctorOpForSymbol(getSymbolForUnaryOp(op)), {}) {
-            arguments.push_back(std::move(v));}
-
-    RamUnaryOperator(FunctorOp op, std::unique_ptr<RamValue> v)
-            : RamIntrinsicOperator(op, {}) {
-        arguments.push_back(std::move(v));
-    }
-
-    /** Get operator */
-    UnaryOp getOperator() const {
-        return getUnaryOpForSymbol(getSymbolForFunctorOp(operation));
-    }
-
-    /** Create clone */
-    RamUnaryOperator* clone() const override {
-        RamUnaryOperator* res = new RamUnaryOperator(operation, std::unique_ptr<RamValue>(arguments[0]->clone()));
-        return res;
-    }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamUnaryOperator*>(&node));
-        const auto& other = static_cast<const RamUnaryOperator&>(node);
-        return getOperator() == other.getOperator() && getArgument(0) == other.getArgument(0);
-    }
-};
-
-/**
  * Binary function
  */
 // TODO (#541): have a single n-ary function

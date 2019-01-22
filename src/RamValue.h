@@ -94,6 +94,18 @@ public:
             os << ")";
         }
     }
+
+    /** Get argument */
+    // TODO (#541): Remove old def -- rename to getArgument
+    const RamValue* getArg(int i) const {
+        return arguments[i].get();
+    }
+    const RamValue& getArgument(int i) const {
+        // TODO: size_t?
+        assert(arguments[i]);
+        return *arguments[i];
+    }
+
 };
 
 /**
@@ -110,15 +122,6 @@ public:
     RamUnaryOperator(FunctorOp op, std::unique_ptr<RamValue> v)
             : RamIntrinsicOperator(op, {}) {
         arguments.push_back(std::move(v));
-    }
-
-    /** Get Argument */
-    // TODO (#541): rename to getArgument()
-    const RamValue* getValue() const {
-        return arguments[0].get();
-    }
-    const RamValue& getArgument() const {
-        return *arguments[0];
     }
 
     /** Get operator */
@@ -153,7 +156,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamUnaryOperator*>(&node));
         const auto& other = static_cast<const RamUnaryOperator&>(node);
-        return getOperator() == other.getOperator() && getArgument() == other.getArgument();
+        return getOperator() == other.getOperator() && getArgument(0) == other.getArgument(0);
     }
 };
 
@@ -170,26 +173,6 @@ public:
 
     RamBinaryOperator(BinaryOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
             : RamIntrinsicOperator(getFunctorOpForSymbol(getSymbolForBinaryOp(op)), {}) {arguments.push_back(std::move(l)); arguments.push_back(std::move(r)); }
-
-    /** Get left-handside argument */
-    // remove def below
-    const RamValue* getLHS() const {
-        return arguments[0].get();
-    }
-    const RamValue& getLHSArgument() const {
-        assert(arguments[0]);
-        return *arguments[0];
-    }
-
-    /** Get right-handside argument */
-    // remove def below
-    const RamValue* getRHS() const {
-        return arguments[1].get();
-    }
-    const RamValue& getRHSArgument() const {
-        assert(arguments[1]);
-        return *arguments[1];
-    }
 
     /** Get operator symbol */
     BinaryOp getOperator() const {
@@ -226,8 +209,8 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamBinaryOperator*>(&node));
         const auto& other = static_cast<const RamBinaryOperator&>(node);
-        return getOperator() == other.getOperator() && getLHSArgument() == other.getLHSArgument() &&
-               getRHSArgument() == other.getRHSArgument();
+        return getOperator() == other.getOperator() && getArgument(0) == other.getArgument(0) &&
+               getArgument(1) == other.getArgument(1);
     }
 };
 
@@ -253,16 +236,6 @@ public:
             arguments.push_back(std::move(a1));
             arguments.push_back(std::move(a2));
             }
-
-    /** Get argument */
-    // TODO (#541): Remove old def
-    const RamValue* getArg(int i) const {
-        return arguments[i].get();
-    }
-    const RamValue& getArgument(int i) const {
-        assert(arguments[i]);
-        return *arguments[i];
-    }
 
     /** Get operation symbol */
     TernaryOp getOperator() const {

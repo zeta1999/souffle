@@ -76,7 +76,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
         // unary operators
         RamDomain visitUnaryOperator(const RamUnaryOperator& op) override {
-            RamDomain arg = visit(op.getValue());
+            RamDomain arg = visit(op.getArg(0));
             switch (op.getOperator()) {
                 case UnaryOp::NEG:
                     return -arg;
@@ -174,8 +174,8 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
         // binary functors
         RamDomain visitBinaryOperator(const RamBinaryOperator& op) override {
-            RamDomain lhs = visit(op.getLHS());
-            RamDomain rhs = visit(op.getRHS());
+            RamDomain lhs = visit(op.getArg(0));
+            RamDomain rhs = visit(op.getArg(1));
             switch (op.getOperator()) {
                 case BinaryOp::ADD: {
                     return lhs + rhs;

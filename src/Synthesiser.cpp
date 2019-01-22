@@ -1119,36 +1119,36 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             switch (op.getOperator()) {
                 case UnaryOp::ORD:
-                    visit(op.getValue(), out);
+                    visit(op.getArg(0), out);
                     break;
                 case UnaryOp::STRLEN:
                     out << "static_cast<RamDomain>(symTable.resolve(";
-                    visit(op.getValue(), out);
+                    visit(op.getArg(0), out);
                     out << ").size())";
                     break;
                 case UnaryOp::NEG:
                     out << "(-(";
-                    visit(op.getValue(), out);
+                    visit(op.getArg(0), out);
                     out << "))";
                     break;
                 case UnaryOp::BNOT:
                     out << "(~(";
-                    visit(op.getValue(), out);
+                    visit(op.getArg(0), out);
                     out << "))";
                     break;
                 case UnaryOp::LNOT:
                     out << "(!(";
-                    visit(op.getValue(), out);
+                    visit(op.getArg(0), out);
                     out << "))";
                     break;
                 case UnaryOp::TOSTRING:
                     out << "symTable.lookup(std::to_string(";
-                    visit(op.getValue(), out);
+                    visit(op.getArg(0), out);
                     out << "))";
                     break;
                 case UnaryOp::TONUMBER:
                     out << "(wrapper_tonumber(symTable.resolve((size_t)";
-                    visit(op.getValue(), out);
+                    visit(op.getArg(0), out);
                     out << ")))";
                     break;
 
@@ -1165,33 +1165,33 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // arithmetic
                 case BinaryOp::ADD: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") + (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::SUB: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") - (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::MUL: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") * (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::DIV: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") / (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
@@ -1199,73 +1199,73 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     // Cast as int64, then back to RamDomain of int32 to avoid wrapping to negative
                     // when using int32 RamDomains
                     out << "static_cast<int64_t>(std::pow(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ",";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << "))";
                     break;
                 }
                 case BinaryOp::MOD: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") % (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::BAND: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") & (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::BOR: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") | (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::BXOR: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") ^ (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::LAND: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") && (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::LOR: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") || (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::MAX: {
                     out << "std::max(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ",";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
                 case BinaryOp::MIN: {
                     out << "std::min(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ",";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << ")";
                     break;
                 }
@@ -1274,9 +1274,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case BinaryOp::CAT: {
                     out << "symTable.lookup(";
                     out << "symTable.resolve(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArg(0), out);
                     out << ") + symTable.resolve(";
-                    visit(op.getRHS(), out);
+                    visit(op.getArg(1), out);
                     out << "))";
                     break;
                 }

@@ -58,7 +58,8 @@ public:
 };
 
 class RamBuiltInOperator : public RamValue {
-private:
+// TODO: change to private after
+protected:
     /** Operation symbol */
     FunctorOp operation;
 
@@ -70,12 +71,14 @@ public:
     RamBuiltInOperator() = default;
 
     template <typename... Args>
-    RamBuiltInOperator(FunctorOp op, Args... args) : RamValue(RN_BuiltInOperator, all_of(args..., [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), operation(op) {
-        std::unique_ptr<RamValue> tmp[] = { std::move(args)... };
-        for (auto& cur : tmp) {
-            arguments.push_back(std::move(cur));
-        }
-    }
+        // TODO: uncomment soon
+//    RamBuiltInOperator(FunctorOp op, Args... args) : RamValue(RN_BuiltInOperator, all_of(args..., [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), operation(op) {
+    // RamBuiltInOperator(FunctorOp op, Args... args) : RamValue(RN_BuiltInOperator, true), operation(op) {
+    //     std::unique_ptr<RamValue> tmp[] = { std::move(args)... };
+    //     for (auto& cur : tmp) {
+    //         arguments.push_back(std::move(cur));
+    //     }
+    // }
 
     // TODO: necessary?
     RamBuiltInOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_BuiltInOperator, all_of(args, [](const std::unique_ptr<RamValue>&a) { return a && a->isConstant(); })), operation(op), arguments(std::move(args)) {}
@@ -85,59 +88,57 @@ public:
  * Unary function
  */
 // TODO (#541): have a single n-ary function
-class RamUnaryOperator : public RamValue {
-private:
-    /** Operation symbol */
-    UnaryOp operation;
-
-    /** Argument of unary function */
-    std::unique_ptr<RamValue> argument;
-
+class RamUnaryOperator : public RamBuiltInOperator {
 public:
     RamUnaryOperator(UnaryOp op, std::unique_ptr<RamValue> v)
-            : RamValue(RN_UnaryOperator, v->isConstant()), operation(op), argument(std::move(v)) {}
+            : RamBuiltInOperator(getFunctorOpForSymbol(getSymbolForUnaryOp(op)), {}) {
+            arguments.push_back(std::move(v));}
 
+    RamUnaryOperator(FunctorOp op, std::unique_ptr<RamValue> v)
+            : RamBuiltInOperator(op, {}) {
+        arguments.push_back(std::move(v));
+    }
     /** Print */
     void print(std::ostream& os) const override {
-        os << getSymbolForUnaryOp(operation) << "(";
-        argument->print(os);
+        os << getSymbolForFunctorOp(operation) << "(";
+        arguments[0]->print(os);
         os << ")";
     }
 
     /** Get Argument */
     // TODO (#541): rename to getArgument()
     const RamValue* getValue() const {
-        return argument.get();
+        return arguments[0].get();
     }
     const RamValue& getArgument() const {
-        return *argument;
+        return *arguments[0];
     }
 
     /** Get operator */
     UnaryOp getOperator() const {
-        return operation;
+        return getUnaryOpForSymbol(getSymbolForFunctorOp(operation));
     }
 
     /** Get level */
     // TODO (#541): move to an analysis
     size_t getLevel() const override {
-        return argument->getLevel();
+        return arguments[0]->getLevel();
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(argument.get());
+        return toVector<const RamNode*>(arguments[0].get());
     }
 
     /** Create clone */
     RamUnaryOperator* clone() const override {
-        RamUnaryOperator* res = new RamUnaryOperator(operation, std::unique_ptr<RamValue>(argument->clone()));
+        RamUnaryOperator* res = new RamUnaryOperator(operation, std::unique_ptr<RamValue>(arguments[0]->clone()));
         return res;
     }
 
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
-        argument = map(std::move(argument));
+        arguments[0] = map(std::move(arguments[0]));
     }
 
 protected:
@@ -153,38 +154,32 @@ protected:
  * Binary function
  */
 // TODO (#541): have a single n-ary function
-class RamBinaryOperator : public RamValue {
-private:
-    /** Operation symbol */
-    BinaryOp operation;
-
-    /** Left-hand side argument */
-    std::unique_ptr<RamValue> lhsArgument;
-
-    /** Right-hand side argument */
-    std::unique_ptr<RamValue> rhsArgument;
-
+class RamBinaryOperator : public RamBuiltInOperator {
 public:
+    RamBinaryOperator(FunctorOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
+            : RamBuiltInOperator(op, {}) {
+            arguments.push_back(std::move(l)); arguments.push_back(std::move(r));}
+
     RamBinaryOperator(BinaryOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
-            : RamValue(RN_BinaryOperator, l->isConstant() && r->isConstant()), operation(op),
-              lhsArgument(std::move(l)), rhsArgument(std::move(r)) {}
+            : RamBuiltInOperator(getFunctorOpForSymbol(getSymbolForBinaryOp(op)), {}) {arguments.push_back(std::move(l)); arguments.push_back(std::move(r)); }
 
     /** Print */
     void print(std::ostream& os) const override {
-        if (operation < BinaryOp::MAX) {
+        // TODO: FIX THIS
+        if (operation < FunctorOp::MAX) {
             // print infix notation
             os << "(";
-            lhsArgument->print(os);
-            os << getSymbolForBinaryOp(operation);
-            rhsArgument->print(os);
+            arguments[0]->print(os);
+            os << getSymbolForFunctorOp(operation);
+            arguments[1]->print(os);
             os << ")";
         } else {
             // print prefix notation
-            os << getSymbolForBinaryOp(operation);
+            os << getSymbolForFunctorOp(operation);
             os << "(";
-            lhsArgument->print(os);
+            arguments[0]->print(os);
             os << ",";
-            rhsArgument->print(os);
+            arguments[1]->print(os);
             os << ")";
         }
     }
@@ -192,51 +187,51 @@ public:
     /** Get left-handside argument */
     // remove def below
     const RamValue* getLHS() const {
-        return lhsArgument.get();
+        return arguments[0].get();
     }
     const RamValue& getLHSArgument() const {
-        assert(lhsArgument);
-        return *lhsArgument;
+        assert(arguments[0]);
+        return *arguments[0];
     }
 
     /** Get right-handside argument */
     // remove def below
     const RamValue* getRHS() const {
-        return rhsArgument.get();
+        return arguments[1].get();
     }
     const RamValue& getRHSArgument() const {
-        assert(rhsArgument);
-        return *rhsArgument;
+        assert(arguments[1]);
+        return *arguments[1];
     }
 
     /** Get operator symbol */
     BinaryOp getOperator() const {
-        return operation;
+        return getBinaryOpForSymbol(getSymbolForFunctorOp(operation));
     }
 
     /** Get level */
     // TODO (#541): move to an analysis
     size_t getLevel() const override {
-        return std::max(lhsArgument->getLevel(), rhsArgument->getLevel());
+        return std::max(arguments[0]->getLevel(), arguments[1]->getLevel());
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(lhsArgument.get(), rhsArgument.get());
+        return toVector<const RamNode*>(arguments[0].get(), arguments[1].get());
     }
 
     /** Create clone */
     RamBinaryOperator* clone() const override {
         RamBinaryOperator* res =
-                new RamBinaryOperator(operation, std::unique_ptr<RamValue>(lhsArgument->clone()),
-                        std::unique_ptr<RamValue>(rhsArgument->clone()));
+                new RamBinaryOperator(operation, std::unique_ptr<RamValue>(arguments[0]->clone()),
+                        std::unique_ptr<RamValue>(arguments[1]->clone()));
         return res;
     }
 
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
-        lhsArgument = map(std::move(lhsArgument));
-        rhsArgument = map(std::move(rhsArgument));
+        arguments[0] = map(std::move(arguments[0]));
+        arguments[1] = map(std::move(arguments[1]));
     }
 
 protected:
@@ -253,23 +248,27 @@ protected:
  * Ternary Function
  */
 // TODO (#541): have a single n-ary function
-class RamTernaryOperator : public RamValue {
-private:
-    /** Operation symbol */
-    TernaryOp operation;
-
-    /** Arguments */
-    std::array<std::unique_ptr<RamValue>, 3> arguments;
-
+class RamTernaryOperator : public RamBuiltInOperator {
 public:
+    RamTernaryOperator(FunctorOp op, std::unique_ptr<RamValue> a0, std::unique_ptr<RamValue> a1,
+            std::unique_ptr<RamValue> a2)
+            : RamBuiltInOperator(op, {}) {
+            arguments.push_back(std::move(a0));
+            arguments.push_back(std::move(a1));
+            arguments.push_back(std::move(a2));
+            }
+
     RamTernaryOperator(TernaryOp op, std::unique_ptr<RamValue> a0, std::unique_ptr<RamValue> a1,
             std::unique_ptr<RamValue> a2)
-            : RamValue(RN_TernaryOperator, a0->isConstant() && a1->isConstant() && a2->isConstant()),
-              operation(op), arguments({{std::move(a0), std::move(a1), std::move(a2)}}) {}
+            : RamBuiltInOperator(getFunctorOpForSymbol(getSymbolForTernaryOp(op)), {}) {
+            arguments.push_back(std::move(a0));
+            arguments.push_back(std::move(a1));
+            arguments.push_back(std::move(a2));
+            }
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << getSymbolForTernaryOp(operation);
+        os << getSymbolForFunctorOp(operation);
         os << "(";
         arguments[0]->print(os);
         os << ",";
@@ -291,7 +290,7 @@ public:
 
     /** Get operation symbol */
     TernaryOp getOperator() const {
-        return operation;
+        return getTernaryOpForSymbol(getSymbolForFunctorOp(operation));
     }
 
     /** Get level */

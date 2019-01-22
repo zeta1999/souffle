@@ -21,7 +21,7 @@
 #include "AstNode.h"
 #include "AstTypes.h"
 #include "BinaryFunctorOps.h"
-#include "FunctorOps.h"
+#include "FunctorOps.h" // TODO: only include where needed
 #include "SymbolTable.h"
 #include "Util.h"
 #include <array>

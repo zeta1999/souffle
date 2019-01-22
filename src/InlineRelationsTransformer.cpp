@@ -25,7 +25,6 @@
 #include "AstTranslationUnit.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
-#include "BinaryFunctorOps.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -491,7 +490,10 @@ void renameVariables(AstArgument* arg) {
 
 // Performs a given binary op on a list of aggregators recursively.
 // E.g. ( <aggr1, aggr2, aggr3, ...>, o > = (aggr1 o (aggr2 o (agg3 o (...))))
-AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, BinaryOp fun) {
+// TODO: fix up this function
+AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, FunctorOp fun) {
+    assert(getFunctorOpArity(fun) == 2 && "not a binary functor");
+
     // Due to variable scoping issues with aggregators, we rename all variables uniquely in the
     // added aggregator
     renameVariables(aggrs[0]);
@@ -502,7 +504,7 @@ AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, BinaryOp fun)
 
     AstArgument* rhs = combineAggregators(std::vector<AstAggregator*>(aggrs.begin() + 1, aggrs.end()), fun);
 
-    AstArgument* result = new AstBinaryFunctor(
+    AstArgument* result = new AstIntrinsicFunctor(
             fun, std::unique_ptr<AstArgument>(aggrs[0]), std::unique_ptr<AstArgument>(rhs));
 
     return result;
@@ -586,16 +588,16 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     // Create the actual overall aggregator that ties the replacement aggregators together.
                     if (op == AstAggregator::min) {
                         // min x : { a(x) }. <=> min ( min x : { a1(x) }, min x : { a2(x) }, ... )
-                        versions.push_back(combineAggregators(aggrVersions, BinaryOp::MIN));
+                        versions.push_back(combineAggregators(aggrVersions, FunctorOp::MIN));
                     } else if (op == AstAggregator::max) {
                         // max x : { a(x) }. <=> max ( max x : { a1(x) }, max x : { a2(x) }, ... )
-                        versions.push_back(combineAggregators(aggrVersions, BinaryOp::MAX));
+                        versions.push_back(combineAggregators(aggrVersions, FunctorOp::MAX));
                     } else if (op == AstAggregator::count) {
                         // count : { a(x) }. <=> sum ( count : { a1(x) }, count : { a2(x) }, ... )
-                        versions.push_back(combineAggregators(aggrVersions, BinaryOp::ADD));
+                        versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
                     } else if (op == AstAggregator::sum) {
                         // sum x : { a(x) }. <=> sum ( sum x : { a1(x) }, sum x : { a2(x) }, ... )
-                        versions.push_back(combineAggregators(aggrVersions, BinaryOp::ADD));
+                        versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
                     } else {
                         assert(false && "Unsupported aggregator type");
                     }

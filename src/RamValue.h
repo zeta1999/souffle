@@ -71,14 +71,12 @@ public:
     RamBuiltInOperator() = default;
 
     template <typename... Args>
-        // TODO: uncomment soon
-//    RamBuiltInOperator(FunctorOp op, Args... args) : RamValue(RN_BuiltInOperator, all_of(args..., [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), operation(op) {
-    // RamBuiltInOperator(FunctorOp op, Args... args) : RamValue(RN_BuiltInOperator, true), operation(op) {
-    //     std::unique_ptr<RamValue> tmp[] = { std::move(args)... };
-    //     for (auto& cur : tmp) {
-    //         arguments.push_back(std::move(cur));
-    //     }
-    // }
+    RamBuiltInOperator(FunctorOp op, Args... args) : RamValue(RN_BuiltInOperator, all_of(args..., [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), operation(op) {
+        std::unique_ptr<RamValue> tmp[] = { std::move(args)... };
+        for (auto& cur : tmp) {
+            arguments.push_back(std::move(cur));
+        }
+    }
 
     // TODO: necessary?
     RamBuiltInOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_BuiltInOperator, all_of(args, [](const std::unique_ptr<RamValue>&a) { return a && a->isConstant(); })), operation(op), arguments(std::move(args)) {}
@@ -90,6 +88,7 @@ public:
 // TODO (#541): have a single n-ary function
 class RamUnaryOperator : public RamBuiltInOperator {
 public:
+    // TODO: change these to use n-ary constructor
     RamUnaryOperator(UnaryOp op, std::unique_ptr<RamValue> v)
             : RamBuiltInOperator(getFunctorOpForSymbol(getSymbolForUnaryOp(op)), {}) {
             arguments.push_back(std::move(v));}
@@ -156,6 +155,7 @@ protected:
 // TODO (#541): have a single n-ary function
 class RamBinaryOperator : public RamBuiltInOperator {
 public:
+    // TODO: change these to use n-ary constructor
     RamBinaryOperator(FunctorOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
             : RamBuiltInOperator(op, {}) {
             arguments.push_back(std::move(l)); arguments.push_back(std::move(r));}
@@ -250,6 +250,7 @@ protected:
 // TODO (#541): have a single n-ary function
 class RamTernaryOperator : public RamBuiltInOperator {
 public:
+    // TODO: change these to use n-ary constructor
     RamTernaryOperator(FunctorOp op, std::unique_ptr<RamValue> a0, std::unique_ptr<RamValue> a1,
             std::unique_ptr<RamValue> a2)
             : RamBuiltInOperator(op, {}) {

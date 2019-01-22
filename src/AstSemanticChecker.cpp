@@ -346,15 +346,13 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (dynamic_cast<const AstCounter*>(arg)) {
         return false;
     }
-    if (const auto* uf = dynamic_cast<const AstUnaryFunctor*>(arg)) {
-        return hasUnnamedVariable(uf->getArg(0));
-    }
-    if (const auto* bf = dynamic_cast<const AstBinaryFunctor*>(arg)) {
-        return hasUnnamedVariable(bf->getArg(0)) || hasUnnamedVariable(bf->getArg(1));
-    }
-    if (const auto* tf = dynamic_cast<const AstTernaryFunctor*>(arg)) {
-        return hasUnnamedVariable(tf->getArg(0)) || hasUnnamedVariable(tf->getArg(1)) ||
-               hasUnnamedVariable(tf->getArg(2));
+    if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
+        for (size_t i = 0; i < inf->getArity(); i++) {
+            if (hasUnnamedVariable(inf->getArg(i))) {
+                return true;
+            }
+        }
+        return false;
     }
     if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
         for (size_t i = 0; i < udf->getArgCount(); i++) {
@@ -437,15 +435,10 @@ void AstSemanticChecker::checkArgument(
         ErrorReport& report, const AstProgram& program, const AstArgument& arg) {
     if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg)) {
         checkAggregator(report, program, *agg);
-    } else if (const auto* unaryFunc = dynamic_cast<const AstUnaryFunctor*>(&arg)) {
-        checkArgument(report, program, *unaryFunc->getArg(0));
-    } else if (const auto* binFunc = dynamic_cast<const AstBinaryFunctor*>(&arg)) {
-        checkArgument(report, program, *binFunc->getArg(0));
-        checkArgument(report, program, *binFunc->getArg(1));
-    } else if (const auto* ternFunc = dynamic_cast<const AstTernaryFunctor*>(&arg)) {
-        checkArgument(report, program, *ternFunc->getArg(0));
-        checkArgument(report, program, *ternFunc->getArg(1));
-        checkArgument(report, program, *ternFunc->getArg(2));
+    } else if (const auto* intrFunc = dynamic_cast<const AstIntrinsicFunctor*>(&arg)) {
+        for (size_t i = 0; i < intrFunc->getArity(); i++) {
+            checkArgument(report, program, *intrFunc->getArg(i));
+        }
     } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
         for (size_t i = 0; i < userDefFunc->getArgCount(); i++) {
             checkArgument(report, program, *userDefFunc->getArg(i));
@@ -454,19 +447,22 @@ void AstSemanticChecker::checkArgument(
 }
 
 static bool isConstantArithExpr(const AstArgument& argument) {
+    // TODO: double check that UDF check not needed here
     if (dynamic_cast<const AstNumberConstant*>(&argument)) {
         return true;
     }
-    if (const auto* unOp = dynamic_cast<const AstUnaryFunctor*>(&argument)) {
-        return unOp->isNumerical() && isConstantArithExpr(*unOp->getArg(0));
-    }
-    if (const auto* binOp = dynamic_cast<const AstBinaryFunctor*>(&argument)) {
-        return binOp->isNumerical() && isConstantArithExpr(*binOp->getArg(0)) &&
-               isConstantArithExpr(*binOp->getArg(1));
-    }
-    if (const auto* ternOp = dynamic_cast<const AstTernaryFunctor*>(&argument)) {
-        return ternOp->isNumerical() && isConstantArithExpr(*ternOp->getArg(0)) &&
-               isConstantArithExpr(*ternOp->getArg(1)) && isConstantArithExpr(*ternOp->getArg(2));
+    if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
+        // TODO: less clunky way to write this?
+        if (inf->isNumerical()) {
+            for (size_t i = 0; i < inf->getArity(); i++) {
+                // all arguments should be constant arithmetic expressions
+                if (!isConstantArithExpr(*inf->getArg(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
     return false;
 }
@@ -476,17 +472,10 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         report.addError("Variable " + var->getName() + " in fact", var->getSrcLoc());
     } else if (dynamic_cast<const AstUnnamedVariable*>(&argument)) {
         report.addError("Underscore in fact", argument.getSrcLoc());
-    } else if (dynamic_cast<const AstUnaryFunctor*>(&argument)) {
+    } else if (dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
         if (!isConstantArithExpr(argument)) {
-            report.addError("Unary function in fact", argument.getSrcLoc());
-        }
-    } else if (dynamic_cast<const AstBinaryFunctor*>(&argument)) {
-        if (!isConstantArithExpr(argument)) {
-            report.addError("Binary function in fact", argument.getSrcLoc());
-        }
-    } else if (dynamic_cast<const AstTernaryFunctor*>(&argument)) {
-        if (!isConstantArithExpr(argument)) {
-            report.addError("Ternary function in fact", argument.getSrcLoc());
+            // TODO: ERROR MESSAGE: CHANGED!!!
+            report.addError("Non-constant functor in fact", argument.getSrcLoc());
         }
     } else if (dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
         report.addError("User-defined functor in fact", argument.getSrcLoc());

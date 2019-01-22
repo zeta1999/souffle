@@ -490,6 +490,8 @@ protected:
     }
 };
 
+// TODO: maybe unify UDF and INF a bit?
+
 /**
  * Subclass of Argument that represents a unary function
  */

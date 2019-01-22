@@ -16,7 +16,6 @@
 
 #include "Synthesiser.h"
 #include "BinaryConstraintOps.h"
-#include "BinaryFunctorOps.h"
 #include "FunctorOps.h"  // TODO: is this necessary?
 #include "Global.h"
 #include "IODirectives.h"

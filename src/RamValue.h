@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "BinaryFunctorOps.h"
 #include "FunctorOps.h"
 #include "RamNode.h"
 #include "RamRelation.h"

@@ -95,6 +95,10 @@ public:
         }
     }
 
+    FunctorOp getOperator() const {
+        return operation;
+    }
+
     /** Get argument */
     // TODO (#541): Remove old def -- rename to getArgument
     const RamValue* getArg(int i) const {
@@ -128,6 +132,29 @@ public:
         return res;
     }
 
+    RamIntrinsicOperator* clone() const override {
+        auto argsCopy = std::vector<std::unique_ptr<RamValue>>(arguments.size());
+        for (auto& arg : arguments) {
+            argsCopy.push_back(std::unique_ptr<RamValue>(arg->clone()));
+        }
+        auto res = new RamIntrinsicOperator(operation, std::move(argsCopy));
+        return res;
+    }
+
+    /** Apply mapper */
+    void apply(const RamNodeMapper& map) override {
+        for (auto& arg : arguments) {
+            arg = map(std::move(arg));
+        }
+    }
+
+protected:
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamIntrinsicOperator*>(&node));
+        const auto& other = static_cast<const RamIntrinsicOperator&>(node);
+        return getOperator() == other.getOperator() && equal_targets(arguments, other.arguments);
+    }
 };
 
 /**
@@ -155,11 +182,6 @@ public:
     RamUnaryOperator* clone() const override {
         RamUnaryOperator* res = new RamUnaryOperator(operation, std::unique_ptr<RamValue>(arguments[0]->clone()));
         return res;
-    }
-
-    /** Apply mapper */
-    void apply(const RamNodeMapper& map) override {
-        arguments[0] = map(std::move(arguments[0]));
     }
 
 protected:
@@ -196,12 +218,6 @@ public:
                 new RamBinaryOperator(operation, std::unique_ptr<RamValue>(arguments[0]->clone()),
                         std::unique_ptr<RamValue>(arguments[1]->clone()));
         return res;
-    }
-
-    /** Apply mapper */
-    void apply(const RamNodeMapper& map) override {
-        arguments[0] = map(std::move(arguments[0]));
-        arguments[1] = map(std::move(arguments[1]));
     }
 
 protected:
@@ -249,13 +265,6 @@ public:
                         std::unique_ptr<RamValue>(arguments[1]->clone()),
                         std::unique_ptr<RamValue>(arguments[2]->clone()));
         return res;
-    }
-
-    /** Apply mapper */
-    void apply(const RamNodeMapper& map) override {
-        for (int i = 0; i < 3; i++) {
-            arguments[i] = map(std::move(arguments[i]));
-        }
     }
 
 protected:

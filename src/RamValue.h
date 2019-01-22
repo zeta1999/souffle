@@ -80,6 +80,20 @@ public:
 
     // TODO: necessary?
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_IntrinsicOperator, all_of(args, [](const std::unique_ptr<RamValue>&a) { return a && a->isConstant(); })), operation(op), arguments(std::move(args)) {}
+
+    /** Print */
+    void print(std::ostream& os) const override {
+        if (isInfixFunctorOp(operation)) {
+            os << "(";
+            os << join(arguments, getSymbolForFunctorOp(operation), print_deref<std::unique_ptr<RamValue>>());
+            os << ")";
+        } else {
+            os << getSymbolForFunctorOp(operation);
+            os << "(";
+            os << join(arguments, ",", print_deref<std::unique_ptr<RamValue>>());
+            os << ")";
+        }
+    }
 };
 
 /**
@@ -96,12 +110,6 @@ public:
     RamUnaryOperator(FunctorOp op, std::unique_ptr<RamValue> v)
             : RamIntrinsicOperator(op, {}) {
         arguments.push_back(std::move(v));
-    }
-    /** Print */
-    void print(std::ostream& os) const override {
-        os << getSymbolForFunctorOp(operation) << "(";
-        arguments[0]->print(os);
-        os << ")";
     }
 
     /** Get Argument */
@@ -162,27 +170,6 @@ public:
 
     RamBinaryOperator(BinaryOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
             : RamIntrinsicOperator(getFunctorOpForSymbol(getSymbolForBinaryOp(op)), {}) {arguments.push_back(std::move(l)); arguments.push_back(std::move(r)); }
-
-    /** Print */
-    void print(std::ostream& os) const override {
-        // TODO: FIX THIS
-        if (operation < FunctorOp::MAX) {
-            // print infix notation
-            os << "(";
-            arguments[0]->print(os);
-            os << getSymbolForFunctorOp(operation);
-            arguments[1]->print(os);
-            os << ")";
-        } else {
-            // print prefix notation
-            os << getSymbolForFunctorOp(operation);
-            os << "(";
-            arguments[0]->print(os);
-            os << ",";
-            arguments[1]->print(os);
-            os << ")";
-        }
-    }
 
     /** Get left-handside argument */
     // remove def below
@@ -266,18 +253,6 @@ public:
             arguments.push_back(std::move(a1));
             arguments.push_back(std::move(a2));
             }
-
-    /** Print */
-    void print(std::ostream& os) const override {
-        os << getSymbolForFunctorOp(operation);
-        os << "(";
-        arguments[0]->print(os);
-        os << ",";
-        arguments[1]->print(os);
-        os << ",";
-        arguments[2]->print(os);
-        os << ")";
-    }
 
     /** Get argument */
     // TODO (#541): Remove old def

@@ -216,31 +216,14 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
             addConstraint(isTrue(getVar(c)));
         }
 
-        // unary functors with grounded values are grounded values
-        void visitUnaryFunctor(const AstUnaryFunctor& cur) override {
+        // intrinsic functors with grounded values are grounded values
+        void visitIntrinsicFunctor(const AstIntrinsicFunctor& cur) override {
             auto fun = getVar(cur);
-            auto arg = getVar(cur.getArg(0));
-
-            addConstraint(imply(arg, fun));
-        }
-
-        // binary functors with grounded values are grounded values
-        void visitBinaryFunctor(const AstBinaryFunctor& cur) override {
-            auto fun = getVar(cur);
-            auto lhs = getVar(cur.getArg(0));
-            auto rhs = getVar(cur.getArg(1));
-
-            addConstraint(imply({lhs, rhs}, fun));
-        }
-
-        // ternary functors with grounded values are grounded values
-        void visitTernaryFunctor(const AstTernaryFunctor& cur) override {
-            auto fun = getVar(cur);
-            auto a0 = getVar(cur.getArg(0));
-            auto a1 = getVar(cur.getArg(1));
-            auto a2 = getVar(cur.getArg(2));
-
-            addConstraint(imply({a0, a1, a2}, fun));
+            std::vector<BoolDisjunctVar> varArgs;
+            for (const auto& arg : cur.getArguments()) {
+                varArgs.push_back(getVar(arg));
+            }
+            addConstraint(imply(varArgs, fun));
         }
 
         // user-defined functors with grounded values are grounded values

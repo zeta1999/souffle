@@ -631,7 +631,10 @@ arg
         $$->setSrcLoc(@$);
     }
   | SUBSTR LPAREN arg COMMA arg COMMA arg RPAREN {
-        $$ = new AstIntrinsicFunctor(FunctorOp::SUBSTR, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5), std::unique_ptr<AstArgument>($7));
+        $$ = new AstIntrinsicFunctor(FunctorOp::SUBSTR,
+                std::unique_ptr<AstArgument>($3),
+                std::unique_ptr<AstArgument>($5),
+                std::unique_ptr<AstArgument>($7));
         $$->setSrcLoc(@$);
     }
   | arg AS IDENT {

@@ -612,7 +612,8 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
             for (size_t i = 0; i < functor->getArity(); i++) {
                 // TODO: should maybe return unique_ptr?
                 // try inlining each argument from left to right
-                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, functor->getArg(i));
+                NullableVector<AstArgument*> argumentVersions =
+                        getInlinedArgument(program, functor->getArg(i));
                 if (argumentVersions.isValid()) {
                     changed = true;
                     for (AstArgument* newArgVersion : argumentVersions.getVector()) {

@@ -278,7 +278,7 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
 
         std::unique_ptr<RamValue> visitIntrinsicFunctor(const AstIntrinsicFunctor& inf) override {
             std::vector<std::unique_ptr<RamValue>> values;
-            for (const auto& cur: inf.getArguments()) {
+            for (const auto& cur : inf.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
             return std::make_unique<RamIntrinsicOperator>(inf.getFunction(), std::move(values));

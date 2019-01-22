@@ -274,17 +274,17 @@ public:
 class AstFunctor : public AstArgument {};
 
 // TODO: fix up the comments on all these bc they seem messed in general
-class AstBuiltInFunctor : public AstFunctor {
+class AstIntrinsicFunctor : public AstFunctor {
 protected:
     FunctorOp op;
     std::vector<std::unique_ptr<AstArgument>> args;
 
 public:
     // TODO: remove this once subclasses are gone
-    AstBuiltInFunctor() = default;
+    AstIntrinsicFunctor() = default;
 
     template <typename... Operands>
-    AstBuiltInFunctor(FunctorOp op, Operands... operands) : op(op) {
+    AstIntrinsicFunctor(FunctorOp op, Operands... operands) : op(op) {
         std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
         for (auto& cur : tmp) {
             args.push_back(std::move(cur));
@@ -297,7 +297,7 @@ public:
     }
 
     // TODO: necessary?
-    AstBuiltInFunctor(FunctorOp op, std::vector<std::unique_ptr<AstArgument>> operands)
+    AstIntrinsicFunctor(FunctorOp op, std::vector<std::unique_ptr<AstArgument>> operands)
             : op(op), args(std::move(operands)){};
 
     AstArgument* getArg(size_t idx) const {
@@ -348,12 +348,12 @@ public:
     }
 
     /** Clone this node */
-    AstBuiltInFunctor* clone() const override {
+    AstIntrinsicFunctor* clone() const override {
         auto argsCopy = std::vector<std::unique_ptr<AstArgument>>(args.size());
         for (auto& arg : args) {
             argsCopy.push_back(std::unique_ptr<AstArgument>(arg->clone()));
         }
-        auto res = new AstBuiltInFunctor(op, std::move(argsCopy));
+        auto res = new AstIntrinsicFunctor(op, std::move(argsCopy));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -378,8 +378,8 @@ protected:
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         // TODO: maybe not important assertion?
-        assert(nullptr != dynamic_cast<const AstBuiltInFunctor*>(&node));
-        const auto& other = static_cast<const AstBuiltInFunctor&>(node);
+        assert(nullptr != dynamic_cast<const AstIntrinsicFunctor*>(&node));
+        const auto& other = static_cast<const AstIntrinsicFunctor&>(node);
         return op == other.op && equal_targets(args, other.args);
     }
 };
@@ -387,11 +387,11 @@ protected:
 /**
  * Subclass of Argument that represents a unary function
  */
-class AstUnaryFunctor : public AstBuiltInFunctor {
+class AstUnaryFunctor : public AstIntrinsicFunctor {
 public:
     AstUnaryFunctor(UnaryOp fun, std::unique_ptr<AstArgument> o)
-            : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForUnaryOp(fun)), std::move(o)) {}
-    AstUnaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> o) : AstBuiltInFunctor(fun, std::move(o)) {}
+            : AstIntrinsicFunctor(getFunctorOpForSymbol(getSymbolForUnaryOp(fun)), std::move(o)) {}
+    AstUnaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> o) : AstIntrinsicFunctor(fun, std::move(o)) {}
 
     ~AstUnaryFunctor() override = default;
 
@@ -418,13 +418,13 @@ protected:
 /**
  * Subclass of Argument that represents a binary function
  */
-class AstBinaryFunctor : public AstBuiltInFunctor {
+class AstBinaryFunctor : public AstIntrinsicFunctor {
 public:
     AstBinaryFunctor(BinaryOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
-            : AstBuiltInFunctor(
+            : AstIntrinsicFunctor(
                       getFunctorOpForSymbol(getSymbolForBinaryOp(fun)), std::move(l), std::move(r)) {}
     AstBinaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
-            : AstBuiltInFunctor(fun, std::move(l), std::move(r)) {}
+            : AstIntrinsicFunctor(fun, std::move(l), std::move(r)) {}
 
     ~AstBinaryFunctor() override = default;
 
@@ -454,14 +454,14 @@ protected:
  * @brief Subclass of Argument that represents a binary functor
  */
 // TODO: REPRESETNS A BINARY FUNCTOR?
-class AstTernaryFunctor : public AstBuiltInFunctor {
+class AstTernaryFunctor : public AstIntrinsicFunctor {
 public:
     AstTernaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> a1, std::unique_ptr<AstArgument> a2,
             std::unique_ptr<AstArgument> a3)
-            : AstBuiltInFunctor(fun, std::move(a1), std::move(a2), std::move(a3)) {}
+            : AstIntrinsicFunctor(fun, std::move(a1), std::move(a2), std::move(a3)) {}
     AstTernaryFunctor(TernaryOp fun, std::unique_ptr<AstArgument> a1, std::unique_ptr<AstArgument> a2,
             std::unique_ptr<AstArgument> a3)
-            : AstBuiltInFunctor(getFunctorOpForSymbol(getSymbolForTernaryOp(fun)), std::move(a1),
+            : AstIntrinsicFunctor(getFunctorOpForSymbol(getSymbolForTernaryOp(fun)), std::move(a1),
                       std::move(a2), std::move(a3)) {}
 
     ~AstTernaryFunctor() override = default;

@@ -57,7 +57,7 @@ public:
     RamValue* clone() const override = 0;
 };
 
-class RamBuiltInOperator : public RamValue {
+class RamIntrinsicOperator : public RamValue {
 // TODO: change to private after
 protected:
     /** Operation symbol */
@@ -68,10 +68,10 @@ protected:
 
 public:
     // TODO: remove this once subclasses are gone
-    RamBuiltInOperator() = default;
+    RamIntrinsicOperator() = default;
 
     template <typename... Args>
-    RamBuiltInOperator(FunctorOp op, Args... args) : RamValue(RN_BuiltInOperator, all_of(args..., [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), operation(op) {
+    RamIntrinsicOperator(FunctorOp op, Args... args) : RamValue(RN_IntrinsicOperator, all_of(args..., [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), operation(op) {
         std::unique_ptr<RamValue> tmp[] = { std::move(args)... };
         for (auto& cur : tmp) {
             arguments.push_back(std::move(cur));
@@ -79,22 +79,22 @@ public:
     }
 
     // TODO: necessary?
-    RamBuiltInOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_BuiltInOperator, all_of(args, [](const std::unique_ptr<RamValue>&a) { return a && a->isConstant(); })), operation(op), arguments(std::move(args)) {}
+    RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_IntrinsicOperator, all_of(args, [](const std::unique_ptr<RamValue>&a) { return a && a->isConstant(); })), operation(op), arguments(std::move(args)) {}
 };
 
 /**
  * Unary function
  */
 // TODO (#541): have a single n-ary function
-class RamUnaryOperator : public RamBuiltInOperator {
+class RamUnaryOperator : public RamIntrinsicOperator {
 public:
     // TODO: change these to use n-ary constructor
     RamUnaryOperator(UnaryOp op, std::unique_ptr<RamValue> v)
-            : RamBuiltInOperator(getFunctorOpForSymbol(getSymbolForUnaryOp(op)), {}) {
+            : RamIntrinsicOperator(getFunctorOpForSymbol(getSymbolForUnaryOp(op)), {}) {
             arguments.push_back(std::move(v));}
 
     RamUnaryOperator(FunctorOp op, std::unique_ptr<RamValue> v)
-            : RamBuiltInOperator(op, {}) {
+            : RamIntrinsicOperator(op, {}) {
         arguments.push_back(std::move(v));
     }
     /** Print */
@@ -153,15 +153,15 @@ protected:
  * Binary function
  */
 // TODO (#541): have a single n-ary function
-class RamBinaryOperator : public RamBuiltInOperator {
+class RamBinaryOperator : public RamIntrinsicOperator {
 public:
     // TODO: change these to use n-ary constructor
     RamBinaryOperator(FunctorOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
-            : RamBuiltInOperator(op, {}) {
+            : RamIntrinsicOperator(op, {}) {
             arguments.push_back(std::move(l)); arguments.push_back(std::move(r));}
 
     RamBinaryOperator(BinaryOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
-            : RamBuiltInOperator(getFunctorOpForSymbol(getSymbolForBinaryOp(op)), {}) {arguments.push_back(std::move(l)); arguments.push_back(std::move(r)); }
+            : RamIntrinsicOperator(getFunctorOpForSymbol(getSymbolForBinaryOp(op)), {}) {arguments.push_back(std::move(l)); arguments.push_back(std::move(r)); }
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -248,12 +248,12 @@ protected:
  * Ternary Function
  */
 // TODO (#541): have a single n-ary function
-class RamTernaryOperator : public RamBuiltInOperator {
+class RamTernaryOperator : public RamIntrinsicOperator {
 public:
     // TODO: change these to use n-ary constructor
     RamTernaryOperator(FunctorOp op, std::unique_ptr<RamValue> a0, std::unique_ptr<RamValue> a1,
             std::unique_ptr<RamValue> a2)
-            : RamBuiltInOperator(op, {}) {
+            : RamIntrinsicOperator(op, {}) {
             arguments.push_back(std::move(a0));
             arguments.push_back(std::move(a1));
             arguments.push_back(std::move(a2));
@@ -261,7 +261,7 @@ public:
 
     RamTernaryOperator(TernaryOp op, std::unique_ptr<RamValue> a0, std::unique_ptr<RamValue> a1,
             std::unique_ptr<RamValue> a2)
-            : RamBuiltInOperator(getFunctorOpForSymbol(getSymbolForTernaryOp(op)), {}) {
+            : RamIntrinsicOperator(getFunctorOpForSymbol(getSymbolForTernaryOp(op)), {}) {
             arguments.push_back(std::move(a0));
             arguments.push_back(std::move(a1));
             arguments.push_back(std::move(a2));

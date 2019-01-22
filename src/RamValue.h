@@ -106,6 +106,18 @@ public:
         return *arguments[i];
     }
 
+    /** Get level */
+    // TODO (#541): move to an analysis
+    // TODO: change to std::max with comparator?
+    size_t getLevel() const override {
+        size_t level = 0;
+        for (const auto& arg : arguments) {
+            if (arg) {
+                level = std::max(level, arg->getLevel());
+            }
+        }
+        return level;
+    }
 };
 
 /**
@@ -127,12 +139,6 @@ public:
     /** Get operator */
     UnaryOp getOperator() const {
         return getUnaryOpForSymbol(getSymbolForFunctorOp(operation));
-    }
-
-    /** Get level */
-    // TODO (#541): move to an analysis
-    size_t getLevel() const override {
-        return arguments[0]->getLevel();
     }
 
     /** Obtain list of child nodes */
@@ -177,12 +183,6 @@ public:
     /** Get operator symbol */
     BinaryOp getOperator() const {
         return getBinaryOpForSymbol(getSymbolForFunctorOp(operation));
-    }
-
-    /** Get level */
-    // TODO (#541): move to an analysis
-    size_t getLevel() const override {
-        return std::max(arguments[0]->getLevel(), arguments[1]->getLevel());
     }
 
     /** Obtain list of child nodes */
@@ -240,13 +240,6 @@ public:
     /** Get operation symbol */
     TernaryOp getOperator() const {
         return getTernaryOpForSymbol(getSymbolForFunctorOp(operation));
-    }
-
-    /** Get level */
-    // TODO (#541): move to analysis
-    size_t getLevel() const override {
-        return std::max(
-                std::max(arguments[0]->getLevel(), arguments[1]->getLevel()), arguments[2]->getLevel());
     }
 
     /** Obtain list of child nodes */

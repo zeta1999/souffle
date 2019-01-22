@@ -313,6 +313,10 @@ public:
         return args.size();
     }
 
+    std::vector<AstArgument*> getArguments() const {
+        return toPtrVector(args);
+    }
+
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {
         return isNumericFunctorOp(op);

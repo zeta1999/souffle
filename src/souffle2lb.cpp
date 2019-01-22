@@ -251,16 +251,21 @@ private:
     }
 
     void visitFunctor(const AstFunctor& fun, std::ostream& out) override {
-        // process unary operators
-        if (dynamic_cast<const AstUnaryFunctor*>(&fun)) {
-            throw UnsupportedConstructException("Unsupported function: " + toString(fun));
-        } else if (const auto* binary = dynamic_cast<const AstBinaryFunctor*>(&fun)) {
-            std::string sym = getSymbolForFunctorOp(binary->getFunction());
-            out << "(";
-            visit(*binary->getArg(0), out);
-            out << sym;
-            visit(*binary->getArg(1), out);
-            out << ")";
+        // TODO: make this nicer? and make sure correct?
+        if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
+            // process unary operators
+            if (inf->getArity() == 1) {
+                throw UnsupportedConstructException("Unsupported function: " + toString(fun));
+            } else if (inf->getArity() == 2) {
+                std::string sym = getSymbolForFunctorOp(inf->getFunction());
+                out << "(";
+                visit(*inf->getArg(0), out);
+                out << sym;
+                visit(*inf->getArg(1), out);
+                out << ")";
+            } else {
+                assert(false && "Unsupported functor!");
+            }
         } else {
             assert(false && "Unsupported functor!");
         }

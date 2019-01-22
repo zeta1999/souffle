@@ -233,15 +233,20 @@ private:
         std::stringstream binding;
         binding << var << "=";
 
+        // TODO: make this nicer? and make sure correct?
         // TODO: fix up this part... comments dont match up with code...
         // process unary operators
-        if (dynamic_cast<const AstUnaryFunctor*>(&fun)) {
-            // binary functors are not supported
-            throw UnsupportedConstructException("Unsupported function: " + toString(fun));
-        } else if (const auto* binary = dynamic_cast<const AstBinaryFunctor*>(&fun)) {
-            visit(*binary->getArg(0), binding);
-            binding << getSymbolForFunctorOp(binary->getFunction());
-            visit(*binary->getArg(1), binding);
+        if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
+            if (inf->getArity() == 1) {
+                // binary functors are not supported
+                throw UnsupportedConstructException("Unsupported function: " + toString(fun));
+            } else if (inf->getArity() == 2) {
+                visit(*inf->getArg(0), binding);
+                binding << getSymbolForFunctorOp(inf->getFunction());
+                visit(*inf->getArg(1), binding);
+            } else {
+                assert(false && "Unsupported functor!");
+            }
         } else {
             assert(false && "Unsupported functor!");
         }

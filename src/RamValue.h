@@ -21,7 +21,6 @@
 #include "RamNode.h"
 #include "RamRelation.h"
 #include "SymbolTable.h"
-#include "UnaryFunctorOps.h"
 
 #include <algorithm>
 #include <array>

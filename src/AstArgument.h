@@ -23,7 +23,6 @@
 #include "BinaryFunctorOps.h"
 #include "FunctorOps.h"
 #include "SymbolTable.h"
-#include "UnaryFunctorOps.h"
 #include "Util.h"
 #include <array>
 #include <cassert>
@@ -389,33 +388,6 @@ protected:
         assert(nullptr != dynamic_cast<const AstIntrinsicFunctor*>(&node));
         const auto& other = static_cast<const AstIntrinsicFunctor&>(node);
         return op == other.op && equal_targets(args, other.args);
-    }
-};
-
-/**
- * Subclass of Argument that represents a unary function
- */
-class AstUnaryFunctor : public AstIntrinsicFunctor {
-public:
-    AstUnaryFunctor(UnaryOp fun, std::unique_ptr<AstArgument> o)
-            : AstIntrinsicFunctor(getFunctorOpForSymbol(getSymbolForUnaryOp(fun)), std::move(o)) {}
-    AstUnaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> o) : AstIntrinsicFunctor(fun, std::move(o)) {}
-
-    ~AstUnaryFunctor() override = default;
-
-    /** Creates a clone */
-    AstUnaryFunctor* clone() const override {
-        auto res = new AstUnaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()));
-        res->setSrcLoc(getSrcLoc());
-        return res;
-    }
-
-protected:
-    /** Implements the node comparison for this node type */
-    bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstUnaryFunctor*>(&node));
-        const auto& other = static_cast<const AstUnaryFunctor&>(node);
-        return op == other.op && *args[0] == *other.args[0];
     }
 };
 

@@ -34,7 +34,6 @@
 #include "ReadStream.h"
 #include "SignalHandler.h"
 #include "SymbolTable.h"
-#include "UnaryFunctorOps.h"
 #include "WriteStream.h"
 #include <algorithm>
 #include <cmath>

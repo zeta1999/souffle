@@ -42,11 +42,11 @@
     #include "AstParserUtils.h"
     #include "AstProgram.h"
     #include "AstRelation.h"
-    #include "SrcLocation.h"
     #include "AstTypes.h"
     #include "BinaryConstraintOps.h"
     #include "BinaryFunctorOps.h"
-    #include "UnaryFunctorOps.h"
+    #include "FunctorOps.h"
+    #include "SrcLocation.h"
     #include "Util.h"
 
     using namespace souffle;
@@ -615,19 +615,19 @@ arg
         $$->setSrcLoc(@$);
     }
   | ORD LPAREN arg RPAREN {
-        $$ = new AstUnaryFunctor(UnaryOp::ORD, std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::ORD, std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | STRLEN LPAREN arg RPAREN {
-        $$ = new AstUnaryFunctor(UnaryOp::STRLEN, std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::STRLEN, std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | TONUMBER LPAREN arg RPAREN {
-        $$ = new AstUnaryFunctor(UnaryOp::TONUMBER, std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::TONUMBER, std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | TOSTRING LPAREN arg RPAREN {
-        $$ = new AstUnaryFunctor(UnaryOp::TOSTRING, std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::TOSTRING, std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | SUBSTR LPAREN arg COMMA arg COMMA arg RPAREN {
@@ -648,16 +648,16 @@ arg
             $$->setSrcLoc($2->getSrcLoc());
             delete $2;
         } else {
-            $$ = new AstUnaryFunctor(UnaryOp::NEG, std::unique_ptr<AstArgument>($2));
+            $$ = new AstIntrinsicFunctor(FunctorOp::NEG, std::unique_ptr<AstArgument>($2));
             $$->setSrcLoc(@$);
         }
     }
   | BW_NOT arg {
-        $$ = new AstUnaryFunctor(UnaryOp::BNOT, std::unique_ptr<AstArgument>($2));
+        $$ = new AstIntrinsicFunctor(FunctorOp::BNOT, std::unique_ptr<AstArgument>($2));
         $$->setSrcLoc(@$);
     }
   | L_NOT arg {
-        $$ = new AstUnaryFunctor(UnaryOp::LNOT, std::unique_ptr<AstArgument>($2));
+        $$ = new AstIntrinsicFunctor(FunctorOp::LNOT, std::unique_ptr<AstArgument>($2));
         $$->setSrcLoc(@$);
     }
   | LBRACKET RBRACKET {

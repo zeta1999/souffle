@@ -33,7 +33,6 @@
 #include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
-#include "UnaryFunctorOps.h"
 #include "Util.h"
 #include <algorithm>
 #include <cassert>

@@ -135,7 +135,6 @@ souffle_sources = \
               Synthesiser.cpp       Synthesiser.h       \
               SynthesiserRelation.cpp SynthesiserRelation.h \
               TypeSystem.cpp        TypeSystem.h        \
-              UnaryFunctorOps.h                         \
               WriteStream.h                             \
               WriteStreamCSV.h                          \
               parser.cc             parser.hh           \

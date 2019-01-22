@@ -1286,6 +1286,25 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
+        void visitTernaryOperator(const RamTernaryOperator& op, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            switch (op.getOperator()) {
+                case TernaryOp::SUBSTR:
+                    out << "symTable.lookup(";
+                    out << "substr_wrapper(symTable.resolve(";
+                    visit(op.getArg(0), out);
+                    out << "),(";
+                    visit(op.getArg(1), out);
+                    out << "),(";
+                    visit(op.getArg(2), out);
+                    out << ")))";
+                    break;
+                default:
+                    assert(false && "Unsupported Operation!");
+            }
+            PRINT_END_COMMENT(out);
+        }
+
         void visitUserDefinedOperator(const RamUserDefinedOperator& op, std::ostream& out) override {
             const std::string& name = op.getName();
             const std::string& type = op.getType();
@@ -1314,25 +1333,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (type[arity] == 'S') {
                 out << ")";
             }
-        }
-
-        void visitTernaryOperator(const RamTernaryOperator& op, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            switch (op.getOperator()) {
-                case TernaryOp::SUBSTR:
-                    out << "symTable.lookup(";
-                    out << "substr_wrapper(symTable.resolve(";
-                    visit(op.getArg(0), out);
-                    out << "),(";
-                    visit(op.getArg(1), out);
-                    out << "),(";
-                    visit(op.getArg(2), out);
-                    out << ")))";
-                    break;
-                default:
-                    assert(false && "Unsupported Operation!");
-            }
-            PRINT_END_COMMENT(out);
         }
 
         // -- records --

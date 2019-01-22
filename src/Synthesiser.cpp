@@ -17,6 +17,7 @@
 #include "Synthesiser.h"
 #include "BinaryConstraintOps.h"
 #include "BinaryFunctorOps.h"
+#include "FunctorOps.h" // TODO: is this necessary?
 #include "Global.h"
 #include "IODirectives.h"
 #include "IndexSetAnalysis.h"
@@ -32,7 +33,6 @@
 #include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
-#include "TernaryFunctorOps.h"
 #include "UnaryFunctorOps.h"
 #include "Util.h"
 #include <algorithm>

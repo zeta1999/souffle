@@ -17,6 +17,7 @@
 #include "Interpreter.h"
 #include "BinaryConstraintOps.h"
 #include "BinaryFunctorOps.h"
+#include "FunctorOps.h" // TODO: is this necessary?
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"
@@ -33,7 +34,6 @@
 #include "ReadStream.h"
 #include "SignalHandler.h"
 #include "SymbolTable.h"
-#include "TernaryFunctorOps.h"
 #include "UnaryFunctorOps.h"
 #include "WriteStream.h"
 #include <algorithm>

@@ -77,10 +77,10 @@ struct AstVisitor : public ast_visitor_tag {
         // arguments
         FORWARD(Variable)
         FORWARD(UnnamedVariable)
+        FORWARD(IntrinsicFunctor)
         FORWARD(UnaryFunctor)
-        FORWARD(UserDefinedFunctor)
         FORWARD(BinaryFunctor)
-        FORWARD(TernaryFunctor)
+        FORWARD(UserDefinedFunctor)
         FORWARD(Counter)
         FORWARD(NumberConstant)
         FORWARD(StringConstant)
@@ -146,7 +146,6 @@ protected:
 
     LINK(UnaryFunctor, IntrinsicFunctor)
     LINK(BinaryFunctor, IntrinsicFunctor)
-    LINK(TernaryFunctor, IntrinsicFunctor)
     LINK(IntrinsicFunctor, Functor)
     LINK(UserDefinedFunctor, Functor)
     LINK(Functor, Argument)

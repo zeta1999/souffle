@@ -23,7 +23,6 @@
 #include "BinaryFunctorOps.h"
 #include "FunctorOps.h"
 #include "SymbolTable.h"
-#include "TernaryFunctorOps.h"
 #include "UnaryFunctorOps.h"
 #include "Util.h"
 #include <array>
@@ -451,42 +450,6 @@ protected:
         assert(nullptr != dynamic_cast<const AstBinaryFunctor*>(&node));
         const auto& other = static_cast<const AstBinaryFunctor&>(node);
         return op == other.op && *args[0] == *other.args[0] && *args[1] == *other.args[1];
-    }
-};
-
-/**
- * @class TernaryFunctor
- * @brief Subclass of Argument that represents a binary functor
- */
-// TODO: REPRESETNS A BINARY FUNCTOR?
-class AstTernaryFunctor : public AstIntrinsicFunctor {
-public:
-    AstTernaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> a1, std::unique_ptr<AstArgument> a2,
-            std::unique_ptr<AstArgument> a3)
-            : AstIntrinsicFunctor(fun, std::move(a1), std::move(a2), std::move(a3)) {}
-    AstTernaryFunctor(TernaryOp fun, std::unique_ptr<AstArgument> a1, std::unique_ptr<AstArgument> a2,
-            std::unique_ptr<AstArgument> a3)
-            : AstIntrinsicFunctor(getFunctorOpForSymbol(getSymbolForTernaryOp(fun)), std::move(a1),
-                      std::move(a2), std::move(a3)) {}
-
-    ~AstTernaryFunctor() override = default;
-
-    /** Clone this node  */
-    AstTernaryFunctor* clone() const override {
-        auto res = new AstTernaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()),
-                std::unique_ptr<AstArgument>(args[1]->clone()),
-                std::unique_ptr<AstArgument>(args[2]->clone()));
-        res->setSrcLoc(getSrcLoc());
-        return res;
-    }
-
-protected:
-    /** Implements the node comparison for this node type */
-    bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstTernaryFunctor*>(&node));
-        const auto& other = static_cast<const AstTernaryFunctor&>(node);
-        return op == other.op && *args[0] == *other.args[0] && *args[1] == *other.args[1] &&
-               *args[2] == *other.args[2];
     }
 };
 

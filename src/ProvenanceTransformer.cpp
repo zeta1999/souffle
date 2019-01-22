@@ -197,16 +197,27 @@ bool ProvenanceTransformer::transform(AstTranslationUnit& translationUnit) {
             transformEqrelRelation(*relation);
         }
 
+        // generate info relations for each clause
+        // do this before all other transformations so that we record
+        // the original rule without any instrumentation
+        size_t clauseNum = 1;
+        for (auto clause : relation->getClauses()) {
+            if (!clause->isFact()) {
+                clause->setClauseNum(clauseNum);
+
+                // add info relation
+                program->addRelation(makeInfoRelation(*clause, translationUnit));
+
+                clauseNum++;
+            }
+        }
+
         relation->addAttribute(
                 std::make_unique<AstAttribute>(std::string("@rule_number"), AstTypeIdentifier("number")));
         relation->addAttribute(
                 std::make_unique<AstAttribute>(std::string("@level_number"), AstTypeIdentifier("number")));
 
-        // record clause number
-        size_t clauseNum = 1;
         for (auto clause : relation->getClauses()) {
-            clause->setClauseNum(clauseNum);
-
             // mapper to add two provenance columns to atoms
             struct M : public AstNodeMapper {
                 using AstNodeMapper::operator();
@@ -253,13 +264,8 @@ bool ProvenanceTransformer::transform(AstTranslationUnit& translationUnit) {
                 }
 
                 // add two provenance columns to head lit
-                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(clauseNum));
+                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(clause->getClauseNum()));
                 clause->getHead()->addArgument(std::unique_ptr<AstArgument>(getNextLevelNumber(bodyLevels)));
-
-                clauseNum++;
-
-                // add info relation
-                program->addRelation(makeInfoRelation(*clause, translationUnit));
             }
         }
     }

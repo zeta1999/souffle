@@ -229,53 +229,6 @@ protected:
     }
 };
 
-/**
- * Ternary Function
- */
-// TODO (#541): have a single n-ary function
-class RamTernaryOperator : public RamIntrinsicOperator {
-public:
-    // TODO: change these to use n-ary constructor
-    RamTernaryOperator(FunctorOp op, std::unique_ptr<RamValue> a0, std::unique_ptr<RamValue> a1,
-            std::unique_ptr<RamValue> a2)
-            : RamIntrinsicOperator(op, {}) {
-            arguments.push_back(std::move(a0));
-            arguments.push_back(std::move(a1));
-            arguments.push_back(std::move(a2));
-            }
-
-    RamTernaryOperator(TernaryOp op, std::unique_ptr<RamValue> a0, std::unique_ptr<RamValue> a1,
-            std::unique_ptr<RamValue> a2)
-            : RamIntrinsicOperator(getFunctorOpForSymbol(getSymbolForTernaryOp(op)), {}) {
-            arguments.push_back(std::move(a0));
-            arguments.push_back(std::move(a1));
-            arguments.push_back(std::move(a2));
-            }
-
-    /** Get operation symbol */
-    TernaryOp getOperator() const {
-        return getTernaryOpForSymbol(getSymbolForFunctorOp(operation));
-    }
-
-    /** Create clone */
-    RamTernaryOperator* clone() const override {
-        RamTernaryOperator* res =
-                new RamTernaryOperator(operation, std::unique_ptr<RamValue>(arguments[0]->clone()),
-                        std::unique_ptr<RamValue>(arguments[1]->clone()),
-                        std::unique_ptr<RamValue>(arguments[2]->clone()));
-        return res;
-    }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamTernaryOperator*>(&node));
-        const auto& other = static_cast<const RamTernaryOperator&>(node);
-        return getOperator() == other.getOperator() && getArgument(0) == other.getArgument(0) &&
-               getArgument(1) == other.getArgument(1) && getArgument(2) == other.getArgument(2);
-    }
-};
-
 // TODO: fix up these comments
 /**
  * Unary user-defined function

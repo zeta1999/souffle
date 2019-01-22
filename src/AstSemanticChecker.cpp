@@ -474,7 +474,7 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         report.addError("Underscore in fact", argument.getSrcLoc());
     } else if (dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
         if (!isConstantArithExpr(argument)) {
-            // TODO: ERROR MESSAGE: CHANGED!!!
+            // TODO: ERROR MESSAGE: CHANGED!!! THIS SHOULD CHANGE ANYWAY doesnt match because cat("x","y") will fail
             report.addError("Non-constant functor in fact", argument.getSrcLoc());
         }
     } else if (dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {

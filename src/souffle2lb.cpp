@@ -255,7 +255,7 @@ private:
         if (dynamic_cast<const AstUnaryFunctor*>(&fun)) {
             throw UnsupportedConstructException("Unsupported function: " + toString(fun));
         } else if (const auto* binary = dynamic_cast<const AstBinaryFunctor*>(&fun)) {
-            std::string sym = getSymbolForBinaryOp(binary->getFunction());
+            std::string sym = getSymbolForFunctorOp(binary->getFunction());
             out << "(";
             visit(*binary->getArg(0), out);
             out << sym;

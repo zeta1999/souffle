@@ -432,10 +432,6 @@ public:
 
     ~AstBinaryFunctor() override = default;
 
-    BinaryOp getFunction() const {
-        return getBinaryOpForSymbol(getSymbolForFunctorOp(op));
-    }
-
     /** Creates a clone */
     AstBinaryFunctor* clone() const override {
         auto res = new AstBinaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()),

@@ -233,13 +233,14 @@ private:
         std::stringstream binding;
         binding << var << "=";
 
+        // TODO: fix up this part... comments dont match up with code...
         // process unary operators
         if (dynamic_cast<const AstUnaryFunctor*>(&fun)) {
             // binary functors are not supported
             throw UnsupportedConstructException("Unsupported function: " + toString(fun));
         } else if (const auto* binary = dynamic_cast<const AstBinaryFunctor*>(&fun)) {
             visit(*binary->getArg(0), binding);
-            binding << getSymbolForBinaryOp(binary->getFunction());
+            binding << getSymbolForFunctorOp(binary->getFunction());
             visit(*binary->getArg(1), binding);
         } else {
             assert(false && "Unsupported functor!");

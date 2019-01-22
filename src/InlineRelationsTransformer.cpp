@@ -513,6 +513,7 @@ AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, BinaryOp fun)
  * Note: This function is currently generalised to perform any required inlining within aggregators
  * as well, making it simple to extend to this later on if desired (and the semantic check is removed).
  */
+// TODO: better way to implement this?
 NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstArgument* arg) {
     bool changed = false;
     std::vector<AstArgument*> versions;
@@ -607,77 +608,26 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
             }
         }
     } else if (dynamic_cast<const AstFunctor*>(arg)) {
-        // Each type of functor (unary, binary, ternary) must be handled differently.
-        if (const auto* functor = dynamic_cast<const AstUnaryFunctor*>(arg)) {
-            NullableVector<AstArgument*> argumentVersions =
-                    getInlinedArgument(program, functor->getArg(0));
-            if (argumentVersions.isValid()) {
-                changed = true;
-                for (AstArgument* newArg : argumentVersions.getVector()) {
-                    AstArgument* newFunctor =
-                            new AstUnaryFunctor(functor->getFunction(), std::unique_ptr<AstArgument>(newArg));
-                    versions.push_back(newFunctor);
-                }
-            }
-        } else if (const auto* functor = dynamic_cast<const AstBinaryFunctor*>(arg)) {
-            NullableVector<AstArgument*> lhsVersions = getInlinedArgument(program, functor->getArg(0));
-            if (lhsVersions.isValid()) {
-                changed = true;
-                for (AstArgument* newLhs : lhsVersions.getVector()) {
-                    AstArgument* newFunctor =
-                            new AstBinaryFunctor(functor->getFunction(), std::unique_ptr<AstArgument>(newLhs),
-                                    std::unique_ptr<AstArgument>(functor->getArg(1)->clone()));
-                    versions.push_back(newFunctor);
-                }
-            } else {
-                NullableVector<AstArgument*> rhsVersions = getInlinedArgument(program, functor->getArg(1));
-                if (rhsVersions.isValid()) {
+        if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
+            for (size_t i = 0; i < functor->getArity(); i++) {
+                // TODO: should maybe return unique_ptr?
+                // try inlining each argument from left to right
+                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, functor->getArg(i));
+                if (argumentVersions.isValid()) {
                     changed = true;
-                    for (AstArgument* newRhs : rhsVersions.getVector()) {
-                        AstArgument* newFunctor = new AstBinaryFunctor(functor->getFunction(),
-                                std::unique_ptr<AstArgument>(functor->getArg(0)->clone()),
-                                std::unique_ptr<AstArgument>(newRhs));
+                    for (AstArgument* newArgVersion : argumentVersions.getVector()) {
+                        // same functor but with new argument version
+                        AstIntrinsicFunctor* newFunctor = functor->clone();
+                        newFunctor->setArg(i, std::unique_ptr<AstArgument>(newArgVersion));
                         versions.push_back(newFunctor);
                     }
+                    // only one step at a time
+                    break;
                 }
             }
-        } else if (const auto* functor = dynamic_cast<const AstTernaryFunctor*>(arg)) {
-            NullableVector<AstArgument*> leftVersions = getInlinedArgument(program, functor->getArg(0));
-            if (leftVersions.isValid()) {
-                changed = true;
-                for (AstArgument* newLeft : leftVersions.getVector()) {
-                    AstArgument* newFunctor = new AstTernaryFunctor(functor->getFunction(),
-                            std::unique_ptr<AstArgument>(newLeft),
-                            std::unique_ptr<AstArgument>(functor->getArg(1)->clone()),
-                            std::unique_ptr<AstArgument>(functor->getArg(2)->clone()));
-                    versions.push_back(newFunctor);
-                }
-            } else {
-                NullableVector<AstArgument*> middleVersions = getInlinedArgument(program, functor->getArg(1));
-                if (middleVersions.isValid()) {
-                    changed = true;
-                    for (AstArgument* newMiddle : middleVersions.getVector()) {
-                        AstArgument* newFunctor = new AstTernaryFunctor(functor->getFunction(),
-                                std::unique_ptr<AstArgument>(functor->getArg(0)->clone()),
-                                std::unique_ptr<AstArgument>(newMiddle),
-                                std::unique_ptr<AstArgument>(functor->getArg(2)->clone()));
-                        versions.push_back(newFunctor);
-                    }
-                } else {
-                    NullableVector<AstArgument*> rightVersions =
-                            getInlinedArgument(program, functor->getArg(2));
-                    if (rightVersions.isValid()) {
-                        changed = true;
-                        for (AstArgument* newRight : rightVersions.getVector()) {
-                            AstArgument* newFunctor = new AstTernaryFunctor(functor->getFunction(),
-                                    std::unique_ptr<AstArgument>(functor->getArg(0)->clone()),
-                                    std::unique_ptr<AstArgument>(functor->getArg(1)->clone()),
-                                    std::unique_ptr<AstArgument>(newRight));
-                            versions.push_back(newFunctor);
-                        }
-                    }
-                }
-            }
+        } else if (dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+            // TODO: handle this
+            assert(false && "unhandled argument: AstUserDefinedFunctor");
         }
     } else if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {
         NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, cast->getValue());

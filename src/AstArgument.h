@@ -317,6 +317,11 @@ public:
         return toPtrVector(args);
     }
 
+    void setArg(size_t idx, std::unique_ptr<AstArgument> arg) {
+        assert(idx >= 0 && idx < args.size() && "wrong argument");
+        args[idx] = std::move(arg);
+    }
+
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {
         return isNumericFunctorOp(op);

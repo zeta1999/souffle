@@ -185,7 +185,8 @@ public:
             // traverse subroutine return
             size_t arity;
             if (isConstraint) {
-                // we only handle binary constraints
+                // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
+                // annotations
                 arity = 4;
             } else {
                 arity = prog.getRelation(bodyRelAtomName)->getArity();

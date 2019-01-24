@@ -88,8 +88,17 @@ std::unique_ptr<AstRelation> makeInfoRelation(
             std::string relName = identifierToString(atom->getName());
 
             if (dynamic_cast<AstAtom*>(lit) != nullptr) {
+                std::string atomDescription = relName;
+
+                // for each argument in the literal, add an extra field to the instrumented relation name
+                for (auto& arg : atom->getArguments()) {
+                    std::stringstream argDescription;
+                    arg->print(argDescription);
+                    atomDescription.append("," + argDescription.str());
+                }
+
                 infoClauseHead->addArgument(
-                        std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), relName));
+                        std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), atomDescription));
             } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
                 infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
                         translationUnit.getSymbolTable(), ("!" + relName)));

@@ -79,7 +79,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
         const AstAtom* atom = lit->getAtom();
 
         // add an attribute for atoms and binary constraints
-        if (atom != nullptr || dynamic_cast<AstBinaryConstraint*>(lit)) {
+        if (atom != nullptr || dynamic_cast<AstBinaryConstraint*>(lit) != nullptr) {
             infoRelation->addAttribute(std::make_unique<AstAttribute>(
                     std::string("rel_") + std::to_string(i), AstTypeIdentifier("symbol")));
         }
@@ -87,10 +87,10 @@ std::unique_ptr<AstRelation> makeInfoRelation(
         if (atom != nullptr) {
             std::string relName = identifierToString(atom->getName());
 
-            if (dynamic_cast<AstAtom*>(lit)) {
+            if (dynamic_cast<AstAtom*>(lit) != nullptr) {
                 infoClauseHead->addArgument(
                         std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), relName));
-            } else if (dynamic_cast<AstNegation*>(lit)) {
+            } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
                 infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
                         translationUnit.getSymbolTable(), ("!" + relName)));
             }

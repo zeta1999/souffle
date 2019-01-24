@@ -105,21 +105,21 @@ public:
 
             // find all the info tuples
             for (auto& tuple : *rel) {
-                std::vector<std::string> bodyRels;
+                std::vector<std::string> bodyLiterals;
 
                 RamDomain ruleNum;
                 tuple >> ruleNum;
 
                 for (size_t i = 1; i < rel->getArity() - 1; i++) {
-                    std::string bodyRel;
-                    tuple >> bodyRel;
-                    bodyRels.push_back(bodyRel);
+                    std::string bodyLit;
+                    tuple >> bodyLit;
+                    bodyLiterals.push_back(bodyLit);
                 }
 
                 std::string rule;
                 tuple >> rule;
 
-                info.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), bodyRels});
+                info.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), bodyLiterals});
                 rules.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), rule});
             }
         }
@@ -171,7 +171,10 @@ public:
 
         // recursively get nodes for subproofs
         size_t tupleCurInd = 0;
-        for (std::string bodyRel : info[std::make_pair(relName, ruleNum)]) {
+        for (std::string bodyLiteral : info[std::make_pair(relName, ruleNum)]) {
+            // split bodyLiteral since it contains relation name plus arguments
+            std::string bodyRel = splitString(bodyLiteral, ',')[0];
+
             // check whether the current atom is a constraint
             bool isConstraint =
                     std::find(constraintList.begin(), constraintList.end(), bodyRel) != constraintList.end();

@@ -20,7 +20,7 @@
 
 #include "AstNode.h"
 #include "AstTypes.h"
-#include "FunctorOps.h" // TODO: only include where needed
+#include "FunctorOps.h"
 #include "SymbolTable.h"
 #include "Util.h"
 #include <array>

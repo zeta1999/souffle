@@ -16,7 +16,7 @@
 
 #include "Interpreter.h"
 #include "BinaryConstraintOps.h"
-#include "FunctorOps.h"  // TODO: is this necessary?
+#include "FunctorOps.h"
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"

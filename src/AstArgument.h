@@ -355,7 +355,7 @@ public:
 
     /** Clone this node */
     AstIntrinsicFunctor* clone() const override {
-        auto argsCopy = std::vector<std::unique_ptr<AstArgument>>(args.size());
+        auto argsCopy = std::vector<std::unique_ptr<AstArgument>>();
         for (auto& arg : args) {
             argsCopy.push_back(std::unique_ptr<AstArgument>(arg->clone()));
         }

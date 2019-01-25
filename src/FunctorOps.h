@@ -161,44 +161,6 @@ inline std::string getSymbolForFunctorOp(FunctorOp op) {
     return "?";
 }
 
-// TODO: NOT ONE TO ONE!!! SO get rid of this maybe? or somehow get around this?
-/**
- * Converts symbolic representation of an operator to the operator
- */
-inline FunctorOp getFunctorOpForSymbol(const std::string& symbol) {
-    /** Unary Functor Operators */
-    if (symbol == "ord") return FunctorOp::ORD;
-    if (symbol == "strlen") return FunctorOp::STRLEN;
-    if (symbol == "-") return FunctorOp::NEG;
-    if (symbol == "bnot") return FunctorOp::BNOT;
-    if (symbol == "lnot") return FunctorOp::LNOT;
-    if (symbol == "to_number") return FunctorOp::TONUMBER;
-    if (symbol == "to_string") return FunctorOp::TOSTRING;
-
-    /** Binary Functor Operators */
-    if (symbol == "+") return FunctorOp::ADD;
-    if (symbol == "-") return FunctorOp::SUB;
-    if (symbol == "*") return FunctorOp::MUL;
-    if (symbol == "/") return FunctorOp::DIV;
-    if (symbol == "^") return FunctorOp::EXP;
-    if (symbol == "%") return FunctorOp::MOD;
-    if (symbol == "band") return FunctorOp::BAND;
-    if (symbol == "bor") return FunctorOp::BOR;
-    if (symbol == "bxor") return FunctorOp::BXOR;
-    if (symbol == "land") return FunctorOp::LAND;
-    if (symbol == "lor") return FunctorOp::LOR;
-    if (symbol == "max") return FunctorOp::MAX;
-    if (symbol == "min") return FunctorOp::MIN;
-    if (symbol == "cat") return FunctorOp::CAT;
-
-    /** Ternary Functor Operators */
-    if (symbol == "substr") return FunctorOp::SUBSTR;
-
-    /** Undefined */
-    assert(false && "unrecognised operator");
-    return FunctorOp::__UNDEFINED__;
-}
-
 // TODO: change all the asserts to have consistent errors
 
 /**

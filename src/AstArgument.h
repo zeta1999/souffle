@@ -270,16 +270,15 @@ public:
  */
 class AstFunctor : public AstArgument {};
 
-// TODO: fix up the comments on all these bc they seem messed in general
+/**
+ * Subclass of AstFunctor that represents an intrinsic (built-in) functor
+ */
 class AstIntrinsicFunctor : public AstFunctor {
 protected:
     FunctorOp op;
     std::vector<std::unique_ptr<AstArgument>> args;
 
 public:
-    // TODO: remove this once subclasses are gone
-    AstIntrinsicFunctor() = default;
-
     template <typename... Operands>
     AstIntrinsicFunctor(FunctorOp op, Operands... operands) : op(op) {
         std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
@@ -287,13 +286,10 @@ public:
             args.push_back(std::move(cur));
         }
 
-        // TODO: NOTE THAT THIS CAN POSSIBLY FAIL ATM!!! Because of non-uniquness of getfunctorop for '-'
-        // std::cout << getSymbolForFunctorOp(op) << " HAS ARITY " << getFunctorOpArity(op) << " WHILE ARGS HAS SIZE " << args.size()  << std::endl;
-        // TODO: CAREFUL with this as well because in the future may want (max(1,2,3)) to be a thing etc.
+        // TODO: CAREFUL with this because in the future may want (max(1,2,3)) to be a thing etc.
         assert(getFunctorOpArity(op) == args.size() && "invalid number of arguments for functor");
     }
 
-    // TODO: necessary?
     AstIntrinsicFunctor(FunctorOp op, std::vector<std::unique_ptr<AstArgument>> operands)
             : op(op), args(std::move(operands)){};
 
@@ -393,9 +389,8 @@ protected:
 // TODO: maybe unify UDF and INF a bit?
 
 /**
- * Subclass of Argument that represents a unary function
+ * Subclass of AstFunctor that represents an extrinsic (user-defined) function
  */
-// TODO: SUBCLASS OF UNARY FUCNTION?
 class AstUserDefinedFunctor : public AstFunctor {
 protected:
     /** name of user-defined functor */
@@ -423,6 +418,7 @@ public:
 
     /** get argument */
     const AstArgument* getArg(size_t idx) const {
+        assert(idx >= 0 && idx < args.size());
         return args[idx].get();
     }
 

@@ -78,7 +78,6 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(Variable)
         FORWARD(UnnamedVariable)
         FORWARD(IntrinsicFunctor)
-        FORWARD(BinaryFunctor)
         FORWARD(UserDefinedFunctor)
         FORWARD(Counter)
         FORWARD(NumberConstant)
@@ -143,7 +142,6 @@ protected:
     LINK(NullConstant, Constant)
     LINK(Constant, Argument)
 
-    LINK(BinaryFunctor, IntrinsicFunctor)
     LINK(IntrinsicFunctor, Functor)
     LINK(UserDefinedFunctor, Functor)
     LINK(Functor, Argument)

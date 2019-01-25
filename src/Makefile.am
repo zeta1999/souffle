@@ -88,7 +88,6 @@ souffle_sources = \
               AstUtils.cpp          AstUtils.h          \
               AstVisitor.h                              \
               BinaryConstraintOps.h                     \
-              BinaryFunctorOps.h                        \
               ComponentModel.cpp    ComponentModel.h    \
               Constraints.h                             \
               DebugReport.cpp       DebugReport.h       \

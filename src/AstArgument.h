@@ -20,7 +20,6 @@
 
 #include "AstNode.h"
 #include "AstTypes.h"
-#include "BinaryFunctorOps.h"
 #include "FunctorOps.h" // TODO: only include where needed
 #include "SymbolTable.h"
 #include "Util.h"
@@ -388,36 +387,6 @@ protected:
         assert(nullptr != dynamic_cast<const AstIntrinsicFunctor*>(&node));
         const auto& other = static_cast<const AstIntrinsicFunctor&>(node);
         return op == other.op && equal_targets(args, other.args);
-    }
-};
-
-/**
- * Subclass of Argument that represents a binary function
- */
-class AstBinaryFunctor : public AstIntrinsicFunctor {
-public:
-    AstBinaryFunctor(BinaryOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
-            : AstIntrinsicFunctor(
-                      getFunctorOpForSymbol(getSymbolForBinaryOp(fun)), std::move(l), std::move(r)) {}
-    AstBinaryFunctor(FunctorOp fun, std::unique_ptr<AstArgument> l, std::unique_ptr<AstArgument> r)
-            : AstIntrinsicFunctor(fun, std::move(l), std::move(r)) {}
-
-    ~AstBinaryFunctor() override = default;
-
-    /** Creates a clone */
-    AstBinaryFunctor* clone() const override {
-        auto res = new AstBinaryFunctor(op, std::unique_ptr<AstArgument>(args[0]->clone()),
-                std::unique_ptr<AstArgument>(args[1]->clone()));
-        res->setSrcLoc(getSrcLoc());
-        return res;
-    }
-
-protected:
-    /** Implements the node comparison for this node type */
-    bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstBinaryFunctor*>(&node));
-        const auto& other = static_cast<const AstBinaryFunctor&>(node);
-        return op == other.op && *args[0] == *other.args[0] && *args[1] == *other.args[1];
     }
 };
 

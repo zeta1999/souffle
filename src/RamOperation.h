@@ -123,7 +123,7 @@ class RamSearch : public RamNestedOperation {
     size_t identifier;
 
     /** Profile text */
-    std::string profileText;
+    const std::string profileText;
 
 public:
     RamSearch(RamNodeType type, size_t ident, std::unique_ptr<RamOperation> nested,
@@ -168,9 +168,9 @@ class RamRelationSearch : public RamSearch {
     bool pureExistenceCheck = false;
 
 public:
-    RamRelationSearch(RamNodeType type, std::unique_ptr<RamRelationReference> r, size_t ident,
+    RamRelationSearch(RamNodeType type, std::unique_ptr<RamRelationReference> rel, size_t ident,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamSearch(type, ident, std::move(nested), std::move(profileText)), relation(std::move(r)) {}
+            : RamSearch(type, ident, std::move(nested), std::move(profileText)), relation(std::move(rel)) {}
 
     /** Get search relation */
     const RamRelationReference& getRelation() const {
@@ -211,9 +211,9 @@ protected:
  */
 class RamScan : public RamRelationSearch {
 public:
-    RamScan(std::unique_ptr<RamRelationReference> r, size_t ident, std::unique_ptr<RamOperation> nested,
+    RamScan(std::unique_ptr<RamRelationReference> rel, size_t ident, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamRelationSearch(RN_Scan, std::move(r), ident, std::move(nested), std::move(profileText)) {}
+            : RamRelationSearch(RN_Scan, std::move(rel), ident, std::move(nested), std::move(profileText)) {}
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
@@ -410,7 +410,7 @@ private:
     std::unique_ptr<RamCondition> condition;
 
     /** Aggregation function */
-    Function fun;
+    Function function;
 
     /** Aggregation value */
     // TODO (#541): rename to target expression
@@ -428,7 +428,7 @@ private:
 public:
     RamAggregate(std::unique_ptr<RamOperation> nested, Function fun, std::unique_ptr<RamValue> value,
             std::unique_ptr<RamRelationReference> rel, size_t ident)
-            : RamSearch(RN_Aggregate, ident, std::move(nested)), fun(fun), value(std::move(value)),
+            : RamSearch(RN_Aggregate, ident, std::move(nested)), function(fun), value(std::move(value)),
               relation(std::move(rel)), pattern(relation->getArity()) {}
 
     /** Get condition */
@@ -438,7 +438,7 @@ public:
 
     /** Get aggregation function */
     Function getFunction() const {
-        return fun;
+        return function;
     }
 
     /** Get target expression */
@@ -464,18 +464,13 @@ public:
     }
 
     /** Add condition */
-    void addCondition(std::unique_ptr<RamCondition> c, const RamOperation& root);
-
-    /** Add condition */
-    void addCondition(std::unique_ptr<RamCondition> c) {
-        addCondition(std::move(c), *this);
-    }
+    void addCondition(std::unique_ptr<RamCondition> newCondition);
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
         os << times('\t', tabpos);
 
-        switch (fun) {
+        switch (function) {
             case MIN:
                 os << "MIN ";
                 break;
@@ -490,7 +485,7 @@ public:
                 break;
         }
 
-        if (fun != COUNT) {
+        if (function != COUNT) {
             os << *value << " ";
         }
 
@@ -523,7 +518,7 @@ public:
 
     /** Create clone */
     RamAggregate* clone() const override {
-        RamAggregate* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), fun,
+        RamAggregate* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 value == nullptr ? nullptr : std::unique_ptr<RamValue>(value->clone()),
                 std::unique_ptr<RamRelationReference>(relation->clone()), getIdentifier());
         res->keys = keys;

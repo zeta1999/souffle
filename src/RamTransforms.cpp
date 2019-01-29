@@ -189,17 +189,17 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
             }
         };
 
-        for (RamCondition* c : getConditions(filter->getCondition().clone())) {
+        for (RamCondition* cond : getConditions(filter->getCondition().clone())) {
             size_t element = 0;
-            if (std::unique_ptr<RamValue> value = getIndexElement(c, element, identifier)) {
+            if (std::unique_ptr<RamValue> value = getIndexElement(cond, element, identifier)) {
                 keys |= (1 << element);
                 if (queryPattern[element] == nullptr) {
                     queryPattern[element] = std::move(value);
                 } else {
-                    addCondition(std::unique_ptr<RamCondition>(c));
+                    addCondition(std::unique_ptr<RamCondition>(cond));
                 }
             } else {
-                addCondition(std::unique_ptr<RamCondition>(c));
+                addCondition(std::unique_ptr<RamCondition>(cond));
             }
         }
 
@@ -304,11 +304,21 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                         if (elemAccess->getLevel() == identifier) {
                             return true;
                         }
+                    } else if (const RamUnaryOperator* unaryOp = dynamic_cast<const RamUnaryOperator*>(val)) {
+                        queue.push_back(unaryOp->getValue());
+                    } else if (const RamUserDefinedOperator* userDefinedOp =
+                                       dynamic_cast<const RamUserDefinedOperator*>(val)) {
+                        for (const RamValue* arg : userDefinedOp->getArguments()) {
+                            queue.push_back(arg);
+                        }
                     } else if (const RamBinaryOperator* binOp = dynamic_cast<const RamBinaryOperator*>(val)) {
                         queue.push_back(binOp->getLHS());
                         queue.push_back(binOp->getRHS());
-                    } else if (const RamUnaryOperator* unaryOp = dynamic_cast<const RamUnaryOperator*>(val)) {
-                        queue.push_back(unaryOp->getValue());
+                    } else if (const RamTernaryOperator* ternaryOp =
+                                       dynamic_cast<const RamTernaryOperator*>(val)) {
+                        queue.push_back(ternaryOp->getArg(0));
+                        queue.push_back(ternaryOp->getArg(1));
+                        queue.push_back(ternaryOp->getArg(2));
                     }
                 }
             }

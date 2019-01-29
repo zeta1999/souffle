@@ -55,12 +55,12 @@ std::unique_ptr<RamValue> getIndexElement(RamCondition* c, size_t& element, size
 }  // namespace
 
 /** add condition */
-void RamAggregate::addCondition(std::unique_ptr<RamCondition> c, const RamOperation& root) {
-    assert(c->getLevel() == getIdentifier());
+void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
+    assert(newCondition->getLevel() == getIdentifier());
 
     // use condition to narrow scan if possible
     size_t element = 0;
-    if (std::unique_ptr<RamValue> value = getIndexElement(c.get(), element, getIdentifier())) {
+    if (std::unique_ptr<RamValue> value = getIndexElement(newCondition.get(), element, getIdentifier())) {
         if (element > 0 || relation->getName().find("__agg") == std::string::npos) {
             keys |= (1 << element);
             if (pattern[element] == nullptr) {

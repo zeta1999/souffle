@@ -332,7 +332,7 @@ void AstSemanticChecker::checkAtom(ErrorReport& report, const AstProgram& progra
 }
 
 /* Check whether an unnamed variable occurs in an argument (expression) */
-// TODO: convert to an AstVisitor
+// TODO (azreika): use a visitor instead
 static bool hasUnnamedVariable(const AstArgument* arg) {
     if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
         return true;
@@ -347,27 +347,13 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
         return false;
     }
     if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
-        for (size_t i = 0; i < inf->getArity(); i++) {
-            if (hasUnnamedVariable(inf->getArg(i))) {
-                return true;
-            }
-        }
-        return false;
+        return any_of(inf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
     if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-        for (size_t i = 0; i < udf->getArgCount(); i++) {
-            if (hasUnnamedVariable(udf->getArg(i))) {
-                return true;
-            }
-        }
-        return false;
+        return any_of(udf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
     if (const auto* ri = dynamic_cast<const AstRecordInit*>(arg)) {
         return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
-    }
-    // TODO: get rid of this unnecessary conditionanl
-    if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-        return any_of(udf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
     if (dynamic_cast<const AstAggregator*>(arg)) {
         return false;
@@ -486,11 +472,6 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         // this one is fine - type checker will make sure of number and symbol constants
     } else if (auto* ri = dynamic_cast<const AstRecordInit*>(&argument)) {
         for (auto* arg : ri->getArguments()) {
-            checkConstant(report, *arg);
-        }
-    } else if (auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
-        // TODO: seems like another useless conditional?
-        for (auto* arg : udf->getArguments()) {
             checkConstant(report, *arg);
         }
     } else {

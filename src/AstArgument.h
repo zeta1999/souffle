@@ -268,6 +268,7 @@ public:
 /**
  * A common base class for AST functors
  */
+// TODO: maybe unify UDF and INF a bit?
 class AstFunctor : public AstArgument {};
 
 /**
@@ -286,7 +287,7 @@ public:
             args.push_back(std::move(cur));
         }
 
-        // TODO: CAREFUL with this because in the future may want (max(1,2,3)) to be a thing etc.
+        // TODO (#761): eventually allow non-fixed functor arity
         assert(getFunctorOpArity(op) == args.size() && "invalid number of arguments for functor");
     }
 
@@ -385,10 +386,8 @@ protected:
     }
 };
 
-// TODO: maybe unify UDF and INF a bit?
-
 /**
- * Subclass of AstFunctor that represents an extrinsic (user-defined) function
+ * Subclass of AstFunctor that represents an extrinsic (user-defined) functor
  */
 class AstUserDefinedFunctor : public AstFunctor {
 protected:

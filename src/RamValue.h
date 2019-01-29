@@ -54,6 +54,11 @@ public:
     RamValue* clone() const override = 0;
 };
 
+// TODO (azreika): create a common abstract base class for RAM operators
+
+/**
+ * Operator that represents an intrinsic (built-in) functor
+ */
 class RamIntrinsicOperator : public RamValue {
 private:
     /** Operation symbol */
@@ -155,11 +160,9 @@ protected:
     }
 };
 
-// TODO: fix up these comments
 /**
- * Unary user-defined function
+ * Operator that represents an extrinsic (user-defined) functor
  */
-// TODO (#541): have a single n-ary function
 class RamUserDefinedOperator : public RamValue {
 private:
     /** Argument of unary function */

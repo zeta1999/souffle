@@ -1191,6 +1191,34 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
     return ProvenanceClauseTranslator(*this).translateClause(*intermediateClause, clause);
 }
 
+/** make a subroutine to search for subproofs for the non-existence of a tuple */
+std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
+    // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations)
+
+    // the structure of this subroutine is a sequence where each nested statement is a search in each relation
+    std::unique_ptr<RamSequence> searchSequence = std::make_unique<RamSequence>();
+
+    // build a vector of unique variables
+    std::vector<AstArgument*> uniqueVariables;
+    // process head first
+    for (const auto& arg : clause.getHead()->getArguments()) {
+        if (std::find(uniqueVariables.begin(), uniqueVariables.end(), arg) == uniqueVariables.end()) {
+            uniqueVariables.push_back(arg);
+        }
+    }
+
+    // process body atoms
+    for (const auto& lit : clause.getBodyLiterals()) {
+        if (const auto& atom = dynamic_cast<AstAtom*>(lit)) {
+            for (const auto& arg : atom->getArguments()) {
+                if (std::find(uniqueVariables.begin(), uniqueVariables.end(), arg) == uniqueVariables.end()) {
+                    uniqueVariables.push_back(arg);
+                }
+            }
+        }
+    }
+}
+
 /** translates the given datalog program into an equivalent RAM program  */
 void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) {
     // obtain type environment from analysis

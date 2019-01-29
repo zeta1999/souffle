@@ -97,8 +97,8 @@ std::unique_ptr<AstRelation> makeInfoRelation(
                     atomDescription.append("," + argDescription.str());
                 }
 
-                infoClauseHead->addArgument(
-                        std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), atomDescription));
+                infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
+                        translationUnit.getSymbolTable(), atomDescription));
             } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
                 infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
                         translationUnit.getSymbolTable(), ("!" + relName)));

@@ -96,7 +96,11 @@ public:
         return operation;
     }
 
-    /** Get argument */
+    /** Get values */
+    std::vector<RamValue*> getArguments() const {
+        return toPtrVector(arguments);
+    }
+
     // TODO (#541): Remove old def -- rename to getArgument
     const RamValue* getArg(int i) const {
         return arguments[i].get();

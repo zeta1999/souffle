@@ -79,73 +79,74 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             switch (op.getOperator()) {
                 /** Unary Functor Operators */
                 case FunctorOp::ORD:
-                    return args[0];
+                    return visit(args[0]);
                 case FunctorOp::STRLEN:
-                    return interpreter.getSymbolTable().resolve(args[0]).size();
+                    return interpreter.getSymbolTable().resolve(visit(args[0])).size();
                 case FunctorOp::NEG:
-                    return -args[0];
+                    return -visit(args[0]);
                 case FunctorOp::BNOT:
-                    return ~args[0];
+                    return ~visit(args[0]);
                 case FunctorOp::LNOT:
-                    return !args[0];
+                    return !visit(args[0]);
                 case FunctorOp::TONUMBER: {
                     RamDomain result = 0;
                     try {
-                        result = stord(interpreter.getSymbolTable().resolve(args[0]));
+                        result = stord(interpreter.getSymbolTable().resolve(visit(args[0])));
                     } catch (...) {
                         std::cerr << "error: wrong string provided by to_number(\"";
-                        std::cerr << interpreter.getSymbolTable().resolve(args[0]);
+                        std::cerr << interpreter.getSymbolTable().resolve(visit(args[0]));
                         std::cerr << "\") functor.\n";
                         raise(SIGFPE);
                     }
                     return result;
                 }
                 case FunctorOp::TOSTRING:
-                    return interpreter.getSymbolTable().lookup(std::to_string(args[0]));
+                    return interpreter.getSymbolTable().lookup(std::to_string(visit(args[0])));
 
                 /** Binary Functor Operators */
                 case FunctorOp::ADD: {
-                    return args[0] + args[1];
+                    return visit(args[0]) + visit(args[1]);
                 }
                 case FunctorOp::SUB: {
-                    return args[0] - args[1];
+                    return visit(args[0]) - visit(args[1]);
                 }
                 case FunctorOp::MUL: {
-                    return args[0] * args[1];
+                    return visit(args[0]) * visit(args[1]);
                 }
                 case FunctorOp::DIV: {
-                    return args[0] / args[1];
+                    return visit(args[0]) / visit(args[1]);
                 }
                 case FunctorOp::EXP: {
-                    return std::pow(args[0], args[1]);
+                    return std::pow(visit(args[0]), visit(args[1]));
                 }
                 case FunctorOp::MOD: {
-                    return args[0] % args[1];
+                    return visit(args[0]) % visit(args[1]);
                 }
                 case FunctorOp::BAND: {
-                    return args[0] & args[1];
+                    return visit(args[0]) & visit(args[1]);
                 }
                 case FunctorOp::BOR: {
-                    return args[0] | args[1];
+                    return visit(args[0]) | visit(args[1]);
                 }
                 case FunctorOp::BXOR: {
-                    return args[0] ^ args[1];
+                    return visit(args[0]) ^ visit(args[1]);
                 }
                 case FunctorOp::LAND: {
-                    return args[0] && args[1];
+                    return visit(args[0]) && visit(args[1]);
                 }
                 case FunctorOp::LOR: {
-                    return args[0] || args[1];
+                    return visit(args[0]) || visit(args[1]);
                 }
                 case FunctorOp::MAX: {
-                    return std::max(args[0], args[1]);
+                    return std::max(visit(args[0]), visit(args[1]));
                 }
                 case FunctorOp::MIN: {
-                    return std::min(args[0], args[1]);
+                    return std::min(visit(args[0]), visit(args[1]));
                 }
                 case FunctorOp::CAT: {
-                    return interpreter.getSymbolTable().lookup(interpreter.getSymbolTable().resolve(args[0]) +
-                                                               interpreter.getSymbolTable().resolve(args[1]));
+                    return interpreter.getSymbolTable().lookup(
+                            interpreter.getSymbolTable().resolve(visit(args[0])) +
+                            interpreter.getSymbolTable().resolve(visit(args[1])));
                 }
 
                 /** Ternary Functor Operators */
@@ -159,12 +160,10 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
                         sub_str = str.substr(idx, len);
                     } catch (...) {
                         std::cerr << "warning: wrong index position provided by substr(\"";
-                        std::cerr << str << "\"," << (int32_t)idx << "," << (int32_t)len
-                                  << ") functor.\n";
+                        std::cerr << str << "\"," << (int32_t)idx << "," << (int32_t)len << ") functor.\n";
                     }
                     return interpreter.getSymbolTable().lookup(sub_str);
                 }
-
 
                 /** Undefined */
                 default: {

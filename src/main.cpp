@@ -31,6 +31,7 @@
 #include "RamProgram.h"
 #include "RamSemanticChecker.h"
 #include "RamTransformer.h"
+#include "RamTransforms.h"
 #include "RamTranslationUnit.h"
 #include "SymbolTable.h"
 #include "Synthesiser.h"
@@ -197,8 +198,8 @@ int main(int argc, char** argv) {
                             {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
                             {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
 #ifdef USE_PROVENANCE
-                            {"provenance", 't', "EXPLAIN", "", false,
-                                    "Enable provenance information via guided SLD."},
+                            {"provenance", 't', "[ none | explain | explore ]", "", false,
+                                    "Enable provenance instrumentation and interaction."},
 #endif
                             {"engine", 'e', "[ file | mpi ]", "", false,
                                     "Specify communication engine for distributed execution."},
@@ -495,6 +496,9 @@ int main(int argc, char** argv) {
             AstTranslator().translateUnit(*astTranslationUnit);
 
     std::vector<std::unique_ptr<RamTransformer>> ramTransforms;
+    ramTransforms.push_back(std::make_unique<LevelConditionsTransformer>());
+    ramTransforms.push_back(std::make_unique<CreateIndicesTransformer>());
+    ramTransforms.push_back(std::make_unique<ConvertExistenceChecksTransformer>());
     ramTransforms.push_back(std::make_unique<RamSemanticChecker>());
 
     for (const auto& transform : ramTransforms) {
@@ -542,9 +546,9 @@ int main(int argc, char** argv) {
         if (Global::config().has("provenance")) {
             // construct SouffleProgram from env
             InterpreterProgInterface interface(*interpreter);
-            if (Global::config().get("provenance") == "1") {
+            if (Global::config().get("provenance") == "explain") {
                 explain(interface, true, false);
-            } else if (Global::config().get("provenance") == "2") {
+            } else if (Global::config().get("provenance") == "explore") {
                 explain(interface, true, true);
             }
         }

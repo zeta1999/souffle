@@ -1286,6 +1286,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 }
 
+                /** Undefined */
                 default: {
                     assert(false && "Unsupported Operation!");
                     break;

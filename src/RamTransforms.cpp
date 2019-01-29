@@ -304,7 +304,8 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                         if (elemAccess->getLevel() == identifier) {
                             return true;
                         }
-                    } else if (const RamIntrinsicOperator* intrinsicOp = dynamic_cast<const RamIntrinsicOperator*>(val)) {
+                    } else if (const RamIntrinsicOperator* intrinsicOp =
+                                       dynamic_cast<const RamIntrinsicOperator*>(val)) {
                         for (const RamValue* arg : intrinsicOp->getArguments()) {
                             queue.push_back(arg);
                         }
@@ -361,7 +362,8 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                                 if (const RamPack* pack = dynamic_cast<const RamPack*>(value)) {
                                     const std::vector<RamValue*> args = pack->getArguments();
                                     values.insert(values.end(), args.begin(), args.end());
-                                } else if (const auto* intrinsicOp = dynamic_cast<const RamIntrinsicOperator*>(value)) {
+                                } else if (const auto* intrinsicOp =
+                                                   dynamic_cast<const RamIntrinsicOperator*>(value)) {
                                     if (intrinsicOp->getArgCount() == 2) {
                                         values.push_back(intrinsicOp->getArgument(0));
                                         values.push_back(intrinsicOp->getArgument(1));

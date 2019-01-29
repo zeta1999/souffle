@@ -268,7 +268,7 @@ public:
 /**
  * A common base class for AST functors
  */
-// TODO: maybe unify UDF and INF a bit?
+// TODO (azreika): consider pushing some common Intr/Extr functor functionality here
 class AstFunctor : public AstArgument {};
 
 /**

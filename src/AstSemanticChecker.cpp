@@ -210,7 +210,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
 
         // check types of arguments
-        // TODO: ERROR MESSAGES? HAVE NOW CHANGED!!!
         for (size_t i = 0; i < fun.getArity(); i++) {
             auto arg = fun.getArg(i);
             if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
@@ -461,8 +460,7 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         report.addError("Underscore in fact", argument.getSrcLoc());
     } else if (dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
         if (!isConstantArithExpr(argument)) {
-            // TODO: ERROR MESSAGE: CHANGED!!! THIS SHOULD CHANGE ANYWAY doesnt match because cat("x","y") will fail
-            report.addError("Non-constant functor in fact", argument.getSrcLoc());
+            report.addError("Function in fact", argument.getSrcLoc());
         }
     } else if (dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
         report.addError("User-defined functor in fact", argument.getSrcLoc());

@@ -55,8 +55,7 @@ public:
 };
 
 class RamIntrinsicOperator : public RamValue {
-    // TODO: change to private after
-protected:
+private:
     /** Operation symbol */
     FunctorOp operation;
 
@@ -64,9 +63,6 @@ protected:
     std::vector<std::unique_ptr<RamValue>> arguments;
 
 public:
-    // TODO: remove this once subclasses are gone
-    RamIntrinsicOperator() = default;
-
     template <typename... Args>
     RamIntrinsicOperator(FunctorOp op, Args... args)
             : RamValue(RN_IntrinsicOperator,
@@ -79,7 +75,6 @@ public:
         }
     }
 
-    // TODO: necessary?
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args)
             : RamValue(RN_IntrinsicOperator,
                       all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
@@ -108,14 +103,9 @@ public:
         return toPtrVector(arguments);
     }
 
-    // TODO (#541): Remove old def -- rename to getArgument
-    const RamValue* getArg(int i) const {
+    const RamValue* getArgument(size_t i) const {
+        assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return arguments[i].get();
-    }
-    const RamValue& getArgument(int i) const {
-        // TODO: size_t?
-        assert(arguments[i]);
-        return *arguments[i];
     }
 
     /** Get level */
@@ -201,11 +191,12 @@ public:
         return toPtrVector(arguments);
     }
 
-    const RamValue* getArg(size_t i) const {
-        // TODO: add an assert here?
+    const RamValue* getArgument(size_t i) const {
+        assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return arguments[i].get();
     }
 
+    // TODO: change to arity
     size_t getArgCount() const {
         return arguments.size();
     }

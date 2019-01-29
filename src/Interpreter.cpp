@@ -198,7 +198,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
             /* Initialize arguments for ffi-call */
             for (size_t i = 0; i < arity; i++) {
-                RamDomain arg = visit(op.getArg(i));
+                RamDomain arg = visit(op.getArgument(i));
                 if (type[i] == 'S') {
                     args[i] = &ffi_type_pointer;
                     strVal[i] = interpreter.getSymbolTable().resolve(arg).c_str();
@@ -338,6 +338,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                 high[i] = (values[i]) ? low[i] : MAX_RAM_DOMAIN;
             }
 
+            // TODO: add an assert here
             low[arity - 2] = MIN_RAM_DOMAIN;
             low[arity - 1] = MIN_RAM_DOMAIN;
             high[arity - 2] = MAX_RAM_DOMAIN;

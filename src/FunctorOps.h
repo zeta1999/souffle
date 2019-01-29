@@ -16,16 +16,12 @@
 
 #pragma once
 
-// TODO: check these
 #include <cassert>
 #include <iostream>
 
 namespace souffle {
 
 enum class FunctorOp {
-    // TODO: is this needed?
-    __UNDEFINED__,  // undefined operator
-
     /** Unary Functor Operators */
     ORD,       // ordinal number of a string
     STRLEN,    // length of a string
@@ -53,6 +49,9 @@ enum class FunctorOp {
 
     /** Ternary Functor Operators */
     SUBSTR,  // addition
+
+    /** Undefined */
+    __UNDEFINED__,  // undefined operator
 };
 
 /**
@@ -161,8 +160,6 @@ inline std::string getSymbolForFunctorOp(FunctorOp op) {
     return "?";
 }
 
-// TODO: change all the asserts to have consistent errors
-
 /**
  * Determines whether the given operator has a numeric return value
  */
@@ -214,7 +211,6 @@ inline bool isNumericFunctorOp(const FunctorOp op) {
  * Determines whether the operator has a symbolic return value.
  */
 inline bool isSymbolicFunctorOp(const FunctorOp op) {
-    // TODO: maybe write it out explicitly in case more types are added later on
     return !isNumericFunctorOp(op);
 }
 

@@ -1114,76 +1114,82 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
         void visitIntrinsicOperator(const RamIntrinsicOperator& op, std::ostream& out) override {
-            // TODO: make this nicer?
             PRINT_BEGIN_COMMENT(out);
 
             switch (op.getOperator()) {
                 /** Unary Functor Operators */
-                case FunctorOp::ORD:
-                    visit(op.getArg(0), out);
+                case FunctorOp::ORD: {
+                    visit(op.getArgument(0), out);
                     break;
-                case FunctorOp::STRLEN:
+                }
+                case FunctorOp::STRLEN: {
                     out << "static_cast<RamDomain>(symTable.resolve(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ").size())";
                     break;
-                case FunctorOp::NEG:
+                }
+                case FunctorOp::NEG: {
                     out << "(-(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << "))";
                     break;
-                case FunctorOp::BNOT:
+                }
+                case FunctorOp::BNOT: {
                     out << "(~(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << "))";
                     break;
-                case FunctorOp::LNOT:
+                }
+                case FunctorOp::LNOT: {
                     out << "(!(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << "))";
                     break;
-                case FunctorOp::TOSTRING:
+                }
+                case FunctorOp::TOSTRING: {
                     out << "symTable.lookup(std::to_string(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << "))";
                     break;
-                case FunctorOp::TONUMBER:
+                }
+                case FunctorOp::TONUMBER: {
                     out << "(wrapper_tonumber(symTable.resolve((size_t)";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ")))";
                     break;
+                }
 
                 /** Binary Functor Operators */
                 // arithmetic
                 case FunctorOp::ADD: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") + (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::SUB: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") - (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::MUL: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") * (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::DIV: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") / (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
@@ -1191,73 +1197,73 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     // Cast as int64, then back to RamDomain of int32 to avoid wrapping to negative
                     // when using int32 RamDomains
                     out << "static_cast<int64_t>(std::pow(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ",";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << "))";
                     break;
                 }
                 case FunctorOp::MOD: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") % (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::BAND: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") & (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::BOR: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") | (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::BXOR: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") ^ (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::LAND: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") && (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::LOR: {
                     out << "(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") || (";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::MAX: {
                     out << "std::max(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ",";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::MIN: {
                     out << "std::min(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ",";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
@@ -1266,9 +1272,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case FunctorOp::CAT: {
                     out << "symTable.lookup(";
                     out << "symTable.resolve(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << ") + symTable.resolve(";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << "))";
                     break;
                 }
@@ -1277,11 +1283,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case FunctorOp::SUBSTR: {
                     out << "symTable.lookup(";
                     out << "substr_wrapper(symTable.resolve(";
-                    visit(op.getArg(0), out);
+                    visit(op.getArgument(0), out);
                     out << "),(";
-                    visit(op.getArg(1), out);
+                    visit(op.getArgument(1), out);
                     out << "),(";
-                    visit(op.getArg(2), out);
+                    visit(op.getArgument(2), out);
                     out << ")))";
                     break;
                 }
@@ -1311,11 +1317,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 if (type[i] == 'N') {
                     out << "((RamDomain)";
-                    visit(op.getArg(i), out);
+                    visit(op.getArgument(i), out);
                     out << ")";
                 } else {
                     out << "symTable.resolve((RamDomain)";
-                    visit(op.getArg(i), out);
+                    visit(op.getArgument(i), out);
                     out << ").c_str()";
                 }
             }

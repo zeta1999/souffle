@@ -467,6 +467,7 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     return false;
 }
 
+// TODO: refactor this, slightly confusing name/setup
 void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& argument) {
     if (const auto* var = dynamic_cast<const AstVariable*>(&argument)) {
         report.addError("Variable " + var->getName() + " in fact", var->getSrcLoc());

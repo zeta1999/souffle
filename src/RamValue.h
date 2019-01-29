@@ -55,7 +55,7 @@ public:
 };
 
 class RamIntrinsicOperator : public RamValue {
-// TODO: change to private after
+    // TODO: change to private after
 protected:
     /** Operation symbol */
     FunctorOp operation;
@@ -68,15 +68,22 @@ public:
     RamIntrinsicOperator() = default;
 
     template <typename... Args>
-    RamIntrinsicOperator(FunctorOp op, Args... args) : RamValue(RN_IntrinsicOperator, all_of(args..., [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })), operation(op) {
-        std::unique_ptr<RamValue> tmp[] = { std::move(args)... };
+    RamIntrinsicOperator(FunctorOp op, Args... args)
+            : RamValue(RN_IntrinsicOperator,
+                      all_of(args...,
+                              [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
+              operation(op) {
+        std::unique_ptr<RamValue> tmp[] = {std::move(args)...};
         for (auto& cur : tmp) {
             arguments.push_back(std::move(cur));
         }
     }
 
     // TODO: necessary?
-    RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_IntrinsicOperator, all_of(args, [](const std::unique_ptr<RamValue>&a) { return a && a->isConstant(); })), operation(op), arguments(std::move(args)) {}
+    RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args)
+            : RamValue(RN_IntrinsicOperator,
+                      all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
+              operation(op), arguments(std::move(args)) {}
 
     /** Print */
     void print(std::ostream& os) const override {

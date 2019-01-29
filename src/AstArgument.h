@@ -363,8 +363,8 @@ public:
 
     /** Mutates this node */
     void apply(const AstNodeMapper& map) override {
-        for (size_t i = 0; i < args.size(); i++) {
-            args[i] = map(std::move(args[i]));
+        for (auto& arg : args) {
+            arg = map(std::move(arg));
         }
     }
 

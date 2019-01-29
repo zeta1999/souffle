@@ -139,7 +139,7 @@ public:
     }
 
     RamIntrinsicOperator* clone() const override {
-        auto argsCopy = std::vector<std::unique_ptr<RamValue>>(arguments.size());
+        auto argsCopy = std::vector<std::unique_ptr<RamValue>>();
         for (auto& arg : arguments) {
             argsCopy.push_back(std::unique_ptr<RamValue>(arg->clone()));
         }

@@ -432,27 +432,27 @@ void AstSemanticChecker::checkArgument(
 }
 
 static bool isConstantArithExpr(const AstArgument& argument) {
-    // TODO: double check that UDF check not needed here
     if (dynamic_cast<const AstNumberConstant*>(&argument)) {
         return true;
     }
     if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
-        // TODO: less clunky way to write this?
-        if (inf->isNumerical()) {
-            for (size_t i = 0; i < inf->getArity(); i++) {
-                // all arguments should be constant arithmetic expressions
-                if (!isConstantArithExpr(*inf->getArg(i))) {
-                    return false;
-                }
-            }
-            return true;
+        if (!inf->isNumerical()) {
+            return false;
         }
-        return false;
+
+        for (size_t i = 0; i < inf->getArity(); i++) {
+            if (!isConstantArithExpr(*inf->getArg(i))) {
+                return false;
+            }
+        }
+
+        // numerical intrinsic functor with all-constant arguments
+        return true;
     }
     return false;
 }
 
-// TODO: refactor this, slightly confusing name/setup
+// TODO (azreika): refactor this (and isConstantArithExpr); confusing name/setup
 void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& argument) {
     if (const auto* var = dynamic_cast<const AstVariable*>(&argument)) {
         report.addError("Variable " + var->getName() + " in fact", var->getSrcLoc());

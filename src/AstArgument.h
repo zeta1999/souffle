@@ -422,7 +422,6 @@ public:
 
     /** get number of arguments */
     size_t getArgCount() const {
-        // TODO: change to getArity? see how this owrks in practice
         return args.size();
     }
 

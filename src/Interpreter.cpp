@@ -338,7 +338,6 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                 high[i] = (values[i]) ? low[i] : MAX_RAM_DOMAIN;
             }
 
-            // TODO: add an assert here
             low[arity - 2] = MIN_RAM_DOMAIN;
             low[arity - 1] = MIN_RAM_DOMAIN;
             high[arity - 2] = MAX_RAM_DOMAIN;

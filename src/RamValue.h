@@ -115,7 +115,6 @@ public:
 
     /** Get level */
     // TODO (#541): move to an analysis
-    // TODO: change to std::max with comparator?
     size_t getLevel() const override {
         size_t level = 0;
         for (const auto& arg : arguments) {
@@ -199,7 +198,6 @@ public:
         return arguments[i].get();
     }
 
-    // TODO: change to arity
     size_t getArgCount() const {
         return arguments.size();
     }

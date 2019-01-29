@@ -234,7 +234,8 @@ private:
         binding << var << "=";
 
         // only intrinsic binary operators supported
-        if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&fun) && inf->getArity() == 2) {
+        const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&fun);
+        if (inf != nullptr && inf->getArity() == 2) {
             visit(*inf->getArg(0), binding);
             binding << getSymbolForFunctorOp(inf->getFunction());
             visit(*inf->getArg(1), binding);

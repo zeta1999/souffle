@@ -251,7 +251,9 @@ private:
     }
 
     void visitFunctor(const AstFunctor& fun, std::ostream& out) override {
-        if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&fun) && inf->getArity() == 2) {
+        // only intrinsic binary operators supported
+        const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&fun);
+        if (inf != nullptr && inf->getArity() == 2) {
             std::string sym = getSymbolForFunctorOp(inf->getFunction());
             out << "(";
             visit(*inf->getArg(0), out);

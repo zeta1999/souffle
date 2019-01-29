@@ -490,7 +490,7 @@ void renameVariables(AstArgument* arg) {
 
 // Performs a given binary op on a list of aggregators recursively.
 // E.g. ( <aggr1, aggr2, aggr3, ...>, o > = (aggr1 o (aggr2 o (agg3 o (...))))
-// TODO: fix up this function
+// TODO (azreika): remove aggregator support
 AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, FunctorOp fun) {
     assert(getFunctorOpArity(fun) == 2 && "not a binary functor");
 
@@ -515,7 +515,7 @@ AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, FunctorOp fun
  * Note: This function is currently generalised to perform any required inlining within aggregators
  * as well, making it simple to extend to this later on if desired (and the semantic check is removed).
  */
-// TODO: better way to implement this?
+// TODO (azreika): rewrite this method, removing aggregators
 NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstArgument* arg) {
     bool changed = false;
     std::vector<AstArgument*> versions;
@@ -612,7 +612,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
     } else if (dynamic_cast<const AstFunctor*>(arg)) {
         if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
             for (size_t i = 0; i < functor->getArity(); i++) {
-                // TODO: should maybe return unique_ptr?
+                // TODO (azreika): use unique pointers
                 // try inlining each argument from left to right
                 NullableVector<AstArgument*> argumentVersions =
                         getInlinedArgument(program, functor->getArg(i));
@@ -629,7 +629,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                 }
             }
         } else if (dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-            // TODO: handle this
+            // TODO (azreika): extend to handle user-defined functors
             assert(false && "unhandled argument: AstUserDefinedFunctor");
         }
     } else if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {

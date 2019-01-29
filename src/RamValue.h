@@ -113,6 +113,10 @@ public:
         return arguments[i].get();
     }
 
+    size_t getArgCount() const {
+        return arguments.size();
+    }
+
     /** Get level */
     // TODO (#541): move to an analysis
     size_t getLevel() const override {

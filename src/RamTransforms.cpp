@@ -364,9 +364,8 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                                     values.insert(values.end(), args.begin(), args.end());
                                 } else if (const auto* intrinsicOp =
                                                    dynamic_cast<const RamIntrinsicOperator*>(value)) {
-                                    if (intrinsicOp->getArgCount() == 2) {
-                                        values.push_back(intrinsicOp->getArgument(0));
-                                        values.push_back(intrinsicOp->getArgument(1));
+                                    for (auto* arg : intrinsicOp->getArguments()) {
+                                        values.push_back(arg);
                                     }
                                 } else if (value != nullptr && !value->isConstant() &&
                                            value->getLevel() == identifier) {

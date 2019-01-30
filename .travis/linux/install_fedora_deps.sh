@@ -26,6 +26,7 @@ travis_retry yum install -y -q autoconf automake bison clang doxygen flex gcc gc
 
 # Set up the package builder
 travis_retry yum install -y -q rpm-build ruby-devel
+travis_retry gem install --no-ri --no-rdoc rake
 travis_retry gem install --no-ri --no-rdoc fpm
 
 fpm --version

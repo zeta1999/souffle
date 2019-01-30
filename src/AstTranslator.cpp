@@ -1193,30 +1193,67 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
 /** make a subroutine to search for subproofs for the non-existence of a tuple */
 std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
-    // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations)
+    // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates or
+    // anything else...)
+
+    // build a vector of unique variables
+    std::vector<AstVariable> uniqueVariables;
+
+    visitDepthFirst(clause, [&](const AstVariable& var) {
+        if (var.getName().find("@level_num") == std::string::npos) {
+            if (std::find(uniqueVariables.begin(), uniqueVariables.end(), var) == uniqueVariables.end()) {
+                uniqueVariables.push_back(var);
+            }
+        }
+    });
 
     // the structure of this subroutine is a sequence where each nested statement is a search in each relation
     std::unique_ptr<RamSequence> searchSequence = std::make_unique<RamSequence>();
 
-    // build a vector of unique variables
-    std::vector<AstArgument*> uniqueVariables;
-    // process head first
-    for (const auto& arg : clause.getHead()->getArguments()) {
-        if (std::find(uniqueVariables.begin(), uniqueVariables.end(), arg) == uniqueVariables.end()) {
-            uniqueVariables.push_back(arg);
+    // go through each body atom and create a return
+    size_t atomNumber = 0;
+    for (const auto& lit : clause.getBodyLiterals()) {
+        if (const auto& atom = dynamic_cast<AstAtom*>(lit)) {
+            // get a RamRelationReference
+            auto relRef = translateRelation(atom);
+
+            // get the query pattern and range query columns from subroutine arguments
+            std::vector<std::unique_ptr<RamValue>> query;
+            SearchColumns searchCols = 0;
+            visitDepthFirst(*atom, [&](const AstVariable& var) {
+                if (var.getName().find("@level_num") == std::string::npos) {
+                    // assume the variable has been found already
+                    size_t argNum = std::find(uniqueVariables.begin(), uniqueVariables.end(), var) -
+                                    uniqueVariables.begin();
+                    query.push_back(std::make_unique<RamArgument>(argNum));
+                }
+            });
+
+            searchCols <<= 2;
+
+            // fill up query with nullptrs for the provenance columns
+            query.push_back(nullptr);
+            query.push_back(nullptr);
+
+            // ensure the length of query tuple is correct
+            assert(query.size() == atom->getArity() && "wrong query tuple size");
+
+            // make the nested operation to return the atom number if it exists
+            auto returnValue = std::make_unique<RamReturn>();
+            returnValue->addValue(std::make_unique<RamNumber>(atomNumber));
+
+            // create a search
+            auto search = std::make_unique<RamIndexScan>(
+                    std::move(relRef), atomNumber, std::move(query), searchCols, std::move(returnValue));
+
+            // append search to the sequence
+            searchSequence->add(std::make_unique<RamInsert>(std::move(search)));
+
+            atomNumber++;
         }
     }
 
-    // process body atoms
-    for (const auto& lit : clause.getBodyLiterals()) {
-        if (const auto& atom = dynamic_cast<AstAtom*>(lit)) {
-            for (const auto& arg : atom->getArguments()) {
-                if (std::find(uniqueVariables.begin(), uniqueVariables.end(), arg) == uniqueVariables.end()) {
-                    uniqueVariables.push_back(arg);
-                }
-            }
-        }
-    }
+    return std::move(searchSequence);
 }
 
 /** translates the given datalog program into an equivalent RAM program  */
@@ -1532,6 +1569,10 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             std::string subroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_subproof";
             ramProg->addSubroutine(subroutineLabel, makeSubproofSubroutine(clause));
+
+            std::string negationSubroutineLabel =
+                    relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_negation_subproof";
+            ramProg->addSubroutine(negationSubroutineLabel, makeNegationSubproofSubroutine(clause));
         });
     }
 }

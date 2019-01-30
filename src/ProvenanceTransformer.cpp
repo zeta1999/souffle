@@ -25,6 +25,7 @@
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
+#include "AstVisitor.h"
 #include "BinaryFunctorOps.h"
 #include "Util.h"
 #include <cassert>
@@ -90,12 +91,20 @@ std::unique_ptr<AstRelation> makeInfoRelation(
             if (dynamic_cast<AstAtom*>(lit) != nullptr) {
                 std::string atomDescription = relName;
 
-                // for each argument in the literal, add an extra field to the instrumented relation name
+                // for each variable in the literal, add an extra field to the instrumented relation name
+                visitDepthFirst(*atom, [&](const AstVariable& var) {
+                    std::stringstream varName;
+                    var.print(varName);
+                    atomDescription.append("," + varName.str());
+                });
+
+                /*
                 for (auto& arg : atom->getArguments()) {
                     std::stringstream argDescription;
                     arg->print(argDescription);
                     atomDescription.append("," + argDescription.str());
                 }
+                */
 
                 infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
                         translationUnit.getSymbolTable(), atomDescription));

@@ -25,7 +25,7 @@
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
-#include "BinaryFunctorOps.h"
+#include "FunctorOps.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -183,19 +183,19 @@ bool ProvenanceTransformer::transform(AstTranslationUnit& translationUnit) {
         }
 
         if (levels.size() == 1) {
-            return static_cast<AstArgument*>(new AstBinaryFunctor(BinaryOp::ADD,
+            return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
                     std::unique_ptr<AstArgument>(levels[0]), std::make_unique<AstNumberConstant>(1)));
         }
 
-        auto currentMax = new AstBinaryFunctor(BinaryOp::MAX, std::unique_ptr<AstArgument>(levels[0]),
+        auto currentMax = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>(levels[0]),
                 std::unique_ptr<AstArgument>(levels[1]));
 
         for (size_t i = 2; i < levels.size(); i++) {
-            currentMax = new AstBinaryFunctor(BinaryOp::MAX, std::unique_ptr<AstArgument>(currentMax),
+            currentMax = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>(currentMax),
                     std::unique_ptr<AstArgument>(levels[i]));
         }
 
-        return static_cast<AstArgument*>(new AstBinaryFunctor(BinaryOp::ADD,
+        return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
                 std::unique_ptr<AstArgument>(currentMax), std::make_unique<AstNumberConstant>(1)));
     };
 

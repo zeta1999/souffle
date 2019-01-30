@@ -33,10 +33,10 @@
 #include "AstType.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
-#include "BinaryFunctorOps.h"
 #include "ComponentModel.h"
 #include "DebugReport.h"
 #include "ErrorReport.h"
+#include "FunctorOps.h"
 #include "Global.h"
 #include "ParserDriver.h"
 #include "SymbolTable.h"
@@ -251,18 +251,17 @@ private:
     }
 
     void visitFunctor(const AstFunctor& fun, std::ostream& out) override {
-        // process unary operators
-        if (dynamic_cast<const AstUnaryFunctor*>(&fun)) {
-            throw UnsupportedConstructException("Unsupported function: " + toString(fun));
-        } else if (const auto* binary = dynamic_cast<const AstBinaryFunctor*>(&fun)) {
-            std::string sym = getSymbolForBinaryOp(binary->getFunction());
+        // only intrinsic binary operators supported
+        const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&fun);
+        if (inf != nullptr && inf->getArity() == 2) {
+            std::string sym = getSymbolForFunctorOp(inf->getFunction());
             out << "(";
-            visit(*binary->getLHS(), out);
+            visit(*inf->getArg(0), out);
             out << sym;
-            visit(*binary->getRHS(), out);
+            visit(*inf->getArg(1), out);
             out << ")";
         } else {
-            assert(false && "Unsupported functor!");
+            throw UnsupportedConstructException("Unsupported function: " + toString(fun));
         }
     }
 

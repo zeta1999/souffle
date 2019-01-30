@@ -276,9 +276,12 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
             return std::make_unique<RamNumber>(c.getIndex());
         }
 
-        std::unique_ptr<RamValue> visitUnaryFunctor(const AstUnaryFunctor& uf) override {
-            return std::make_unique<RamUnaryOperator>(
-                    uf.getFunction(), translator.translateValue(uf.getOperand(), index));
+        std::unique_ptr<RamValue> visitIntrinsicFunctor(const AstIntrinsicFunctor& inf) override {
+            std::vector<std::unique_ptr<RamValue>> values;
+            for (const auto& cur : inf.getArguments()) {
+                values.push_back(translator.translateValue(cur, index));
+            }
+            return std::make_unique<RamIntrinsicOperator>(inf.getFunction(), std::move(values));
         }
 
         std::unique_ptr<RamValue> visitUserDefinedFunctor(const AstUserDefinedFunctor& udf) override {
@@ -289,19 +292,6 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
             const AstFunctorDeclaration* decl = translator.program->getFunctorDeclaration(udf.getName());
             std::string type = decl->getType();
             return std::make_unique<RamUserDefinedOperator>(udf.getName(), type, std::move(values));
-        }
-
-        std::unique_ptr<RamValue> visitBinaryFunctor(const AstBinaryFunctor& bf) override {
-            return std::make_unique<RamBinaryOperator>(bf.getFunction(),
-                    translator.translateValue(bf.getLHS(), index),
-                    translator.translateValue(bf.getRHS(), index));
-        }
-
-        std::unique_ptr<RamValue> visitTernaryFunctor(const AstTernaryFunctor& tf) override {
-            return std::make_unique<RamTernaryOperator>(tf.getFunction(),
-                    translator.translateValue(tf.getArg(0), index),
-                    translator.translateValue(tf.getArg(1), index),
-                    translator.translateValue(tf.getArg(2), index));
         }
 
         std::unique_ptr<RamValue> visitCounter(const AstCounter&) override {

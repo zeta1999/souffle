@@ -220,7 +220,7 @@ CLEANFILES = $(BUILT_SOURCES)  parser.cc scanner.cc parser.hh stack.hh
 
 # run Bison
 $(builddir)/parser.hh: $(srcdir)/parser.yy
-	$(BISON) -Wall -Werror -v -d -o parser.cc $(srcdir)/parser.yy
+	$(BISON) -Wall -Werror -Wno-error=deprecated -Wno-error=other -v -d -o parser.cc $(srcdir)/parser.yy
 
 # and FLEX
 $(builddir)/scanner.cc: $(srcdir)/scanner.ll

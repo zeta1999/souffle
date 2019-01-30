@@ -34,21 +34,12 @@ namespace souffle {
 /**
  * Abstract class for describing scalar values in RAM
  */
-// TODO (#541): Remove isConstant() and make an analysis for RAM
 class RamValue : public RamNode {
-protected:
-    bool cnst;
-
 public:
-    RamValue(RamNodeType type, bool isCnst) : RamNode(type), cnst(isCnst) {}
+    RamValue(RamNodeType type) : RamNode(type) {}
 
     /** get level of value (which for-loop of a query) */
     virtual size_t getLevel() const = 0;
-
-    /** Determines whether this value is a constant or not */
-    bool isConstant() const {
-        return cnst;
-    }
 
     /** Create clone */
     RamValue* clone() const override = 0;
@@ -70,10 +61,7 @@ private:
 public:
     template <typename... Args>
     RamIntrinsicOperator(FunctorOp op, Args... args)
-            : RamValue(RN_IntrinsicOperator,
-                      all_of(args...,
-                              [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
-              operation(op) {
+            : RamValue(RN_IntrinsicOperator), operation(op) {
         std::unique_ptr<RamValue> tmp[] = {std::move(args)...};
         for (auto& cur : tmp) {
             arguments.push_back(std::move(cur));
@@ -81,8 +69,7 @@ public:
     }
 
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args)
-            : RamValue(RN_IntrinsicOperator,
-                      all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
+            : RamValue(RN_IntrinsicOperator), 
               operation(op), arguments(std::move(args)) {}
 
     /** Print */
@@ -170,7 +157,6 @@ class RamUserDefinedOperator : public RamValue {
 private:
     /** Argument of unary function */
     std::vector<std::unique_ptr<RamValue>> arguments;
-
     /** Name of user-defined unary functor */
     const std::string name;
 
@@ -180,8 +166,7 @@ private:
 public:
     RamUserDefinedOperator(
             const std::string& n, const std::string& t, std::vector<std::unique_ptr<RamValue>> args)
-            : RamValue(RN_UserDefinedOperator,
-                      all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
+            : RamValue(RN_UserDefinedOperator),
               arguments(std::move(args)), name(n), type(t) {}
 
     /** Print */
@@ -337,7 +322,7 @@ class RamNumber : public RamValue {
     RamDomain constant;
 
 public:
-    RamNumber(RamDomain c) : RamValue(RN_Number, true), constant(c) {}
+    RamNumber(RamDomain c) : RamValue(RN_Number), constant(c) {}
 
     /** Get constant */
     // TODO (#541):  move to analysis
@@ -433,8 +418,7 @@ private:
 
 public:
     RamPack(std::vector<std::unique_ptr<RamValue>> args)
-            : RamValue(RN_Pack,
-                      all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
+            : RamValue(RN_Pack),
               arguments(std::move(args)) {}
 
     /** Get values */

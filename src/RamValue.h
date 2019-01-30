@@ -122,7 +122,7 @@ public:
     size_t getLevel() const override {
         size_t level = 0;
         for (const auto& arg : arguments) {
-            if (arg) {
+            if (arg != nullptr) {
                 level = std::max(level, arg->getLevel());
             }
         }
@@ -139,7 +139,7 @@ public:
     }
 
     RamIntrinsicOperator* clone() const override {
-        auto argsCopy = std::vector<std::unique_ptr<RamValue>>();
+        std::vector<std::unique_ptr<RamValue>> argsCopy;
         for (auto& arg : arguments) {
             argsCopy.push_back(std::unique_ptr<RamValue>(arg->clone()));
         }
@@ -219,7 +219,7 @@ public:
     size_t getLevel() const override {
         size_t level = 0;
         for (const auto& arg : arguments) {
-            if (arg) {
+            if (arg != nullptr) {
                 level = std::max(level, arg->getLevel());
             }
         }

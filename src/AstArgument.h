@@ -352,7 +352,7 @@ public:
 
     /** Clone this node */
     AstIntrinsicFunctor* clone() const override {
-        auto argsCopy = std::vector<std::unique_ptr<AstArgument>>();
+        std::vector<std::unique_ptr<AstArgument>> argsCopy;
         for (auto& arg : args) {
             argsCopy.push_back(std::unique_ptr<AstArgument>(arg->clone()));
         }
@@ -416,7 +416,7 @@ public:
 
     /** get argument */
     const AstArgument* getArg(size_t idx) const {
-        assert(idx >= 0 && idx < args.size());
+        assert(idx >= 0 && idx < args.size() && "argument index out of bounds");
         return args[idx].get();
     }
 

@@ -74,6 +74,22 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     infoRelation->addAttribute(std::make_unique<AstAttribute>("clause_num", AstTypeIdentifier("number")));
     infoClauseHead->addArgument(std::make_unique<AstNumberConstant>(originalClause.getClauseNum()));
 
+    // add head relation as meta info
+    std::vector<std::string> headVariables;
+    visitDepthFirst(*(originalClause.getHead()), [&](const AstVariable& var) {
+        std::stringstream varName;
+        var.print(varName);
+        headVariables.push_back(varName.str());
+    });
+
+    std::stringstream headVariableString;
+    headVariableString << join(headVariables, ",");
+
+    infoRelation->addAttribute(
+            std::make_unique<AstAttribute>(std::string("head_vars"), AstTypeIdentifier("symbol")));
+    infoClauseHead->addArgument(
+            std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), headVariableString.str()));
+
     // visit all body literals and add to info clause head
     for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {
         auto lit = originalClause.getBodyLiterals()[i];

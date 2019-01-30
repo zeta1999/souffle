@@ -171,7 +171,11 @@ public:
 
         // recursively get nodes for subproofs
         size_t tupleCurInd = 0;
-        for (std::string bodyLiteral : info[std::make_pair(relName, ruleNum)]) {
+        auto bodyRelations = info[std::make_pair(relName, ruleNum)];
+
+        // start from begin + 1 because the first element represents the head atom
+        for (auto it = bodyRelations.begin() + 1; it < bodyRelations.end(); it++) {
+            std::string bodyLiteral = *it;
             // split bodyLiteral since it contains relation name plus arguments
             std::string bodyRel = splitString(bodyLiteral, ',')[0];
 

@@ -276,23 +276,23 @@ class AstFunctor : public AstArgument {};
  */
 class AstIntrinsicFunctor : public AstFunctor {
 protected:
-    FunctorOp op;
+    FunctorOp function;
     std::vector<std::unique_ptr<AstArgument>> args;
 
 public:
     template <typename... Operands>
-    AstIntrinsicFunctor(FunctorOp op, Operands... operands) : op(op) {
+    AstIntrinsicFunctor(FunctorOp function, Operands... operands) : function(function) {
         std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
         for (auto& cur : tmp) {
             args.push_back(std::move(cur));
         }
 
         // TODO (#761): eventually allow non-fixed functor arity
-        assert(getFunctorOpArity(op) == args.size() && "invalid number of arguments for functor");
+        assert(getFunctorOpArity(function) == args.size() && "invalid number of arguments for functor");
     }
 
-    AstIntrinsicFunctor(FunctorOp op, std::vector<std::unique_ptr<AstArgument>> operands)
-            : op(op), args(std::move(operands)){};
+    AstIntrinsicFunctor(FunctorOp function, std::vector<std::unique_ptr<AstArgument>> operands)
+            : function(function), args(std::move(operands)){};
 
     AstArgument* getArg(size_t idx) const {
         assert(idx >= 0 && idx < args.size() && "wrong argument");
@@ -300,7 +300,7 @@ public:
     }
 
     FunctorOp getFunction() const {
-        return op;
+        return function;
     }
 
     size_t getArity() const {
@@ -318,32 +318,32 @@ public:
 
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {
-        return isNumericFunctorOp(op);
+        return isNumericFunctorOp(function);
     }
 
     /** Check if the return value of this functor is a symbol type. */
     bool isSymbolic() const {
-        return isSymbolicFunctorOp(op);
+        return isSymbolicFunctorOp(function);
     }
 
     /** Check if the argument of this functor is a number type. */
     bool acceptsNumbers(size_t arg) const {
-        return functorOpAcceptsNumbers(arg, op);
+        return functorOpAcceptsNumbers(arg, function);
     }
 
     /** Check if the argument of this functor is a symbol type. */
     bool acceptsSymbols(size_t arg) const {
-        return functorOpAcceptsSymbols(arg, op);
+        return functorOpAcceptsSymbols(arg, function);
     }
 
     /** Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        if (isInfixFunctorOp(op)) {
+        if (isInfixFunctorOp(function)) {
             os << "(";
-            os << join(args, getSymbolForFunctorOp(op), print_deref<std::unique_ptr<AstArgument>>());
+            os << join(args, getSymbolForFunctorOp(function), print_deref<std::unique_ptr<AstArgument>>());
             os << ")";
         } else {
-            os << getSymbolForFunctorOp(op);
+            os << getSymbolForFunctorOp(function);
             os << "(";
             os << join(args, ",", print_deref<std::unique_ptr<AstArgument>>());
             os << ")";
@@ -356,7 +356,7 @@ public:
         for (auto& arg : args) {
             argsCopy.push_back(std::unique_ptr<AstArgument>(arg->clone()));
         }
-        auto res = new AstIntrinsicFunctor(op, std::move(argsCopy));
+        auto res = new AstIntrinsicFunctor(function, std::move(argsCopy));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -382,7 +382,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstIntrinsicFunctor*>(&node));
         const auto& other = static_cast<const AstIntrinsicFunctor&>(node);
-        return op == other.op && equal_targets(args, other.args);
+        return function == other.function && equal_targets(args, other.args);
     }
 };
 

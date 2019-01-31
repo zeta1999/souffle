@@ -8,18 +8,19 @@
 
 /************************************************************************
  *
- * @file RamConstAnalysis.cpp
+ * @file RamConstValue.cpp
  *
- * Implementation of RAM Constant Analysis
+ * Implementation of RAM Constant Value Analysis
  *
  ***********************************************************************/
 
-#include "RamConstAnalysis.h"
+#include "RamConstValue.h"
+#include "RamTranslationUnit.h"
 
 namespace souffle {
 
 /** run constant value analysis */ 
-void RamConstAnalysis::run(const RamTranslationUnit& translationUnit) {
+void RamConstValueAnalysis::run(const RamTranslationUnit& translationUnit) {
   
 }
 

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "RamConstValue.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
 
@@ -46,8 +47,10 @@ public:
 };
 
 class CreateIndicesTransformer : public RamTransformer {
+    RamConstValueAnalysis *rcva;
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
+        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>(); 
         return createIndices(*translationUnit.getProgram());
     }
 

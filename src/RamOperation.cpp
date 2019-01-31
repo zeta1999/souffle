@@ -35,14 +35,14 @@ std::unique_ptr<RamValue> getIndexElement(RamCondition* c, size_t& element, size
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamValue* rhs = binRelOp->getRHS();
-                if (lhs->getLevel() == level && (rhs->isConstant() || rhs->getLevel() < level)) {
+                if (lhs->getLevel() == level && rhs->getLevel() < level) {
                     element = lhs->getElement();
                     return binRelOp->takeRHS();
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamValue* lhs = binRelOp->getLHS();
-                if (rhs->getLevel() == level && (lhs->isConstant() || lhs->getLevel() < level)) {
+                if (rhs->getLevel() == level && (lhs->getLevel() < level)) {
                     element = rhs->getElement();
                     return binRelOp->takeLHS();
                 }

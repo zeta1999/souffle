@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamConstAnalysis.h
+ * @file RamConstValue.h
  *
  * Check whether a RAM value is constant
  *
@@ -16,20 +16,23 @@
 
 #pragma once
 
-#include <iostream>
+#include <set>
 
 #include "RamAnalysis.h"
+#include "RamValue.h"
 
 namespace souffle {
 
 /*
  * Class for a constant check
  */
-class RamConstAnalysis : RamAnalysis {
+class RamConstValueAnalysis : RamAnalysis {
     /** set of constant ram values */ 
     std::set<RamNode *> constRamValues; 
 
 public:
+    /** name of analysis */ 
+    static constexpr const char* name = "const-value-analysis";
 
     /** run const value analysis for a RAM translation unit */
     void run(const RamTranslationUnit& translationUnit); 

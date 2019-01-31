@@ -264,7 +264,7 @@ private:
 
 public:
     RamElementAccess(size_t l, size_t e, std::string n = "")
-            : RamValue(RN_ElementAccess, false), level(l), element(e), name(std::move(n)) {}
+            : RamValue(RN_ElementAccess), level(l), element(e), name(std::move(n)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -372,7 +372,7 @@ protected:
  */
 class RamAutoIncrement : public RamValue {
 public:
-    RamAutoIncrement() : RamValue(RN_AutoIncrement, false) {}
+    RamAutoIncrement() : RamValue(RN_AutoIncrement) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -507,7 +507,7 @@ class RamArgument : public RamValue {
     size_t number;
 
 public:
-    RamArgument(size_t number) : RamValue(RN_Argument, false), number(number) {}
+    RamArgument(size_t number) : RamValue(RN_Argument), number(number) {}
 
     /** Get argument number */
     size_t getArgCount() const {

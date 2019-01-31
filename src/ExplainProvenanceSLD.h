@@ -279,6 +279,38 @@ public:
         return explain(relName, tup, ruleNum, levelNum, depthLimit);
     }
 
+    std::vector<std::string> explainNegationGetVariables(std::string relName, size_t ruleNum) {
+        std::vector<std::string> variables;
+
+        // atom meta information stored for the current rule
+        auto atoms = info[std::make_pair(relName, ruleNum)];
+
+        // atoms[0] represents variables in the head atom
+        auto headVariables = splitString(atoms[0], ',');
+
+        // get body variables
+        std::vector<std::string> uniqueBodyVariables;
+        for (auto it = atoms.begin() + 1; it < atoms.end(); it++) {
+            auto atomRepresentation = splitString(*it, ',');
+
+            // atomRepresentation.begin() + 1 because the first element is the relation name of the atom
+            // which is not relevant for finding variables
+            for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
+                if (std::find(uniqueBodyVariables.begin(), uniqueBodyVariables.end(), *atomIt) ==
+                        uniqueBodyVariables.end()) {
+                    uniqueBodyVariables.push_back(*atomIt);
+                }
+            }
+        }
+
+        return uniqueBodyVariables;
+    }
+
+    std::unique_ptr<TreeNode> explainNegation(
+            std::string relName, std::vector<std::string> tuple, std::vector<std::string> bodyVariables) {
+        return nullptr;
+    }
+
     std::string getRule(std::string relName, size_t ruleNum) override {
         auto key = make_pair(relName, ruleNum);
 

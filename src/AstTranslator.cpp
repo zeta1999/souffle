@@ -1226,6 +1226,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
                     size_t argNum = std::find(uniqueVariables.begin(), uniqueVariables.end(), var) -
                                     uniqueVariables.begin();
                     query.push_back(std::make_unique<RamArgument>(argNum));
+
+                    searchCols = (searchCols << 1) + 1;
                 }
             });
 

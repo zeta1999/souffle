@@ -113,6 +113,11 @@ public:
     virtual std::unique_ptr<TreeNode> explainSubproof(
             std::string relName, RamDomain label, size_t depthLimit) = 0;
 
+    virtual std::vector<std::string> explainNegationGetVariables(std::string relName, size_t ruleNum) = 0;
+
+    virtual std::unique_ptr<TreeNode> explainNegation(
+            std::string relName, std::vector<std::string> tuple, std::vector<std::string> bodyVariables) = 0;
+
     virtual std::string getRule(std::string relName, size_t ruleNum) = 0;
 
     virtual std::string measureRelation(std::string relName) = 0;

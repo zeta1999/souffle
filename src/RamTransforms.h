@@ -47,10 +47,11 @@ public:
 };
 
 class CreateIndicesTransformer : public RamTransformer {
-    RamConstValueAnalysis *rcva;
+    RamConstValueAnalysis* rcva;
+
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
-        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>(); 
+        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
         return createIndices(*translationUnit.getProgram());
     }
 
@@ -67,7 +68,7 @@ public:
      * @param program the program to be processed
      * @return whether the program was modified
      */
-    static bool createIndices(RamProgram& program);
+    bool createIndices(RamProgram& program);
 };
 
 class ConvertExistenceChecksTransformer : public RamTransformer {

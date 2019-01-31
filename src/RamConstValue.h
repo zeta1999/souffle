@@ -27,20 +27,22 @@ namespace souffle {
  * Class for a constant check
  */
 class RamConstValueAnalysis : RamAnalysis {
-    /** set of constant ram values */ 
-    std::set<RamNode *> constRamValues; 
+    /** set of constant ram values */
+    std::set<RamNode*> constRamValues;
 
 public:
-    /** name of analysis */ 
+    RamConstValueAnalysis() = default;
+
+    /** name of analysis */
     static constexpr const char* name = "const-value-analysis";
 
     /** run const value analysis for a RAM translation unit */
-    void run(const RamTranslationUnit& translationUnit); 
+    void run(const RamTranslationUnit& translationUnit) override;
 
     /** constant value */
-    bool isConstant(RamValue *v) const {
-       return constRamValues.find(v) != constRamValues.end(); 
-    } 
+    bool isConstant(RamValue* v) const {
+        return constRamValues.find(v) != constRamValues.end();
+    }
 };
 
 }  // end of namespace souffle

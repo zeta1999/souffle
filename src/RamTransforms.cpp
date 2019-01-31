@@ -150,14 +150,16 @@ std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamValue* rhs = binRelOp->getRHS();
-                if (lhs->getLevel() == identifier && (rhs->isConstant() || rhs->getLevel() < identifier)) {
+                if (lhs->getLevel() == identifier &&
+                        (rcva->isConstant(rhs) || rhs->getLevel() < identifier)) {
                     element = lhs->getElement();
                     return binRelOp->takeRHS();
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamValue* lhs = binRelOp->getLHS();
-                if (rhs->getLevel() == identifier && (lhs->isConstant() || lhs->getLevel() < identifier)) {
+                if (rhs->getLevel() == identifier &&
+                        (rcva->isConstant(lhs) || lhs->getLevel() < identifier)) {
                     element = rhs->getElement();
                     return binRelOp->takeLHS();
                 }
@@ -343,7 +345,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     visitDepthFirst(scan->getOperation(), [&](const RamIndexScan& indexScan) {
                         if (isExistCheck) {
                             for (const RamValue* value : indexScan.getRangePattern()) {
-                                if (value != nullptr && !value->isConstant() &&
+                                if (value != nullptr && !rcva->isConstant(value) &&
                                         dependsOn(value, identifier)) {
                                     isExistCheck = false;
                                     break;
@@ -372,7 +374,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                                     for (auto* arg : intrinsicOp->getArguments()) {
                                         values.push_back(arg);
                                     }
-                                } else if (value != nullptr && !value->isConstant() &&
+                                } else if (value != nullptr && !rcva->isConstant(value) &&
                                            value->getLevel() == identifier) {
                                     isExistCheck = false;
                                     break;

@@ -1,5 +1,9 @@
 #include "TypeSystem.h"
 
+// Forward declarations
+class PrimitiveType;
+class ConstantType;
+
 class AnalysisType {
 public:
     // Check the type is not a bottom or top type
@@ -19,11 +23,14 @@ class ConstantType : AnalysisType {};
 class TypeLattice {
 public:
     // Initialise the type lattice from the types found in the type environment
-    TypeLattice(TypeEnvironment& env);
+    TypeLattice(const TypeEnvironment& env);
 
     // Find the highest common subtype (intersection)
     AnalysisType meet(AnalysisType first, AnalysisType second);
 
     // Find the lowest common supertype (union)
     AnalysisType join(AnalysisType first, AnalysisType second);
+
+    // Check if the first is a subtype of the second
+    bool isSubtype(AnalysisType first, AnalysisType second);
 }

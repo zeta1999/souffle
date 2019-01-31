@@ -52,6 +52,10 @@ public:
         return found->second;
     }
 
+private:
+    std::map<const AstArgument*, AnalysisType> argumentTypes;
+    TypeLattice lattice;
+
     /**
      * Analyse the given clause and computes for each contained argument a potential type. If the type is a
      * bottom or top type, no consistent typing can be found and the rule can not be properly typed.
@@ -62,10 +66,6 @@ public:
      */
     static std::map<const AstArgument*, AnalysisType> analyseTypes(
             const TypeLattice& lat, const AstClause& clause);
-
-private:
-    std::map<const AstArgument*, AnalysisType> argumentTypes;
-    TypeLattice lattice;
 };
 
 }  // end of namespace souffle

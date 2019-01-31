@@ -34,6 +34,7 @@ namespace souffle {
  */
 class RamTranslationUnit {
 private:
+    /** cached analyses */
     mutable std::map<std::string, std::unique_ptr<RamAnalysis>> analyses;
 
     /* Program RAM */
@@ -58,7 +59,7 @@ public:
         auto it = analyses.find(name);
         if (it == analyses.end()) {
             // analysis does not exist yet, create instance and run it.
-            // analyses[name] = std::make_unique<Analysis>();
+            analyses[name] = std::make_unique<Analysis>();
             analyses[name]->run(*this);
         }
         return dynamic_cast<Analysis*>(analyses[name].get());

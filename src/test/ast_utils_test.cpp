@@ -110,7 +110,7 @@ TEST(AstUtils, GroundedRecords) {
                  .decl r ( r : R )
                  .decl s ( r : N )
 
-                 s(x) :- r([x,y]).
+                 s(x) :- r(R [x,y]).
 
             )",
             sym, e, d);
@@ -120,7 +120,7 @@ TEST(AstUtils, GroundedRecords) {
     auto clause = program.getRelation("s")->getClause(0);
 
     // check construction
-    EXPECT_EQ("s(x) :- \n   r([x,y]).", toString(*clause));
+    EXPECT_EQ("s(x) :- \n   r(R[x,y]).", toString(*clause));
 
     // obtain groundness
     auto isGrounded = getGroundedTerms(*clause);
@@ -339,8 +339,9 @@ TEST(AstUtils, GroundTermPropagation) {
             R"(
                 .type D
                 .decl p(a:D,b:D)
+                .type R = [ x : D, y : D ]
 
-                p(a,b) :- p(x,y), r = [x,y], s = r, s = [w,v], [w,v] = [a,b].
+                p(a,b) :- p(x,y), r = R [x,y], s = r, s = R [w,v], R [w,v] = R [a,b].
             )",
             sym, e, d);
 
@@ -349,15 +350,16 @@ TEST(AstUtils, GroundTermPropagation) {
     // check types in clauses
     AstClause* a = program.getRelation("p")->getClause(0);
 
-    EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = [x,y],\n   s = r,\n   s = [w,v],\n   [w,v] = [a,b].",
+    EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = R[x,y],\n   s = r,\n   s = R[w,v],\n   R[w,v] = R[a,b].",
             toString(*a));
 
     std::unique_ptr<AstClause> res = ResolveAliasesTransformer::resolveAliases(*a);
     std::unique_ptr<AstClause> cleaned = ResolveAliasesTransformer::removeTrivialEquality(*res);
 
     EXPECT_EQ(
-            "p(x,y) :- \n   p(x,y),\n   [x,y] = [x,y],\n   [x,y] = [x,y],\n   [x,y] = [x,y],\n   [x,y] = "
-            "[x,y].",
+            "p(x,y) :- \n   p(x,y),\n   R[x,y] = R[x,y],\n   R[x,y] = R[x,y],\n   R[x,y] = R[x,y],\n   "
+            "R[x,y] = "
+            "R[x,y].",
             toString(*res));
     EXPECT_EQ("p(x,y) :- \n   p(x,y).", toString(*cleaned));
 }
@@ -399,14 +401,15 @@ TEST(AstUtils, ResolveGroundedAliases) {
             R"(
                 .type D
                 .decl p(a:D,b:D)
+                .type R = [ x : D, y : D ]
 
-                p(a,b) :- p(x,y), r = [x,y], s = r, s = [w,v], [w,v] = [a,b].
+                p(a,b) :- p(x,y), r = R [x,y], s = r, s = R [w,v], R [w,v] = R [a,b].
             )",
             sym, e, d);
 
     AstProgram& program = *tu->getProgram();
 
-    EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = [x,y],\n   s = r,\n   s = [w,v],\n   [w,v] = [a,b].",
+    EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = R[x,y],\n   s = r,\n   s = R[w,v],\n   R[w,v] = R[a,b].",
             toString(*program.getRelation("p")->getClause(0)));
 
     std::make_unique<ResolveAliasesTransformer>()->apply(*tu);

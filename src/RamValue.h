@@ -60,8 +60,7 @@ private:
 
 public:
     template <typename... Args>
-    RamIntrinsicOperator(FunctorOp op, Args... args)
-            : RamValue(RN_IntrinsicOperator), operation(op) {
+    RamIntrinsicOperator(FunctorOp op, Args... args) : RamValue(RN_IntrinsicOperator), operation(op) {
         std::unique_ptr<RamValue> tmp[] = {std::move(args)...};
         for (auto& cur : tmp) {
             arguments.push_back(std::move(cur));
@@ -69,8 +68,7 @@ public:
     }
 
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args)
-            : RamValue(RN_IntrinsicOperator), 
-              operation(op), arguments(std::move(args)) {}
+            : RamValue(RN_IntrinsicOperator), operation(op), arguments(std::move(args)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -166,8 +164,7 @@ private:
 public:
     RamUserDefinedOperator(
             const std::string& n, const std::string& t, std::vector<std::unique_ptr<RamValue>> args)
-            : RamValue(RN_UserDefinedOperator),
-              arguments(std::move(args)), name(n), type(t) {}
+            : RamValue(RN_UserDefinedOperator), arguments(std::move(args)), name(n), type(t) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -417,9 +414,7 @@ private:
     std::vector<std::unique_ptr<RamValue>> arguments;
 
 public:
-    RamPack(std::vector<std::unique_ptr<RamValue>> args)
-            : RamValue(RN_Pack),
-              arguments(std::move(args)) {}
+    RamPack(std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_Pack), arguments(std::move(args)) {}
 
     /** Get values */
     // TODO (#541): remove getter

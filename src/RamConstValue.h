@@ -28,7 +28,7 @@ namespace souffle {
  */
 class RamConstValueAnalysis : public RamAnalysis {
     /** set of constant ram values */
-    std::set<const RamNode*> constRamValues;
+    std::set<const RamValue*> constRamValues;
 
 public:
     RamConstValueAnalysis() = default;
@@ -38,6 +38,9 @@ public:
 
     /** run const value analysis for a RAM translation unit */
     void run(const RamTranslationUnit& translationUnit) override;
+
+    /** print the analysis result in HTML format */
+    void print(std::ostream& os) const override;
 
     /** constant value */
     bool isConstant(const RamValue* v) const {

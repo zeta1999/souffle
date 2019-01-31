@@ -19,6 +19,7 @@
 #pragma once
 
 #include "AstNode.h"
+#include "AstType.h"
 #include "AstTypes.h"
 #include "FunctorOps.h"
 #include "SymbolTable.h"
@@ -478,15 +479,15 @@ class AstRecordInit : public AstArgument {
 public:
     AstRecordInit() = default;
 
-    AstRecordInit(const std::string& type) : type(type) {}
+    AstRecordInit(const AstTypeIdentifier& type) : type(type) {}
 
     ~AstRecordInit() override = default;
 
-    void setType(const std::string& t) {
+    void setType(const AstTypeIdentifier& t) {
         type = t;
     }
 
-    std::string getType() {
+    AstTypeIdentifier getType() const {
         return type;
     }
 
@@ -499,7 +500,7 @@ public:
     }
 
     void print(std::ostream& os) const override {
-        os << type << "[" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << "]";
+        os << "*" << type << "[" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << "]";
     }
 
     /** Creates a clone of this AST sub-structure */
@@ -533,7 +534,7 @@ protected:
     std::vector<std::unique_ptr<AstArgument>> args;
 
     /** The type of record being construted */
-    std::string type;
+    AstTypeIdentifier type;
 
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {

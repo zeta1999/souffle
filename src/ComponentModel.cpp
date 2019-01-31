@@ -466,6 +466,14 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
                 }
             }
         });
+
+        // rename type information in record constructor
+        visitDepthFirst(node, [&](const AstRecordInit& record) {
+            auto pos = typeNameMapping.find(record.getType());
+            if (pos != typeNameMapping.end()) {
+                const_cast<AstRecordInit&>(record).setType(pos->second);
+            }
+        });
     };
 
     // rename attribute type in headers and atoms in clauses of the relation

@@ -673,12 +673,13 @@ arg
         $$ = new AstIntrinsicFunctor(FunctorOp::LNOT, std::unique_ptr<AstArgument>($2));
         $$->setSrcLoc(@$);
     }
-  | LBRACKET RBRACKET {
-        $$ = new AstRecordInit();
+  | IDENT LBRACKET RBRACKET {
+        $$ = new AstRecordInit($1);
         $$->setSrcLoc(@$);
     }
-  | LBRACKET recordlist RBRACKET {
-        $$ = $2;
+  | IDENT LBRACKET recordlist RBRACKET {
+        $3->setType($1);
+        $$ = $3;
         $$->setSrcLoc(@$);
     }
   | NIL {

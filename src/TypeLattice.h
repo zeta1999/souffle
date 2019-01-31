@@ -6,10 +6,10 @@ public:
     bool isValid();
 
     // Get the primitive type that is a supertype of this
-    PrimtiveType getPrimitive(); // This will fail on the top type
+    PrimtiveType getPrimitive();  // This will fail on the top type
 
     // Get the constant type that is a subtype of this
-    ConstantType getConstant(); // This will fail on the bottom type
+    ConstantType getConstant();  // This will fail on the bottom type
 };
 
 class PrimitiveType : AnalysisType {};

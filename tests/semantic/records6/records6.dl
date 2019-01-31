@@ -9,5 +9,5 @@
 .output AccessPathShouldBeRebased2()
 
 AccessPathShouldBeRebased2(?newAp , ?from, ?to) :-
-   AccessPathShouldBeRebased2([ ?from, [ [ ?rest, ?nextFld ], ?lastFld ] ], ?from, ?to),
-   ?newAp = [ ?from, [ ?rest, ?nextFld ] ].
+   AccessPathShouldBeRebased2(*AccessPath[ ?from, *AccessPathSuffix[ *AccessPathSuffix[ ?rest, ?nextFld ], ?lastFld ] ], ?from, ?to),
+   ?newAp = *AccessPath[ ?from, *AccessPathSuffix[ ?rest, ?nextFld ] ].

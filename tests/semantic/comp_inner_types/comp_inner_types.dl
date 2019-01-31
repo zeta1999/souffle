@@ -16,10 +16,10 @@
 
     // declare a relation dependent on these inner types
     .decl inner_rel(record: InnerRecord, union: InnerUnion)
-    inner_rel(["x", 1], 1).
+    inner_rel(*InnerRecord["x", 1], 1).
 
     .decl out0(x: T1, y: T2, z: T3)
-    out0(x,y,z) :- inner_rel([x,y],z).
+    out0(x,y,z) :- inner_rel(*InnerRecord[x,y],z).
     .output out0()
 }
 
@@ -35,9 +35,9 @@
 
 // depends on the inner component types
 .decl outer_rel1(x: comp.InnerRecord)
-outer_rel1(["x", 1]).
+outer_rel1(*comp.InnerRecord["x", 1]).
 .decl out1(x: comp.T1, y: comp.T2)
-out1(x,y) :- outer_rel1([x,y]).
+out1(x,y) :- outer_rel1(*comp.InnerRecord[x,y]).
 .output out1()
 
 // depends on the inner component types
@@ -49,9 +49,9 @@ out2(x) :- outer_rel2(x).
 
 // should be independent of the inner types in the component
 .decl outer_rel3(x: InnerRecord)
-outer_rel3([0,1]).
+outer_rel3(*InnerRecord[0,1]).
 .decl out3(x: T1, y: T1)
-out3(x,y) :- outer_rel3([x,y]).
+out3(x,y) :- outer_rel3(*InnerRecord[x,y]).
 .output out3()
 
 // should be independent of the inner types in the component

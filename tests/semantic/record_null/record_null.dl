@@ -6,11 +6,10 @@
 
 // this is ok
 a("N",nil,nil).
-a("N",nil,["N",nil]).
-a("N",nil,["N",["N",nil]]).
+a("N",nil,*L["N",nil]).
+a("N",nil,*L["N",*L["N",nil]]).
 
 // this is not
 a(nil,nil,nil).
-a("N",nil,[nil,nil]).
-a("N",nil,["N",[nil,nil]]).
-
+a("N",nil,*L[nil,nil]).
+a("N",nil,*L["N",*L[nil,nil]]).

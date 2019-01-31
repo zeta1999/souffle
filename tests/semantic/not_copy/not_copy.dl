@@ -12,7 +12,7 @@
 // A
 .decl A(a:X)
 
-A(["a"]).
+A(*X["a"]).
 
 // B
 .decl B(b:X)
@@ -21,10 +21,10 @@ A(["a"]).
 // `B(x) :- x = ["foo"], A(x).` is going to be transformed to
 // `B(["foo"]) :- A(["foo"]).` after constant propagation.
 
-B(x) :- x = ["foo"], A(x).
+B(x) :- x = *X["foo"], A(x).
 
 // C
 .decl C(c:symbol)
 .output C()
 
-C(x) :- B([x]).
+C(x) :- B(*X[x]).

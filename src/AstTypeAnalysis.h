@@ -18,12 +18,15 @@
 
 #include "AstAnalysis.h"
 #include "TypeSystem.h"
+#include "AstTypeEnvironmentAnalysis.h"
+#include "TypeLattice.h"
 #include <cassert>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <utility>
 #include <vector>
+#include <ostream>
 
 namespace souffle {
 
@@ -41,31 +44,28 @@ public:
     void print(std::ostream& os) const override;
 
     /**
-     * Get the computed types for the given argument.
+     * Get the computed type for the given argument.
      */
-    TypeSet getTypes(const AstArgument* argument) const {
+    AnalysisType getType(const AstArgument* argument) const {
         auto found = argumentTypes.find(argument);
         assert(found != argumentTypes.end());
         return found->second;
     }
 
     /**
-     * Analyse the given clause and computes for each contained argument
-     * a set of potential types. If the set associated to an argument is empty,
-     * no consistent typing can be found and the rule can not be properly typed.
+     * Analyse the given clause and computes for each contained argument a potential type. If the type is a
+     * bottom or top type, no consistent typing can be found and the rule can not be properly typed.
      *
-     * @param env a typing environment describing the set of available types
+     * @param lat a lattice containing available types
      * @param clause the clause to be typed
-     * @param program the program
-     * @return a map mapping each contained argument to a a set of types
+     * @return a map mapping each contained argument to a type
      */
-    static std::map<const AstArgument*, TypeSet> analyseTypes(const TypeEnvironment& env,
-            const AstClause& clause, const AstProgram* program, std::ostream* logs = nullptr);
+    static std::map<const AstArgument*, AnalysisType> analyseTypes(
+            const TypeLattice& lat, const AstClause& clause);
 
 private:
-    std::map<const AstArgument*, TypeSet> argumentTypes;
-    std::vector<std::unique_ptr<AstClause>> annotatedClauses;
-    std::stringstream analysisLogs;
+    std::map<const AstArgument*, AnalysisType> argumentTypes;
+    TypeLattice lattice;
 };
 
 }  // end of namespace souffle

@@ -279,8 +279,15 @@ public:
         return explain(relName, tup, ruleNum, levelNum, depthLimit);
     }
 
-    std::vector<std::string> explainNegationGetVariables(std::string relName, size_t ruleNum) {
+    std::vector<std::string> explainNegationGetVariables(
+            std::string relName, std::vector<std::string> args, size_t ruleNum) {
         std::vector<std::string> variables;
+
+        // check that the tuple actually doesn't exist
+        if (findTuple(relName, argsToNums(relName, args)) != std::make_pair(-1, -1)) {
+            // return a sentinel value
+            return std::vector<std::string>({"@"});
+        }
 
         // atom meta information stored for the current rule
         auto atoms = info[std::make_pair(relName, ruleNum)];
@@ -296,8 +303,7 @@ public:
             // atomRepresentation.begin() + 1 because the first element is the relation name of the atom
             // which is not relevant for finding variables
             for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
-                if (std::find(uniqueBodyVariables.begin(), uniqueBodyVariables.end(), *atomIt) ==
-                        uniqueBodyVariables.end()) {
+                if (!contains(uniqueBodyVariables, *atomIt) && !contains(headVariables, *atomIt)) {
                     uniqueBodyVariables.push_back(*atomIt);
                 }
             }
@@ -306,9 +312,94 @@ public:
         return uniqueBodyVariables;
     }
 
-    std::unique_ptr<TreeNode> explainNegation(
-            std::string relName, std::vector<std::string> tuple, std::vector<std::string> bodyVariables) {
-        return nullptr;
+    std::unique_ptr<TreeNode> explainNegation(std::string relName, size_t ruleNum,
+            const std::vector<std::string>& tuple, std::map<std::string, std::string>& bodyVariables) {
+        // set up return and error vectors for subroutine calling
+        std::vector<RamDomain> ret;
+        std::vector<bool> err;
+
+        std::vector<std::string> uniqueVariables;
+
+        // atom meta information stored for the current rule
+        auto atoms = info[std::make_pair(relName, ruleNum)];
+
+        // atoms[0] represents variables in the head atom
+        auto headVariables = splitString(atoms[0], ',');
+
+        uniqueVariables.insert(uniqueVariables.end(), headVariables.begin(), headVariables.end());
+
+        // get body variables
+        for (auto it = atoms.begin() + 1; it < atoms.end(); it++) {
+            auto atomRepresentation = splitString(*it, ',');
+
+            // atomRepresentation.begin() + 1 because the first element is the relation name of the atom
+            // which is not relevant for finding variables
+            for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
+                if (!contains(uniqueVariables, *atomIt) && !contains(headVariables, *atomIt)) {
+                    uniqueVariables.push_back(*atomIt);
+                }
+            }
+        }
+
+        // TODO: this only works with numbers at the moment
+        std::vector<RamDomain> args;
+
+        size_t varCounter = 0;
+        for (auto x : tuple) {
+            std::cout << x << std::endl;
+            args.push_back(std::stoi(x));
+            varCounter++;
+        }
+
+        while (varCounter < uniqueVariables.size()) {
+            args.push_back(std::stoi(bodyVariables[uniqueVariables[varCounter]]));
+            varCounter++;
+        }
+
+        // execute subroutine to get subproofs
+        prog.executeSubroutine(
+                relName + "_" + std::to_string(ruleNum) + "_negation_subproof", args, ret, err);
+
+        // construct tree nodes
+        std::stringstream joinedArgsStr;
+        joinedArgsStr << join(tuple, ",");
+        auto internalNode = std::make_unique<InnerNode>(
+                relName + "(" + joinedArgsStr.str() + ")", "(R" + std::to_string(ruleNum) + ")");
+
+        std::cout << "here! " << bodyVariables << std::endl;
+
+        for (size_t i = 1; i < atoms.size(); i++) {
+            // store passed in values of atom
+            std::vector<std::string> atomValues;
+
+            auto atom = split(atoms[i], ',');
+
+            std::cout << "atom: " << atom << std::endl;
+
+            for (size_t j = 1; j < atom.size(); j++) {
+                if (contains(headVariables, atom[j])) {
+                    atomValues.push_back(
+                            tuple[std::find(headVariables.begin(), headVariables.end(), atom[j]) -
+                                    headVariables.begin()]);
+                } else {
+                    std::cout << atom[j] << std::endl;
+                    atomValues.push_back(bodyVariables[atom[j]]);
+                }
+            }
+
+            std::stringstream leafNodeText;
+            leafNodeText << atom[0] << "(" << join(atomValues, ",") << ")";
+            if (contains(ret, i + 1)) {
+                leafNodeText << " ✓";
+            } else {
+                leafNodeText << " x";
+            }
+
+            internalNode->add_child(std::make_unique<LeafNode>(leafNodeText.str()));
+            internalNode->setSize(internalNode->getSize() + 1);
+        }
+
+        return std::move(internalNode);
     }
 
     std::string getRule(std::string relName, size_t ruleNum) override {

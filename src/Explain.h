@@ -267,21 +267,40 @@ public:
                 printTree(std::move(t));
             } else if (command[0] == "explainnegation") {
                 std::pair<std::string, std::vector<std::string>> query;
-                if (command.size() == 3) {
+                if (command.size() == 2) {
                     query = parseTuple(command[1]);
                 } else {
                     printStr(
                             "Usage: explainnegation relation_name(\"<string element1>\", <number element2>, "
-                            "...) <rule number>\n");
+                            "...)\n");
                     continue;
                 }
-                auto variables = prov.explainNegationGetVariables(query.first, std::stoi(query[2]));
+                // TODO: print rules and allow user to make a choice
+                std::cout << "Pick a rule number: ";
 
-                // this doesn't work with ncurses yet!!
-                for (auto var : variables) {
-                    std::cout << "Pick a value for " << var << ": ";
+                std::string ruleNum;
+                getline(std::cin, ruleNum);
+                auto variables =
+                        prov.explainNegationGetVariables(query.first, query.second, std::stoi(ruleNum));
+
+                if (variables.size() == 1 && variables[0] == "@") {
+                    printStr("The tuple exists, cannot explain negation of it!\n");
+                    continue;
                 }
 
+                // this doesn't work with ncurses yet!!
+                std::map<std::string, std::string> varValues;
+                for (auto var : variables) {
+                    std::cout << "Pick a value for " << var << ": ";
+                    std::string varValue;
+                    getline(std::cin, varValue);
+                    varValues[var] = varValue;
+                }
+
+                std::cout << query.second << std::endl;
+                std::cout << varValues << std::endl;
+
+                printTree(prov.explainNegation(query.first, std::stoi(ruleNum), query.second, varValues));
             } else if (command[0] == "rule" && command.size() == 2) {
                 auto query = split(command[1], ' ');
                 if (query.size() != 2) {

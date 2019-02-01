@@ -88,11 +88,11 @@ souffle_sources = \
               AstUtils.cpp          AstUtils.h          \
               AstVisitor.h                              \
               BinaryConstraintOps.h                     \
-              BinaryFunctorOps.h                        \
               ComponentModel.cpp    ComponentModel.h    \
               Constraints.h                             \
               DebugReport.cpp       DebugReport.h       \
               EventProcessor.h                          \
+              FunctorOps.h                              \
               Global.cpp            Global.h            \
               GraphUtils.h                              \
               IODirectives.h                            \
@@ -128,15 +128,13 @@ souffle_sources = \
               ReadStream.h                              \
               ReadStreamCSV.h                           \
               ReorderLiteralsTransformer.cpp            \
-              ResolveAliasesTransformer.cpp	            \
+              ResolveAliasesTransformer.cpp             \
               SignalHandler.h                           \
               SrcLocation.cpp    SrcLocation.h          \
               StringPool.h                              \
               Synthesiser.cpp       Synthesiser.h       \
               SynthesiserRelation.cpp SynthesiserRelation.h \
-              TernaryFunctorOps.h                       \
               TypeSystem.cpp        TypeSystem.h        \
-              UnaryFunctorOps.h                         \
               WriteStream.h                             \
               WriteStreamCSV.h                          \
               parser.cc             parser.hh           \
@@ -220,7 +218,7 @@ CLEANFILES = $(BUILT_SOURCES)  parser.cc scanner.cc parser.hh stack.hh
 
 # run Bison
 $(builddir)/parser.hh: $(srcdir)/parser.yy
-	$(BISON) -Wall -Werror -v -d -o parser.cc $(srcdir)/parser.yy
+	$(BISON) -Wall -Werror -Wno-error=deprecated -Wno-error=other -v -d -o parser.cc $(srcdir)/parser.yy
 
 # and FLEX
 $(builddir)/scanner.cc: $(srcdir)/scanner.ll

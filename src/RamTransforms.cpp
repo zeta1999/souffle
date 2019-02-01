@@ -294,33 +294,33 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
             return modified;
         }
 
-        bool dependsOn(const RamCondition* condition, const size_t identifier) const {
-            if (const RamBinaryRelation* binRel = dynamic_cast<const RamBinaryRelation*>(condition)) {
-                std::vector<const RamValue*> queue = {binRel->getLHS(), binRel->getRHS()};
-                while (!queue.empty()) {
-                    const RamValue* val = queue.back();
-                    queue.pop_back();
-                    if (const RamValue* elemAccess = dynamic_cast<const RamElementAccess*>(val)) {
-                        if (elemAccess->getLevel() == identifier) {
-                            return true;
-                        }
-                    } else if (const RamUnaryOperator* unaryOp = dynamic_cast<const RamUnaryOperator*>(val)) {
-                        queue.push_back(unaryOp->getValue());
-                    } else if (const RamUserDefinedOperator* userDefinedOp =
-                                       dynamic_cast<const RamUserDefinedOperator*>(val)) {
-                        for (const RamValue* arg : userDefinedOp->getArguments()) {
-                            queue.push_back(arg);
-                        }
-                    } else if (const RamBinaryOperator* binOp = dynamic_cast<const RamBinaryOperator*>(val)) {
-                        queue.push_back(binOp->getLHS());
-                        queue.push_back(binOp->getRHS());
-                    } else if (const RamTernaryOperator* ternaryOp =
-                                       dynamic_cast<const RamTernaryOperator*>(val)) {
-                        queue.push_back(ternaryOp->getArg(0));
-                        queue.push_back(ternaryOp->getArg(1));
-                        queue.push_back(ternaryOp->getArg(2));
+        bool dependsOn(const RamValue* value, const size_t identifier) const {
+            std::vector<const RamValue*> queue = {value};
+            while (!queue.empty()) {
+                const RamValue* val = queue.back();
+                queue.pop_back();
+                if (const RamValue* elemAccess = dynamic_cast<const RamElementAccess*>(val)) {
+                    if (elemAccess->getLevel() == identifier) {
+                        return true;
+                    }
+                } else if (const RamIntrinsicOperator* intrinsicOp =
+                                   dynamic_cast<const RamIntrinsicOperator*>(val)) {
+                    for (const RamValue* arg : intrinsicOp->getArguments()) {
+                        queue.push_back(arg);
+                    }
+                } else if (const RamUserDefinedOperator* userDefinedOp =
+                                   dynamic_cast<const RamUserDefinedOperator*>(val)) {
+                    for (const RamValue* arg : userDefinedOp->getArguments()) {
+                        queue.push_back(arg);
                     }
                 }
+            }
+            return false;
+        }
+
+        bool dependsOn(const RamCondition* condition, const size_t identifier) const {
+            if (const RamBinaryRelation* binRel = dynamic_cast<const RamBinaryRelation*>(condition)) {
+                return dependsOn(binRel->getLHS(), identifier) || dependsOn(binRel->getRHS(), identifier);
             }
             return false;
         }
@@ -344,7 +344,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                         if (isExistCheck) {
                             for (const RamValue* value : indexScan.getRangePattern()) {
                                 if (value != nullptr && !value->isConstant() &&
-                                        value->getLevel() == identifier) {
+                                        dependsOn(value, identifier)) {
                                     isExistCheck = false;
                                     break;
                                 }
@@ -367,10 +367,11 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                                 if (const RamPack* pack = dynamic_cast<const RamPack*>(value)) {
                                     const std::vector<RamValue*> args = pack->getArguments();
                                     values.insert(values.end(), args.begin(), args.end());
-                                } else if (const RamBinaryOperator* binOp =
-                                                   dynamic_cast<const RamBinaryOperator*>(value)) {
-                                    values.push_back(binOp->getLHS());
-                                    values.push_back(binOp->getRHS());
+                                } else if (const auto* intrinsicOp =
+                                                   dynamic_cast<const RamIntrinsicOperator*>(value)) {
+                                    for (auto* arg : intrinsicOp->getArguments()) {
+                                        values.push_back(arg);
+                                    }
                                 } else if (value != nullptr && !value->isConstant() &&
                                            value->getLevel() == identifier) {
                                     isExistCheck = false;

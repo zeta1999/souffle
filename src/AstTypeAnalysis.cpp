@@ -422,35 +422,11 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             addConstraint(isSubtypeOf(rhs, lhs));
         }
 
-        // unary functor
-        void visitUnaryFunctor(const AstUnaryFunctor& fun) override {
-            auto out = getVar(fun);
-            auto in = getVar(fun.getOperand());
-
-            // add a constraint for the return type of the unary functor
-            if (fun.isNumerical()) {
-                addConstraint(isSubtypeOf(out, env.getNumberType()));
-            }
-            if (fun.isSymbolic()) {
-                addConstraint(isSubtypeOf(out, env.getSymbolType()));
-            }
-
-            // add a constraint for the argument type of the unary functor
-            if (fun.acceptsNumbers()) {
-                addConstraint(isSubtypeOf(in, env.getNumberType()));
-            }
-            if (fun.acceptsSymbols()) {
-                addConstraint(isSubtypeOf(in, env.getSymbolType()));
-            }
-        }
-
-        // binary functor
-        void visitBinaryFunctor(const AstBinaryFunctor& fun) override {
+        // intrinsic functor
+        void visitIntrinsicFunctor(const AstIntrinsicFunctor& fun) override {
             auto cur = getVar(fun);
-            auto lhs = getVar(fun.getLHS());
-            auto rhs = getVar(fun.getRHS());
 
-            // add a constraint for the return type of the binary functor
+            // add a constraint for the return type of the functor
             if (fun.isNumerical()) {
                 addConstraint(isSubtypeOf(cur, env.getNumberType()));
             }
@@ -458,61 +434,15 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 addConstraint(isSubtypeOf(cur, env.getSymbolType()));
             }
 
-            // add a constraint for the first argument of the binary functor
-            if (fun.acceptsNumbers(0)) {
-                addConstraint(isSubtypeOf(lhs, env.getNumberType()));
-            }
-            if (fun.acceptsSymbols(0)) {
-                addConstraint(isSubtypeOf(lhs, env.getSymbolType()));
-            }
-
-            // add a constraint for the second argument of the binary functor
-            if (fun.acceptsNumbers(1)) {
-                addConstraint(isSubtypeOf(rhs, env.getNumberType()));
-            }
-            if (fun.acceptsSymbols(1)) {
-                addConstraint(isSubtypeOf(rhs, env.getSymbolType()));
-            }
-        }
-
-        // ternary functor
-        void visitTernaryFunctor(const AstTernaryFunctor& fun) override {
-            auto cur = getVar(fun);
-
-            auto a0 = getVar(fun.getArg(0));
-            auto a1 = getVar(fun.getArg(1));
-            auto a2 = getVar(fun.getArg(2));
-
-            // add a constraint for the return type of the ternary functor
-            if (fun.isNumerical()) {
-                addConstraint(isSubtypeOf(cur, env.getNumberType()));
-            }
-            if (fun.isSymbolic()) {
-                addConstraint(isSubtypeOf(cur, env.getSymbolType()));
-            }
-
-            // add a constraint for the first argument of the ternary functor
-            if (fun.acceptsNumbers(0)) {
-                addConstraint(isSubtypeOf(a0, env.getNumberType()));
-            }
-            if (fun.acceptsSymbols(0)) {
-                addConstraint(isSubtypeOf(a0, env.getSymbolType()));
-            }
-
-            // add a constraint for the second argument of the ternary functor
-            if (fun.acceptsNumbers(1)) {
-                addConstraint(isSubtypeOf(a1, env.getNumberType()));
-            }
-            if (fun.acceptsSymbols(1)) {
-                addConstraint(isSubtypeOf(a1, env.getSymbolType()));
-            }
-
-            // add a constraint for the third argument of the ternary functor
-            if (fun.acceptsNumbers(2)) {
-                addConstraint(isSubtypeOf(a2, env.getNumberType()));
-            }
-            if (fun.acceptsSymbols(2)) {
-                addConstraint(isSubtypeOf(a2, env.getSymbolType()));
+            // add a constraint for each argument of the functor
+            for (size_t i = 0; i < fun.getArity(); i++) {
+                auto arg = getVar(fun.getArg(i));
+                if (fun.acceptsNumbers(i)) {
+                    addConstraint(isSubtypeOf(arg, env.getNumberType()));
+                }
+                if (fun.acceptsSymbols(i)) {
+                    addConstraint(isSubtypeOf(arg, env.getSymbolType()));
+                }
             }
         }
 

@@ -16,12 +16,10 @@
 
 #pragma once
 
-#include "BinaryFunctorOps.h"
+#include "FunctorOps.h"
 #include "RamNode.h"
 #include "RamRelation.h"
 #include "SymbolTable.h"
-#include "TernaryFunctorOps.h"
-#include "UnaryFunctorOps.h"
 
 #include <algorithm>
 #include <array>
@@ -56,78 +54,118 @@ public:
     RamValue* clone() const override = 0;
 };
 
+// TODO (azreika): create a common abstract base class for RAM operators
+
 /**
- * Unary function
+ * Operator that represents an intrinsic (built-in) functor
  */
-// TODO (#541): have a single n-ary function
-class RamUnaryOperator : public RamValue {
+class RamIntrinsicOperator : public RamValue {
 private:
     /** Operation symbol */
-    UnaryOp operation;
+    FunctorOp operation;
 
-    /** Argument of unary function */
-    std::unique_ptr<RamValue> argument;
+    /** Arguments of the function */
+    std::vector<std::unique_ptr<RamValue>> arguments;
 
 public:
-    RamUnaryOperator(UnaryOp op, std::unique_ptr<RamValue> v)
-            : RamValue(RN_UnaryOperator, v->isConstant()), operation(op), argument(std::move(v)) {}
+    template <typename... Args>
+    RamIntrinsicOperator(FunctorOp op, Args... args)
+            : RamValue(RN_IntrinsicOperator,
+                      all_of(args...,
+                              [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
+              operation(op) {
+        std::unique_ptr<RamValue> tmp[] = {std::move(args)...};
+        for (auto& cur : tmp) {
+            arguments.push_back(std::move(cur));
+        }
+    }
+
+    RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args)
+            : RamValue(RN_IntrinsicOperator,
+                      all_of(args, [](const std::unique_ptr<RamValue>& a) { return a && a->isConstant(); })),
+              operation(op), arguments(std::move(args)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << getSymbolForUnaryOp(operation) << "(";
-        argument->print(os);
-        os << ")";
+        if (isInfixFunctorOp(operation)) {
+            os << "(";
+            os << join(arguments, getSymbolForFunctorOp(operation), print_deref<std::unique_ptr<RamValue>>());
+            os << ")";
+        } else {
+            os << getSymbolForFunctorOp(operation);
+            os << "(";
+            os << join(arguments, ",", print_deref<std::unique_ptr<RamValue>>());
+            os << ")";
+        }
     }
 
-    /** Get Argument */
-    // TODO (#541): rename to getArgument()
-    const RamValue* getValue() const {
-        return argument.get();
-    }
-    const RamValue& getArgument() const {
-        return *argument;
-    }
-
-    /** Get operator */
-    UnaryOp getOperator() const {
+    FunctorOp getOperator() const {
         return operation;
+    }
+
+    /** Get values */
+    std::vector<RamValue*> getArguments() const {
+        return toPtrVector(arguments);
+    }
+
+    const RamValue* getArgument(size_t i) const {
+        assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
+        return arguments[i].get();
+    }
+
+    size_t getArgCount() const {
+        return arguments.size();
     }
 
     /** Get level */
     // TODO (#541): move to an analysis
     size_t getLevel() const override {
-        return argument->getLevel();
+        size_t level = 0;
+        for (const auto& arg : arguments) {
+            if (arg != nullptr) {
+                level = std::max(level, arg->getLevel());
+            }
+        }
+        return level;
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(argument.get());
+        std::vector<const RamNode*> res;
+        for (const auto& cur : arguments) {
+            res.push_back(cur.get());
+        }
+        return res;
     }
 
-    /** Create clone */
-    RamUnaryOperator* clone() const override {
-        RamUnaryOperator* res = new RamUnaryOperator(operation, std::unique_ptr<RamValue>(argument->clone()));
+    RamIntrinsicOperator* clone() const override {
+        std::vector<std::unique_ptr<RamValue>> argsCopy;
+        for (auto& arg : arguments) {
+            argsCopy.push_back(std::unique_ptr<RamValue>(arg->clone()));
+        }
+        auto res = new RamIntrinsicOperator(operation, std::move(argsCopy));
         return res;
     }
 
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
-        argument = map(std::move(argument));
+        for (auto& arg : arguments) {
+            arg = map(std::move(arg));
+        }
     }
 
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamUnaryOperator*>(&node));
-        const auto& other = static_cast<const RamUnaryOperator&>(node);
-        return getOperator() == other.getOperator() && getArgument() == other.getArgument();
+        assert(nullptr != dynamic_cast<const RamIntrinsicOperator*>(&node));
+        const auto& other = static_cast<const RamIntrinsicOperator&>(node);
+        return getOperator() == other.getOperator() && equal_targets(arguments, other.arguments);
     }
 };
 
 /**
- * Unary user-defined function
+ * Operator that represents an extrinsic (user-defined) functor
  */
-// TODO (#541): have a single n-ary function
 class RamUserDefinedOperator : public RamValue {
 private:
     /** Argument of unary function */
@@ -159,7 +197,8 @@ public:
         return toPtrVector(arguments);
     }
 
-    const RamValue* getArg(size_t i) const {
+    const RamValue* getArgument(size_t i) const {
+        assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return arguments[i].get();
     }
 
@@ -180,7 +219,7 @@ public:
     size_t getLevel() const override {
         size_t level = 0;
         for (const auto& arg : arguments) {
-            if (arg) {
+            if (arg != nullptr) {
                 level = std::max(level, arg->getLevel());
             }
         }
@@ -219,189 +258,6 @@ protected:
         assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
         const auto& other = static_cast<const RamUserDefinedOperator&>(node);
         return name == other.name && type == other.type && equal_targets(arguments, other.arguments);
-    }
-};
-
-/**
- * Binary function
- */
-// TODO (#541): have a single n-ary function
-class RamBinaryOperator : public RamValue {
-private:
-    /** Operation symbol */
-    BinaryOp operation;
-
-    /** Left-hand side argument */
-    std::unique_ptr<RamValue> lhsArgument;
-
-    /** Right-hand side argument */
-    std::unique_ptr<RamValue> rhsArgument;
-
-public:
-    RamBinaryOperator(BinaryOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
-            : RamValue(RN_BinaryOperator, l->isConstant() && r->isConstant()), operation(op),
-              lhsArgument(std::move(l)), rhsArgument(std::move(r)) {}
-
-    /** Print */
-    void print(std::ostream& os) const override {
-        if (operation < BinaryOp::MAX) {
-            // print infix notation
-            os << "(";
-            lhsArgument->print(os);
-            os << getSymbolForBinaryOp(operation);
-            rhsArgument->print(os);
-            os << ")";
-        } else {
-            // print prefix notation
-            os << getSymbolForBinaryOp(operation);
-            os << "(";
-            lhsArgument->print(os);
-            os << ",";
-            rhsArgument->print(os);
-            os << ")";
-        }
-    }
-
-    /** Get left-handside argument */
-    // remove def below
-    const RamValue* getLHS() const {
-        return lhsArgument.get();
-    }
-    const RamValue& getLHSArgument() const {
-        assert(lhsArgument);
-        return *lhsArgument;
-    }
-
-    /** Get right-handside argument */
-    // remove def below
-    const RamValue* getRHS() const {
-        return rhsArgument.get();
-    }
-    const RamValue& getRHSArgument() const {
-        assert(rhsArgument);
-        return *rhsArgument;
-    }
-
-    /** Get operator symbol */
-    BinaryOp getOperator() const {
-        return operation;
-    }
-
-    /** Get level */
-    // TODO (#541): move to an analysis
-    size_t getLevel() const override {
-        return std::max(lhsArgument->getLevel(), rhsArgument->getLevel());
-    }
-
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(lhsArgument.get(), rhsArgument.get());
-    }
-
-    /** Create clone */
-    RamBinaryOperator* clone() const override {
-        RamBinaryOperator* res =
-                new RamBinaryOperator(operation, std::unique_ptr<RamValue>(lhsArgument->clone()),
-                        std::unique_ptr<RamValue>(rhsArgument->clone()));
-        return res;
-    }
-
-    /** Apply mapper */
-    void apply(const RamNodeMapper& map) override {
-        lhsArgument = map(std::move(lhsArgument));
-        rhsArgument = map(std::move(rhsArgument));
-    }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamBinaryOperator*>(&node));
-        const auto& other = static_cast<const RamBinaryOperator&>(node);
-        return getOperator() == other.getOperator() && getLHSArgument() == other.getLHSArgument() &&
-               getRHSArgument() == other.getRHSArgument();
-    }
-};
-
-/**
- * Ternary Function
- */
-// TODO (#541): have a single n-ary function
-class RamTernaryOperator : public RamValue {
-private:
-    /** Operation symbol */
-    TernaryOp operation;
-
-    /** Arguments */
-    std::array<std::unique_ptr<RamValue>, 3> arguments;
-
-public:
-    RamTernaryOperator(TernaryOp op, std::unique_ptr<RamValue> a0, std::unique_ptr<RamValue> a1,
-            std::unique_ptr<RamValue> a2)
-            : RamValue(RN_TernaryOperator, a0->isConstant() && a1->isConstant() && a2->isConstant()),
-              operation(op), arguments({{std::move(a0), std::move(a1), std::move(a2)}}) {}
-
-    /** Print */
-    void print(std::ostream& os) const override {
-        os << getSymbolForTernaryOp(operation);
-        os << "(";
-        arguments[0]->print(os);
-        os << ",";
-        arguments[1]->print(os);
-        os << ",";
-        arguments[2]->print(os);
-        os << ")";
-    }
-
-    /** Get argument */
-    // TODO (#541): Remove old def
-    const RamValue* getArg(int i) const {
-        return arguments[i].get();
-    }
-    const RamValue& getArgument(int i) const {
-        assert(arguments[i]);
-        return *arguments[i];
-    }
-
-    /** Get operation symbol */
-    TernaryOp getOperator() const {
-        return operation;
-    }
-
-    /** Get level */
-    // TODO (#541): move to analysis
-    size_t getLevel() const override {
-        return std::max(
-                std::max(arguments[0]->getLevel(), arguments[1]->getLevel()), arguments[2]->getLevel());
-    }
-
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(arguments[0].get(), arguments[1].get(), arguments[2].get());
-    }
-
-    /** Create clone */
-    RamTernaryOperator* clone() const override {
-        RamTernaryOperator* res =
-                new RamTernaryOperator(operation, std::unique_ptr<RamValue>(arguments[0]->clone()),
-                        std::unique_ptr<RamValue>(arguments[1]->clone()),
-                        std::unique_ptr<RamValue>(arguments[2]->clone()));
-        return res;
-    }
-
-    /** Apply mapper */
-    void apply(const RamNodeMapper& map) override {
-        for (int i = 0; i < 3; i++) {
-            arguments[i] = map(std::move(arguments[i]));
-        }
-    }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamTernaryOperator*>(&node));
-        const auto& other = static_cast<const RamTernaryOperator&>(node);
-        return getOperator() == other.getOperator() && getArgument(0) == other.getArgument(0) &&
-               getArgument(1) == other.getArgument(1) && getArgument(2) == other.getArgument(2);
     }
 };
 

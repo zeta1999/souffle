@@ -16,7 +16,7 @@
 
 #include "Synthesiser.h"
 #include "BinaryConstraintOps.h"
-#include "BinaryFunctorOps.h"
+#include "FunctorOps.h"
 #include "Global.h"
 #include "IODirectives.h"
 #include "IndexSetAnalysis.h"
@@ -32,8 +32,6 @@
 #include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
-#include "TernaryFunctorOps.h"
-#include "UnaryFunctorOps.h"
 #include "Util.h"
 #include <algorithm>
 #include <cassert>
@@ -1136,173 +1134,190 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitUnaryOperator(const RamUnaryOperator& op, std::ostream& out) override {
+        void visitIntrinsicOperator(const RamIntrinsicOperator& op, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
+
             switch (op.getOperator()) {
-                case UnaryOp::ORD:
-                    visit(op.getValue(), out);
+                /** Unary Functor Operators */
+                case FunctorOp::ORD: {
+                    visit(op.getArgument(0), out);
                     break;
-                case UnaryOp::STRLEN:
+                }
+                case FunctorOp::STRLEN: {
                     out << "static_cast<RamDomain>(symTable.resolve(";
-                    visit(op.getValue(), out);
+                    visit(op.getArgument(0), out);
                     out << ").size())";
                     break;
-                case UnaryOp::NEG:
+                }
+                case FunctorOp::NEG: {
                     out << "(-(";
-                    visit(op.getValue(), out);
+                    visit(op.getArgument(0), out);
                     out << "))";
                     break;
-                case UnaryOp::BNOT:
+                }
+                case FunctorOp::BNOT: {
                     out << "(~(";
-                    visit(op.getValue(), out);
+                    visit(op.getArgument(0), out);
                     out << "))";
                     break;
-                case UnaryOp::LNOT:
+                }
+                case FunctorOp::LNOT: {
                     out << "(!(";
-                    visit(op.getValue(), out);
+                    visit(op.getArgument(0), out);
                     out << "))";
                     break;
-                case UnaryOp::TOSTRING:
+                }
+                case FunctorOp::TOSTRING: {
                     out << "symTable.lookup(std::to_string(";
-                    visit(op.getValue(), out);
+                    visit(op.getArgument(0), out);
                     out << "))";
                     break;
-                case UnaryOp::TONUMBER:
+                }
+                case FunctorOp::TONUMBER: {
                     out << "(wrapper_tonumber(symTable.resolve((size_t)";
-                    visit(op.getValue(), out);
+                    visit(op.getArgument(0), out);
                     out << ")))";
                     break;
+                }
 
-                default:
-                    assert(false && "Unsupported Operation!");
-                    break;
-            }
-            PRINT_END_COMMENT(out);
-        }
-
-        void visitBinaryOperator(const RamBinaryOperator& op, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            switch (op.getOperator()) {
+                /** Binary Functor Operators */
                 // arithmetic
-                case BinaryOp::ADD: {
+                case FunctorOp::ADD: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") + (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::SUB: {
+                case FunctorOp::SUB: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") - (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::MUL: {
+                case FunctorOp::MUL: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") * (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::DIV: {
+                case FunctorOp::DIV: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") / (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::EXP: {
+                case FunctorOp::EXP: {
                     // Cast as int64, then back to RamDomain of int32 to avoid wrapping to negative
                     // when using int32 RamDomains
                     out << "static_cast<int64_t>(std::pow(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ",";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << "))";
                     break;
                 }
-                case BinaryOp::MOD: {
+                case FunctorOp::MOD: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") % (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::BAND: {
+                case FunctorOp::BAND: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") & (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::BOR: {
+                case FunctorOp::BOR: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") | (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::BXOR: {
+                case FunctorOp::BXOR: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") ^ (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::LAND: {
+                case FunctorOp::LAND: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") && (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::LOR: {
+                case FunctorOp::LOR: {
                     out << "(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") || (";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::MAX: {
+                case FunctorOp::MAX: {
                     out << "std::max(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ",";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
-                case BinaryOp::MIN: {
+                case FunctorOp::MIN: {
                     out << "std::min(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ",";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << ")";
                     break;
                 }
 
                 // strings
-                case BinaryOp::CAT: {
+                case FunctorOp::CAT: {
                     out << "symTable.lookup(";
                     out << "symTable.resolve(";
-                    visit(op.getLHS(), out);
+                    visit(op.getArgument(0), out);
                     out << ") + symTable.resolve(";
-                    visit(op.getRHS(), out);
+                    visit(op.getArgument(1), out);
                     out << "))";
                     break;
                 }
-                default:
+
+                /** Ternary Functor Operators */
+                case FunctorOp::SUBSTR: {
+                    out << "symTable.lookup(";
+                    out << "substr_wrapper(symTable.resolve(";
+                    visit(op.getArgument(0), out);
+                    out << "),(";
+                    visit(op.getArgument(1), out);
+                    out << "),(";
+                    visit(op.getArgument(2), out);
+                    out << ")))";
+                    break;
+                }
+
+                /** Undefined */
+                default: {
                     assert(false && "Unsupported Operation!");
+                    break;
+                }
             }
             PRINT_END_COMMENT(out);
         }
@@ -1323,11 +1338,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 if (type[i] == 'N') {
                     out << "((RamDomain)";
-                    visit(op.getArg(i), out);
+                    visit(op.getArgument(i), out);
                     out << ")";
                 } else {
                     out << "symTable.resolve((RamDomain)";
-                    visit(op.getArg(i), out);
+                    visit(op.getArgument(i), out);
                     out << ").c_str()";
                 }
             }
@@ -1335,25 +1350,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (type[arity] == 'S') {
                 out << ")";
             }
-        }
-
-        void visitTernaryOperator(const RamTernaryOperator& op, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            switch (op.getOperator()) {
-                case TernaryOp::SUBSTR:
-                    out << "symTable.lookup(";
-                    out << "substr_wrapper(symTable.resolve(";
-                    visit(op.getArg(0), out);
-                    out << "),(";
-                    visit(op.getArg(1), out);
-                    out << "),(";
-                    visit(op.getArg(2), out);
-                    out << ")))";
-                    break;
-                default:
-                    assert(false && "Unsupported Operation!");
-            }
-            PRINT_END_COMMENT(out);
         }
 
         // -- records --

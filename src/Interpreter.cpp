@@ -16,7 +16,7 @@
 
 #include "Interpreter.h"
 #include "BinaryConstraintOps.h"
-#include "BinaryFunctorOps.h"
+#include "FunctorOps.h"
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"
@@ -33,8 +33,6 @@
 #include "ReadStream.h"
 #include "SignalHandler.h"
 #include "SymbolTable.h"
-#include "TernaryFunctorOps.h"
-#include "UnaryFunctorOps.h"
 #include "WriteStream.h"
 #include <algorithm>
 #include <cmath>
@@ -74,37 +72,104 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             return interpreter.incCounter();
         }
 
-        // unary operators
-        RamDomain visitUnaryOperator(const RamUnaryOperator& op) override {
-            RamDomain arg = visit(op.getValue());
+        // intrinsic functors
+        RamDomain visitIntrinsicOperator(const RamIntrinsicOperator& op) override {
+            const auto& args = op.getArguments();
+
             switch (op.getOperator()) {
-                case UnaryOp::NEG:
-                    return -arg;
-                case UnaryOp::BNOT:
-                    return ~arg;
-                case UnaryOp::LNOT:
-                    return !arg;
-                case UnaryOp::ORD:
-                    return arg;
-                case UnaryOp::STRLEN:
-                    return interpreter.getSymbolTable().resolve(arg).size();
-                case UnaryOp::TONUMBER: {
+                /** Unary Functor Operators */
+                case FunctorOp::ORD:
+                    return visit(args[0]);
+                case FunctorOp::STRLEN:
+                    return interpreter.getSymbolTable().resolve(visit(args[0])).size();
+                case FunctorOp::NEG:
+                    return -visit(args[0]);
+                case FunctorOp::BNOT:
+                    return ~visit(args[0]);
+                case FunctorOp::LNOT:
+                    return !visit(args[0]);
+                case FunctorOp::TONUMBER: {
                     RamDomain result = 0;
                     try {
-                        result = stord(interpreter.getSymbolTable().resolve(arg));
+                        result = stord(interpreter.getSymbolTable().resolve(visit(args[0])));
                     } catch (...) {
                         std::cerr << "error: wrong string provided by to_number(\"";
-                        std::cerr << interpreter.getSymbolTable().resolve(arg);
+                        std::cerr << interpreter.getSymbolTable().resolve(visit(args[0]));
                         std::cerr << "\") functor.\n";
                         raise(SIGFPE);
                     }
                     return result;
                 }
-                case UnaryOp::TOSTRING:
-                    return interpreter.getSymbolTable().lookup(std::to_string(arg));
-                default:
+                case FunctorOp::TOSTRING:
+                    return interpreter.getSymbolTable().lookup(std::to_string(visit(args[0])));
+
+                /** Binary Functor Operators */
+                case FunctorOp::ADD: {
+                    return visit(args[0]) + visit(args[1]);
+                }
+                case FunctorOp::SUB: {
+                    return visit(args[0]) - visit(args[1]);
+                }
+                case FunctorOp::MUL: {
+                    return visit(args[0]) * visit(args[1]);
+                }
+                case FunctorOp::DIV: {
+                    return visit(args[0]) / visit(args[1]);
+                }
+                case FunctorOp::EXP: {
+                    return std::pow(visit(args[0]), visit(args[1]));
+                }
+                case FunctorOp::MOD: {
+                    return visit(args[0]) % visit(args[1]);
+                }
+                case FunctorOp::BAND: {
+                    return visit(args[0]) & visit(args[1]);
+                }
+                case FunctorOp::BOR: {
+                    return visit(args[0]) | visit(args[1]);
+                }
+                case FunctorOp::BXOR: {
+                    return visit(args[0]) ^ visit(args[1]);
+                }
+                case FunctorOp::LAND: {
+                    return visit(args[0]) && visit(args[1]);
+                }
+                case FunctorOp::LOR: {
+                    return visit(args[0]) || visit(args[1]);
+                }
+                case FunctorOp::MAX: {
+                    return std::max(visit(args[0]), visit(args[1]));
+                }
+                case FunctorOp::MIN: {
+                    return std::min(visit(args[0]), visit(args[1]));
+                }
+                case FunctorOp::CAT: {
+                    return interpreter.getSymbolTable().lookup(
+                            interpreter.getSymbolTable().resolve(visit(args[0])) +
+                            interpreter.getSymbolTable().resolve(visit(args[1])));
+                }
+
+                /** Ternary Functor Operators */
+                case FunctorOp::SUBSTR: {
+                    auto symbol = visit(args[0]);
+                    const std::string& str = interpreter.getSymbolTable().resolve(symbol);
+                    auto idx = visit(args[1]);
+                    auto len = visit(args[2]);
+                    std::string sub_str;
+                    try {
+                        sub_str = str.substr(idx, len);
+                    } catch (...) {
+                        std::cerr << "warning: wrong index position provided by substr(\"";
+                        std::cerr << str << "\"," << (int32_t)idx << "," << (int32_t)len << ") functor.\n";
+                    }
+                    return interpreter.getSymbolTable().lookup(sub_str);
+                }
+
+                /** Undefined */
+                default: {
                     assert(false && "unsupported operator");
                     return 0;
+                }
             }
         }
 
@@ -133,7 +198,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
             /* Initialize arguments for ffi-call */
             for (size_t i = 0; i < arity; i++) {
-                RamDomain arg = visit(op.getArg(i));
+                RamDomain arg = visit(op.getArgument(i));
                 if (type[i] == 'S') {
                     args[i] = &ffi_type_pointer;
                     strVal[i] = interpreter.getSymbolTable().resolve(arg).c_str();
@@ -170,83 +235,6 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
             }
 
             return result;
-        }
-
-        // binary functors
-        RamDomain visitBinaryOperator(const RamBinaryOperator& op) override {
-            RamDomain lhs = visit(op.getLHS());
-            RamDomain rhs = visit(op.getRHS());
-            switch (op.getOperator()) {
-                case BinaryOp::ADD: {
-                    return lhs + rhs;
-                }
-                case BinaryOp::SUB: {
-                    return lhs - rhs;
-                }
-                case BinaryOp::MUL: {
-                    return lhs * rhs;
-                }
-                case BinaryOp::DIV: {
-                    return lhs / rhs;
-                }
-                case BinaryOp::EXP: {
-                    return std::pow(lhs, rhs);
-                }
-                case BinaryOp::MOD: {
-                    return lhs % rhs;
-                }
-                case BinaryOp::BAND: {
-                    return lhs & rhs;
-                }
-                case BinaryOp::BOR: {
-                    return lhs | rhs;
-                }
-                case BinaryOp::BXOR: {
-                    return lhs ^ rhs;
-                }
-                case BinaryOp::LAND: {
-                    return lhs && rhs;
-                }
-                case BinaryOp::LOR: {
-                    return lhs || rhs;
-                }
-                case BinaryOp::MAX: {
-                    return std::max(lhs, rhs);
-                }
-                case BinaryOp::MIN: {
-                    return std::min(lhs, rhs);
-                }
-                case BinaryOp::CAT: {
-                    return interpreter.getSymbolTable().lookup(interpreter.getSymbolTable().resolve(lhs) +
-                                                               interpreter.getSymbolTable().resolve(rhs));
-                }
-                default:
-                    assert(false && "unsupported operator");
-                    return 0;
-            }
-        }
-
-        // ternary operators
-        RamDomain visitTernaryOperator(const RamTernaryOperator& op) override {
-            switch (op.getOperator()) {
-                case TernaryOp::SUBSTR: {
-                    auto symbol = visit(op.getArg(0));
-                    const std::string& str = interpreter.getSymbolTable().resolve(symbol);
-                    auto idx = visit(op.getArg(1));
-                    auto len = visit(op.getArg(2));
-                    std::string sub_str;
-                    try {
-                        sub_str = str.substr(idx, len);
-                    } catch (...) {
-                        std::cerr << "warning: wrong index position provided by substr(\"";
-                        std::cerr << str << "\"," << (int32_t)idx << "," << (int32_t)len << ") functor.\n";
-                    }
-                    return interpreter.getSymbolTable().lookup(sub_str);
-                }
-                default:
-                    assert(false && "unsupported operator");
-                    return 0;
-            }
         }
 
         // -- records --
@@ -425,6 +413,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                     return false;
             }
         }
+
         bool visitNode(const RamNode& node) override {
             std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
             assert(false && "Unsupported Node Type!");

@@ -32,10 +32,10 @@
 #include "AstTranslationUnit.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
-#include "BinaryFunctorOps.h"
 #include "ComponentModel.h"
 #include "DebugReport.h"
 #include "ErrorReport.h"
+#include "FunctorOps.h"
 #include "Global.h"
 #include "ParserDriver.h"
 #include "RamTypes.h"
@@ -233,17 +233,16 @@ private:
         std::stringstream binding;
         binding << var << "=";
 
-        // process unary operators
-        if (dynamic_cast<const AstUnaryFunctor*>(&fun)) {
-            // binary functors are not supported
-            throw UnsupportedConstructException("Unsupported function: " + toString(fun));
-        } else if (const auto* binary = dynamic_cast<const AstBinaryFunctor*>(&fun)) {
-            visit(*binary->getLHS(), binding);
-            binding << getSymbolForBinaryOp(binary->getFunction());
-            visit(*binary->getRHS(), binding);
+        // only intrinsic binary operators supported
+        const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&fun);
+        if (inf != nullptr && inf->getArity() == 2) {
+            visit(*inf->getArg(0), binding);
+            binding << getSymbolForFunctorOp(inf->getFunction());
+            visit(*inf->getArg(1), binding);
         } else {
-            assert(false && "Unsupported functor!");
+            throw UnsupportedConstructException("Unsupported function: " + toString(fun));
         }
+
         extra_literals.push_back(binding.str());
     }
 

@@ -20,17 +20,13 @@
 
 namespace souffle {
 
-/** run constant value analysis */
-void RamConstValueAnalysis::run(const RamTranslationUnit& translationUnit) {
+/** Determine whether a RAM value is a constant */
+bool RamConstValueAnalysis::isConstant(const RamValue* value) const {
+    // visitor 
     class ConstValueVisitor : public RamVisitor<bool> {
-        std::set<const RamValue*>& constRamValues;
-
     public:
-        ConstValueVisitor(std::set<const RamValue*>& cv) : constRamValues(cv) {}
-
         // number
         bool visitNumber(const RamNumber& num) override {
-            constRamValues.insert(&num);
             return true;
         }
 
@@ -51,16 +47,11 @@ void RamConstValueAnalysis::run(const RamTranslationUnit& translationUnit) {
             for (const auto arg : args) {
                 isConst = isConst && visit(arg);
             }
-            // add intrinsic to constant value set if all arguments are constant
-            if (isConst) {
-                constRamValues.insert(&op);
-            }
             return isConst;
         }
 
         // pack operator
         bool visitPack(const RamPack& pack) override {
-            // perhaps consider constant if all arguments are constant
             return false;
         }
 
@@ -76,22 +67,10 @@ void RamConstValueAnalysis::run(const RamTranslationUnit& translationUnit) {
             for (const auto arg : args) {
                 isConst = isConst && visit(arg);
             }
-            if (isConst) {
-                constRamValues.insert(&op);
-            }
             return isConst;
         }
     };
-    ConstValueVisitor cvv(constRamValues);
-    cvv.visit(translationUnit.getProgram());
-}
-
-/** print the analysis result in HTML format */
-void RamConstValueAnalysis::print(std::ostream& os) const {
-    os << "Constant RAM values:" << std::endl;
-    for (auto value : constRamValues) {
-        os << *value << std::endl;
-    }
+    return ConstValueVisitor().visit(value);
 }
 
 }  // end of namespace souffle

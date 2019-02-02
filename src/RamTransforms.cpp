@@ -150,14 +150,16 @@ std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamValue* rhs = binRelOp->getRHS();
-                if (lhs->getLevel() == identifier && (rhs->isConstant() || rhs->getLevel() < identifier)) {
+                if (lhs->getLevel() == identifier &&
+                        (rcva->isConstant(rhs) || rhs->getLevel() < identifier)) {
                     element = lhs->getElement();
                     return binRelOp->takeRHS();
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamValue* lhs = binRelOp->getLHS();
-                if (rhs->getLevel() == identifier && (lhs->isConstant() || lhs->getLevel() < identifier)) {
+                if (rhs->getLevel() == identifier &&
+                        (rcva->isConstant(lhs) || lhs->getLevel() < identifier)) {
                     element = rhs->getElement();
                     return binRelOp->takeLHS();
                 }
@@ -221,50 +223,51 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
 bool CreateIndicesTransformer::createIndices(RamProgram& program) {
     // TODO: Change these to LambdaRamNodeMapper lambdas
     // Node-mapper that searches for and updates RAM scans nested in RAM inserts
-    struct RamScanCapturer : public RamNodeMapper {
+    class RamScanCapturer : public RamNodeMapper {
         mutable bool modified = false;
+        CreateIndicesTransformer* context;
 
+    public:
+        RamScanCapturer(CreateIndicesTransformer* c) : modified(false), context(c) {}
         bool getModified() const {
             return modified;
         }
-
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             if (RamNestedOperation* nested = dynamic_cast<RamNestedOperation*>(node.get())) {
                 if (const RamScan* scan = dynamic_cast<const RamScan*>(&nested->getOperation())) {
-                    if (std::unique_ptr<RamOperation> op = rewriteScan(scan)) {
+                    if (std::unique_ptr<RamOperation> op = context->rewriteScan(scan)) {
                         modified = true;
                         nested->setOperation(std::move(op));
                     }
                 }
             }
-
             node->apply(*this);
             return node;
         }
     };
 
     // Node-mapper that searches for and updates RAM inserts
-    struct RamInsertCapturer : public RamNodeMapper {
-        mutable bool modified = false;
+    class RamInsertCapturer : public RamNodeMapper {
+        mutable bool modified;
+        CreateIndicesTransformer* context;
 
+    public:
+        RamInsertCapturer(CreateIndicesTransformer* c) : modified(false), context(c) {}
         bool getModified() const {
             return modified;
         }
-
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
             if (RamInsert* insert = dynamic_cast<RamInsert*>(node.get())) {
                 // TODO: better way to modify the child of a RAM insert
                 if (const RamScan* scan = dynamic_cast<const RamScan*>(&insert->getOperation())) {
-                    if (std::unique_ptr<RamOperation> op = rewriteScan(scan)) {
+                    if (std::unique_ptr<RamOperation> op = context->rewriteScan(scan)) {
                         modified = true;
                         insert->setOperation(std::move(op));
                     }
                 }
-
-                RamScanCapturer scanUpdate;
+                RamScanCapturer scanUpdate(context);
                 insert->apply(scanUpdate);
-
                 if (!modified && scanUpdate.getModified()) {
                     modified = true;
                 }
@@ -272,13 +275,13 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
                 // no need to search for nested RAM inserts
                 node->apply(*this);
             }
-
             return node;
         }
     };
 
     // level all RAM inserts
-    RamInsertCapturer insertUpdate;
+    RamInsertCapturer insertUpdate(this);
+
     program.getMain()->apply(insertUpdate);
 
     return insertUpdate.getModified();
@@ -287,9 +290,13 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
 bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& program) {
     // TODO: Change these to LambdaRamNodeMapper lambdas
     // Node-mapper that searches for and updates RAM scans nested in RAM inserts
-    struct RamScanCapturer : public RamNodeMapper {
-        mutable bool modified = false;
 
+    class RamScanCapturer : public RamNodeMapper {
+        mutable bool modified;
+        ConvertExistenceChecksTransformer* context;
+
+    public:
+        RamScanCapturer(ConvertExistenceChecksTransformer* c) : modified(false), context(c) {}
         bool getModified() const {
             return modified;
         }
@@ -343,7 +350,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     visitDepthFirst(scan->getOperation(), [&](const RamIndexScan& indexScan) {
                         if (isExistCheck) {
                             for (const RamValue* value : indexScan.getRangePattern()) {
-                                if (value != nullptr && !value->isConstant() &&
+                                if (value != nullptr && !context->rcva->isConstant(value) &&
                                         dependsOn(value, identifier)) {
                                     isExistCheck = false;
                                     break;
@@ -372,7 +379,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                                     for (auto* arg : intrinsicOp->getArguments()) {
                                         values.push_back(arg);
                                     }
-                                } else if (value != nullptr && !value->isConstant() &&
+                                } else if (value != nullptr && !context->rcva->isConstant(value) &&
                                            value->getLevel() == identifier) {
                                     isExistCheck = false;
                                     break;
@@ -401,24 +408,25 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                 }
                 scan->setIsPureExistenceCheck(isExistCheck);
             }
-
             node->apply(*this);
             return node;
         }
     };
 
     // Node-mapper that searches for and updates RAM inserts
-    struct RamInsertCapturer : public RamNodeMapper {
-        mutable bool modified = false;
+    class RamInsertCapturer : public RamNodeMapper {
+        mutable bool modified;
+        ConvertExistenceChecksTransformer* context;
 
+    public:
+        RamInsertCapturer(ConvertExistenceChecksTransformer* c) : modified(false), context(c) {}
         bool getModified() const {
             return modified;
         }
-
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
             if (RamInsert* insert = dynamic_cast<RamInsert*>(node.get())) {
-                RamScanCapturer scanUpdate;
+                RamScanCapturer scanUpdate(context);
                 insert->apply(scanUpdate);
 
                 if (scanUpdate.getModified()) {
@@ -428,13 +436,12 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                 // no need to search for nested RAM inserts
                 node->apply(*this);
             }
-
             return node;
         }
     };
 
     // level all RAM inserts
-    RamInsertCapturer insertUpdate;
+    RamInsertCapturer insertUpdate(this);
     program.getMain()->apply(insertUpdate);
 
     return insertUpdate.getModified();

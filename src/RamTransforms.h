@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "RamConstValue.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
 
@@ -42,12 +43,15 @@ public:
      * @param program the program to be processed
      * @return whether the program was modified
      */
-    static bool levelConditions(RamProgram& program);
+    bool levelConditions(RamProgram& program);
 };
 
 class CreateIndicesTransformer : public RamTransformer {
+    RamConstValueAnalysis* rcva;
+
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
+        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
         return createIndices(*translationUnit.getProgram());
     }
 
@@ -56,20 +60,23 @@ public:
         return "CreateIndicesTransformer";
     }
 
-    static std::unique_ptr<RamValue> getIndexElement(RamCondition* c, size_t& element, size_t level);
+    std::unique_ptr<RamValue> getIndexElement(RamCondition* c, size_t& element, size_t level);
 
-    static std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
+    std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
 
     /**
      * @param program the program to be processed
      * @return whether the program was modified
      */
-    static bool createIndices(RamProgram& program);
+    bool createIndices(RamProgram& program);
 };
 
 class ConvertExistenceChecksTransformer : public RamTransformer {
+    RamConstValueAnalysis* rcva;
+
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
+        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
         return convertExistenceChecks(*translationUnit.getProgram());
     }
 
@@ -82,7 +89,7 @@ public:
      * @param program the program to be processed
      * @return whether the program was modified
      */
-    static bool convertExistenceChecks(RamProgram& program);
+    bool convertExistenceChecks(RamProgram& program);
 };
 
 }  // end of namespace souffle

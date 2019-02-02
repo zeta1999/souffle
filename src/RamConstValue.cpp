@@ -22,7 +22,7 @@ namespace souffle {
 
 /** Determine whether a RAM value is a constant */
 bool RamConstValueAnalysis::isConstant(const RamValue* value) const {
-    // visitor 
+    // visitor
     class ConstValueVisitor : public RamVisitor<bool> {
     public:
         // number

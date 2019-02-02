@@ -25,13 +25,12 @@ namespace souffle {
  * Class for a constant check
  */
 class RamConstValueAnalysis : public RamAnalysis {
-
 public:
     /** name of analysis */
     static constexpr const char* name = "const-value-analysis";
 
     /** run const value analysis for a RAM translation unit */
-    void run(const RamTranslationUnit& translationUnit) override { }
+    void run(const RamTranslationUnit& translationUnit) override {}
 
     /** constant value */
     bool isConstant(const RamValue* v) const;

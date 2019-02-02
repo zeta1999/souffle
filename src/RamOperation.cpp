@@ -20,8 +20,8 @@
 #include "BinaryConstraintOps.h"
 #include "RamCondition.h"
 #include "RamRelation.h"
-#include "RamVisitor.h"
 #include "RamValue.h"
+#include "RamVisitor.h"
 #include <cstddef>
 #include <iostream>
 #include <memory>
@@ -31,10 +31,9 @@ namespace souffle {
 
 namespace {
 
-
 /** Determine whether a RAM value is a constant */
 bool isConstant(const RamValue* value) {
-    // visitor 
+    // visitor
     class ConstValueVisitor : public RamVisitor<bool> {
     public:
         // number

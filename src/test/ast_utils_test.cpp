@@ -341,7 +341,7 @@ TEST(AstUtils, GroundTermPropagation) {
                 .decl p(a:D,b:D)
                 .type R = [ x : D, y : D ]
 
-                p(a,b) :- p(x,y), r = R [x,y], s = r, s = *R [w,v], *R [w,v] = *R [a,b].
+                p(a,b) :- p(x,y), r = *R [x,y], s = r, s = *R [w,v], *R [w,v] = *R [a,b].
             )",
             sym, e, d);
 

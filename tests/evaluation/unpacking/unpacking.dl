@@ -8,12 +8,9 @@
 .decl b(x:N,y:N)
 .output b()
 
-a([1,2]).
-a([2,3]).
+a(*P[1,2]).
+a(*P[2,3]).
 
 
-b(x,y) :- a([x,y]).
-b(x,z) :- a([x,y]), b(y,z).
-
-
-
+b(x,y) :- a(*P[x,y]).
+b(x,z) :- a(*P[x,y]), b(y,z).

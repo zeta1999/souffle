@@ -143,17 +143,12 @@ public:
         requirements.push_back(FixedConstraint(variable, bound));
     }
     typeSol resolve(const typeSol& existing, const TypeLattice& lattice) {
-        bool reqsSatisfied = true;
         for (req : requirements) {
             if (!req.isSatisfied(existing, lattice)) {
-                reqsSatisfied = false;
-                break;
+                return existing;
             }
         }
-        if (reqsSatisfied) {
-            return result.resolve(existing, lattice);
-        }
-        return existing;
+        return result.resolve(existing, lattice);
     }
     bool isSatisfied(const typeSol& solution, const TypeLattice& lattice) {
         for (req : requirements) {
@@ -166,10 +161,23 @@ public:
     void print(std::ostream& os) const {
         os << "(" << join(requirements) << ") => (" << result << ")";
     }
+};
+
+std::vector<TypeConstraint> getConstraints(const AstClause& clause) {
+    struct constraintFinder : public AstVisitor<std::vector<TypeConstraint>> {
+        visitNode(const AstNode& node) {
+            std::vector<TypeConstraint> ret;
+            for (const AstNode* cur : root.getChildNodes()) {
+                std::vector<TypeConstraint> curCons = visitNode(cur);
+                ret.insert(ret.end(), curCons.begin(), curCons.end());
+            }
+            return ret;
+        }
+        // TODO add other visitors
+    };
 }
 
-std::map<const AstArgument*, AnalysisType>
-analyseTypes(const TypeLattice& lattice, const AstClause& clause) {
+std::map<const AstArgument*, AnalysisType> analyseTypes(const TypeLattice& lattice, const AstClause& clause) {
     // TODO
 }
 

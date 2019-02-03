@@ -314,10 +314,6 @@ public:
 
     std::unique_ptr<TreeNode> explainNegation(std::string relName, size_t ruleNum,
             const std::vector<std::string>& tuple, std::map<std::string, std::string>& bodyVariables) {
-        // set up return and error vectors for subroutine calling
-        std::vector<RamDomain> ret;
-        std::vector<bool> err;
-
         std::vector<std::string> uniqueVariables;
 
         // atom meta information stored for the current rule
@@ -356,6 +352,10 @@ public:
             varCounter++;
         }
 
+        // set up return and error vectors for subroutine calling
+        std::vector<RamDomain> ret;
+        std::vector<bool> err;
+
         // execute subroutine to get subproofs
         prog.executeSubroutine(
                 relName + "_" + std::to_string(ruleNum) + "_negation_subproof", args, ret, err);
@@ -389,7 +389,8 @@ public:
 
             std::stringstream leafNodeText;
             leafNodeText << atom[0] << "(" << join(atomValues, ",") << ")";
-            if (contains(ret, i + 1)) {
+
+            if (contains(ret, i - 1)) {
                 leafNodeText << " ✓";
             } else {
                 leafNodeText << " x";

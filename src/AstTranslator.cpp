@@ -1221,8 +1221,6 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
                 }
             });
 
-            searchCols <<= 2;
-
             // fill up query with nullptrs for the provenance columns
             query.push_back(nullptr);
             query.push_back(nullptr);

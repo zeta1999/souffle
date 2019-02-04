@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AstType.h"
+#include <ostream>
 
 namespace souffle {
 
@@ -8,24 +9,97 @@ class TypeEnvironment;
 class Type;
 
 // Forward declarations
-class PrimitiveType;
-class ConstantType;
+class PrimitiveAType;
+class ConstantAType;
+class TypeLattice;
+
+enum class Kind = {SYMBOL, NUMBER, RECORD};
 
 class AnalysisType {
 public:
     // Check the type is not a bottom or top type
     bool isValid();
 
-    // Get the primitive type that is a supertype of this
-    PrimitiveType getPrimitive();  // This will fail on the top type
+    // Get the primitive type that is a supertype of this, or top if none exists
+    PrimitiveAType getPrimitive();
 
-    // Get the constant type that is a subtype of this
-    ConstantType getConstant();  // This will fail on the bottom type
+    // Get the constant type that is a subtype of this, or bot is none exists
+    ConstantAType getConstant();
+
+    void print(std::ostream& os);
 };
 
-class PrimitiveType : AnalysisType {};
+class PrimitiveAType : AnalysisType {
+private:
+    Kind kind;
 
-class ConstantType : AnalysisType {};
+public:
+    PrimitiveAType(Kind kind) : kind(kind) {}
+    bool isValid() {
+        return (kind != Kind::RECORD);
+    }
+    PrimitiveAType getPrimitive() {
+        return PrimitiveAType(kind);
+    }
+    ConstantAType getConstant() {
+        return ConstantAType(kind);
+    }
+    void print(std::ostream& os) {
+        switch (kind) {
+            case Kind::SYMBOL:
+                os << "symbol";
+                break;
+            case Kind::NUMBER:
+                os << "number";
+                break;
+            case Kind::RECORD:
+                os << "record";
+                break;
+        }
+    }
+};
+
+class ConstantAType : AnalysisType {
+private:
+    Kind kind;
+
+public:
+    ConstantAType(Kind kind) : kind(kind) {}
+    bool isValid() {
+        return true;
+    }
+    PrimitiveAType getPrimitive() {
+        return PrimitiveAType(kind);
+    }
+    ConstantAType getConstant() {
+        return ConstantAType(kind);
+    }
+    void print(std::ostream& os) {
+        switch (kind) {
+            case Kind::SYMBOL:
+                os << "const_symbol";
+                break;
+            case Kind::NUMBER:
+                os << "const_number";
+                break;
+            case Kind::RECORD:
+                os << "nil";
+                break;
+        }
+    }
+};
+
+class BaseAType : AnalysisType {};
+
+class RecordAType : AnalysisType {};
+
+class UnionAType : AnalysisType {};
+
+class TopAType : AnalysisType {};
+
+class BotAType : AnalysisType {};
+
+class BotPrimAType : AnalysisType {};
 
 class TypeLattice {
 public:
@@ -40,24 +114,6 @@ public:
 
     // Check if the first is a subtype of the second
     bool isSubtype(AnalysisType first, AnalysisType second) const;
-
-    // Get the constant number type
-    ConstantType getNumberConstant() const;
-
-    // Get the constant symbol type
-    ConstantType getSymbolConstant() const;
-
-    // Get the constant record type
-    ConstantType getRecordConstant() const;
-
-    // Get the top number type
-    PrimitiveType getNumberType() const;
-
-    // Get the top symbol type
-    PrimitiveType getSymbolType() const;
-
-    // Get the top record type
-    PrimitiveType getRecordType() const;
 
     // Get the contained type environment
     TypeEnvironment getEnvironment() const;

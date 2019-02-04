@@ -180,27 +180,27 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, 
             return cons;
         }
         constraints visitCounter(const AstCounter& counter) {
-            return constraints(1, FixedConstraint(counter, lattice.getNumberConstant()));
+            return constraints(1, FixedConstraint(counter, ConstantAType(Kind::NUMBER)));
         }
         constraints visitNumberConstant(const AstNumberConstant& constant) {
-            return constraints(1, FixedConstraint(constant, lattice.getNumberConstant()));
+            return constraints(1, FixedConstraint(constant, ConstantAType(Kind::NUMBER)));
         }
         constraints visitSymbolConstant(const AstSymbolConstant& constant) {
-            return constraints(1, FixedConstraint(constant, lattice.getSymbolConstant()));
+            return constraints(1, FixedConstraint(constant, ConstantAType(Kind::SYMBOL)));
         }
         constraints visitNullConstant(const AstNullConstant& constant) {
-            return constraints(1, FixedConstraint(constant, lattice.getRecordConstant()));
+            return constraints(1, FixedConstraint(constant, ConstantAType(Kind::RECORD)));
         }
         constraints visitIntrinsicFunctor(const AstIntrinsicFunctor& functor) {
             constraints cons = visitNode(functor);
             if (functor.getFunction() == FunctorOp::MAX || functor.getFunction() == FunctorOp::MIN) {
                 cons.push_back(UnionConstraint(functor, functor.getArg(0), functor.getArg(1)));
             } else {
-                PrimitiveType outType;
+                PrimitiveAType outType;
                 if (functor.isSymbolic()) {
-                    outType = lattice.getSymbolType();
+                    outType = PrimitiveAType(Kind::SYMBOL);
                 } else if (functor.isNumeric()) {
-                    outType = lattice.getNumberType();
+                    outType = PrimitiveAType(Kind::NUMBER);
                 } else {
                     assert(false && "Unsupported functor output type");
                 }
@@ -208,9 +208,11 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, 
                 ImplicationConstraint constCons(functor, outType.getConstant());
                 for (size_t i = 0; i < functor.getArity(); ++i) {
                     if (functor.acceptsSymbols(i)) {
-                        constCons.addRequirement(FixedConstraint(functor.getArg(i), lattice.getSymbolType()));
+                        constCons.addRequirement(
+                                FixedConstraint(functor.getArg(i), PrimitiveAType(Kind::SYMBOL)));
                     } else if (functor.acceptsNumbers(i)) {
-                        constCons.addRequirement(FixedConstraint(functor.getArg(i), lattice.getNumberType()));
+                        constCons.addRequirement(
+                                FixedConstraint(functor.getArg(i), PrimitiveAType(Kind::NUMBER)));
                     } else {
                         assert(false && "Unsupported functor input type");
                     }
@@ -222,11 +224,11 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, 
         constraints visitUserDefinedFunctor(const AstUserDefinedFunctor& functor) {
             constraints cons = visitNode(functor);
             AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(functor.getName());
-            PrimitiveType outType;
+            PrimitiveAType outType;
             if (funDecl->isSymbolic()) {
-                outType = lattice.getSymbolType();
+                outType = PrimitiveAType(Kind::SYMBOL);
             } else if (funDecl->isNumeric()) {
-                outType = lattice.getNumberType();
+                outType = PrimitiveAType(Kind::NUMBER);
             } else {
                 assert(false && "Unsupported functor output type");
             }
@@ -235,9 +237,11 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, 
             assert(funDecl->getArgCount() == functor.getArgCount() && "Functor has correct arity");
             for (size_t i = 0; i < functor.getArgCount(); ++i) {
                 if (funDecl->acceptsSymbols(i)) {
-                    constCons.addRequirement(FixedConstraint(functor.getArg(i), lattice.getSymbolType()));
+                    constCons.addRequirement(
+                            FixedConstraint(functor.getArg(i), PrimitiveAType(Kind::SYMBOL)));
                 } else if (funDecl->acceptsNumbers(i)) {
-                    constCons.addRequirement(FixedConstraint(functor.getArg(i), lattice.getNumberType()));
+                    constCons.addRequirement(
+                            FixedConstraint(functor.getArg(i), PrimitiveAType(Kind::NUMBER)));
                 } else {
                     assert(false && "Unsupported functor input type");
                 }
@@ -247,15 +251,14 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, 
         }
         constraints visitRecordInit(const AstRecordInit& record) {
             constraints cons = visitNode(record);
-            auto* type = dynamic_cast<RecordType>(lattice.getTypeEnvironment().getType(record.getType()));
+            auto* type = dynamic_cast<RecordType>(lattice.getTypeEnvionment().getType(record.getType()));
             assert(type != nullptr && "Type of record is a record type");
             assert(record.getArguments().size() == type->getFields().size() &&
                     "Constructor has correct number of arguments");
-            FixedConstraint firstReq(record, lattice.getRecordType());
+            FixedConstraint firstReq(record, PrimitiveAType(Kind::RECORD));
             ImplicationConstraint secondCons(record, lattice.convert(type));
             for (size_t i = 0; i < record.getArguments().size(); ++i) {
-                AnalysisType fieldType =
-                        lattice.convert(lattice.getTypeEnvironment().getType(type->getFields()[i].type));
+                AnalysisType fieldType = lattice.getType(type->getFields()[i].type));
                 ImplicationConstraint curCons(record.getArguments()[i], fieldType);
                 curCons.addRequirement(firstReq);
                 cons.push_back(curCons);
@@ -268,7 +271,7 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, 
             constraints cons = visitNode(aggregate);
             if (aggregate.getOperator() == AstAggregator::count ||
                     aggregate.getOperator() == AstAggregator::sum) {
-                cons.push_back(FixedConstraint(aggregate, lattice.getNumberType()));
+                cons.push_back(FixedConstraint(aggregate, PrimitiveAType(Kind::NUMBER)));
             } else if (aggregate.getOperator() == AstAggregator::min ||
                        aggregate.getOperator() == AstAggregator::max) {
                 cons.push_back(VarConstraint(aggregate, aggregate.getTargetExpression()));
@@ -282,7 +285,7 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, 
             AstRelation* relation = program.getRelation(atom.getName());
             assert(relation->getArity() == atom.argSize() && "Atom has correct number of arguments");
             for (size_t i = 0; i < atom.argSize(); i++) {
-                AnalysisType curType = lattice.convert(lattice.getType(relation->getAttribute(i)->getTypeName()));
+                AnalysisType curType = lattice.getType(relation->getAttribute(i)->getTypeName()));
                 cons.push_back(FixedConstraint(atom.getArgument(i), curType));
             }
             return cons;
@@ -315,7 +318,9 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, 
     return finder.visit(clause);
 }
 
-typeSol analyseTypes(const TypeLattice& lattice, const AstClause& clause, std::ostream* debugStream = nullptr) {
+typeSol TypeAnalysis::analyseTypes(const TypeLattice& lattice, const AstClause& clause,
+        const AstProgram& program, std::ostream* debugStream = nullptr) {
+    constraints typeCons = getConstraints(lattice, clause, program);
     // TODO
 }
 

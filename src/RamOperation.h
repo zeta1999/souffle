@@ -17,10 +17,13 @@
 #pragma once
 
 #include "RamCondition.h"
+#include "RamConditionLevel.h"
+#include "RamConstValue.h"
 #include "RamNode.h"
 #include "RamRelation.h"
 #include "RamTypes.h"
 #include "RamValue.h"
+#include "RamValueLevel.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -397,6 +400,10 @@ protected:
  * Aggregation
  */
 class RamAggregate : public RamSearch {
+    RamConstValueAnalysis* rcva;
+    RamConditionLevelAnalysis* rcla;
+    RamValueLevelAnalysis* rvla;
+
 public:
     /** Types of aggregation functions */
     enum Function { MAX, MIN, COUNT, SUM };
@@ -462,6 +469,9 @@ public:
     SearchColumns getRangeQueryColumns() const {
         return keys;
     }
+
+    /** Get indexable element */
+    std::unique_ptr<RamValue> getIndexElement(RamCondition* c, size_t& element, size_t level);
 
     /** Add condition */
     void addCondition(std::unique_ptr<RamCondition> newCondition);

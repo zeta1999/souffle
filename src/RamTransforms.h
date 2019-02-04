@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include "RamConditionLevel.h"
 #include "RamConstValue.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
+#include "RamValueLevel.h"
 
 namespace souffle {
 
@@ -29,6 +31,8 @@ class RamProgram;
  * can be evaluated.
  */
 class LevelConditionsTransformer : public RamTransformer {
+    RamConditionLevelAnalysis* rcla;
+
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
         return levelConditions(*translationUnit.getProgram());
@@ -48,6 +52,7 @@ public:
 
 class CreateIndicesTransformer : public RamTransformer {
     RamConstValueAnalysis* rcva;
+    RamValueLevelAnalysis* rvla;
 
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
@@ -73,6 +78,8 @@ public:
 
 class ConvertExistenceChecksTransformer : public RamTransformer {
     RamConstValueAnalysis* rcva;
+    RamConditionLevelAnalysis* rcla;
+    RamValueLevelAnalysis* rvla;
 
 private:
     bool transform(RamTranslationUnit& translationUnit) override {

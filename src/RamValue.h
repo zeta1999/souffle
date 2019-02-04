@@ -38,9 +38,6 @@ class RamValue : public RamNode {
 public:
     RamValue(RamNodeType type) : RamNode(type) {}
 
-    /** get level of value (which for-loop of a query) */
-    virtual size_t getLevel() const = 0;
-
     /** Create clone */
     RamValue* clone() const override = 0;
 };
@@ -100,18 +97,6 @@ public:
 
     size_t getArgCount() const {
         return arguments.size();
-    }
-
-    /** Get level */
-    // TODO (#541): move to an analysis
-    size_t getLevel() const override {
-        size_t level = 0;
-        for (const auto& arg : arguments) {
-            if (arg != nullptr) {
-                level = std::max(level, arg->getLevel());
-            }
-        }
-        return level;
     }
 
     /** Obtain list of child nodes */
@@ -196,18 +181,6 @@ public:
         return type;
     }
 
-    /** Get level */
-    // TODO (#541): move to an analysis
-    size_t getLevel() const override {
-        size_t level = 0;
-        for (const auto& arg : arguments) {
-            if (arg != nullptr) {
-                level = std::max(level, arg->getLevel());
-            }
-        }
-        return level;
-    }
-
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
@@ -273,7 +246,7 @@ public:
     }
 
     /** Get level */
-    size_t getLevel() const override {
+    size_t getLevel() const {
         return level;
     }
 
@@ -332,12 +305,6 @@ public:
         os << "number(" << constant << ")";
     }
 
-    /** Get level */
-    // TODO (#541): move to analysis
-    size_t getLevel() const override {
-        return 0;
-    }
-
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return std::vector<const RamNode*>();  // no child nodes
@@ -374,12 +341,6 @@ public:
     /** Print */
     void print(std::ostream& os) const override {
         os << "autoinc()";
-    }
-
-    /** Get level */
-    // TODO (#541): move to analysis
-    size_t getLevel() const override {
-        return 0;
     }
 
     /** Obtain list of child nodes */
@@ -434,18 +395,6 @@ public:
                 out << "_";
             }
         }) << "]";
-    }
-
-    /** Get level */
-    // TODO (#541): move to analysis
-    size_t getLevel() const override {
-        size_t level = 0;
-        for (const auto& arg : arguments) {
-            if (arg) {
-                level = std::max(level, arg->getLevel());
-            }
-        }
-        return level;
     }
 
     /** Obtain list of child nodes */
@@ -512,12 +461,6 @@ public:
     /** Print */
     void print(std::ostream& os) const override {
         os << "argument(" << number << ")";
-    }
-
-    /** Get level */
-    // TODO (#541): move to an analysis
-    size_t getLevel() const override {
-        return 0;
     }
 
     /** Obtain list of child nodes */

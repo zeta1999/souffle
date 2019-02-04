@@ -114,6 +114,8 @@ souffle_sources = \
               ProvenanceTransformer.cpp                 \
               RamAnalysis.h                             \
               RamConstValue.cpp RamConstValue.h         \
+              RamConditionLevel.cpp RamConditionLevel.h \
+              RamValueLevel.cpp RamValueLevel.h         \
               RamCondition.h                            \
               RamNode.h                                 \
               RamOperation.cpp      RamOperation.h      \

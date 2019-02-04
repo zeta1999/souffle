@@ -1197,19 +1197,60 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
         }
     });
 
+    // a mapper to replace variables with subroutine arguments
+    struct VariablesToArguments : public AstNodeMapper {
+        std::vector<AstVariable> uniqueVariables;
+
+        VariablesToArguments() = default;
+        VariablesToArguments(std::vector<AstVariable> uniqueVariables) : uniqueVariables(uniqueVariables) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // apply recursive
+            node->apply(*this);
+
+            // replace unknown variables
+            if (auto varPtr = dynamic_cast<AstVariable*>(node.get())) {
+                auto var = *varPtr;
+                size_t argNum = std::find(uniqueVariables.begin(), uniqueVariables.end(), var) -
+                                uniqueVariables.begin();
+
+                return std::make_unique<AstSubroutineArgument>(argNum);
+            }
+
+            // otherwise nothing
+            return node;
+        }
+    };
+
     // the structure of this subroutine is a sequence where each nested statement is a search in each relation
     std::unique_ptr<RamSequence> searchSequence = std::make_unique<RamSequence>();
+
+    // value index
+    // auto valueIndex = ClauseTranslator(*this).createValueIndex(clause);
 
     // go through each body atom and create a return
     size_t atomNumber = 0;
     for (const auto& lit : clause.getBodyLiterals()) {
-        if (const auto& atom = dynamic_cast<AstAtom*>(lit)) {
+        if (auto atom = dynamic_cast<AstAtom*>(lit)) {
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
 
-            // get the query pattern and range query columns from subroutine arguments
+            // construct a query
             std::vector<std::unique_ptr<RamValue>> query;
             SearchColumns searchCols = 0;
+
+            // translate variables to subroutine arguments
+            VariablesToArguments varsToArgs(uniqueVariables);
+            atom->apply(varsToArgs);
+
+            for (size_t i = 0; i < atom->getArity() - 2; i++) {
+                auto arg = atom->getArgument(i);
+                query.push_back(translateValue(arg, ValueIndex()));
+                searchCols = (searchCols << 1) + 1;
+            }
+
+            /*
+            // get the query pattern and range query columns from subroutine arguments
             visitDepthFirst(*atom, [&](const AstVariable& var) {
                 if (var.getName().find("@level_num") == std::string::npos) {
                     // assume the variable has been found already
@@ -1217,9 +1258,9 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
                                     uniqueVariables.begin();
                     query.push_back(std::make_unique<RamArgument>(argNum));
 
-                    searchCols = (searchCols << 1) + 1;
                 }
             });
+            */
 
             // fill up query with nullptrs for the provenance columns
             query.push_back(nullptr);
@@ -1231,6 +1272,9 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             // make the nested operation to return the atom number if it exists
             auto returnValue = std::make_unique<RamReturn>();
             returnValue->addValue(std::make_unique<RamNumber>(atomNumber));
+            for (size_t i = 0; i < atom->getArity() - 2; i++) {
+                returnValue->addValue(translateValue(atom->getArgument(i), ValueIndex()));
+            }
 
             // create a search
             auto search = std::make_unique<RamIndexScan>(
@@ -1240,6 +1284,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             searchSequence->add(std::make_unique<RamInsert>(std::move(search)));
 
             atomNumber++;
+        } else if (auto con = dynamic_cast<AstConstraint*>(lit)) {
         }
     }
 

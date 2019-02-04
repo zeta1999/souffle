@@ -297,9 +297,6 @@ public:
                     varValues[var] = varValue;
                 }
 
-                std::cout << query.second << std::endl;
-                std::cout << varValues << std::endl;
-
                 printTree(prov.explainNegation(query.first, std::stoi(ruleNum), query.second, varValues));
             } else if (command[0] == "rule" && command.size() == 2) {
                 auto query = split(command[1], ' ');

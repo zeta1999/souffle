@@ -51,7 +51,8 @@ class ExplainProvenance {
 protected:
     SouffleProgram& prog;
 
-    std::vector<RamDomain> argsToNums(const std::string& relName, std::vector<std::string>& args) const {
+    std::vector<RamDomain> argsToNums(
+            const std::string& relName, const std::vector<std::string>& args) const {
         std::vector<RamDomain> nums;
 
         auto rel = prog.getRelation(relName);
@@ -64,7 +65,11 @@ protected:
                 // remove quotation marks
                 if (args[i].size() >= 2 && args[i][0] == '"' && args[i][args[i].size() - 1] == '"') {
                     auto originalStr = args[i].substr(1, args[i].size() - 2);
-                    nums.push_back(prog.getSymbolTable().lookupExisting(originalStr));
+                    if (prog.getSymbolTable().contains(originalStr)) {
+                        nums.push_back(prog.getSymbolTable().lookupExisting(originalStr));
+                    } else {
+                        nums.push_back(-1);
+                    }
                 }
             } else {
                 nums.push_back(std::stoi(args[i]));
@@ -88,7 +93,11 @@ protected:
                 args.push_back("_");
             } else {
                 if (*rel->getAttrType(i) == 's') {
-                    args.push_back("\"" + std::string(prog.getSymbolTable().resolve(nums[i])) + "\"");
+                    if (prog.getSymbolTable().contains(nums[i])) {
+                        args.push_back("\"" + std::string(prog.getSymbolTable().resolve(nums[i])) + "\"");
+                    } else {
+                        args.push_back("ERROR_STRING_NOT_FOUND");
+                    }
                 } else {
                     args.push_back(std::to_string(nums[i]));
                 }

@@ -314,7 +314,11 @@ public:
 
     std::unique_ptr<TreeNode> explainNegation(std::string relName, size_t ruleNum,
             const std::vector<std::string>& tuple, std::map<std::string, std::string>& bodyVariables) {
+        // construct a vector of unique variables that occur in the rule
         std::vector<std::string> uniqueVariables;
+
+        // we also need to know the type of each variable
+        std::map<std::string, char> variableTypes;
 
         // atom meta information stored for the current rule
         auto atoms = info[std::make_pair(relName, ruleNum)];
@@ -333,6 +337,13 @@ public:
             for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
                 if (!contains(uniqueVariables, *atomIt) && !contains(headVariables, *atomIt)) {
                     uniqueVariables.push_back(*atomIt);
+
+                    // store type of variable
+                    auto currentRel = prog.getRelation(atomRepresentation[0]);
+                    assert(currentRel != nullptr &&
+                            ("relation " + atomRepresentation[0] + " doesn't exist").c_str());
+                    variableTypes[*atomIt] =
+                            *currentRel->getAttrType(atomIt - atomRepresentation.begin() - 1);
                 }
             }
         }
@@ -341,14 +352,37 @@ public:
         std::vector<RamDomain> args;
 
         size_t varCounter = 0;
-        for (auto x : tuple) {
-            std::cout << x << std::endl;
-            args.push_back(std::stoi(x));
-            varCounter++;
-        }
+
+        // add number representation of tuple
+        auto tupleNums = argsToNums(relName, tuple);
+        args.insert(args.end(), tupleNums.begin(), tupleNums.end());
+        varCounter += tuple.size();
+
+        std::cout << variableTypes << std::endl;
 
         while (varCounter < uniqueVariables.size()) {
-            args.push_back(std::stoi(bodyVariables[uniqueVariables[varCounter]]));
+            auto var = uniqueVariables[varCounter];
+            auto varValue = bodyVariables[var];
+            if (variableTypes[var] == 's') {
+                if (varValue.size() >= 2 && varValue[0] == '"' && varValue[varValue.size() - 1] == '"') {
+                    auto originalStr = varValue.substr(1, varValue.size() - 2);
+                    if (prog.getSymbolTable().contains(originalStr)) {
+                        args.push_back(prog.getSymbolTable().lookupExisting(originalStr));
+                    } else {
+                        args.push_back(-1);
+                    }
+                } else {
+                    // assume no quotation marks
+                    if (prog.getSymbolTable().contains(varValue)) {
+                        args.push_back(prog.getSymbolTable().lookupExisting(varValue));
+                    } else {
+                        args.push_back(-1);
+                    }
+                }
+            } else {
+                args.push_back(std::stoi(varValue));
+            }
+
             varCounter++;
         }
 
@@ -366,15 +400,11 @@ public:
         auto internalNode = std::make_unique<InnerNode>(
                 relName + "(" + joinedArgsStr.str() + ")", "(R" + std::to_string(ruleNum) + ")");
 
-        std::cout << "here! " << bodyVariables << std::endl;
-
         for (size_t i = 1; i < atoms.size(); i++) {
             // store passed in values of atom
             std::vector<std::string> atomValues;
 
             auto atom = split(atoms[i], ',');
-
-            std::cout << "atom: " << atom << std::endl;
 
             for (size_t j = 1; j < atom.size(); j++) {
                 if (contains(headVariables, atom[j])) {
@@ -382,7 +412,6 @@ public:
                             tuple[std::find(headVariables.begin(), headVariables.end(), atom[j]) -
                                     headVariables.begin()]);
                 } else {
-                    std::cout << atom[j] << std::endl;
                     atomValues.push_back(bodyVariables[atom[j]]);
                 }
             }

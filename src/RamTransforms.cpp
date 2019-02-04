@@ -40,13 +40,17 @@ std::vector<RamCondition*> getConditions(const RamCondition* condition) {
 bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     // Node-mapper that collects nested conditions which apply to a given scan level
     // TODO: Change these to LambdaRamNodeMapper lambdas
-    struct RamFilterCapturer : public RamNodeMapper {
-        mutable std::unique_ptr<RamCondition> condition;
+    class RamFilterCapturer : public RamNodeMapper {
+        LevelConditionsTransformer* context;
 
         /** identifier for the tuple */
         const size_t identifier;
 
-        RamFilterCapturer(const size_t ident) : identifier(ident) {}
+        mutable std::unique_ptr<RamCondition> condition;
+
+    public:
+        RamFilterCapturer(LevelConditionsTransformer* l, const size_t ident)
+                : context(l), identifier(ident) {}
 
         std::unique_ptr<RamCondition> getCondition() const {
             return std::move(condition);
@@ -67,7 +71,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
                 if (const RamFilter* filter = dynamic_cast<const RamFilter*>(&nested->getOperation())) {
                     const RamCondition& condition = filter->getCondition();
 
-                    if (condition.getLevel() == identifier) {
+                    if (context->rcla->getLevel(&condition) == identifier) {
                         addCondition(std::unique_ptr<RamCondition>(condition.clone()));
 
                         // skip this filter
@@ -83,8 +87,12 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     };
 
     // Node-mapper that searches for and updates RAM scans nested in RAM inserts
-    struct RamScanCapturer : public RamNodeMapper {
+    class RamScanCapturer : public RamNodeMapper {
         mutable bool modified = false;
+        LevelConditionsTransformer* context;
+
+    public:
+        RamScanCapturer(LevelConditionsTransformer* l) : context(l) {}
 
         bool getModified() const {
             return modified;
@@ -92,7 +100,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             if (RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
-                RamFilterCapturer filterUpdate(scan->getIdentifier());
+                RamFilterCapturer filterUpdate(context, scan->getIdentifier());
                 std::unique_ptr<RamScan> newScan = filterUpdate(std::unique_ptr<RamScan>(scan->clone()));
 
                 // If a condition applies to this scan level, filter the scan based on the condition
@@ -111,8 +119,12 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     };
 
     // Node-mapper that searches for and updates RAM inserts
-    struct RamInsertCapturer : public RamNodeMapper {
+    class RamInsertCapturer : public RamNodeMapper {
         mutable bool modified = false;
+        LevelConditionsTransformer* context;
+
+    public:
+        RamInsertCapturer(LevelConditionsTransformer* l) : context(l) {}
 
         bool getModified() const {
             return modified;
@@ -121,7 +133,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
             if (RamInsert* insert = dynamic_cast<RamInsert*>(node.get())) {
-                RamScanCapturer scanUpdate;
+                RamScanCapturer scanUpdate(context);
                 insert->apply(scanUpdate);
 
                 if (scanUpdate.getModified()) {
@@ -137,7 +149,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     };
 
     // level all RAM inserts
-    RamInsertCapturer insertUpdate;
+    RamInsertCapturer insertUpdate(this);
     program.getMain()->apply(insertUpdate);
 
     return insertUpdate.getModified();
@@ -150,16 +162,16 @@ std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamValue* rhs = binRelOp->getRHS();
-                if (lhs->getLevel() == identifier &&
-                        (rcva->isConstant(rhs) || rhs->getLevel() < identifier)) {
+                if (rvla->getLevel(lhs) == identifier &&
+                        (rcva->isConstant(rhs) || rvla->getLevel(rhs) < identifier)) {
                     element = lhs->getElement();
                     return binRelOp->takeRHS();
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamValue* lhs = binRelOp->getLHS();
-                if (rhs->getLevel() == identifier &&
-                        (rcva->isConstant(lhs) || lhs->getLevel() < identifier)) {
+                if (rvla->getLevel(rhs) == identifier &&
+                        (rcva->isConstant(lhs) || rvla->getLevel(lhs) < identifier)) {
                     element = rhs->getElement();
                     return binRelOp->takeLHS();
                 }
@@ -229,9 +241,11 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
 
     public:
         RamScanCapturer(CreateIndicesTransformer* c) : modified(false), context(c) {}
+
         bool getModified() const {
             return modified;
         }
+
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             if (RamNestedOperation* nested = dynamic_cast<RamNestedOperation*>(node.get())) {
                 if (const RamScan* scan = dynamic_cast<const RamScan*>(&nested->getOperation())) {
@@ -253,9 +267,11 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
 
     public:
         RamInsertCapturer(CreateIndicesTransformer* c) : modified(false), context(c) {}
+
         bool getModified() const {
             return modified;
         }
+
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
             if (RamInsert* insert = dynamic_cast<RamInsert*>(node.get())) {
@@ -292,11 +308,12 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
     // Node-mapper that searches for and updates RAM scans nested in RAM inserts
 
     class RamScanCapturer : public RamNodeMapper {
-        mutable bool modified;
+        mutable bool modified = false;
         ConvertExistenceChecksTransformer* context;
 
     public:
-        RamScanCapturer(ConvertExistenceChecksTransformer* c) : modified(false), context(c) {}
+        RamScanCapturer(ConvertExistenceChecksTransformer* c) : context(c) {}
+
         bool getModified() const {
             return modified;
         }
@@ -306,8 +323,8 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
             while (!queue.empty()) {
                 const RamValue* val = queue.back();
                 queue.pop_back();
-                if (const RamValue* elemAccess = dynamic_cast<const RamElementAccess*>(val)) {
-                    if (elemAccess->getLevel() == identifier) {
+                if (const RamElementAccess* elemAccess = dynamic_cast<const RamElementAccess*>(val)) {
+                    if (context->rvla->getLevel(elemAccess) == identifier) {
                         return true;
                     }
                 } else if (const RamIntrinsicOperator* intrinsicOp =
@@ -380,7 +397,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                                         values.push_back(arg);
                                     }
                                 } else if (value != nullptr && !context->rcva->isConstant(value) &&
-                                           value->getLevel() == identifier) {
+                                           context->rvla->getLevel(value) == identifier) {
                                     isExistCheck = false;
                                     break;
                                 }
@@ -400,7 +417,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                 if (isExistCheck) {
                     visitDepthFirst(scan->getOperation(), [&](const RamNotExists& notExists) {
                         if (isExistCheck) {
-                            if (notExists.getLevel() == identifier) {
+                            if (context->rcla->getLevel(&notExists) == identifier) {
                                 isExistCheck = false;
                             }
                         }
@@ -420,9 +437,11 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
 
     public:
         RamInsertCapturer(ConvertExistenceChecksTransformer* c) : modified(false), context(c) {}
+
         bool getModified() const {
             return modified;
         }
+
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
             if (RamInsert* insert = dynamic_cast<RamInsert*>(node.get())) {

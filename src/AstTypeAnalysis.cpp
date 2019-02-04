@@ -165,7 +165,7 @@ public:
 
 using constraints = std::vector<TypeConstraint>;
 
-constraints getConstraints(const TypeLattice& lattice, const AstClause& clause) {
+constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, const AstProgram& program) {
     struct constraintFinder : public AstVisitor<constraints> {
         constraints visitNode(const AstNode& node) {
             constraints cons;
@@ -176,18 +176,18 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause) 
             return cons;
         }
         constraints visitNumberConstant(const AstNumberConstant& constant) {
-            return constraints(1,FixedConstraint(constant, lattice.getNumberConstant()));
+            return constraints(1, FixedConstraint(constant, lattice.getNumberConstant()));
         }
         constraints visitSymbolConstant(const AstSymbolConstant& constant) {
-            return constraints(1,FixedConstraint(constant, lattice.getSymbolConstant()));
+            return constraints(1, FixedConstraint(constant, lattice.getSymbolConstant()));
         }
         constraints visitNullConstant(const AstNullConstant& constant) {
-            return constraints(1,FixedConstraint(constant, lattice.getRecordConstant()));
+            return constraints(1, FixedConstraint(constant, lattice.getRecordConstant()));
         }
         constraints visitIntrinsicFunctor(const AstIntrinsicFunctor& functor) {
             constraints cons = visitNode(functor);
             if (functor.getFunction() == FunctorOp::MAX || functor.getFunction() == FunctorOp::MIN) {
-                cons.push_back(UnionConstraint(functor,functor.getArg(0),functor.getArg(1)));
+                cons.push_back(UnionConstraint(functor, functor.getArg(0), functor.getArg(1)));
             } else {
                 PrimitiveType outType;
                 if (functor.isSymbolic()) {
@@ -198,12 +198,12 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause) 
                     assert(false && "Unsupported functor output type");
                 }
                 cons.push_back(FixedConstraint(functor, outType));
-                ImplicationConstraint constCons (functor, outType.getConstant());
-                for (size_t i = 0; i < functor.get_arity(); ++i) {
+                ImplicationConstraint constCons(functor, outType.getConstant());
+                for (size_t i = 0; i < functor.getArity(); ++i) {
                     if (functor.acceptsSymbols(i)) {
-                        constCons.addRequirement(FixedConstraint(functor.getArg(i),lattice.getSymbolType()));
+                        constCons.addRequirement(FixedConstraint(functor.getArg(i), lattice.getSymbolType()));
                     } else if (functor.acceptsNumbers(i)) {
-                        constCons.addRequirement(FixedConstraint(functor.getArg(i),lattice.getNumberType()));
+                        constCons.addRequirement(FixedConstraint(functor.getArg(i), lattice.getNumberType()));
                     } else {
                         assert(false && "Unsupported functor input type");
                     }
@@ -214,7 +214,29 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause) 
         }
         constraints visitUserDefinedFunctor(const AstUserDefinedFunctor& functor) {
             constraints cons = visitNode(functor);
-            // TODO where is the type information?
+            const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(functor.getName());
+            PrimitiveType outType;
+            if (funDecl->isSymbolic()) {
+                outType = lattice.getSymbolType();
+            } else if (funDecl->isNumeric()) {
+                outType = lattice.getNumberType();
+            } else {
+                assert(false && "Unsupported functor output type");
+            }
+            cons.push_back(FixedConstraint(functor, outType));
+            ImplicationConstraint constCons(functor, outType.getConstant());
+            assert(funDecl->getArgCount() == functor.getArgCount() && "Functor has correct arity");
+            for (size_t i = 0; i < functor.getArgCount(); ++i) {
+                if (funDecl->acceptsSymbols(i)) {
+                    constCons.addRequirement(FixedConstraint(functor.getArg(i), lattice.getSymbolType()));
+                } else if (funDecl->acceptsNumbers(i)) {
+                    constCons.addRequirement(FixedConstraint(functor.getArg(i), lattice.getNumberType()));
+                } else {
+                    assert(false && "Unsupported functor input type");
+                }
+            }
+            cons.push_back(constCons);
+            return cons;
         }
         constraints visitRecordInit(const AstRecordInit& record) {
             constraints cons = visitNode(record);
@@ -222,10 +244,12 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause) 
         }
         constraints visitAggregator(const AstAggregator& aggregate) {
             constraints cons = visitNode(aggregate);
-            if (aggregate.getOperator() == AstAggregator::count || aggregate.getOperator() == AstAggregator::sum) {
-                cons.push_back(FixedConstraint(aggregate,lattice.getNumberType()));
-            } else if (aggregate.getOperator() == AstAggregator::min || aggregate.getOperator() == AstAggregator::max) {
-                cons.push_back(VarConstraint(aggregate,aggregate.getTargetExpression()));
+            if (aggregate.getOperator() == AstAggregator::count ||
+                    aggregate.getOperator() == AstAggregator::sum) {
+                cons.push_back(FixedConstraint(aggregate, lattice.getNumberType()));
+            } else if (aggregate.getOperator() == AstAggregator::min ||
+                       aggregate.getOperator() == AstAggregator::max) {
+                cons.push_back(VarConstraint(aggregate, aggregate.getTargetExpression()));
             } else {
                 assert(false && "Unsupported aggregation operation");
             }
@@ -235,8 +259,11 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause) 
             constraints cons = visitNode(atom);
             // TODO
         }
-        // TODO add other visitors
+        constraints visitClause(const AstClause& clause) {
+            // TODO
+        }
     };
+    // TODO
 }
 
 std::map<const AstArgument*, AnalysisType> analyseTypes(const TypeLattice& lattice, const AstClause& clause) {

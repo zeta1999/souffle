@@ -51,4 +51,4 @@ public:
 
     // Get the top record type
     PrimitiveType getRecordType() const;
-}
+};

@@ -1,3 +1,9 @@
+#pragma once
+
+#include "AstType.h"
+
+namespace souffle {
+
 class TypeEnvironment;
 class Type;
 
@@ -58,4 +64,9 @@ public:
 
     // Pack a type environment type into a lattice type
     AnalysisType convert(const Type& other);
+
+    // Get a type from its identifier
+    const AnalysisType& getType(const AstTypeIdentifier& ident) const;
 };
+
+}  // end of namespace souffle

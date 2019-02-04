@@ -25,12 +25,12 @@
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
-#include "Util.h"
 // #include "AstTypeEnvironmentAnalysis.h"
 // #include "AstUtils.h"
 // #include "AstVisitor.h"
 // #include "Constraints.h"
 // #include "Global.h"
+#include "FunctorOps.h"
 #include "TypeLattice.h"
 #include "Util.h"
 #include <cassert>
@@ -163,15 +163,77 @@ public:
     }
 };
 
-std::vector<TypeConstraint> getConstraints(const AstClause& clause) {
-    struct constraintFinder : public AstVisitor<std::vector<TypeConstraint>> {
-        visitNode(const AstNode& node) {
-            std::vector<TypeConstraint> ret;
+using constraints = std::vector<TypeConstraint>;
+
+constraints getConstraints(const TypeLattice& lattice, const AstClause& clause) {
+    struct constraintFinder : public AstVisitor<constraints> {
+        constraints visitNode(const AstNode& node) {
+            constraints cons;
             for (const AstNode* cur : root.getChildNodes()) {
-                std::vector<TypeConstraint> curCons = visitNode(cur);
+                constraints curCons = visitNode(cur);
                 ret.insert(ret.end(), curCons.begin(), curCons.end());
             }
-            return ret;
+            return cons;
+        }
+        constraints visitNumberConstant(const AstNumberConstant& constant) {
+            return constraints(1,FixedConstraint(constant, lattice.getNumberConstant()));
+        }
+        constraints visitSymbolConstant(const AstSymbolConstant& constant) {
+            return constraints(1,FixedConstraint(constant, lattice.getSymbolConstant()));
+        }
+        constraints visitNullConstant(const AstNullConstant& constant) {
+            return constraints(1,FixedConstraint(constant, lattice.getRecordConstant()));
+        }
+        constraints visitIntrinsicFunctor(const AstIntrinsicFunctor& functor) {
+            constraints cons = visitNode(functor);
+            if (functor.getFunction() == FunctorOp::MAX || functor.getFunction() == FunctorOp::MIN) {
+                cons.push_back(UnionConstraint(functor,functor.getArg(0),functor.getArg(1)));
+            } else {
+                PrimitiveType outType;
+                if (functor.isSymbolic()) {
+                    outType = lattice.getSymbolType();
+                } else if (functor.isNumeric()) {
+                    outType = lattice.getNumberType();
+                } else {
+                    assert(false && "Unsupported functor output type");
+                }
+                cons.push_back(FixedConstraint(functor, outType));
+                ImplicationConstraint constCons (functor, outType.getConstant());
+                for (size_t i = 0; i < functor.get_arity(); ++i) {
+                    if (functor.acceptsSymbols(i)) {
+                        constCons.addRequirement(FixedConstraint(functor.getArg(i),lattice.getSymbolType()));
+                    } else if (functor.acceptsNumbers(i)) {
+                        constCons.addRequirement(FixedConstraint(functor.getArg(i),lattice.getNumberType()));
+                    } else {
+                        assert(false && "Unsupported functor input type");
+                    }
+                }
+                cons.push_back(constCons);
+            }
+            return cons;
+        }
+        constraints visitUserDefinedFunctor(const AstUserDefinedFunctor& functor) {
+            constraints cons = visitNode(functor);
+            // TODO where is the type information?
+        }
+        constraints visitRecordInit(const AstRecordInit& record) {
+            constraints cons = visitNode(record);
+            // TODO need type information stored in record
+        }
+        constraints visitAggregator(const AstAggregator& aggregate) {
+            constraints cons = visitNode(aggregate);
+            if (aggregate.getOperator() == AstAggregator::count || aggregate.getOperator() == AstAggregator::sum) {
+                cons.push_back(FixedConstraint(aggregate,lattice.getNumberType()));
+            } else if (aggregate.getOperator() == AstAggregator::min || aggregate.getOperator() == AstAggregator::max) {
+                cons.push_back(VarConstraint(aggregate,aggregate.getTargetExpression()));
+            } else {
+                assert(false && "Unsupported aggregation operation");
+            }
+            return cons;
+        }
+        constraints visitAtom(const AstAtom& atom) {
+            constraints cons = visitNode(atom);
+            // TODO
         }
         // TODO add other visitors
     };

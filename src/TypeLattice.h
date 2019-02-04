@@ -10,7 +10,7 @@ public:
     bool isValid();
 
     // Get the primitive type that is a supertype of this
-    PrimtiveType getPrimitive();  // This will fail on the top type
+    PrimitiveType getPrimitive();  // This will fail on the top type
 
     // Get the constant type that is a subtype of this
     ConstantType getConstant();  // This will fail on the bottom type
@@ -32,5 +32,23 @@ public:
     AnalysisType join(AnalysisType first, AnalysisType second);
 
     // Check if the first is a subtype of the second
-    bool isSubtype(AnalysisType first, AnalysisType second);
+    bool isSubtype(AnalysisType first, AnalysisType second) const;
+
+    // Get the constant number type
+    ConstantType getNumberConstant() const;
+
+    // Get the constant symbol type
+    ConstantType getSymbolConstant() const;
+
+    // Get the constant record type
+    ConstantType getRecordConstant() const;
+
+    // Get the top number type
+    PrimitiveType getNumberType() const;
+
+    // Get the top symbol type
+    PrimitiveType getSymbolType() const;
+
+    // Get the top record type
+    PrimitiveType getRecordType() const;
 }

@@ -32,6 +32,7 @@
 // #include "Global.h"
 #include "FunctorOps.h"
 #include "TypeLattice.h"
+#include "TypeSystem.h"
 #include "Util.h"
 #include <cassert>
 #include <map>
@@ -240,7 +241,20 @@ constraints getConstraints(const TypeLattice& lattice, const AstClause& clause, 
         }
         constraints visitRecordInit(const AstRecordInit& record) {
             constraints cons = visitNode(record);
-            // TODO need type information stored in record
+            auto* type = dynamic_cast<RecordType>(lattice.getTypeEnvironment().getType(record.getType()));
+            assert(type != nullptr && "Type of record is a record type");
+            assert(record.getArguments().size() == type->getFields().size() && "Constructor has correct number of arguments");
+            FixedConstraint firstReq (record, lattice.getRecordType());
+            ImplicationConstraint secondCons (record, lattice.convert(type));
+            for (size_t i = 0; i < record.getArguments().size(); ++i) {
+                AnalysisType fieldType = lattice.convert(lattice.getTypeEnvironment().getType(type->getFields()[i].type));
+                ImplicationConstraint curCons (record.getArguments()[i], fieldType);
+                curCons.addRequirement(firstReq);
+                cons.push_back(curCons);
+                secondCons.addRequirement(FixedConstraint(record.getArguments()[i], fieldType));
+            }
+            cons.push_back(secondCons);
+            return cons;
         }
         constraints visitAggregator(const AstAggregator& aggregate) {
             constraints cons = visitNode(aggregate);

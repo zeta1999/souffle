@@ -1,4 +1,5 @@
-#include "TypeSystem.h"
+class TypeEnvironment;
+class Type;
 
 // Forward declarations
 class PrimitiveType;
@@ -51,4 +52,10 @@ public:
 
     // Get the top record type
     PrimitiveType getRecordType() const;
+
+    // Get the contained type environment
+    TypeEnvironment getEnvironment() const;
+
+    // Pack a type environment type into a lattice type
+    AnalysisType convert(const Type& other);
 };

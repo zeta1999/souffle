@@ -28,7 +28,7 @@ public:
 
 class TopAType : AnalysisType {
 public:
-    TopAType(){};
+    TopAType() {}
     void print(std::ostream& os) {
         os << "top";
     }
@@ -36,7 +36,7 @@ public:
 
 class BotAType : AnalysisType {
 public:
-    TopAType(){};
+    BotAType() {}
     void print(std::ostream& os) {
         os << "bottom";
     }
@@ -45,7 +45,7 @@ public:
 // Type that is not top or bottom
 class InnerAType : AnalysisType {
 public:
-    bool isValid() override {
+    bool isValid() {
         return true;
     }
 
@@ -53,12 +53,12 @@ public:
 
     // Get the primitive type that is a supertype of this
     PrimitiveAType getPrimitive() {
-        return PrimitiveAType(this.getKind());
+        return PrimitiveAType(this->getKind());
     }
 
     // Get the constant type that is a subtype of this
     ConstantAType getConstant() {
-        return ConstantAType(this.getKind());
+        return ConstantAType(this->getKind());
     }
 };
 
@@ -68,7 +68,7 @@ private:
 
 public:
     PrimitiveAType(Kind kind) : kind(kind) {}
-    bool isValid() override {
+    bool isValid() {
         return (kind != Kind::RECORD);
     }
     Kind getKind() {
@@ -119,7 +119,7 @@ private:
 
 public:
     BotPrimAType(Kind kind) : kind(kind) {}
-    bool isValid() override {
+    bool isValid() {
         return false;
     }
     Kind getKind() {
@@ -185,7 +185,7 @@ public:
     UnionAType(std::vector<BaseAType> bases) : representation(), bases(bases) {
         std::stringstream repr;
         repr << join(bases, "|");
-        representation = repr.str;
+        representation = repr.str();
         assert(!bases.empty() && "Empty union is not allowed");
         assert(bases.size() > 1 && "Union with one element is just a base type");
         Kind kind = bases.front().getKind();
@@ -196,7 +196,7 @@ public:
     UnionAType(std::vector<BaseAType> bases, AstTypeIdentifier name) : bases(bases) {
         std::stringstream repr;
         repr << name;
-        representation = repr.str;
+        representation = repr.str();
         assert(!bases.empty() && "Empty union is not allowed");
         assert(bases.size() > 1 && "Union with one element is just a base type");
         Kind kind = bases.front().getKind();
@@ -208,7 +208,7 @@ public:
         return bases.front().getKind();
     }
     void print(std::ostream& os) {
-        os << name;
+        os << representation;
     }
 };
 

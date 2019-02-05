@@ -55,7 +55,7 @@ private:
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
                     tuple >> s;
-                    n = prog.getSymbolTable().lookupExisting(s);
+                    n = symTable.lookupExisting(s);
                 } else {
                     tuple >> n;
                 }
@@ -85,7 +85,7 @@ private:
 
     void printRelationOutput(
             const SymbolMask& symMask, const IODirectives& ioDir, const Relation& rel) override {
-        WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), ioDir, true)->writeAll(rel);
+        WriteCoutCSVFactory().getWriter(symMask, symTable, ioDir, true)->writeAll(rel);
     }
 
 public:
@@ -226,8 +226,8 @@ public:
                 if (isNumericBinaryConstraintOp(toBinaryConstraintOp(bodyRel))) {
                     joinedConstraint << subproofTuple[0] << " " << bodyRel << " " << subproofTuple[1];
                 } else {
-                    joinedConstraint << bodyRel << "(\"" << prog.getSymbolTable().resolve(subproofTuple[0])
-                                     << "\", \"" << prog.getSymbolTable().resolve(subproofTuple[1]) << "\")";
+                    joinedConstraint << bodyRel << "(\"" << symTable.resolve(subproofTuple[0]) << "\", \""
+                                     << symTable.resolve(subproofTuple[1]) << "\")";
                 }
 
                 internalNode->add_child(std::make_unique<LeafNode>(joinedConstraint.str()));
@@ -348,17 +348,17 @@ public:
             }
         }
 
-        // TODO: this only works with numbers at the moment
         std::vector<RamDomain> args;
 
         size_t varCounter = 0;
+
+        // construct arguments to pass in to the subroutine
+        // - this contains the variable bindings selected by the user
 
         // add number representation of tuple
         auto tupleNums = argsToNums(relName, tuple);
         args.insert(args.end(), tupleNums.begin(), tupleNums.end());
         varCounter += tuple.size();
-
-        std::cout << variableTypes << std::endl;
 
         while (varCounter < uniqueVariables.size()) {
             auto var = uniqueVariables[varCounter];
@@ -366,18 +366,10 @@ public:
             if (variableTypes[var] == 's') {
                 if (varValue.size() >= 2 && varValue[0] == '"' && varValue[varValue.size() - 1] == '"') {
                     auto originalStr = varValue.substr(1, varValue.size() - 2);
-                    if (prog.getSymbolTable().contains(originalStr)) {
-                        args.push_back(prog.getSymbolTable().lookupExisting(originalStr));
-                    } else {
-                        args.push_back(-1);
-                    }
+                    args.push_back(symTable.lookup(originalStr));
                 } else {
                     // assume no quotation marks
-                    if (prog.getSymbolTable().contains(varValue)) {
-                        args.push_back(prog.getSymbolTable().lookupExisting(varValue));
-                    } else {
-                        args.push_back(-1);
-                    }
+                    args.push_back(symTable.lookup(varValue));
                 }
             } else {
                 args.push_back(std::stoi(varValue));
@@ -400,6 +392,86 @@ public:
         auto internalNode = std::make_unique<InnerNode>(
                 relName + "(" + joinedArgsStr.str() + ")", "(R" + std::to_string(ruleNum) + ")");
 
+        // traverse return vector and construct child nodes
+        // making sure we display existent and non-existent tuples correctly
+        int literalCounter = 1;
+        for (size_t returnCounter = 0; returnCounter < ret.size(); returnCounter++) {
+            // check what the next contained atom is
+            bool atomExists;
+            if (err[returnCounter]) {
+                atomExists = false;
+                returnCounter++;
+            } else {
+                atomExists = true;
+                assert(err[returnCounter + 1] && "there should be a separator for literals in return");
+                returnCounter += 2;
+            }
+
+            // get the relation of the current atom
+            auto atomRepresentation = splitString(atoms[literalCounter], ',');
+            std::string bodyRel = atomRepresentation[0];
+
+            // check whether the current atom is a constraint
+            bool isConstraint =
+                    std::find(constraintList.begin(), constraintList.end(), bodyRel) != constraintList.end();
+
+            // handle negated atom names
+            auto bodyRelAtomName = bodyRel;
+            if (bodyRel[0] == '!') {
+                bodyRelAtomName = bodyRel.substr(1);
+            }
+
+            // traverse subroutine return
+            size_t arity;
+            if (isConstraint) {
+                // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
+                // annotations
+                arity = 4;
+            } else {
+                std::cout << "atom name: " << bodyRelAtomName << std::endl;
+                arity = prog.getRelation(bodyRelAtomName)->getArity();
+            }
+
+            // process current literal
+            std::vector<RamDomain> atomValues;
+            std::vector<bool> atomErrs;
+            size_t j = returnCounter;
+            for (; j < returnCounter + arity - 2; j++) {
+                atomValues.push_back(ret[j]);
+                atomErrs.push_back(err[j]);
+            }
+
+            // add child nodes to the proof tree
+            std::stringstream childLabel;
+            if (isConstraint) {
+                assert(atomValues.size() == 2 && "not a binary constraint");
+
+                if (isNumericBinaryConstraintOp(toBinaryConstraintOp(bodyRel))) {
+                    childLabel << atomValues[0] << " " << bodyRel << " " << atomValues[1];
+                } else {
+                    childLabel << bodyRel << "(\"" << symTable.resolve(atomValues[0]) << "\", \""
+                               << symTable.resolve(atomValues[1]) << "\")";
+                }
+            } else {
+                childLabel << bodyRel << "(";
+                childLabel << join(numsToArgs(bodyRelAtomName, atomValues, &atomErrs), ", ");
+                childLabel << ")";
+            }
+
+            if (atomExists) {
+                childLabel << " ✓";
+            } else {
+                childLabel << " x";
+            }
+
+            internalNode->add_child(std::make_unique<LeafNode>(childLabel.str()));
+            internalNode->setSize(internalNode->getSize() + 1);
+
+            returnCounter = j - 1;
+            literalCounter++;
+        }
+
+        /*
         for (size_t i = 1; i < atoms.size(); i++) {
             // store passed in values of atom
             std::vector<std::string> atomValues;
@@ -428,6 +500,7 @@ public:
             internalNode->add_child(std::make_unique<LeafNode>(leafNodeText.str()));
             internalNode->setSize(internalNode->getSize() + 1);
         }
+        */
 
         return std::move(internalNode);
     }
@@ -475,7 +548,7 @@ public:
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
                     tuple >> s;
-                    n = prog.getSymbolTable().lookupExisting(s.c_str());
+                    n = symTable.lookupExisting(s.c_str());
                 } else {
                     tuple >> n;
                 }

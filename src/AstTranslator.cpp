@@ -1199,10 +1199,11 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
     // a mapper to replace variables with subroutine arguments
     struct VariablesToArguments : public AstNodeMapper {
-        std::vector<AstVariable> uniqueVariables;
+        const std::vector<AstVariable>& uniqueVariables;
 
         VariablesToArguments() = default;
-        VariablesToArguments(std::vector<AstVariable> uniqueVariables) : uniqueVariables(uniqueVariables) {}
+        VariablesToArguments(const std::vector<AstVariable>& uniqueVariables)
+                : uniqueVariables(uniqueVariables) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // apply recursive
@@ -1229,7 +1230,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     // auto valueIndex = ClauseTranslator(*this).createValueIndex(clause);
 
     // go through each body atom and create a return
-    size_t atomNumber = 0;
+    size_t litNumber = 0;
     for (const auto& lit : clause.getBodyLiterals()) {
         if (auto atom = dynamic_cast<AstAtom*>(lit)) {
             // get a RamRelationReference
@@ -1271,21 +1272,68 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
             // make the nested operation to return the atom number if it exists
             auto returnValue = std::make_unique<RamReturn>();
-            returnValue->addValue(std::make_unique<RamNumber>(atomNumber));
-            for (size_t i = 0; i < atom->getArity() - 2; i++) {
-                returnValue->addValue(translateValue(atom->getArgument(i), ValueIndex()));
-            }
+            returnValue->addValue(std::make_unique<RamNumber>(litNumber));
 
             // create a search
             auto search = std::make_unique<RamIndexScan>(
-                    std::move(relRef), atomNumber, std::move(query), searchCols, std::move(returnValue));
+                    std::move(relRef), litNumber, std::move(query), searchCols, std::move(returnValue));
+
+            // now, return the values of the atoms, with a separator
+            auto returnAtom = std::make_unique<RamReturn>();
+            // separator between atom number and atom
+            returnAtom->addValue(nullptr);
+            // the actual atom
+            for (size_t i = 0; i < atom->getArity() - 2; i++) {
+                returnAtom->addValue(translateValue(atom->getArgument(i), ValueIndex()));
+            }
+
+            // chain the atom number and atom value together
+            auto atomSequence = std::make_unique<RamSequence>();
+            atomSequence->add(std::make_unique<RamInsert>(std::move(search)));
+            atomSequence->add(std::make_unique<RamInsert>(std::move(returnAtom)));
 
             // append search to the sequence
-            searchSequence->add(std::make_unique<RamInsert>(std::move(search)));
+            searchSequence->add(std::move(atomSequence));
 
-            atomNumber++;
         } else if (auto con = dynamic_cast<AstConstraint*>(lit)) {
+            VariablesToArguments varsToArgs(uniqueVariables);
+            con->apply(varsToArgs);
+
+            // translate to a RamCondition
+            auto condition = translateConstraint(con, ValueIndex());
+
+            // create a return value
+            auto returnValue = std::make_unique<RamReturn>();
+            returnValue->addValue(std::make_unique<RamNumber>(litNumber));
+
+            // create a filter
+            auto filter = std::make_unique<RamFilter>(std::move(condition), std::move(returnValue));
+
+            // now, return the values of the literal, with a separator
+            auto returnLit = std::make_unique<RamReturn>();
+            // separator between atom number and atom
+            returnLit->addValue(nullptr);
+            // add return values for binary constraints and negations
+            if (auto binaryConstraint = dynamic_cast<AstBinaryConstraint*>(con)) {
+                returnLit->addValue(translateValue(binaryConstraint->getLHS(), ValueIndex()));
+                returnLit->addValue(translateValue(binaryConstraint->getRHS(), ValueIndex()));
+            } else if (auto negation = dynamic_cast<AstNegation*>(con)) {
+                auto vals = negation->getAtom()->getArguments();
+                for (size_t i = 0; i < vals.size() - 2; i++) {
+                    returnLit->addValue(translateValue(vals[i], ValueIndex()));
+                }
+            }
+
+            // chain the atom number and atom value together
+            auto litSequence = std::make_unique<RamSequence>();
+            litSequence->add(std::make_unique<RamInsert>(std::move(filter)));
+            litSequence->add(std::make_unique<RamInsert>(std::move(returnLit)));
+
+            // append search to the sequence
+            searchSequence->add(std::move(litSequence));
         }
+
+        litNumber++;
     }
 
     return std::move(searchSequence);

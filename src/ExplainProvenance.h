@@ -50,6 +50,7 @@ inline std::vector<std::string> split(const std::string& s, char delim, int time
 class ExplainProvenance {
 protected:
     SouffleProgram& prog;
+    SymbolTable symTable;
 
     std::vector<RamDomain> argsToNums(
             const std::string& relName, const std::vector<std::string>& args) const {
@@ -65,11 +66,7 @@ protected:
                 // remove quotation marks
                 if (args[i].size() >= 2 && args[i][0] == '"' && args[i][args[i].size() - 1] == '"') {
                     auto originalStr = args[i].substr(1, args[i].size() - 2);
-                    if (prog.getSymbolTable().contains(originalStr)) {
-                        nums.push_back(prog.getSymbolTable().lookupExisting(originalStr));
-                    } else {
-                        nums.push_back(-1);
-                    }
+                    nums.push_back(symTable.lookupExisting(originalStr));
                 }
             } else {
                 nums.push_back(std::stoi(args[i]));
@@ -93,11 +90,7 @@ protected:
                 args.push_back("_");
             } else {
                 if (*rel->getAttrType(i) == 's') {
-                    if (prog.getSymbolTable().contains(nums[i])) {
-                        args.push_back("\"" + std::string(prog.getSymbolTable().resolve(nums[i])) + "\"");
-                    } else {
-                        args.push_back("ERROR_STRING_NOT_FOUND");
-                    }
+                    args.push_back("\"" + std::string(symTable.resolve(nums[i])) + "\"");
                 } else {
                     args.push_back(std::to_string(nums[i]));
                 }
@@ -111,7 +104,9 @@ protected:
             const SymbolMask& symMask, const IODirectives& ioDir, const Relation& rel) = 0;
 
 public:
-    ExplainProvenance(SouffleProgram& prog) : prog(prog) {}
+    ExplainProvenance(SouffleProgram& prog) : prog(prog) {
+        symTable = SymbolTable(prog.getSymbolTable());
+    }
     virtual ~ExplainProvenance() = default;
 
     virtual void setup() = 0;

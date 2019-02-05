@@ -435,13 +435,13 @@ public:
      */
     std::map<std::string, std::string> getStringMap(const std::vector<std::string>& path) const {
         std::map<std::string, std::string> kvps;
-        DirectoryEntry* parent = dynamic_cast<DirectoryEntry*>(lookupEntry(path));
+        auto* parent = dynamic_cast<DirectoryEntry*>(lookupEntry(path));
         if (parent == nullptr) {
             return kvps;
         }
 
         for (const auto& key : parent->getKeys()) {
-            TextEntry* text = dynamic_cast<TextEntry*>(parent->readEntry(key));
+            auto* text = dynamic_cast<TextEntry*>(parent->readEntry(key));
             if (text != nullptr) {
                 kvps[key] = text->getText();
             }

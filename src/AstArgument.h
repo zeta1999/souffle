@@ -549,8 +549,8 @@ protected:
  */
 class AstTypeCast : public AstArgument {
 public:
-    AstTypeCast(std::unique_ptr<AstArgument> value, std::string type)
-            : value(std::move(value)), type(std::move(type)) {}
+    AstTypeCast(std::unique_ptr<AstArgument> value, const AstTypeIdentifier& type)
+            : value(std::move(value)), type(type) {}
 
     void print(std::ostream& os) const override {
         os << *value << " as " << type;
@@ -560,7 +560,7 @@ public:
         return value.get();
     }
 
-    const std::string& getType() const {
+    const AstTypeIdentifier& getType() const {
         return type;
     }
 
@@ -588,7 +588,7 @@ protected:
     std::unique_ptr<AstArgument> value;
 
     /** The target type name */
-    std::string type;
+    AstTypeIdentifier type;
 
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {

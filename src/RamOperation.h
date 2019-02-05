@@ -41,10 +41,6 @@ class RamOperation : public RamNode {
 public:
     RamOperation(RamNodeType type) : RamNode(type) {}
 
-    /** Get depth */
-    // TODO (#541): move to analysis
-    virtual size_t getDepth() const = 0;
-
     /** Print */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
@@ -77,11 +73,6 @@ class RamNestedOperation : public RamOperation {
 public:
     RamNestedOperation(RamNodeType type, std::unique_ptr<RamOperation> nested)
             : RamOperation(type), nestedOperation(std::move(nested)) {}
-
-    /** Get depth of query */
-    size_t getDepth() const override {
-        return 1 + nestedOperation->getDepth();
-    }
 
     /** Get nested operation */
     RamOperation& getOperation() const {
@@ -673,11 +664,6 @@ public:
         return toPtrVector(values);
     }
 
-    /** Get depth */
-    size_t getDepth() const override {
-        return 1;
-    }
-
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
         const std::string tabs(tabpos, '\t');
@@ -758,10 +744,6 @@ public:
         }
 
         os << ")";
-    }
-
-    size_t getDepth() const override {
-        return 1;
     }
 
     void addValue(std::unique_ptr<RamValue> val) {

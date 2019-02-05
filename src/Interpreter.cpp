@@ -28,6 +28,7 @@
 #include "ProfileEvent.h"
 #include "RamNode.h"
 #include "RamOperation.h"
+#include "RamOperationDepth.h"
 #include "RamValue.h"
 #include "RamVisitor.h"
 #include "ReadStream.h"
@@ -665,7 +666,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
     };
 
     // create and run interpreter for operations
-    InterpreterContext ctxt(op.getDepth());
+    InterpreterContext ctxt(translationUnit.getAnalysis<RamOperationDepthAnalysis>()->getDepth(&op));
     ctxt.setReturnValues(args.getReturnValues());
     ctxt.setReturnErrors(args.getReturnErrors());
     ctxt.setArguments(args.getArguments());

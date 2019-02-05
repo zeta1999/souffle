@@ -428,7 +428,6 @@ public:
                 // annotations
                 arity = 4;
             } else {
-                std::cout << "atom name: " << bodyRelAtomName << std::endl;
                 arity = prog.getRelation(bodyRelAtomName)->getArity();
             }
 

@@ -50,7 +50,7 @@ inline std::vector<std::string> split(const std::string& s, char delim, int time
 class ExplainProvenance {
 protected:
     SouffleProgram& prog;
-    SymbolTable symTable;
+    SymbolTable& symTable;
 
     std::vector<RamDomain> argsToNums(
             const std::string& relName, const std::vector<std::string>& args) const {
@@ -66,7 +66,7 @@ protected:
                 // remove quotation marks
                 if (args[i].size() >= 2 && args[i][0] == '"' && args[i][args[i].size() - 1] == '"') {
                     auto originalStr = args[i].substr(1, args[i].size() - 2);
-                    nums.push_back(symTable.lookupExisting(originalStr));
+                    nums.push_back(symTable.lookup(originalStr));
                 }
             } else {
                 nums.push_back(std::stoi(args[i]));
@@ -104,9 +104,7 @@ protected:
             const SymbolMask& symMask, const IODirectives& ioDir, const Relation& rel) = 0;
 
 public:
-    ExplainProvenance(SouffleProgram& prog) : prog(prog) {
-        symTable = SymbolTable(prog.getSymbolTable());
-    }
+    ExplainProvenance(SouffleProgram& prog) : prog(prog), symTable(prog.getSymbolTable()) {}
     virtual ~ExplainProvenance() = default;
 
     virtual void setup() = 0;

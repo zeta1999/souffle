@@ -1984,7 +1984,7 @@ void Synthesiser::generateCode(
     os << "}\n";  // end of dumpOutputs() method
 
     os << "public:\n";
-    os << "const SymbolTable &getSymbolTable() const override {\n";
+    os << "SymbolTable &getSymbolTable() override {\n";
     os << "return symTable;\n";
     os << "}\n";  // end of getSymbolTable() method
 

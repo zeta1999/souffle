@@ -35,6 +35,7 @@ class LevelConditionsTransformer : public RamTransformer {
 
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
+        rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
         return levelConditions(*translationUnit.getProgram());
     }
 
@@ -57,6 +58,7 @@ class CreateIndicesTransformer : public RamTransformer {
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
         rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
+        rvla = translationUnit.getAnalysis<RamValueLevelAnalysis>();
         return createIndices(*translationUnit.getProgram());
     }
 
@@ -84,6 +86,8 @@ class ConvertExistenceChecksTransformer : public RamTransformer {
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
         rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
+        rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
+        rvla = translationUnit.getAnalysis<RamValueLevelAnalysis>();
         return convertExistenceChecks(*translationUnit.getProgram());
     }
 

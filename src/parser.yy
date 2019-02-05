@@ -636,7 +636,7 @@ arg
                 std::unique_ptr<AstArgument>($7));
         $$->setSrcLoc(@$);
     }
-  | arg AS IDENT {
+  | arg AS type_id {
         $$ = new AstTypeCast(std::unique_ptr<AstArgument>($1), $3);
         $$->setSrcLoc(@$);
     }

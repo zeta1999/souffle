@@ -115,6 +115,7 @@ souffle_sources = \
               RamAnalysis.h                             \
               RamConstValue.cpp RamConstValue.h         \
               RamConditionLevel.cpp RamConditionLevel.h \
+              RamOperationDepth.cpp RamOperationDepth.h \
               RamValueLevel.cpp RamValueLevel.h         \
               RamCondition.h                            \
               RamNode.h                                 \

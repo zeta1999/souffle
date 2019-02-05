@@ -20,6 +20,7 @@
 #include "TypeSystem.h"
 #include "AstTypeEnvironmentAnalysis.h"
 #include "TypeLattice.h"
+#include "TypeSystem.h"
 #include <cassert>
 #include <map>
 #include <memory>
@@ -37,6 +38,8 @@ class AstTranslationUnit;
 
 class TypeAnalysis : public AstAnalysis {
 public:
+    TypeAnalysis(const TypeEnvironment& env) : argumentTypes(), lattice(env){};
+
     static constexpr const char* name = "type-analysis";
 
     void run(const AstTranslationUnit& translationUnit) override;

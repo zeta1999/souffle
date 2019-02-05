@@ -18,10 +18,13 @@ enum class Kind { SYMBOL, NUMBER, RECORD };
 
 class AnalysisType {
     friend class TypeLattice;
+
 protected:
     const TypeLattice& lattice;
+
 protected:
     AnalysisType(const TypeLattice& lattice) : lattice(lattice) {}
+
 public:
     // Check the type is not a bottom or top type
     bool isValid() const {
@@ -38,8 +41,10 @@ public:
 
 class TopAType : public AnalysisType {
     friend class TypeLattice;
+
 private:
     TopAType(const TypeLattice& lattice) : AnalysisType(lattice) {}
+
 public:
     void print(std::ostream& os) const override {
         os << "top";
@@ -48,8 +53,10 @@ public:
 
 class BotAType : public AnalysisType {
     friend class TypeLattice;
+
 private:
     BotAType(const TypeLattice& lattice) : AnalysisType(lattice) {}
+
 public:
     void print(std::ostream& os) const override {
         os << "bottom";
@@ -59,8 +66,10 @@ public:
 // Type that is not top or bottom
 class InnerAType : public AnalysisType {
     friend class TypeLattice;
+
 protected:
     InnerAType(const TypeLattice& lattice) : AnalysisType(lattice) {}
+
 public:
     bool isValid() const {
         return true;
@@ -69,18 +78,21 @@ public:
     virtual Kind getKind() const = 0;
 
     // Get the primitive type that is a supertype of this
-    const PrimitiveAType& getPrimitive();
+    const PrimitiveAType& getPrimitive() const;
 
     // Get the constant type that is a subtype of this
-    const ConstantAType& getConstant();
+    const ConstantAType& getConstant() const;
 };
 
 class PrimitiveAType : public InnerAType {
     friend class TypeLattice;
+
 private:
     Kind kind;
+
 private:
     PrimitiveAType(const TypeLattice& lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
+
 public:
     bool isValid() const {
         return (kind != Kind::RECORD);
@@ -105,10 +117,13 @@ public:
 
 class ConstantAType : public InnerAType {
     friend class TypeLattice;
+
 private:
     Kind kind;
+
 private:
     ConstantAType(const TypeLattice& lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
+
 public:
     Kind getKind() const override {
         return kind;
@@ -130,10 +145,13 @@ public:
 
 class BotPrimAType : public InnerAType {
     friend class TypeLattice;
+
 private:
     Kind kind;
+
 private:
     BotPrimAType(const TypeLattice& lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
+
 public:
     bool isValid() const {
         return false;
@@ -158,13 +176,17 @@ public:
 
 class BaseAType : public InnerAType {
     friend class TypeLattice;
+
 private:
     Kind kind;
     AstTypeIdentifier name;
+
 private:
-    BaseAType(const TypeLattice& lattice, Kind kind, AstTypeIdentifier name) : InnerAType(lattice), kind(kind), name(name) {
+    BaseAType(const TypeLattice& lattice, Kind kind, AstTypeIdentifier name)
+            : InnerAType(lattice), kind(kind), name(name) {
         assert(kind != Kind::RECORD && "Base types are symbols and numbers only");
     }
+
 public:
     Kind getKind() const override {
         return kind;
@@ -176,11 +198,15 @@ public:
 
 class RecordAType : public InnerAType {
     friend class TypeLattice;
+
 private:
     AstTypeIdentifier name;
     std::vector<InnerAType*> fields;
+
 private:
-    RecordAType(const TypeLattice& lattice, AstTypeIdentifier name, std::vector<InnerAType*> fields) : InnerAType(lattice), name(name), fields(fields) {}
+    RecordAType(const TypeLattice& lattice, AstTypeIdentifier name, std::vector<InnerAType*> fields)
+            : InnerAType(lattice), name(name), fields(fields) {}
+
 public:
     Kind getKind() const override {
         return Kind::RECORD;
@@ -192,12 +218,15 @@ public:
 
 class UnionAType : public InnerAType {
     friend class TypeLattice;
+
 private:
     std::string representation;
     std::vector<BaseAType*> bases;
+
 private:
     UnionAType(const TypeLattice& lattice, std::vector<BaseAType*> bases);
     UnionAType(const TypeLattice& lattice, std::vector<BaseAType*> bases, AstTypeIdentifier name);
+
 public:
     Kind getKind() const override {
         return bases.front()->getKind();
@@ -210,12 +239,19 @@ public:
 class TypeLattice {
 private:
     const TypeEnvironment& env;
+    TopAType top;
+    std::map<Kind, PrimitiveAType> primitives;
+    std::map<Kind, ConstantAType> constants;
+    std::map<Kind, BotPrimAType> botprims;
+    BotAType bot;
+    std::vector<BaseAType> bases;
+    std::vector<RecordAType> records;
+    std::vector<UnionAType> unions;
+    std::map<AstTypeIdentifier, InnerAType*> aliases;
 
 public:
     // Initialise the type lattice from the types found in the type environment
-    TypeLattice(const TypeEnvironment& env) : env(env) {
-        // TODO
-    }
+    TypeLattice(const TypeEnvironment& env);
 
     // Find the highest common subtype (intersection)
     const AnalysisType& meet(const AnalysisType& first, const AnalysisType& second);
@@ -242,6 +278,9 @@ public:
 
     // Get a constant type
     const ConstantAType& getConstant(Kind kind) const;
+
+    // Get the top type
+    const TopAType& getTop() const;
 };
 
 }  // end of namespace souffle

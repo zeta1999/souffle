@@ -17,64 +17,78 @@ class TypeLattice;
 enum class Kind { SYMBOL, NUMBER, RECORD };
 
 class AnalysisType {
+    friend class TypeLattice;
+protected:
+    const TypeLattice& lattice;
+protected:
+    AnalysisType(const TypeLattice& lattice) : lattice(lattice) {}
 public:
     // Check the type is not a bottom or top type
-    bool isValid() {
+    bool isValid() const {
         return false;
     }
 
-    virtual void print(std::ostream& os);
+    virtual void print(std::ostream& os) const = 0;
+
+    friend std::ostream& operator<<(std::ostream& out, const AnalysisType& type) {
+        type.print(out);
+        return out;
+    }
 };
 
-class TopAType : AnalysisType {
+class TopAType : public AnalysisType {
+    friend class TypeLattice;
+private:
+    TopAType(const TypeLattice& lattice) : AnalysisType(lattice) {}
 public:
-    TopAType() {}
-    void print(std::ostream& os) {
+    void print(std::ostream& os) const override {
         os << "top";
     }
 };
 
-class BotAType : AnalysisType {
+class BotAType : public AnalysisType {
+    friend class TypeLattice;
+private:
+    BotAType(const TypeLattice& lattice) : AnalysisType(lattice) {}
 public:
-    BotAType() {}
-    void print(std::ostream& os) {
+    void print(std::ostream& os) const override {
         os << "bottom";
     }
 };
 
 // Type that is not top or bottom
-class InnerAType : AnalysisType {
+class InnerAType : public AnalysisType {
+    friend class TypeLattice;
+protected:
+    InnerAType(const TypeLattice& lattice) : AnalysisType(lattice) {}
 public:
-    bool isValid() {
+    bool isValid() const {
         return true;
     }
 
-    virtual Kind getKind();
+    virtual Kind getKind() const = 0;
 
     // Get the primitive type that is a supertype of this
-    PrimitiveAType getPrimitive() {
-        return PrimitiveAType(this->getKind());
-    }
+    const PrimitiveAType& getPrimitive();
 
     // Get the constant type that is a subtype of this
-    ConstantAType getConstant() {
-        return ConstantAType(this->getKind());
-    }
+    const ConstantAType& getConstant();
 };
 
-class PrimitiveAType : InnerAType {
+class PrimitiveAType : public InnerAType {
+    friend class TypeLattice;
 private:
     Kind kind;
-
+private:
+    PrimitiveAType(const TypeLattice& lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
 public:
-    PrimitiveAType(Kind kind) : kind(kind) {}
-    bool isValid() {
+    bool isValid() const {
         return (kind != Kind::RECORD);
     }
-    Kind getKind() {
+    Kind getKind() const override {
         return kind;
     }
-    void print(std::ostream& os) {
+    void print(std::ostream& os) const override {
         switch (kind) {
             case Kind::SYMBOL:
                 os << "symbol";
@@ -89,16 +103,17 @@ public:
     }
 };
 
-class ConstantAType : InnerAType {
+class ConstantAType : public InnerAType {
+    friend class TypeLattice;
 private:
     Kind kind;
-
+private:
+    ConstantAType(const TypeLattice& lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
 public:
-    ConstantAType(Kind kind) : kind(kind) {}
-    Kind getKind() {
+    Kind getKind() const override {
         return kind;
     }
-    void print(std::ostream& os) {
+    void print(std::ostream& os) const override {
         switch (kind) {
             case Kind::SYMBOL:
                 os << "const_symbol";
@@ -113,19 +128,20 @@ public:
     }
 };
 
-class BotPrimAType : InnerAType {
+class BotPrimAType : public InnerAType {
+    friend class TypeLattice;
 private:
     Kind kind;
-
+private:
+    BotPrimAType(const TypeLattice& lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
 public:
-    BotPrimAType(Kind kind) : kind(kind) {}
-    bool isValid() {
+    bool isValid() const {
         return false;
     }
-    Kind getKind() {
+    Kind getKind() const override {
         return kind;
     }
-    void print(std::ostream& os) {
+    void print(std::ostream& os) const override {
         switch (kind) {
             case Kind::SYMBOL:
                 os << "bot_symbol";
@@ -140,81 +156,60 @@ public:
     }
 };
 
-class BaseAType : InnerAType {
+class BaseAType : public InnerAType {
+    friend class TypeLattice;
 private:
     Kind kind;
     AstTypeIdentifier name;
-
-public:
-    BaseAType(Kind kind, AstTypeIdentifier name) : kind(kind), name(name) {
+private:
+    BaseAType(const TypeLattice& lattice, Kind kind, AstTypeIdentifier name) : InnerAType(lattice), kind(kind), name(name) {
         assert(kind != Kind::RECORD && "Base types are symbols and numbers only");
     }
-    Kind getKind() {
+public:
+    Kind getKind() const override {
         return kind;
     }
-    void print(std::ostream& os) {
+    void print(std::ostream& os) const override {
         os << name;
     }
 };
 
-class RecordAType : InnerAType {
+class RecordAType : public InnerAType {
+    friend class TypeLattice;
 private:
     AstTypeIdentifier name;
-    std::vector<InnerAType> fields;
-
+    std::vector<InnerAType*> fields;
+private:
+    RecordAType(const TypeLattice& lattice, AstTypeIdentifier name, std::vector<InnerAType*> fields) : InnerAType(lattice), name(name), fields(fields) {}
 public:
-    RecordAType(AstTypeIdentifier name) : name(name), fields() {}
-    RecordAType(AstTypeIdentifier name, std::vector<InnerAType> fields) : name(name), fields(fields) {}
-    void addField(InnerAType field) {
-        fields.push_back(field);
-    }
-    Kind getKind() {
+    Kind getKind() const override {
         return Kind::RECORD;
     }
-    void print(std::ostream& os) {
+    void print(std::ostream& os) const override {
         os << name;
     }
 };
 
-class UnionAType : InnerAType {
+class UnionAType : public InnerAType {
+    friend class TypeLattice;
 private:
     std::string representation;
-    std::vector<BaseAType> bases;
-
+    std::vector<BaseAType*> bases;
+private:
+    UnionAType(const TypeLattice& lattice, std::vector<BaseAType*> bases);
+    UnionAType(const TypeLattice& lattice, std::vector<BaseAType*> bases, AstTypeIdentifier name);
 public:
-    UnionAType(std::vector<BaseAType> bases) : representation(), bases(bases) {
-        std::stringstream repr;
-        repr << join(bases, "|");
-        representation = repr.str();
-        assert(!bases.empty() && "Empty union is not allowed");
-        assert(bases.size() > 1 && "Union with one element is just a base type");
-        Kind kind = bases.front().getKind();
-        for (BaseAType b : bases) {
-            assert(b.getKind() == kind && "All components of union have the same type");
-        }
+    Kind getKind() const override {
+        return bases.front()->getKind();
     }
-    UnionAType(std::vector<BaseAType> bases, AstTypeIdentifier name) : bases(bases) {
-        std::stringstream repr;
-        repr << name;
-        representation = repr.str();
-        assert(!bases.empty() && "Empty union is not allowed");
-        assert(bases.size() > 1 && "Union with one element is just a base type");
-        Kind kind = bases.front().getKind();
-        for (BaseAType b : bases) {
-            assert(b.getKind() == kind && "All components of union have the same type");
-        }
-    }
-    Kind getKind() {
-        return bases.front().getKind();
-    }
-    void print(std::ostream& os) {
+    void print(std::ostream& os) const override {
         os << representation;
     }
 };
 
 class TypeLattice {
 private:
-    TypeEnvironment env;
+    const TypeEnvironment& env;
 
 public:
     // Initialise the type lattice from the types found in the type environment
@@ -223,24 +218,30 @@ public:
     }
 
     // Find the highest common subtype (intersection)
-    AnalysisType meet(AnalysisType first, AnalysisType second);
+    const AnalysisType& meet(const AnalysisType& first, const AnalysisType& second);
 
     // Find the lowest common supertype (union)
-    AnalysisType join(AnalysisType first, AnalysisType second);
+    const AnalysisType& join(const AnalysisType& first, const AnalysisType& second);
 
     // Check if the first is a subtype of the second
-    bool isSubtype(AnalysisType first, AnalysisType second) const;
+    bool isSubtype(const AnalysisType& first, const AnalysisType& second) const;
 
     // Get the contained type environment
-    TypeEnvironment getEnvironment() const {
+    const TypeEnvironment& getEnvironment() const {
         return env;
     }
 
     // Pack a type environment type into a lattice type
-    InnerAType convert(const Type& other);
+    const InnerAType& convert(const Type& other) const;
 
     // Get a type from its identifier
     const InnerAType& getType(const AstTypeIdentifier& ident) const;
+
+    // Get a primitive type
+    const PrimitiveAType& getPrimitive(Kind kind) const;
+
+    // Get a constant type
+    const ConstantAType& getConstant(Kind kind) const;
 };
 
 }  // end of namespace souffle

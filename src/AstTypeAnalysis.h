@@ -46,7 +46,7 @@ public:
     /**
      * Get the computed type for the given argument.
      */
-    AnalysisType getType(const AstArgument* argument) const {
+    const AnalysisType& getType(const AstArgument* argument) const {
         auto found = argumentTypes.find(argument);
         assert(found != argumentTypes.end());
         return found->second;
@@ -64,7 +64,7 @@ private:
      * @param clause the clause to be typed
      * @return a map mapping each contained argument to a type
      */
-    static std::map<const AstArgument*, AnalysisType> analyseTypes(const TypeLattice& lat,
+    static std::map<const AstArgument*, const AnalysisType&> analyseTypes(const TypeLattice& lat,
             const AstClause& clause, const AstProgram& program, std::ostream* debugStream = nullptr);
 };
 

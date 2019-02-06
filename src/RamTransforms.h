@@ -31,7 +31,7 @@ class RamProgram;
  * can be evaluated.
  */
 class LevelConditionsTransformer : public RamTransformer {
-    RamConditionLevelAnalysis* rcla;
+    RamConditionLevelAnalysis* rcla{nullptr};
 
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
@@ -51,8 +51,8 @@ public:
 };
 
 class CreateIndicesTransformer : public RamTransformer {
-    RamConstValueAnalysis* rcva;
-    RamValueLevelAnalysis* rvla;
+    RamConstValueAnalysis* rcva{nullptr};
+    RamValueLevelAnalysis* rvla{nullptr};
 
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
@@ -77,9 +77,9 @@ public:
 };
 
 class ConvertExistenceChecksTransformer : public RamTransformer {
-    RamConstValueAnalysis* rcva;
-    RamConditionLevelAnalysis* rcla;
-    RamValueLevelAnalysis* rvla;
+    RamConstValueAnalysis* rcva{nullptr};
+    RamConditionLevelAnalysis* rcla{nullptr};
+    RamValueLevelAnalysis* rvla{nullptr};
 
 private:
     bool transform(RamTranslationUnit& translationUnit) override {

@@ -391,9 +391,9 @@ protected:
  * Aggregation
  */
 class RamAggregate : public RamSearch {
-    RamConstValueAnalysis* rcva;
-    RamConditionLevelAnalysis* rcla;
-    RamValueLevelAnalysis* rvla;
+    RamConstValueAnalysis* rcva{nullptr};
+    RamConditionLevelAnalysis* rcla{nullptr};
+    RamValueLevelAnalysis* rvla{nullptr};
 
 public:
     /** Types of aggregation functions */

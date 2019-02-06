@@ -18,17 +18,15 @@
 
 extern "C" {
 
-int32_t foo(int32_t n, const char *s) {
-   return n + strlen(s);
+int32_t foo(int32_t n, const char* s) {
+    return n + strlen(s);
 }
 
-int32_t goo(const char *s, int32_t n) {
-   return strlen(s) + n;
+int32_t goo(const char* s, int32_t n) {
+    return strlen(s) + n;
 }
 
-const char *hoo() {
+const char* hoo() {
     return "Hello world!\n";
 }
-
 }
-

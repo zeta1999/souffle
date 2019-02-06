@@ -368,6 +368,7 @@ typeSol TypeAnalysis::analyseTypes(const TypeLattice& lattice, const AstClause& 
         const AstProgram& program, std::ostream* debugStream) {
     TypeConstraints typeCons = getConstraints(lattice, clause, program);
     // TODO
+    assert(false && "Not implemented");
 }
 
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
@@ -381,10 +382,12 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     //     }
     // }
     // TODO
+    assert(false && "Not implemented");
 }
 
 void TypeAnalysis::print(std::ostream& os) const {
     // TODO
+    assert(false && "Not implemented");
 }
 
 }  // end of namespace souffle

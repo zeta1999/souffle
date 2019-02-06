@@ -249,14 +249,14 @@ class TypeLattice {
 private:
     const TypeEnvironment& env;
     TopAType top;
-    std::map<Kind, PrimitiveAType> primitives;
-    std::map<Kind, ConstantAType> constants;
-    std::map<Kind, BotPrimAType> botprims;
+    std::map<Kind, PrimitiveAType> primitives{};
+    std::map<Kind, ConstantAType> constants{};
+    std::map<Kind, BotPrimAType> botprims{};
     BotAType bot;
-    std::vector<BaseAType> bases;
-    std::vector<RecordAType> records;
-    std::vector<UnionAType> unions;
-    std::map<AstTypeIdentifier, const InnerAType*> aliases;
+    std::vector<BaseAType> bases{};
+    std::vector<RecordAType> records{};
+    std::vector<UnionAType> unions{};
+    std::map<AstTypeIdentifier, const InnerAType*> aliases{};
 
 private:
     const InnerAType* addType(const Type* type);
@@ -266,13 +266,19 @@ public:
     TypeLattice(const TypeEnvironment& env);
 
     // Find the highest common subtype (intersection)
-    const AnalysisType& meet(const AnalysisType& first, const AnalysisType& second);
+    const AnalysisType& meet(const AnalysisType& first, const AnalysisType& second) {
+        assert(false && "Not implemented");
+    }
 
     // Find the lowest common supertype (union)
-    const AnalysisType& join(const AnalysisType& first, const AnalysisType& second);
+    const AnalysisType& join(const AnalysisType& first, const AnalysisType& second) {
+        assert(false && "Not implemented");
+    }
 
     // Check if the first is a subtype of the second
-    bool isSubtype(const AnalysisType& first, const AnalysisType& second) const;
+    bool isSubtype(const AnalysisType& first, const AnalysisType& second) const {
+        assert(false && "Not implemented");
+    }
 
     // Get the contained type environment
     const TypeEnvironment& getEnvironment() const {
@@ -280,19 +286,27 @@ public:
     }
 
     // Get a lattice type from its type environment type
-    const InnerAType& getType(const Type& other) const;
+    const InnerAType& getType(const Type& type) const;
 
     // Get a type from its identifier
-    const InnerAType& getType(const AstTypeIdentifier& ident) const;
+    const InnerAType& getType(const AstTypeIdentifier& ident) const {
+        return *aliases.find(ident)->second;
+    }
 
     // Get a primitive type
-    const PrimitiveAType& getPrimitive(Kind kind) const;
+    const PrimitiveAType& getPrimitive(Kind kind) const {
+        return primitives.find(kind)->second;
+    }
 
     // Get a constant type
-    const ConstantAType& getConstant(Kind kind) const;
+    const ConstantAType& getConstant(Kind kind) const {
+        return constants.find(kind)->second;
+    };
 
     // Get the top type
-    const TopAType& getTop() const;
+    const TopAType& getTop() const {
+        return top;
+    };
 };
 
 }  // end of namespace souffle

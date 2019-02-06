@@ -117,7 +117,7 @@ const InnerAType* TypeLattice::addType(const Type* type) {
             }
 
             // Better implementation using meet/join
-            // TODO: Add faster operation using meet/join
+            // TODO: Add faster implementation using meet/join
         } else {
             assert(false && "Unsupported type");
         }
@@ -125,9 +125,7 @@ const InnerAType* TypeLattice::addType(const Type* type) {
     return aliases[type->getName()];
 }
 
-TypeLattice::TypeLattice(const TypeEnvironment& env)
-        : env(env), top(this), primitives(), constants(), botprims(), bot(this), bases(), records(), unions(),
-          aliases() {
+TypeLattice::TypeLattice(const TypeEnvironment& env) : env(env), top(this), bot(this) {
     for (Kind kind : {Kind::NUMBER, Kind::SYMBOL, Kind::RECORD}) {
         primitives.insert(std::pair<Kind, PrimitiveAType>(kind, PrimitiveAType(this, kind)));
         constants.insert(std::pair<Kind, ConstantAType>(kind, ConstantAType(this, kind)));
@@ -138,7 +136,11 @@ TypeLattice::TypeLattice(const TypeEnvironment& env)
     for (const Type& type : env.getAllTypes()) {
         addType(&type);
     }
-    // TODO
+}
+
+const InnerAType& TypeLattice::getType(const Type& type) const {
+    assert(env.isType(type) && "Type must be in environment");
+    return getType(type.getName());
 }
 
 }  // namespace souffle

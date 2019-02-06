@@ -119,7 +119,7 @@ size_t getLevel(const RamValue* value) {
         size_t visitPack(const RamPack& pack) override {
             size_t level = 0;
             for (const auto& arg : pack.getArguments()) {
-                if (arg) {
+                if (arg != nullptr) {
                     level = std::max(level, visit(arg));
                 }
             }
@@ -165,7 +165,7 @@ size_t getLevel(const RamCondition* condition) {
         size_t visitNotExists(const RamNotExists& notExists) override {
             size_t level = 0;
             for (const auto& cur : notExists.getValues()) {
-                if (cur) {
+                if (cur != nullptr) {
                     level = std::max(level, getLevel(cur));
                 }
             }
@@ -176,7 +176,7 @@ size_t getLevel(const RamCondition* condition) {
         size_t visitProvenanceNotExists(const RamProvenanceNotExists& provNotExists) override {
             size_t level = 0;
             for (const auto& cur : provNotExists.getValues()) {
-                if (cur) {
+                if (cur != nullptr) {
                     level = std::max(level, getLevel(cur));
                 }
             }

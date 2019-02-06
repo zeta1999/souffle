@@ -38,7 +38,7 @@ class AstTranslationUnit;
 
 class TypeAnalysis : public AstAnalysis {
 public:
-    TypeAnalysis(const TypeEnvironment& env) : argumentTypes(), lattice(env){};
+    TypeAnalysis() = default;
 
     static constexpr const char* name = "type-analysis";
 
@@ -49,15 +49,14 @@ public:
     /**
      * Get the computed type for the given argument.
      */
-    const AnalysisType& getType(const AstArgument* argument) const {
-        auto found = argumentTypes.find(argument);
-        assert(found != argumentTypes.end());
-        return found->second;
-    }
+    // const AnalysisType& getType(const AstArgument* argument) const; // {
+    // auto found = argumentTypes.find(argument);
+    // assert(found != argumentTypes.end() && "");
+    // return found->second;
+    // }
 
 private:
-    std::map<const AstArgument*, AnalysisType> argumentTypes;
-    TypeLattice lattice;
+    std::map<const AstArgument*, const AnalysisType*> argumentTypes{};
 
     /**
      * Analyse the given clause and computes for each contained argument a potential type. If the type is a
@@ -67,7 +66,7 @@ private:
      * @param clause the clause to be typed
      * @return a map mapping each contained argument to a type
      */
-    static std::map<const AstArgument*, const AnalysisType&> analyseTypes(const TypeLattice& lat,
+    static std::map<const AstArgument*, const AnalysisType*> analyseTypes(const TypeLattice& lat,
             const AstClause& clause, const AstProgram& program, std::ostream* debugStream = nullptr);
 };
 

@@ -2,6 +2,7 @@
 
 #include "AstType.h"
 #include "Util.h"
+#include <cassert>
 #include <sstream>
 
 namespace souffle {
@@ -20,10 +21,10 @@ class AnalysisType {
     friend class TypeLattice;
 
 protected:
-    const TypeLattice& lattice;
+    const TypeLattice* lattice;
 
 protected:
-    AnalysisType(const TypeLattice& lattice) : lattice(lattice) {}
+    AnalysisType(const TypeLattice* lattice) : lattice(lattice) {}
 
 public:
     // Check the type is not a bottom or top type
@@ -43,7 +44,7 @@ class TopAType : public AnalysisType {
     friend class TypeLattice;
 
 private:
-    TopAType(const TypeLattice& lattice) : AnalysisType(lattice) {}
+    TopAType(const TypeLattice* lattice) : AnalysisType(lattice) {}
 
 public:
     void print(std::ostream& os) const override {
@@ -55,7 +56,7 @@ class BotAType : public AnalysisType {
     friend class TypeLattice;
 
 private:
-    BotAType(const TypeLattice& lattice) : AnalysisType(lattice) {}
+    BotAType(const TypeLattice* lattice) : AnalysisType(lattice) {}
 
 public:
     void print(std::ostream& os) const override {
@@ -68,7 +69,7 @@ class InnerAType : public AnalysisType {
     friend class TypeLattice;
 
 protected:
-    InnerAType(const TypeLattice& lattice) : AnalysisType(lattice) {}
+    InnerAType(const TypeLattice* lattice) : AnalysisType(lattice) {}
 
 public:
     bool isValid() const {
@@ -91,7 +92,7 @@ private:
     Kind kind;
 
 private:
-    PrimitiveAType(const TypeLattice& lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
+    PrimitiveAType(const TypeLattice* lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
 
 public:
     bool isValid() const {
@@ -122,7 +123,7 @@ private:
     Kind kind;
 
 private:
-    ConstantAType(const TypeLattice& lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
+    ConstantAType(const TypeLattice* lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
 
 public:
     Kind getKind() const override {
@@ -150,7 +151,7 @@ private:
     Kind kind;
 
 private:
-    BotPrimAType(const TypeLattice& lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
+    BotPrimAType(const TypeLattice* lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
 
 public:
     bool isValid() const {
@@ -182,9 +183,9 @@ private:
     AstTypeIdentifier name;
 
 private:
-    BaseAType(const TypeLattice& lattice, Kind kind, AstTypeIdentifier name)
+    BaseAType(const TypeLattice* lattice, Kind kind, AstTypeIdentifier name)
             : InnerAType(lattice), kind(kind), name(name) {
-        assert(kind != Kind::RECORD && "Base types are symbols and numbers only");
+        assert(kind != Kind::RECORD && "Base type cannot be a record");
     }
 
 public:
@@ -201,11 +202,15 @@ class RecordAType : public InnerAType {
 
 private:
     AstTypeIdentifier name;
-    std::vector<InnerAType*> fields;
+    std::vector<const InnerAType*> fields{};
 
 private:
-    RecordAType(const TypeLattice& lattice, AstTypeIdentifier name, std::vector<InnerAType*> fields)
-            : InnerAType(lattice), name(name), fields(fields) {}
+    RecordAType(const TypeLattice* lattice, AstTypeIdentifier name) : InnerAType(lattice), name(name) {}
+
+    void addField(const InnerAType* field) {
+        assert(field->isValid() && "Field type must be valid");
+        fields.push_back(field);
+    }
 
 public:
     Kind getKind() const override {
@@ -221,15 +226,19 @@ class UnionAType : public InnerAType {
 
 private:
     std::string representation;
-    std::vector<BaseAType*> bases;
+    std::set<const BaseAType*> bases;
 
 private:
-    UnionAType(const TypeLattice& lattice, std::vector<BaseAType*> bases);
-    UnionAType(const TypeLattice& lattice, std::vector<BaseAType*> bases, AstTypeIdentifier name);
+    UnionAType(const TypeLattice* lattice, std::set<const BaseAType*> bases);
+    UnionAType(const TypeLattice* lattice, std::set<const BaseAType*> bases, AstTypeIdentifier name);
+    const std::set<const BaseAType*>& getBases() const {
+        return bases;
+    }
+    void setName(AstTypeIdentifier name);
 
 public:
     Kind getKind() const override {
-        return bases.front()->getKind();
+        return (*bases.begin())->getKind();
     }
     void print(std::ostream& os) const override {
         os << representation;
@@ -247,7 +256,10 @@ private:
     std::vector<BaseAType> bases;
     std::vector<RecordAType> records;
     std::vector<UnionAType> unions;
-    std::map<AstTypeIdentifier, InnerAType*> aliases;
+    std::map<AstTypeIdentifier, const InnerAType*> aliases;
+
+private:
+    const InnerAType* addType(const Type* type);
 
 public:
     // Initialise the type lattice from the types found in the type environment
@@ -267,8 +279,8 @@ public:
         return env;
     }
 
-    // Pack a type environment type into a lattice type
-    const InnerAType& convert(const Type& other) const;
+    // Get a lattice type from its type environment type
+    const InnerAType& getType(const Type& other) const;
 
     // Get a type from its identifier
     const InnerAType& getType(const AstTypeIdentifier& ident) const;

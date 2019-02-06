@@ -342,7 +342,7 @@ protected:
     }
 
 public:
-    ProfileDatabase() : root(std::unique_ptr<DirectoryEntry>(new DirectoryEntry("root"))) {}
+    ProfileDatabase() : root(std::make_unique<DirectoryEntry>("root")) {}
 
     ProfileDatabase(const std::string& filename) : root(std::make_unique<DirectoryEntry>("root")) {
         std::ifstream file(filename);

@@ -650,8 +650,8 @@ arg
                 std::unique_ptr<AstArgument>($7));
         $$->setSrcLoc(@$);
     }
-  | arg AS type_id {
-        $$ = new AstTypeCast(std::unique_ptr<AstArgument>($1), $3);
+  | AS type_id arg {
+        $$ = new AstTypeCast(std::unique_ptr<AstArgument>($3), *$2);
         $$->setSrcLoc(@$);
     }
   | MINUS arg %prec NEG {

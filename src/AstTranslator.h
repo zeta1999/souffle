@@ -53,7 +53,7 @@ private:
     const AstProgram* program = nullptr;
 
     /** Type environment */
-    const TypeEnvironment* typeEnv;
+    const TypeEnvironment* typeEnv = nullptr;
 
     /** RAM program */
     std::unique_ptr<RamProgram> ramProg;

@@ -182,6 +182,49 @@ private:
         keypad(treePad, true);
     }
 
+    std::string getInput() {
+        std::string line;
+
+        if (ncurses && !output) {
+            char buf[100];
+
+            curs_set(1);
+            echo();
+
+            // get next command
+            wgetnstr(queryWindow, buf, 100);
+            noecho();
+            curs_set(0);
+            line = buf;
+        } else {
+            if (!getline(std::cin, line)) {
+                printStr("Exiting explain\n");
+                return "q";
+            }
+        }
+
+        return line;
+    }
+
+    void printPrompt(std::string prompt) {
+        if (ncurses && !output) {
+            // reset command line on each loop
+            werase(queryWindow);
+            wrefresh(queryWindow);
+            mvwprintw(queryWindow, 1, 0, prompt.c_str());
+        } else {
+            std::cout << prompt;
+        }
+    }
+
+    void clearDisplay() {
+        if (ncurses && !output) {
+            // reset tree display on each loop
+            werase(treePad);
+            prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
+        }
+    }
+
 public:
     Explain(ExplainProvenance& p, bool ncurses, int d = 4)
             : prov(p), ncurses(ncurses), depthLimit(d), output(nullptr), json(false) {}
@@ -195,35 +238,10 @@ public:
             std::signal(SIGWINCH, nullptr);
         }
 
-        // process commands
-        char buf[100];
-        std::string line;
-
         while (true) {
-            if (ncurses && !output) {
-                // reset command line on each loop
-                werase(queryWindow);
-                wrefresh(queryWindow);
-                mvwprintw(queryWindow, 1, 0, "Enter command > ");
-                curs_set(1);
-                echo();
-
-                // get next command
-                wgetnstr(queryWindow, buf, 100);
-                noecho();
-                curs_set(0);
-                line = buf;
-
-                // reset tree display on each loop
-                werase(treePad);
-                prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
-            } else {
-                std::cout << "Enter command > ";
-                if (!getline(std::cin, line)) {
-                    printStr("Exiting explain\n");
-                    break;
-                }
-            }
+            clearDisplay();
+            printPrompt("Enter command > ");
+            std::string line = getInput();
 
             std::vector<std::string> command = split(line, ' ', 1);
 
@@ -275,25 +293,37 @@ public:
                             "...)\n");
                     continue;
                 }
-                // TODO: print rules and allow user to make a choice
-                std::cout << "Pick a rule number: ";
 
-                std::string ruleNum;
-                getline(std::cin, ruleNum);
+                size_t i = 1;
+                std::string rules;
+                for (auto rule : prov.getRules(query.first)) {
+                    rules += std::to_string(i) + ": ";
+                    rules += rule;
+                    rules += "\n\n";
+                    i++;
+                }
+                printStr(rules);
+
+                if (ncurses && !output) {
+                    prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
+                }
+
+                printPrompt("Pick a rule number: ");
+
+                std::string ruleNum = getInput();
                 auto variables =
                         prov.explainNegationGetVariables(query.first, query.second, std::stoi(ruleNum));
 
                 if (variables.size() == 1 && variables[0] == "@") {
-                    printStr("The tuple exists, cannot explain negation of it!\n");
+                    printPrompt("The tuple exists, cannot explain negation of it!\n");
                     continue;
                 }
 
                 // this doesn't work with ncurses yet!!
                 std::map<std::string, std::string> varValues;
                 for (auto var : variables) {
-                    std::cout << "Pick a value for " << var << ": ";
-                    std::string varValue;
-                    getline(std::cin, varValue);
+                    printPrompt("Pick a value for " + var + ": ");
+                    std::string varValue = getInput();
                     varValues[var] = varValue;
                 }
 

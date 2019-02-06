@@ -122,6 +122,7 @@ public:
             const std::vector<std::string>& tuple, std::map<std::string, std::string>& bodyVariables) = 0;
 
     virtual std::string getRule(std::string relName, size_t ruleNum) = 0;
+    virtual std::vector<std::string> getRules(std::string relName) = 0;
 
     virtual std::string measureRelation(std::string relName) = 0;
 

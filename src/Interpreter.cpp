@@ -426,7 +426,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 }
 
 /** Evaluate RAM operation */
-void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args) {
+void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& ctxt) {
     class OperationEvaluator : public RamVisitor<void> {
         Interpreter& interpreter;
         InterpreterContext& ctxt;
@@ -665,20 +665,21 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
     };
 
     // create and run interpreter for operations
-    InterpreterContext ctxt(op.getDepth());
-    ctxt.setReturnValues(args.getReturnValues());
-    ctxt.setReturnErrors(args.getReturnErrors());
-    ctxt.setArguments(args.getArguments());
-    OperationEvaluator(*this, ctxt).visit(op);
+    InterpreterContext args(op.getDepth());
+    args.setReturnValues(ctxt.getReturnValues());
+    args.setReturnErrors(ctxt.getReturnErrors());
+    args.setArguments(ctxt.getArguments());
+    OperationEvaluator(*this, args).visit(op);
 }
 
 /** Evaluate RAM statement */
-void Interpreter::evalStmt(const RamStatement& stmt) {
+void Interpreter::evalStmt(const RamStatement& stmt, const InterpreterContext& ctxt) {
     class StatementEvaluator : public RamVisitor<bool> {
         Interpreter& interpreter;
+        InterpreterContext& ctxt;
 
     public:
-        StatementEvaluator(Interpreter& interp) : interpreter(interp) {}
+        StatementEvaluator(Interpreter& interp, InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
 
         // -- Statements -----------------------------
 
@@ -727,7 +728,7 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
         }
 
         bool visitExit(const RamExit& exit) override {
-            return !interpreter.evalCond(exit.getCondition());
+            return !interpreter.evalCond(exit.getCondition(), ctxt);
         }
 
         bool visitLogTimer(const RamLogTimer& timer) override {
@@ -846,11 +847,11 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
 
             const RamCondition* c = insert.getCondition();
             if (c != nullptr) {
-                if (interpreter.evalCond(*insert.getCondition())) {
-                    interpreter.evalOp(insert.getOperation());
+                if (interpreter.evalCond(*insert.getCondition(), ctxt)) {
+                    interpreter.evalOp(insert.getOperation(), ctxt);
                 }
             } else {
-                interpreter.evalOp(insert.getOperation());
+                interpreter.evalOp(insert.getOperation(), ctxt);
             }
             return true;
         }
@@ -888,7 +889,11 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
     };
 
     // create and run interpreter for statements
-    StatementEvaluator(*this).visit(stmt);
+    InterpreterContext args;
+    args.setReturnValues(ctxt.getReturnValues());
+    args.setReturnErrors(ctxt.getReturnErrors());
+    args.setArguments(ctxt.getArguments());
+    StatementEvaluator(*this, args).visit(stmt);
 }
 
 /** Execute main program of a translation unit */
@@ -955,8 +960,8 @@ void Interpreter::executeSubroutine(const RamStatement& stmt, const std::vector<
     ctxt.setArguments(arguments);
 
     // run subroutine
-    const RamOperation& op = static_cast<const RamInsert&>(stmt).getOperation();
-    evalOp(op, ctxt);
+    // const RamOperation& op = static_cast<const RamInsert&>(stmt).getOperation();
+    evalStmt(stmt, ctxt);
 }
 
 }  // end of namespace souffle

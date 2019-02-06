@@ -76,13 +76,13 @@ protected:
     RamDomain evalVal(const RamValue& value, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate operation */
-    void evalOp(const RamOperation& op, const InterpreterContext& args = InterpreterContext());
+    void evalOp(const RamOperation& op, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate conditions */
     bool evalCond(const RamCondition& cond, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate statement */
-    void evalStmt(const RamStatement& stmt);
+    void evalStmt(const RamStatement& stmt, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {

@@ -470,37 +470,6 @@ public:
             literalCounter++;
         }
 
-        /*
-        for (size_t i = 1; i < atoms.size(); i++) {
-            // store passed in values of atom
-            std::vector<std::string> atomValues;
-
-            auto atom = split(atoms[i], ',');
-
-            for (size_t j = 1; j < atom.size(); j++) {
-                if (contains(headVariables, atom[j])) {
-                    atomValues.push_back(
-                            tuple[std::find(headVariables.begin(), headVariables.end(), atom[j]) -
-                                    headVariables.begin()]);
-                } else {
-                    atomValues.push_back(bodyVariables[atom[j]]);
-                }
-            }
-
-            std::stringstream leafNodeText;
-            leafNodeText << atom[0] << "(" << join(atomValues, ",") << ")";
-
-            if (contains(ret, i - 1)) {
-                leafNodeText << " ✓";
-            } else {
-                leafNodeText << " x";
-            }
-
-            internalNode->add_child(std::make_unique<LeafNode>(leafNodeText.str()));
-            internalNode->setSize(internalNode->getSize() + 1);
-        }
-        */
-
         return std::move(internalNode);
     }
 
@@ -513,6 +482,18 @@ public:
         } else {
             return rule->second;
         }
+    }
+
+    std::vector<std::string> getRules(std::string relName) override {
+        std::vector<std::string> relRules;
+        // go through all rules
+        for (auto it = rules.begin(); it != rules.end(); it++) {
+            if (it->first.first == relName) {
+                relRules.push_back(it->second);
+            }
+        }
+
+        return relRules;
     }
 
     std::string measureRelation(std::string relName) override {

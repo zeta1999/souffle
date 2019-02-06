@@ -1278,6 +1278,11 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             auto search = std::make_unique<RamIndexScan>(
                     std::move(relRef), litNumber, std::move(query), searchCols, std::move(returnValue));
 
+            search->print(std::cout, 0);
+            std::cout << std::endl;
+            search->getOperation().print(std::cout, 1);
+            std::cout << std::endl;
+
             // now, return the values of the atoms, with a separator
             auto returnAtom = std::make_unique<RamReturn>();
             // separator between atom number and atom

@@ -198,6 +198,13 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
+    // type casts name a valid type
+    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
+        if (!typeEnv.isType(cast.getType())) {
+            report.addError("Type cast is to undeclared type " + toString(cast.getType()), cast.getSrcLoc());
+        }
+    });
+
     // - intrinsic functors -
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         // check type of result

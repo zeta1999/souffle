@@ -42,6 +42,8 @@
 #include <ostream>
 #include <vector>
 
+#include <iostream>  // TODO remove
+
 namespace souffle {
 
 using typeSol = std::map<const AstArgument*, const AnalysisType*>;
@@ -104,7 +106,7 @@ public:
         return lattice.isSubtype(*solution.at(variable), *solution.at(bound));
     }
     void print(std::ostream& os) const override {
-        os << *variable << "<:" << bound;
+        os << *variable << "<:" << *bound;
     }
 };
 
@@ -205,6 +207,20 @@ public:
         unionCons.insert(unionCons.end(), other.unionCons.begin(), other.unionCons.end());
         implCons.insert(implCons.end(), other.implCons.begin(), other.implCons.end());
     }
+    void print(std::ostream& os) const {
+        for (FixedConstraint con : fixedCons) {
+            os << con << std::endl;
+        }
+        for (VarConstraint con : varCons) {
+            os << con << std::endl;
+        }
+        for (UnionConstraint con : unionCons) {
+            os << con << std::endl;
+        }
+        for (ImplicationConstraint con : implCons) {
+            os << con << std::endl;
+        }
+    }
 };
 
 TypeConstraints getConstraints(
@@ -256,10 +272,10 @@ TypeConstraints getConstraints(
                 for (size_t i = 0; i < functor.getArity(); ++i) {
                     if (functor.acceptsSymbols(i)) {
                         constCons.addRequirement(
-                                FixedConstraint(functor.getArg(i), &lattice.getPrimitive(Kind::SYMBOL)));
+                                FixedConstraint(functor.getArg(i), &lattice.getConstant(Kind::SYMBOL)));
                     } else if (functor.acceptsNumbers(i)) {
                         constCons.addRequirement(
-                                FixedConstraint(functor.getArg(i), &lattice.getPrimitive(Kind::NUMBER)));
+                                FixedConstraint(functor.getArg(i), &lattice.getConstant(Kind::NUMBER)));
                     } else {
                         assert(false && "Unsupported functor input type");
                     }
@@ -286,10 +302,10 @@ TypeConstraints getConstraints(
             for (size_t i = 0; i < functor.getArgCount(); ++i) {
                 if (funDecl->acceptsSymbols(i)) {
                     constCons.addRequirement(
-                            FixedConstraint(functor.getArg(i), &lattice.getPrimitive(Kind::SYMBOL)));
+                            FixedConstraint(functor.getArg(i), &lattice.getConstant(Kind::SYMBOL)));
                 } else if (funDecl->acceptsNumbers(i)) {
                     constCons.addRequirement(
-                            FixedConstraint(functor.getArg(i), &lattice.getPrimitive(Kind::NUMBER)));
+                            FixedConstraint(functor.getArg(i), &lattice.getConstant(Kind::NUMBER)));
                 } else {
                     assert(false && "Unsupported functor input type");
                 }
@@ -367,22 +383,28 @@ TypeConstraints getConstraints(
 typeSol TypeAnalysis::analyseTypes(const TypeLattice& lattice, const AstClause& clause,
         const AstProgram& program, std::ostream* debugStream) {
     TypeConstraints typeCons = getConstraints(lattice, clause, program);
+    std::cout << clause << std::endl << std::endl;
+    typeCons.print(std::cout);
+    std::cout << std::endl;
     // TODO
-    assert(false && "Not implemented");
+    // assert(false && "Not implemented");
+    return typeSol();  // TODO remove
 }
 
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
-    // auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
-    // TypeLattice lattice = TypeLattice(typeEnvAnalysis->getTypeEnvironment());
-    // for (const AstRelation* rel : translationUnit.getProgram()->getRelations()) {
-    //     for (const AstClause* clause : rel->getClauses()) {
-    //         // Perform the type analysis
-    //         std::map<const AstArgument*, AnalysisType> clauseArgumentTypes = analyseTypes(*lattice,
-    //         *clause); argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
-    //     }
-    // }
+    auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
+    TypeLattice lattice = TypeLattice(typeEnvAnalysis->getTypeEnvironment());
+    const AstProgram* program = translationUnit.getProgram();
+    for (const AstRelation* rel : program->getRelations()) {
+        for (const AstClause* clause : rel->getClauses()) {
+            // Perform the type analysis
+            // typeSol clauseArgumentTypes = analyseTypes(lattice,*clause,*program);
+            analyseTypes(lattice, *clause, *program);  // TODO remove
+            // argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+        }
+    }
     // TODO
-    assert(false && "Not implemented");
+    // assert(false && "Not implemented");
 }
 
 void TypeAnalysis::print(std::ostream& os) const {

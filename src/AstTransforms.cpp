@@ -1104,4 +1104,14 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
     return changed;
 }
 
+bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) {
+    bool changed = false;
+
+    visitDepthFirstPostOrder(*translationUnit.getProgram(), [&](const AstTypeCast& cast) {
+        // TODO
+        assert(false && "Not implemented");
+    });
+    return changed;
+}
+
 }  // end of namespace souffle

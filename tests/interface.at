@@ -32,7 +32,8 @@ m4_define([TEST_EVAL_FUNCTOR],[
   m4_define([TESTDIR],[$TESTS/CATEGORY/TESTNAME])
   m4_define([PROGRAM],[TESTDIR/TESTNAME.dl])
   m4_define([FACTS],[TESTDIR/facts])
-  cp TESTDIR/.libs/libfunctors* .
+  dnl copy libs from where they were built
+  cp ../../interface/functors/.libs/libfunctors* .
   # invoke souffle
   AT_CHECK(["$SOUFFLE" -o $1 -D. -F FACTS PROGRAM 1>TESTNAME.out 2>TESTNAME.err], [0])
   AT_CHECK([DYLD_LIBRARY_PATH=. LD_LIBRARY_PATH=. ./$1 FACTS 1>TESTNAME.out 2>>TESTNAME.err], [0])

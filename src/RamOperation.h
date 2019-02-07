@@ -391,10 +391,6 @@ protected:
  * Aggregation
  */
 class RamAggregate : public RamSearch {
-    RamConstValueAnalysis* rcva{nullptr};
-    RamConditionLevelAnalysis* rcla{nullptr};
-    RamValueLevelAnalysis* rvla{nullptr};
-
 public:
     /** Types of aggregation functions */
     enum Function { MAX, MIN, COUNT, SUM };

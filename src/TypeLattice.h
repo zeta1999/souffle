@@ -3,7 +3,9 @@
 #include "AstType.h"
 #include "Util.h"
 #include <cassert>
+#include <deque>
 #include <sstream>
+#include <vector>
 
 namespace souffle {
 
@@ -249,13 +251,13 @@ class TypeLattice {
 private:
     const TypeEnvironment& env;
     TopAType top;
+    BotAType bot;
     std::map<Kind, PrimitiveAType> primitives{};
     std::map<Kind, ConstantAType> constants{};
     std::map<Kind, BotPrimAType> botprims{};
-    BotAType bot;
-    std::vector<BaseAType> bases{};
-    std::vector<RecordAType> records{};
-    std::vector<UnionAType> unions{};
+    std::deque<BaseAType> bases{};
+    std::deque<RecordAType> records{};
+    std::deque<UnionAType> unions{};
     std::map<AstTypeIdentifier, const InnerAType*> aliases{};
 
 private:

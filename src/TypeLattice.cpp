@@ -2,6 +2,7 @@
 #include "AstType.h"
 #include "TypeSystem.h"
 #include "Util.h"
+#include <deque>
 #include <map>
 #include <set>
 #include <sstream>

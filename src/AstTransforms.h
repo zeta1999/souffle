@@ -341,7 +341,7 @@ public:
     std::string getName() const override {
         return "RemoveTypecastsTransformer";
     }
-}
+};
 
 /**
  * Transformer that holds an arbitrary number of sub-transformations

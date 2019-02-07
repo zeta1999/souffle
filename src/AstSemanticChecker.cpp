@@ -345,6 +345,9 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (dynamic_cast<const AstCounter*>(arg)) {
         return false;
     }
+    if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {
+        return hasUnnamedVariable(cast->getValue());
+    }
     if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
         return any_of(inf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }

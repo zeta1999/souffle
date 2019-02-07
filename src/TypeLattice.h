@@ -292,6 +292,7 @@ public:
 
     // Get a type from its identifier
     const InnerAType& getType(const AstTypeIdentifier& ident) const {
+        assert(aliases.find(ident) != aliases.end() && "Type exists");
         return *aliases.find(ident)->second;
     }
 

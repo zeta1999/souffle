@@ -253,6 +253,11 @@ TypeConstraints getConstraints(
         TypeConstraints visitNullConstant(const AstNullConstant& constant) {
             return TypeConstraints(FixedConstraint(&constant, &lattice.getConstant(Kind::RECORD)));
         }
+        TypeConstraints visitTypeCast(const AstTypeCast& cast) {
+            TypeConstraints cons = visitNode(cast);
+            cons.addConstraint(FixedConstraint(&cast, &lattice.getType(cast.getType())));
+            return cons;
+        }
         TypeConstraints visitIntrinsicFunctor(const AstIntrinsicFunctor& functor) {
             TypeConstraints cons = visitNode(functor);
             if (functor.getFunction() == FunctorOp::MAX || functor.getFunction() == FunctorOp::MIN) {

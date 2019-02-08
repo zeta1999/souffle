@@ -212,16 +212,16 @@ public:
     }
     std::vector<const TypeConstraint*> getAll() const {
         std::vector<const TypeConstraint*> all;
-        for (FixedConstraint con : fixedCons) {
+        for (const FixedConstraint& con : fixedCons) {
             all.push_back(&con);
         }
-        for (VarConstraint con : varCons) {
+        for (const VarConstraint& con : varCons) {
             all.push_back(&con);
         }
-        for (UnionConstraint con : unionCons) {
+        for (const UnionConstraint& con : unionCons) {
             all.push_back(&con);
         }
-        for (ImplicationConstraint con : implCons) {
+        for (const ImplicationConstraint& con : implCons) {
             all.push_back(&con);
         }
         return all;

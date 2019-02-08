@@ -286,7 +286,7 @@ public:
 
     // Get a type from its identifier
     const InnerAType& getType(const AstTypeIdentifier& ident) const {
-        assert(aliases.count(ident) > 0 && "Type exists");
+        assert(aliases.count(ident) > 0 && "Type is not in lattice");
         return *aliases.find(ident)->second;
     }
 

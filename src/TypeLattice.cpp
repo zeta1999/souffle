@@ -138,7 +138,7 @@ const AnalysisType* TypeLattice::join(const AnalysisType* first, const AnalysisT
     } else {
         assert(false && "Unsupported type");
     }
-    assert(contents.size() > 1 && "Union of non-equal non-empty sets somehow hass less than 2 elements");
+    assert(contents.size() > 1 && "Union of non-equal non-empty sets somehow has less than 2 elements");
     for (UnionAType& other : unions) {
         if (other.getBases() == contents) {
             return &other;

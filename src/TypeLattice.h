@@ -268,19 +268,13 @@ public:
     TypeLattice(const TypeEnvironment& env);
 
     // Find the highest common subtype (intersection)
-    const AnalysisType& meet(const AnalysisType& first, const AnalysisType& second) {
-        assert(false && "Not implemented");
-    }
+    const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);
 
     // Find the lowest common supertype (union)
-    const AnalysisType& join(const AnalysisType& first, const AnalysisType& second) {
-        assert(false && "Not implemented");
-    }
+    const AnalysisType* join(const AnalysisType* first, const AnalysisType* second);
 
     // Check if the first is a subtype of the second
-    bool isSubtype(const AnalysisType& first, const AnalysisType& second) const {
-        assert(false && "Not implemented");
-    }
+    bool isSubtype(const AnalysisType* first, const AnalysisType* second) const;
 
     // Get the contained type environment
     const TypeEnvironment& getEnvironment() const {
@@ -305,6 +299,11 @@ public:
     const ConstantAType& getConstant(Kind kind) const {
         return constants.find(kind)->second;
     };
+
+    // Get a bottom primitive type
+    const BotPrimAType& getBotPrim(Kind kind) const {
+        return botprims.find(kind)->second;
+    }
 
     // Get the top type
     const TopAType& getTop() const {

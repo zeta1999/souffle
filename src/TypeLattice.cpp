@@ -5,7 +5,7 @@
 #include <deque>
 #include <map>
 #include <set>
-#include <sstream>
+#include <ostream>
 #include <vector>
 
 namespace souffle {
@@ -19,10 +19,7 @@ const ConstantAType& InnerAType::getConstant() const {
 }
 
 UnionAType::UnionAType(const TypeLattice* lattice, std::set<const BaseAType*> bases)
-        : InnerAType(lattice), bases(bases) {
-    std::stringstream repr;
-    repr << join(bases, "|");
-    representation = repr.str();
+        : InnerAType(lattice), representation(toString(join(bases, " | "))), bases(bases) {
     assert(!bases.empty() && "Empty union is not allowed");
     assert(bases.size() > 1 && "Union with one element is just a base type");
     Kind kind = (*bases.begin())->getKind();
@@ -32,10 +29,7 @@ UnionAType::UnionAType(const TypeLattice* lattice, std::set<const BaseAType*> ba
 }
 
 UnionAType::UnionAType(const TypeLattice* lattice, std::set<const BaseAType*> bases, AstTypeIdentifier name)
-        : InnerAType(lattice), bases(bases) {
-    std::stringstream repr;
-    repr << name;
-    representation = repr.str();
+        : InnerAType(lattice), representation(toString(name)), bases(bases) {
     assert(!bases.empty() && "Empty union is not allowed");
     assert(bases.size() > 1 && "Union with one element is just a base type");
     Kind kind = (*bases.begin())->getKind();
@@ -45,9 +39,197 @@ UnionAType::UnionAType(const TypeLattice* lattice, std::set<const BaseAType*> ba
 }
 
 void UnionAType::setName(AstTypeIdentifier name) {
-    std::stringstream repr;
-    repr << name;
-    representation = repr.str();
+    representation = toString(name);
+}
+
+const AnalysisType* TypeLattice::meet(const AnalysisType* first, const AnalysisType* second) {
+    assert(first->lattice == this && "Type must be in this lattice");
+    assert(second->lattice == this && "Type must be in this lattice");
+    if (isSubtype(first, second)) {
+        return first;
+    }
+    if (isSubtype(second, first)) {
+        return second;
+    }
+    // Neither can be top or bottom, so they are inner types
+    const auto* firstInner = dynamic_cast<const InnerAType*>(first);
+    const auto* secondInner = dynamic_cast<const InnerAType*>(second);
+    assert(firstInner != nullptr && "Unsupported type");
+    assert(secondInner != nullptr && "Unsupported type");
+    if (firstInner->getKind() != secondInner->getKind()) {
+        // The types are in different sub-lattices
+        return &bot;
+    }
+    Kind kind = firstInner->getKind();
+    if (kind == Kind::RECORD) {
+        // They aren't subtypes, so they must be different records
+        return &getBotPrim(kind);
+    }
+    if (dynamic_cast<const BaseAType*>(first) != nullptr || dynamic_cast<const BaseAType*>(second) != nullptr) {
+        // One is a base type, but they are not subtypes, and hence must be disjoint
+        return &getBotPrim(kind);
+    }
+    // The only option is for both to be union types
+    const auto* firstUnion = dynamic_cast<const UnionAType*>(first);
+    const auto* secondUnion = dynamic_cast<const UnionAType*>(second);
+    assert(firstUnion != nullptr && "Unsupported type");
+    assert(secondUnion != nullptr && "Unsupported type");
+    std::set<const BaseAType*> intersection;
+    for (const BaseAType* base : firstUnion->getBases()) {
+        if (secondUnion->getBases().count(base) > 0) {
+            intersection.insert(base);
+        }
+    }
+    if (intersection.size() == 0) {
+        // Types are disjoint
+        return &getBotPrim(kind);
+    }
+    if (intersection.size() == 1) {
+        return *intersection.begin();
+    }
+    for (UnionAType& other : unions) {
+        if (other.getBases() == intersection) {
+            return &other;
+        }
+    }
+    unions.push_back(UnionAType(this, intersection));
+    return &unions.back();
+}
+
+const AnalysisType* TypeLattice::join(const AnalysisType* first, const AnalysisType* second) {
+    assert(first->lattice == this && "Type must be in this lattice");
+    assert(second->lattice == this && "Type must be in this lattice");
+    if (isSubtype(first, second)) {
+        return second;
+    }
+    if (isSubtype(second, first)) {
+        return first;
+    }
+    // Neither can be top or bottom, so they are inner types
+    const auto* firstInner = dynamic_cast<const InnerAType*>(first);
+    const auto* secondInner = dynamic_cast<const InnerAType*>(second);
+    assert(firstInner != nullptr && "Unsupported type");
+    assert(secondInner != nullptr && "Unsupported type");
+    if (firstInner->getKind() != secondInner->getKind()) {
+        // The types are in different sub-lattices
+        return &top;
+    }
+    Kind kind = firstInner->getKind();
+    if (kind == Kind::RECORD) {
+        // They aren't subtypes, so they must be different records
+        return &getPrimitive(kind);
+    }
+    // The output must be some union type containing both inputs
+    std::set<const BaseAType*> contents;
+    if (dynamic_cast<const BaseAType*>(first) != nullptr) {
+        contents.insert(dynamic_cast<const BaseAType*>(first));
+    } else if (dynamic_cast<const UnionAType*>(first) != nullptr) {
+        contents = dynamic_cast<const UnionAType*>(first)->getBases();
+    } else {
+        assert(false && "Unsupported type");
+    }
+    if (dynamic_cast<const BaseAType*>(second) != nullptr) {
+        contents.insert(dynamic_cast<const BaseAType*>(second));
+    } else if (dynamic_cast<const UnionAType*>(second) != nullptr) {
+        for (const BaseAType* base : dynamic_cast<const UnionAType*>(second)->getBases()) {
+            contents.insert(base);
+        }
+    } else {
+        assert(false && "Unsupported type");
+    }
+    assert(contents.size() > 1 && "Oliver made a mistake");
+    for (UnionAType& other : unions) {
+        if (other.getBases() == contents) {
+            return &other;
+        }
+    }
+    unions.push_back(UnionAType(this, contents));
+    return &unions.back();
+}
+
+bool TypeLattice::isSubtype(const AnalysisType* first, const AnalysisType* second) const {
+    assert(first->lattice == this && "Type must be in this lattice");
+    assert(second->lattice == this && "Type must be in this lattice");
+    if (first == second) {
+        // Most subtype checks fall into this case
+        return true;
+    }
+    if (dynamic_cast<const TopAType*>(second) != nullptr) {
+        // Everything is a subtype of top
+        return true;
+    }
+    if (dynamic_cast<const TopAType*>(first) != nullptr) {
+        // Everything else is not a supertype of top
+        return false;
+    }
+    if (dynamic_cast<const BotAType*>(first) != nullptr) {
+        // Everything is a supertype of bottom
+        return true;
+    }
+    if (dynamic_cast<const BotAType*>(second) != nullptr) {
+        // Everything else is not a subtype of bottom
+        return false;
+    }
+    // Neither are top/bottom, so they are both inner types
+    const auto* firstInner = dynamic_cast<const InnerAType*>(first);
+    const auto* secondInner = dynamic_cast<const InnerAType*>(second);
+    assert(firstInner != nullptr && "Unsupported type");
+    assert(secondInner != nullptr && "Unsupported type");
+    if (firstInner->getKind() != secondInner->getKind()) {
+        // The types are unrelated
+        return false;
+    }
+    // Now we know both types are in the same sub-lattice
+    if (dynamic_cast<const PrimitiveAType*>(second) != nullptr) {
+        // Everything is a subtype of top
+        return true;
+    }
+    if (dynamic_cast<const PrimitiveAType*>(first) != nullptr) {
+        // Everything else is not a supertype of top
+        return false;
+    }
+    if (dynamic_cast<const ConstantAType*>(first) != nullptr) {
+        // Everything is a supertype of bottom
+        return true;
+    }
+    if (dynamic_cast<const ConstantAType*>(second) != nullptr) {
+        // Everything else is not a subtype of bottom
+        return false;
+    }
+    if (dynamic_cast<const BotPrimAType*>(first) != nullptr) {
+        // Everything else is a supertype of the second bottom
+        return true;
+    }
+    if (dynamic_cast<const BotPrimAType*>(second) != nullptr) {
+        // Everything else is not a subtype of the second bottom
+        return false;
+    }
+    if (firstInner->getKind() == Kind::RECORD) {
+        // Record subtyping is not supported for types other than top/bottom/constant
+        return false;
+    }
+    if (dynamic_cast<const BaseAType*>(second) != nullptr) {
+        // The other type cannot be this base type or lower
+        return false;
+    }
+    // The only remaining possibility for the second type is to be a union type
+    const auto* secondUnion = dynamic_cast<const UnionAType*>(second);
+    assert(secondUnion != nullptr && "Unsupported type");
+    const std::set<const BaseAType*>& secondBases = secondUnion->getBases();
+    if (dynamic_cast<const BaseAType*>(first) != nullptr) {
+        // Check if the base type is in the union
+        return secondBases.count(dynamic_cast<const BaseAType*>(first)) > 0;
+    }
+    // The only remaining possibility for the first type is to be a union type
+    const auto* firstUnion = dynamic_cast<const UnionAType*>(first);
+    assert(firstUnion != nullptr && "Unsupported type");
+    // Check if the sets of base types are subsets
+    for (const BaseAType* base : firstUnion->getBases()) {
+        if (secondBases.count(base) == 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 const InnerAType* TypeLattice::addType(const Type* type) {
@@ -76,7 +258,6 @@ const InnerAType* TypeLattice::addType(const Type* type) {
                 thisRecord.addField(addType(&field.type));
             }
         } else if (dynamic_cast<const UnionType*>(type) != nullptr) {
-            // Simplified implementation that does not use meet/join
             auto* unionType = dynamic_cast<const UnionType*>(type);
             std::set<const BaseAType*> memberTypes;
             bool isPrimitive = false;
@@ -116,9 +297,6 @@ const InnerAType* TypeLattice::addType(const Type* type) {
                     assert(false && "Invalid union");
                 }
             }
-
-            // Better implementation using meet/join
-            // TODO: Add faster implementation using meet/join
         } else {
             assert(false && "Unsupported type");
         }

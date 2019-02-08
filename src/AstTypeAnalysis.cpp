@@ -72,12 +72,12 @@ public:
     typeSol resolve(const typeSol existing, TypeLattice& lattice) override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         typeSol ret(existing);
-        ret[variable] = &lattice.meet(*existing.at(variable), *bound);
+        ret[variable] = lattice.meet(existing.at(variable), bound);
         return ret;
     }
     bool isSatisfied(const typeSol solution, TypeLattice& lattice) override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
-        return lattice.isSubtype(*solution.at(variable), *bound);
+        return lattice.isSubtype(solution.at(variable), bound);
     }
     void print(std::ostream& os) const override {
         os << *variable << "<:" << *bound;
@@ -97,13 +97,13 @@ public:
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         assert(existing.find(bound) != existing.end() && "Bound does not have a type");
         typeSol ret(existing);
-        ret[variable] = &lattice.meet(*existing.at(variable), *existing.at(bound));
+        ret[variable] = lattice.meet(existing.at(variable), existing.at(bound));
         return ret;
     }
     bool isSatisfied(const typeSol solution, TypeLattice& lattice) override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         assert(solution.find(bound) != solution.end() && "Bound does not have a type");
-        return lattice.isSubtype(*solution.at(variable), *solution.at(bound));
+        return lattice.isSubtype(solution.at(variable), solution.at(bound));
     }
     void print(std::ostream& os) const override {
         os << *variable << "<:" << *bound;
@@ -127,8 +127,8 @@ public:
         assert(existing.find(firstBound) != existing.end() && "First bound does not have a type");
         assert(existing.find(secondBound) != existing.end() && "Second bound does not have a type");
         typeSol ret(existing);
-        ret[variable] = &lattice.meet(
-                *existing.at(variable), lattice.join(*existing.at(firstBound), *existing.at(secondBound)));
+        ret[variable] = lattice.meet(
+                existing.at(variable), lattice.join(existing.at(firstBound), existing.at(secondBound)));
         return ret;
     }
     bool isSatisfied(const typeSol solution, TypeLattice& lattice) override {
@@ -136,7 +136,7 @@ public:
         assert(solution.find(firstBound) != solution.end() && "First bound does not have a type");
         assert(solution.find(secondBound) != solution.end() && "Second bound does not have a type");
         return lattice.isSubtype(
-                *solution.at(variable), lattice.join(*solution.at(firstBound), *solution.at(secondBound)));
+                solution.at(variable), lattice.join(solution.at(firstBound), solution.at(secondBound)));
     }
     void print(std::ostream& os) const override {
         os << *variable << "<:(" << *firstBound << "∪" << *secondBound << ")";

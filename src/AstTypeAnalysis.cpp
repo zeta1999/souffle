@@ -44,16 +44,14 @@
 #include <set>
 #include <vector>
 
-#include <iostream>  // TODO remove
-
 namespace souffle {
 
 using typeSol = std::map<const AstArgument*, const AnalysisType*>;
 
 class TypeConstraint {
 public:
-    virtual typeSol resolve(const typeSol existing, TypeLattice& lattice) = 0;
-    virtual bool isSatisfied(const typeSol solution, TypeLattice& lattice) = 0;
+    virtual typeSol resolve(const typeSol existing, TypeLattice& lattice) const = 0;
+    virtual bool isSatisfied(const typeSol solution, TypeLattice& lattice) const = 0;
     virtual void print(std::ostream& os) const = 0;
     friend std::ostream& operator<<(std::ostream& out, const TypeConstraint& other) {
         other.print(out);
@@ -71,13 +69,14 @@ public:
             : variable(variable), bound(bound){};
     FixedConstraint(const FixedConstraint& other) = default;
     FixedConstraint& operator=(const FixedConstraint& other) = default;
-    typeSol resolve(const typeSol existing, TypeLattice& lattice) override {
+    typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         typeSol ret(existing);
         ret[variable] = lattice.meet(existing.at(variable), bound);
+        assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
-    bool isSatisfied(const typeSol solution, TypeLattice& lattice) override {
+    bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         return lattice.isSubtype(solution.at(variable), bound);
     }
@@ -95,14 +94,15 @@ public:
     VarConstraint(const AstArgument* variable, const AstArgument* bound) : variable(variable), bound(bound){};
     VarConstraint(const VarConstraint& other) = default;
     VarConstraint& operator=(const VarConstraint& other) = default;
-    typeSol resolve(const typeSol existing, TypeLattice& lattice) override {
+    typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         assert(existing.find(bound) != existing.end() && "Bound does not have a type");
         typeSol ret(existing);
         ret[variable] = lattice.meet(existing.at(variable), existing.at(bound));
+        assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
-    bool isSatisfied(const typeSol solution, TypeLattice& lattice) override {
+    bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         assert(solution.find(bound) != solution.end() && "Bound does not have a type");
         return lattice.isSubtype(solution.at(variable), solution.at(bound));
@@ -124,16 +124,17 @@ public:
             : variable(variable), firstBound(firstBound), secondBound(secondBound){};
     UnionConstraint(const UnionConstraint& other) = default;
     UnionConstraint& operator=(const UnionConstraint& other) = default;
-    typeSol resolve(const typeSol existing, TypeLattice& lattice) override {
+    typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         assert(existing.find(firstBound) != existing.end() && "First bound does not have a type");
         assert(existing.find(secondBound) != existing.end() && "Second bound does not have a type");
         typeSol ret(existing);
         ret[variable] = lattice.meet(
                 existing.at(variable), lattice.join(existing.at(firstBound), existing.at(secondBound)));
+        assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
-    bool isSatisfied(const typeSol solution, TypeLattice& lattice) override {
+    bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         assert(solution.find(firstBound) != solution.end() && "First bound does not have a type");
         assert(solution.find(secondBound) != solution.end() && "Second bound does not have a type");
@@ -157,15 +158,15 @@ public:
     void addRequirement(FixedConstraint req) {
         requirements.push_back(req);
     }
-    typeSol resolve(const typeSol existing, TypeLattice& lattice) override {
-        for (FixedConstraint req : requirements) {
-            if (!req.isSatisfied(existing, lattice)) {
-                return typeSol(existing);
-            }
+    typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
+        if (isSatisfied(existing, lattice)) {
+            return typeSol(existing);
         }
-        return result.resolve(existing, lattice);
+        typeSol ret = result.resolve(existing, lattice);
+        assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
+        return ret;
     }
-    bool isSatisfied(const typeSol solution, TypeLattice& lattice) override {
+    bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
         for (FixedConstraint req : requirements) {
             if (!req.isSatisfied(solution, lattice)) {
                 return true;
@@ -209,31 +210,38 @@ public:
         unionCons.insert(unionCons.end(), other.unionCons.begin(), other.unionCons.end());
         implCons.insert(implCons.end(), other.implCons.begin(), other.implCons.end());
     }
-    void print(std::ostream& os) const {
+    std::vector<const TypeConstraint*> getAll() const {
+        std::vector<const TypeConstraint*> all;
         for (FixedConstraint con : fixedCons) {
-            os << "   " << con << std::endl;
+            all.push_back(&con);
         }
         for (VarConstraint con : varCons) {
-            os << "   " << con << std::endl;
+            all.push_back(&con);
         }
         for (UnionConstraint con : unionCons) {
-            os << "   " << con << std::endl;
+            all.push_back(&con);
         }
         for (ImplicationConstraint con : implCons) {
-            os << "   " << con << std::endl;
+            all.push_back(&con);
+        }
+        return all;
+    }
+    void print(std::ostream& os) const {
+        for (const TypeConstraint* con : getAll()) {
+            os << "   " << *con << std::endl;
         }
     }
     friend std::ostream& operator<<(std::ostream& out, const TypeConstraints& other) {
         other.print(out);
         return out;
     }
-    typeSol solve(TypeLattice& lattice, std::set<const AstArgument*> arguments) {
+    typeSol solve(TypeLattice& lattice, std::set<const AstArgument*> arguments) const {
         typeSol currentSol;
         for (const AstArgument* arg : arguments) {
             currentSol[arg] = &lattice.getTop();
         }
         for (FixedConstraint con : fixedCons) {
-            con.resolve(currentSol, lattice);
+            currentSol = con.resolve(currentSol, lattice);
         }
         typeSol oldSol;
         do {
@@ -248,6 +256,9 @@ public:
                 currentSol = cons.resolve(currentSol, lattice);
             }
         } while (oldSol != currentSol);
+        for (const TypeConstraint* con : getAll()) {
+            assert(con->isSatisfied(oldSol, lattice) && "All constraints are satisified");
+        }
         return oldSol;
     }
 };

@@ -203,7 +203,7 @@ soufflepublic_HEADERS = \
                         SymbolMask.h            \
                         SymbolTable.h           \
                         Table.h                 \
-                        Trie.h                  \
+                        Brie.h                  \
                         UnionFind.h             \
                         Util.h                  \
                         WriteStream.h           \
@@ -345,10 +345,10 @@ test_graph_utils_test_SOURCES = test/graph_utils_test.cpp
 test_graph_utils_test_LDADD = libsouffle.la
 
 # trie implementation
-check_PROGRAMS += test/trie_test
-test_trie_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
-test_trie_test_SOURCES = test/trie_test.cpp
-test_trie_test_LDADD = libsouffle.la
+check_PROGRAMS += test/brie_test
+test_brie_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_brie_test_SOURCES = test/brie_test.cpp
+test_brie_test_LDADD = libsouffle.la
 
 # parallel utils implementation
 check_PROGRAMS += test/parallel_utils_test

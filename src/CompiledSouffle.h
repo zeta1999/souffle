@@ -31,7 +31,7 @@
 #include "souffle/SouffleInterface.h"
 #include "souffle/SymbolMask.h"
 #include "souffle/SymbolTable.h"
-#include "souffle/Trie.h"
+#include "souffle/Brie.h"
 #include "souffle/Util.h"
 #include "souffle/WriteStream.h"
 #ifdef USE_MPI

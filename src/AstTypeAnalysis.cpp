@@ -221,6 +221,29 @@ public:
             os << con << std::endl;
         }
     }
+    typeSol solve(TypeLattice& lattice, std::vector<AstArgument*> arguments) {
+        typeSol currentSol;
+        for (const AstArgument* arg : arguments) {
+            currentSol[arg] = &lattice.getTop();
+        }
+        for (FixedConstraint con : fixedCons) {
+            con.resolve(currentSol, lattice);
+        }
+        typeSol oldSol;
+        do {
+            oldSol = currentSol;
+            for (VarConstraint cons : varCons) {
+                currentSol = cons.resolve(currentSol, lattice);
+            }
+            for (UnionConstraint cons : unionCons) {
+                currentSol = cons.resolve(currentSol, lattice);
+            }
+            for (ImplicationConstraint cons : implCons) {
+                currentSol = cons.resolve(currentSol, lattice);
+            }
+        } while (oldSol != currentSol);
+        return oldSol;
+    }
 };
 
 TypeConstraints getConstraints(
@@ -385,12 +408,14 @@ TypeConstraints getConstraints(
     return finder.visit(clause);
 }
 
-typeSol TypeAnalysis::analyseTypes(const TypeLattice& lattice, const AstClause& clause,
-        const AstProgram& program, std::ostream* debugStream) {
+typeSol TypeAnalysis::analyseTypes(
+        TypeLattice& lattice, const AstClause& clause, const AstProgram& program, std::ostream* debugStream) {
     TypeConstraints typeCons = getConstraints(lattice, clause, program);
-    std::cout << clause << std::endl << std::endl;
-    typeCons.print(std::cout);
-    std::cout << std::endl;
+    if (debugStream != nullptr) {
+        *debugStream << clause << std::endl << std::endl;
+        typeCons.print(*debugStream);
+        *debugStream << std::endl;
+    }
     // TODO
     // assert(false && "Not implemented");
     return typeSol();  // TODO remove
@@ -404,7 +429,7 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
         for (const AstClause* clause : rel->getClauses()) {
             // Perform the type analysis
             // typeSol clauseArgumentTypes = analyseTypes(lattice,*clause,*program);
-            analyseTypes(lattice, *clause, *program);  // TODO remove
+            analyseTypes(lattice, *clause, *program, &std::cout);  // TODO remove
             // argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
         }
     }

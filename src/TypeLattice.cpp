@@ -4,8 +4,8 @@
 #include "Util.h"
 #include <deque>
 #include <map>
-#include <set>
 #include <ostream>
+#include <set>
 #include <vector>
 
 namespace souffle {
@@ -65,7 +65,8 @@ const AnalysisType* TypeLattice::meet(const AnalysisType* first, const AnalysisT
         // They aren't subtypes, so they must be different records
         return &getBotPrim(kind);
     }
-    if (dynamic_cast<const BaseAType*>(first) != nullptr || dynamic_cast<const BaseAType*>(second) != nullptr) {
+    if (dynamic_cast<const BaseAType*>(first) != nullptr ||
+            dynamic_cast<const BaseAType*>(second) != nullptr) {
         // One is a base type, but they are not subtypes, and hence must be disjoint
         return &getBotPrim(kind);
     }
@@ -137,7 +138,7 @@ const AnalysisType* TypeLattice::join(const AnalysisType* first, const AnalysisT
     } else {
         assert(false && "Unsupported type");
     }
-    assert(contents.size() > 1 && "Oliver made a mistake");
+    assert(contents.size() > 1 && "Union of non-equal non-empty sets somehow hass less than 2 elements");
     for (UnionAType& other : unions) {
         if (other.getBases() == contents) {
             return &other;
@@ -234,7 +235,7 @@ bool TypeLattice::isSubtype(const AnalysisType* first, const AnalysisType* secon
 
 const InnerAType* TypeLattice::addType(const Type* type) {
     assert(env.isType(*type) && "Type must be in environment");
-    if (aliases.find(type->getName()) == aliases.end()) {
+    if (aliases.count(type->getName()) == 0) {
         if (dynamic_cast<const PrimitiveType*>(type) != nullptr) {
             auto* baseType = dynamic_cast<const PrimitiveType*>(type);
             Kind kind;

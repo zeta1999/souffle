@@ -34,12 +34,14 @@
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
+#include "Global.h"
 #include "TypeLattice.h"
 #include "TypeSystem.h"
 #include "Util.h"
 #include <cassert>
 #include <map>
 #include <ostream>
+#include <set>
 #include <vector>
 
 #include <iostream>  // TODO remove
@@ -209,19 +211,23 @@ public:
     }
     void print(std::ostream& os) const {
         for (FixedConstraint con : fixedCons) {
-            os << con << std::endl;
+            os <<  "    " << con << std::endl;
         }
         for (VarConstraint con : varCons) {
-            os << con << std::endl;
+            os <<  "    " << con << std::endl;
         }
         for (UnionConstraint con : unionCons) {
-            os << con << std::endl;
+            os <<  "    " << con << std::endl;
         }
         for (ImplicationConstraint con : implCons) {
-            os << con << std::endl;
+            os <<  "    " << con << std::endl;
         }
     }
-    typeSol solve(TypeLattice& lattice, std::vector<AstArgument*> arguments) {
+    friend std::ostream& operator<<(std::ostream& out, const TypeConstraints& other) {
+        other.print(out);
+        return out;
+    }
+    typeSol solve(TypeLattice& lattice, std::set<const AstArgument*> arguments) {
         typeSol currentSol;
         for (const AstArgument* arg : arguments) {
             currentSol[arg] = &lattice.getTop();
@@ -408,38 +414,46 @@ TypeConstraints getConstraints(
     return finder.visit(clause);
 }
 
+std::set<const AstArgument*> TypeAnalysis::getArguments(const AstClause& clause) {
+    std::set<const AstArgument*> args;
+    visitDepthFirst(clause, [&](const AstArgument& arg){
+        args.insert(&arg);
+    });
+    return args;
+}
+
 typeSol TypeAnalysis::analyseTypes(
         TypeLattice& lattice, const AstClause& clause, const AstProgram& program, std::ostream* debugStream) {
     TypeConstraints typeCons = getConstraints(lattice, clause, program);
+    typeSol types = typeCons.solve(lattice, getArguments(clause));
     if (debugStream != nullptr) {
-        *debugStream << clause << std::endl << std::endl;
-        typeCons.print(*debugStream);
-        *debugStream << std::endl;
+        *debugStream << "Clause:\n" << clause << std::endl << std::endl;
+        *debugStream << "Constraints:\n" << typeCons << std::endl;
+        *debugStream << "Types:\n" << types << std::endl;
     }
-    // TODO
-    // assert(false && "Not implemented");
-    return typeSol();  // TODO remove
+    return types;
 }
 
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
+    // Check if debugging information is being generated and note where logs should be sent
+    std::ostream* debugStream = nullptr;
+    if (!Global::config().get("debug-report").empty()) {
+        debugStream = &analysisLogs;
+    }
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
     TypeLattice lattice = TypeLattice(typeEnvAnalysis->getTypeEnvironment());
     const AstProgram* program = translationUnit.getProgram();
     for (const AstRelation* rel : program->getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {
             // Perform the type analysis
-            // typeSol clauseArgumentTypes = analyseTypes(lattice,*clause,*program);
-            analyseTypes(lattice, *clause, *program, &std::cout);  // TODO remove
-            // argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+            typeSol clauseArgumentTypes = analyseTypes(lattice,*clause,*program,debugStream);
+            argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
         }
     }
-    // TODO
-    // assert(false && "Not implemented");
 }
 
 void TypeAnalysis::print(std::ostream& os) const {
-    // TODO
-    assert(false && "Not implemented");
+    os << analysisLogs.str();
 }
 
 }  // end of namespace souffle

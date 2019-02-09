@@ -174,6 +174,7 @@ soufflepublicdir = $(includedir)/souffle
 
 soufflepublic_HEADERS = \
 						CompiledOptions.h       \
+                        Brie.h                  \
                         BTree.h                 \
                         CompiledIndexUtils.h    \
                         CompiledRecord.h        \
@@ -203,7 +204,6 @@ soufflepublic_HEADERS = \
                         SymbolMask.h            \
                         SymbolTable.h           \
                         Table.h                 \
-                        Brie.h                  \
                         UnionFind.h             \
                         Util.h                  \
                         WriteStream.h           \

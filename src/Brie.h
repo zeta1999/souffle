@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file Trie.h
+ * @file Brie.h
  *
  * This header file contains the implementation for a generic, fixed
  * length integer trie.

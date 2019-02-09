@@ -18,11 +18,11 @@
 #pragma once
 
 #include "BTree.h"
+#include "Brie.h"
 #include "CompiledTuple.h"
 #include "EquivalenceRelation.h"
 #include "IterUtils.h"
 #include "RamTypes.h"
-#include "Trie.h"
 #include "Util.h"
 #include <cassert>
 #include <iterator>

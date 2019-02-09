@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "souffle/Brie.h"
 #include "souffle/CompiledIndexUtils.h"
 #include "souffle/CompiledOptions.h"
 #include "souffle/CompiledRecord.h"
@@ -31,7 +32,6 @@
 #include "souffle/SouffleInterface.h"
 #include "souffle/SymbolMask.h"
 #include "souffle/SymbolTable.h"
-#include "souffle/Trie.h"
 #include "souffle/Util.h"
 #include "souffle/WriteStream.h"
 #ifdef USE_MPI

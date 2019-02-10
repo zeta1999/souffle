@@ -4,7 +4,7 @@
 #include "Util.h"
 #include <deque>
 #include <map>
-#include <ostream>
+#include <sstream>
 #include <set>
 #include <vector>
 

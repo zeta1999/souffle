@@ -64,24 +64,35 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
             }
         }
 
-        using RamNodeMapper::operator();
-
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            if (RamNestedOperation* nested = dynamic_cast<RamNestedOperation*>(node.get())) {
-                if (const RamFilter* filter = dynamic_cast<const RamFilter*>(&nested->getOperation())) {
-                    const RamCondition& condition = filter->getCondition();
+            if (RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
+                const RamCondition& condition = filter->getCondition();
 
-                    if (context->rcla->getLevel(&condition) == identifier) {
-                        addCondition(std::unique_ptr<RamCondition>(condition.clone()));
+                if (context->rcla->getLevel(&condition) == identifier) {
+                    addCondition(std::unique_ptr<RamCondition>(condition.clone()));
 
-                        // skip this filter
-                        nested->setOperation(std::unique_ptr<RamOperation>(filter->getOperation().clone()));
-                        return (*this)(std::move(node));
-                    }
+                    // skip this filter
+                    node->apply(*this);
+                    return std::unique_ptr<RamOperation>(filter->getOperation().clone());
                 }
             }
 
             node->apply(*this);
+            return node;
+        }
+    };
+
+    class RamFilterInsert : public RamNodeMapper {
+        std::unique_ptr<RamCondition> condition;
+
+    public:
+        RamFilterInsert(std::unique_ptr<RamCondition> c) : condition(std::move(c)) {}
+
+        std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
+            if (nullptr != dynamic_cast<RamOperation*>(node.get())) {
+                return std::make_unique<RamFilter>(std::unique_ptr<RamCondition>(condition->clone()),
+                        std::unique_ptr<RamOperation>(dynamic_cast<RamOperation*>(node.release())));
+            }
             return node;
         }
     };
@@ -101,16 +112,14 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             if (RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
                 RamFilterCapturer filterUpdate(context, scan->getIdentifier());
-                std::unique_ptr<RamScan> newScan = filterUpdate(std::unique_ptr<RamScan>(scan->clone()));
+                node->apply(filterUpdate);
 
                 // If a condition applies to this scan level, filter the scan based on the condition
                 if (std::unique_ptr<RamCondition> condition = filterUpdate.getCondition()) {
-                    newScan->setOperation(std::make_unique<RamFilter>(std::move(condition),
-                            std::unique_ptr<RamOperation>(newScan->getOperation().clone())));
+                    RamFilterInsert filterInsert(std::move(condition));
+                    node->apply(filterInsert);
                     modified = true;
                 }
-
-                node = std::move(newScan);
             }
 
             node->apply(*this);

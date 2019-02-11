@@ -80,11 +80,6 @@ public:
         return *nestedOperation;
     }
 
-    /** Set nested operation */
-    void setOperation(std::unique_ptr<RamOperation> nested) {
-        nestedOperation = std::move(nested);
-    }
-
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
         nestedOperation->print(os, tabpos + 1);

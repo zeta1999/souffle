@@ -265,6 +265,7 @@ public:
 
 class TypeLattice {
     friend class TypeAnalysis;
+
 private:
     const TypeEnvironment* env;
     TopAType top;

@@ -465,6 +465,8 @@ typeSol TypeAnalysis::analyseTypes(
         }
         *debugStream << std::endl;
     }
+    // Make sure each argument object has a type
+    visitDepthFirst(clause, [&](const AstVariable& var) { types[&var] = types[getVar(&variables, &var)]; });
     return types;
 }
 

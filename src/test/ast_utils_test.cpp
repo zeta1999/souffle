@@ -22,6 +22,7 @@
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "ParserDriver.h"
+#include "TypeLattice.h"
 #include "test.h"
 
 namespace souffle {
@@ -172,15 +173,15 @@ TEST(AstUtils, SimpleTypes) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a))));
-    EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
-    EXPECT_EQ("{U}", toString(typeAnalysis->getTypes(getX(u))));
+    EXPECT_EQ("U", toString(typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("U", toString(typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("U", toString(typeAnalysis->getType(getX(u))));
 
     AstClause* a1 = program.getRelation("a")->getClause(1);
-    EXPECT_EQ("{}", toString(typeAnalysis->getTypes(getX(a1))));
+    EXPECT_EQ("bot_symbol", toString(typeAnalysis->getType(getX(a1))));
 
     AstClause* a2 = program.getRelation("a")->getClause(2);
-    EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a2))));
+    EXPECT_EQ("top", toString(typeAnalysis->getType(getX(a2))));
 }
 
 TEST(AstUtils, NumericTypes) {
@@ -216,9 +217,9 @@ TEST(AstUtils, NumericTypes) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("{}", toString(typeAnalysis->getTypes(getX(a))));
-    EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
-    EXPECT_EQ("{U}", toString(typeAnalysis->getTypes(getX(u))));
+    EXPECT_EQ("top", toString(typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("top", toString(typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("top", toString(typeAnalysis->getType(getX(u))));
 }
 
 TEST(AstUtils, SubtypeChain) {
@@ -249,20 +250,20 @@ TEST(AstUtils, SubtypeChain) {
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
     // check proper type handling
-    auto& env = tu->getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
-    EXPECT_PRED2(isSubtypeOf, env.getType("B"), env.getType("A"));
-    EXPECT_PRED2(isSubtypeOf, env.getType("C"), env.getType("A"));
-    EXPECT_PRED2(isSubtypeOf, env.getType("D"), env.getType("A"));
+    auto lattice = TypeLattice(tu->getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment());
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("B"), lattice.getType("A"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("C"), lattice.getType("A"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("D"), lattice.getType("A"));
 
-    EXPECT_PRED2(isSubtypeOf, env.getType("C"), env.getType("B"));
-    EXPECT_PRED2(isSubtypeOf, env.getType("D"), env.getType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("C"), lattice.getType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("D"), lattice.getType("B"));
 
-    EXPECT_PRED2(isSubtypeOf, env.getType("D"), env.getType("C"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("D"), lattice.getType("C"));
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
     // check proper type deduction
-    EXPECT_EQ("{D}", toString(typeAnalysis->getTypes(getX(a))));
+    EXPECT_EQ("D", toString(typeAnalysis->getType(getX(a))));
 }
 
 TEST(AstUtils, FactTypes) {
@@ -300,9 +301,9 @@ TEST(AstUtils, FactTypes) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a))));
-    EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
-    EXPECT_EQ("{U}", toString(typeAnalysis->getTypes(getX(u))));
+    EXPECT_EQ("const_symbol", toString(typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("const_number", toString(typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("const_symbol", toString(typeAnalysis->getType(getX(u))));
 }
 
 TEST(AstUtils, NestedFunctions) {
@@ -327,7 +328,7 @@ TEST(AstUtils, NestedFunctions) {
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
     // check proper type deduction
-    EXPECT_EQ("{D}", toString(tu->getAnalysis<TypeAnalysis>()->getTypes(getX(a))));
+    EXPECT_EQ("top", toString(tu->getAnalysis<TypeAnalysis>()->getTypes(getX(a))));
 }
 
 TEST(AstUtils, GroundTermPropagation) {

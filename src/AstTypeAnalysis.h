@@ -69,6 +69,8 @@ private:
      *
      * @param lat a lattice containing available types
      * @param clause the clause to be typed
+     * @param program the program the clause is contained in
+     * @param debugStream a pointer to the stream where debugging information should be printed
      * @return a map mapping each contained argument to a type
      */
     static std::map<const AstArgument*, const AnalysisType*> analyseTypes(TypeLattice& lat,

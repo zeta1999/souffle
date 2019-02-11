@@ -34,6 +34,11 @@ public:
         return false;
     }
 
+    // Check if a type is numeric
+    bool isNumeric() const {
+        return false;
+    }
+
     virtual void print(std::ostream& os) const = 0;
 
     friend std::ostream& operator<<(std::ostream& out, const AnalysisType& type) {
@@ -76,6 +81,10 @@ protected:
 public:
     bool isValid() const {
         return true;
+    }
+
+    bool isNumeric() const {
+        return getKind() == Kind::NUMBER;
     }
 
     virtual Kind getKind() const = 0;

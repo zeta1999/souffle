@@ -173,15 +173,15 @@ TEST(AstUtils, SimpleTypes) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("U", toString(typeAnalysis->getType(getX(a))));
-    EXPECT_EQ("U", toString(typeAnalysis->getType(getX(b))));
-    EXPECT_EQ("U", toString(typeAnalysis->getType(getX(u))));
+    EXPECT_EQ("U", toString(*typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("U", toString(*typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("U", toString(*typeAnalysis->getType(getX(u))));
 
     AstClause* a1 = program.getRelation("a")->getClause(1);
-    EXPECT_EQ("bot_symbol", toString(typeAnalysis->getType(getX(a1))));
+    EXPECT_EQ("B", toString(*typeAnalysis->getType(getX(a1))));
 
     AstClause* a2 = program.getRelation("a")->getClause(2);
-    EXPECT_EQ("top", toString(typeAnalysis->getType(getX(a2))));
+    EXPECT_EQ("top", toString(*typeAnalysis->getType(getX(a2))));
 }
 
 TEST(AstUtils, NumericTypes) {
@@ -217,9 +217,9 @@ TEST(AstUtils, NumericTypes) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("top", toString(typeAnalysis->getType(getX(a))));
-    EXPECT_EQ("top", toString(typeAnalysis->getType(getX(b))));
-    EXPECT_EQ("top", toString(typeAnalysis->getType(getX(u))));
+    EXPECT_EQ("top", toString(*typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("top", toString(*typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("top", toString(*typeAnalysis->getType(getX(u))));
 }
 
 TEST(AstUtils, SubtypeChain) {
@@ -252,18 +252,25 @@ TEST(AstUtils, SubtypeChain) {
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
     // check proper type handling
-    TypeLattice& lattice = typeAnalysis.getLattice();
-    EXPECT_PRED2(lattice.isSubtype, &lattice.getType("B"), &lattice.getType("A"));
-    EXPECT_PRED2(lattice.isSubtype, &lattice.getType("C"), &lattice.getType("A"));
-    EXPECT_PRED2(lattice.isSubtype, &lattice.getType("D"), &lattice.getType("A"));
+    const TypeLattice& lattice = typeAnalysis->getLattice();
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("B"), lattice.getType("A"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("C"), lattice.getType("A"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("D"), lattice.getType("A"));
 
-    EXPECT_PRED2(lattice.isSubtype, &lattice.getType("C"), &lattice.getType("B"));
-    EXPECT_PRED2(lattice.isSubtype, &lattice.getType("D"), &lattice.getType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("A"), lattice.getType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("C"), lattice.getType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("D"), lattice.getType("B"));
 
-    EXPECT_PRED2(lattice.isSubtype, &lattice.getType("D"), &lattice.getType("C"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("A"), lattice.getType("C"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("B"), lattice.getType("C"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("D"), lattice.getType("C"));
+
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("A"), lattice.getType("D"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("B"), lattice.getType("D"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getType("C"), lattice.getType("D"));
 
     // check proper type deduction
-    EXPECT_EQ("D", toString(typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("D", toString(*typeAnalysis->getType(getX(a))));
 }
 
 TEST(AstUtils, FactTypes) {
@@ -301,9 +308,9 @@ TEST(AstUtils, FactTypes) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("const_symbol", toString(typeAnalysis->getType(getX(a))));
-    EXPECT_EQ("const_number", toString(typeAnalysis->getType(getX(b))));
-    EXPECT_EQ("const_symbol", toString(typeAnalysis->getType(getX(u))));
+    EXPECT_EQ("const_symbol", toString(*typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("const_number", toString(*typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("const_symbol", toString(*typeAnalysis->getType(getX(u))));
 }
 
 TEST(AstUtils, NestedFunctions) {
@@ -328,7 +335,7 @@ TEST(AstUtils, NestedFunctions) {
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
     // check proper type deduction
-    EXPECT_EQ("top", toString(tu->getAnalysis<TypeAnalysis>()->getType(getX(a))));
+    EXPECT_EQ("symbol", toString(*tu->getAnalysis<TypeAnalysis>()->getType(getX(a))));
 }
 
 TEST(AstUtils, GroundTermPropagation) {

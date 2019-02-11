@@ -321,6 +321,21 @@ TypeLattice::TypeLattice(const TypeEnvironment* env) : env(env), top(this), bot(
     }
 }
 
+void TypeLattice::setEnvironment(const TypeEnvironment* env) {
+    assert(this->env == nullptr && "Cannot have existing environment");
+    this->env = env;
+    for (Kind kind : {Kind::NUMBER, Kind::SYMBOL, Kind::RECORD}) {
+        primitives.insert(std::pair<Kind, PrimitiveAType>(kind, PrimitiveAType(this, kind)));
+        constants.insert(std::pair<Kind, ConstantAType>(kind, ConstantAType(this, kind)));
+        botprims.insert(std::pair<Kind, BotPrimAType>(kind, BotPrimAType(this, kind)));
+    }
+    aliases["number"] = &primitives.find(Kind::NUMBER)->second;
+    aliases["symbol"] = &primitives.find(Kind::SYMBOL)->second;
+    for (const Type& type : env->getAllTypes()) {
+        addType(&type);
+    }
+}
+
 const InnerAType* TypeLattice::getType(const Type& type) const {
     assert(env->isType(type) && "Type must be in environment");
     return getType(type.getName());

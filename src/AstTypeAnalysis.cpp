@@ -375,7 +375,8 @@ TypeConstraints getConstraints(const TypeLattice& lattice,
         }
         TypeConstraints visitRecordInit(const AstRecordInit& record) {
             TypeConstraints cons = visitNode(record);
-            auto* type = dynamic_cast<const RecordType*>(&lattice.getEnvironment()->getType(record.getType()));
+            auto* type =
+                    dynamic_cast<const RecordType*>(&lattice.getEnvironment()->getType(record.getType()));
             assert(type != nullptr && "Type of record must be a record type");
             assert(record.getArguments().size() == type->getFields().size() &&
                     "Constructor has incorrect number of arguments");
@@ -477,7 +478,7 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
         debugStream = &analysisLogs;
     }
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
-    lattice = TypeLattice(&typeEnvAnalysis->getTypeEnvironment());
+    lattice.setEnvironment(&typeEnvAnalysis->getTypeEnvironment());
     const AstProgram* program = translationUnit.getProgram();
     for (const AstRelation* rel : program->getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {

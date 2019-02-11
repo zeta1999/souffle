@@ -30,9 +30,7 @@ protected:
 
 public:
     // Check the type is not a bottom or top type
-    bool isValid() const {
-        return false;
-    }
+    virtual bool isValid() const = 0;
 
     // Check if a type is numeric
     bool isNumeric() const {
@@ -54,6 +52,10 @@ private:
     TopAType(const TypeLattice* lattice) : AnalysisType(lattice) {}
 
 public:
+    bool isValid() const override {
+        return false;
+    }
+
     void print(std::ostream& os) const override {
         os << "top";
     }
@@ -66,6 +68,10 @@ private:
     BotAType(const TypeLattice* lattice) : AnalysisType(lattice) {}
 
 public:
+    bool isValid() const override {
+        return false;
+    }
+
     void print(std::ostream& os) const override {
         os << "bottom";
     }
@@ -79,7 +85,7 @@ protected:
     InnerAType(const TypeLattice* lattice) : AnalysisType(lattice) {}
 
 public:
-    bool isValid() const {
+    bool isValid() const override {
         return true;
     }
 
@@ -106,7 +112,7 @@ private:
     PrimitiveAType(const TypeLattice* lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
 
 public:
-    bool isValid() const {
+    bool isValid() const override {
         return (kind != Kind::RECORD);
     }
     Kind getKind() const override {
@@ -165,7 +171,7 @@ private:
     BotPrimAType(const TypeLattice* lattice, Kind kind) : InnerAType(lattice), kind(kind) {}
 
 public:
-    bool isValid() const {
+    bool isValid() const override {
         return false;
     }
     Kind getKind() const override {
@@ -278,6 +284,8 @@ public:
 
     // Temporary constructor, produces invalid lattice
     TypeLattice() : env(), top(this), bot(this) {}
+
+    void setEnvironment(const TypeEnvironment* env);
 
     // Find the highest common subtype (intersection)
     const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);

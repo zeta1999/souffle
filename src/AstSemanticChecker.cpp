@@ -165,10 +165,9 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         if (typeEnv.isType(record.getType())) {
             const Type& type = typeEnv.getType(record.getType());
             if (!isRecordType(type)) {
-                report.addError(
-                        "Type " + toString(type) + " is not a record type", record.getSrcLoc());
+                report.addError("Type " + toString(type) + " is not a record type", record.getSrcLoc());
             } else if (record.getArguments().size() !=
-                    dynamic_cast<const RecordType*>(&type)->getFields().size()) {
+                       dynamic_cast<const RecordType*>(&type)->getFields().size()) {
                 report.addError("Wrong number of arguments given to record", record.getSrcLoc());
             }
         } else {
@@ -180,6 +179,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // check all arguments have been declared a valid type
     visitDepthFirst(nodes, [&](const AstArgument& arg) {
         if (!typeAnalysis.getType(&arg)->isValid()) {
+            // TODO do not print error if ungrounded
             report.addError("Unable to deduce valid type for expression " + toString(arg), arg.getSrcLoc());
         }
     });
@@ -188,12 +188,14 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         for (size_t i = 0; i < fun.getArity(); i++) {
             if (fun.acceptsSymbols(i)) {
-                if (!lattice.isSubtype(typeAnalysis.getType(fun.getArg(i)),lattice.getPrimitive(Kind::SYMBOL))) {
-                    report.addError("Non-symbolic argument for functor", fun.getSrcLoc());
+                if (!lattice.isSubtype(
+                            typeAnalysis.getType(fun.getArg(i)), lattice.getPrimitive(Kind::SYMBOL))) {
+                    report.addError("Non-symbolic argument for functor", fun.getArg(i)->getSrcLoc());
                 }
             } else if (fun.acceptsNumbers(i)) {
-                if (!lattice.isSubtype(typeAnalysis.getType(fun.getArg(i)),lattice.getPrimitive(Kind::NUMBER))) {
-                    report.addError("Non-numeric argument for functor", fun.getSrcLoc());
+                if (!lattice.isSubtype(
+                            typeAnalysis.getType(fun.getArg(i)), lattice.getPrimitive(Kind::NUMBER))) {
+                    report.addError("Non-numeric argument for functor", fun.getArg(i)->getSrcLoc());
                 }
             } else {
                 assert(false && "Unsupported functor input type");
@@ -212,12 +214,14 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             }
             for (size_t i = 0; i < funDecl->getArgCount(); i++) {
                 if (funDecl->acceptsSymbols(i)) {
-                    if (!lattice.isSubtype(typeAnalysis.getType(fun.getArg(i)),lattice.getPrimitive(Kind::SYMBOL))) {
-                        report.addError("Non-symbolic argument for functor", fun.getSrcLoc());
+                    if (!lattice.isSubtype(
+                                typeAnalysis.getType(fun.getArg(i)), lattice.getPrimitive(Kind::SYMBOL))) {
+                        report.addError("Non-symbolic argument for functor", fun.getArg(i)->getSrcLoc());
                     }
                 } else if (funDecl->acceptsNumbers(i)) {
-                    if (!lattice.isSubtype(typeAnalysis.getType(fun.getArg(i)),lattice.getPrimitive(Kind::NUMBER))) {
-                        report.addError("Non-numeric argument for functor", fun.getSrcLoc());
+                    if (!lattice.isSubtype(
+                                typeAnalysis.getType(fun.getArg(i)), lattice.getPrimitive(Kind::NUMBER))) {
+                        report.addError("Non-numeric argument for functor", fun.getArg(i)->getSrcLoc());
                     }
                 } else {
                     assert(false && "Unsupported functor input type");
@@ -229,13 +233,15 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // check records have been assigned the correct type
     visitDepthFirst(nodes, [&](const AstRecordInit& record) {
         if (!lattice.isSubtype(typeAnalysis.getType(&record), lattice.getType(record.getType()))) {
-            report.addError("Unable to deduce correct type for record " + toString(record), record.getSrcLoc());
+            report.addError(
+                    "Unable to deduce correct type for record " + toString(record), record.getSrcLoc());
         }
     });
 
     // check aggregates involve numbers
     visitDepthFirst(nodes, [&](const AstAggregator& aggr) {
-        if (!lattice.isSubtype(typeAnalysis.getType(aggr.getTargetExpression()),lattice.getPrimitive(Kind::NUMBER))) {
+        if (!lattice.isSubtype(
+                    typeAnalysis.getType(aggr.getTargetExpression()), lattice.getPrimitive(Kind::NUMBER))) {
             report.addError("Type of aggregation variable is not a number", aggr.getSrcLoc());
         }
     });
@@ -245,17 +251,19 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         if (typeAnalysis.getType(&cast) != lattice.getType(cast.getType())) {
             report.addError("Typecast is to incorrect type", cast.getSrcLoc());
         }
-        if (!lattice.isSubtype(typeAnalysis.getType(cast.getValue()),lattice.getType(cast.getType()))) {
+        if (!lattice.isSubtype(typeAnalysis.getType(cast.getValue()), lattice.getType(cast.getType()))) {
             report.addError("Cannot cast to non-supertype", cast.getSrcLoc());
         }
     });
 
-    // check all atoms have correct input types (only negated and head atoms must be checked, but other atoms hold trivially)
+    // check all atoms have correct input types (only negated and head atoms must be checked, but other atoms
+    // hold trivially)
     visitDepthFirst(nodes, [&](const AstAtom& atom) {
         AstRelation* relation = program.getRelation(atom.getName());
         for (size_t i = 0; i < atom.argSize(); i++) {
-            if (!lattice.isSubtype(typeAnalysis.getType(atom.getArgument(i)), lattice.getType(relation->getAttribute(i)->getTypeName()))) {
-                report.addError("Argument to relation has incorrect type", atom.getSrcLoc());
+            if (!lattice.isSubtype(typeAnalysis.getType(atom.getArgument(i)),
+                        lattice.getType(relation->getAttribute(i)->getTypeName()))) {
+                report.addError("Argument to relation has incorrect type", atom.getArgument(i)->getSrcLoc());
             }
         }
     });
@@ -275,7 +283,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                     report.addError("Cannot compare arguments of different kinds", constraint.getSrcLoc());
                 } else if (lhsType->getKind() == Kind::RECORD) {
                     // TODO (#380): Remove this once record unions are allowed
-                    if (!(lattice.isSubtype(lhsType,rhsType) || lattice.isSubtype(rhsType,lhsType))) {
+                    if (!(lattice.isSubtype(lhsType, rhsType) || lattice.isSubtype(rhsType, lhsType))) {
                         report.addError("Cannot compare records of different types", constraint.getSrcLoc());
                     }
                 }

@@ -56,9 +56,14 @@ public:
         return found->second;
     }
 
+    const TypeLattice& getLattice() const {
+        return lattice;
+    }
+
 private:
     std::map<const AstArgument*, const AnalysisType*> argumentTypes{};
     std::stringstream analysisLogs{};
+    TypeLattice lattice{};
 
     static std::set<const AstArgument*> getArguments(
             std::map<std::string, const AstVariable*>* variables, const AstClause& clause);

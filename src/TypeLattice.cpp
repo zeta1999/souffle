@@ -10,11 +10,11 @@
 
 namespace souffle {
 
-const PrimitiveAType& InnerAType::getPrimitive() const {
+const PrimitiveAType* InnerAType::getPrimitive() const {
     return lattice->getPrimitive(this->getKind());
 }
 
-const ConstantAType& InnerAType::getConstant() const {
+const ConstantAType* InnerAType::getConstant() const {
     return lattice->getConstant(this->getKind());
 }
 
@@ -66,12 +66,12 @@ const AnalysisType* TypeLattice::meet(const AnalysisType* first, const AnalysisT
     Kind kind = firstInner->getKind();
     if (kind == Kind::RECORD) {
         // They aren't subtypes, so they must be different records
-        return &getBotPrim(kind);
+        return getBotPrim(kind);
     }
     if (dynamic_cast<const BaseAType*>(first) != nullptr ||
             dynamic_cast<const BaseAType*>(second) != nullptr) {
         // One is a base type, but they are not subtypes, and hence must be disjoint
-        return &getBotPrim(kind);
+        return getBotPrim(kind);
     }
     // The only option is for both to be union types
     const auto* firstUnion = dynamic_cast<const UnionAType*>(first);
@@ -86,7 +86,7 @@ const AnalysisType* TypeLattice::meet(const AnalysisType* first, const AnalysisT
     }
     if (intersection.size() == 0) {
         // Types are disjoint
-        return &getBotPrim(kind);
+        return getBotPrim(kind);
     }
     if (intersection.size() == 1) {
         return *intersection.begin();
@@ -121,7 +121,7 @@ const AnalysisType* TypeLattice::join(const AnalysisType* first, const AnalysisT
     Kind kind = firstInner->getKind();
     if (kind == Kind::RECORD) {
         // They aren't subtypes, so they must be different records
-        return &getPrimitive(kind);
+        return getPrimitive(kind);
     }
     // The output must be some union type containing both inputs
     std::set<const BaseAType*> contents;
@@ -237,7 +237,7 @@ bool TypeLattice::isSubtype(const AnalysisType* first, const AnalysisType* secon
 }
 
 const InnerAType* TypeLattice::addType(const Type* type) {
-    assert(env.isType(*type) && "Type must be in environment");
+    assert(env->isType(*type) && "Type must be in environment");
     if (aliases.count(type->getName()) == 0) {
         if (dynamic_cast<const PrimitiveType*>(type) != nullptr) {
             auto* baseType = dynamic_cast<const PrimitiveType*>(type);
@@ -308,7 +308,7 @@ const InnerAType* TypeLattice::addType(const Type* type) {
     return aliases[type->getName()];
 }
 
-TypeLattice::TypeLattice(const TypeEnvironment& env) : env(env), top(this), bot(this) {
+TypeLattice::TypeLattice(const TypeEnvironment* env) : env(env), top(this), bot(this) {
     for (Kind kind : {Kind::NUMBER, Kind::SYMBOL, Kind::RECORD}) {
         primitives.insert(std::pair<Kind, PrimitiveAType>(kind, PrimitiveAType(this, kind)));
         constants.insert(std::pair<Kind, ConstantAType>(kind, ConstantAType(this, kind)));
@@ -316,13 +316,13 @@ TypeLattice::TypeLattice(const TypeEnvironment& env) : env(env), top(this), bot(
     }
     aliases["number"] = &primitives.find(Kind::NUMBER)->second;
     aliases["symbol"] = &primitives.find(Kind::SYMBOL)->second;
-    for (const Type& type : env.getAllTypes()) {
+    for (const Type& type : env->getAllTypes()) {
         addType(&type);
     }
 }
 
-const InnerAType& TypeLattice::getType(const Type& type) const {
-    assert(env.isType(type) && "Type must be in environment");
+const InnerAType* TypeLattice::getType(const Type& type) const {
+    assert(env->isType(type) && "Type must be in environment");
     return getType(type.getName());
 }
 

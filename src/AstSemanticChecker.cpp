@@ -40,6 +40,7 @@
 #include "PrecedenceGraph.h"
 #include "RelationRepresentation.h"
 #include "SrcLocation.h"
+#include "TypeLattice.h"
 #include "TypeSystem.h"
 #include "Util.h"
 #include <algorithm>
@@ -113,7 +114,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     checkInlining(report, program, precedenceGraph, ioTypes);
 
     // get the list of components to be checked
-    std::vector<const AstNode*> nodes;
+    std::vector<const AstClause*> nodes;
     for (const auto& rel : program.getRelations()) {
         for (const auto& cls : rel->getClauses()) {
             nodes.push_back(cls);
@@ -148,68 +149,27 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // -- type checks --
 
-    // - variables -
-    visitDepthFirst(nodes, [&](const AstVariable& var) {
-        if (typeAnalysis.getTypes(&var).empty()) {
-            report.addError("Unable to deduce type for variable " + var.getName(), var.getSrcLoc());
+    const TypeLattice& lattice = typeAnalysis.getLattice();
+
+    // type casts name a valid type
+    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
+        if (!typeEnv.isType(cast.getType())) {
+            report.addError("Type cast is to undeclared type " + toString(cast.getType()), cast.getSrcLoc());
         }
     });
 
-    // - constants -
-
-    // all string constants are used as symbols
-    visitDepthFirst(nodes, [&](const AstStringConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
-        if (!isSymbolType(types)) {
-            report.addError("Symbol constant (type mismatch)", cnst.getSrcLoc());
-        }
-    });
-
-    // all number constants are used as numbers
-    visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
-        if (!isNumberType(types)) {
-            report.addError("Number constant (type mismatch)", cnst.getSrcLoc());
-        }
-        AstDomain idx = cnst.getIndex();
-        if (idx > MAX_AST_DOMAIN || idx < MIN_AST_DOMAIN) {
-            report.addError("Number constant not in range [" + std::to_string(MIN_AST_DOMAIN) + ", " +
-                                    std::to_string(MAX_AST_DOMAIN) + "]",
-                    cnst.getSrcLoc());
-        }
-    });
-
-    // all null constants are used as records
-    visitDepthFirst(nodes, [&](const AstNullConstant& cnst) {
-        // TODO (#467) remove the next line to enable subprogram compilation for record types
-        Global::config().unset("engine");
-        TypeSet types = typeAnalysis.getTypes(&cnst);
-        if (!isRecordType(types)) {
-            report.addError("Null constant used as a non-record", cnst.getSrcLoc());
-        }
-    });
-
-    // record initializations have the same size as their types
-    visitDepthFirst(nodes, [&](const AstRecordInit& cnst) {
-        // TODO (#467) remove the next line to enable subprogram compilation for record types
-        Global::config().unset("engine");
-        TypeSet types = typeAnalysis.getTypes(&cnst);
-        if (isRecordType(types)) {
-            for (const Type& type : types) {
-                if (cnst.getArguments().size() !=
-                        dynamic_cast<const RecordType*>(&type)->getFields().size()) {
-                    report.addError("Wrong number of arguments given to record", cnst.getSrcLoc());
-                }
-            }
-        }
-    });
-
-    // record initializations declare valid record types
+    // record initializations declare valid record types and have correct size
     visitDepthFirst(nodes, [&](const AstRecordInit& record) {
+        // TODO (#467) remove the next line to enable subprogram compilation for record types
+        Global::config().unset("engine");
         if (typeEnv.isType(record.getType())) {
-            if (!isRecordType(typeEnv.getType(record.getType()))) {
+            const Type& type = typeEnv.getType(record.getType());
+            if (!isRecordType(type)) {
                 report.addError(
-                        "Type " + toString(record.getType()) + " is not a record type", record.getSrcLoc());
+                        "Type " + toString(type) + " is not a record type", record.getSrcLoc());
+            } else if (record.getArguments().size() !=
+                    dynamic_cast<const RecordType*>(&type)->getFields().size()) {
+                report.addError("Wrong number of arguments given to record", record.getSrcLoc());
             }
         } else {
             report.addError(
@@ -217,25 +177,26 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
-    // - intrinsic functors -
+    // check all arguments have been declared a valid type
+    visitDepthFirst(nodes, [&](const AstArgument& arg) {
+        if (!typeAnalysis.getType(&arg)->isValid()) {
+            report.addError("Unable to deduce valid type for expression " + toString(arg), arg.getSrcLoc());
+        }
+    });
+
+    // check functor inputs
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
-        // check type of result
-        if (fun.isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-        }
-
-        if (fun.isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-        }
-
-        // check types of arguments
         for (size_t i = 0; i < fun.getArity(); i++) {
-            auto arg = fun.getArg(i);
-            if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-            }
-            if (fun.acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+            if (fun.acceptsSymbols(i)) {
+                if (!lattice.isSubtype(typeAnalysis.getType(fun.getArg(i)),lattice.getPrimitive(Kind::SYMBOL))) {
+                    report.addError("Non-symbolic argument for functor", fun.getSrcLoc());
+                }
+            } else if (fun.acceptsNumbers(i)) {
+                if (!lattice.isSubtype(typeAnalysis.getType(fun.getArg(i)),lattice.getPrimitive(Kind::NUMBER))) {
+                    report.addError("Non-numeric argument for functor", fun.getSrcLoc());
+                }
+            } else {
+                assert(false && "Unsupported functor input type");
             }
         }
     });
@@ -249,54 +210,93 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             if (funDecl->getArgCount() != fun.getArgCount()) {
                 report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
             }
-            // check return values of user-defined functor
-            if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-                report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-            }
-            if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-                report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-            }
-            for (size_t i = 0; i < fun.getArgCount(); i++) {
-                const AstArgument* arg = fun.getArg(i);
-                if (i < funDecl->getArgCount()) {
-                    if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                        report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+            for (size_t i = 0; i < funDecl->getArgCount(); i++) {
+                if (funDecl->acceptsSymbols(i)) {
+                    if (!lattice.isSubtype(typeAnalysis.getType(fun.getArg(i)),lattice.getPrimitive(Kind::SYMBOL))) {
+                        report.addError("Non-symbolic argument for functor", fun.getSrcLoc());
                     }
-                    if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                        report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+                } else if (funDecl->acceptsNumbers(i)) {
+                    if (!lattice.isSubtype(typeAnalysis.getType(fun.getArg(i)),lattice.getPrimitive(Kind::NUMBER))) {
+                        report.addError("Non-numeric argument for functor", fun.getSrcLoc());
                     }
+                } else {
+                    assert(false && "Unsupported functor input type");
                 }
             }
         }
     });
 
-    // - binary relation -
-    visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
-        // only interested in non-equal constraints
-        auto op = constraint.getOperator();
-        if (op == BinaryConstraintOp::EQ || op == BinaryConstraintOp::NE) {
-            return;
+    // check records have been assigned the correct type
+    visitDepthFirst(nodes, [&](const AstRecordInit& record) {
+        if (!lattice.isSubtype(typeAnalysis.getType(&record), lattice.getType(record.getType()))) {
+            report.addError("Unable to deduce correct type for record " + toString(record), record.getSrcLoc());
         }
+    });
 
-        // get left and right side
+    // check aggregates involve numbers
+    visitDepthFirst(nodes, [&](const AstAggregator& aggr) {
+        if (!lattice.isSubtype(typeAnalysis.getType(aggr.getTargetExpression()),lattice.getPrimitive(Kind::NUMBER))) {
+            report.addError("Type of aggregation variable is not a number", aggr.getSrcLoc());
+        }
+    });
+
+    // check type cast has correct type
+    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
+        if (typeAnalysis.getType(&cast) != lattice.getType(cast.getType())) {
+            report.addError("Typecast is to incorrect type", cast.getSrcLoc());
+        }
+        if (!lattice.isSubtype(typeAnalysis.getType(cast.getValue()),lattice.getType(cast.getType()))) {
+            report.addError("Cannot cast to non-supertype", cast.getSrcLoc());
+        }
+    });
+
+    // check all atoms have correct input types (only negated and head atoms must be checked, but other atoms hold trivially)
+    visitDepthFirst(nodes, [&](const AstAtom& atom) {
+        AstRelation* relation = program.getRelation(atom.getName());
+        for (size_t i = 0; i < atom.argSize(); i++) {
+            if (!lattice.isSubtype(typeAnalysis.getType(atom.getArgument(i)), lattice.getType(relation->getAttribute(i)->getTypeName()))) {
+                report.addError("Argument to relation has incorrect type", atom.getSrcLoc());
+            }
+        }
+    });
+
+    // check inputs to binary constraint are correct
+    visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
         auto lhs = constraint.getLHS();
         auto rhs = constraint.getRHS();
-
-        if (constraint.isNumerical()) {
-            // check numeric type
-            if (!isNumberType(typeAnalysis.getTypes(lhs))) {
-                report.addError("Non-numerical operand for comparison", lhs->getSrcLoc());
-            }
-            if (!isNumberType(typeAnalysis.getTypes(rhs))) {
-                report.addError("Non-numerical operand for comparison", rhs->getSrcLoc());
-            }
-        } else if (constraint.isSymbolic()) {
-            // check symbolic type
-            if (!isSymbolType(typeAnalysis.getTypes(lhs))) {
-                report.addError("Non-string operand for operation", lhs->getSrcLoc());
-            }
-            if (!isSymbolType(typeAnalysis.getTypes(rhs))) {
-                report.addError("Non-string operand for operation", rhs->getSrcLoc());
+        const auto* lhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(lhs));
+        const auto* rhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(rhs));
+        auto op = constraint.getOperator();
+        if (lhsType != nullptr && rhsType != nullptr) {
+            if (op == BinaryConstraintOp::EQ) {
+                return;
+            } else if (op == BinaryConstraintOp::NE) {
+                if (lhsType->getKind() != rhsType->getKind()) {
+                    report.addError("Cannot compare arguments of different kinds", constraint.getSrcLoc());
+                } else if (lhsType->getKind() == Kind::RECORD) {
+                    // TODO (#380): Remove this once record unions are allowed
+                    if (!(lattice.isSubtype(lhsType,rhsType) || lattice.isSubtype(rhsType,lhsType))) {
+                        report.addError("Cannot compare records of different types", constraint.getSrcLoc());
+                    }
+                }
+            } else {
+                if (constraint.isNumerical()) {
+                    if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::NUMBER))) {
+                        report.addError("Non-numerical operand for comparison", lhs->getSrcLoc());
+                    }
+                    if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::NUMBER))) {
+                        report.addError("Non-numerical operand for comparison", rhs->getSrcLoc());
+                    }
+                } else if (constraint.isSymbolic()) {
+                    if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::SYMBOL))) {
+                        report.addError("Non-symbolic operand for comparison", lhs->getSrcLoc());
+                    }
+                    if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::SYMBOL))) {
+                        report.addError("Non-symbolic operand for comparison", rhs->getSrcLoc());
+                    }
+                } else {
+                    assert(false && "Unsupported constraint");
+                }
             }
         }
     });

@@ -90,10 +90,10 @@ public:
     virtual Kind getKind() const = 0;
 
     // Get the primitive type that is a supertype of this
-    const PrimitiveAType& getPrimitive() const;
+    const PrimitiveAType* getPrimitive() const;
 
     // Get the constant type that is a subtype of this
-    const ConstantAType& getConstant() const;
+    const ConstantAType* getConstant() const;
 };
 
 class PrimitiveAType : public InnerAType {
@@ -258,7 +258,7 @@ public:
 
 class TypeLattice {
 private:
-    const TypeEnvironment& env;
+    const TypeEnvironment* env;
     TopAType top;
     BotAType bot;
     std::map<Kind, PrimitiveAType> primitives{};
@@ -274,7 +274,10 @@ private:
 
 public:
     // Initialise the type lattice from the types found in the type environment
-    TypeLattice(const TypeEnvironment& env);
+    TypeLattice(const TypeEnvironment* env);
+
+    // Temporary constructor, produces invalid lattice
+    TypeLattice() : env(), top(this), bot(this) {}
 
     // Find the highest common subtype (intersection)
     const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);
@@ -286,37 +289,37 @@ public:
     bool isSubtype(const AnalysisType* first, const AnalysisType* second) const;
 
     // Get the contained type environment
-    const TypeEnvironment& getEnvironment() const {
+    const TypeEnvironment* getEnvironment() const {
         return env;
     }
 
     // Get a lattice type from its type environment type
-    const InnerAType& getType(const Type& type) const;
+    const InnerAType* getType(const Type& type) const;
 
     // Get a type from its identifier
-    const InnerAType& getType(const AstTypeIdentifier& ident) const {
+    const InnerAType* getType(const AstTypeIdentifier& ident) const {
         assert(aliases.count(ident) > 0 && "Type is not in lattice");
-        return *aliases.find(ident)->second;
+        return aliases.find(ident)->second;
     }
 
     // Get a primitive type
-    const PrimitiveAType& getPrimitive(Kind kind) const {
-        return primitives.find(kind)->second;
+    const PrimitiveAType* getPrimitive(Kind kind) const {
+        return &primitives.find(kind)->second;
     }
 
     // Get a constant type
-    const ConstantAType& getConstant(Kind kind) const {
-        return constants.find(kind)->second;
+    const ConstantAType* getConstant(Kind kind) const {
+        return &constants.find(kind)->second;
     };
 
     // Get a bottom primitive type
-    const BotPrimAType& getBotPrim(Kind kind) const {
-        return botprims.find(kind)->second;
+    const BotPrimAType* getBotPrim(Kind kind) const {
+        return &botprims.find(kind)->second;
     }
 
     // Get the top type
-    const TopAType& getTop() const {
-        return top;
+    const TopAType* getTop() const {
+        return &top;
     };
 };
 

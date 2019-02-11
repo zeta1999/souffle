@@ -4,8 +4,8 @@
 #include "Util.h"
 #include <deque>
 #include <map>
-#include <sstream>
 #include <set>
+#include <sstream>
 #include <vector>
 
 namespace souffle {
@@ -19,7 +19,10 @@ const ConstantAType& InnerAType::getConstant() const {
 }
 
 UnionAType::UnionAType(const TypeLattice* lattice, std::set<const BaseAType*> bases)
-        : InnerAType(lattice), representation(toString(join(bases, " | "))), bases(bases) {
+        : InnerAType(lattice), bases(bases) {
+    std::stringstream repr;
+    repr << join(bases, " | ", print_deref<const BaseAType*>());
+    representation = repr.str();
     assert(!bases.empty() && "Empty union is not allowed");
     assert(bases.size() > 1 && "Union with one element is just a base type");
     Kind kind = (*bases.begin())->getKind();

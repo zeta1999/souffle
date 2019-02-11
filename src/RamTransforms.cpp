@@ -24,7 +24,7 @@ namespace {
 std::vector<RamCondition*> getConditions(const RamCondition* condition) {
     std::vector<RamCondition*> conditions;
     while (condition != nullptr) {
-        if (const RamAnd* ramAnd = dynamic_cast<const RamAnd*>(condition)) {
+        if (const auto* ramAnd = dynamic_cast<const RamAnd*>(condition)) {
             conditions.push_back(ramAnd->getRHS().clone());
             condition = &ramAnd->getLHS();
         } else {
@@ -65,7 +65,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
         }
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            if (RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
+            if (auto* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition& condition = filter->getCondition();
 
                 if (context->rcla->getLevel(&condition) == identifier) {
@@ -110,7 +110,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
         }
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            if (RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
+            if (auto* scan = dynamic_cast<RamScan*>(node.get())) {
                 RamFilterCapturer filterUpdate(context, scan->getIdentifier());
                 node->apply(filterUpdate);
 
@@ -141,7 +141,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
-            if (RamInsert* insert = dynamic_cast<RamInsert*>(node.get())) {
+            if (auto* insert = dynamic_cast<RamInsert*>(node.get())) {
                 RamScanCapturer scanUpdate(context);
                 insert->apply(scanUpdate);
 
@@ -167,7 +167,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 /** Get indexable element */
 std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
         RamCondition* c, size_t& element, size_t identifier) {
-    if (RamBinaryRelation* binRelOp = dynamic_cast<RamBinaryRelation*>(c)) {
+    if (auto* binRelOp = dynamic_cast<RamBinaryRelation*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamValue* rhs = binRelOp->getRHS();
@@ -191,7 +191,7 @@ std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
 }
 
 std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamScan* scan) {
-    if (const RamFilter* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
+    if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
         const RamRelationReference& rel = scan->getRelation();
         const size_t identifier = scan->getIdentifier();
 
@@ -249,19 +249,17 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
         CreateIndicesTransformer* context;
 
     public:
-        RamScanCapturer(CreateIndicesTransformer* c) : modified(false), context(c) {}
+        RamScanCapturer(CreateIndicesTransformer* c) : context(c) {}
 
         bool getModified() const {
             return modified;
         }
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            if (RamNestedOperation* nested = dynamic_cast<RamNestedOperation*>(node.get())) {
-                if (const RamScan* scan = dynamic_cast<const RamScan*>(&nested->getOperation())) {
-                    if (std::unique_ptr<RamOperation> op = context->rewriteScan(scan)) {
-                        modified = true;
-                        nested->setOperation(std::move(op));
-                    }
+            if (auto* scan = dynamic_cast<RamScan*>(node.get())) {
+                if (std::unique_ptr<RamOperation> op = context->rewriteScan(scan)) {
+                    modified = true;
+                    node = std::move(op);
                 }
             }
             node->apply(*this);
@@ -283,14 +281,7 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
-            if (RamInsert* insert = dynamic_cast<RamInsert*>(node.get())) {
-                // TODO: better way to modify the child of a RAM insert
-                if (const RamScan* scan = dynamic_cast<const RamScan*>(&insert->getOperation())) {
-                    if (std::unique_ptr<RamOperation> op = context->rewriteScan(scan)) {
-                        modified = true;
-                        insert->setOperation(std::move(op));
-                    }
-                }
+            if (auto* insert = dynamic_cast<RamInsert*>(node.get())) {
                 RamScanCapturer scanUpdate(context);
                 insert->apply(scanUpdate);
                 if (!modified && scanUpdate.getModified()) {
@@ -306,7 +297,6 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
 
     // level all RAM inserts
     RamInsertCapturer insertUpdate(this);
-
     program.getMain()->apply(insertUpdate);
 
     return insertUpdate.getModified();
@@ -332,17 +322,15 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
             while (!queue.empty()) {
                 const RamValue* val = queue.back();
                 queue.pop_back();
-                if (const RamElementAccess* elemAccess = dynamic_cast<const RamElementAccess*>(val)) {
+                if (const auto* elemAccess = dynamic_cast<const RamElementAccess*>(val)) {
                     if (context->rvla->getLevel(elemAccess) == identifier) {
                         return true;
                     }
-                } else if (const RamIntrinsicOperator* intrinsicOp =
-                                   dynamic_cast<const RamIntrinsicOperator*>(val)) {
+                } else if (const auto* intrinsicOp = dynamic_cast<const RamIntrinsicOperator*>(val)) {
                     for (const RamValue* arg : intrinsicOp->getArguments()) {
                         queue.push_back(arg);
                     }
-                } else if (const RamUserDefinedOperator* userDefinedOp =
-                                   dynamic_cast<const RamUserDefinedOperator*>(val)) {
+                } else if (const auto* userDefinedOp = dynamic_cast<const RamUserDefinedOperator*>(val)) {
                     for (const RamValue* arg : userDefinedOp->getArguments()) {
                         queue.push_back(arg);
                     }
@@ -352,14 +340,14 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
         }
 
         bool dependsOn(const RamCondition* condition, const size_t identifier) const {
-            if (const RamBinaryRelation* binRel = dynamic_cast<const RamBinaryRelation*>(condition)) {
+            if (const auto* binRel = dynamic_cast<const RamBinaryRelation*>(condition)) {
                 return dependsOn(binRel->getLHS(), identifier) || dependsOn(binRel->getRHS(), identifier);
             }
             return false;
         }
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            if (RamRelationSearch* scan = dynamic_cast<RamRelationSearch*>(node.get())) {
+            if (auto* scan = dynamic_cast<RamRelationSearch*>(node.get())) {
                 const size_t identifier = scan->getIdentifier();
                 bool isExistCheck = true;
                 visitDepthFirst(scan->getOperation(), [&](const RamFilter& filter) {
@@ -397,7 +385,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                                 const RamValue* value = values.back();
                                 values.pop_back();
 
-                                if (const RamPack* pack = dynamic_cast<const RamPack*>(value)) {
+                                if (const auto* pack = dynamic_cast<const RamPack*>(value)) {
                                     const std::vector<RamValue*> args = pack->getArguments();
                                     values.insert(values.end(), args.begin(), args.end());
                                 } else if (const auto* intrinsicOp =
@@ -457,7 +445,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
-            if (RamInsert* insert = dynamic_cast<RamInsert*>(node.get())) {
+            if (auto* insert = dynamic_cast<RamInsert*>(node.get())) {
                 RamScanCapturer scanUpdate(context);
                 insert->apply(scanUpdate);
 

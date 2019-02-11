@@ -9,6 +9,7 @@
 
 namespace souffle {
 
+class TypeAnalysis;
 class TypeEnvironment;
 class Type;
 
@@ -263,6 +264,7 @@ public:
 };
 
 class TypeLattice {
+    friend class TypeAnalysis;
 private:
     const TypeEnvironment* env;
     TopAType top;
@@ -278,15 +280,16 @@ private:
 private:
     const InnerAType* addType(const Type* type);
 
-public:
     // Initialise the type lattice from the types found in the type environment
     TypeLattice(const TypeEnvironment* env);
 
     // Temporary constructor, produces invalid lattice
     TypeLattice() : env(), top(this), bot(this) {}
 
+    // Makes previously invalid lattice valid again
     void setEnvironment(const TypeEnvironment* env);
 
+public:
     // Find the highest common subtype (intersection)
     const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);
 

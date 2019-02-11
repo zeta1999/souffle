@@ -249,8 +249,10 @@ TEST(AstUtils, SubtypeChain) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
+    auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+
     // check proper type handling
-    auto lattice = TypeLattice(tu->getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment());
+    TypeLattice& lattice = typeAnalysis.getLattice();
     EXPECT_PRED2(lattice.isSubtype, &lattice.getType("B"), &lattice.getType("A"));
     EXPECT_PRED2(lattice.isSubtype, &lattice.getType("C"), &lattice.getType("A"));
     EXPECT_PRED2(lattice.isSubtype, &lattice.getType("D"), &lattice.getType("A"));
@@ -259,8 +261,6 @@ TEST(AstUtils, SubtypeChain) {
     EXPECT_PRED2(lattice.isSubtype, &lattice.getType("D"), &lattice.getType("B"));
 
     EXPECT_PRED2(lattice.isSubtype, &lattice.getType("D"), &lattice.getType("C"));
-
-    auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
     // check proper type deduction
     EXPECT_EQ("D", toString(typeAnalysis->getType(getX(a))));

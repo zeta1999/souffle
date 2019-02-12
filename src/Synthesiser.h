@@ -36,6 +36,9 @@ class RamTranslationUnit;
  */
 class Synthesiser {
 private:
+    /** RAM translation unit */
+    RamTranslationUnit& translationUnit;
+
     /** RAM identifier to C++ identifier map */
     std::map<const std::string, const std::string> identifiers;
 
@@ -83,11 +86,10 @@ protected:
     size_t lookupReadIdx(const std::string& txt);
 
 public:
-    Synthesiser() = default;
+    Synthesiser(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
     virtual ~Synthesiser() = default;
 
     /** Generate code */
-    void generateCode(
-            const RamTranslationUnit& tu, std::ostream& os, const std::string& id, bool& withSharedLibrary);
+    void generateCode(std::ostream& os, const std::string& id, bool& withSharedLibrary);
 };
 }  // end of namespace souffle

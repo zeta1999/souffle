@@ -1476,14 +1476,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     CodeEmitter(*this).visit(stmt, out);
 }
 
-void Synthesiser::generateCode(
-        const RamTranslationUnit& unit, std::ostream& os, const std::string& id, bool& withSharedLibrary) {
+void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& withSharedLibrary) {
     // ---------------------------------------------------------------
     //                      Auto-Index Generation
     // ---------------------------------------------------------------
-    const SymbolTable& symTable = unit.getSymbolTable();
-    const RamProgram& prog = unit.getP();
-    auto* idxAnalysis = unit.getAnalysis<IndexSetAnalysis>();
+    const SymbolTable& symTable = translationUnit.getSymbolTable();
+    const RamProgram& prog = translationUnit.getP();
+    auto* idxAnalysis = translationUnit.getAnalysis<IndexSetAnalysis>();
 
     // ---------------------------------------------------------------
     //                      Code Generation

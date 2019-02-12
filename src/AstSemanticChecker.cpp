@@ -250,9 +250,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // check aggregates involve numbers
     visitDepthFirst(nodes, [&](const AstAggregator& aggr) {
-        if (!lattice.isSubtype(
-                    typeAnalysis.getType(aggr.getTargetExpression()), lattice.getPrimitive(Kind::NUMBER))) {
-            report.addError("Type of aggregation variable is not a number", aggr.getSrcLoc());
+        if (aggr.getOperator() != AstAggregator::count) {
+            if (!lattice.isSubtype(
+                        typeAnalysis.getType(aggr.getTargetExpression()), lattice.getPrimitive(Kind::NUMBER))) {
+                report.addError("Type of aggregation variable is not a number", aggr.getSrcLoc());
+            }
         }
     });
 

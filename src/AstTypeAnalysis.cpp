@@ -482,9 +482,25 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     const AstProgram* program = translationUnit.getProgram();
     for (const AstRelation* rel : program->getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {
-            // Perform the type analysis
-            typeSol clauseArgumentTypes = analyseTypes(lattice, *clause, *program, debugStream);
-            argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+            // TODO (azreika [olligobber]) : fix this up
+            bool skipClause = false;
+            visitDepthFirst(*clause, [&](const AstAtom& atom) {
+                auto* relDecl = program->getRelation(atom.getName());
+                if (relDecl->getArity() != atom.getArity()) {
+                    skipClause = true;
+                }
+            });
+            visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
+                AstFunctorDeclaration* funDecl = program->getFunctorDeclaration(fun.getName());
+                if (funDecl->getArgCount() != fun.getArgCount()) {
+                    skipClause = true;
+                }
+            });
+            if (!skipClause) {
+                // Perform the type analysis
+                typeSol clauseArgumentTypes = analyseTypes(lattice, *clause, *program, debugStream);
+                argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+            }
         }
     }
 }

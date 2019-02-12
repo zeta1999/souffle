@@ -176,6 +176,16 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
+    // number constants are within allowed domain
+    visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
+        AstDomain idx = cnst.getIndex();
+        if (idx > MAX_AST_DOMAIN || idx < MIN_AST_DOMAIN) {
+            report.addError("Number constant not in range [" + std::to_string(MIN_AST_DOMAIN) + ", " +
+                                    std::to_string(MAX_AST_DOMAIN) + "]",
+                    cnst.getSrcLoc());
+        }
+    });
+
     // check all arguments have been declared a valid type
     visitDepthFirst(nodes, [&](const AstArgument& arg) {
         if (!typeAnalysis.getType(&arg)->isValid()) {

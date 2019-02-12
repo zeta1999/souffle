@@ -317,6 +317,9 @@ public:
                 if (variables.size() == 1 && variables[0] == "@") {
                     printPrompt("The tuple exists, cannot explain negation of it!\n");
                     continue;
+                } else if (variables.size() == 1 && variables[0] == "@non_matching") {
+                    printPrompt("The variable bindings don't match, cannot explain!\n");
+                    continue;
                 }
 
                 // this doesn't work with ncurses yet!!

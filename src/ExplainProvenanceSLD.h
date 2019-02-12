@@ -280,7 +280,7 @@ public:
     }
 
     std::vector<std::string> explainNegationGetVariables(
-            std::string relName, std::vector<std::string> args, size_t ruleNum) {
+            std::string relName, std::vector<std::string> args, size_t ruleNum) override {
         std::vector<std::string> variables;
 
         // check that the tuple actually doesn't exist
@@ -294,6 +294,19 @@ public:
 
         // atoms[0] represents variables in the head atom
         auto headVariables = splitString(atoms[0], ',');
+
+        // check that head variable bindings make sense, i.e. for a head like a(x, x), make sure both x are
+        // the same value
+        std::map<std::string, std::string> headVariableMapping;
+        for (size_t i = 0; i < headVariables.size(); i++) {
+            if (headVariableMapping.find(headVariables[i]) == headVariableMapping.end()) {
+                headVariableMapping[headVariables[i]] = args[i];
+            } else {
+                if (headVariableMapping[headVariables[i]] != args[i]) {
+                    return std::vector<std::string>({"@non_matching"});
+                }
+            }
+        }
 
         // get body variables
         std::vector<std::string> uniqueBodyVariables;
@@ -313,7 +326,8 @@ public:
     }
 
     std::unique_ptr<TreeNode> explainNegation(std::string relName, size_t ruleNum,
-            const std::vector<std::string>& tuple, std::map<std::string, std::string>& bodyVariables) {
+            const std::vector<std::string>& tuple,
+            std::map<std::string, std::string>& bodyVariables) override {
         // construct a vector of unique variables that occur in the rule
         std::vector<std::string> uniqueVariables;
 

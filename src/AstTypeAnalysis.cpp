@@ -479,34 +479,44 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     }
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
     lattice.setEnvironment(&typeEnvAnalysis->getTypeEnvironment());
-    const AstProgram* program = translationUnit.getProgram();
-    for (const AstRelation* rel : program->getRelations()) {
-        for (const AstClause* clause : rel->getClauses()) {
-            // TODO (azreika [olligobber]) : fix this up
-            bool skipClause = false;
-            visitDepthFirst(*clause, [&](const AstAtom& atom) {
-                auto* relDecl = program->getRelation(atom.getName());
-                if (relDecl->getArity() != atom.getArity()) {
-                    skipClause = true;
-                }
-            });
-            visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
-                AstFunctorDeclaration* funDecl = program->getFunctorDeclaration(fun.getName());
-                if (funDecl->getArgCount() != fun.getArgCount()) {
-                    skipClause = true;
-                }
-            });
-            if (!skipClause) {
-                // Perform the type analysis
-                typeSol clauseArgumentTypes = analyseTypes(lattice, *clause, *program, debugStream);
-                argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
-            }
-        }
+    const AstProgram& program = *translationUnit.getProgram();
+    for (const AstClause* clause : getValidClauses(program)) {
+        // Perform the type analysis
+        typeSol clauseArgumentTypes = analyseTypes(lattice, *clause, program, debugStream);
+        argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
     }
 }
 
 void TypeAnalysis::print(std::ostream& os) const {
     os << analysisLogs.str();
+}
+
+std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& program) {
+    std::vector<const AstClause*> valid;
+    for (const AstRelation* rel : program.getRelations()) {
+        for (const AstClause* clause : rel->getClauses()) {
+            // TODO (azreika [olligobber]) : fix this up
+            bool skipClause = false;
+            visitDepthFirst(*clause, [&](const AstAtom& atom) {
+                auto* relDecl = program.getRelation(atom.getName());
+                if (relDecl == nullptr) {
+                    skipClause = true;
+                } else if (relDecl->getArity() != atom.getArity()) {
+                    skipClause = true;
+                }
+            });
+            visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
+                AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+                if (funDecl->getArgCount() != fun.getArgCount()) {
+                    skipClause = true;
+                }
+            });
+            if (!skipClause) {
+                valid.push_back(clause);
+            }
+        }
+    }
+    return valid;
 }
 
 }  // end of namespace souffle

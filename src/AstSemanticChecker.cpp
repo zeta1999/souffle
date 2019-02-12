@@ -114,30 +114,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     checkInlining(report, program, precedenceGraph, ioTypes);
 
     // get the list of components to be checked
-    std::vector<const AstClause*> nodes;
-    for (const auto& rel : program.getRelations()) {
-        for (const auto& clause : rel->getClauses()) {
-            // TODO (azreika [olligobber]) : fix this up
-            bool skipClause = false;
-            visitDepthFirst(*clause, [&](const AstAtom& atom) {
-                auto* relDecl = program.getRelation(atom.getName());
-                if (relDecl->getArity() != atom.getArity()) {
-                    // TODO maybe add error
-                    skipClause = true;
-                }
-            });
-            visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
-                AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-                if (funDecl->getArgCount() != fun.getArgCount()) {
-                    // TODO add error
-                    skipClause = true;
-                }
-            });
-            if (!skipClause) {
-                nodes.push_back(clause);
-            }
-        }
-    }
+    std::vector<const AstClause*> nodes = TypeAnalysis::getValidClauses(program);
 
     // -- check grounded variables and records --
     visitDepthFirst(nodes, [&](const AstClause& clause) {

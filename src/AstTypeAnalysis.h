@@ -84,6 +84,9 @@ private:
      */
     static std::map<const AstArgument*, const AnalysisType*> analyseTypes(TypeLattice& lat,
             const AstClause& clause, const AstProgram& program, std::ostream* debugStream = nullptr);
+
+    // Get clauses that can be typechecked
+    static std::vector<const AstClause*> getValidClauses(const AstProgram& program);
 };
 
 }  // end of namespace souffle

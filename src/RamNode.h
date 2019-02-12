@@ -47,7 +47,7 @@ enum RamNodeType {
     RN_Empty,
     RN_And,
     RN_Not,
-    RN_BinaryRelation,
+    RN_Constraint,
 
     // operations
     RN_Project,

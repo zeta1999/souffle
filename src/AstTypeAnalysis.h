@@ -56,6 +56,10 @@ public:
         return found->second;
     }
 
+    TypeLattice& getLattice() {
+        return lattice;
+    }
+
     const TypeLattice& getLattice() const {
         return lattice;
     }

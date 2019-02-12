@@ -291,6 +291,8 @@ private:
     void setEnvironment(const TypeEnvironment* env);
 
 public:
+    TypeLattice(const TypeLattice& lattice) = delete;
+
     // Find the highest common subtype (intersection)
     const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);
 

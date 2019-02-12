@@ -511,6 +511,14 @@ std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& pr
                     skipClause = true;
                 }
             });
+            visitDepthFirst(*clause, [&](const AstRecordInit& record) {
+                if (record.getArguments().size() !=
+                        dynamic_cast<const AstRecordType*>(program.getType(record.getType()))
+                                ->getFields()
+                                .size()) {
+                    skipClause = true;
+                }
+            });
             if (!skipClause) {
                 valid.push_back(clause);
             }

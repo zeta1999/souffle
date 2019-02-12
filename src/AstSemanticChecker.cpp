@@ -146,6 +146,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     const TypeLattice& lattice = typeAnalysis.getLattice();
 
+    // TODO make these check all clauses
     // type casts name a valid type
     visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
         if (!typeEnv.isType(cast.getType())) {
@@ -153,6 +154,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
+    // TODO make these check all clauses
     // record initializations declare valid record types and have correct size
     visitDepthFirst(nodes, [&](const AstRecordInit& record) {
         // TODO (#467) remove the next line to enable subprogram compilation for record types

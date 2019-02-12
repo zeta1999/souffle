@@ -114,7 +114,12 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     checkInlining(report, program, precedenceGraph, ioTypes);
 
     // get the list of components to be checked
-    std::vector<const AstClause*> nodes = TypeAnalysis::getValidClauses(program);
+    std::vector<const AstNode*> nodes;
+    for (const auto& rel : program.getRelations()) {
+        for (const auto& cls : rel->getClauses()) {
+            nodes.push_back(cls);
+        }
+    }
 
     // -- check grounded variables and records --
     visitDepthFirst(nodes, [&](const AstClause& clause) {
@@ -144,8 +149,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // -- type checks --
 
-    const TypeLattice& lattice = typeAnalysis.getLattice();
-
     // TODO make these check all clauses
     // type casts name a valid type
     visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
@@ -154,7 +157,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
-    // TODO make these check all clauses
     // record initializations declare valid record types and have correct size
     visitDepthFirst(nodes, [&](const AstRecordInit& record) {
         // TODO (#467) remove the next line to enable subprogram compilation for record types
@@ -172,6 +174,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                     "Type " + toString(record.getType()) + " has not been declared", record.getSrcLoc());
         }
     });
+
+    const TypeLattice& lattice = typeAnalysis.getLattice();
+
+    // get the list of components to be checked
+    std::vector<const AstClause*> nodes = TypeAnalysis::getValidClauses(program);
 
     // number constants are within allowed domain
     visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
@@ -259,9 +266,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
         if (typeAnalysis.getType(&cast) != lattice.getType(cast.getType())) {
             report.addError("Typecast is to incorrect type", cast.getSrcLoc());
-        }
-        if (!lattice.isSubtype(typeAnalysis.getType(cast.getValue()), lattice.getType(cast.getType()))) {
-            report.addError("Cannot cast to non-supertype", cast.getSrcLoc());
         }
     });
 

@@ -114,7 +114,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     checkInlining(report, program, precedenceGraph, ioTypes);
 
     // get the list of components to be checked
-    std::vector<const AstNode*> nodes;
+    std::vector<const AstClause*> nodes;
     for (const auto& rel : program.getRelations()) {
         for (const auto& cls : rel->getClauses()) {
             nodes.push_back(cls);
@@ -149,7 +149,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // -- type checks --
 
-    // TODO make these check all clauses
     // type casts name a valid type
     visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
         if (!typeEnv.isType(cast.getType())) {
@@ -175,11 +174,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
-    const TypeLattice& lattice = typeAnalysis.getLattice();
-
-    // get the list of components to be checked
-    std::vector<const AstClause*> nodes = TypeAnalysis::getValidClauses(program);
-
     // number constants are within allowed domain
     visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
         AstDomain idx = cnst.getIndex();
@@ -189,6 +183,15 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                     cnst.getSrcLoc());
         }
     });
+
+    const TypeLattice& lattice = typeAnalysis.getLattice();
+
+    // get the list of components to be checked
+    if (lattice.isValid()) {
+        nodes = TypeAnalysis::getValidClauses(program);
+    } else {
+        nodes = std::vector<const AstClause*>();
+    }
 
     // check all arguments have been declared a valid type
     visitDepthFirst(nodes, [&](const AstArgument& arg) {

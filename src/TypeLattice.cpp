@@ -265,12 +265,18 @@ const InnerAType* TypeLattice::addType(const Type* type) {
             auto* unionType = dynamic_cast<const UnionType*>(type);
             std::set<const BaseAType*> memberTypes;
             bool isPrimitive = false;
+            Kind kind;
+            assert(!unionType->getElementTypes().empty() && "Union type cannot be empty");
             for (const Type* memberType : unionType->getElementTypes()) {
                 const InnerAType* memberAType = addType(memberType);
                 if (dynamic_cast<const PrimitiveAType*>(memberAType) != nullptr) {
-                    isPrimitive = true;
-                    aliases[type->getName()] = &primitives.find(memberAType->getKind())->second;
-                    break;
+                    if (isPrimitive && kind != memberAType->getKind()) {
+                        this->valid = false;
+                    } else if (!isPrimitive) {
+                        isPrimitive = true;
+                        kind = memberAType->getKind();
+                        aliases[type->getName()] = &primitives.find(memberAType->getKind())->second;
+                    }
                 } else if (dynamic_cast<const UnionAType*>(memberAType) != nullptr) {
                     for (const BaseAType* memberBaseType :
                             dynamic_cast<const UnionAType*>(memberAType)->getBases()) {
@@ -280,6 +286,16 @@ const InnerAType* TypeLattice::addType(const Type* type) {
                     memberTypes.insert(dynamic_cast<const BaseAType*>(memberAType));
                 } else {
                     assert(false && "Unsupported member type");
+                }
+            }
+            if (!isPrimitive) {
+                kind = (*memberTypes.begin())->getKind();
+            }
+            for (const BaseAType* base : memberTypes) {
+                if (base->getKind() != kind) {
+                    this->valid = false;
+                    isPrimitive = true;
+                    break;
                 }
             }
             if (!isPrimitive) {
@@ -308,7 +324,7 @@ const InnerAType* TypeLattice::addType(const Type* type) {
     return aliases[type->getName()];
 }
 
-TypeLattice::TypeLattice(const TypeEnvironment* env) : env(env), top(this), bot(this) {
+TypeLattice::TypeLattice(const TypeEnvironment* env) : valid(true), env(env), top(this), bot(this) {
     for (Kind kind : {Kind::NUMBER, Kind::SYMBOL, Kind::RECORD}) {
         primitives.insert(std::pair<Kind, PrimitiveAType>(kind, PrimitiveAType(this, kind)));
         constants.insert(std::pair<Kind, ConstantAType>(kind, ConstantAType(this, kind)));
@@ -323,6 +339,7 @@ TypeLattice::TypeLattice(const TypeEnvironment* env) : env(env), top(this), bot(
 
 void TypeLattice::setEnvironment(const TypeEnvironment* env) {
     assert(this->env == nullptr && "Cannot have existing environment");
+    this->valid = true;
     this->env = env;
     for (Kind kind : {Kind::NUMBER, Kind::SYMBOL, Kind::RECORD}) {
         primitives.insert(std::pair<Kind, PrimitiveAType>(kind, PrimitiveAType(this, kind)));

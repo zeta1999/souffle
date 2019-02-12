@@ -267,6 +267,7 @@ class TypeLattice {
     friend class TypeAnalysis;
 
 private:
+    bool valid;
     const TypeEnvironment* env;
     TopAType top;
     BotAType bot;
@@ -285,13 +286,17 @@ private:
     TypeLattice(const TypeEnvironment* env);
 
     // Temporary constructor, produces invalid lattice
-    TypeLattice() : env(), top(this), bot(this) {}
+    TypeLattice() : valid(false), env(), top(this), bot(this) {}
 
     // Makes previously invalid lattice valid again
     void setEnvironment(const TypeEnvironment* env);
 
 public:
     TypeLattice(const TypeLattice& lattice) = delete;
+
+    bool isValid() const {
+        return valid;
+    }
 
     // Find the highest common subtype (intersection)
     const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);

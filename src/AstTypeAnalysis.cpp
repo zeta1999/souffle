@@ -479,16 +479,22 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     }
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
     lattice.setEnvironment(&typeEnvAnalysis->getTypeEnvironment());
-    const AstProgram& program = *translationUnit.getProgram();
-    for (const AstClause* clause : getValidClauses(program)) {
-        // Perform the type analysis
-        typeSol clauseArgumentTypes = analyseTypes(lattice, *clause, program, debugStream);
-        argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+    if (lattice.isValid()) {
+        const AstProgram& program = *translationUnit.getProgram();
+        for (const AstClause* clause : getValidClauses(program)) {
+            // Perform the type analysis
+            typeSol clauseArgumentTypes = analyseTypes(lattice, *clause, program, debugStream);
+            argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+        }
     }
 }
 
 void TypeAnalysis::print(std::ostream& os) const {
-    os << analysisLogs.str();
+    if (lattice.isValid()) {
+        os << analysisLogs.str();
+    } else {
+        os << "Unable to run type analysis as valid type lattice could not be constructed";
+    }
 }
 
 std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& program) {

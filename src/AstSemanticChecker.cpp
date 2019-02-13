@@ -218,22 +218,21 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // check functor inputs
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         for (size_t i = 0; i < fun.getArity(); i++) {
-            if (fun.acceptsSymbols(i)) {
-                if (!lattice.isSubtype(
-                            typeAnalysis.getType(fun.getArg(i)), lattice.getPrimitive(Kind::SYMBOL))) {
-                    // TODO do not print error if type is invalid
-                    // TODO add information about expected and actual types
-                    report.addError("Non-symbolic argument for functor", fun.getArg(i)->getSrcLoc());
+            const AnalysisType* argType = typeAnalysis.getType(fun.getArg(i));
+            if (argType->isValid()) {
+                if (fun.acceptsSymbols(i)) {
+                    if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::SYMBOL))) {
+                        // TODO add information about expected and actual types
+                        report.addError("Non-symbolic argument for functor", fun.getArg(i)->getSrcLoc());
+                    }
+                } else if (fun.acceptsNumbers(i)) {
+                    if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::NUMBER))) {
+                        // TODO add information about expected and actual types
+                        report.addError("Non-numeric argument for functor", fun.getArg(i)->getSrcLoc());
+                    }
+                } else {
+                    assert(false && "Unsupported functor input type");
                 }
-            } else if (fun.acceptsNumbers(i)) {
-                if (!lattice.isSubtype(
-                            typeAnalysis.getType(fun.getArg(i)), lattice.getPrimitive(Kind::NUMBER))) {
-                    // TODO do not print error if type is invalid
-                    // TODO add information about expected and actual types
-                    report.addError("Non-numeric argument for functor", fun.getArg(i)->getSrcLoc());
-                }
-            } else {
-                assert(false && "Unsupported functor input type");
             }
         }
     });
@@ -244,22 +243,21 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         assert(funDecl != nullptr && "Functor must have been declared");
         assert(funDecl->getArgCount() == fun.getArgCount() && "Functor arity must match declaration");
         for (size_t i = 0; i < funDecl->getArgCount(); i++) {
-            if (funDecl->acceptsSymbols(i)) {
-                if (!lattice.isSubtype(
-                            typeAnalysis.getType(fun.getArg(i)), lattice.getPrimitive(Kind::SYMBOL))) {
-                    // TODO do not print error if type is invalid
-                    // TODO add information about expected and actual types
-                    report.addError("Non-symbolic argument for functor", fun.getArg(i)->getSrcLoc());
+            const AnalysisType* argType = typeAnalysis.getType(fun.getArg(i));
+            if (argType->isValid()) {
+                if (funDecl->acceptsSymbols(i)) {
+                    if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::SYMBOL))) {
+                        // TODO add information about expected and actual types
+                        report.addError("Non-symbolic argument for functor", fun.getArg(i)->getSrcLoc());
+                    }
+                } else if (funDecl->acceptsNumbers(i)) {
+                    if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::NUMBER))) {
+                        // TODO add information about expected and actual types
+                        report.addError("Non-numeric argument for functor", fun.getArg(i)->getSrcLoc());
+                    }
+                } else {
+                    assert(false && "Unsupported functor input type");
                 }
-            } else if (funDecl->acceptsNumbers(i)) {
-                if (!lattice.isSubtype(
-                            typeAnalysis.getType(fun.getArg(i)), lattice.getPrimitive(Kind::NUMBER))) {
-                    // TODO do not print error if type is invalid
-                    // TODO add information about expected and actual types
-                    report.addError("Non-numeric argument for functor", fun.getArg(i)->getSrcLoc());
-                }
-            } else {
-                assert(false && "Unsupported functor input type");
             }
         }
     });
@@ -296,11 +294,13 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         AstRelation* relation = program.getRelation(atom.getName());
         assert(relation != nullptr && "Relation must have been declared");
         for (size_t i = 0; i < atom.argSize(); i++) {
-            if (!lattice.isSubtype(typeAnalysis.getType(atom.getArgument(i)),
-                        lattice.getType(relation->getAttribute(i)->getTypeName()))) {
-                // TODO do not print error if type is invalid
-                // TODO add information about expected and actual types
-                report.addError("Argument to relation has incorrect type", atom.getArgument(i)->getSrcLoc());
+            const AnalysisType* argType = typeAnalysis.getType(atom.getArgument(i));
+            if (argType->isValid()) {
+                if (!lattice.isSubtype(argType, lattice.getType(relation->getAttribute(i)->getTypeName()))) {
+                    // TODO add information about expected and actual types
+                    report.addError(
+                            "Argument to relation has incorrect type", atom.getArgument(i)->getSrcLoc());
+                }
             }
         }
     });
@@ -309,11 +309,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
         auto lhs = constraint.getLHS();
         auto rhs = constraint.getRHS();
-        // TODO skip if either type is invalid
-        const auto* lhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(lhs));
-        const auto* rhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(rhs));
-        auto op = constraint.getOperator();
-        if (lhsType != nullptr && rhsType != nullptr) {
+        if (typeAnalysis.getType(lhs)->isValid() && typeAnalysis.getType(rhs)->isValid()) {
+            const auto* lhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(lhs));
+            const auto* rhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(rhs));
+            auto op = constraint.getOperator();
+            assert(lhsType != nullptr && rhsType != nullptr && "Both types must have a kind");
             if (op == BinaryConstraintOp::EQ) {
                 return;
             } else if (op == BinaryConstraintOp::NE) {
@@ -329,23 +329,19 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             } else {
                 if (constraint.isNumerical()) {
                     if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::NUMBER))) {
-                        // TODO do not print error if type is invalid
                         // TODO add information about expected and actual types
                         report.addError("Non-numerical operand for comparison", lhs->getSrcLoc());
                     }
                     if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::NUMBER))) {
-                        // TODO do not print error if type is invalid
                         // TODO add information about expected and actual types
                         report.addError("Non-numerical operand for comparison", rhs->getSrcLoc());
                     }
                 } else if (constraint.isSymbolic()) {
                     if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        // TODO do not print error if type is invalid
                         // TODO add information about expected and actual types
                         report.addError("Non-symbolic operand for comparison", lhs->getSrcLoc());
                     }
                     if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        // TODO do not print error if type is invalid
                         // TODO add information about expected and actual types
                         report.addError("Non-symbolic operand for comparison", rhs->getSrcLoc());
                     }

@@ -285,6 +285,10 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
         if (typeAnalysis.getType(&cast) != lattice.getType(cast.getType())) {
             report.addError("Typecast is to incorrect type", cast.getSrcLoc());
+        } else if (!lattice.isSubtype(typeAnalysis.getType(cast.getValue()),
+                           lattice.getType(cast.getType())->getPrimitive())) {
+            report.addWarning(
+                    "Casts between different primitive types may cause runtime errors", cast.getSrcLoc());
         }
     });
 

@@ -226,10 +226,18 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                 // This argument has already caused an error, so skip it here
                 return;
             }
-            if (!typeAnalysis.getType(&arg)->isValid()) {
-                // TODO make this error more descriptive
-                report.addError(
-                        "Unable to deduce valid type for expression " + toString(arg), arg.getSrcLoc());
+            const AnalysisType* type = typeAnalysis.getType(&arg);
+            if (!type->isValid()) {
+                if (dynamic_cast<const BotPrimAType*>(type) != nullptr) {
+                    report.addError("Unable to deduce valid type for expression, as base types are disjoint",
+                            arg.getSrcLoc());
+                } else if (dynamic_cast<const BotAType*>(type) != nullptr) {
+                    report.addError(
+                            "Unable to deduce valid type for expression, as primitive types are disjoint",
+                            arg.getSrcLoc());
+                } else {
+                    assert(false && "No other types should raise an error here");
+                }
             }
         });
     }
@@ -241,13 +249,15 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             if (argType->isValid()) {
                 if (fun.acceptsSymbols(i)) {
                     if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        // TODO add information about expected and actual types
-                        report.addError("Non-symbolic argument for functor", fun.getArg(i)->getSrcLoc());
+                        report.addError("Non-symbolic argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                fun.getArg(i)->getSrcLoc());
                     }
                 } else if (fun.acceptsNumbers(i)) {
                     if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::NUMBER))) {
-                        // TODO add information about expected and actual types
-                        report.addError("Non-numeric argument for functor", fun.getArg(i)->getSrcLoc());
+                        report.addError("Non-numeric argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                fun.getArg(i)->getSrcLoc());
                     }
                 } else {
                     assert(false && "Unsupported functor input type");
@@ -266,13 +276,15 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             if (argType->isValid()) {
                 if (funDecl->acceptsSymbols(i)) {
                     if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        // TODO add information about expected and actual types
-                        report.addError("Non-symbolic argument for functor", fun.getArg(i)->getSrcLoc());
+                        report.addError("Non-symbolic argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                fun.getArg(i)->getSrcLoc());
                     }
                 } else if (funDecl->acceptsNumbers(i)) {
                     if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::NUMBER))) {
-                        // TODO add information about expected and actual types
-                        report.addError("Non-numeric argument for functor", fun.getArg(i)->getSrcLoc());
+                        report.addError("Non-numeric argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                fun.getArg(i)->getSrcLoc());
                     }
                 } else {
                     assert(false && "Unsupported functor input type");
@@ -295,24 +307,32 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         if (aggr.getOperator() != AstAggregator::count) {
             const AnalysisType* targetType = typeAnalysis.getType(aggr.getTargetExpression());
             if (targetType->isValid() && !lattice.isSubtype(targetType, lattice.getPrimitive(Kind::NUMBER))) {
-                // TODO add information about actual type
-                report.addError("Type of aggregation variable is not a number", aggr.getSrcLoc());
+                report.addError(
+                        "Aggregation variable is not a number, instead has type " + toString(*targetType),
+                        aggr.getSrcLoc());
             }
         }
     });
 
     // check type cast has correct type
     visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
-        if (typeAnalysis.getType(&cast)->isValid() &&
-                typeAnalysis.getType(&cast) != lattice.getType(cast.getType())) {
-            // TODO add information about actual type
-            report.addError("Typecast is to incorrect type", cast.getSrcLoc());
+        if (!typeAnalysis.getType(&cast)->isValid()) {
+            return;
         }
-        if (!lattice.isSubtype(
-                    typeAnalysis.getType(cast.getValue()), lattice.getType(cast.getType())->getPrimitive())) {
-            // TODO add information about primitives involved
-            report.addWarning(
-                    "Casts between different primitive types may cause runtime errors", cast.getSrcLoc());
+        const auto* actualType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(&cast));
+        assert(actualType != nullptr && "Valid type should have a kind");
+        const AnalysisType* inputType = typeAnalysis.getType(cast.getValue());
+        const PrimitiveAType* outputKind = actualType->getPrimitive();
+        if (actualType->isValid() && actualType != lattice.getType(cast.getType())) {
+            report.addError("Typecast is to type " + toString(cast.getType()) +
+                                    " but is used where the type " + toString(*actualType) + " is expected",
+                    cast.getSrcLoc());
+        }
+        if (inputType->isValid() && !lattice.isSubtype(inputType, outputKind)) {
+            const PrimitiveAType* inputKind = dynamic_cast<const InnerAType*>(inputType)->getPrimitive();
+            report.addWarning("Casts from " + toString(*inputKind) + " values to " + toString(*outputKind) +
+                                      " types may cause runtime errors",
+                    cast.getSrcLoc());
         }
     });
 
@@ -323,10 +343,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         assert(relation != nullptr && "Relation must have been declared");
         for (size_t i = 0; i < atom.argSize(); i++) {
             const AnalysisType* argType = typeAnalysis.getType(atom.getArgument(i));
-            if (argType->isValid() &&
-                    !lattice.isSubtype(argType, lattice.getType(relation->getAttribute(i)->getTypeName()))) {
-                // TODO add information about expected and actual types
-                report.addError("Argument to relation has incorrect type", atom.getArgument(i)->getSrcLoc());
+            auto relationType = relation->getAttribute(i)->getTypeName();
+            if (argType->isValid() && !lattice.isSubtype(argType, lattice.getType(relationType))) {
+                report.addError("Relation expects value of type " + toString(relationType) +
+                                        " but got argument of type " + toString(*argType),
+                        atom.getArgument(i)->getSrcLoc());
             }
         }
     });
@@ -344,8 +365,10 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                 return;
             } else if (op == BinaryConstraintOp::NE) {
                 if (lhsType->getKind() != rhsType->getKind()) {
-                    // TODO provide more information about type of arguments
-                    report.addError("Cannot compare arguments of different kinds", constraint.getSrcLoc());
+                    report.addError("Cannot compare operands of different kinds, left operand is a " +
+                                            toString(*lhsType->getPrimitive()) + " and right operand is a " +
+                                            toString(*rhsType->getPrimitive()),
+                            constraint.getSrcLoc());
                 } else if (lhsType->getKind() == Kind::RECORD) {
                     // TODO (#380): Remove this once record unions are allowed
                     if (!(lattice.isSubtype(lhsType, rhsType) || lattice.isSubtype(rhsType, lhsType))) {
@@ -355,21 +378,29 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             } else {
                 if (constraint.isNumerical()) {
                     if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::NUMBER))) {
-                        // TODO add information about expected and actual types
-                        report.addError("Non-numerical operand for comparison", lhs->getSrcLoc());
+                        report.addError(
+                                "Non-numerical operand for comparison, instead left operand has type " +
+                                        toString(*lhsType),
+                                lhs->getSrcLoc());
                     }
                     if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::NUMBER))) {
-                        // TODO add information about expected and actual types
-                        report.addError("Non-numerical operand for comparison", rhs->getSrcLoc());
+                        report.addError(
+                                "Non-numerical operand for comparison, instead right operand has type " +
+                                        toString(*rhsType),
+                                rhs->getSrcLoc());
                     }
                 } else if (constraint.isSymbolic()) {
                     if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        // TODO add information about expected and actual types
-                        report.addError("Non-symbolic operand for comparison", lhs->getSrcLoc());
+                        report.addError(
+                                "Non-symbolic operand for comparison, instead left operand has type " +
+                                        toString(*lhsType),
+                                lhs->getSrcLoc());
                     }
                     if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        // TODO add information about expected and actual types
-                        report.addError("Non-symbolic operand for comparison", rhs->getSrcLoc());
+                        report.addError(
+                                "Non-symbolic operand for comparison, instead right operand has type " +
+                                        toString(*rhsType),
+                                rhs->getSrcLoc());
                     }
                 } else {
                     assert(false && "Unsupported constraint type");

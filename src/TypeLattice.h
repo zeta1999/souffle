@@ -215,6 +215,7 @@ public:
     }
 };
 
+// TODO (#380): When record unions are allowed, records inherit from base types
 class RecordAType : public InnerAType {
     friend class TypeLattice;
 

@@ -190,8 +190,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     if (lattice.isValid()) {
         if (TypeAnalysis::anyInvalidClauses(program)) {
             nodes = TypeAnalysis::getValidClauses(program);
-            report.addError(
-                    "Not all clauses could be typechecked due to other errors present", program.getSrcLoc());
+            report.addError("Not all clauses could be typechecked due to other errors present");
         }
     } else {
         nodes = std::vector<const AstClause*>();

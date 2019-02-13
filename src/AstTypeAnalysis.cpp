@@ -514,6 +514,9 @@ bool TypeAnalysis::anyInvalidClauses(const AstProgram& program) {
                     skipClause = true;
                 } else {
                     for (const AstAttribute* attribute : relDecl->getAttributes()) {
+                        if (attribute->getTypeName() == "symbol" || attribute->getTypeName() == "number") {
+                            continue;
+                        }
                         if (program.getType(attribute->getTypeName()) == nullptr) {
                             skipClause = true;
                             break;
@@ -560,6 +563,9 @@ std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& pr
                     skipClause = true;
                 } else {
                     for (const AstAttribute* attribute : relDecl->getAttributes()) {
+                        if (attribute->getTypeName() == "symbol" || attribute->getTypeName() == "number") {
+                            continue;
+                        }
                         if (program.getType(attribute->getTypeName()) == nullptr) {
                             skipClause = true;
                             break;

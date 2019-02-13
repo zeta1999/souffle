@@ -163,6 +163,11 @@ public:
         return diagnostics.size();
     }
 
+    /** Add an error with no location */
+    void addError(const std::string& message) {
+        diagnostics.insert(Diagnostic(Diagnostic::ERROR, DiagnosticMessage(message)));
+    }
+
     /** Adds an error with the given message and location */
     void addError(const std::string& message, SrcLocation location) {
         diagnostics.insert(Diagnostic(Diagnostic::ERROR, DiagnosticMessage(message, std::move(location))));

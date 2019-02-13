@@ -209,11 +209,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // check all arguments have been declared a valid type
     for (const AstClause* clause : nodes) {
-        // skip facts
-        if (clause->isFact()) {
-            return;
-        }
-
         // compute all grounded terms
         auto isGrounded = getGroundedTerms(*clause);
 
@@ -295,11 +290,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // check records have been assigned the correct type
     for (const AstClause* clause : nodes) {
-        // skip facts
-        if (clause->isFact()) {
-            return;
-        }
-
         // compute all grounded terms
         auto isGrounded = getGroundedTerms(*clause);
 

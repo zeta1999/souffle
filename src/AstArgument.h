@@ -564,6 +564,10 @@ public:
         return type;
     }
 
+    void setType(const AstTypeIdentifier& type) {
+        this->type = type;
+    }
+
     /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         auto res = AstArgument::getChildNodes();

@@ -294,13 +294,27 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     });
 
     // check records have been assigned the correct type
-    visitDepthFirst(nodes, [&](const AstRecordInit& record) {
-        // TODO improve errors depending on result of type analysis
-        if (!lattice.isSubtype(typeAnalysis.getType(&record), lattice.getType(record.getType()))) {
-            report.addError(
-                    "Unable to deduce correct type for record " + toString(record), record.getSrcLoc());
+    for (const AstClause* clause : nodes) {
+        // skip facts
+        if (clause->isFact()) {
+            return;
         }
-    });
+
+        // compute all grounded terms
+        auto isGrounded = getGroundedTerms(*clause);
+
+        visitDepthFirst(*clause, [&](const AstRecordInit& record) {
+            if (!isGrounded[&record]) {
+                // Error has already been raised by grounded check
+                return;
+            }
+            // TODO improve errors depending on result of type analysis
+            if (!lattice.isSubtype(typeAnalysis.getType(&record), lattice.getType(record.getType()))) {
+                report.addError(
+                        "Unable to deduce correct type for record " + toString(record), record.getSrcLoc());
+            }
+        });
+    }
 
     // check aggregates involve numbers
     visitDepthFirst(nodes, [&](const AstAggregator& aggr) {

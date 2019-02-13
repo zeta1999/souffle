@@ -208,12 +208,30 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     }
 
     // check all arguments have been declared a valid type
-    visitDepthFirst(nodes, [&](const AstArgument& arg) {
-        if (!typeAnalysis.getType(&arg)->isValid()) {
-            // TODO do not print error if ungrounded, underscore, or record
-            report.addError("Unable to deduce valid type for expression " + toString(arg), arg.getSrcLoc());
+    for (const AstClause* clause : nodes) {
+        // skip facts
+        if (clause->isFact()) {
+            return;
         }
-    });
+
+        // compute all grounded terms
+        auto isGrounded = getGroundedTerms(*clause);
+
+        visitDepthFirst(*clause, [&](const AstArgument& arg) {
+            if (dynamic_cast<const AstRecordInit*>(&arg) != nullptr) {
+                // More constructive type errors can be produced for records, so skip them here
+                return;
+            }
+            if (!isGrounded[&arg]) {
+                // This argument has already caused an error, so skip it here
+                return;
+            }
+            if (!typeAnalysis.getType(&arg)->isValid()) {
+                // TODO make this error more descriptive
+                report.addError("Unable to deduce valid type for expression " + toString(arg), arg.getSrcLoc());
+            }
+        });
+    }
 
     // check functor inputs
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {

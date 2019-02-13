@@ -228,7 +228,8 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             }
             if (!typeAnalysis.getType(&arg)->isValid()) {
                 // TODO make this error more descriptive
-                report.addError("Unable to deduce valid type for expression " + toString(arg), arg.getSrcLoc());
+                report.addError(
+                        "Unable to deduce valid type for expression " + toString(arg), arg.getSrcLoc());
             }
         });
     }
@@ -292,8 +293,9 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // check aggregates involve numbers
     visitDepthFirst(nodes, [&](const AstAggregator& aggr) {
         if (aggr.getOperator() != AstAggregator::count) {
-            if (!lattice.isSubtype(typeAnalysis.getType(aggr.getTargetExpression()),
-                        lattice.getPrimitive(Kind::NUMBER))) {
+            const AnalysisType* targetType = typeAnalysis.getType(aggr.getTargetExpression());
+            if (targetType->isValid() && !lattice.isSubtype(targetType, lattice.getPrimitive(Kind::NUMBER))) {
+                // TODO add information about actual type
                 report.addError("Type of aggregation variable is not a number", aggr.getSrcLoc());
             }
         }
@@ -301,10 +303,14 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // check type cast has correct type
     visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
-        if (typeAnalysis.getType(&cast) != lattice.getType(cast.getType())) {
+        if (typeAnalysis.getType(&cast)->isValid() &&
+                typeAnalysis.getType(&cast) != lattice.getType(cast.getType())) {
+            // TODO add information about actual type
             report.addError("Typecast is to incorrect type", cast.getSrcLoc());
-        } else if (!lattice.isSubtype(typeAnalysis.getType(cast.getValue()),
-                           lattice.getType(cast.getType())->getPrimitive())) {
+        }
+        if (!lattice.isSubtype(
+                    typeAnalysis.getType(cast.getValue()), lattice.getType(cast.getType())->getPrimitive())) {
+            // TODO add information about primitives involved
             report.addWarning(
                     "Casts between different primitive types may cause runtime errors", cast.getSrcLoc());
         }
@@ -317,12 +323,10 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         assert(relation != nullptr && "Relation must have been declared");
         for (size_t i = 0; i < atom.argSize(); i++) {
             const AnalysisType* argType = typeAnalysis.getType(atom.getArgument(i));
-            if (argType->isValid()) {
-                if (!lattice.isSubtype(argType, lattice.getType(relation->getAttribute(i)->getTypeName()))) {
-                    // TODO add information about expected and actual types
-                    report.addError(
-                            "Argument to relation has incorrect type", atom.getArgument(i)->getSrcLoc());
-                }
+            if (argType->isValid() &&
+                    !lattice.isSubtype(argType, lattice.getType(relation->getAttribute(i)->getTypeName()))) {
+                // TODO add information about expected and actual types
+                report.addError("Argument to relation has incorrect type", atom.getArgument(i)->getSrcLoc());
             }
         }
     });

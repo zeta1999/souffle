@@ -239,7 +239,7 @@ public:
     }
     void print(std::ostream& os) const {
         for (const TypeConstraint* con : getAll()) {
-            os << "   " << *con << std::endl;
+            os << "      " << *con << std::endl;
         }
     }
     friend std::ostream& operator<<(std::ostream& out, const TypeConstraints& other) {
@@ -459,10 +459,10 @@ typeSol TypeAnalysis::analyseTypes(
     typeSol types = typeCons.solve(lattice, getArguments(&variables, clause));
     if (debugStream != nullptr) {
         *debugStream << "Clause:\n" << clause << std::endl << std::endl;
-        *debugStream << "Constraints:\n" << typeCons << std::endl;
-        *debugStream << "Types:" << std::endl;
+        *debugStream << "   Constraints:\n" << typeCons << std::endl;
+        *debugStream << "   Types:" << std::endl;
         for (std::pair<const AstArgument*, const AnalysisType*> iter : types) {
-            *debugStream << "   type(" << *iter.first << ") = " << *iter.second << std::endl;
+            *debugStream << "      type(" << *iter.first << ") = " << *iter.second << std::endl;
         }
         *debugStream << std::endl;
     }
@@ -481,6 +481,10 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     lattice.setEnvironment(&typeEnvAnalysis->getTypeEnvironment());
     if (lattice.isValid()) {
         const AstProgram& program = *translationUnit.getProgram();
+        if (anyInvalidClauses(program) && debugStream != nullptr) {
+            *debugStream << "Some clauses were skipped as they cannot be typechecked" << std::endl
+                         << std::endl;
+        }
         for (const AstClause* clause : getValidClauses(program)) {
             // Perform the type analysis
             typeSol clauseArgumentTypes = analyseTypes(lattice, *clause, program, debugStream);
@@ -497,6 +501,51 @@ void TypeAnalysis::print(std::ostream& os) const {
     }
 }
 
+bool TypeAnalysis::anyInvalidClauses(const AstProgram& program) {
+    for (const AstRelation* rel : program.getRelations()) {
+        for (const AstClause* clause : rel->getClauses()) {
+            // TODO (azreika [olligobber]) : fix this up
+            bool skipClause = false;
+            visitDepthFirst(*clause, [&](const AstAtom& atom) {
+                auto* relDecl = program.getRelation(atom.getName());
+                if (relDecl == nullptr) {
+                    skipClause = true;
+                } else if (relDecl->getArity() != atom.getArity()) {
+                    skipClause = true;
+                } else {
+                    for (const AstAttribute* attribute : relDecl->getAttributes()) {
+                        if (program.getType(attribute->getTypeName()) == nullptr) {
+                            skipClause = true;
+                            break;
+                        }
+                    }
+                }
+            });
+            visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
+                AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+                if (funDecl == nullptr) {
+                    skipClause = true;
+                } else if (funDecl->getArgCount() != fun.getArgCount()) {
+                    skipClause = true;
+                }
+            });
+            visitDepthFirst(*clause, [&](const AstRecordInit& record) {
+                const auto* recordType =
+                        dynamic_cast<const AstRecordType*>(program.getType(record.getType()));
+                if (recordType == nullptr) {
+                    skipClause = true;
+                } else if (record.getArguments().size() != recordType->getFields().size()) {
+                    skipClause = true;
+                }
+            });
+            if (skipClause) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& program) {
     std::vector<const AstClause*> valid;
     for (const AstRelation* rel : program.getRelations()) {
@@ -509,19 +558,29 @@ std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& pr
                     skipClause = true;
                 } else if (relDecl->getArity() != atom.getArity()) {
                     skipClause = true;
+                } else {
+                    for (const AstAttribute* attribute : relDecl->getAttributes()) {
+                        if (program.getType(attribute->getTypeName()) == nullptr) {
+                            skipClause = true;
+                            break;
+                        }
+                    }
                 }
             });
             visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
                 AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-                if (funDecl->getArgCount() != fun.getArgCount()) {
+                if (funDecl == nullptr) {
+                    skipClause = true;
+                } else if (funDecl->getArgCount() != fun.getArgCount()) {
                     skipClause = true;
                 }
             });
             visitDepthFirst(*clause, [&](const AstRecordInit& record) {
-                if (record.getArguments().size() !=
-                        dynamic_cast<const AstRecordType*>(program.getType(record.getType()))
-                                ->getFields()
-                                .size()) {
+                const auto* recordType =
+                        dynamic_cast<const AstRecordType*>(program.getType(record.getType()));
+                if (recordType == nullptr) {
+                    skipClause = true;
+                } else if (record.getArguments().size() != recordType->getFields().size()) {
                     skipClause = true;
                 }
             });

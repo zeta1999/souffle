@@ -188,7 +188,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // get the list of components to be checked
     if (lattice.isValid()) {
-        nodes = TypeAnalysis::getValidClauses(program);
+        if (TypeAnalysis::anyInvalidClauses(program)) {
+            nodes = TypeAnalysis::getValidClauses(program);
+            report.addError(
+                    "Not all clauses could be typechecked due to other errors present", program.getSrcLoc());
+        }
     } else {
         nodes = std::vector<const AstClause*>();
     }

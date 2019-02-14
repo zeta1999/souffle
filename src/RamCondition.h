@@ -114,7 +114,7 @@ protected:
     std::unique_ptr<RamCondition> operand;
 
 public:
-    RamNot(std::unique_ptr<RamCondition> o) : RamCondition(RN_Not), operand(std::move(o)) {}
+    RamNot(std::unique_ptr<RamCondition> operand) : RamCondition(RN_Not), operand(std::move(operand)) {}
 
     /** Get operand of negation */
     const RamCondition& getOperand() const {

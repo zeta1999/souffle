@@ -58,7 +58,7 @@ public:
     }
 
     void print(std::ostream& os) const override {
-        os << "top";
+        os << "top type";
     }
 };
 
@@ -74,7 +74,7 @@ public:
     }
 
     void print(std::ostream& os) const override {
-        os << "bottom";
+        os << "bottom type";
     }
 };
 
@@ -150,13 +150,13 @@ public:
     void print(std::ostream& os) const override {
         switch (kind) {
             case Kind::SYMBOL:
-                os << "const_symbol";
+                os << "symbol constant";
                 break;
             case Kind::NUMBER:
-                os << "const_number";
+                os << "number constant";
                 break;
             case Kind::RECORD:
-                os << "nil";
+                os << "nil record";
                 break;
         }
     }
@@ -181,13 +181,13 @@ public:
     void print(std::ostream& os) const override {
         switch (kind) {
             case Kind::SYMBOL:
-                os << "bot_symbol";
+                os << "bottom symbol";
                 break;
             case Kind::NUMBER:
-                os << "bot_number";
+                os << "bottom number";
                 break;
             case Kind::RECORD:
-                os << "bot_record";
+                os << "bottom record";
                 break;
         }
     }

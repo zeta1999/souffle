@@ -412,9 +412,9 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     });
                 }
                 if (isExistCheck) {
-                    visitDepthFirst(scan->getOperation(), [&](const RamNotExists& notExists) {
+                    visitDepthFirst(scan->getOperation(), [&](const RamExists& exists) {
                         if (isExistCheck) {
-                            for (const RamValue* value : notExists.getValues()) {
+                            for (const RamValue* value : exists.getValues()) {
                                 if (value != nullptr && !context->rcva->isConstant(value) &&
                                         dependsOn(value, identifier)) {
                                     isExistCheck = false;

@@ -279,8 +279,12 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 
         // -- connectors operators --
 
-        bool visitAnd(const RamAnd& a) override {
-            return visit(a.getLHS()) && visit(a.getRHS());
+        bool visitAnd(const RamAnd& conj) override {
+            return visit(conj.getLHS()) && visit(conj.getRHS());
+        }
+
+        bool visitNot(const RamNot& neg) override {
+            return !visit(neg.getOperand());
         }
 
         // -- relation operations --
@@ -290,24 +294,24 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             return rel.empty();
         }
 
-        bool visitNotExists(const RamNotExists& ne) override {
-            const InterpreterRelation& rel = interpreter.getRelation(ne.getRelation());
+        bool visitExists(const RamExists& exists) override {
+            const InterpreterRelation& rel = interpreter.getRelation(exists.getRelation());
 
             // construct the pattern tuple
             auto arity = rel.getArity();
-            auto values = ne.getValues();
+            auto values = exists.getValues();
 
-            if (Global::config().has("profile") && !ne.getRelation().isTemp()) {
-                interpreter.reads[ne.getRelation().getName()]++;
+            if (Global::config().has("profile") && !exists.getRelation().isTemp()) {
+                interpreter.reads[exists.getRelation().getName()]++;
             }
             // for total we use the exists test
-            if (ne.isTotal()) {
+            if (exists.isTotal()) {
                 RamDomain tuple[arity];
                 for (size_t i = 0; i < arity; i++) {
                     tuple[i] = (values[i]) ? interpreter.evalVal(*values[i], ctxt) : MIN_RAM_DOMAIN;
                 }
 
-                return !rel.exists(tuple);
+                return rel.exists(tuple);
             }
 
             // for partial we search for lower and upper boundaries
@@ -319,17 +323,17 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             }
 
             // obtain index
-            auto idx = rel.getIndex(ne.getKey());
+            auto idx = rel.getIndex(exists.getKey());
             auto range = idx->lowerUpperBound(low, high);
-            return range.first == range.second;  // if there are none => done
+            return range.first != range.second;  // if there are none => done
         }
 
-        bool visitProvenanceNotExists(const RamProvenanceNotExists& ne) override {
-            const InterpreterRelation& rel = interpreter.getRelation(ne.getRelation());
+        bool visitProvenanceExists(const RamProvenanceExists& provExists) override {
+            const InterpreterRelation& rel = interpreter.getRelation(provExists.getRelation());
 
             // construct the pattern tuple
             auto arity = rel.getArity();
-            auto values = ne.getValues();
+            auto values = provExists.getValues();
 
             // for partial we search for lower and upper boundaries
             RamDomain low[arity];
@@ -345,9 +349,9 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             high[arity - 1] = MAX_RAM_DOMAIN;
 
             // obtain index
-            auto idx = rel.getIndex(ne.getKey());
+            auto idx = rel.getIndex(provExists.getKey());
             auto range = idx->lowerUpperBound(low, high);
-            return range.first == range.second;  // if there are none => done
+            return range.first != range.second;  // if there are none => done
         }
 
         // -- comparison operators --

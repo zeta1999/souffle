@@ -15,7 +15,7 @@ m(6).
 .type pair = [ first : N, second : N ]
 
 .decl p ( p1 : pair, x: N, p2:pair, y:N )
-p(*pair[x,y], x+y, *pair[x,y], x-y) :- n(x), m(y).
+p(*pair[x,y], as(x+y,N), *pair[x,y], as(x-y,N)) :- n(x), m(y).
 
 .decl r ( x1 : N, y1 : N, z1:N, x2 : N, y2 : N, z2:N )
 .output r ()

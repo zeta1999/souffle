@@ -10,4 +10,5 @@ Warning: No rules/facts defined for relation D in file rule_arity.dl at line 6
 Error: Mismatching arity of relation B in file rule_arity.dl at line 8
 A (x, y, z) :- B(x), C(y), D(z), B(x,y).
 ---------------------------------^-------
-1 errors generated, evaluation aborted
+Error: Not all clauses could be typechecked due to other errors present
+2 errors generated, evaluation aborted

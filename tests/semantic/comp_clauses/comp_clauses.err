@@ -1,19 +1,10 @@
-Error: Non-symbolic use for symbolic functor in file comp_clauses.dl at line 12
+Error: Relation expects value of type number but got argument of type symbol in file comp_clauses.dl at line 12
 q(cat(x,x)) :- q(x).                // this one should
 --^----------------------------------------------------
-Error: Non-symbolic argument for functor in file comp_clauses.dl at line 12
+Error: Non-symbolic argument for functor, instead argument has type number in file comp_clauses.dl at line 12
 q(cat(x,x)) :- q(x).                // this one should
 ------^------------------------------------------------
-Error: Unable to deduce type for variable x in file comp_clauses.dl at line 12
-q(cat(x,x)) :- q(x).                // this one should
-------^------------------------------------------------
-Error: Non-symbolic argument for functor in file comp_clauses.dl at line 12
+Error: Non-symbolic argument for functor, instead argument has type number in file comp_clauses.dl at line 12
 q(cat(x,x)) :- q(x).                // this one should
 --------^----------------------------------------------
-Error: Unable to deduce type for variable x in file comp_clauses.dl at line 12
-q(cat(x,x)) :- q(x).                // this one should
---------^----------------------------------------------
-Error: Unable to deduce type for variable x in file comp_clauses.dl at line 12
-q(cat(x,x)) :- q(x).                // this one should
------------------^-------------------------------------
-6 errors generated, evaluation aborted
+3 errors generated, evaluation aborted

@@ -15,15 +15,15 @@ m(6).
 .type pair = [ first : N, second : N ]
 
 .decl p ( p : pair, x: N )
-p(*pair[x,y], x+y) :- n(x), m(y).
+p(*pair[x,y], as(x+y,N)) :- n(x), m(y).
 
 .decl r1 ( x : N, y : N, z:N )
 .output r1 ()
-r1(z-y,y,z) :- p(*pair[_,y], z).
+r1(as(z-y,N),y,z) :- p(*pair[_,y], z).
 
 .decl r2 ( x : N, y : N, z:N )
 .output r2 ()
-r2(z-x,x,z) :- p(*pair[x,_], z).
+r2(as(z-x,N),x,z) :- p(*pair[x,_], z).
 
 .decl r3 ( z:N )
 .output r3 ()

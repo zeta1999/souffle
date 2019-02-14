@@ -13,58 +13,49 @@ Warning: No rules/facts defined for relation D in file rule_typecompat.dl at lin
 Warning: No rules/facts defined for relation E in file rule_typecompat.dl at line 10
 .decl E (r:R, s:S)
 ------^------------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 15
+Error: Relation expects value of type T but got argument of type S in file rule_typecompat.dl at line 15
 A(x) :- B(x).
 --^-----------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 15
-A(x) :- B(x).
-----------^---
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 18
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 18
 A(x) :- F(x,x).
 --^-------------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 18
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 18
 A(x) :- F(x,x).
 ----------^-----
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 18
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 18
 A(x) :- F(x,x).
 ------------^---
 Warning: Variable y only occurs once in file rule_typecompat.dl at line 20
 A(x) :- F(y,x).
 ----------^-----
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 23
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 23
 A(x) :- G(x,x).
 --^-------------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 23
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 23
 A(x) :- G(x,x).
 ----------^-----
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 23
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 23
 A(x) :- G(x,x).
 ------------^---
 Warning: Variable y only occurs once in file rule_typecompat.dl at line 25
 A(x) :- G(x,y).
 ------------^---
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 28
-G(x,x) :- A(x).
---^-------------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 28
+Error: Relation expects value of type R but got argument of type T in file rule_typecompat.dl at line 28
 G(x,x) :- A(x).
 ----^-----------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 28
-G(x,x) :- A(x).
-------------^---
 Error: Ungrounded variable y in file rule_typecompat.dl at line 30
 G(x,y) :- A(x).
 ----^-----------
 Warning: Variable y only occurs once in file rule_typecompat.dl at line 30
 G(x,y) :- A(x).
 ----^-----------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 33
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 33
 A(x) :- B(x), C(x).
 --^-----------------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 33
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 33
 A(x) :- B(x), C(x).
 ----------^---------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 33
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 33
 A(x) :- B(x), C(x).
 ----------------^---
 Warning: Variable y only occurs once in file rule_typecompat.dl at line 36
@@ -73,118 +64,103 @@ A(x) :- A(x), B(y), C(z).
 Warning: Variable z only occurs once in file rule_typecompat.dl at line 36
 A(x) :- A(x), B(y), C(z).
 ----------------------^---
-Error: Unable to deduce type for variable y in file rule_typecompat.dl at line 39
+Error: Relation expects value of type T but got argument of type R in file rule_typecompat.dl at line 39
 F(x,y) :- F(x,z), G(z,y).
 ----^---------------------
-Error: Unable to deduce type for variable y in file rule_typecompat.dl at line 39
-F(x,y) :- F(x,z), G(z,y).
-----------------------^---
 Error: Ungrounded variable y in file rule_typecompat.dl at line 41
 F(x,y) :- F(x,z), G(z,x).
 ----^---------------------
 Warning: Variable y only occurs once in file rule_typecompat.dl at line 41
 F(x,y) :- F(x,z), G(z,x).
 ----^---------------------
-Error: Unable to deduce type for variable v in file rule_typecompat.dl at line 47
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 47
 F(x,y) :- F(x,v), F(w,y), A(v), D(v).
 --------------^-----------------------
 Warning: Variable w only occurs once in file rule_typecompat.dl at line 47
 F(x,y) :- F(x,v), F(w,y), A(v), D(v).
 --------------------^-----------------
-Error: Unable to deduce type for variable v in file rule_typecompat.dl at line 47
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 47
 F(x,y) :- F(x,v), F(w,y), A(v), D(v).
 ----------------------------^---------
-Error: Unable to deduce type for variable v in file rule_typecompat.dl at line 47
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 47
 F(x,y) :- F(x,v), F(w,y), A(v), D(v).
 ----------------------------------^---
 Warning: Variable v only occurs once in file rule_typecompat.dl at line 48
 F(x,y) :- F(x,v), F(w,y), A(w), D(w).
 --------------^-----------------------
-Error: Unable to deduce type for variable w in file rule_typecompat.dl at line 48
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 48
 F(x,y) :- F(x,v), F(w,y), A(w), D(w).
 --------------------^-----------------
-Error: Unable to deduce type for variable w in file rule_typecompat.dl at line 48
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 48
 F(x,y) :- F(x,v), F(w,y), A(w), D(w).
 ----------------------------^---------
-Error: Unable to deduce type for variable w in file rule_typecompat.dl at line 48
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 48
 F(x,y) :- F(x,v), F(w,y), A(w), D(w).
 ----------------------------------^---
-Error: Unable to deduce type for variable v in file rule_typecompat.dl at line 49
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 49
 F(x,y) :- F(x,v), F(w,y), A(w), D(v).
 --------------^-----------------------
-Error: Unable to deduce type for variable w in file rule_typecompat.dl at line 49
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 49
 F(x,y) :- F(x,v), F(w,y), A(w), D(v).
 --------------------^-----------------
-Error: Unable to deduce type for variable w in file rule_typecompat.dl at line 49
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 49
 F(x,y) :- F(x,v), F(w,y), A(w), D(v).
 ----------------------------^---------
-Error: Unable to deduce type for variable v in file rule_typecompat.dl at line 49
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 49
 F(x,y) :- F(x,v), F(w,y), A(w), D(v).
 ----------------------------------^---
 Warning: Variable w only occurs once in file rule_typecompat.dl at line 52
 F(x,y) :- F(x,v), F(w,y), !H(v), !D(v).
 --------------------^-------------------
+Error: Relation expects value of type R but got argument of type T in file rule_typecompat.dl at line 52
+F(x,y) :- F(x,v), F(w,y), !H(v), !D(v).
+------------------------------------^---
 Warning: Variable v only occurs once in file rule_typecompat.dl at line 53
 F(x,y) :- F(x,v), F(w,y), !H(w), !D(w).
 --------------^-------------------------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 57
-F(x,y) :- F(x,y),  x > y.
---^-----------------------
-Error: Unable to deduce type for variable y in file rule_typecompat.dl at line 57
-F(x,y) :- F(x,y),  x > y.
-----^---------------------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 57
-F(x,y) :- F(x,y),  x > y.
-------------^-------------
-Error: Unable to deduce type for variable y in file rule_typecompat.dl at line 57
-F(x,y) :- F(x,y),  x > y.
---------------^-----------
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 57
+Error: Relation expects value of type T but got argument of type R in file rule_typecompat.dl at line 53
+F(x,y) :- F(x,v), F(w,y), !H(w), !D(w).
+-----------------------------^----------
+Error: Relation expects value of type T but got argument of type R in file rule_typecompat.dl at line 54
+F(x,y) :- F(x,v), F(w,y), !H(w), !D(v).
+-----------------------------^----------
+Error: Relation expects value of type R but got argument of type T in file rule_typecompat.dl at line 54
+F(x,y) :- F(x,v), F(w,y), !H(w), !D(v).
+------------------------------------^---
+Error: Non-numerical operand for comparison, instead left operand has type R in file rule_typecompat.dl at line 57
 F(x,y) :- F(x,y),  x > y.
 -------------------^------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 57
-F(x,y) :- F(x,y),  x > y.
--------------------^------
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 57
+Error: Non-numerical operand for comparison, instead right operand has type T in file rule_typecompat.dl at line 57
 F(x,y) :- F(x,y),  x > y.
 -----------------------^--
-Error: Unable to deduce type for variable y in file rule_typecompat.dl at line 57
-F(x,y) :- F(x,y),  x > y.
------------------------^--
-Error: Unable to deduce type for variable v in file rule_typecompat.dl at line 59
-F(x,y) :- F(x,v), F(w,y), w != v.
---------------^-------------------
-Error: Unable to deduce type for variable w in file rule_typecompat.dl at line 59
-F(x,y) :- F(x,v), F(w,y), w != v.
---------------------^-------------
-Error: Unable to deduce type for variable w in file rule_typecompat.dl at line 59
-F(x,y) :- F(x,v), F(w,y), w != v.
---------------------------^-------
-Error: Unable to deduce type for variable v in file rule_typecompat.dl at line 59
-F(x,y) :- F(x,v), F(w,y), w != v.
--------------------------------^--
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 62
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 59
+F(x,y) :- F(x,v), F(w,y), w = v.
+--------------^------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 59
+F(x,y) :- F(x,v), F(w,y), w = v.
+--------------------^------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 59
+F(x,y) :- F(x,v), F(w,y), w = v.
+--------------------------^------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file rule_typecompat.dl at line 59
+F(x,y) :- F(x,v), F(w,y), w = v.
+------------------------------^--
+Error: Non-numerical operand for comparison, instead left operand has type R in file rule_typecompat.dl at line 64
 F(x,y) :- F(x,y),  x > t.
 -------------------^------
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 62
+Error: Ungrounded variable t in file rule_typecompat.dl at line 64
 F(x,y) :- F(x,y),  x > t.
 -----------------------^--
-Error: Ungrounded variable t in file rule_typecompat.dl at line 62
+Warning: Variable t only occurs once in file rule_typecompat.dl at line 64
 F(x,y) :- F(x,y),  x > t.
 -----------------------^--
-Warning: Variable t only occurs once in file rule_typecompat.dl at line 62
-F(x,y) :- F(x,y),  x > t.
------------------------^--
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 63
+Error: Ungrounded variable t in file rule_typecompat.dl at line 65
 F(x,y) :- F(x,y),  t < x.
 -------------------^------
-Error: Ungrounded variable t in file rule_typecompat.dl at line 63
+Warning: Variable t only occurs once in file rule_typecompat.dl at line 65
 F(x,y) :- F(x,y),  t < x.
 -------------------^------
-Warning: Variable t only occurs once in file rule_typecompat.dl at line 63
-F(x,y) :- F(x,y),  t < x.
--------------------^------
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 63
+Error: Non-numerical operand for comparison, instead right operand has type R in file rule_typecompat.dl at line 65
 F(x,y) :- F(x,y),  t < x.
 -----------------------^--
-46 errors generated, evaluation aborted
+38 errors generated, evaluation aborted

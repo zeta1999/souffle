@@ -19,7 +19,7 @@
     inner_rel(*InnerRecord["x", 1], 1).
 
     .decl out0(x: T1, y: T2, z: T3)
-    out0(x,y,z) :- inner_rel(*InnerRecord[x,y],z).
+    out0(x,y,as(z,T3)) :- inner_rel(*InnerRecord[x,y],z).
     .output out0()
 }
 

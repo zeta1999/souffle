@@ -1,328 +1,292 @@
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 34
+Error: Relation expects value of type number but got argument of type symbol constant in file type_system1.dl at line 34
 NumberRelation("1").                                    // error
 ---------------^-------------------------------------------------
-Error: Null constant used as a non-record in file type_system1.dl at line 35
+Error: Relation expects value of type number but got argument of type nil record in file type_system1.dl at line 35
 NumberRelation(nil).                                    // error
 ---------------^-------------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 37
+Error: Relation expects value of type number but got argument of type single_number in file type_system1.dl at line 37
 NumberRelation(*single_number[1]).                      // error
-------------------------------^----------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 38
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type single_number in file type_system1.dl at line 38
 NumberRelation(*single_number[-1]).                     // error
--------------------------------^---------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 39
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type single_number in file type_system1.dl at line 39
 NumberRelation(*single_number[1+1]).                    // error
-------------------------------^----------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 41
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type double_number in file type_system1.dl at line 41
 NumberRelation(*double_number[1, 1]).                   // error
-------------------------------^----------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 41
-NumberRelation(*double_number[1, 1]).                   // error
----------------------------------^-------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 42
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type double_number in file type_system1.dl at line 42
 NumberRelation(*double_number[-1, -1]).                 // error
--------------------------------^---------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 42
-NumberRelation(*double_number[-1, -1]).                 // error
------------------------------------^-----------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 43
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type double_number in file type_system1.dl at line 43
 NumberRelation(*double_number[1+1, 1+1]).               // error
-------------------------------^----------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 43
-NumberRelation(*double_number[1+1, 1+1]).               // error
------------------------------------^-----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 45
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type triple_number in file type_system1.dl at line 45
 NumberRelation(*triple_number[1, 1, 1]).                // error
-------------------------------^----------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 45
-NumberRelation(*triple_number[1, 1, 1]).                // error
----------------------------------^-------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 45
-NumberRelation(*triple_number[1, 1, 1]).                // error
-------------------------------------^----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 46
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type triple_number in file type_system1.dl at line 46
 NumberRelation(*triple_number[-1, -1, -1]).             // error
--------------------------------^---------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 46
-NumberRelation(*triple_number[-1, -1, -1]).             // error
------------------------------------^-----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 46
-NumberRelation(*triple_number[-1, -1, -1]).             // error
----------------------------------------^-------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 47
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type triple_number in file type_system1.dl at line 47
 NumberRelation(*triple_number[1+1, 1+1, 1+1]).          // error
-------------------------------^----------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 47
-NumberRelation(*triple_number[1+1, 1+1, 1+1]).          // error
------------------------------------^-----------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 47
-NumberRelation(*triple_number[1+1, 1+1, 1+1]).          // error
-----------------------------------------^------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 49
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type single_symbol in file type_system1.dl at line 49
 NumberRelation(*single_symbol["1"]).                    // error
-------------------------------^----------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 50
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type double_symbol in file type_system1.dl at line 50
 NumberRelation(*double_symbol["1", "1"]).               // error
-------------------------------^----------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 50
-NumberRelation(*double_symbol["1", "1"]).               // error
------------------------------------^-----------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 51
+---------------^-------------------------------------------------
+Error: Relation expects value of type number but got argument of type triple_symbol in file type_system1.dl at line 51
 NumberRelation(*triple_symbol["1", "1", "1"]).          // error
-------------------------------^----------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 51
-NumberRelation(*triple_symbol["1", "1", "1"]).          // error
------------------------------------^-----------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 51
-NumberRelation(*triple_symbol["1", "1", "1"]).          // error
-----------------------------------------^------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 55
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number constant in file type_system1.dl at line 55
 SymbolRelation(0).                                      // error
 ---------------^-------------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 56
+Error: Relation expects value of type symbol but got argument of type number constant in file type_system1.dl at line 56
 SymbolRelation(1).                                      // error
 ---------------^-------------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 57
+Error: Relation expects value of type symbol but got argument of type number constant in file type_system1.dl at line 57
 SymbolRelation(-1).                                     // error
 ----------------^------------------------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 58
+Error: Relation expects value of type symbol but got argument of type number constant in file type_system1.dl at line 58
 SymbolRelation(1+1).                                    // error
 ---------------^-------------------------------------------------
-Error: Null constant used as a non-record in file type_system1.dl at line 60
+Error: Relation expects value of type symbol but got argument of type nil record in file type_system1.dl at line 60
 SymbolRelation(nil).                                    // error
 ---------------^-------------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 62
+Error: Relation expects value of type symbol but got argument of type single_number in file type_system1.dl at line 62
 SymbolRelation(*single_number[1]).                      // error
-------------------------------^----------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 63
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type single_number in file type_system1.dl at line 63
 SymbolRelation(*single_number[-1]).                     // error
--------------------------------^---------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 64
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type single_number in file type_system1.dl at line 64
 SymbolRelation(*single_number[1+1]).                    // error
-------------------------------^----------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 66
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type double_number in file type_system1.dl at line 66
 SymbolRelation(*double_number[1, 1]).                   // error
-------------------------------^----------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 66
-SymbolRelation(*double_number[1, 1]).                   // error
----------------------------------^-------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 67
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type double_number in file type_system1.dl at line 67
 SymbolRelation(*double_number[-1, -1]).                 // error
--------------------------------^---------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 67
-SymbolRelation(*double_number[-1, -1]).                 // error
------------------------------------^-----------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 68
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type double_number in file type_system1.dl at line 68
 SymbolRelation(*double_number[1+1, 1+1]).               // error
-------------------------------^----------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 68
-SymbolRelation(*double_number[1+1, 1+1]).               // error
------------------------------------^-----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 70
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type triple_number in file type_system1.dl at line 70
 SymbolRelation(*triple_number[1, 1, 1]).                // error
-------------------------------^----------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 70
-SymbolRelation(*triple_number[1, 1, 1]).                // error
----------------------------------^-------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 70
-SymbolRelation(*triple_number[1, 1, 1]).                // error
-------------------------------------^----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 71
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type triple_number in file type_system1.dl at line 71
 SymbolRelation(*triple_number[-1, -1, -1]).             // error
--------------------------------^---------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 71
-SymbolRelation(*triple_number[-1, -1, -1]).             // error
------------------------------------^-----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 71
-SymbolRelation(*triple_number[-1, -1, -1]).             // error
----------------------------------------^-------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 72
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type triple_number in file type_system1.dl at line 72
 SymbolRelation(*triple_number[1+1, 1+1, 1+1]).          // error
-------------------------------^----------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 72
-SymbolRelation(*triple_number[1+1, 1+1, 1+1]).          // error
------------------------------------^-----------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 72
-SymbolRelation(*triple_number[1+1, 1+1, 1+1]).          // error
-----------------------------------------^------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 74
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type single_symbol in file type_system1.dl at line 74
 SymbolRelation(*single_symbol["1"]).                    // error
-------------------------------^----------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 75
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type double_symbol in file type_system1.dl at line 75
 SymbolRelation(*double_symbol["1", "1"]).               // error
-------------------------------^----------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 75
-SymbolRelation(*double_symbol["1", "1"]).               // error
------------------------------------^-----------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 76
+---------------^-------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type triple_symbol in file type_system1.dl at line 76
 SymbolRelation(*triple_symbol["1", "1", "1"]).          // error
-------------------------------^----------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 76
-SymbolRelation(*triple_symbol["1", "1", "1"]).          // error
------------------------------------^-----------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 76
-SymbolRelation(*triple_symbol["1", "1", "1"]).          // error
-----------------------------------------^------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 80
+---------------^-------------------------------------------------
+Error: Relation expects value of type single_number but got argument of type number constant in file type_system1.dl at line 80
 SingleNumberRelation(0).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 81
+Error: Relation expects value of type single_number but got argument of type number constant in file type_system1.dl at line 81
 SingleNumberRelation(1).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 82
+Error: Relation expects value of type single_number but got argument of type number constant in file type_system1.dl at line 82
 SingleNumberRelation(-1).                               // error
 ----------------------^------------------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 83
+Error: Relation expects value of type single_number but got argument of type number constant in file type_system1.dl at line 83
 SingleNumberRelation(1+1).                              // error
 ---------------------^-------------------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 84
+Error: Relation expects value of type single_number but got argument of type symbol constant in file type_system1.dl at line 84
 SingleNumberRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 89
+Error: Unable to deduce type single_number as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 89
+SingleNumberRelation(*single_number["1"]).              // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type number but instead it has type symbol constant in file type_system1.dl at line 89
 SingleNumberRelation(*single_number["1"]).              // error
 ------------------------------------^----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 94
+Error: Relation expects value of type double_number but got argument of type number constant in file type_system1.dl at line 94
 DoubleNumberRelation(0).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 95
+Error: Relation expects value of type double_number but got argument of type number constant in file type_system1.dl at line 95
 DoubleNumberRelation(1).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 96
+Error: Relation expects value of type double_number but got argument of type number constant in file type_system1.dl at line 96
 DoubleNumberRelation(-1).                               // error
 ----------------------^------------------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 97
+Error: Relation expects value of type double_number but got argument of type number constant in file type_system1.dl at line 97
 DoubleNumberRelation(1+1).                              // error
 ---------------------^-------------------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 98
+Error: Relation expects value of type double_number but got argument of type symbol constant in file type_system1.dl at line 98
 DoubleNumberRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 103
+Error: Unable to deduce type double_number as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 103
+DoubleNumberRelation(*double_number["1", "1"]).         // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type number but instead it has type symbol constant in file type_system1.dl at line 103
 DoubleNumberRelation(*double_number["1", "1"]).         // error
 ------------------------------------^----------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 103
+Error: Record constructor expects element to have type number but instead it has type symbol constant in file type_system1.dl at line 103
 DoubleNumberRelation(*double_number["1", "1"]).         // error
 -----------------------------------------^-----------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 107
+Error: Relation expects value of type triple_number but got argument of type number constant in file type_system1.dl at line 107
 TripleNumberRelation(0).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 108
+Error: Relation expects value of type triple_number but got argument of type number constant in file type_system1.dl at line 108
 TripleNumberRelation(1).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 109
+Error: Relation expects value of type triple_number but got argument of type number constant in file type_system1.dl at line 109
 TripleNumberRelation(-1).                               // error
 ----------------------^------------------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 110
+Error: Relation expects value of type triple_number but got argument of type number constant in file type_system1.dl at line 110
 TripleNumberRelation(1+1).                              // error
 ---------------------^-------------------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 111
+Error: Relation expects value of type triple_number but got argument of type symbol constant in file type_system1.dl at line 111
 TripleNumberRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 116
+Error: Unable to deduce type triple_number as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 116
+TripleNumberRelation(*triple_number["1", "1", "1"]).    // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type number but instead it has type symbol constant in file type_system1.dl at line 116
 TripleNumberRelation(*triple_number["1", "1", "1"]).    // error
 ------------------------------------^----------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 116
+Error: Record constructor expects element to have type number but instead it has type symbol constant in file type_system1.dl at line 116
 TripleNumberRelation(*triple_number["1", "1", "1"]).    // error
 -----------------------------------------^-----------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 116
+Error: Record constructor expects element to have type number but instead it has type symbol constant in file type_system1.dl at line 116
 TripleNumberRelation(*triple_number["1", "1", "1"]).    // error
 ----------------------------------------------^------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 120
+Error: Relation expects value of type single_symbol but got argument of type number constant in file type_system1.dl at line 120
 SingleSymbolRelation(0).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 121
+Error: Relation expects value of type single_symbol but got argument of type number constant in file type_system1.dl at line 121
 SingleSymbolRelation(1).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 122
+Error: Relation expects value of type single_symbol but got argument of type number constant in file type_system1.dl at line 122
 SingleSymbolRelation(-1).                               // error
 ----------------------^------------------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 123
+Error: Relation expects value of type single_symbol but got argument of type number constant in file type_system1.dl at line 123
 SingleSymbolRelation(1+1).                              // error
 ---------------------^-------------------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 124
+Error: Relation expects value of type single_symbol but got argument of type symbol constant in file type_system1.dl at line 124
 SingleSymbolRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 126
+Error: Unable to deduce type single_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 126
+SingleSymbolRelation(*single_symbol[1]).                // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 126
 SingleSymbolRelation(*single_symbol[1]).                // error
 ------------------------------------^----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 127
+Error: Unable to deduce type single_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 127
+SingleSymbolRelation(*single_symbol[-1]).               // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 127
 SingleSymbolRelation(*single_symbol[-1]).               // error
 -------------------------------------^---------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 128
+Error: Unable to deduce type single_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 128
+SingleSymbolRelation(*single_symbol[1+1]).              // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 128
 SingleSymbolRelation(*single_symbol[1+1]).              // error
 ------------------------------------^----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 133
+Error: Relation expects value of type double_symbol but got argument of type number constant in file type_system1.dl at line 133
 DoubleSymbolRelation(0).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 134
+Error: Relation expects value of type double_symbol but got argument of type number constant in file type_system1.dl at line 134
 DoubleSymbolRelation(1).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 135
+Error: Relation expects value of type double_symbol but got argument of type number constant in file type_system1.dl at line 135
 DoubleSymbolRelation(-1).                               // error
 ----------------------^------------------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 136
+Error: Relation expects value of type double_symbol but got argument of type number constant in file type_system1.dl at line 136
 DoubleSymbolRelation(1+1).                              // error
 ---------------------^-------------------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 137
+Error: Relation expects value of type double_symbol but got argument of type symbol constant in file type_system1.dl at line 137
 DoubleSymbolRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 139
+Error: Unable to deduce type double_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 139
+DoubleSymbolRelation(*double_symbol[1, 1]).             // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 139
 DoubleSymbolRelation(*double_symbol[1, 1]).             // error
 ------------------------------------^----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 139
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 139
 DoubleSymbolRelation(*double_symbol[1, 1]).             // error
 ---------------------------------------^-------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 140
+Error: Unable to deduce type double_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 140
+DoubleSymbolRelation(*double_symbol[-1, -1]).           // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 140
 DoubleSymbolRelation(*double_symbol[-1, -1]).           // error
 -------------------------------------^---------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 140
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 140
 DoubleSymbolRelation(*double_symbol[-1, -1]).           // error
 -----------------------------------------^-----------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 141
+Error: Unable to deduce type double_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 141
+DoubleSymbolRelation(*double_symbol[1+1, 1+1]).         // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 141
 DoubleSymbolRelation(*double_symbol[1+1, 1+1]).         // error
 ------------------------------------^----------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 141
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 141
 DoubleSymbolRelation(*double_symbol[1+1, 1+1]).         // error
 -----------------------------------------^-----------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 146
+Error: Relation expects value of type triple_symbol but got argument of type number constant in file type_system1.dl at line 146
 TripleSymbolRelation(0).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 147
+Error: Relation expects value of type triple_symbol but got argument of type number constant in file type_system1.dl at line 147
 TripleSymbolRelation(1).                                // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 148
+Error: Relation expects value of type triple_symbol but got argument of type number constant in file type_system1.dl at line 148
 TripleSymbolRelation(-1).                               // error
 ----------------------^------------------------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 149
+Error: Relation expects value of type triple_symbol but got argument of type number constant in file type_system1.dl at line 149
 TripleSymbolRelation(1+1).                              // error
 ---------------------^-------------------------------------------
-Error: Symbol constant (type mismatch) in file type_system1.dl at line 150
+Error: Relation expects value of type triple_symbol but got argument of type symbol constant in file type_system1.dl at line 150
 TripleSymbolRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 152
+Error: Unable to deduce type triple_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 152
+TripleSymbolRelation(*triple_symbol[1, 1, 1]).          // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 152
 TripleSymbolRelation(*triple_symbol[1, 1, 1]).          // error
 ------------------------------------^----------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 152
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 152
 TripleSymbolRelation(*triple_symbol[1, 1, 1]).          // error
 ---------------------------------------^-------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 152
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 152
 TripleSymbolRelation(*triple_symbol[1, 1, 1]).          // error
 ------------------------------------------^----------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 153
+Error: Unable to deduce type triple_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 153
+TripleSymbolRelation(*triple_symbol[-1, -1, -1]).       // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 153
 TripleSymbolRelation(*triple_symbol[-1, -1, -1]).       // error
 -------------------------------------^---------------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 153
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 153
 TripleSymbolRelation(*triple_symbol[-1, -1, -1]).       // error
 -----------------------------------------^-----------------------
-Error: Number constant (type mismatch) in file type_system1.dl at line 153
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 153
 TripleSymbolRelation(*triple_symbol[-1, -1, -1]).       // error
 ---------------------------------------------^-------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 154
+Error: Unable to deduce type triple_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 154
+TripleSymbolRelation(*triple_symbol[1+1, 1+1, 1+1]).    // error
+---------------------^-------------------------------------------
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 154
 TripleSymbolRelation(*triple_symbol[1+1, 1+1, 1+1]).    // error
 ------------------------------------^----------------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 154
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 154
 TripleSymbolRelation(*triple_symbol[1+1, 1+1, 1+1]).    // error
 -----------------------------------------^-----------------------
-Error: Non-numeric use for numeric functor in file type_system1.dl at line 154
+Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 154
 TripleSymbolRelation(*triple_symbol[1+1, 1+1, 1+1]).    // error
 ----------------------------------------------^------------------
-109 errors generated, evaluation aborted
+97 errors generated, evaluation aborted

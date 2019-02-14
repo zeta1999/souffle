@@ -1,30 +1,9 @@
 Error: Ungrounded variable  X0 in file agg_checks.dl at line 10
 r("X",Y) :- Y = min X : { X != Y }.
 --------------------^---------------
-Error: Unable to deduce type for variable Y in file agg_checks.dl at line 11
-r("X",Y) :- Y = min X : { X != Y, !a(X,Y) }.
-------^--------------------------------------
-Error: Unable to deduce type for variable Y in file agg_checks.dl at line 11
-r("X",Y) :- Y = min X : { X != Y, !a(X,Y) }.
-------------^--------------------------------
-Error: Unable to deduce type for variable  X1 in file agg_checks.dl at line 11
-r("X",Y) :- Y = min X : { X != Y, !a(X,Y) }.
---------------------^------------------------
 Error: Ungrounded variable  X1 in file agg_checks.dl at line 11
 r("X",Y) :- Y = min X : { X != Y, !a(X,Y) }.
 --------------------^------------------------
-Error: Unable to deduce type for variable  X1 in file agg_checks.dl at line 11
-r("X",Y) :- Y = min X : { X != Y, !a(X,Y) }.
---------------------------^------------------
-Error: Unable to deduce type for variable Y in file agg_checks.dl at line 11
-r("X",Y) :- Y = min X : { X != Y, !a(X,Y) }.
--------------------------------^-------------
-Error: Unable to deduce type for variable  X1 in file agg_checks.dl at line 11
-r("X",Y) :- Y = min X : { X != Y, !a(X,Y) }.
--------------------------------------^-------
-Error: Unable to deduce type for variable Y in file agg_checks.dl at line 11
-r("X",Y) :- Y = min X : { X != Y, !a(X,Y) }.
----------------------------------------^-----
 Error: Ungrounded variable  X2 in file agg_checks.dl at line 14
 r("X",Y) :- Y = min X : { a("A",2) }.
 --------------------^-----------------
@@ -34,18 +13,19 @@ r("X",Y) :- Y = min X : { a("A",2) }.
 Error: Ungrounded variable  X3 in file agg_checks.dl at line 17
 r("X",Y) :- Y = min X : { a("A",Y), Y>X }.
 --------------------^----------------------
-Error: Unable to deduce type for variable  X4 in file agg_checks.dl at line 20
+Error: Relation expects value of type number but got argument of type symbol in file agg_checks.dl at line 20
+r("X",Y) :- Y = min X : a(X,_).
+------^-------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file agg_checks.dl at line 20
 r("X",Y) :- Y = min X : a(X,_).
 --------------------^-----------
-Error: Unable to deduce type for variable  X4 in file agg_checks.dl at line 20
-r("X",Y) :- Y = min X : a(X,_).
---------------------------^-----
 Error: Undefined relation nonexistent in file agg_checks.dl at line 31
 r("X",count: { nonexistent(_,_) }).
 ---------------^--------------------
 Error: Undefined relation nonexistent in file agg_checks.dl at line 32
 r("X",count: { nonexistent(_,_) } * 3).
 ---------------^------------------------
+Error: Not all clauses could be typechecked due to other errors present
 Error: Unable to stratify relation(s) {r}
 Relation r in file agg_checks.dl at line 6
 .decl r(a:symbol,b:number)
@@ -53,4 +33,4 @@ Relation r in file agg_checks.dl at line 6
 has cyclic aggregation in file agg_checks.dl at line 28
 r("X",Y) :- Y = min Y : r("X",Y).
 ------------------------^---------
-16 errors generated, evaluation aborted
+10 errors generated, evaluation aborted

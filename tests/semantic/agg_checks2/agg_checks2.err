@@ -7,4 +7,5 @@ Error: Undefined relation ExpandedInstanceFieldPointsTo in file agg_checks2.dl a
 Error: Undefined relation InstanceFieldPointsTo in file agg_checks2.dl at line 5
               size = count :{InstanceFieldPointsTo(_,_,_,_,obj)}.
 -----------------------------^------------------------------------
-3 errors generated, evaluation aborted
+Error: Not all clauses could be typechecked due to other errors present
+4 errors generated, evaluation aborted

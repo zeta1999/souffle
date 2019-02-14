@@ -1,37 +1,19 @@
-Error: Unable to deduce type for variable x in file comp_types.dl at line 26
+Error: Relation expects value of type x.inner but got argument of type y.inner in file comp_types.dl at line 26
 relX(x) :- relY(x).
 -----^--------------
-Error: Unable to deduce type for variable x in file comp_types.dl at line 26
-relX(x) :- relY(x).
-----------------^---
-Error: Unable to deduce type for variable x in file comp_types.dl at line 27
+Error: Relation expects value of type x.inner but got argument of type z.inner in file comp_types.dl at line 27
 relX(x) :- relZ(x).
 -----^--------------
-Error: Unable to deduce type for variable x in file comp_types.dl at line 27
-relX(x) :- relZ(x).
-----------------^---
-Error: Unable to deduce type for variable x in file comp_types.dl at line 29
+Error: Relation expects value of type y.inner but got argument of type x.inner in file comp_types.dl at line 29
 relY(x) :- relX(x).
 -----^--------------
-Error: Unable to deduce type for variable x in file comp_types.dl at line 29
-relY(x) :- relX(x).
-----------------^---
-Error: Unable to deduce type for variable x in file comp_types.dl at line 31
+Error: Relation expects value of type y.inner but got argument of type z.inner in file comp_types.dl at line 31
 relY(x) :- relZ(x).
 -----^--------------
-Error: Unable to deduce type for variable x in file comp_types.dl at line 31
-relY(x) :- relZ(x).
-----------------^---
-Error: Unable to deduce type for variable x in file comp_types.dl at line 33
+Error: Relation expects value of type z.inner but got argument of type x.inner in file comp_types.dl at line 33
 relZ(x) :- relX(x).
 -----^--------------
-Error: Unable to deduce type for variable x in file comp_types.dl at line 33
-relZ(x) :- relX(x).
-----------------^---
-Error: Unable to deduce type for variable x in file comp_types.dl at line 34
+Error: Relation expects value of type z.inner but got argument of type y.inner in file comp_types.dl at line 34
 relZ(x) :- relY(x).
 -----^--------------
-Error: Unable to deduce type for variable x in file comp_types.dl at line 34
-relZ(x) :- relY(x).
-----------------^---
-12 errors generated, evaluation aborted
+6 errors generated, evaluation aborted

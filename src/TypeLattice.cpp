@@ -266,12 +266,17 @@ const InnerAType* TypeLattice::addType(const Type* type) {
             std::set<const BaseAType*> memberTypes;
             bool isPrimitive = false;
             Kind kind;
+            if (unionType->getElementTypes().size() <= 0) {
+                this->valid = false;
+                return nullptr;
+            }
             assert(!unionType->getElementTypes().empty() && "Union type cannot be empty");
             for (const Type* memberType : unionType->getElementTypes()) {
                 const InnerAType* memberAType = addType(memberType);
                 if (dynamic_cast<const PrimitiveAType*>(memberAType) != nullptr) {
                     if (isPrimitive && kind != memberAType->getKind()) {
                         this->valid = false;
+                        return nullptr;
                     } else if (!isPrimitive) {
                         isPrimitive = true;
                         kind = memberAType->getKind();
@@ -285,7 +290,7 @@ const InnerAType* TypeLattice::addType(const Type* type) {
                 } else if (dynamic_cast<const BaseAType*>(memberAType) != nullptr) {
                     memberTypes.insert(dynamic_cast<const BaseAType*>(memberAType));
                 } else {
-                    assert(false && "Unsupported member type");
+                    assert(!this->isValid() && "Unsupported member type");
                 }
             }
             if (!isPrimitive) {
@@ -295,7 +300,7 @@ const InnerAType* TypeLattice::addType(const Type* type) {
                 if (base->getKind() != kind) {
                     this->valid = false;
                     isPrimitive = true;
-                    break;
+                    return nullptr;
                 }
             }
             if (!isPrimitive) {
@@ -314,7 +319,7 @@ const InnerAType* TypeLattice::addType(const Type* type) {
                         aliases[type->getName()] = &unions.back();
                     }
                 } else {
-                    assert(false && "Invalid union");
+                    assert(!this->isValid() && "Invalid union");
                 }
             }
         } else {

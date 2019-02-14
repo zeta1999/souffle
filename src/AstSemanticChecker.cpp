@@ -233,6 +233,8 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                 } else if (dynamic_cast<const TopAType*>(type) != nullptr) {
                     // this must be equal to a poorly typed but grounded record constructor, which will
                     // produce an error so we don't have to
+                    // e.g. A(x) :- x = *R[y], B(y). when y has the wrong type for R, we don't want to also
+                    // raise an error for the type of x
                 } else {
                     assert(false && "No other type should be invalid");
                 }
@@ -308,7 +310,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                     "Constructor has incorrect number of arguments");
             if (!lattice.isSubtype(typeAnalysis.getType(&record), lattice.getType(*type))) {
                 report.addError("Unable to deduce type " + toString(record.getType()) +
-                                        " as record is not grounded as a record elsewhere, and atleast one "
+                                        " as record is not grounded as a record elsewhere, and at least one "
                                         "of its elements has the wrong type",
                         record.getSrcLoc());
                 for (size_t i = 0; i < record.getArguments().size(); ++i) {

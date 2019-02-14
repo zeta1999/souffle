@@ -95,7 +95,7 @@ lastPred(u, v) :-
  * NB: this step is performed assuming that the computation
  * hasn't finished yet.
  */
-step(i+1, v, d1 + d2, u) :-
+step(i+1, v, as(d1 + d2,Distance), u) :-
    again(i),
    shortestStepPath(i, u, d2),
    firstPred(u, v),
@@ -118,7 +118,7 @@ step(i, v, d, u2) :-
  * shortest path of current predecessors.
  */
 
-step(i, v, d1 + d2, u2) :-
+step(i, v, as(d1 + d2,Distance), u2) :-
    step(i, v, d, u1),
    succPred(u1, u2, v),
    edge(u2, v, d1),
@@ -140,7 +140,7 @@ shortestStepPath(i, u, 0) :-
 shortestStepPath(0, u, largeDist) :-
    node(u),
    !start(u),
-   largeDist = sum d: {edge(_,_,d)}.
+   largeDist = as(sum d: {edge(_,_,d)},Distance).
 
 /* shortest distance for all other steps */
 shortestStepPath(i, v, d) :-
@@ -161,9 +161,9 @@ again(1).
  * previous step, a new step is required.
  */
 
-again(i+1) :-
+again(as(i+1,Distance)) :-
    shortestStepPath(i, u, wi),
-   shortestStepPath(i-1, u, wi_1),
+   shortestStepPath(as(i-1,Distance), u, wi_1),
    i > 0,
    wi < wi_1.
 
@@ -188,4 +188,3 @@ shortestPath(u, d) :-
    shortestStepPath(i, u, d).
 
 .output shortestPath
-

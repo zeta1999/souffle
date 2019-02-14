@@ -15,29 +15,29 @@
 
 // List of flights
 .decl flight(r : Route)
-flight(["Sydney", "Melbourne", 8, 2]).
-flight(["Sydney", "Melbourne", 20, 2]).
-flight(["Sydney", "Singapore", 6, 10]).
-flight(["Melbourne", "Auckland", 14, 4]).
-flight(["Sydney", "Auckland", 12, 3]).
-flight(["Singapore", "Tokyo", 21, 12]).
-flight(["Singapore", "Dubai", 10, 11]).
-flight(["Singapore", "London", 14, 14]).
-flight(["Dubai", "London", 5, 6]).
-flight(["London", "New York", 17, 15]).
-flight(["London", "New York", 5, 15]).
-flight(["London", "Oslo", 15, 3]).
-flight(["London", "Paris", 10, 3]).
-flight(["London", "Reykjavik", 8, 5]).
-flight(["Oslo", "Reykjavik", 9, 4]).
-flight(["Oslo", "Reykjavik", 21, 4]).
-flight(["Los Angeles", "New York", 14, 5]).
-flight(["Tokyo", "Los Angeles", 4, 14]).
-flight(["Singapore", "Los Angeles", 9, 14]).
-flight(["Singapore", "Los Angeles", 17, 14]).
-flight(["Tokyo", "Vancouver", 12, 10]).
-flight(["Singapore", "Vancouver", 18, 14]).
-flight(["Los Angeles", "Vancouver", 5, 5]).
+flight(*Route["Sydney", "Melbourne", 8, 2]).
+flight(*Route["Sydney", "Melbourne", 20, 2]).
+flight(*Route["Sydney", "Singapore", 6, 10]).
+flight(*Route["Melbourne", "Auckland", 14, 4]).
+flight(*Route["Sydney", "Auckland", 12, 3]).
+flight(*Route["Singapore", "Tokyo", 21, 12]).
+flight(*Route["Singapore", "Dubai", 10, 11]).
+flight(*Route["Singapore", "London", 14, 14]).
+flight(*Route["Dubai", "London", 5, 6]).
+flight(*Route["London", "New York", 17, 15]).
+flight(*Route["London", "New York", 5, 15]).
+flight(*Route["London", "Oslo", 15, 3]).
+flight(*Route["London", "Paris", 10, 3]).
+flight(*Route["London", "Reykjavik", 8, 5]).
+flight(*Route["Oslo", "Reykjavik", 9, 4]).
+flight(*Route["Oslo", "Reykjavik", 21, 4]).
+flight(*Route["Los Angeles", "New York", 14, 5]).
+flight(*Route["Tokyo", "Los Angeles", 4, 14]).
+flight(*Route["Singapore", "Los Angeles", 9, 14]).
+flight(*Route["Singapore", "Los Angeles", 17, 14]).
+flight(*Route["Tokyo", "Vancouver", 12, 10]).
+flight(*Route["Singapore", "Vancouver", 18, 14]).
+flight(*Route["Los Angeles", "Vancouver", 5, 5]).
 
 // Input starting airport and time
 .decl travel(s : Airport, t : Hour)
@@ -46,8 +46,8 @@ flight(["Los Angeles", "Vancouver", 5, 5]).
 // Find all connecting flights from starting airport
 .decl connection(s : Airport, d : Airport, t : Hour, h : Hour)
 .output connection()
-connection(s, d, (t + h) % 24, (24 + t - tx) % 24 + h) :- travel(s, tx), flight([s, d, t, h]).
-connection(s, d, (tx + h) % 24, hx + (24 + t - tx) % 24 + h) :- connection(s, x, tx, hx), flight([x, d, t, h]).
+connection(s, d, as((t + h) % 24,Hour), as((24 + t - tx) % 24 + h,Hour)) :- travel(s, tx), flight(*Route[s, d, t, h]).
+connection(s, d, as((tx + h) % 24,Hour), as(hx + (24 + t - tx) % 24 + h,Hour)) :- connection(s, x, tx, hx), flight(*Route[x, d, t, h]).
 
 // Total time in hours to reach destination airport
 .decl total_time(d : Airport, h : Hour)

@@ -65,32 +65,32 @@ bin(1).
 
 // generate all ordered lists (including list stubs)
 .decl gen_wire_states( wl : Wire_list)
-gen_wire_states([[x, v], nil]) :-
+gen_wire_states(*Wire_list[[x, v], nil]) :-
 	first(x),
     bin(v).
 
-gen_wire_states( [[y, v], l]) :-
+gen_wire_states( *Wire_list[[y, v], l]) :-
     gen_wire_states(l),
 	succ(x, y),
     bin(v),
-    l = [[x,xv],tail].
+    l = *Wire_list[[x,xv],tail].
 
 // collect full length ordered lists (i.e. ignore stubs)
 .decl final_gen_wire_states(wl : Wire_list)
 final_gen_wire_states(l) :-
     gen_wire_states(l),
-    l = [[x,xv],tail],
+    l = *Wire_list[[x,xv],tail],
     last(x).
-	
+
 //extract a wire's value from the array (associative array type)
 .decl get_by_key(key : Wire, val : number, rec : Wire_list, conf: Wire_list)
-get_by_key(k, v, tail, [[a,av], tail]) :-
-	in(a), bin(av), a=k, av=v, gen_wire_states([[a,av], tail]), last(a).
+get_by_key(k, v, tail, *Wire_list[[a,av], tail]) :-
+	in(a), bin(av), a=k, av=v, gen_wire_states(*Wire_list[[a,av], tail]), last(a).
 get_by_key(k, v, tail, conf) :-
-	in(k), bin(v), get_by_key(_, _, [[k, v], tail], conf).
-	
+	in(k), bin(v), get_by_key(_, _, *Wire_list[[k, v], tail], conf).
+
 .decl required_out(ws : Wire_state)
-required_out([w, v]) :- required_out_fi(w, v).
+required_out(*Wire_state[w, v]) :- required_out_fi(w, v).
 //which wires are required to have certain values
 .decl required_out_fi(w : Wire, v : number)
 .input required_out_fi()
@@ -104,25 +104,25 @@ required_out([w, v]) :- required_out_fi(w, v).
 
 // evaluate the wire's required value from a set of inputs
 .decl evaluate(circuit_state : Wire_list, wire_state : Wire_state)
-evaluate(cs, [k, v]) :-
+evaluate(cs, *Wire_state[k, v]) :-
 	get_by_key(k,v,  _, cs).
-evaluate(cs, [k, av band bv]) :-
+evaluate(cs, *Wire_state[k, av band bv]) :-
 	circuit_and(k, a, b),
-	evaluate(cs, [a, av]),
-	evaluate(cs, [b, bv]).
-evaluate(cs, [k, av bor bv]) :-
+	evaluate(cs, *Wire_state[a, av]),
+	evaluate(cs, *Wire_state[b, bv]).
+evaluate(cs, *Wire_state[k, av bor bv]) :-
 	circuit_or(k, a, b),
-	evaluate(cs, [a, av]),
-	evaluate(cs, [b, bv]).
-evaluate(cs, [k, lnot av]) :-
+	evaluate(cs, *Wire_state[a, av]),
+	evaluate(cs, *Wire_state[b, bv]).
+evaluate(cs, *Wire_state[k, lnot av]) :-
 	circuit_not(k, a),
-	evaluate(cs, [a, av]).
+	evaluate(cs, *Wire_state[a, av]).
 
 .decl satisfy(conf : Wire_list, ws: Wire_state)
-satisfy(conf, [var, val]) :-
-	required_out([var, val]),
-	evaluate(conf, [var, val]).
-	
+satisfy(conf, *Wire_state[var, val]) :-
+	required_out(*Wire_state[var, val]),
+	evaluate(conf, *Wire_state[var, val]).
+
 // print the required inputs to reach the configuration (turned off atm, as the souffle tester cannot handle the output of records)
 .decl sat_print(var : Wire, val : number, conf : Wire_list)
 sat_print(var, val, conf) :-
@@ -133,4 +133,3 @@ sat_print(var, val, conf) :-
 .output print_states()
 print_states(val) :-
 	val = count : { sat_print(_, _, _) }.
-	

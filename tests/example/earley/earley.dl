@@ -25,14 +25,14 @@
 .decl NotEndString		(c:Pos)
 
 NotEndProd(x, p) :- Prod(x, p, _), Prod(x, q, _), p < q.
-EndProd(x, p + 1) :- Prod(x, p, _), !NotEndProd(x, p).
+EndProd(x, as(p + 1,Pos)) :- Prod(x, p, _), !NotEndProd(x, p).
 
 NotEndString(c) :- String(c, _), String(d, _), c < d.
-EndString(c + 1) :- String(c, _), !NotEndString(c).
+EndString(as(c + 1,Pos)) :- String(c, _), !NotEndString(c).
 
 // Adapted from Earley parser - Wikipedia
 
-// Current parse position in the string is c, production x has been matched 
+// Current parse position in the string is c, production x has been matched
 // up to position p in the body starting at position j in the input string.
 .decl State			(c:Pos, x:Label, p:Pos, j:Pos)
 
@@ -43,10 +43,10 @@ State(1, 1, 1, 1).
 State(c, x, 1, c) :- State(c, y, p, _), Prod(x, 0, n), Prod(y, p, n).
 
 // Scanning
-State(c + 1, x, p + 1, j) :- String(c, a), State(c, x, p, j), Prod(x, p, a).
+State(as(c + 1,Pos), x, as(p + 1,Pos), j) :- String(c, a), State(c, x, p, j), Prod(x, p, a).
 
 // Completion
-State(c, x, p + 1, j) :- State(c, y, q, k), EndProd(y, q), Prod(y, 0, n), State(k, x, p, j), Prod(x, p, n).
+State(c, x, as(p + 1,Pos), j) :- State(c, y, q, k), EndProd(y, q), Prod(y, 0, n), State(k, x, p, j), Prod(x, p, n).
 
 .type Answer
 .decl Accept			(s:Answer)

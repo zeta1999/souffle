@@ -40,22 +40,22 @@
 	.decl member_at(list: TList, index: number, member: T)	// is 'member' at given index position, 1-based index
 
 	len(nil, 0).
-	len([h, t], l+1) :-  sublist([h, t]), len(t, l).
+	len(*TList[h, t], l+1) :-  sublist(*TList[h, t]), len(t, l).
 
 	sublist(nil).
-	sublist([h, t]) :- element(h), sublist(t), len(t, l), size(max_size), l < max_size.
+	sublist(*TList[h, t]) :- element(h), sublist(t), len(t, l), size(max_size), l < max_size.
 
 	vector(list) :- sublist(list), size(max_size), len(list, max_size).
 
 
-	member_at([h, t], idx, member) :-
+	member_at(*TList[h, t], idx, member) :-
 		element(h), sublist(t), element(member),
 		member_at(t, idx, member).
 
-	member_at([h, t], idx, member) :-
+	member_at(*TList[h, t], idx, member) :-
 		element(h), sublist(t), element(member),
 		size(max_size), idx <= max_size,
-		h = member, len([h, t], idx).
+		h = member, len(*TList[h, t], idx).
 }
 
 .comp Automaton<TState, TAlpha, TWord> {
@@ -82,7 +82,7 @@
 	accepts(w) :- Word.sublist(w), start_state(s), accepts_from_state(w, s).
 
 	accepts_from_state(nil, s) :- final(s).
-	accepts_from_state([h, t], s) :-
+	accepts_from_state(*TWord[h, t], s) :-
 		alphabet(h), state(s), Word.sublist(t),
 		tr(s, q, h), accepts_from_state(t, q).
 }
@@ -97,7 +97,7 @@
 .init Nfsa = Automaton<N, Letter, Word>
 Nfsa.start_state(1).
 Nfsa.state(s) :- state(s).
-Nfsa.final(fs) :- fs = max s : { state(s) }.
+Nfsa.final(fs) :- as(fs = max s : { state(s) }, N).
 Nfsa.alphabet(c) :- alphabet(c).
 Nfsa.max_acceptance_size(5).
 Nfsa.tr(s, q, c) :- tr(s, q, c).
@@ -158,12 +158,12 @@ not_fsa_tr(s, q, a) :-
 .type String
 .decl fsa_state_to_str(state: NumberList, str: String)
 fsa_state_to_str(nil, " ").
-fsa_state_to_str([0,t], cat("0", str)) :- FsaState.sublist(t), fsa_state_to_str(t, str).
-fsa_state_to_str([1,t], cat("1", str)) :- FsaState.sublist(t), fsa_state_to_str(t, str).
+fsa_state_to_str(*NumberList[0,t], as(cat("0", str),String)) :- FsaState.sublist(t), fsa_state_to_str(t, str).
+fsa_state_to_str(*NumberList[1,t], as(cat("1", str),String)) :- FsaState.sublist(t), fsa_state_to_str(t, str).
 
 .decl word_to_str(word: Word, str: String)
 word_to_str(nil, " ").
-word_to_str([h,t], cat(h, str)) :- Fsa.alphabet(h), Fsa.Word.sublist(t), word_to_str(t, str).
+word_to_str(*NumberList[h,t], as(cat(h, str),String)) :- Fsa.alphabet(h), Fsa.Word.sublist(t), word_to_str(t, str).
 
 .decl fsa_accepted(w: String)
 .output fsa_accepted()
@@ -176,4 +176,3 @@ nfsa_accepted(w) :- Nfsa.accepts(list), word_to_str(list, w).
 .decl fsa_tr(s: String, q: String, c: Letter)
 .output fsa_tr()
 fsa_tr(s_str, q_str, c) :- Fsa.tr(s, q, c), fsa_state_to_str(s, s_str), fsa_state_to_str(q, q_str).
-

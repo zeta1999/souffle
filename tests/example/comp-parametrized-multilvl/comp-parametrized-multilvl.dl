@@ -39,4 +39,3 @@
 .init main1 = Main<NumSelector, LotsOfNumGenerator>
 .init main2 = Main<GoodNumSelector, LotsOfNumGenerator> // selects 42, even if it is not generated
 .init main3 = Main<NumSelector, BiggerNumGenerator> // selects 22 = 2*11
-

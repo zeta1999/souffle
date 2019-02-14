@@ -29,11 +29,11 @@ End2(p) :- String2(p, _), !NotEnd2(p).
 Match(0, 0, 0).
 
 // Match a character
-Match(i + 1, j + 1, s) :- End1(e), i < e, End2(f), j < f, Match(i, j, s), String1(i + 1, a), String2(j + 1, a).
+Match(as(i + 1,Pos), as(j + 1,Pos), s) :- End1(e), i < e, End2(f), j < f, Match(i, j, s), String1(as(i + 1,Pos), a), String2(as(j + 1,Pos), a).
 
 // Indels
-Match(i + 1, j, s + 1) :- End1(e), i < e, End2(f), j <= f, Match(i, j, s).
-Match(i, j + 1, s + 1) :- End1(e), i <= e, End2(f), j < f, Match(i, j, s).
+Match(as(i + 1,Pos), j, as(s + 1,Cost)) :- End1(e), i < e, End2(f), j <= f, Match(i, j, s).
+Match(i, as(j + 1,Pos), as(s + 1,Cost)) :- End1(e), i <= e, End2(f), j < f, Match(i, j, s).
 
 .decl MinMatch			(i:Pos, j:Pos, c:Cost)
 .decl NotMinMatch		(i:Pos, j:Pos, c:Cost)

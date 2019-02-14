@@ -29,7 +29,7 @@
 .decl ToGcdInt(first : int, second : int)
 ToGcdInt(second,modulo) :-
     ToGcdInt(first,second),
-    modulo = first % second,
+    modulo = as(first % second,int),
     modulo != 0. // Modulo = 0 is a base case, do not recurse.
 
 // Base case of integer gcd
@@ -50,65 +50,65 @@ GcdInt(first,second,gcd) :-
 
 // Polynomials we wish to simplify
 .decl ToSimplify(a : poly)
-ToSimplify(tail) :- ToSimplify([_,tail]).
+ToSimplify(tail) :- ToSimplify(*poly[_,tail]).
 
 // Result of simplification
 .decl Simplify(a : poly, b : poly)
 Simplify(nil,nil) :- ToSimplify(nil).
-Simplify([head,tail],nil) :- // Trim the tail of polynomials equivalent to zero
-    ToSimplify([head,tail]),
+Simplify(*poly[head,tail],nil) :- // Trim the tail of polynomials equivalent to zero
+    ToSimplify(*poly[head,tail]),
     Simplify(tail,nil),
-    head = [0,denominator].
-Simplify([head,tail],[newHead,newTail]) :-
-    ToSimplify([head,tail]),
+    head = *rational[0,denominator].
+Simplify(*poly[head,tail],*poly[newHead,newTail]) :-
+    ToSimplify(*poly[head,tail]),
     Simplify(tail,newTail),
-    head = [numerator,denominator] ,
+    head = *rational[numerator,denominator] ,
     (newTail != nil; numerator != 0), // make sure polynomial is non-zero
     GcdInt(numerator,denominator,gcd),
-    newHead = [numerator/gcd,denominator/gcd]. // simplify coefficient
+    newHead = &rational[as(numerator/gcd,int),as(denominator/gcd,int)]. // simplify coefficient
 
 // Helper method for simplify
 ToGcdInt(numerator,denominator) :-
-    ToSimplify([head,tail]),
+    ToSimplify(*poly[head,tail]),
     Simplify(tail,newTail),
-    head = [numerator,denominator] ,
+    head = *rational[numerator,denominator] ,
     (newTail != nil; numerator != 0).
 
 // -- Add polynomials recursively -- //
 
 // Polynomials that we need to add
 .decl ToAdd(first : poly, second : poly)
-ToAdd(firstTail, secondTail) :- ToAdd([_,firstTail],[_,secondTail]).
+ToAdd(firstTail, secondTail) :- ToAdd(*poly[_,firstTail],*poly[_,secondTail]).
 
 // Result of addition
 .decl Add(first : poly, second : poly, added : poly)
 Add(first,nil,first) :- ToAdd(first,nil).
 Add(nil,second,second) :- ToAdd(nil,second).
-Add([firstHead,firstTail],[secondHead,secondTail],[sumHead,sumTail]) :-
-    ToAdd([firstHead,firstTail],[secondHead,secondTail]),
+Add(*poly[firstHead,firstTail],*poly[secondHead,secondTail],*poly[sumHead,sumTail]) :-
+    ToAdd(*poly[firstHead,firstTail],*poly[secondHead,secondTail]),
     Add(firstTail,secondTail,sumTail),
-    firstHead = [firstNumerator,firstDenominator],
-    secondHead = [secondNumerator,secondDenominator],
+    firstHead = *rational[firstNumerator,firstDenominator],
+    secondHead = *rational[secondNumerator,secondDenominator],
     sumHead =
-        [firstNumerator*secondDenominator+firstDenominator*secondNumerator,
-            firstDenominator*secondDenominator].
+        *rational[as(firstNumerator*secondDenominator+firstDenominator*secondNumerator,int),
+            as(firstDenominator*secondDenominator,int)].
 
 // -- Multiply polynomials by rational constants -- //
 
 // Constant and polynomial to be multiplied
 .decl ToMultiply(constant : rational, polynomial : poly)
-ToMultiply(constant,tail) :- ToMultiply(constant,[_,tail]).
+ToMultiply(constant,tail) :- ToMultiply(constant,*poly[_,tail]).
 
 // Result of multiplication
 .decl Multiply(constant : rational, polynomial : poly, product : poly)
 Multiply(constant, nil, nil) :- ToMultiply(constant, nil).
-Multiply(constant, [head,tail], [productHead, productTail]) :-
-    ToMultiply(constant, [head,tail]),
+Multiply(constant, *poly[head,tail], *poly[productHead, productTail]) :-
+    ToMultiply(constant, *poly[head,tail]),
     Multiply(constant, tail, productTail),
-    constant = [constantNumerator, constantDenominator],
-    head = [headNumerator, headDenominator],
+    constant = *rational[constantNumerator, constantDenominator],
+    head = *rational[headNumerator, headDenominator],
     productHead =
-        [constantNumerator*headNumerator, constantDenominator*headDenominator].
+        *rational[as(constantNumerator*headNumerator,int), as(constantDenominator*headDenominator,int)].
 
 // -- Find the leading coefficient and index of a polynomial -- //
 // We do not assume the polynomial is simplified
@@ -117,21 +117,21 @@ Multiply(constant, [head,tail], [productHead, productTail]) :-
 
 // Polynomials to find the leading term of
 .decl ToLeading(a : poly)
-ToLeading(tail) :- ToLeading([_,tail]).
+ToLeading(tail) :- ToLeading(*poly[_,tail]).
 
 // Resulting leading terms
 .decl Leading(a : poly, coefficient : rational, i : index)
-Leading(nil, [0,1], 0) :- ToLeading(nil).
-Leading([head,tail], [0,1], 0) :- // Polynomial is equivalent to 0
-    ToLeading([head,tail]),
-    Leading(tail,[0,1],0),
-    head = [0,denominator].
-Leading([head,tail], head, 1) :- // Polynomial is equivalent to non-zero constant
-    ToLeading([head,tail]),
-    Leading(tail,[0,1],0),
-    head = [numerator,denominator], numerator!=0.
-Leading([head,tail], coefficient, i+1) :-
-    ToLeading([head,tail]),
+Leading(nil, *rational[0,1], 0) :- ToLeading(nil).
+Leading(*poly[head,tail], *rational[0,1], 0) :- // Polynomial is equivalent to 0
+    ToLeading(*poly[head,tail]),
+    Leading(tail,*rational[0,1],0),
+    head = *rational[0,denominator].
+Leading(*poly[head,tail], head, 1) :- // Polynomial is equivalent to non-zero constant
+    ToLeading(*poly[head,tail]),
+    Leading(tail,*rational[0,1],0),
+    head = *rational[numerator,denominator], numerator!=0.
+Leading(*poly[head,tail], coefficient, as(i+1,index)) :-
+    ToLeading(*poly[head,tail]),
     Leading(tail,coefficient,i),
     i != 0.
 
@@ -140,7 +140,7 @@ Leading([head,tail], coefficient, i+1) :-
 // Input is of the form Raise(start,goal,0,start)
 // Output is of the form Raise(start,goal,goal,result)
 .decl Raise(start : poly, goal : index, current : index, result : poly)
-Raise(start,goal,current+1,[[0,1],result]) :-
+Raise(start,goal,as(current+1,index),*poly[*rational[0,1],result]) :-
     Raise(start,goal,current,result),
     current < goal.
 
@@ -153,13 +153,13 @@ ToMod(next,second) :-
     Leading(first,firstCoefficient,firstDegree),
     Leading(second,secondCoefficient,secondDegree),
     firstDegree >= secondDegree, // check we are not in a base case
-    firstCoefficient = [firstNumerator,firstDenominator],
-    secondCoefficient = [secondNumerator,secondDenominator],
+    firstCoefficient = *rational[firstNumerator,firstDenominator],
+    secondCoefficient = *rational[secondNumerator,secondDenominator],
     multiplicationConstant =
-        [-firstNumerator*secondDenominator,firstDenominator*secondNumerator],
+        *rational[as(-firstNumerator*secondDenominator,int),as(firstDenominator*secondNumerator,int)],
     Multiply(multiplicationConstant,second,multiplicationResult), // make the leading coefficients negatives of each other
-    Raise(multiplicationResult,firstDegree-secondDegree,
-        firstDegree-secondDegree,raiseResult), // make the leading indices the same
+    Raise(multiplicationResult,as(firstDegree-secondDegree,index)
+        as(firstDegree-secondDegree,index),raiseResult), // make the leading indices the same
     Add(first,raiseResult,nextUnsimp), // this will cancel out the leading term
     Simplify(nextUnsimp,next). // avoid integer overflow and excessive computation
 
@@ -171,44 +171,44 @@ ToMultiply(multiplicationConstant,second) :-
     Leading(first,firstCoefficient,firstDegree),
     Leading(second,secondCoefficient,secondDegree),
     firstDegree >= secondDegree,
-    firstCoefficient = [firstNumerator,firstDenominator],
-    secondCoefficient = [secondNumerator,secondDenominator],
+    firstCoefficient = *rational[firstNumerator,firstDenominator],
+    secondCoefficient = *rational[secondNumerator,secondDenominator],
     multiplicationConstant =
-        [-firstNumerator*secondDenominator,firstDenominator*secondNumerator].
+        *rational[as(-firstNumerator*secondDenominator,int),as(firstDenominator*secondNumerator,int)].
 Raise(multiplicationResult,firstDegree-secondDegree,0,multiplicationResult) :-
     ToMod(first,second),
     Leading(first,firstCoefficient,firstDegree),
     Leading(second,secondCoefficient,secondDegree),
     firstDegree >= secondDegree,
-    firstCoefficient = [firstNumerator,firstDenominator],
-    secondCoefficient = [secondNumerator,secondDenominator],
+    firstCoefficient = *rational[firstNumerator,firstDenominator],
+    secondCoefficient = *rational[secondNumerator,secondDenominator],
     multiplicationConstant =
-        [-firstNumerator*secondDenominator,firstDenominator*secondNumerator],
+        *rational[as(-firstNumerator*secondDenominator,int),as(firstDenominator*secondNumerator,int)],
     Multiply(multiplicationConstant,second,multiplicationResult).
 ToAdd(first,raiseResult) :-
     ToMod(first,second),
     Leading(first,firstCoefficient,firstDegree),
     Leading(second,secondCoefficient,secondDegree),
     firstDegree >= secondDegree,
-    firstCoefficient = [firstNumerator,firstDenominator],
-    secondCoefficient = [secondNumerator,secondDenominator],
+    firstCoefficient = *rational[firstNumerator,firstDenominator],
+    secondCoefficient = *rational[secondNumerator,secondDenominator],
     multiplicationConstant =
-        [-firstNumerator*secondDenominator,firstDenominator*secondNumerator],
+        *rational[as(-firstNumerator*secondDenominator,int),as(firstDenominator*secondNumerator,int)],
     Multiply(multiplicationConstant,second,multiplicationResult),
-    Raise(multiplicationResult,firstDegree-secondDegree,
-        firstDegree-secondDegree,raiseResult).
+    Raise(multiplicationResult,as(firstDegree-secondDegree,index),
+        as(firstDegree-secondDegree,index),raiseResult).
 ToSimplify(nextUnsimp) :-
     ToMod(first,second),
     Leading(first,firstCoefficient,firstDegree),
     Leading(second,secondCoefficient,secondDegree),
     firstDegree >= secondDegree,
-    firstCoefficient = [firstNumerator,firstDenominator],
-    secondCoefficient = [secondNumerator,secondDenominator],
+    firstCoefficient = *rational[firstNumerator,firstDenominator],
+    secondCoefficient = *rational[secondNumerator,secondDenominator],
     multiplicationConstant =
-        [-firstNumerator*secondDenominator,firstDenominator*secondNumerator],
+        *rational[as(-firstNumerator*secondDenominator,int),as(firstDenominator*secondNumerator,int)],
     Multiply(multiplicationConstant,second,multiplicationResult),
-    Raise(multiplicationResult,firstDegree-secondDegree,
-        firstDegree-secondDegree,raiseResult),
+    Raise(multiplicationResult,as(firstDegree-secondDegree,index),
+        as(firstDegree-secondDegree,index),raiseResult),
     Add(first,raiseResult,nextUnsimp).
 
 // The result of the modulo operation
@@ -223,18 +223,18 @@ Mod(first,second,modulo) :-
     Leading(first,firstCoefficient,firstDegree),
     Leading(second,secondCoefficient,secondDegree),
     firstDegree >= secondDegree,
-    firstCoefficient = [firstNumerator,firstDenominator],
-    secondCoefficient = [secondNumerator,secondDenominator],
+    firstCoefficient = *rational[firstNumerator,firstDenominator],
+    secondCoefficient = *rational[secondNumerator,secondDenominator],
     multiplicationConstant =
-        [-firstNumerator*secondDenominator,firstDenominator*secondNumerator],
+        *rational[as(-firstNumerator*secondDenominator,int),as(firstDenominator*secondNumerator,int)],
     Multiply(multiplicationConstant,second,multiplicationResult),
-    Raise(multiplicationResult,firstDegree-secondDegree,
-        firstDegree-secondDegree,raiseResult),
+    Raise(multiplicationResult,as(firstDegree-secondDegree,index),
+        as(firstDegree-secondDegree,index),raiseResult),
     Add(first,raiseResult,nextUnsimp),
     Simplify(nextUnsimp,next),
     Mod(next,second,modulo).
 
-// -- Cakculate the greatest common divisor of two polynomials -- //
+// -- Calculate the greatest common divisor of two polynomials -- //
 
 // Polynomials to calculate the gcd of
 .decl ToGcd(first : poly, second : poly)
@@ -256,8 +256,8 @@ ToLeading(second) :- ToGcd(_,second).
 Gcd(first,second,gcd) :-
     ToGcd(first,second),
     Leading(second,_,0), // base case, one term is zero so return the other
-    Leading(first,[firstNumerator,firstDenominator],_),
-    Multiply([firstDenominator,firstNumerator],first,multiplicationResult), // make the gcd monic
+    Leading(first,*rational[firstNumerator,firstDenominator],_),
+    Multiply(*rational[firstDenominator,firstNumerator],first,multiplicationResult), // make the gcd monic
     Simplify(multiplicationResult, gcd). // make output gcd look nicer
 Gcd(first,second,gcd) :-
     ToGcd(first,second),
@@ -268,15 +268,15 @@ Gcd(first,second,gcd) :-
 
 // Helper methods for Gcd base case
 ToLeading(first) :- ToGcd(first,_).
-ToMultiply([firstDenominator,firstNumerator],first) :-
+ToMultiply(*rational[firstDenominator,firstNumerator],first) :-
     ToGcd(first,second),
     Leading(second,_,0),
-    Leading(first,[firstNumerator,firstDenominator],_).
+    Leading(first,*rational[firstNumerator,firstDenominator],_).
 ToSimplify(multiplicationResult) :-
     ToGcd(first,second),
     Leading(second,_,0),
-    Leading(first,[firstNumerator,firstDenominator],_),
-    Multiply([firstDenominator,firstNumerator],first,multiplicationResult).
+    Leading(first,*rational[firstNumerator,firstDenominator],_),
+    Multiply(*rational[firstDenominator,firstNumerator],first,multiplicationResult).
 
 // -- Input -- //
 
@@ -291,28 +291,28 @@ ToSimplify(multiplicationResult) :-
 
 // Calculate the largest index in each polynomial
 .decl Degree(n : inputIndex, i : index)
-Degree(1,i) :- i = max x : FirstTerm(x,_,_).
-Degree(2,i) :- i = max x : SecondTerm(x,_,_).
+Degree(1,i) :- i = as(max x : FirstTerm(x,_,_),index).
+Degree(2,i) :- i = as(max x : SecondTerm(x,_,_),index).
 
 // Re-format input to be in one relation, with no missing indices
 .decl Term(n : inputIndex, coefficient : rational, i : index)
-Term(1,[numerator,denominator],i) :- FirstTerm(i,numerator,denominator).
-Term(1,[0,1],i+1) :-
+Term(1,*rational[numerator,denominator],i) :- FirstTerm(i,numerator,denominator).
+Term(1,*rational[0,1],as(i+1,index)) :-
     Term(1,_,i),
     Degree(1,degree),
     degree > i,
-    !FirstTerm(i+1,_,_). // Replace missing index with 0
-Term(2,[numerator,denominator],i) :- SecondTerm(i,numerator,denominator).
-Term(2,[0,1],i+1) :-
+    !FirstTerm(as(i+1,inputIndex),_,_). // Replace missing index with 0
+Term(2,*rational[numerator,denominator],i) :- SecondTerm(i,numerator,denominator).
+Term(2,*rational[0,1],i+1) :-
     Term(2,_,i),
     Degree(2,degree),
     degree > i,
-    !SecondTerm(i+1,_,_). // Replace missing index with 0
+    !SecondTerm(as(i+1,inputIndex),_,_). // Replace missing index with 0
 
 // Build the link-list style polynomial objects
 .decl InputPoly(n : inputIndex, i : index, polynomial : poly)
-InputPoly(n,degree+1,nil) :- Degree(n,degree).
-InputPoly(n,i-1,[head,tail]) :- InputPoly(n,i,tail), Term(n,head,i-1).
+InputPoly(n,as(degree+1,index),nil) :- Degree(n,degree).
+InputPoly(n,as(i-1,index),*poly[head,tail]) :- InputPoly(n,i,tail), Term(n,head,as(i-1,index)).
 
 ToGcd(first,second) :-
     InputPoly(1,0,first),
@@ -322,7 +322,7 @@ ToGcd(first,second) :-
 
 // Find the output polynomial and its degree
 .decl OutputPoly(gcd : poly, degree : index)
-OutputPoly(gcd, degree-1) :- // subtract one because Leading added one
+OutputPoly(gcd, as(degree-1,index)) :- // subtract one because Leading added one
     InputPoly(1,0,first),
     InputPoly(2,0,second),
     Gcd(first,second,gcd),
@@ -335,13 +335,13 @@ ToLeading(gcd) :-
 
 // calculate the coefficient at each term, and keep the remaining terms on hand
 .decl OutTerm(i : index, coefficient : rational, remaining : poly)
-OutTerm(0, head, tail) :- OutputPoly([head,tail],_).
-OutTerm(0, [0,1], nil) :- OutputPoly(_,0). // handle degenerate case
-OutTerm(i+1, head, tail) :-
-    OutTerm(i, _, [head,tail]),
+OutTerm(0, head, tail) :- OutputPoly(*poly[head,tail],_).
+OutTerm(0, *rational[0,1], nil) :- OutputPoly(_,0). // handle degenerate case
+OutTerm(as(i+1,index), head, tail) :-
+    OutTerm(i, _, *poly[head,tail]),
     OutputPoly(_,degree),
     i < degree.
 
 .decl Output(i : index, numerator : int, denominator : int)
-Output(i,numerator,denominator) :- OutTerm(i,[numerator,denominator],_).
+Output(i,numerator,denominator) :- OutTerm(i,*rational[numerator,denominator],_).
 .output Output

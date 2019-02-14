@@ -25,15 +25,15 @@
 // When parsing `in` we have processed `i` characters and are at state `cur`
 .decl parse(in : string, cur : state, i : index)
 parse(in,cur,0) :- toparse(in), start(cur).
-parse(in,new,i+j) :-
+parse(in,new,as(i+j,index)) :-
     parse(in,old,i),
     transition(old,diff,new),
     j=strlen(diff),
-    diff=substr(in,i,j).
+    diff=as(substr(in,i,j),string).
 // The rule above can cause the AST translator to fail in old versions of Souffle
 
 .decl accept(in : string)
-accept(in) :- parse(in,cur,strlen(in)), accepting(cur).
+accept(in) :- parse(in,cur,as(strlen(in),index)), accepting(cur).
 
 .decl out(s : string, result : symbol)
 out(s, "Accept") :- accept(s).

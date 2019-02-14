@@ -32,14 +32,14 @@ Error: Relation expects value of type number_primi_2 but got argument of type nu
 number_primi_relation_1_2_A(X) :- number_primi_relation_1_2_B(X), !number_primi_relation_1(X), !number_primi_relation_2(X). // error
 ------------------------------------------------------------------------------------------------------------------------^------------
 Error: Relation expects value of type number_primi_3 but got argument of type number_primi_2_3 in file type_system3.dl at line 50
-number_primi_relation_3(X) :- number_primi_relation_2_3(X).
-------------------------^-----------------------------------
+number_primi_relation_3(X) :- number_primi_relation_2_3(X). // error
+------------------------^--------------------------------------------
 Error: Relation expects value of type symbol_primi_1_2 but got argument of type symbol in file type_system3.dl at line 117
-symbol_primi_relation_1_2_B(X) :- symbol_relation(X).
-----------------------------^-------------------------
+symbol_primi_relation_1_2_B(X) :- symbol_relation(X). // error
+----------------------------^----------------------------------
 Error: Relation expects value of type symbol_primi_2_3 but got argument of type symbol in file type_system3.dl at line 118
-symbol_primi_relation_2_3(X) :- symbol_relation(X).
---------------------------^-------------------------
+symbol_primi_relation_2_3(X) :- symbol_relation(X). // error
+--------------------------^----------------------------------
 Error: Relation expects value of type symbol_primi_1 but got argument of type symbol_primi_2 in file type_system3.dl at line 120
 symbol_primi_relation_1(X) :- symbol_primi_relation_2(X). // error
 ------------------------^------------------------------------------
@@ -53,21 +53,21 @@ Error: Unable to deduce valid type for expression, as base types are disjoint in
 symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1(X), symbol_primi_relation_2(X). // error
 --------------------------------------------------------------------------------------^------------
 Error: Relation expects value of type symbol_primi_1_2 but got argument of type symbol in file type_system3.dl at line 125
-symbol_primi_relation_1_2_A(X) :- symbol_relation(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X).
-----------------------------^-----------------------------------------------------------------------------------
+symbol_primi_relation_1_2_A(X) :- symbol_relation(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X). // error
+----------------------------^--------------------------------------------------------------------------------------------
 Error: Relation expects value of type symbol_primi_1 but got argument of type symbol in file type_system3.dl at line 125
-symbol_primi_relation_1_2_A(X) :- symbol_relation(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X).
--------------------------------------------------------------------------------^--------------------------------
+symbol_primi_relation_1_2_A(X) :- symbol_relation(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X). // error
+-------------------------------------------------------------------------------^-----------------------------------------
 Error: Relation expects value of type symbol_primi_2 but got argument of type symbol in file type_system3.dl at line 125
-symbol_primi_relation_1_2_A(X) :- symbol_relation(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X).
-------------------------------------------------------------------------------------------------------------^---
+symbol_primi_relation_1_2_A(X) :- symbol_relation(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X). // error
+------------------------------------------------------------------------------------------------------------^------------
 Error: Relation expects value of type symbol_primi_1 but got argument of type symbol_primi_1_2 in file type_system3.dl at line 126
-symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1_2_B(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X).
--------------------------------------------------------------------------------------------^--------------------------------
+symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1_2_B(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X). // error
+-------------------------------------------------------------------------------------------^-----------------------------------------
 Error: Relation expects value of type symbol_primi_2 but got argument of type symbol_primi_1_2 in file type_system3.dl at line 126
-symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1_2_B(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X).
-------------------------------------------------------------------------------------------------------------------------^---
+symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1_2_B(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X). // error
+------------------------------------------------------------------------------------------------------------------------^------------
 Error: Relation expects value of type symbol_primi_3 but got argument of type symbol_primi_2_3 in file type_system3.dl at line 128
-symbol_primi_relation_3(X) :- symbol_primi_relation_2_3(X).
-------------------------^-----------------------------------
+symbol_primi_relation_3(X) :- symbol_primi_relation_2_3(X). // error
+------------------------^--------------------------------------------
 24 errors generated, evaluation aborted

@@ -1,16 +1,16 @@
 Error: Relation expects value of type N but got argument of type nil record in file record_null.dl at line 13
 a(nil,nil,nil).
 --^-------------
-Error: Unable to deduce type L as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file record_null.dl at line 14
+Error: Unable to deduce type L as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file record_null.dl at line 14
 a("N",nil,*L[nil,nil]).
 ----------^-------------
 Error: Record constructor expects element to have type N but instead it has type nil record in file record_null.dl at line 14
 a("N",nil,*L[nil,nil]).
 -------------^----------
-Error: Unable to deduce type L as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file record_null.dl at line 15
+Error: Unable to deduce type L as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file record_null.dl at line 15
 a("N",nil,*L["N",*L[nil,nil]]).
 ----------^---------------------
-Error: Unable to deduce type L as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file record_null.dl at line 15
+Error: Unable to deduce type L as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file record_null.dl at line 15
 a("N",nil,*L["N",*L[nil,nil]]).
 -----------------^--------------
 Error: Record constructor expects element to have type N but instead it has type nil record in file record_null.dl at line 15

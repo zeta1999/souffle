@@ -106,7 +106,7 @@ SingleNumberRelation(1+1).                              // error
 Error: Relation expects value of type single_number but got argument of type symbol constant in file type_system1.dl at line 84
 SingleNumberRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Unable to deduce type single_number as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 89
+Error: Unable to deduce type single_number as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 89
 SingleNumberRelation(*single_number["1"]).              // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type number but instead it has type symbol constant in file type_system1.dl at line 89
@@ -127,7 +127,7 @@ DoubleNumberRelation(1+1).                              // error
 Error: Relation expects value of type double_number but got argument of type symbol constant in file type_system1.dl at line 98
 DoubleNumberRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Unable to deduce type double_number as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 103
+Error: Unable to deduce type double_number as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 103
 DoubleNumberRelation(*double_number["1", "1"]).         // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type number but instead it has type symbol constant in file type_system1.dl at line 103
@@ -151,7 +151,7 @@ TripleNumberRelation(1+1).                              // error
 Error: Relation expects value of type triple_number but got argument of type symbol constant in file type_system1.dl at line 111
 TripleNumberRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Unable to deduce type triple_number as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 116
+Error: Unable to deduce type triple_number as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 116
 TripleNumberRelation(*triple_number["1", "1", "1"]).    // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type number but instead it has type symbol constant in file type_system1.dl at line 116
@@ -178,19 +178,19 @@ SingleSymbolRelation(1+1).                              // error
 Error: Relation expects value of type single_symbol but got argument of type symbol constant in file type_system1.dl at line 124
 SingleSymbolRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Unable to deduce type single_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 126
+Error: Unable to deduce type single_symbol as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 126
 SingleSymbolRelation(*single_symbol[1]).                // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 126
 SingleSymbolRelation(*single_symbol[1]).                // error
 ------------------------------------^----------------------------
-Error: Unable to deduce type single_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 127
+Error: Unable to deduce type single_symbol as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 127
 SingleSymbolRelation(*single_symbol[-1]).               // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 127
 SingleSymbolRelation(*single_symbol[-1]).               // error
 -------------------------------------^---------------------------
-Error: Unable to deduce type single_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 128
+Error: Unable to deduce type single_symbol as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 128
 SingleSymbolRelation(*single_symbol[1+1]).              // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 128
@@ -211,7 +211,7 @@ DoubleSymbolRelation(1+1).                              // error
 Error: Relation expects value of type double_symbol but got argument of type symbol constant in file type_system1.dl at line 137
 DoubleSymbolRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Unable to deduce type double_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 139
+Error: Unable to deduce type double_symbol as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 139
 DoubleSymbolRelation(*double_symbol[1, 1]).             // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 139
@@ -220,7 +220,7 @@ DoubleSymbolRelation(*double_symbol[1, 1]).             // error
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 139
 DoubleSymbolRelation(*double_symbol[1, 1]).             // error
 ---------------------------------------^-------------------------
-Error: Unable to deduce type double_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 140
+Error: Unable to deduce type double_symbol as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 140
 DoubleSymbolRelation(*double_symbol[-1, -1]).           // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 140
@@ -229,7 +229,7 @@ DoubleSymbolRelation(*double_symbol[-1, -1]).           // error
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 140
 DoubleSymbolRelation(*double_symbol[-1, -1]).           // error
 -----------------------------------------^-----------------------
-Error: Unable to deduce type double_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 141
+Error: Unable to deduce type double_symbol as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 141
 DoubleSymbolRelation(*double_symbol[1+1, 1+1]).         // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 141
@@ -253,7 +253,7 @@ TripleSymbolRelation(1+1).                              // error
 Error: Relation expects value of type triple_symbol but got argument of type symbol constant in file type_system1.dl at line 150
 TripleSymbolRelation("1").                              // error
 ---------------------^-------------------------------------------
-Error: Unable to deduce type triple_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 152
+Error: Unable to deduce type triple_symbol as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 152
 TripleSymbolRelation(*triple_symbol[1, 1, 1]).          // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 152
@@ -265,7 +265,7 @@ TripleSymbolRelation(*triple_symbol[1, 1, 1]).          // error
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 152
 TripleSymbolRelation(*triple_symbol[1, 1, 1]).          // error
 ------------------------------------------^----------------------
-Error: Unable to deduce type triple_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 153
+Error: Unable to deduce type triple_symbol as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 153
 TripleSymbolRelation(*triple_symbol[-1, -1, -1]).       // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 153
@@ -277,7 +277,7 @@ TripleSymbolRelation(*triple_symbol[-1, -1, -1]).       // error
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 153
 TripleSymbolRelation(*triple_symbol[-1, -1, -1]).       // error
 ---------------------------------------------^-------------------
-Error: Unable to deduce type triple_symbol as record is not grounded as a record elsewhere, and atleast one of its elements has the wrong type in file type_system1.dl at line 154
+Error: Unable to deduce type triple_symbol as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_system1.dl at line 154
 TripleSymbolRelation(*triple_symbol[1+1, 1+1, 1+1]).    // error
 ---------------------^-------------------------------------------
 Error: Record constructor expects element to have type symbol but instead it has type number constant in file type_system1.dl at line 154

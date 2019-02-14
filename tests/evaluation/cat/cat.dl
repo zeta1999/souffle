@@ -17,4 +17,4 @@
 Y("a","b").
 Y("c","d").
 
-Z(a,b, cat(cat(a,b), a)) :- Y(a,b).
+Z(a,b, as(cat(cat(a,b), a),A)) :- Y(a,b).

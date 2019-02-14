@@ -383,14 +383,14 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
         auto lhs = constraint.getLHS();
         auto rhs = constraint.getRHS();
-        if (typeAnalysis.getType(lhs)->isValid() && typeAnalysis.getType(rhs)->isValid()) {
-            const auto* lhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(lhs));
-            const auto* rhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(rhs));
-            auto op = constraint.getOperator();
-            assert(lhsType != nullptr && rhsType != nullptr && "Both types must have a kind");
-            if (op == BinaryConstraintOp::EQ) {
-                return;
-            } else if (op == BinaryConstraintOp::NE) {
+        auto op = constraint.getOperator();
+        if (op == BinaryConstraintOp::EQ) {
+            return;
+        } else if (op == BinaryConstraintOp::NE) {
+            if (typeAnalysis.getType(lhs)->isValid() && typeAnalysis.getType(rhs)->isValid()) {
+                const auto* lhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(lhs));
+                const auto* rhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(rhs));
+                assert(lhsType != nullptr && rhsType != nullptr && "Both types must have a kind");
                 if (lhsType->getKind() != rhsType->getKind()) {
                     report.addError("Cannot compare operands of different kinds, left operand is a " +
                                             toString(*lhsType->getPrimitive()) + " and right operand is a " +
@@ -402,19 +402,17 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                         report.addError("Cannot compare records of different types", constraint.getSrcLoc());
                     }
                 }
-            } else {
+            }
+        } else {
+            const AnalysisType* lhsType = typeAnalysis.getType(lhs);
+            const AnalysisType* rhsType = typeAnalysis.getType(rhs);
+            if (lhsType->isValid()) {
                 if (constraint.isNumerical()) {
                     if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::NUMBER))) {
                         report.addError(
                                 "Non-numerical operand for comparison, instead left operand has type " +
                                         toString(*lhsType),
                                 lhs->getSrcLoc());
-                    }
-                    if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::NUMBER))) {
-                        report.addError(
-                                "Non-numerical operand for comparison, instead right operand has type " +
-                                        toString(*rhsType),
-                                rhs->getSrcLoc());
                     }
                 } else if (constraint.isSymbolic()) {
                     if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::SYMBOL))) {
@@ -423,6 +421,19 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                                         toString(*lhsType),
                                 lhs->getSrcLoc());
                     }
+                } else {
+                    assert(false && "Unsupported constraint type");
+                }
+            }
+            if (rhsType->isValid()) {
+                if (constraint.isNumerical()) {
+                    if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::NUMBER))) {
+                        report.addError(
+                                "Non-numerical operand for comparison, instead right operand has type " +
+                                        toString(*rhsType),
+                                rhs->getSrcLoc());
+                    }
+                } else if (constraint.isSymbolic()) {
                     if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::SYMBOL))) {
                         report.addError(
                                 "Non-symbolic operand for comparison, instead right operand has type " +

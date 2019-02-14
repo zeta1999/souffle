@@ -474,6 +474,8 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         }
     } else if (dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
         report.addError("User-defined functor in fact", argument.getSrcLoc());
+    } else if (auto* cast = dynamic_cast<const AstTypeCast*>(&argument)) {
+        checkConstant(report, *cast->getValue());
     } else if (dynamic_cast<const AstCounter*>(&argument)) {
         report.addError("Counter in fact", argument.getSrcLoc());
     } else if (dynamic_cast<const AstConstant*>(&argument)) {

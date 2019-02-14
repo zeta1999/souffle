@@ -42,10 +42,11 @@ enum RamNodeType {
     RN_Argument,
 
     // conditions
-    RN_NotExists,
-    RN_ProvenanceNotExists,
+    RN_Exists,
+    RN_ProvenanceExists,
     RN_Empty,
     RN_And,
+    RN_Not,
     RN_BinaryRelation,
 
     // operations

@@ -39,15 +39,20 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
             return std::max(visit(conj.getLHS()), visit(conj.getRHS()));
         }
 
+        // negation
+        size_t visitNot(const RamNot& neg) override {
+            return visit(neg.getOperand());
+        }
+
         // binary constraint
         size_t visitBinaryRelation(const RamBinaryRelation& binRel) override {
             return std::max(rvla->getLevel(binRel.getLHS()), rvla->getLevel(binRel.getRHS()));
         }
 
         // not exists check
-        size_t visitNotExists(const RamNotExists& notExists) override {
+        size_t visitExists(const RamExists& exists) override {
             size_t level = 0;
-            for (const auto& cur : notExists.getValues()) {
+            for (const auto& cur : exists.getValues()) {
                 if (cur) {
                     level = std::max(level, rvla->getLevel(cur));
                 }
@@ -56,9 +61,9 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         }
 
         // not exists check for a provenance existence check
-        size_t visitProvenanceNotExists(const RamProvenanceNotExists& provNotExists) override {
+        size_t visitProvenanceExists(const RamProvenanceExists& provExists) override {
             size_t level = 0;
-            for (const auto& cur : provNotExists.getValues()) {
+            for (const auto& cur : provExists.getValues()) {
                 if (cur) {
                     level = std::max(level, rvla->getLevel(cur));
                 }

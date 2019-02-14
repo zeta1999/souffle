@@ -89,9 +89,10 @@ struct RamVisitor : public ram_visitor_tag {
 
             // conditions
             FORWARD(Empty);
-            FORWARD(NotExists);
-            FORWARD(ProvenanceNotExists);
+            FORWARD(Exists);
+            FORWARD(ProvenanceExists);
             FORWARD(And);
+            FORWARD(Not);
             FORWARD(BinaryRelation);
 
             // operations
@@ -197,9 +198,10 @@ protected:
 
     // -- conditions --
     LINK(And, Condition)
+    LINK(Not, Condition)
     LINK(BinaryRelation, Condition)
-    LINK(NotExists, Condition)
-    LINK(ProvenanceNotExists, Condition)
+    LINK(Exists, Condition)
+    LINK(ProvenanceExists, Condition)
     LINK(Empty, Condition)
 
     LINK(Condition, Node)

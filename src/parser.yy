@@ -193,7 +193,6 @@
 %type <std::vector<AstIODirective *>>    iodirective_head iodirective_list
 %printer { yyoutput << $$; } <*>;
 
-%precedence AS
 %left L_OR
 %left L_AND
 %left BW_OR
@@ -636,8 +635,8 @@ arg
                 std::unique_ptr<AstArgument>($7));
         $$->setSrcLoc(@$);
     }
-  | AS type_id arg {
-        $$ = new AstTypeCast(std::unique_ptr<AstArgument>($3), *$2);
+  | AS LPAREN arg COMMA type_id RPAREN {
+        $$ = new AstTypeCast(std::unique_ptr<AstArgument>($3), *$5);
         $$->setSrcLoc(@$);
     }
   | MINUS arg %prec NEG {

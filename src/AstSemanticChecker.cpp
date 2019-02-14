@@ -230,8 +230,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                     report.addError(
                             "Unable to deduce valid type for expression, as primitive types are disjoint",
                             arg.getSrcLoc());
+                } else if (dynamic_cast<const TopAType*>(type) != nullptr) {
+                    // this must be equal to a poorly typed but grounded record constructor, which will
+                    // produce an error so we don't have to
                 } else {
-                    assert(false && "No other types should raise an error here");
+                    assert(false && "No other type should be invalid");
                 }
             }
         });
@@ -298,10 +301,27 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                 // Error has already been raised by grounded check
                 return;
             }
-            // TODO improve errors depending on result of type analysis
-            if (!lattice.isSubtype(typeAnalysis.getType(&record), lattice.getType(record.getType()))) {
-                report.addError(
-                        "Unable to deduce correct type for record " + toString(record), record.getSrcLoc());
+
+            auto* type = dynamic_cast<const RecordType*>(&typeEnv.getType(record.getType()));
+            assert(type != nullptr && "Type of record must be a record type");
+            assert(record.getArguments().size() == type->getFields().size() &&
+                    "Constructor has incorrect number of arguments");
+            if (!lattice.isSubtype(typeAnalysis.getType(&record), lattice.getType(*type))) {
+                report.addError("Unable to deduce type " + toString(record.getType()) +
+                                        " as record is not grounded as a record elsewhere, and atleast one "
+                                        "of its elements has the wrong type",
+                        record.getSrcLoc());
+                for (size_t i = 0; i < record.getArguments().size(); ++i) {
+                    const AstArgument* member = record.getArguments()[i];
+                    const AnalysisType* fieldType = lattice.getType(type->getFields()[i].type);
+                    const AnalysisType* actualType = typeAnalysis.getType(member);
+                    if (actualType->isValid() && !lattice.isSubtype(actualType, fieldType)) {
+                        report.addError("Record constructor expects element to have type " +
+                                                toString(*fieldType) + " but instead it has type " +
+                                                toString(*actualType),
+                                member->getSrcLoc());
+                    }
+                }
             }
         });
     }
@@ -326,7 +346,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         const auto* actualType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(&cast));
         assert(actualType != nullptr && "Valid type should have a kind");
         const AnalysisType* inputType = typeAnalysis.getType(cast.getValue());
-        const PrimitiveAType* outputKind = actualType->getPrimitive();
+        const PrimitiveAType* outputKind = lattice.getType(cast.getType())->getPrimitive();
         if (actualType->isValid() && actualType != lattice.getType(cast.getType())) {
             report.addError("Typecast is to type " + toString(cast.getType()) +
                                     " but is used where the type " + toString(*actualType) + " is expected",
@@ -337,6 +357,9 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
             report.addWarning("Casts from " + toString(*inputKind) + " values to " + toString(*outputKind) +
                                       " types may cause runtime errors",
                     cast.getSrcLoc());
+        } else if (inputType->isValid() && lattice.getType(cast.getType())->getKind() == Kind::RECORD) {
+            // TODO (#380) remove this once record unions are allowed
+            report.addWarning("Casts involving record types may cause runtime errors", cast.getSrcLoc());
         }
     });
 

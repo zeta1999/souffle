@@ -181,7 +181,7 @@ TEST(AstUtils, SimpleTypes) {
     EXPECT_EQ("B", toString(*typeAnalysis->getType(getX(a1))));
 
     AstClause* a2 = program.getRelation("a")->getClause(2);
-    EXPECT_EQ("top", toString(*typeAnalysis->getType(getX(a2))));
+    EXPECT_EQ("top type", toString(*typeAnalysis->getType(getX(a2))));
 }
 
 TEST(AstUtils, NumericTypes) {
@@ -217,9 +217,9 @@ TEST(AstUtils, NumericTypes) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("top", toString(*typeAnalysis->getType(getX(a))));
-    EXPECT_EQ("top", toString(*typeAnalysis->getType(getX(b))));
-    EXPECT_EQ("top", toString(*typeAnalysis->getType(getX(u))));
+    EXPECT_EQ("top type", toString(*typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("top type", toString(*typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("top type", toString(*typeAnalysis->getType(getX(u))));
 }
 
 TEST(AstUtils, SubtypeChain) {
@@ -308,9 +308,9 @@ TEST(AstUtils, FactTypes) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("const_symbol", toString(*typeAnalysis->getType(getX(a))));
-    EXPECT_EQ("const_number", toString(*typeAnalysis->getType(getX(b))));
-    EXPECT_EQ("const_symbol", toString(*typeAnalysis->getType(getX(u))));
+    EXPECT_EQ("symbol constant", toString(*typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("number constant", toString(*typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("symbol constant", toString(*typeAnalysis->getType(getX(u))));
 }
 
 TEST(AstUtils, NestedFunctions) {

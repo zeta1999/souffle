@@ -29,7 +29,7 @@
 using namespace std;
 using namespace souffle;
 
-RamRelation r("test", 0, {}, {}, SymbolMask(0), false, false, false, {});
+RamRelation r("test", 0, {}, {}, SymbolMask(0), false, false, {});
 RamRelationReference rel(&r);
 class TestAutoIndex : public IndexSet {
 public:

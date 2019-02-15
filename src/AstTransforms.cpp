@@ -88,7 +88,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstProgram& program) 
 
     // search for relations only defined by a single rule ..
     for (AstRelation* rel : program.getRelations()) {
-        if (!rel->isInput() && !rel->isComputed() && rel->getClauses().size() == 1u) {
+        if (rel->getIODirectives().empty() && rel->getClauses().size() == 1u) {
             // .. of shape r(x,y,..) :- s(x,y,..)
             AstClause* cl = rel->getClause(0);
             if (!cl->isFact() && cl->getBodySize() == 1u && cl->getAtoms().size() == 1u) {
@@ -360,24 +360,25 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& t
     AstProgram& program = *translationUnit.getProgram();
     bool changed = false;
     for (auto rel : program.getRelations()) {
-        if (rel->clauseSize() == 0 && !rel->isInput()) {
-            changed |= removeEmptyRelationUses(translationUnit, rel);
+        if (rel->clauseSize() > 0 || rel->isInput()) {
+            continue;
+        }
+        changed |= removeEmptyRelationUses(translationUnit, rel);
 
-            bool usedInAggregate = false;
-            visitDepthFirst(program, [&](const AstAggregator& agg) {
-                for (const auto lit : agg.getBodyLiterals()) {
-                    visitDepthFirst(*lit, [&](const AstAtom& atom) {
-                        if (getAtomRelation(&atom, &program) == rel) {
-                            usedInAggregate = true;
-                        }
-                    });
-                }
-            });
-
-            if (!usedInAggregate && !rel->isComputed()) {
-                program.removeRelation(rel->getName());
-                changed = true;
+        bool usedInAggregate = false;
+        visitDepthFirst(program, [&](const AstAggregator& agg) {
+            for (const auto lit : agg.getBodyLiterals()) {
+                visitDepthFirst(*lit, [&](const AstAtom& atom) {
+                    if (getAtomRelation(&atom, &program) == rel) {
+                        usedInAggregate = true;
+                    }
+                });
             }
+        });
+
+        if (!usedInAggregate && !rel->isOutput() && !rel->isPrintSize()) {
+            program.removeRelation(rel->getName());
+            changed = true;
         }
     }
     return changed;
@@ -801,11 +802,10 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
     std::set<AstRelationIdentifier> minimalIrreducibleRelations;
 
     for (AstRelation* relation : program.getRelations()) {
-        if (relation->isComputed() || relation->isInput()) {
-            // No I/O relations can be transformed
+        // No I/O relations can be transformed
+        if (!relation->getIODirectives().empty()) {
             minimalIrreducibleRelations.insert(relation->getName());
         }
-
         for (AstClause* clause : relation->getClauses()) {
             bool recursive = isRecursiveClause(*clause);
             visitDepthFirst(*clause, [&](const AstAtom& atom) {

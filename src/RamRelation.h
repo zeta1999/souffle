@@ -55,20 +55,19 @@ protected:
 
     /** Relation qualifiers */
     // TODO: Simplify interface
-    const bool input;     // input relation
-    const bool output;    // output relation
-    const bool computed;  // either output or printed
+    const bool input;   // input relation
+    const bool output;  // output relation
 
     const RelationRepresentation representation;
 
 public:
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
-            const bool computed, const bool output, const RelationRepresentation representation)
+            const bool output, const RelationRepresentation representation)
             : RamNode(RN_Relation), name(std::move(name)), arity(arity),
               attributeNames(std::move(attributeNames)),
               attributeTypeQualifiers(std::move(attributeTypeQualifiers)), mask(std::move(mask)),
-              input(input), output(output), computed(computed), representation(representation) {
+              input(input), output(output), representation(representation) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
     }
@@ -101,11 +100,6 @@ public:
     /** Is input relation */
     const bool isInput() const {
         return input;
-    }
-
-    /** Is relation computed */
-    const bool isComputed() const {
-        return computed;
     }
 
     /** Is output relation */
@@ -163,8 +157,8 @@ public:
 
     /** Create clone */
     RamRelation* clone() const override {
-        RamRelation* res = new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, mask, input,
-                computed, output, representation);
+        RamRelation* res = new RamRelation(
+                name, arity, attributeNames, attributeTypeQualifiers, mask, input, output, representation);
         return res;
     }
 
@@ -227,11 +221,6 @@ public:
     /** Is input relation */
     const bool isInput() const {
         return relation->isInput();
-    }
-
-    /** Is computed relation */
-    const bool isComputed() const {
-        return relation->isComputed();
     }
 
     /** Is output relation */

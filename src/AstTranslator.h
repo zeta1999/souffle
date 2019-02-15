@@ -288,7 +288,7 @@ private:
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity,
             const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
-            const bool computed, const bool output, const RelationRepresentation structure);
+            const bool output, const RelationRepresentation structure);
 
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity);

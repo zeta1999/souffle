@@ -147,6 +147,25 @@ public:
         } else if (q & BTREE_RELATION) {
             representation = RelationRepresentation::BTREE;
         }
+
+        if (q & INPUT_RELATION) {
+            ioDirectives.push_back(std::make_unique<AstIODirective>());
+            ioDirectives.back()->setAsInput();
+            ioDirectives.back()->setName(getName());
+            ioDirectives.back()->setSrcLoc(getSrcLoc());
+        }
+        if (q & OUTPUT_RELATION) {
+            ioDirectives.push_back(std::make_unique<AstIODirective>());
+            ioDirectives.back()->setAsOutput();
+            ioDirectives.back()->setName(getName());
+            ioDirectives.back()->setSrcLoc(getSrcLoc());
+        }
+        if (q & PRINTSIZE_RELATION) {
+            ioDirectives.push_back(std::make_unique<AstIODirective>());
+            ioDirectives.back()->setAsPrintSize();
+            ioDirectives.back()->setName(getName());
+            ioDirectives.back()->setSrcLoc(getSrcLoc());
+        }
     }
 
     /** Get representation for this relation */
@@ -160,17 +179,32 @@ public:
 
     /** Check whether relation is an output relation */
     bool isOutput() const {
-        return (qualifier & OUTPUT_RELATION) != 0;
+        for (const auto& directive : ioDirectives) {
+            if (directive->isOutput()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Check whether relation is an input relation */
     bool isInput() const {
-        return (qualifier & INPUT_RELATION) != 0;
+        for (const auto& directive : ioDirectives) {
+            if (directive->isInput()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Check whether relation is an input relation */
     bool isPrintSize() const {
-        return (qualifier & PRINTSIZE_RELATION) != 0;
+        for (const auto& directive : ioDirectives) {
+            if (directive->isPrintSize()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Check whether relation is an output relation */
@@ -329,14 +363,6 @@ public:
 
     void addIODirectives(std::unique_ptr<AstIODirective> directive) {
         assert(directive && "Undefined directive");
-        // Make sure the old style qualifiers still work.
-        if (directive->isInput()) {
-            qualifier |= INPUT_RELATION;
-        } else if (directive->isOutput()) {
-            qualifier |= OUTPUT_RELATION;
-        } else if (directive->isPrintSize()) {
-            qualifier |= PRINTSIZE_RELATION;
-        }
         ioDirectives.push_back(std::move(directive));
     }
 

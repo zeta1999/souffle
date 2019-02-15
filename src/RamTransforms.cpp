@@ -424,7 +424,30 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                         }
                     });
                 }
-                scan->setIsPureExistenceCheck(isExistCheck);
+                if (isExistCheck) {
+                    // create constraint
+                    std::unique_ptr<RamCondition> constraint;
+
+                    if (nullptr != dynamic_cast<RamScan*>(scan)) {
+                        constraint = std::make_unique<RamNot>(std::make_unique<RamEmpty>(
+                                std::unique_ptr<RamRelationReference>(scan->getRelation().clone())));
+                    } else if (auto* indexScan = dynamic_cast<RamIndexScan*>(scan)) {
+                        auto exists = std::make_unique<RamExists>(
+                                std::unique_ptr<RamRelationReference>(scan->getRelation().clone()));
+                        for (RamValue* value : indexScan->getRangePattern()) {
+                            if (nullptr != value) {
+                                exists->addArg(std::unique_ptr<RamValue>(value->clone()));
+                            } else {
+                                exists->addArg(nullptr);
+                            }
+                        }
+                        constraint = std::move(exists);
+                    }
+
+                    node = std::make_unique<RamFilter>(std::move(constraint),
+                            std::unique_ptr<RamOperation>(scan->getOperation().clone()),
+                            scan->getProfileText());
+                }
             }
             node->apply(*this);
             return node;

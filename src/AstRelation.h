@@ -23,6 +23,7 @@
 #include "AstNode.h"
 #include "AstRelationIdentifier.h"
 #include "AstType.h"
+#include "RelationDataStructure.h"
 
 #include <iostream>
 #include <memory>
@@ -92,6 +93,9 @@ protected:
      */
     std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
 
+    /** Datastructure to use for this relation */
+    RelationDataStructure datastructure;
+
 public:
     AstRelation() = default;
 
@@ -136,6 +140,21 @@ public:
     /** Set qualifier associated with this relation */
     void setQualifier(int q) {
         qualifier = q;
+        if (q & EQREL_RELATION) {
+            datastructure = RelationDataStructure::EQREL;
+        } else if (q & BRIE_RELATION) {
+            datastructure = RelationDataStructure::BRIE;
+        } else if (q & BTREE_RELATION) {
+            datastructure = RelationDataStructure::BTREE;
+        }
+    }
+
+    RelationDataStructure getStructure() {
+        return datastructure;
+    }
+
+    void setStructure(RelationDataStructure structure) {
+        datastructure = structure;
     }
 
     /** Check whether relation is an output relation */
@@ -148,19 +167,24 @@ public:
         return (qualifier & INPUT_RELATION) != 0;
     }
 
+    /** Get datastructure for this relation */
+    RelationDataStructure structure() const {
+        return datastructure;
+    }
+
     /** Check whether relation is a brie relation */
     bool isBrie() const {
-        return (qualifier & BRIE_RELATION) != 0;
+        return datastructure == RelationDataStructure::BRIE;
     }
 
     /** Check whether relation is a btree relation */
     bool isBTree() const {
-        return (qualifier & BTREE_RELATION) != 0;
+        return datastructure == RelationDataStructure::BTREE;
     }
 
     /** Check whether relation is a equivalence relation */
     bool isEqRel() const {
-        return (qualifier & EQREL_RELATION) != 0;
+        return datastructure == RelationDataStructure::EQREL;
     }
 
     /** Check whether relation is an input relation */

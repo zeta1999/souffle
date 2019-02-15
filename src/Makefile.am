@@ -131,6 +131,7 @@ souffle_sources = \
               RamVisitor.h                              \
               ReadStream.h                              \
               ReadStreamCSV.h                           \
+              RelationDataStructure.h                   \
               ReorderLiteralsTransformer.cpp            \
               ResolveAliasesTransformer.cpp             \
               SignalHandler.h                           \

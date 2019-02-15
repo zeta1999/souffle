@@ -19,6 +19,7 @@
 #include "ParallelUtils.h"
 #include "RamNode.h"
 #include "RamTypes.h"
+#include "RelationDataStructure.h"
 #include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "Table.h"
@@ -58,9 +59,7 @@ protected:
     const bool output;    // output relation
     const bool computed;  // either output or printed
 
-    const bool btree;  // btree data-structure
-    const bool brie;   // brie data-structure
-    const bool eqrel;  // equivalence relation
+    const RelationDataStructure datastructure;
 
 public:
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
@@ -69,7 +68,20 @@ public:
             : RamNode(RN_Relation), name(std::move(name)), arity(arity),
               attributeNames(std::move(attributeNames)),
               attributeTypeQualifiers(std::move(attributeTypeQualifiers)), mask(std::move(mask)),
-              input(input), output(output), computed(computed), btree(btree), brie(brie), eqrel(eqrel) {
+              input(input), output(output), computed(computed),
+              datastructure(brie ? RelationDataStructure::BRIE
+                                 : eqrel ? RelationDataStructure::EQREL : RelationDataStructure::BTREE) {
+        assert(this->attributeNames.size() == arity || this->attributeNames.empty());
+        assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
+    }
+
+    RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
+            const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
+            const bool computed, const bool output, const RelationDataStructure datastructure)
+            : RamNode(RN_Relation), name(std::move(name)), arity(arity),
+              attributeNames(std::move(attributeNames)),
+              attributeTypeQualifiers(std::move(attributeTypeQualifiers)), mask(std::move(mask)),
+              input(input), output(output), computed(computed), datastructure(datastructure) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
     }
@@ -119,19 +131,24 @@ public:
         return arity == 0;
     }
 
+    /** Relation datadatastructure type */
+    const RelationDataStructure structure() const {
+        return datastructure;
+    }
+
     /** Is BTree relation */
     const bool isBTree() const {
-        return btree;
+        return datastructure == RelationDataStructure::BTREE;
     }
 
     /** Is Brie relation */
     const bool isBrie() const {
-        return brie;
+        return datastructure == RelationDataStructure::BRIE;
     }
 
     /** Is equivalence relation */
     const bool isEqRel() const {
-        return eqrel;
+        return datastructure == RelationDataStructure::EQREL;
     }
 
     // Flag to check whether the data-structure
@@ -177,7 +194,7 @@ public:
     /** Create clone */
     RamRelation* clone() const override {
         RamRelation* res = new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, mask, input,
-                computed, output, btree, brie, eqrel);
+                computed, output, datastructure);
         return res;
     }
 
@@ -192,8 +209,7 @@ protected:
         return name == other.name && arity == other.arity && attributeNames == other.attributeNames &&
                attributeTypeQualifiers == other.attributeTypeQualifiers && mask == other.mask &&
                isInput() == other.isInput() && isOutput() == other.isOutput() &&
-               isComputed() == other.isComputed() && isBTree() == other.isBTree() &&
-               isBrie() == other.isBrie() && isEqRel() == other.isEqRel() && isTemp() == other.isTemp();
+               datastructure == other.datastructure && isTemp() == other.isTemp();
     }
 };
 
@@ -226,6 +242,11 @@ public:
     /** Is nullary relation */
     const bool isNullary() const {
         return relation->isNullary();
+    }
+
+    /** Relation datadatastructure type */
+    const RelationDataStructure structure() const {
+        return relation->structure();
     }
 
     /* Is BTree relation */

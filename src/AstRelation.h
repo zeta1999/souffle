@@ -94,7 +94,7 @@ protected:
     std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
 
     /** Datastructure to use for this relation */
-    RelationDataStructure datastructure;
+    RelationDataStructure datastructure{RelationDataStructure::DEFAULT};
 
 public:
     AstRelation() = default;

@@ -23,9 +23,13 @@ namespace souffle {
  * Data structures used for a relation.
  */
 enum class RelationDataStructure {
-    BTREE,  // btree data-structure
-    BRIE,   // btree data-structure
-    EQREL   // equivalence relation
+    DEFAULT,
+    // btree data-structure
+    BTREE,
+    // btree data-structure
+    BRIE,
+    // equivalence relation
+    EQREL
 };
 
 inline std::ostream& operator<<(std::ostream& os, RelationDataStructure structure) {

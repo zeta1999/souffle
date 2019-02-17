@@ -150,7 +150,7 @@ public:
     }
 
     /** Get datastructure for this relation */
-    RelationDataStructure getStructure() {
+    RelationDataStructure getStructure() const {
         return datastructure;
     }
 

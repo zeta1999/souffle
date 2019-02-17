@@ -409,7 +409,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitMerge(const RamMerge& merge, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            if (merge.getTargetRelation().isEqRel()) {
+            if (merge.getTargetRelation().structure() == RelationDataStructure::EQREL) {
                 out << synthesiser.getRelationName(merge.getSourceRelation()) << "->"
                     << "extend("
                     << "*" << synthesiser.getRelationName(merge.getTargetRelation()) << ");\n";

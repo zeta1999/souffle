@@ -216,7 +216,7 @@ std::string getNextEdbName(AstProgram* program) {
 void updateQualifier(AstRelation* originalRelation, AstRelation* newRelation) {
     int currentQualifier = newRelation->getQualifier();
 
-    if (originalRelation->isEqRel()) {
+    if (originalRelation->structure() == RelationDataStructure::EQREL) {
         currentQualifier |= EQREL_RELATION;
     }
 

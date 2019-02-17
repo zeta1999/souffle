@@ -22,11 +22,11 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
         rel = new SynthesiserDirectRelation(ramRel, indexSet, isProvenance);
     } else if (ramRel.isNullary()) {
         rel = new SynthesiserNullaryRelation(ramRel, indexSet, isProvenance);
-    } else if (ramRel.isBTree()) {
+    } else if (ramRel.structure() == RelationDataStructure::BTREE) {
         rel = new SynthesiserDirectRelation(ramRel, indexSet, isProvenance);
-    } else if (ramRel.isBrie()) {
+    } else if (ramRel.structure() == RelationDataStructure::BRIE) {
         rel = new SynthesiserBrieRelation(ramRel, indexSet, isProvenance);
-    } else if (ramRel.isEqRel()) {
+    } else if (ramRel.structure() == RelationDataStructure::EQREL) {
         rel = new SynthesiserEqrelRelation(ramRel, indexSet, isProvenance);
     } else {
         // Handle the data structure command line flag

@@ -172,21 +172,6 @@ public:
         return datastructure;
     }
 
-    /** Check whether relation is a brie relation */
-    bool isBrie() const {
-        return datastructure == RelationDataStructure::BRIE;
-    }
-
-    /** Check whether relation is a btree relation */
-    bool isBTree() const {
-        return datastructure == RelationDataStructure::BTREE;
-    }
-
-    /** Check whether relation is a equivalence relation */
-    bool isEqRel() const {
-        return datastructure == RelationDataStructure::EQREL;
-    }
-
     /** Check whether relation is an input relation */
     bool isPrintSize() const {
         return (qualifier & PRINTSIZE_RELATION) != 0;

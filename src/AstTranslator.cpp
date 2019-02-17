@@ -199,11 +199,11 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
         const size_t arity, const std::vector<std::string> attributeNames,
         const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
-        const bool computed, const bool output, const bool btree, const bool brie, const bool eqrel) {
+        const bool computed, const bool output, const RelationDataStructure structure) {
     const RamRelation* ramRel = ramProg->getRelation(name);
     if (ramRel == nullptr) {
         ramProg->addRelation(std::make_unique<RamRelation>(name, arity, attributeNames,
-                attributeTypeQualifiers, mask, input, computed, output, btree, brie, eqrel));
+                attributeTypeQualifiers, mask, input, computed, output, structure));
         ramRel = ramProg->getRelation(name);
         assert(ramRel != nullptr && "cannot find relation");
     }
@@ -212,8 +212,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(con
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(
         const std::string name, const size_t arity) {
-    return createRelationReference(
-            name, arity, {}, {}, SymbolMask(arity), false, false, false, false, false, false);
+    return createRelationReference(name, arity, {}, {}, SymbolMask(arity), false, false, false, {});
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const AstAtom* atom) {
@@ -238,7 +237,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
 
     return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
             attributeNames, attributeTypeQualifiers, getSymbolMask(*rel), rel->isInput(), rel->isComputed(),
-            rel->isOutput(), rel->isBTree(), rel->isBrie(), rel->isEqRel());
+            rel->isOutput(), rel->structure());
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {

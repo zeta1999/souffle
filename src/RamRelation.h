@@ -64,19 +64,6 @@ protected:
 public:
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
-            const bool computed, const bool output, const bool btree, const bool brie, const bool eqrel)
-            : RamNode(RN_Relation), name(std::move(name)), arity(arity),
-              attributeNames(std::move(attributeNames)),
-              attributeTypeQualifiers(std::move(attributeTypeQualifiers)), mask(std::move(mask)),
-              input(input), output(output), computed(computed),
-              datastructure(brie ? RelationDataStructure::BRIE
-                                 : eqrel ? RelationDataStructure::EQREL : RelationDataStructure::BTREE) {
-        assert(this->attributeNames.size() == arity || this->attributeNames.empty());
-        assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
-    }
-
-    RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
-            const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
             const bool computed, const bool output, const RelationDataStructure datastructure)
             : RamNode(RN_Relation), name(std::move(name)), arity(arity),
               attributeNames(std::move(attributeNames)),
@@ -134,21 +121,6 @@ public:
     /** Relation datadatastructure type */
     const RelationDataStructure structure() const {
         return datastructure;
-    }
-
-    /** Is BTree relation */
-    const bool isBTree() const {
-        return datastructure == RelationDataStructure::BTREE;
-    }
-
-    /** Is Brie relation */
-    const bool isBrie() const {
-        return datastructure == RelationDataStructure::BRIE;
-    }
-
-    /** Is equivalence relation */
-    const bool isEqRel() const {
-        return datastructure == RelationDataStructure::EQREL;
     }
 
     // Flag to check whether the data-structure
@@ -245,21 +217,6 @@ public:
     /** Relation datadatastructure type */
     const RelationDataStructure structure() const {
         return relation->structure();
-    }
-
-    /* Is BTree relation */
-    const bool isBTree() const {
-        return relation->isBTree();
-    }
-
-    /** Is Brie relation */
-    const bool isBrie() const {
-        return relation->isBrie();
-    }
-
-    /** Is equivalence relation */
-    const bool isEqRel() const {
-        return relation->isEqRel();
     }
 
     /** Is temp relation */

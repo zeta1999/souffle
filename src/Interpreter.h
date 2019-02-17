@@ -118,7 +118,7 @@ protected:
     void createRelation(const RamRelationReference& id) {
         InterpreterRelation* res = nullptr;
         assert(environment.find(id.getName()) == environment.end());
-        if (id.structure() == RelationDataStructure::EQREL) {
+        if (id.getStructure() == RelationDataStructure::EQREL) {
             res = new InterpreterEqRelation(id.getArity());
         } else {
             res = new InterpreterRelation(id.getArity());

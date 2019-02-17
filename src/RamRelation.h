@@ -119,7 +119,7 @@ public:
     }
 
     /** Relation datadatastructure type */
-    const RelationDataStructure structure() const {
+    const RelationDataStructure getStructure() const {
         return datastructure;
     }
 
@@ -215,8 +215,8 @@ public:
     }
 
     /** Relation datadatastructure type */
-    const RelationDataStructure structure() const {
-        return relation->structure();
+    const RelationDataStructure getStructure() const {
+        return relation->getStructure();
     }
 
     /** Is temp relation */

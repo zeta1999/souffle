@@ -106,7 +106,7 @@ public:
             os << getRelation().getArg(i);
         }
         os << ")";
-        os << " " << getRelation().structure();
+        os << " " << getRelation().getStructure();
     };
 
     /** Create clone */

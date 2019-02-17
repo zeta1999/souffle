@@ -117,7 +117,8 @@ std::unique_ptr<AstRelation> makeInfoRelation(
 
 /** Transform eqrel relations to explicitly define equivalence relations */
 void transformEqrelRelation(AstRelation& rel) {
-    assert(rel.structure() == RelationDataStructure::EQREL && "attempting to transform non-eqrel relation");
+    assert(rel.getStructure() == RelationDataStructure::EQREL &&
+            "attempting to transform non-eqrel relation");
     assert(rel.getArity() == 2 && "eqrel relation not binary");
 
     rel.setQualifier(rel.getQualifier() - EQREL_RELATION);
@@ -200,7 +201,7 @@ bool ProvenanceTransformer::transform(AstTranslationUnit& translationUnit) {
     };
 
     for (auto relation : program->getRelations()) {
-        if (relation->structure() == RelationDataStructure::EQREL) {
+        if (relation->getStructure() == RelationDataStructure::EQREL) {
             transformEqrelRelation(*relation);
         }
 

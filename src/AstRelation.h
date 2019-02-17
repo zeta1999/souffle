@@ -149,6 +149,7 @@ public:
         }
     }
 
+    /** Get datastructure for this relation */
     RelationDataStructure getStructure() {
         return datastructure;
     }
@@ -165,11 +166,6 @@ public:
     /** Check whether relation is an input relation */
     bool isInput() const {
         return (qualifier & INPUT_RELATION) != 0;
-    }
-
-    /** Get datastructure for this relation */
-    RelationDataStructure structure() const {
-        return datastructure;
     }
 
     /** Check whether relation is an input relation */

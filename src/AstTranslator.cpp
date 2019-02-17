@@ -237,7 +237,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
 
     return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
             attributeNames, attributeTypeQualifiers, getSymbolMask(*rel), rel->isInput(), rel->isComputed(),
-            rel->isOutput(), rel->structure());
+            rel->isOutput(), rel->getStructure());
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {

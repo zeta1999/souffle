@@ -181,9 +181,7 @@ public:
         }
         out << ")";
 
-        if (isBTree()) out << " btree";
-        if (isBrie()) out << " brie";
-        if (isEqRel()) out << " eqrel";
+        out << " " << datastructure;
     }
 
     /** Obtain list of child nodes */

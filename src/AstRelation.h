@@ -262,15 +262,7 @@ public:
         if (isInline()) {
             os << "inline ";
         }
-        if (isBTree()) {
-            os << "btree ";
-        }
-        if (isBrie()) {
-            os << "brie ";
-        }
-        if (isEqRel()) {
-            os << "eqrel ";
-        }
+        os << datastructure << " ";
     }
 
     /** Creates a clone of this AST sub-structure */

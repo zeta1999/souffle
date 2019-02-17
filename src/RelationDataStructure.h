@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <ostream>
+
 namespace souffle {
 
 /**
@@ -25,5 +27,23 @@ enum class RelationDataStructure {
     BRIE,   // btree data-structure
     EQREL   // equivalence relation
 };
+
+inline std::ostream& operator<<(std::ostream& os, RelationDataStructure structure) {
+    switch (structure) {
+        case RelationDataStructure::BTREE:
+            os << "btree";
+            break;
+        case RelationDataStructure::BRIE:
+            os << "brie";
+            break;
+        case RelationDataStructure::EQREL:
+            os << "eqrel";
+            break;
+        default:
+            break;
+    }
+
+    return os;
+}
 
 }  // end of namespace souffle

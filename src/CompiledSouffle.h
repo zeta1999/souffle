@@ -159,7 +159,7 @@ public:
     }
 
     /** Eliminate all the tuples in relation*/
-    void purge() override{
+    void purge() override {
         relation.purge();
     }
 };

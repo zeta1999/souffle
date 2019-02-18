@@ -316,21 +316,18 @@ public:
     virtual const SymbolTable& getSymbolTable() const = 0;
 
     // remove all the facts from the output relations
-    void purgeOutputRelations(){
-        for(Relation* relation: outputRelations)
-            relation->purge();
+    void purgeOutputRelations() {
+        for (Relation* relation : outputRelations) relation->purge();
     }
 
     // remove all the facts from the input relations
-    void purgeInputRelations(){
-        for(Relation* relation: inputRelations)
-            relation->purge();
+    void purgeInputRelations() {
+        for (Relation* relation : inputRelations) relation->purge();
     }
 
     // remove all the facts from the internal relations
-    void purgeInternalRelations(){
-        for(Relation* relation: internalRelations)
-            relation->purge();
+    void purgeInternalRelations() {
+        for (Relation* relation : internalRelations) relation->purge();
     }
 };
 

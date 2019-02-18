@@ -991,7 +991,7 @@ inline long duration_in_ns(const time_point& start, const time_point& end) {
 inline bool existFile(const std::string& name) {
     struct stat buffer = {};
     if (stat(name.c_str(), &buffer) == 0) {
-        if ((buffer.st_mode & S_IFREG) != 0) {
+        if ((buffer.st_mode & S_IFMT) != 0) {
             return true;
         }
     }

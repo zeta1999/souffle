@@ -34,7 +34,7 @@ public:
     virtual bool isValid() const = 0;
 
     // Check if a type is numeric
-    bool isNumeric() const {
+    virtual bool isNumeric() const {
         return false;
     }
 
@@ -90,7 +90,7 @@ public:
         return true;
     }
 
-    bool isNumeric() const {
+    bool isNumeric() const override {
         return getKind() == Kind::NUMBER;
     }
 

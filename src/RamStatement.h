@@ -106,9 +106,7 @@ public:
             os << getRelation().getArg(i);
         }
         os << ")";
-        if (getRelation().isBTree()) os << " btree";
-        if (getRelation().isBrie()) os << " brie";
-        if (getRelation().isEqRel()) os << " eqrel";
+        os << " " << getRelation().getRepresentation();
     };
 
     /** Create clone */

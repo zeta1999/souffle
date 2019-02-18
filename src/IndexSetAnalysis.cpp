@@ -284,18 +284,18 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
 void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
     // visit all nodes to collect searches of each relation
     visitDepthFirst(translationUnit.getP(), [&](const RamNode& node) {
-        if (const auto* scan = dynamic_cast<const RamScan*>(&node)) {
-            IndexSet& indexes = getIndexes(scan->getRelation());
-            indexes.addSearch(scan->getRangeQueryColumns());
+        if (const auto* indexScan = dynamic_cast<const RamIndexScan*>(&node)) {
+            IndexSet& indexes = getIndexes(indexScan->getRelation());
+            indexes.addSearch(indexScan->getRangeQueryColumns());
         } else if (const auto* agg = dynamic_cast<const RamAggregate*>(&node)) {
             IndexSet& indexes = getIndexes(agg->getRelation());
             indexes.addSearch(agg->getRangeQueryColumns());
-        } else if (const auto* ne = dynamic_cast<const RamNotExists*>(&node)) {
-            IndexSet& indexes = getIndexes(ne->getRelation());
-            indexes.addSearch(ne->getKey());
-        } else if (const RamProvenanceNotExists* ne = dynamic_cast<const RamProvenanceNotExists*>(&node)) {
-            IndexSet& indexes = getIndexes(ne->getRelation());
-            indexes.addSearch(ne->getKey());
+        } else if (const auto* exists = dynamic_cast<const RamExists*>(&node)) {
+            IndexSet& indexes = getIndexes(exists->getRelation());
+            indexes.addSearch(exists->getKey());
+        } else if (const auto* provExists = dynamic_cast<const RamProvenanceExists*>(&node)) {
+            IndexSet& indexes = getIndexes(provExists->getRelation());
+            indexes.addSearch(provExists->getKey());
         }
     });
 

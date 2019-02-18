@@ -50,10 +50,10 @@ class TypeEnvironment;
 class AstTranslator {
 private:
     /** AST program */
-    const AstProgram* program;
+    const AstProgram* program = nullptr;
 
     /** Type environment */
-    const TypeEnvironment* typeEnv;
+    const TypeEnvironment* typeEnv = nullptr;
 
     /** RAM program */
     std::unique_ptr<RamProgram> ramProg;
@@ -219,6 +219,17 @@ private:
 
         // -- others --
 
+        bool isAggregator(const int level) const {
+            // check for aggregator definitions
+            for (const auto& cur : aggregator_locations) {
+                if (cur.second.level == level) {
+                    return true;
+                }
+            }
+            // nothing defined on this location
+            return false;
+        }
+
         bool isSomethingDefinedOn(int level) const {
             // check for variable definitions
             for (const auto& cur : var_references) {
@@ -277,7 +288,7 @@ private:
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity,
             const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
-            const bool computed, const bool output, const bool btree, const bool brie, const bool eqrel);
+            const bool computed, const bool output, const RelationRepresentation structure);
 
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity);
@@ -369,7 +380,7 @@ private:
     void translateProgram(const AstTranslationUnit& translationUnit);
 
 public:
-    AstTranslator() : program(nullptr){};
+    AstTranslator() = default;
 
     /** translates AST to translation unit  */
     std::unique_ptr<RamTranslationUnit> translateUnit(AstTranslationUnit& tu);

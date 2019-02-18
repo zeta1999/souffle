@@ -38,9 +38,6 @@ class RamCondition : public RamNode {
 public:
     RamCondition(RamNodeType type) : RamNode(type) {}
 
-    /** Get level */
-    virtual size_t getLevel() = 0;
-
     /** Create clone */
     RamCondition* clone() const override = 0;
 };
@@ -48,7 +45,7 @@ public:
 /**
  * Conjunction
  */
-// TODO (#541): rename to RAMConjunction
+// TODO (#541): rename to RamConjunction
 class RamAnd : public RamCondition {
 protected:
     /** Left-hand side of conjunction */
@@ -80,12 +77,7 @@ public:
         rhs->print(os);
     }
 
-    /** Get level */
-    size_t getLevel() override {
-        return std::max(lhs->getLevel(), rhs->getLevel());
-    }
-
-    /** Obtains list of child nodes */
+    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {lhs.get(), rhs.get()};
     }
@@ -113,6 +105,55 @@ protected:
 };
 
 /**
+ * Negation
+ */
+// TODO (#541): rename to RamNegation
+class RamNot : public RamCondition {
+protected:
+    /** Condition to be negated */
+    std::unique_ptr<RamCondition> operand;
+
+public:
+    RamNot(std::unique_ptr<RamCondition> operand) : RamCondition(RN_Not), operand(std::move(operand)) {}
+
+    /** Get operand of negation */
+    const RamCondition& getOperand() const {
+        assert(nullptr != operand);
+        return *operand;
+    }
+
+    /** Print */
+    void print(std::ostream& os) const override {
+        os << "not ";
+        operand->print(os);
+    }
+
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        return {operand.get()};
+    }
+
+    /** Create clone */
+    RamNot* clone() const override {
+        RamNot* res = new RamNot(std::unique_ptr<RamCondition>(operand->clone()));
+        return res;
+    }
+
+    /** Apply */
+    void apply(const RamNodeMapper& map) override {
+        operand = map(std::move(operand));
+    }
+
+protected:
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamNot*>(&node));
+        const auto& other = static_cast<const RamNot&>(node);
+        return getOperand() == other.getOperand();
+    }
+};
+
+/**
  * Binary constraint
  */
 // TODO (#541): rename to RamConstraint
@@ -136,11 +177,6 @@ public:
         lhs->print(os);
         os << " " << toBinaryConstraintSymbol(op) << " ";
         rhs->print(os);
-    }
-
-    /** Get level */
-    size_t getLevel() override {
-        return std::max(lhs->getLevel(), rhs->getLevel());
     }
 
     /** Get left-hand side */
@@ -204,8 +240,9 @@ protected:
     }
 };
 
-/** Not existence check for a relation */
-class RamNotExists : public RamCondition {
+/** Existence check for a relation */
+// TODO (#541): rename to RamExistenceCheck
+class RamExists : public RamCondition {
 protected:
     /* Relation */
     std::unique_ptr<RamRelationReference> relation;
@@ -215,8 +252,8 @@ protected:
     std::vector<std::unique_ptr<RamValue>> values;
 
 public:
-    RamNotExists(std::unique_ptr<RamRelationReference> rel)
-            : RamCondition(RN_NotExists), relation(std::move(rel)) {}
+    RamExists(std::unique_ptr<RamRelationReference> rel)
+            : RamCondition(RN_Exists), relation(std::move(rel)) {}
 
     /** Get relation */
     const RamRelationReference& getRelation() const {
@@ -231,17 +268,6 @@ public:
     /** Add argument */
     void addArg(std::unique_ptr<RamValue> v) {
         values.push_back(std::move(v));
-    }
-
-    /** Get level */
-    size_t getLevel() override {
-        size_t level = 0;
-        for (const auto& cur : values) {
-            if (cur) {
-                level = std::max(level, cur->getLevel());
-            }
-        }
-        return level;
     }
 
     /** Print */
@@ -289,8 +315,8 @@ public:
     }
 
     /** Create clone */
-    RamNotExists* clone() const override {
-        RamNotExists* res = new RamNotExists(std::unique_ptr<RamRelationReference>(relation->clone()));
+    RamExists* clone() const override {
+        RamExists* res = new RamExists(std::unique_ptr<RamRelationReference>(relation->clone()));
         for (auto& cur : values) {
             RamValue* val = nullptr;
             if (cur != nullptr) {
@@ -314,14 +340,15 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamNotExists*>(&node));
-        const auto& other = static_cast<const RamNotExists&>(node);
+        assert(nullptr != dynamic_cast<const RamExists*>(&node));
+        const auto& other = static_cast<const RamExists&>(node);
         return getRelation() == other.getRelation() && equal_targets(values, other.values);
     }
 };
 
-/** Not existence check for a relation for provenance existence check */
-class RamProvenanceNotExists : public RamCondition {
+/** Existence check for a relation for provenance existence check */
+// TODO (#541): rename to RamProvenanceExistenceCheck
+class RamProvenanceExists : public RamCondition {
 protected:
     /* Relation */
     std::unique_ptr<RamRelationReference> relation;
@@ -331,8 +358,8 @@ protected:
     std::vector<std::unique_ptr<RamValue>> values;
 
 public:
-    RamProvenanceNotExists(std::unique_ptr<RamRelationReference> rel)
-            : RamCondition(RN_ProvenanceNotExists), relation(std::move(rel)) {}
+    RamProvenanceExists(std::unique_ptr<RamRelationReference> rel)
+            : RamCondition(RN_ProvenanceExists), relation(std::move(rel)) {}
 
     /** Get relation */
     const RamRelationReference& getRelation() const {
@@ -347,17 +374,6 @@ public:
     /** Add argument */
     void addArg(std::unique_ptr<RamValue> v) {
         values.push_back(std::move(v));
-    }
-
-    /** Get level */
-    size_t getLevel() override {
-        size_t level = 0;
-        for (const auto& cur : values) {
-            if (cur) {
-                level = std::max(level, cur->getLevel());
-            }
-        }
-        return level;
     }
 
     /** Print */
@@ -406,9 +422,9 @@ public:
     }
 
     /** Create clone */
-    RamProvenanceNotExists* clone() const override {
-        RamProvenanceNotExists* res =
-                new RamProvenanceNotExists(std::unique_ptr<RamRelationReference>(relation->clone()));
+    RamProvenanceExists* clone() const override {
+        RamProvenanceExists* res =
+                new RamProvenanceExists(std::unique_ptr<RamRelationReference>(relation->clone()));
         for (auto& cur : values) {
             RamValue* val = nullptr;
             if (cur != nullptr) {
@@ -432,8 +448,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(dynamic_cast<const RamProvenanceNotExists*>(&node));
-        const RamProvenanceNotExists& other = static_cast<const RamProvenanceNotExists&>(node);
+        assert(dynamic_cast<const RamProvenanceExists*>(&node));
+        const auto& other = static_cast<const RamProvenanceExists&>(node);
         return getRelation() == other.getRelation() && equal_targets(values, other.values);
     }
 };
@@ -452,11 +468,6 @@ public:
     /** Get relation */
     const RamRelationReference& getRelation() const {
         return *relation;
-    }
-
-    /** Get level */
-    size_t getLevel() override {
-        return 0;  // can be in the top level
     }
 
     /** Print */

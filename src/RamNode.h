@@ -35,26 +35,27 @@ enum RamNodeType {
     // values
     RN_ElementAccess,
     RN_Number,
-    RN_UnaryOperator,
+    RN_IntrinsicOperator,
     RN_UserDefinedOperator,
-    RN_BinaryOperator,
-    RN_TernaryOperator,
     RN_AutoIncrement,
     RN_Pack,
     RN_Argument,
 
     // conditions
-    RN_NotExists,
-    RN_ProvenanceNotExists,
+    RN_Exists,
+    RN_ProvenanceExists,
     RN_Empty,
     RN_And,
+    RN_Not,
     RN_BinaryRelation,
 
     // operations
     RN_Project,
     RN_Lookup,
     RN_Scan,
+    RN_IndexScan,
     RN_Aggregate,
+    RN_Filter,
 
     // statements
     RN_Create,

@@ -23,6 +23,7 @@
 #include "AstNode.h"
 #include "AstRelationIdentifier.h"
 #include "AstType.h"
+#include "RelationRepresentation.h"
 
 #include <iostream>
 #include <memory>
@@ -92,6 +93,9 @@ protected:
      */
     std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
 
+    /** Datastructure to use for this relation */
+    RelationRepresentation representation{RelationRepresentation::DEFAULT};
+
 public:
     AstRelation() = default;
 
@@ -136,6 +140,22 @@ public:
     /** Set qualifier associated with this relation */
     void setQualifier(int q) {
         qualifier = q;
+        if (q & EQREL_RELATION) {
+            representation = RelationRepresentation::EQREL;
+        } else if (q & BRIE_RELATION) {
+            representation = RelationRepresentation::BRIE;
+        } else if (q & BTREE_RELATION) {
+            representation = RelationRepresentation::BTREE;
+        }
+    }
+
+    /** Get representation for this relation */
+    RelationRepresentation getRepresentation() const {
+        return representation;
+    }
+
+    void setRepresentation(RelationRepresentation representation) {
+        this->representation = representation;
     }
 
     /** Check whether relation is an output relation */
@@ -146,21 +166,6 @@ public:
     /** Check whether relation is an input relation */
     bool isInput() const {
         return (qualifier & INPUT_RELATION) != 0;
-    }
-
-    /** Check whether relation is a brie relation */
-    bool isBrie() const {
-        return (qualifier & BRIE_RELATION) != 0;
-    }
-
-    /** Check whether relation is a btree relation */
-    bool isBTree() const {
-        return (qualifier & BTREE_RELATION) != 0;
-    }
-
-    /** Check whether relation is a equivalence relation */
-    bool isEqRel() const {
-        return (qualifier & EQREL_RELATION) != 0;
     }
 
     /** Check whether relation is an input relation */
@@ -238,15 +243,7 @@ public:
         if (isInline()) {
             os << "inline ";
         }
-        if (isBTree()) {
-            os << "btree ";
-        }
-        if (isBrie()) {
-            os << "brie ";
-        }
-        if (isEqRel()) {
-            os << "eqrel ";
-        }
+        os << representation << " ";
     }
 
     /** Creates a clone of this AST sub-structure */

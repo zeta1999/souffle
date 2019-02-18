@@ -118,10 +118,10 @@ protected:
     void createRelation(const RamRelationReference& id) {
         InterpreterRelation* res = nullptr;
         assert(environment.find(id.getName()) == environment.end());
-        if (!id.isEqRel()) {
-            res = new InterpreterRelation(id.getArity());
-        } else {
+        if (id.getRepresentation() == RelationRepresentation::EQREL) {
             res = new InterpreterEqRelation(id.getArity());
+        } else {
+            res = new InterpreterRelation(id.getArity());
         }
         environment[id.getName()] = res;
     }

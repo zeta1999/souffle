@@ -81,26 +81,27 @@ struct RamVisitor : public ram_visitor_tag {
             // values
             FORWARD(ElementAccess);
             FORWARD(Number);
-            FORWARD(UnaryOperator);
+            FORWARD(IntrinsicOperator);
             FORWARD(UserDefinedOperator);
-            FORWARD(BinaryOperator);
-            FORWARD(TernaryOperator);
             FORWARD(AutoIncrement);
             FORWARD(Pack);
             FORWARD(Argument);
 
             // conditions
             FORWARD(Empty);
-            FORWARD(NotExists);
-            FORWARD(ProvenanceNotExists);
+            FORWARD(Exists);
+            FORWARD(ProvenanceExists);
             FORWARD(And);
+            FORWARD(Not);
             FORWARD(BinaryRelation);
 
             // operations
+            FORWARD(Filter);
             FORWARD(Project);
             FORWARD(Return);
             FORWARD(Lookup);
             FORWARD(Scan);
+            FORWARD(IndexScan);
             FORWARD(Aggregate);
 
             // statements
@@ -182,20 +183,25 @@ protected:
     LINK(Statement, Node);
 
     // -- operations --
-    LINK(Project, Operation)
-    LINK(Lookup, Search)
-    LINK(Scan, Search)
-    LINK(Aggregate, Search)
-    LINK(Search, Operation)
+    LINK(Project, Operation);
     LINK(Return, Operation);
+    LINK(Lookup, Search);
+    LINK(Scan, RelationSearch);
+    LINK(IndexScan, RelationSearch);
+    LINK(RelationSearch, Search);
+    LINK(Aggregate, Search);
+    LINK(Search, NestedOperation);
+    LINK(Filter, NestedOperation);
+    LINK(NestedOperation, Operation);
 
     LINK(Operation, Node)
 
     // -- conditions --
     LINK(And, Condition)
+    LINK(Not, Condition)
     LINK(BinaryRelation, Condition)
-    LINK(NotExists, Condition)
-    LINK(ProvenanceNotExists, Condition)
+    LINK(Exists, Condition)
+    LINK(ProvenanceExists, Condition)
     LINK(Empty, Condition)
 
     LINK(Condition, Node)
@@ -203,10 +209,8 @@ protected:
     // -- values --
     LINK(Number, Value)
     LINK(ElementAccess, Value)
-    LINK(UnaryOperator, Value)
+    LINK(IntrinsicOperator, Value)
     LINK(UserDefinedOperator, Value)
-    LINK(BinaryOperator, Value)
-    LINK(TernaryOperator, Value)
     LINK(AutoIncrement, Value)
     LINK(Pack, Value)
     LINK(Argument, Value)

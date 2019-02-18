@@ -42,11 +42,10 @@
     #include "AstParserUtils.h"
     #include "AstProgram.h"
     #include "AstRelation.h"
-    #include "SrcLocation.h"
     #include "AstTypes.h"
     #include "BinaryConstraintOps.h"
-    #include "BinaryFunctorOps.h"
-    #include "UnaryFunctorOps.h"
+    #include "FunctorOps.h"
+    #include "SrcLocation.h"
     #include "Util.h"
 
     using namespace souffle;
@@ -416,7 +415,7 @@ functor_type
   ;
 
 functor_typeargs
-  : functor_type COMMA functor_typeargs { $$ = $3 + $1; }
+  : functor_type COMMA functor_typeargs { $$ = $1 + $3; }
   | functor_type { $$ = $1;  }
   ;
 
@@ -559,79 +558,79 @@ arg
         $$ = $2;
     }
   | arg BW_OR arg {
-        $$ = new AstBinaryFunctor(BinaryOp::BOR, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::BOR, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg BW_XOR arg {
-        $$ = new AstBinaryFunctor(BinaryOp::BXOR, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::BXOR, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg BW_AND arg {
-        $$ = new AstBinaryFunctor(BinaryOp::BAND, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::BAND, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg L_OR arg {
-        $$ = new AstBinaryFunctor(BinaryOp::LOR, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::LOR, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg L_AND arg {
-        $$ = new AstBinaryFunctor(BinaryOp::LAND, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::LAND, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg PLUS arg {
-        $$ = new AstBinaryFunctor(BinaryOp::ADD, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::ADD, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg MINUS arg {
-        $$ = new AstBinaryFunctor(BinaryOp::SUB, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::SUB, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg STAR arg {
-        $$ = new AstBinaryFunctor(BinaryOp::MUL, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::MUL, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg SLASH arg {
-        $$ = new AstBinaryFunctor(BinaryOp::DIV, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::DIV, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg PERCENT arg {
-        $$ = new AstBinaryFunctor(BinaryOp::MOD, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::MOD, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | arg CARET arg {
-        $$ = new AstBinaryFunctor(BinaryOp::EXP, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::EXP, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | MAX LPAREN arg COMMA arg RPAREN {
-        $$ = new AstBinaryFunctor(BinaryOp::MAX, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5));
+        $$ = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5));
         $$->setSrcLoc(@$);
     }
   | MIN LPAREN arg COMMA arg RPAREN {
-        $$ = new AstBinaryFunctor(BinaryOp::MIN, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5));
+        $$ = new AstIntrinsicFunctor(FunctorOp::MIN, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5));
         $$->setSrcLoc(@$);
     }
   | CAT LPAREN arg COMMA arg RPAREN {
-        $$ = new AstBinaryFunctor(BinaryOp::CAT, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5));
+        $$ = new AstIntrinsicFunctor(FunctorOp::CAT, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5));
         $$->setSrcLoc(@$);
     }
   | ORD LPAREN arg RPAREN {
-        $$ = new AstUnaryFunctor(UnaryOp::ORD, std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::ORD, std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | STRLEN LPAREN arg RPAREN {
-        $$ = new AstUnaryFunctor(UnaryOp::STRLEN, std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::STRLEN, std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | TONUMBER LPAREN arg RPAREN {
-        $$ = new AstUnaryFunctor(UnaryOp::TONUMBER, std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::TONUMBER, std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | TOSTRING LPAREN arg RPAREN {
-        $$ = new AstUnaryFunctor(UnaryOp::TOSTRING, std::unique_ptr<AstArgument>($3));
+        $$ = new AstIntrinsicFunctor(FunctorOp::TOSTRING, std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
   | SUBSTR LPAREN arg COMMA arg COMMA arg RPAREN {
-        $$ = new AstTernaryFunctor(TernaryOp::SUBSTR,
+        $$ = new AstIntrinsicFunctor(FunctorOp::SUBSTR,
                 std::unique_ptr<AstArgument>($3),
                 std::unique_ptr<AstArgument>($5),
                 std::unique_ptr<AstArgument>($7));
@@ -648,16 +647,16 @@ arg
             $$->setSrcLoc($2->getSrcLoc());
             delete $2;
         } else {
-            $$ = new AstUnaryFunctor(UnaryOp::NEG, std::unique_ptr<AstArgument>($2));
+            $$ = new AstIntrinsicFunctor(FunctorOp::NEG, std::unique_ptr<AstArgument>($2));
             $$->setSrcLoc(@$);
         }
     }
   | BW_NOT arg {
-        $$ = new AstUnaryFunctor(UnaryOp::BNOT, std::unique_ptr<AstArgument>($2));
+        $$ = new AstIntrinsicFunctor(FunctorOp::BNOT, std::unique_ptr<AstArgument>($2));
         $$->setSrcLoc(@$);
     }
   | L_NOT arg {
-        $$ = new AstUnaryFunctor(UnaryOp::LNOT, std::unique_ptr<AstArgument>($2));
+        $$ = new AstIntrinsicFunctor(FunctorOp::LNOT, std::unique_ptr<AstArgument>($2));
         $$->setSrcLoc(@$);
     }
   | LBRACKET RBRACKET {

@@ -541,6 +541,11 @@ bool TypeAnalysis::anyInvalidClauses(const AstProgram& program) {
                     skipClause = true;
                 }
             });
+            visitDepthFirst(*clause, [&](const AstTypeCast& cast) {
+                if (program.getType(cast.getType()) == nullptr) {
+                    skipClause = true;
+                }
+            });
             if (skipClause) {
                 return true;
             }
@@ -587,6 +592,11 @@ std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& pr
                 if (recordType == nullptr) {
                     skipClause = true;
                 } else if (record.getArguments().size() != recordType->getFields().size()) {
+                    skipClause = true;
+                }
+            });
+            visitDepthFirst(*clause, [&](const AstTypeCast& cast) {
+                if (program.getType(cast.getType()) == nullptr) {
                     skipClause = true;
                 }
             });

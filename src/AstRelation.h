@@ -23,7 +23,7 @@
 #include "AstNode.h"
 #include "AstRelationIdentifier.h"
 #include "AstType.h"
-#include "RelationDataStructure.h"
+#include "RelationRepresentation.h"
 
 #include <iostream>
 #include <memory>
@@ -94,7 +94,7 @@ protected:
     std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
 
     /** Datastructure to use for this relation */
-    RelationDataStructure datastructure{RelationDataStructure::DEFAULT};
+    RelationRepresentation representation{RelationRepresentation::DEFAULT};
 
 public:
     AstRelation() = default;
@@ -141,21 +141,21 @@ public:
     void setQualifier(int q) {
         qualifier = q;
         if (q & EQREL_RELATION) {
-            datastructure = RelationDataStructure::EQREL;
+            representation = RelationRepresentation::EQREL;
         } else if (q & BRIE_RELATION) {
-            datastructure = RelationDataStructure::BRIE;
+            representation = RelationRepresentation::BRIE;
         } else if (q & BTREE_RELATION) {
-            datastructure = RelationDataStructure::BTREE;
+            representation = RelationRepresentation::BTREE;
         }
     }
 
-    /** Get datastructure for this relation */
-    RelationDataStructure getStructure() const {
-        return datastructure;
+    /** Get representation for this relation */
+    RelationRepresentation getRepresentation() const {
+        return representation;
     }
 
-    void setStructure(RelationDataStructure structure) {
-        datastructure = structure;
+    void setRepresentation(RelationRepresentation representation) {
+        this->representation = representation;
     }
 
     /** Check whether relation is an output relation */
@@ -243,7 +243,7 @@ public:
         if (isInline()) {
             os << "inline ";
         }
-        os << datastructure << " ";
+        os << representation << " ";
     }
 
     /** Creates a clone of this AST sub-structure */

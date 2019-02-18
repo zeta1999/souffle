@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RelationDataStructure.h
+ * @file RelationRepresentation.h
  *
  * Identifies the available data structures.
  ***********************************************************************/
@@ -20,9 +20,9 @@
 namespace souffle {
 
 /**
- * Data structures used for a relation.
+ * Available representations used for a relation.
  */
-enum class RelationDataStructure {
+enum class RelationRepresentation {
     DEFAULT,
     // btree data-structure
     BTREE,
@@ -32,15 +32,15 @@ enum class RelationDataStructure {
     EQREL
 };
 
-inline std::ostream& operator<<(std::ostream& os, RelationDataStructure structure) {
+inline std::ostream& operator<<(std::ostream& os, RelationRepresentation structure) {
     switch (structure) {
-        case RelationDataStructure::BTREE:
+        case RelationRepresentation::BTREE:
             os << "btree";
             break;
-        case RelationDataStructure::BRIE:
+        case RelationRepresentation::BRIE:
             os << "brie";
             break;
-        case RelationDataStructure::EQREL:
+        case RelationRepresentation::EQREL:
             os << "eqrel";
             break;
         default:

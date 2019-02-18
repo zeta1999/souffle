@@ -610,7 +610,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
 
 void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironment& typeEnv,
         const AstProgram& program, const AstRelation& relation, const RecursiveClauses& recursiveClauses) {
-    if (relation.getStructure() == RelationDataStructure::EQREL) {
+    if (relation.getRepresentation() == RelationRepresentation::EQREL) {
         if (relation.getArity() == 2) {
             if (relation.getAttribute(0)->getTypeName() != relation.getAttribute(1)->getTypeName()) {
                 report.addError(

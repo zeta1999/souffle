@@ -199,7 +199,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
         const size_t arity, const std::vector<std::string> attributeNames,
         const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
-        const bool computed, const bool output, const RelationDataStructure structure) {
+        const bool computed, const bool output, const RelationRepresentation structure) {
     const RamRelation* ramRel = ramProg->getRelation(name);
     if (ramRel == nullptr) {
         ramProg->addRelation(std::make_unique<RamRelation>(name, arity, attributeNames,
@@ -237,7 +237,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
 
     return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
             attributeNames, attributeTypeQualifiers, getSymbolMask(*rel), rel->isInput(), rel->isComputed(),
-            rel->isOutput(), rel->getStructure());
+            rel->isOutput(), rel->getRepresentation());
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {

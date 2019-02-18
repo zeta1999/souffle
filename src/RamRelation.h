@@ -19,7 +19,7 @@
 #include "ParallelUtils.h"
 #include "RamNode.h"
 #include "RamTypes.h"
-#include "RelationDataStructure.h"
+#include "RelationRepresentation.h"
 #include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "Table.h"
@@ -59,16 +59,16 @@ protected:
     const bool output;    // output relation
     const bool computed;  // either output or printed
 
-    const RelationDataStructure datastructure;
+    const RelationRepresentation representation;
 
 public:
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
-            const bool computed, const bool output, const RelationDataStructure datastructure)
+            const bool computed, const bool output, const RelationRepresentation representation)
             : RamNode(RN_Relation), name(std::move(name)), arity(arity),
               attributeNames(std::move(attributeNames)),
               attributeTypeQualifiers(std::move(attributeTypeQualifiers)), mask(std::move(mask)),
-              input(input), output(output), computed(computed), datastructure(datastructure) {
+              input(input), output(output), computed(computed), representation(representation) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
     }
@@ -118,9 +118,9 @@ public:
         return arity == 0;
     }
 
-    /** Relation datadatastructure type */
-    const RelationDataStructure getStructure() const {
-        return datastructure;
+    /** Relation representation type */
+    const RelationRepresentation getRepresentation() const {
+        return representation;
     }
 
     // Flag to check whether the data-structure
@@ -153,7 +153,7 @@ public:
         }
         out << ")";
 
-        out << " " << datastructure;
+        out << " " << representation;
     }
 
     /** Obtain list of child nodes */
@@ -164,7 +164,7 @@ public:
     /** Create clone */
     RamRelation* clone() const override {
         RamRelation* res = new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, mask, input,
-                computed, output, datastructure);
+                computed, output, representation);
         return res;
     }
 
@@ -179,7 +179,7 @@ protected:
         return name == other.name && arity == other.arity && attributeNames == other.attributeNames &&
                attributeTypeQualifiers == other.attributeTypeQualifiers && mask == other.mask &&
                isInput() == other.isInput() && isOutput() == other.isOutput() &&
-               datastructure == other.datastructure && isTemp() == other.isTemp();
+               representation == other.representation && isTemp() == other.isTemp();
     }
 };
 
@@ -214,9 +214,9 @@ public:
         return relation->isNullary();
     }
 
-    /** Relation datadatastructure type */
-    const RelationDataStructure getStructure() const {
-        return relation->getStructure();
+    /** Relation representation type */
+    const RelationRepresentation getRepresentation() const {
+        return relation->getRepresentation();
     }
 
     /** Is temp relation */

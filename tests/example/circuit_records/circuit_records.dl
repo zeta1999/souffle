@@ -65,29 +65,29 @@ bin(1).
 
 // generate all ordered lists (including list stubs)
 .decl gen_wire_states( wl : Wire_list)
-gen_wire_states(*Wire_list[[x, v], nil]) :-
+gen_wire_states(*Wire_list[*Wire_state[x, v], nil]) :-
 	first(x),
     bin(v).
 
-gen_wire_states( *Wire_list[[y, v], l]) :-
+gen_wire_states( *Wire_list[*Wire_state[y, v], l]) :-
     gen_wire_states(l),
 	succ(x, y),
     bin(v),
-    l = *Wire_list[[x,xv],tail].
+    l = *Wire_list[*Wire_state[x,xv],tail].
 
 // collect full length ordered lists (i.e. ignore stubs)
 .decl final_gen_wire_states(wl : Wire_list)
 final_gen_wire_states(l) :-
     gen_wire_states(l),
-    l = *Wire_list[[x,xv],tail],
+    l = *Wire_list[*Wire_state[x,xv],tail],
     last(x).
 
 //extract a wire's value from the array (associative array type)
 .decl get_by_key(key : Wire, val : number, rec : Wire_list, conf: Wire_list)
-get_by_key(k, v, tail, *Wire_list[[a,av], tail]) :-
-	in(a), bin(av), a=k, av=v, gen_wire_states(*Wire_list[[a,av], tail]), last(a).
+get_by_key(k, v, tail, *Wire_list[*Wire_state[a,av], tail]) :-
+	in(a), bin(av), a=k, av=v, gen_wire_states(*Wire_list[*Wire_state[a,av], tail]), last(a).
 get_by_key(k, v, tail, conf) :-
-	in(k), bin(v), get_by_key(_, _, *Wire_list[[k, v], tail], conf).
+	in(k), bin(v), get_by_key(_, _, *Wire_list[*Wire_state[k, v], tail], conf).
 
 .decl required_out(ws : Wire_state)
 required_out(*Wire_state[w, v]) :- required_out_fi(w, v).

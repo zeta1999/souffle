@@ -65,7 +65,7 @@ Simplify(*poly[head,tail],*poly[newHead,newTail]) :-
     head = *rational[numerator,denominator] ,
     (newTail != nil; numerator != 0), // make sure polynomial is non-zero
     GcdInt(numerator,denominator,gcd),
-    newHead = &rational[as(numerator/gcd,int),as(denominator/gcd,int)]. // simplify coefficient
+    newHead = *rational[as(numerator/gcd,int),as(denominator/gcd,int)]. // simplify coefficient
 
 // Helper method for simplify
 ToGcdInt(numerator,denominator) :-
@@ -158,7 +158,7 @@ ToMod(next,second) :-
     multiplicationConstant =
         *rational[as(-firstNumerator*secondDenominator,int),as(firstDenominator*secondNumerator,int)],
     Multiply(multiplicationConstant,second,multiplicationResult), // make the leading coefficients negatives of each other
-    Raise(multiplicationResult,as(firstDegree-secondDegree,index)
+    Raise(multiplicationResult,as(firstDegree-secondDegree,index),
         as(firstDegree-secondDegree,index),raiseResult), // make the leading indices the same
     Add(first,raiseResult,nextUnsimp), // this will cancel out the leading term
     Simplify(nextUnsimp,next). // avoid integer overflow and excessive computation
@@ -175,7 +175,7 @@ ToMultiply(multiplicationConstant,second) :-
     secondCoefficient = *rational[secondNumerator,secondDenominator],
     multiplicationConstant =
         *rational[as(-firstNumerator*secondDenominator,int),as(firstDenominator*secondNumerator,int)].
-Raise(multiplicationResult,firstDegree-secondDegree,0,multiplicationResult) :-
+Raise(multiplicationResult,as(firstDegree-secondDegree,index),0,multiplicationResult) :-
     ToMod(first,second),
     Leading(first,firstCoefficient,firstDegree),
     Leading(second,secondCoefficient,secondDegree),
@@ -301,13 +301,13 @@ Term(1,*rational[0,1],as(i+1,index)) :-
     Term(1,_,i),
     Degree(1,degree),
     degree > i,
-    !FirstTerm(as(i+1,inputIndex),_,_). // Replace missing index with 0
+    !FirstTerm(as(i+1,index),_,_). // Replace missing index with 0
 Term(2,*rational[numerator,denominator],i) :- SecondTerm(i,numerator,denominator).
-Term(2,*rational[0,1],i+1) :-
+Term(2,*rational[0,1],as(i+1,index)) :-
     Term(2,_,i),
     Degree(2,degree),
     degree > i,
-    !SecondTerm(as(i+1,inputIndex),_,_). // Replace missing index with 0
+    !SecondTerm(as(i+1,index),_,_). // Replace missing index with 0
 
 // Build the link-list style polynomial objects
 .decl InputPoly(n : inputIndex, i : index, polynomial : poly)

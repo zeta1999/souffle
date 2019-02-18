@@ -97,7 +97,7 @@
 .init Nfsa = Automaton<N, Letter, Word>
 Nfsa.start_state(1).
 Nfsa.state(s) :- state(s).
-Nfsa.final(fs) :- as(fs = max s : { state(s) }, N).
+Nfsa.final(fs) :- fs = as(max s : { state(s) }, N).
 Nfsa.alphabet(c) :- alphabet(c).
 Nfsa.max_acceptance_size(5).
 Nfsa.tr(s, q, c) :- tr(s, q, c).
@@ -110,7 +110,7 @@ FsaState.element(1).
 
 
 .decl not_fsa_start_state(s: NumberList)
-not_fsa_start_state(s) :- FsaState.member_at(s, x, 1), !Nfsa.start_state(x).
+not_fsa_start_state(s) :- FsaState.member_at(s, x, 1), !Nfsa.start_state(as(x,N)).
 
 .init Fsa = Automaton<NumberList, Letter, Word>
 Fsa.state(s) :- FsaState.vector(s).
@@ -143,7 +143,7 @@ not_fsa_tr(s, q, a) :-
 // i.e. Q has got some more states than it should
 not_fsa_tr(s, q, a) :-
 	FsaState.vector(s), FsaState.vector(q), Nfsa.alphabet(a),
-	FsaState.member_at(q, y, 1), !has_x(s, y, a).
+	FsaState.member_at(q, y, 1), !has_x(s, as(y,N), a).
 
 
 // -------------------------------------------------------
@@ -163,7 +163,7 @@ fsa_state_to_str(*NumberList[1,t], as(cat("1", str),String)) :- FsaState.sublist
 
 .decl word_to_str(word: Word, str: String)
 word_to_str(nil, " ").
-word_to_str(*NumberList[h,t], as(cat(h, str),String)) :- Fsa.alphabet(h), Fsa.Word.sublist(t), word_to_str(t, str).
+word_to_str(*Word[h,t], as(cat(h, str),String)) :- Fsa.alphabet(h), Fsa.Word.sublist(t), word_to_str(t, str).
 
 .decl fsa_accepted(w: String)
 .output fsa_accepted()

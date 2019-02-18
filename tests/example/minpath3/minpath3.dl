@@ -143,7 +143,7 @@ shortestStepPath(0, u, largeDist) :-
    largeDist = as(sum d: {edge(_,_,d)},Distance).
 
 /* shortest distance for all other steps */
-shortestStepPath(i, v, d) :-
+shortestStepPath(as(i,Distance), v, d) :-
    step(i, v, d, u),
    lastPred(u, v).
 
@@ -175,7 +175,7 @@ again(as(i+1,Distance)) :-
 
 lastStep(i) :-
    again(i),
-   !again(i+1).
+   !again(as(i+1,Distance)).
 
 //
 // shortest path

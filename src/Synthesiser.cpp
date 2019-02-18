@@ -1675,7 +1675,7 @@ void Synthesiser::generateCode(
         os << "// -- Table: " << raw_name << "\n";
 
         os << "std::unique_ptr<" << type << "> " << name << " = std::make_unique<" << type << ">();\n";
-        if ((rel.isInput() || rel.isComputed() || Global::config().has("provenance")) && !rel.isTemp()) {
+        if (!rel.isTemp()) {
             os << "souffle::RelationWrapper<";
             os << relCtr++ << ",";
             os << type << ",";

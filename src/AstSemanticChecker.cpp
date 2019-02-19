@@ -350,14 +350,18 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                                     " but is used where the type " + toString(*actualType) + " is expected",
                     cast.getSrcLoc());
         }
-        if (inputType->isValid() && !lattice.isSubtype(inputType, outputKind)) {
+        if (!inputType->isValid()) {
+            return;
+        }
+        if (!lattice.isSubtype(inputType, outputKind)) {
             const PrimitiveAType* inputKind = dynamic_cast<const InnerAType*>(inputType)->getPrimitive();
             report.addWarning("Casts from " + toString(*inputKind) + " values to " + toString(*outputKind) +
                                       " types may cause runtime errors",
                     cast.getSrcLoc());
-        } else if (inputType->isValid() && lattice.getType(cast.getType())->getKind() == Kind::RECORD) {
-            // TODO (#380) remove this once record unions are allowed
-            report.addWarning("Casts involving record types may cause runtime errors", cast.getSrcLoc());
+        } else if (outputKind->getKind() == Kind::RECORD &&
+                   !lattice.isSubtype(inputType, lattice.getType(cast.getType()))) {
+            report.addWarning(
+                    "Casting a record to the wrong record type may cause runtime errors", cast.getSrcLoc());
         }
     });
 

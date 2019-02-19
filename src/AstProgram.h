@@ -21,6 +21,7 @@
 #include "AstFunctorDeclaration.h"
 #include "AstNode.h"
 #include "AstPragma.h"
+#include "AstRelation.h"
 #include "AstRelationIdentifier.h"
 #include "AstType.h"
 #include "Util.h"
@@ -29,6 +30,7 @@
 #include <iosfwd>
 #include <map>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -36,7 +38,6 @@ namespace souffle {
 
 class AstClause;
 class AstIODirective;
-class AstRelation;
 
 /**
  *  Intermediate representation of a datalog program

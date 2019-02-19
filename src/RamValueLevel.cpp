@@ -16,6 +16,7 @@
 
 #include "RamValueLevel.h"
 #include "RamVisitor.h"
+#include <algorithm>
 
 namespace souffle {
 

@@ -17,30 +17,35 @@
 #pragma once
 
 #include "AstArgument.h"
-#include "AstClause.h"
 #include "AstRelationIdentifier.h"
-#include "AstUtils.h"
-#include "IODirectives.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
-#include "RamValue.h"
+#include "RelationRepresentation.h"
 #include "SymbolMask.h"
-
+#include "Util.h"
+#include <cassert>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <set>
 #include <string>
+#include <utility>
 
 namespace souffle {
 
 // forward declarations
+class AstAtom;
 class AstClause;
+class AstLiteral;
 class AstProgram;
 class AstRelation;
 class AstTranslationUnit;
+class IODirectives;
+class RamCondition;
+class RamOperation;
 class RamProgram;
+class RamRelationReference;
 class RamStatement;
 class RamTranslationUnit;
+class RamValue;
 class RecursiveClauses;
 class TypeEnvironment;
 

@@ -22,8 +22,11 @@
 #include "AstIOTypeAnalysis.h"
 #include "AstRelation.h"
 #include "GraphUtils.h"
+#include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <set>
 #include <stack>

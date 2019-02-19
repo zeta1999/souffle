@@ -15,7 +15,18 @@
  ***********************************************************************/
 
 #include "RamTransforms.h"
+#include "BinaryConstraintOps.h"
+#include "RamCondition.h"
+#include "RamNode.h"
+#include "RamOperation.h"
+#include "RamProgram.h"
+#include "RamRelation.h"
+#include "RamStatement.h"
+#include "RamTypes.h"
+#include "RamValue.h"
 #include "RamVisitor.h"
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

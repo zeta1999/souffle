@@ -26,6 +26,7 @@
 #include "BinaryConstraintOps.h"
 #include "Global.h"
 #include "IODirectives.h"
+#include "RelationRepresentation.h"
 #include "SrcLocation.h"
 #include "Util.h"
 #include <cassert>

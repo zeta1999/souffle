@@ -15,8 +15,12 @@
  ***********************************************************************/
 
 #include "RamConditionLevel.h"
+#include "RamCondition.h"
 #include "RamTranslationUnit.h"
+#include "RamValueLevel.h"
 #include "RamVisitor.h"
+#include <algorithm>
+#include <vector>
 
 namespace souffle {
 

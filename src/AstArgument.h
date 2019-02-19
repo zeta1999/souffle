@@ -23,7 +23,6 @@
 #include "FunctorOps.h"
 #include "SymbolTable.h"
 #include "Util.h"
-#include <array>
 #include <cassert>
 #include <cstddef>
 #include <memory>

@@ -15,7 +15,6 @@
  ***********************************************************************/
 
 #include "IndexSetAnalysis.h"
-#include "Global.h"
 #include "RamCondition.h"
 #include "RamIndexScanKeys.h"
 #include "RamNode.h"

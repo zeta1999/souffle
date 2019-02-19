@@ -8,12 +8,10 @@
 
 #pragma once
 
-#include "Global.h"
 #include "IndexSetAnalysis.h"
 #include "RamRelation.h"
 
 #include <memory>
-#include <numeric>
 #include <ostream>
 #include <string>
 #include <vector>

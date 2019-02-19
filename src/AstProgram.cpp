@@ -18,6 +18,7 @@
 #include "AstProgram.h"
 #include "AstClause.h"
 #include "AstComponent.h"
+#include "AstFunctorDeclaration.h"
 #include "AstLiteral.h"
 #include "AstRelation.h"
 #include "ErrorReport.h"

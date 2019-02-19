@@ -23,10 +23,15 @@
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
+#include "RelationRepresentation.h"
 
+#include <atomic>
 #include <cassert>
+#include <cstdlib>
+#include <iostream>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 #include <dlfcn.h>
 

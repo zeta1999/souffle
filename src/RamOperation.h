@@ -17,13 +17,10 @@
 #pragma once
 
 #include "RamCondition.h"
-#include "RamConditionLevel.h"
-#include "RamConstValue.h"
 #include "RamNode.h"
 #include "RamRelation.h"
 #include "RamTypes.h"
 #include "RamValue.h"
-#include "RamValueLevel.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>

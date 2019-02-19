@@ -16,7 +16,11 @@
 
 #pragma once
 
+#include "AstClause.h"
+#include "AstIODirective.h"
+#include "AstNode.h"
 #include "AstRelation.h"
+#include "AstType.h"
 
 #include <memory>
 #include <string>
@@ -24,8 +28,6 @@
 #include <vector>
 
 namespace souffle {
-
-class ErrorReport;
 
 /**
  * A component type is the class utilized to represent a construct of the form

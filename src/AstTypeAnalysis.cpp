@@ -19,6 +19,7 @@
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstConstraintAnalysis.h"
+#include "AstFunctorDeclaration.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -31,6 +32,7 @@
 #include "Constraints.h"
 #include "Global.h"
 #include "TypeSystem.h"
+#include "Util.h"
 #include <cassert>
 #include <map>
 #include <memory>

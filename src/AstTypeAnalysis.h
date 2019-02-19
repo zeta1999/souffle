@@ -17,11 +17,12 @@
 #pragma once
 
 #include "AstAnalysis.h"
-#include "AstTypeEnvironmentAnalysis.h"
 #include "TypeSystem.h"
+#include <cassert>
 #include <map>
 #include <memory>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 namespace souffle {

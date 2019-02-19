@@ -27,6 +27,7 @@ namespace souffle {
 class AstClause;
 class AstComponent;
 class AstComponentInit;
+class AstFunctorDeclaration;
 class AstIODirective;
 class AstPragma;
 class AstRelation;

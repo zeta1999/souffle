@@ -20,7 +20,6 @@
 #include "Global.h"
 #include "IODirectives.h"
 #include "IndexSetAnalysis.h"
-#include "LogStatement.h"
 #include "RamCondition.h"
 #include "RamIndexScanKeys.h"
 #include "RamNode.h"
@@ -30,6 +29,7 @@
 #include "RamTranslationUnit.h"
 #include "RamValue.h"
 #include "RamVisitor.h"
+#include "RelationRepresentation.h"
 #include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
@@ -40,7 +40,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <typeinfo>
 #include <utility>
 #include <vector>

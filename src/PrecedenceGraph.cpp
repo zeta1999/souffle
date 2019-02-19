@@ -79,10 +79,9 @@ void RedundantRelations::run(const AstTranslationUnit& translationUnit) {
     std::set<const AstRelation*> notRedundant;
 
     const std::vector<AstRelation*>& relations = translationUnit.getProgram()->getRelations();
-
     /* Add all output relations to the work set */
     for (const AstRelation* r : relations) {
-        if (r->isComputed()) {
+        if (r->isOutput() || r->isPrintSize()) {
             work.insert(r);
         }
     }

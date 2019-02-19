@@ -110,8 +110,6 @@ public:
     virtual std::size_t size() = 0;
 
     // properties
-    virtual bool isOutput() const = 0;
-    virtual bool isInput() const = 0;
     virtual std::string getName() const = 0;
     virtual const char* getAttrType(size_t) const = 0;
     virtual const char* getAttrName(size_t) const = 0;

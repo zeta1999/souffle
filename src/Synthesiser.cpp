@@ -1655,6 +1655,14 @@ void Synthesiser::generateCode(
     std::string registerRel;  // registration of relations
     int relCtr = 0;
     std::string tempType;  // string to hold the type of the temporary relations
+    std::set<std::string> storeRelations;
+    std::set<std::string> loadRelations;
+    visitDepthFirst(*(prog.getMain()),
+            [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
+    visitDepthFirst(*(prog.getMain()),
+            [&](const RamPrintSize& size) { storeRelations.insert(size.getRelation().getName()); });
+    visitDepthFirst(*(prog.getMain()),
+            [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
     visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
         // get some table details
         const auto& rel = create.getRelation();
@@ -1680,9 +1688,7 @@ void Synthesiser::generateCode(
             os << relCtr++ << ",";
             os << type << ",";
             os << "Tuple<RamDomain," << arity << ">,";
-            os << arity << ",";
-            os << (rel.isInput() ? "true" : "false") << ",";
-            os << (rel.isComputed() ? "true" : "false");
+            os << arity;
             os << "> wrapper_" << name << ";\n";
 
             // construct types
@@ -1708,8 +1714,11 @@ void Synthesiser::generateCode(
             }
             initCons += "\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
                         tupleType + "," + tupleName + ")";
-            registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + "," +
-                           std::to_string(rel.isInput()) + "," + std::to_string(rel.isOutput()) + ");\n";
+            registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + ",";
+            registerRel += (loadRelations.count(rel.getName()) > 0) ? "true" : "false";
+            registerRel += ",";
+            registerRel += (storeRelations.count(rel.getName()) > 0) ? "true" : "false";
+            registerRel += ");\n";
         }
     });
 

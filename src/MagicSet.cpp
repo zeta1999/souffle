@@ -727,9 +727,10 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
         AstRelationIdentifier relName = rel->getName();
 
         // find computed relations for the topdown part
-        if (rel->isComputed()) {
+        if (rel->isOutput() || rel->isPrintSize()) {
             outputQueries.push_back(rel->getName());
-            adornmentRelations.push_back(rel->getName());  // add relation to adornment
+            // add relation to adornment
+            adornmentRelations.push_back(rel->getName());
         }
 
         // check whether edb or idb

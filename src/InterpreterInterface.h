@@ -126,9 +126,9 @@ protected:
 
 public:
     InterpreterRelInterface(InterpreterRelation& r, SymbolTable& s, std::string n, std::vector<std::string> t,
-            std::vector<std::string> an, bool rInput, bool rOutput, uint32_t i)
+            std::vector<std::string> an, uint32_t i)
             : relation(r), symTable(s), name(std::move(n)), types(std::move(t)), attrNames(std::move(an)),
-              relInput(rInput), relOutput(rOutput), id(i) {}
+              id(i) {}
     ~InterpreterRelInterface() override = default;
 
     /** Insert tuple */
@@ -151,16 +151,6 @@ public:
     iterator end() const override {
         return InterpreterRelInterface::iterator(
                 new InterpreterRelInterface::iterator_base(id, this, relation.end()));
-    }
-
-    /** Check whether relation is an output relation */
-    bool isOutput() const override {
-        return relOutput;
-    }
-
-    /** Check whether relation is an input relation */
-    bool isInput() const override {
-        return relInput;
     }
 
     /** Get name */
@@ -233,10 +223,22 @@ public:
                 std::string n = rel.getArg(i);
                 attrNames.push_back(n);
             }
-            InterpreterRelInterface* interface = new InterpreterRelInterface(interpreterRel, symTable,
-                    rel.getName(), types, attrNames, rel.isInput(), rel.isOutput(), id);
+            InterpreterRelInterface* interface = new InterpreterRelInterface(
+                    interpreterRel, symTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);
-            addRelation(rel.getName(), interface, rel.isInput(), rel.isOutput());
+            bool input;
+            bool output;
+            visitDepthFirst(prog, [&](const RamStore& store) {
+                if (store.getRelation() == rel) {
+                    output = true;
+                }
+            });
+            visitDepthFirst(prog, [&](const RamLoad& load) {
+                if (load.getRelation() == rel) {
+                    input = true;
+                }
+            });
+            addRelation(rel.getName(), interface, input, output);
             id++;
         }
     }

@@ -151,6 +151,11 @@ public:
     SymbolTable& getSymbolTable() const override {
         return symTable;
     }
+
+    /** Eliminate all the tuples in relation*/
+    void purge() override {
+        relation.purge();
+    }
 };
 
 /** Nullary relations */

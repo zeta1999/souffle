@@ -184,6 +184,11 @@ public:
     std::size_t size() override {
         return relation.size();
     }
+
+    /** Eliminate all the tuples in relation*/
+    void purge() override {
+        relation.purge();
+    }
 };
 
 /**

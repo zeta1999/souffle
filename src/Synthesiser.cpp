@@ -1682,9 +1682,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "// -- Table: " << raw_name << "\n";
 
         os << "std::unique_ptr<" << type << "> " << name << " = std::make_unique<" << type << ">();\n";
-        if ((loadRelations.count(rel.getName()) > 0 || storeRelations.count(rel.getName()) > 0 ||
-                    Global::config().has("provenance")) &&
-                !rel.isTemp()) {
+        if (!rel.isTemp()) {
             os << "souffle::RelationWrapper<";
             os << relCtr++ << ",";
             os << type << ",";

@@ -123,6 +123,9 @@ public:
         signature += ">";
         return signature;
     }
+
+    // Eliminate all the tuples in relation
+    virtual void purge() = 0;
 };
 
 /**
@@ -309,6 +312,21 @@ public:
     virtual void executeSubroutine(std::string name, const std::vector<RamDomain>& args,
             std::vector<RamDomain>& ret, std::vector<bool>& retErr) {}
     virtual const SymbolTable& getSymbolTable() const = 0;
+
+    // remove all the facts from the output relations
+    void purgeOutputRelations() {
+        for (Relation* relation : outputRelations) relation->purge();
+    }
+
+    // remove all the facts from the input relations
+    void purgeInputRelations() {
+        for (Relation* relation : inputRelations) relation->purge();
+    }
+
+    // remove all the facts from the internal relations
+    void purgeInternalRelations() {
+        for (Relation* relation : internalRelations) relation->purge();
+    }
 };
 
 /**

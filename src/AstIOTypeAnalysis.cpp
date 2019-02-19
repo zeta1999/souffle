@@ -24,7 +24,15 @@ namespace souffle {
 
 void IOType::run(const AstTranslationUnit& translationUnit) {
     visitDepthFirst(*translationUnit.getProgram(), [&](const AstIODirective& directive) {
+        if (directive.getNames().empty()) {
+            return;
+        }
+
         auto* relation = translationUnit.getProgram()->getRelation(directive.getName());
+        if (relation == nullptr) {
+            return;
+        }
+
         if (directive.isInput()) {
             inputRelations.insert(relation);
         }

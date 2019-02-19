@@ -396,16 +396,16 @@ public:
         }
         res->head = (head) ? std::unique_ptr<AstAtom>(head->clone()) : nullptr;
         for (const auto& cur : atoms) {
-            res->atoms.push_back(std::unique_ptr<AstAtom>(cur->clone()));
+            res->atoms.emplace_back(cur->clone());
         }
         for (const auto& cur : negations) {
-            res->negations.push_back(std::unique_ptr<AstNegation>(cur->clone()));
+            res->negations.emplace_back(cur->clone());
         }
         for (const auto& cur : provNegations) {
-            res->provNegations.push_back(std::unique_ptr<AstProvenanceNegation>(cur->clone()));
+            res->provNegations.emplace_back(cur->clone());
         }
         for (const auto& cur : constraints) {
-            res->constraints.push_back(std::unique_ptr<AstConstraint>(cur->clone()));
+            res->constraints.emplace_back(cur->clone());
         }
         res->fixedPlan = fixedPlan;
         res->generated = generated;

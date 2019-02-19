@@ -380,7 +380,7 @@ public:
     RamFact* clone() const override {
         RamFact* res = new RamFact(std::unique_ptr<RamRelationReference>(relation->clone()), {});
         for (auto& cur : values) {
-            res->values.push_back(std::unique_ptr<RamValue>(cur->clone()));
+            res->values.emplace_back(cur->clone());
         }
         return res;
     }

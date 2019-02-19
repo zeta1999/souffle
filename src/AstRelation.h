@@ -242,13 +242,13 @@ public:
         res->name = name;
         res->setSrcLoc(getSrcLoc());
         for (const auto& cur : attributes) {
-            res->attributes.push_back(std::unique_ptr<AstAttribute>(cur->clone()));
+            res->attributes.emplace_back(cur->clone());
         }
         for (const auto& cur : clauses) {
-            res->clauses.push_back(std::unique_ptr<AstClause>(cur->clone()));
+            res->clauses.emplace_back(cur->clone());
         }
         for (const auto& cur : ioDirectives) {
-            res->ioDirectives.push_back(std::unique_ptr<AstIODirective>(cur->clone()));
+            res->ioDirectives.emplace_back(cur->clone());
         }
         res->qualifier = qualifier;
         return res;

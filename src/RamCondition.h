@@ -312,7 +312,7 @@ public:
             if (cur != nullptr) {
                 val = cur->clone();
             }
-            res->values.push_back(std::unique_ptr<RamValue>(val));
+            res->values.emplace_back(val);
         }
         return res;
     }
@@ -420,7 +420,7 @@ public:
             if (cur != nullptr) {
                 val = cur->clone();
             }
-            res->values.push_back(std::unique_ptr<RamValue>(val));
+            res->values.emplace_back(val);
         }
         return res;
     }

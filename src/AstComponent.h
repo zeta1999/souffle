@@ -254,7 +254,7 @@ public:
     void copyBaseComponents(const AstComponent* other) {
         baseComponents.clear();
         for (const auto& baseComponent : other->getBaseComponents()) {
-            baseComponents.push_back(std::unique_ptr<AstComponentType>(baseComponent->clone()));
+            baseComponents.emplace_back(baseComponent->clone());
         }
     }
 
@@ -320,25 +320,25 @@ public:
         res->setComponentType(std::unique_ptr<AstComponentType>(type->clone()));
 
         for (const auto& cur : baseComponents) {
-            res->baseComponents.push_back(std::unique_ptr<AstComponentType>(cur->clone()));
+            res->baseComponents.emplace_back(cur->clone());
         }
         for (const auto& cur : components) {
-            res->components.push_back(std::unique_ptr<AstComponent>(cur->clone()));
+            res->components.emplace_back(cur->clone());
         }
         for (const auto& cur : instantiations) {
-            res->instantiations.push_back(std::unique_ptr<AstComponentInit>(cur->clone()));
+            res->instantiations.emplace_back(cur->clone());
         }
         for (const auto& cur : types) {
-            res->types.push_back(std::unique_ptr<AstType>(cur->clone()));
+            res->types.emplace_back(cur->clone());
         }
         for (const auto& cur : relations) {
-            res->relations.push_back(std::unique_ptr<AstRelation>(cur->clone()));
+            res->relations.emplace_back(cur->clone());
         }
         for (const auto& cur : clauses) {
-            res->clauses.push_back(std::unique_ptr<AstClause>(cur->clone()));
+            res->clauses.emplace_back(cur->clone());
         }
         for (const auto& cur : ioDirectives) {
-            res->ioDirectives.push_back(std::unique_ptr<AstIODirective>(cur->clone()));
+            res->ioDirectives.emplace_back(cur->clone());
         }
         for (const auto& cur : overrideRules) {
             res->overrideRules.insert(cur);

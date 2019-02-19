@@ -354,7 +354,7 @@ public:
     AstIntrinsicFunctor* clone() const override {
         std::vector<std::unique_ptr<AstArgument>> argsCopy;
         for (auto& arg : args) {
-            argsCopy.push_back(std::unique_ptr<AstArgument>(arg->clone()));
+            argsCopy.emplace_back(arg->clone());
         }
         auto res = new AstIntrinsicFunctor(function, std::move(argsCopy));
         res->setSrcLoc(getSrcLoc());
@@ -444,7 +444,7 @@ public:
     AstUserDefinedFunctor* clone() const override {
         auto res = new AstUserDefinedFunctor();
         for (auto& cur : args) {
-            res->args.push_back(std::unique_ptr<AstArgument>(cur->clone()));
+            res->args.emplace_back(cur->clone());
         }
         res->setSrcLoc(getSrcLoc());
         res->setName(getName());
@@ -505,7 +505,7 @@ public:
     AstRecordInit* clone() const override {
         auto res = new AstRecordInit();
         for (auto& cur : args) {
-            res->args.push_back(std::unique_ptr<AstArgument>(cur->clone()));
+            res->args.emplace_back(cur->clone());
         }
         res->setSrcLoc(getSrcLoc());
         return res;

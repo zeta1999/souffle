@@ -139,7 +139,7 @@ public:
         auto res = new AstAtom(name);
         res->setSrcLoc(getSrcLoc());
         for (const auto& cur : arguments) {
-            res->arguments.push_back(std::unique_ptr<AstArgument>(cur->clone()));
+            res->arguments.emplace_back(cur->clone());
         }
         return res;
     }

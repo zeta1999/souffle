@@ -340,7 +340,7 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
             if (debugStream != nullptr) {
                 // Store an annotated clause for printing purposes
                 AstClause* annotatedClause = createAnnotatedClause(clause, clauseArgumentTypes);
-                annotatedClauses.push_back(std::unique_ptr<AstClause>(annotatedClause));
+                annotatedClauses.emplace_back(annotatedClause);
             }
         }
     }

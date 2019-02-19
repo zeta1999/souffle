@@ -550,7 +550,7 @@ int main(int argc, char** argv) {
         }
         compileCmd += " ";
 
-        std::unique_ptr<Synthesiser> synthesiser = std::make_unique<Synthesiser>();
+        std::unique_ptr<Synthesiser> synthesiser = std::make_unique<Synthesiser>(*ramTranslationUnit);
 
         try {
             // Find the base filename for code generation and execution
@@ -575,7 +575,7 @@ int main(int argc, char** argv) {
 
             bool withSharedLibrary;
             std::ofstream os(sourceFilename);
-            synthesiser->generateCode(*ramTranslationUnit, os, baseIdentifier, withSharedLibrary);
+            synthesiser->generateCode(os, baseIdentifier, withSharedLibrary);
             os.close();
 
             if (withSharedLibrary) {

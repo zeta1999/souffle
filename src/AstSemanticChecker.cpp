@@ -213,10 +213,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         auto isGrounded = getGroundedTerms(*clause);
 
         visitDepthFirst(*clause, [&](const AstArgument& arg) {
-            if (dynamic_cast<const AstRecordInit*>(&arg) != nullptr) {
-                // More constructive type errors can be produced for records, so skip them here
-                return;
-            }
             if (!isGrounded[&arg]) {
                 // This argument has already caused an error, so skip it here
                 return;
@@ -304,25 +300,25 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
                 return;
             }
 
-            auto* type = dynamic_cast<const RecordType*>(&typeEnv.getType(record.getType()));
-            assert(type != nullptr && "Type of record must be a record type");
-            assert(record.getArguments().size() == type->getFields().size() &&
+            auto* recordType = dynamic_cast<const RecordType*>(&typeEnv.getType(record.getType()));
+            assert(recordType != nullptr && "Type of record must be a record type");
+            assert(record.getArguments().size() == recordType->getFields().size() &&
                     "Constructor has incorrect number of arguments");
-            if (!lattice.isSubtype(typeAnalysis.getType(&record), lattice.getType(*type))) {
+            if (dynamic_cast<const TopAType*>(typeAnalysis.getType(&record)) != nullptr) {
                 report.addError("Unable to deduce type " + toString(record.getType()) +
                                         " as record is not grounded as a record elsewhere, and at least one "
                                         "of its elements has the wrong type",
                         record.getSrcLoc());
-                for (size_t i = 0; i < record.getArguments().size(); ++i) {
-                    const AstArgument* member = record.getArguments()[i];
-                    const AnalysisType* fieldType = lattice.getType(type->getFields()[i].type);
-                    const AnalysisType* actualType = typeAnalysis.getType(member);
-                    if (actualType->isValid() && !lattice.isSubtype(actualType, fieldType)) {
-                        report.addError("Record constructor expects element to have type " +
-                                                toString(*fieldType) + " but instead it has type " +
-                                                toString(*actualType),
-                                member->getSrcLoc());
-                    }
+            }
+            for (size_t i = 0; i < record.getArguments().size(); ++i) {
+                const AstArgument* member = record.getArguments()[i];
+                const AnalysisType* fieldType = lattice.getType(recordType->getFields()[i].type);
+                const AnalysisType* actualType = typeAnalysis.getType(member);
+                if (actualType->isValid() && !lattice.isSubtype(actualType, fieldType)) {
+                    report.addError("Record constructor expects element to have type " +
+                                            toString(*fieldType) + " but instead it has type " +
+                                            toString(*actualType),
+                            member->getSrcLoc());
                 }
             }
         });

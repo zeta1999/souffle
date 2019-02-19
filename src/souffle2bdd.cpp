@@ -21,6 +21,7 @@
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstComponentChecker.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstPragma.h"
@@ -79,13 +80,16 @@ class BddBddBTranslator : private AstVisitor<void, std::ostream&> {
     // literals aggregated to be added to the end of a rule while converting
     std::vector<std::string> extra_literals;
 
+    const IOType* ioTypes;
+
     int varCounter = 0;
 
 public:
     BddBddBTranslator() = default;
 
-    void convert(std::ostream& out, const AstProgram& program) {
-        visit(program, out);
+    void convert(std::ostream& out, const AstTranslationUnit& tu) {
+        ioTypes = tu.getAnalysis<IOType>();
+        visit(*tu.getProgram(), out);
     }
 
 private:
@@ -143,10 +147,10 @@ private:
         });
         out << ")";
 
-        if (rel.isInput()) {
+        if (ioTypes->isInput(&rel)) {
             out << " inputtuples";
         }
-        if (rel.isOutput()) {
+        if (ioTypes->isOutput(&rel)) {
             out << " outputtuples";
         }
 
@@ -266,7 +270,7 @@ private:
 
 /** Convert a Souffle program to a bddbddb program */
 void toBddbddb(std::ostream& out, const AstTranslationUnit& translationUnit) {
-    BddBddBTranslator().convert(out, *translationUnit.getProgram());
+    BddBddBTranslator().convert(out, translationUnit);
 }
 
 int main(int argc, char** argv) {

@@ -358,9 +358,10 @@ bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(const A
 
 bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
+    auto* ioTypes = translationUnit.getAnalysis<IOType>();
     bool changed = false;
     for (auto rel : program.getRelations()) {
-        if (rel->clauseSize() > 0 || rel->isInput()) {
+        if (rel->clauseSize() > 0 || ioTypes->isInput(rel)) {
             continue;
         }
         changed |= removeEmptyRelationUses(translationUnit, rel);
@@ -376,7 +377,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& t
             }
         });
 
-        if (!usedInAggregate && !rel->isOutput() && !rel->isPrintSize()) {
+        if (!usedInAggregate && !ioTypes->isOutput(rel) && !ioTypes->isPrintSize(rel)) {
             program.removeRelation(rel->getName());
             changed = true;
         }

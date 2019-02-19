@@ -115,13 +115,13 @@ public:
         printSize = true;
     }
 
-    bool isInput() {
+    bool isInput() const {
         return input;
     }
-    bool isOutput() {
+    bool isOutput() const {
         return output;
     }
-    bool isPrintSize() {
+    bool isPrintSize() const {
         return printSize;
     }
 

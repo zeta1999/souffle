@@ -17,6 +17,7 @@
 #include "MagicSet.h"
 #include "AstAttribute.h"
 #include "AstIODirective.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstNode.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
@@ -714,6 +715,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
     // --- Setup ---
     // -------------
     const AstProgram* program = translationUnit.getProgram();
+    auto* ioTypes = translationUnit.getAnalysis<IOType>();
 
     // normalises and tracks bindings of composite arguments (namely records and functors)
     BindingStore compositeBindings = bindComposites(program);
@@ -727,7 +729,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
         AstRelationIdentifier relName = rel->getName();
 
         // find computed relations for the topdown part
-        if (rel->isOutput() || rel->isPrintSize()) {
+        if (ioTypes->isOutput(rel) || ioTypes->isPrintSize(rel)) {
             outputQueries.push_back(rel->getName());
             // add relation to adornment
             adornmentRelations.push_back(rel->getName());
@@ -1061,6 +1063,7 @@ void replaceUnderscores(AstProgram* program) {
 // Remove all old idb rules
 bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
     AstProgram* program = translationUnit.getProgram();
+    auto* ioTypes = translationUnit.getAnalysis<IOType>();
 
     separateDBs(program);  // make EDB int IDB = empty
 
@@ -1138,7 +1141,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
                 // copy over input directives to new adorned relation
                 // also - update input directives to correctly use default fact file names
-                if (originalRelation->isInput()) {
+                if (ioTypes->isInput(originalRelation)) {
                     IODirectives inputDirectives;  // to more easily work with the directive
                     auto* newDirective = new AstIODirective();
                     inputDirectives.setRelationName(newRelName.getNames()[0]);
@@ -1396,14 +1399,14 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
         // before deleting, store the directives of computed relations
         // for restoration later on
-        if (relation->isOutput()) {
+        if (ioTypes->isOutput(relation)) {
             addAsOutput.insert(relationName);
             std::vector<AstIODirective*> clonedDirectives;
             for (AstIODirective* iodir : relation->getIODirectives()) {
                 clonedDirectives.push_back(iodir->clone());
             }
             outputDirectives[relationName] = clonedDirectives;
-        } else if (relation->isPrintSize()) {
+        } else if (ioTypes->isPrintSize(relation)) {
             addAsPrintSize.insert(relationName);
             std::vector<AstIODirective*> clonedDirectives;
             for (AstIODirective* iodir : relation->getIODirectives()) {

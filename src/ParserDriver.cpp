@@ -119,17 +119,9 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
                 {DiagnosticMessage("Previous definition", prev->getSrcLoc())});
         translationUnit->getErrorReport().addDiagnostic(err);
     } else {
-        if (r->isInput()) {
+        if (!r->getIODirectives().empty()) {
             translationUnit->getErrorReport().addWarning(
-                    "Deprecated input qualifier was used in relation " + toString(name), r->getSrcLoc());
-        }
-        if (r->isOutput()) {
-            translationUnit->getErrorReport().addWarning(
-                    "Deprecated output qualifier was used in relation " + toString(name), r->getSrcLoc());
-        }
-        if (r->isPrintSize()) {
-            translationUnit->getErrorReport().addWarning(
-                    "Deprecated printsize qualifier was used in relation " + toString(name), r->getSrcLoc());
+                    "Deprecated io qualifier was used in relation " + toString(name), r->getSrcLoc());
         }
         translationUnit->getProgram()->addRelation(std::move(r));
     }

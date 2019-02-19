@@ -19,6 +19,7 @@
 #pragma once
 
 #include "AstAnalysis.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstRelation.h"
 #include "GraphUtils.h"
 #include <cstddef>
@@ -122,6 +123,8 @@ private:
     void scR(const AstRelation* relation, std::map<const AstRelation*, size_t>& preOrder, size_t& counter,
             std::stack<const AstRelation*>& S, std::stack<const AstRelation*>& P, size_t& numSCCs);
 
+    IOType* ioType = nullptr;
+
 public:
     static constexpr const char* name = "scc-graph";
 
@@ -179,7 +182,7 @@ public:
         std::set<const AstRelation*> externOutPreds;
         for (const auto& relation : getInternalRelations(scc)) {
             for (const auto& predecessor : precedenceGraph->graph().predecessors(relation)) {
-                if (relationToScc.at(predecessor) != scc && predecessor->isOutput()) {
+                if (relationToScc.at(predecessor) != scc && ioType->isOutput(predecessor)) {
                     externOutPreds.insert(predecessor);
                 }
             }
@@ -192,7 +195,7 @@ public:
         std::set<const AstRelation*> externNonOutPreds;
         for (const auto& relation : getInternalRelations(scc)) {
             for (const auto& predecessor : precedenceGraph->graph().predecessors(relation)) {
-                if (relationToScc.at(predecessor) != scc && !predecessor->isOutput()) {
+                if (relationToScc.at(predecessor) != scc && !ioType->isOutput(predecessor)) {
                     externNonOutPreds.insert(predecessor);
                 }
             }
@@ -217,7 +220,7 @@ public:
     const std::set<const AstRelation*> getInternalOutputRelations(const size_t scc) const {
         std::set<const AstRelation*> internOuts;
         for (const auto& relation : getInternalRelations(scc)) {
-            if (relation->isOutput()) {
+            if (ioType->isOutput(relation)) {
                 internOuts.insert(relation);
             }
         }
@@ -243,7 +246,7 @@ public:
             const size_t scc) const {
         std::set<const AstRelation*> internNonOutsWithExternSuccs;
         for (const auto& relation : getInternalRelations(scc)) {
-            if (!relation->isOutput()) {
+            if (!ioType->isOutput(relation)) {
                 for (const auto& successor : precedenceGraph->graph().successors(relation)) {
                     if (relationToScc.at(successor) != scc) {
                         internNonOutsWithExternSuccs.insert(relation);
@@ -259,7 +262,7 @@ public:
     const std::set<const AstRelation*> getInternalInputRelations(const size_t scc) const {
         std::set<const AstRelation*> internIns;
         for (const auto& relation : getInternalRelations(scc)) {
-            if (relation->isInput()) {
+            if (ioType->isInput(relation)) {
                 internIns.insert(relation);
             }
         }

@@ -1346,9 +1346,11 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
                                : translateRecursiveRelation(allInterns, recursiveClauses);
         appendStmt(current, std::move(bodyStatement));
 
+        auto* ioTypes = translationUnit.getAnalysis<IOType>();
+
         // print the size of all printsize relations in the current SCC
         for (const auto& relation : allInterns) {
-            if (relation->isPrintSize()) {
+            if (ioTypes->isPrintSize(relation)) {
                 makeRamPrintSize(current, relation);
             }
         }

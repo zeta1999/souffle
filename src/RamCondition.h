@@ -281,7 +281,7 @@ public:
                               out << *value;
                           }
                       })
-           << ") ∉ " << relation->getName();
+           << ") ∈ " << relation->getName();
     }
 
     /** Get key */

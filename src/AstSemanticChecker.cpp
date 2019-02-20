@@ -58,14 +58,17 @@ bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
     auto* typeAnalysis = translationUnit.getAnalysis<TypeAnalysis>();
     auto* precedenceGraph = translationUnit.getAnalysis<PrecedenceGraph>();
     auto* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
+    auto* ioTypes = translationUnit.getAnalysis<IOType>();
+
     checkProgram(translationUnit.getErrorReport(), *translationUnit.getProgram(), typeEnv, *typeAnalysis,
-            *precedenceGraph, *recursiveClauses);
+            *precedenceGraph, *recursiveClauses, *ioTypes);
     return false;
 }
 
 void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& program,
         const TypeEnvironment& typeEnv, const TypeAnalysis& typeAnalysis,
-        const PrecedenceGraph& precedenceGraph, const RecursiveClauses& recursiveClauses) {
+        const PrecedenceGraph& precedenceGraph, const RecursiveClauses& recursiveClauses,
+        const IOType& ioTypes) {
     // suppress warnings for given relations
     if (Global::config().has("suppress-warnings")) {
         std::vector<std::string> suppressedRelations =
@@ -100,7 +103,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // -- conduct checks --
     // TODO: re-write to use visitors
     checkTypes(report, program);
-    checkRules(report, typeEnv, program, recursiveClauses);
+    checkRules(report, typeEnv, program, recursiveClauses, ioTypes);
     checkNamespaces(report, program);
     checkIODirectives(report, program);
     checkWitnessProblem(report, program);
@@ -560,7 +563,7 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
 }
 
 void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const TypeEnvironment& typeEnv,
-        const AstProgram& program, const AstRelation& relation) {
+        const AstProgram& program, const AstRelation& relation, const IOType& ioTypes) {
     for (size_t i = 0; i < relation.getArity(); i++) {
         AstAttribute* attr = relation.getAttribute(i);
         AstTypeIdentifier typeName = attr->getTypeName();
@@ -588,7 +591,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
                 // TODO (#467) remove the next line to enable subprogram compilation for record types
                 Global::config().unset("engine");
 
-                if (relation.isInput()) {
+                if (ioTypes.isInput(&relation)) {
                     report.addError(
                             "Input relations must not have record types. "
                             "Attribute " +
@@ -596,7 +599,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
                                     toString(attr->getTypeName()),
                             attr->getSrcLoc());
                 }
-                if (relation.isOutput()) {
+                if (ioTypes.isOutput(&relation)) {
                     report.addWarning(
                             "Record types in output relations are not printed verbatim: attribute " +
                                     attr->getAttributeName() + " has record type " +
@@ -609,7 +612,8 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
 }
 
 void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironment& typeEnv,
-        const AstProgram& program, const AstRelation& relation, const RecursiveClauses& recursiveClauses) {
+        const AstProgram& program, const AstRelation& relation, const RecursiveClauses& recursiveClauses,
+        const IOType& ioTypes) {
     if (relation.getRepresentation() == RelationRepresentation::EQREL) {
         if (relation.getArity() == 2) {
             if (relation.getAttribute(0)->getTypeName() != relation.getAttribute(1)->getTypeName()) {
@@ -624,7 +628,7 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     }
 
     // start with declaration
-    checkRelationDeclaration(report, typeEnv, program, relation);
+    checkRelationDeclaration(report, typeEnv, program, relation, ioTypes);
 
     // check clauses
     for (AstClause* c : relation.getClauses()) {
@@ -632,16 +636,16 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     }
 
     // check whether this relation is empty
-    if (relation.clauseSize() == 0 && !relation.isInput() && !relation.isSuppressed()) {
+    if (relation.clauseSize() == 0 && !ioTypes.isInput(&relation) && !relation.isSuppressed()) {
         report.addWarning(
                 "No rules/facts defined for relation " + toString(relation.getName()), relation.getSrcLoc());
     }
 }
 
 void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& typeEnv,
-        const AstProgram& program, const RecursiveClauses& recursiveClauses) {
+        const AstProgram& program, const RecursiveClauses& recursiveClauses, const IOType& ioTypes) {
     for (AstRelation* cur : program.getRelations()) {
-        checkRelation(report, typeEnv, program, *cur, recursiveClauses);
+        checkRelation(report, typeEnv, program, *cur, recursiveClauses, ioTypes);
     }
 
     for (AstClause* cur : program.getOrphanClauses()) {

@@ -24,13 +24,13 @@ SymbolsA("a").
 SymbolsA("b").
 SymbolsB("b").
 SymbolsB("c").
-RecordsA([1]).
-RecordsA([2]).
-RecordsA([3]).
-RecordsB([2]).
-RecordsB([3]).
-RecordsB([4]).
-RecordsB([5]).
+RecordsA(*R[1]).
+RecordsA(*R[2]).
+RecordsA(*R[3]).
+RecordsB(*R[2]).
+RecordsB(*R[3]).
+RecordsB(*R[4]).
+RecordsB(*R[5]).
 RecordsB(nil).
 
 CountNumbers(x) :- x = count : { NumbersA(y), NumbersB(y) } .

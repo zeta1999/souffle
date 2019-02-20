@@ -1570,7 +1570,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "   RamDomain result=0; \n";
     os << "   try { result = stord(str); } catch(...) { \n";
     os << "     std::cerr << \"error: wrong string provided by to_number(\\\"\";\n";
-    os << "     std::cerr << str << \"\\\") ";
+    os << R"(     std::cerr << str << "\") )";
     os << "functor.\\n\";\n";
     os << "     raise(SIGFPE);\n";
     os << "   } return result;\n";

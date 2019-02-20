@@ -316,7 +316,7 @@ std::vector<unsigned int> applySips(sips_t sipsFunction, std::vector<AstAtom*> a
         // set all arguments that are variables as bound
         // note: arguments that are functors, etc., do not newly bind anything
         for (AstArgument* arg : nextAtom->getArguments()) {
-            if (AstVariable* var = dynamic_cast<AstVariable*>(arg)) {
+            if (auto* var = dynamic_cast<AstVariable*>(arg)) {
                 boundVariables.insert(var->getName());
             }
         }

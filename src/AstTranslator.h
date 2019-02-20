@@ -53,6 +53,12 @@ class TypeEnvironment;
  * Main class for AST Translator
  */
 class AstTranslator {
+public:
+    AstTranslator() = default;
+
+    /** translates AST to translation unit  */
+    std::unique_ptr<RamTranslationUnit> translateUnit(AstTranslationUnit& tu);
+
 private:
     /** AST program */
     const AstProgram* program = nullptr;
@@ -383,12 +389,6 @@ private:
 
     /** translate AST to RAM Program */
     void translateProgram(const AstTranslationUnit& translationUnit);
-
-public:
-    AstTranslator() = default;
-
-    /** translates AST to translation unit  */
-    std::unique_ptr<RamTranslationUnit> translateUnit(AstTranslationUnit& tu);
 };
 
 }  // end of namespace souffle

@@ -56,10 +56,6 @@ public:
  * Subclass of Argument that represents a named variable
  */
 class AstVariable : public AstArgument {
-protected:
-    /** Variable name */
-    std::string name;
-
 public:
     AstVariable(std::string n) : AstArgument(), name(std::move(n)) {}
 
@@ -91,6 +87,9 @@ public:
     }
 
 protected:
+    /** Variable name */
+    std::string name;
+
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstVariable*>(&node));
@@ -103,7 +102,6 @@ protected:
  * Subclass of Argument that represents an unnamed variable
  */
 class AstUnnamedVariable : public AstArgument {
-protected:
 public:
     AstUnnamedVariable() : AstArgument() {}
 
@@ -136,7 +134,6 @@ protected:
  * Subclass of Argument that represents a counter (for projections only)
  */
 class AstCounter : public AstArgument {
-protected:
 public:
     AstCounter() : AstArgument() {}
 
@@ -169,10 +166,6 @@ protected:
  * Subclass of Argument that represents a datalog constant value
  */
 class AstConstant : public AstArgument {
-protected:
-    /** Index of this Constant in the SymbolTable */
-    AstDomain idx;
-
 public:
     AstConstant(AstDomain i) : AstArgument(), idx(i) {}
 
@@ -187,6 +180,9 @@ public:
     }
 
 protected:
+    /** Index of this Constant in the SymbolTable */
+    AstDomain idx;
+
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstConstant*>(&node));
@@ -199,9 +195,6 @@ protected:
  * Subclass of Argument that represents a datalog constant value
  */
 class AstStringConstant : public AstConstant {
-    SymbolTable& symTable;
-    AstStringConstant(SymbolTable& symTable, size_t index) : AstConstant(index), symTable(symTable) {}
-
 public:
     AstStringConstant(SymbolTable& symTable, const std::string& c)
             : AstConstant(symTable.lookup(c)), symTable(symTable) {}
@@ -222,6 +215,10 @@ public:
         res->setSrcLoc(getSrcLoc());
         return res;
     }
+
+private:
+    SymbolTable& symTable;
+    AstStringConstant(SymbolTable& symTable, size_t index) : AstConstant(index), symTable(symTable) {}
 };
 
 /**
@@ -274,10 +271,6 @@ class AstFunctor : public AstArgument {};
  * Subclass of AstFunctor that represents an intrinsic (built-in) functor
  */
 class AstIntrinsicFunctor : public AstFunctor {
-protected:
-    FunctorOp function;
-    std::vector<std::unique_ptr<AstArgument>> args;
-
 public:
     template <typename... Operands>
     AstIntrinsicFunctor(FunctorOp function, Operands... operands) : function(function) {
@@ -377,6 +370,9 @@ public:
     }
 
 protected:
+    FunctorOp function;
+    std::vector<std::unique_ptr<AstArgument>> args;
+
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstIntrinsicFunctor*>(&node));
@@ -389,13 +385,6 @@ protected:
  * Subclass of AstFunctor that represents an extrinsic (user-defined) functor
  */
 class AstUserDefinedFunctor : public AstFunctor {
-protected:
-    /** name of user-defined functor */
-    std::string name;
-
-    /** arguments of user-defined functor */
-    std::vector<std::unique_ptr<AstArgument>> args;
-
 public:
     AstUserDefinedFunctor() = default;
 
@@ -467,6 +456,12 @@ public:
     }
 
 protected:
+    /** name of user-defined functor */
+    std::string name;
+
+    /** arguments of user-defined functor */
+    std::vector<std::unique_ptr<AstArgument>> args;
+
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstUserDefinedFunctor*>(&node));
@@ -480,9 +475,6 @@ protected:
  * new record.
  */
 class AstRecordInit : public AstArgument {
-    /** The list of components to be aggregated into a record */
-    std::vector<std::unique_ptr<AstArgument>> args;
-
 public:
     AstRecordInit() = default;
 
@@ -527,6 +519,9 @@ public:
     }
 
 protected:
+    /** The list of components to be aggregated into a record */
+    std::vector<std::unique_ptr<AstArgument>> args;
+
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstRecordInit*>(&node));
@@ -539,12 +534,6 @@ protected:
  * An argument capable of casting a value of one type into another.
  */
 class AstTypeCast : public AstArgument {
-    /** The value to be casted */
-    std::unique_ptr<AstArgument> value;
-
-    /** The target type name */
-    std::string type;
-
 public:
     AstTypeCast(std::unique_ptr<AstArgument> value, std::string type)
             : value(std::move(value)), type(std::move(type)) {}
@@ -581,6 +570,12 @@ public:
     }
 
 protected:
+    /** The value to be casted */
+    std::unique_ptr<AstArgument> value;
+
+    /** The target type name */
+    std::string type;
+
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstTypeCast*>(&node));
@@ -595,23 +590,12 @@ protected:
 class AstAggregator : public AstArgument {
 public:
     /**
-     * The kind of utilized aggregation operator.
+     * The kind of utilised aggregation operator.
      * Note: lower-case is utilized due to a collision with
      *  constants in the parser.
      */
     enum Op { min, max, count, sum };
 
-private:
-    /** The aggregation operator of this aggregation step */
-    Op fun;
-
-    /** The expression to be aggregated */
-    std::unique_ptr<AstArgument> expr;
-
-    /** A list of body-literals forming a sub-query which's result is projected and aggregated */
-    std::vector<std::unique_ptr<AstLiteral>> body;
-
-public:
     /** Creates a new aggregation node */
     AstAggregator(Op fun) : fun(fun), expr(nullptr) {}
 
@@ -672,16 +656,22 @@ protected:
         const auto& other = static_cast<const AstAggregator&>(node);
         return fun == other.fun && equal_ptr(expr, other.expr) && equal_targets(body, other.body);
     }
+
+private:
+    /** The aggregation operator of this aggregation step */
+    Op fun;
+
+    /** The expression to be aggregated */
+    std::unique_ptr<AstArgument> expr;
+
+    /** A list of body-literals forming a sub-query which's result is projected and aggregated */
+    std::vector<std::unique_ptr<AstLiteral>> body;
 };
 
 /**
  * An argument taking its value from an argument of a RAM subroutine
  */
 class AstSubroutineArgument : public AstArgument {
-private:
-    /** Index of argument in argument list*/
-    size_t number;
-
 public:
     AstSubroutineArgument(size_t n) : AstArgument(), number(n) {}
 
@@ -714,6 +704,10 @@ protected:
         const auto& other = static_cast<const AstSubroutineArgument&>(node);
         return number == other.number;
     }
+
+private:
+    /** Index of argument in argument list*/
+    size_t number;
 };
 
 }  // end of namespace souffle

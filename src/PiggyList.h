@@ -17,33 +17,6 @@ namespace souffle {
  */
 template <class T>
 class RandomInsertPiggyList {
-    const size_t BLOCKBITS = 16ul;
-    const size_t INITIALBLOCKSIZE = (1ul << BLOCKBITS);
-
-    // number of elements currently stored within
-    std::atomic<size_t> numElements{0};
-
-    // 2^64 - 1 elements can be stored (default initialised to nullptrs)
-    static constexpr size_t maxContainers = 64;
-    std::array<std::atomic<T*>, maxContainers> blockLookupTable = {};
-
-    // for parallel node insertions
-    mutable SpinLock slock;
-
-    /**
-     * Free the arrays allocated within the linked list nodes
-     */
-    void freeList() {
-        slock.lock();
-        // delete all - deleting a nullptr is a no-op
-        for (size_t i = 0; i < maxContainers; ++i) {
-            delete[] blockLookupTable[i].load();
-            // reset the container within to be empty.
-            blockLookupTable[i].store(nullptr);
-        }
-        slock.unlock();
-    }
-
 public:
     RandomInsertPiggyList() = default;
     // an instance where the initial size is not 65k, and instead is user settable (to a power of
@@ -120,38 +93,36 @@ public:
         freeList();
         numElements.store(0);
     }
-};
-
-template <class T>
-class PiggyList {
     const size_t BLOCKBITS = 16ul;
-    const size_t BLOCKSIZE = (1ul << BLOCKBITS);
+    const size_t INITIALBLOCKSIZE = (1ul << BLOCKBITS);
 
-    // number of inserted
-    std::atomic<size_t> num_containers;
-    size_t allocsize = BLOCKSIZE;
-    std::atomic<size_t> container_size;
-    std::atomic<size_t> m_size;
+    // number of elements currently stored within
+    std::atomic<size_t> numElements{0};
 
-    // > 2^64 elements can be stored (default initialise to nullptrs)
-    static constexpr size_t max_conts = 64;
-    std::array<T*, max_conts> blockLookupTable = {};
+    // 2^64 - 1 elements can be stored (default initialised to nullptrs)
+    static constexpr size_t maxContainers = 64;
+    std::array<std::atomic<T*>, maxContainers> blockLookupTable = {};
 
     // for parallel node insertions
-    mutable SpinLock sl;
+    mutable SpinLock slock;
 
     /**
      * Free the arrays allocated within the linked list nodes
      */
     void freeList() {
-        sl.lock();
-        // we don't know which ones are taken up!
-        for (size_t i = 0; i < num_containers; ++i) {
-            delete[] blockLookupTable[i];
+        slock.lock();
+        // delete all - deleting a nullptr is a no-op
+        for (size_t i = 0; i < maxContainers; ++i) {
+            delete[] blockLookupTable[i].load();
+            // reset the container within to be empty.
+            blockLookupTable[i].store(nullptr);
         }
-        sl.unlock();
+        slock.unlock();
     }
+};
 
+template <class T>
+class PiggyList {
 public:
     PiggyList() : num_containers(0), container_size(0), m_size(0) {}
     PiggyList(size_t initialbitsize)
@@ -305,10 +276,37 @@ public:
 
     iterator begin() {
         return iterator(this);
-    };
+    }
     iterator end() {
         return iterator(this, size());
-    };
+    }
+    const size_t BLOCKBITS = 16ul;
+    const size_t BLOCKSIZE = (1ul << BLOCKBITS);
+
+    // number of inserted
+    std::atomic<size_t> num_containers;
+    size_t allocsize = BLOCKSIZE;
+    std::atomic<size_t> container_size;
+    std::atomic<size_t> m_size;
+
+    // > 2^64 elements can be stored (default initialise to nullptrs)
+    static constexpr size_t max_conts = 64;
+    std::array<T*, max_conts> blockLookupTable = {};
+
+    // for parallel node insertions
+    mutable SpinLock sl;
+
+    /**
+     * Free the arrays allocated within the linked list nodes
+     */
+    void freeList() {
+        sl.lock();
+        // we don't know which ones are taken up!
+        for (size_t i = 0; i < num_containers; ++i) {
+            delete[] blockLookupTable[i];
+        }
+        sl.unlock();
+    }
 };
 
 }  // namespace souffle

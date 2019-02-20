@@ -44,38 +44,6 @@ class AstIODirective;
  *          that consists of relations, clauses and types
  */
 class AstProgram : public AstNode {
-    // TODO: Check whether this is needed
-    friend class ComponentInstantiationTransformer;
-    friend class ParserDriver;
-    friend class ProvenanceTransformer;
-
-    /** Program types  */
-    std::map<AstTypeIdentifier, std::unique_ptr<AstType>> types;
-
-    /** Program relations */
-    std::map<AstRelationIdentifier, std::unique_ptr<AstRelation>> relations;
-
-    /** External Functors */
-    std::map<std::string, std::unique_ptr<AstFunctorDeclaration>> functors;
-
-    /** The list of clauses provided by the user */
-    std::vector<std::unique_ptr<AstClause>> clauses;
-
-    /** The list of IO directives provided by the user */
-    std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
-
-    /** Program components */
-    std::vector<std::unique_ptr<AstComponent>> components;
-
-    /** Component instantiations */
-    std::vector<std::unique_ptr<AstComponentInit>> instantiations;
-
-    /** Pragmas */
-    std::vector<std::unique_ptr<AstPragma>> pragmaDirectives;
-
-    /** a private constructor to restrict creation */
-    AstProgram() = default;
-
 public:
     /** Deleted copy constructor since instances can not be copied */
     AstProgram(const AstProgram&) = delete;
@@ -88,12 +56,6 @@ public:
 
     // -- Types ----------------------------------------------------------------
 
-private:
-    /** Add the given type to the program. Asserts if a type with the
-      same name has already been added.  */
-    void addType(std::unique_ptr<AstType> type);
-
-public:
     /** Obtains the type with the given name */
     const AstType* getType(const AstTypeIdentifier& name) const;
 
@@ -102,24 +64,6 @@ public:
 
     // -- Relations ------------------------------------------------------------
 
-private:
-    /** Add the given relation to the program. Asserts if a relation with the
-     * same name has already been added. */
-    void addRelation(std::unique_ptr<AstRelation> r);
-
-    /** Add a clause to the program */
-    void addClause(std::unique_ptr<AstClause> clause);
-
-    /** Add an IO directive to the program */
-    void addIODirective(std::unique_ptr<AstIODirective> directive);
-
-    /** Add a pragma to the program */
-    void addPragma(std::unique_ptr<AstPragma> r);
-
-    /** Add a functor to the program */
-    void addFunctorDeclaration(std::unique_ptr<souffle::AstFunctorDeclaration> f);
-
-public:
     /** Find and return the relation in the program given its name */
     AstRelation* getRelation(const AstRelationIdentifier& name) const;
 
@@ -162,18 +106,6 @@ public:
 
     // -- Components -----------------------------------------------------------
 
-private:
-    /** Adds the given component to this program */
-    void addComponent(std::unique_ptr<AstComponent> c) {
-        components.push_back(std::move(c));
-    }
-
-    /** Adds a component instantiation */
-    void addInstantiation(std::unique_ptr<AstComponentInit> i) {
-        instantiations.push_back(std::move(i));
-    }
-
-public:
     /** Obtains a list of all comprised components */
     std::vector<AstComponent*> getComponents() const {
         return toPtrVector(components);
@@ -197,7 +129,6 @@ public:
     /** Mutates this node */
     void apply(const AstNodeMapper& map) override;
 
-public:
     /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res;
@@ -224,9 +155,6 @@ public:
         }
         return res;
     }
-
-private:
-    void finishParsing();
 
 protected:
     /** Implements the node comparison for this node type */
@@ -281,6 +209,76 @@ protected:
         // no different found => programs are equal
         return true;
     }
+
+private:
+    friend class ComponentInstantiationTransformer;
+    friend class ParserDriver;
+    friend class ProvenanceTransformer;
+
+    /** Program types  */
+    std::map<AstTypeIdentifier, std::unique_ptr<AstType>> types;
+
+    /** Program relations */
+    std::map<AstRelationIdentifier, std::unique_ptr<AstRelation>> relations;
+
+    /** External Functors */
+    std::map<std::string, std::unique_ptr<AstFunctorDeclaration>> functors;
+
+    /** The list of clauses provided by the user */
+    std::vector<std::unique_ptr<AstClause>> clauses;
+
+    /** The list of IO directives provided by the user */
+    std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
+
+    /** Program components */
+    std::vector<std::unique_ptr<AstComponent>> components;
+
+    /** Component instantiations */
+    std::vector<std::unique_ptr<AstComponentInit>> instantiations;
+
+    /** Pragmas */
+    std::vector<std::unique_ptr<AstPragma>> pragmaDirectives;
+
+    /** a private constructor to restrict creation */
+    AstProgram() = default;
+
+    // -- Types ----------------------------------------------------------------
+
+    /** Add the given type to the program. Asserts if a type with the
+      same name has already been added.  */
+    void addType(std::unique_ptr<AstType> type);
+
+    // -- Relations ------------------------------------------------------------
+
+    /** Add the given relation to the program. Asserts if a relation with the
+     * same name has already been added. */
+    void addRelation(std::unique_ptr<AstRelation> r);
+
+    /** Add a clause to the program */
+    void addClause(std::unique_ptr<AstClause> clause);
+
+    /** Add an IO directive to the program */
+    void addIODirective(std::unique_ptr<AstIODirective> directive);
+
+    /** Add a pragma to the program */
+    void addPragma(std::unique_ptr<AstPragma> r);
+
+    /** Add a functor to the program */
+    void addFunctorDeclaration(std::unique_ptr<souffle::AstFunctorDeclaration> f);
+
+    // -- Components -----------------------------------------------------------
+
+    /** Adds the given component to this program */
+    void addComponent(std::unique_ptr<AstComponent> c) {
+        components.push_back(std::move(c));
+    }
+
+    /** Adds a component instantiation */
+    void addInstantiation(std::unique_ptr<AstComponentInit> i) {
+        instantiations.push_back(std::move(i));
+    }
+
+    void finishParsing();
 };
 
 }  // end of namespace souffle

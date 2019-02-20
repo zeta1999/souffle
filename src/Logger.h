@@ -43,14 +43,6 @@ inline Lock& getOutputLock() {
  * processed tuples may be added in the future.
  */
 class Logger {
-private:
-    std::string label;
-    time_point start;
-    size_t startMaxRSS;
-    size_t iteration;
-    std::function<size_t()> size;
-    size_t preSize;
-
 public:
     Logger(std::string label, size_t iteration) : Logger(label, iteration, []() { return 0; }) {}
 
@@ -70,5 +62,13 @@ public:
         ProfileEventSingleton::instance().makeTimingEvent(
                 label, start, now(), startMaxRSS, endMaxRSS, size() - preSize, iteration);
     }
+
+private:
+    std::string label;
+    time_point start;
+    size_t startMaxRSS;
+    size_t iteration;
+    std::function<size_t()> size;
+    size_t preSize;
 };
 }  // end of namespace souffle

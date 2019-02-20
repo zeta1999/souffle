@@ -49,34 +49,30 @@ class SymbolTable;
  */
 
 class Interpreter {
-    friend InterpreterProgInterface;
+public:
+    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0), iteration(0), dll(nullptr) {}
+    virtual ~Interpreter() {
+        for (auto& x : environment) {
+            delete x.second;
+        }
+    }
 
-private:
-    /** RAM translation Unit */
-    RamTranslationUnit& translationUnit;
+    /** Get translation unit */
+    RamTranslationUnit& getTranslationUnit() {
+        return translationUnit;
+    }
 
+    /** Execute main program */
+    void executeMain();
+
+    /* Execute subroutine */
+    void executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
+            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors);
+
+protected:
     /** relation environment type */
     using relation_map = std::map<std::string, InterpreterRelation*>;
 
-    /** relation environment */
-    relation_map environment;
-
-    /** counters for atom profiling */
-    std::map<std::string, std::map<size_t, size_t>> frequencies;
-
-    /** counters for non-existence checks */
-    std::map<std::string, std::atomic<size_t>> reads;
-
-    /** counter for $ operator */
-    int counter;
-
-    /** iteration number (in a fix-point calculation) */
-    size_t iteration;
-
-    /** Dynamic library for user-defined functors */
-    void* dll;
-
-protected:
     /** Evaluate value */
     RamDomain evalVal(const RamValue& value, const InterpreterContext& ctxt = InterpreterContext());
 
@@ -178,25 +174,29 @@ protected:
         return dll;
     }
 
-public:
-    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0), iteration(0), dll(nullptr) {}
-    virtual ~Interpreter() {
-        for (auto& x : environment) {
-            delete x.second;
-        }
-    }
+private:
+    friend InterpreterProgInterface;
 
-    /** Get translation unit */
-    RamTranslationUnit& getTranslationUnit() {
-        return translationUnit;
-    }
+    /** RAM translation Unit */
+    RamTranslationUnit& translationUnit;
 
-    /** Execute main program */
-    void executeMain();
+    /** relation environment */
+    relation_map environment;
 
-    /* Execute subroutine */
-    void executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
-            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors);
+    /** counters for atom profiling */
+    std::map<std::string, std::map<size_t, size_t>> frequencies;
+
+    /** counters for non-existence checks */
+    std::map<std::string, std::atomic<size_t>> reads;
+
+    /** counter for $ operator */
+    int counter;
+
+    /** iteration number (in a fix-point calculation) */
+    size_t iteration;
+
+    /** Dynamic library for user-defined functors */
+    void* dll;
 };
 
 }  // end of namespace souffle

@@ -53,6 +53,9 @@ public:
     ~WriteFileCSV() override = default;
 
 protected:
+    const std::string delimiter;
+    std::ofstream file;
+
     void writeNullary() override {
         file << "()\n";
     }
@@ -73,10 +76,6 @@ protected:
         }
         file << "\n";
     }
-
-protected:
-    const std::string delimiter;
-    std::ofstream file;
 };
 
 #ifdef USE_LIBZ

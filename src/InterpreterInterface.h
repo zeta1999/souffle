@@ -43,87 +43,6 @@ inline RamDomain* convertTupleToNums(const tuple& t) {
  * Wrapper class for interpreter relations
  */
 class InterpreterRelInterface : public Relation {
-private:
-    /** Wrapped interpreter relation */
-    InterpreterRelation& relation;
-
-    /** Symbol table */
-    SymbolTable& symTable;
-
-    /** Name of relation */
-    std::string name;
-
-    /** Attribute type */
-    std::vector<std::string> types;
-
-    /** Attribute Names */
-    std::vector<std::string> attrNames;
-
-    /** Input relation flag */
-    bool relInput;
-
-    /** Output relation flag */
-    bool relOutput;
-
-    /** Unique id for wrapper */
-    // TODO (#541): replace unique id by dynamic type checking for C++
-    uint32_t id;
-
-protected:
-    /**
-     * Iterator wrapper class
-     */
-    class iterator_base : public Relation::iterator_base {
-    private:
-        const InterpreterRelInterface* ramRelationInterface;
-        InterpreterRelation::iterator it;
-        tuple tup;
-
-    public:
-        iterator_base(uint32_t arg_id, const InterpreterRelInterface* r, InterpreterRelation::iterator i)
-                : Relation::iterator_base(arg_id), ramRelationInterface(r), it(i), tup(r) {}
-        ~iterator_base() override = default;
-
-        /** Increment iterator */
-        void operator++() override {
-            ++it;
-        }
-
-        /** Get current tuple */
-        tuple& operator*() override {
-            // set tuple stream to first element
-            tup.rewind();
-
-            // construct the tuple to return
-            for (size_t i = 0; i < ramRelationInterface->getArity(); i++) {
-                if (*(ramRelationInterface->getAttrType(i)) == 's') {
-                    std::string s = ramRelationInterface->getSymbolTable().resolve((*it)[i]);
-                    tup << s;
-                } else {
-                    tup << (*it)[i];
-                }
-            }
-            tup.rewind();
-            return tup;
-        }
-
-        /** Clone iterator */
-        iterator_base* clone() const override {
-            return new InterpreterRelInterface::iterator_base(getId(), ramRelationInterface, it);
-        }
-
-    protected:
-        /** Check equivalence */
-        bool equal(const Relation::iterator_base& o) const override {
-            try {
-                auto iter = dynamic_cast<const InterpreterRelInterface::iterator_base&>(o);
-                return ramRelationInterface == iter.ramRelationInterface && it == iter.it;
-            } catch (const std::bad_cast& e) {
-                return false;
-            }
-        }
-    };
-
 public:
     InterpreterRelInterface(InterpreterRelation& r, SymbolTable& s, std::string n, std::vector<std::string> t,
             std::vector<std::string> an, uint32_t i)
@@ -189,18 +108,93 @@ public:
     void purge() override {
         relation.purge();
     }
+
+protected:
+    /**
+     * Iterator wrapper class
+     */
+    class iterator_base : public Relation::iterator_base {
+    public:
+        iterator_base(uint32_t arg_id, const InterpreterRelInterface* r, InterpreterRelation::iterator i)
+                : Relation::iterator_base(arg_id), ramRelationInterface(r), it(i), tup(r) {}
+        ~iterator_base() override = default;
+
+        /** Increment iterator */
+        void operator++() override {
+            ++it;
+        }
+
+        /** Get current tuple */
+        tuple& operator*() override {
+            // set tuple stream to first element
+            tup.rewind();
+
+            // construct the tuple to return
+            for (size_t i = 0; i < ramRelationInterface->getArity(); i++) {
+                if (*(ramRelationInterface->getAttrType(i)) == 's') {
+                    std::string s = ramRelationInterface->getSymbolTable().resolve((*it)[i]);
+                    tup << s;
+                } else {
+                    tup << (*it)[i];
+                }
+            }
+            tup.rewind();
+            return tup;
+        }
+
+        /** Clone iterator */
+        iterator_base* clone() const override {
+            return new InterpreterRelInterface::iterator_base(getId(), ramRelationInterface, it);
+        }
+
+    protected:
+        /** Check equivalence */
+        bool equal(const Relation::iterator_base& o) const override {
+            try {
+                auto iter = dynamic_cast<const InterpreterRelInterface::iterator_base&>(o);
+                return ramRelationInterface == iter.ramRelationInterface && it == iter.it;
+            } catch (const std::bad_cast& e) {
+                return false;
+            }
+        }
+
+    private:
+        const InterpreterRelInterface* ramRelationInterface;
+        InterpreterRelation::iterator it;
+        tuple tup;
+    };
+
+private:
+    /** Wrapped interpreter relation */
+    InterpreterRelation& relation;
+
+    /** Symbol table */
+    SymbolTable& symTable;
+
+    /** Name of relation */
+    std::string name;
+
+    /** Attribute type */
+    std::vector<std::string> types;
+
+    /** Attribute Names */
+    std::vector<std::string> attrNames;
+
+    /** Input relation flag */
+    bool relInput;
+
+    /** Output relation flag */
+    bool relOutput;
+
+    /** Unique id for wrapper */
+    // TODO (#541): replace unique id by dynamic type checking for C++
+    uint32_t id;
 };
 
 /**
  * Implementation of SouffleProgram interface for an interpreter instance
  */
 class InterpreterProgInterface : public SouffleProgram {
-private:
-    const RamProgram& prog;
-    Interpreter& exec;
-    SymbolTable& symTable;
-    std::vector<InterpreterRelInterface*> interfaces;
-
 public:
     InterpreterProgInterface(Interpreter& interp)
             : prog(interp.getTranslationUnit().getP()), exec(interp),
@@ -281,6 +275,12 @@ public:
     const SymbolTable& getSymbolTable() const override {
         return symTable;
     }
+
+private:
+    const RamProgram& prog;
+    Interpreter& exec;
+    SymbolTable& symTable;
+    std::vector<InterpreterRelInterface*> interfaces;
 };
 
 }  // end of namespace souffle

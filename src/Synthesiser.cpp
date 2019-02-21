@@ -913,21 +913,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     << join(project.getValues(), "),static_cast<RamDomain>(", rec) << ")}});\n";
             }
 
-            // check filter
-            if (project.hasFilter()) {
-                auto relFilter = synthesiser.getRelationName(project.getFilter());
-                auto ctxFilter = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(project.getFilter()) + ")";
-                out << "if (!" << relFilter << ".contains(tuple," << ctxFilter << ")) {";
-            }
-
             // insert tuple
             out << relName << "->"
                 << "insert(tuple," << ctxName << ");\n";
-
-            // end filter
-            if (project.hasFilter()) {
-                out << "}";
-            }
 
             PRINT_END_COMMENT(out);
         }
@@ -952,7 +940,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitBinaryRelation(const RamBinaryRelation& rel, std::ostream& out) override {
+        void visitConstraint(const RamConstraint& rel, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             switch (rel.getOperator()) {
                 // comparison operators

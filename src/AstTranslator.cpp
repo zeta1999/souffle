@@ -337,7 +337,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         std::unique_ptr<RamCondition> visitBinaryConstraint(const AstBinaryConstraint& binRel) override {
             std::unique_ptr<RamValue> valLHS = translator.translateValue(binRel.getLHS(), index);
             std::unique_ptr<RamValue> valRHS = translator.translateValue(binRel.getRHS(), index);
-            return std::make_unique<RamBinaryRelation>(binRel.getOperator(),
+            return std::make_unique<RamConstraint>(binRel.getOperator(),
                     translator.translateValue(binRel.getLHS(), index),
                     translator.translateValue(binRel.getRHS(), index));
         }
@@ -532,11 +532,13 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
 std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(const AstClause& clause) {
     const auto head = clause.getHead();
 
-    std::unique_ptr<RamProject> project = std::make_unique<RamProject>(translator.translateRelation(head));
-
+    std::vector<std::unique_ptr<RamValue>> values;
     for (AstArgument* arg : head->getArguments()) {
-        project->addArg(translator.translateValue(arg, valueIndex));
+        values.push_back(translator.translateValue(arg, valueIndex));
     }
+
+    std::unique_ptr<RamProject> project =
+            std::make_unique<RamProject>(translator.translateRelation(head), std::move(values));
 
     // check existence for original tuple if we have provenance
     // only if we don't compile
@@ -657,7 +659,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         for (const Location& loc : cur.second) {
             if (first != loc && !valueIndex.isAggregator(loc.level)) {
                 op = std::make_unique<RamFilter>(
-                        std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                        std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                 std::make_unique<RamElementAccess>(first.level, first.element, first.name),
                                 std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name)),
                         std::move(op));
@@ -683,7 +685,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 if (auto* agg = dynamic_cast<AstAggregator*>(atom->getArgument(pos))) {
                     auto loc = valueIndex.getAggregatorLocation(*agg);
                     op = std::make_unique<RamFilter>(
-                            std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamElementAccess>(
                                             curLevel, pos, translator.translateRelation(atom)->getArg(pos)),
                                     std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name)),
@@ -730,7 +732,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         // add constant constraints
         for (size_t pos = 0; pos < atom->argSize(); ++pos) {
             if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
-                aggregate->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                         std::make_unique<RamElementAccess>(
                                 level, pos, translator.translateRelation(atom)->getArg(pos)),
                         std::make_unique<RamNumber>(c->getIndex())));
@@ -738,7 +740,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 // all other appearances
                 for (const Location& loc : valueIndex.getVariableReferences().find(var->getName())->second) {
                     if (level != loc.level || (int)pos != loc.element) {
-                        aggregate->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                        aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                 std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name),
                                 std::make_unique<RamElementAccess>(
                                         level, pos, translator.translateRelation(atom)->getArg(pos))));
@@ -764,7 +766,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             for (size_t pos = 0; pos < atom->argSize(); ++pos) {
                 if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
                     op = std::make_unique<RamFilter>(
-                            std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamElementAccess>(
                                             level, pos, translator.translateRelation(atom)->getArg(pos)),
                                     std::make_unique<RamNumber>(c->getIndex())),
@@ -795,16 +797,14 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add constant constraints
             for (size_t pos = 0; pos < rec->getArguments().size(); ++pos) {
                 if (AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
-                    op = std::make_unique<RamFilter>(
-                            std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
-                                    std::make_unique<RamElementAccess>(level, pos),
-                                    std::make_unique<RamNumber>(c->getIndex())),
+                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                                             std::make_unique<RamElementAccess>(level, pos),
+                                                             std::make_unique<RamNumber>(c->getIndex())),
                             std::move(op));
                 } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
-                    op = std::make_unique<RamFilter>(
-                            std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
-                                    std::make_unique<RamElementAccess>(level, pos),
-                                    translator.translateValue(func, valueIndex)),
+                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                                             std::make_unique<RamElementAccess>(level, pos),
+                                                             translator.translateValue(func, valueIndex)),
                             std::move(op));
                 }
             }

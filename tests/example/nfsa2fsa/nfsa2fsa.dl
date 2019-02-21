@@ -97,13 +97,13 @@
 .init Nfsa = Automaton<N, Letter, Word>
 Nfsa.start_state(1).
 Nfsa.state(s) :- state(s).
-Nfsa.final(fs) :- fs = as(max s : { state(s) }, N).
+Nfsa.final(fs) :- fs = max s : { state(s) }.
 Nfsa.alphabet(c) :- alphabet(c).
 Nfsa.max_acceptance_size(5).
 Nfsa.tr(s, q, c) :- tr(s, q, c).
 
 // FSA state is bitvector that represents the set of NFSA states
-.init FsaState = Vector<number, NumberList>
+.init FsaState = Vector<N, NumberList>
 FsaState.size(sz) :- Nfsa.final(sz).
 FsaState.element(0).
 FsaState.element(1).

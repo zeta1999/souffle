@@ -45,7 +45,7 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         }
 
         // binary constraint
-        size_t visitBinaryRelation(const RamBinaryRelation& binRel) override {
+        size_t visitConstraint(const RamConstraint& binRel) override {
             return std::max(rvla->getLevel(binRel.getLHS()), rvla->getLevel(binRel.getRHS()));
         }
 

@@ -936,7 +936,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitBinaryRelation(const RamBinaryRelation& rel, std::ostream& out) override {
+        void visitConstraint(const RamConstraint& rel, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             switch (rel.getOperator()) {
                 // comparison operators

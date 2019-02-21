@@ -156,8 +156,7 @@ protected:
 /**
  * Binary constraint
  */
-// TODO (#541): rename to RamConstraint
-class RamBinaryRelation : public RamCondition {
+class RamConstraint : public RamCondition {
 private:
     /** Operator */
     BinaryConstraintOp op;
@@ -169,8 +168,8 @@ private:
     std::unique_ptr<RamValue> rhs;
 
 public:
-    RamBinaryRelation(BinaryConstraintOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
-            : RamCondition(RN_BinaryRelation), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
+    RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
+            : RamCondition(RN_Constraint), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -198,15 +197,6 @@ public:
         return std::move(rhs);
     }
 
-    /** Set left-hand side */
-    void setLHS(std::unique_ptr<RamValue> l) {
-        lhs.swap(l);
-    }
-    /** Set right-hand side */
-    void setRHS(std::unique_ptr<RamValue> r) {
-        rhs.swap(r);
-    }
-
     /** Get operator symbol */
     BinaryConstraintOp getOperator() const {
         return op;
@@ -218,8 +208,8 @@ public:
     }
 
     /** Create clone */
-    RamBinaryRelation* clone() const override {
-        RamBinaryRelation* res = new RamBinaryRelation(
+    RamConstraint* clone() const override {
+        RamConstraint* res = new RamConstraint(
                 op, std::unique_ptr<RamValue>(lhs->clone()), std::unique_ptr<RamValue>(rhs->clone()));
         return res;
     }
@@ -233,8 +223,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamBinaryRelation*>(&node));
-        const auto& other = static_cast<const RamBinaryRelation&>(node);
+        assert(nullptr != dynamic_cast<const RamConstraint*>(&node));
+        const auto& other = static_cast<const RamConstraint&>(node);
         return getOperator() == other.getOperator() && getLHS() == other.getLHS() &&
                getRHS() == other.getRHS();
     }

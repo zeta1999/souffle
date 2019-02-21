@@ -355,7 +355,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
         }
 
         // -- comparison operators --
-        bool visitBinaryRelation(const RamBinaryRelation& relOp) override {
+        bool visitConstraint(const RamConstraint& relOp) override {
             RamDomain lhs = interpreter.evalVal(*relOp.getLHS(), ctxt);
             RamDomain rhs = interpreter.evalVal(*relOp.getRHS(), ctxt);
             switch (relOp.getOperator()) {

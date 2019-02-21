@@ -167,7 +167,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 /** Get indexable element */
 std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
         RamCondition* c, size_t& element, size_t identifier) {
-    if (auto* binRelOp = dynamic_cast<RamBinaryRelation*>(c)) {
+    if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamValue* rhs = binRelOp->getRHS();
@@ -340,7 +340,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
         }
 
         bool dependsOn(const RamCondition* condition, const size_t identifier) const {
-            if (const auto* binRel = dynamic_cast<const RamBinaryRelation*>(condition)) {
+            if (const auto* binRel = dynamic_cast<const RamConstraint*>(condition)) {
                 return dependsOn(binRel->getLHS(), identifier) || dependsOn(binRel->getRHS(), identifier);
             }
             return false;

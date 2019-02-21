@@ -162,7 +162,7 @@ size_t getLevel(const RamCondition* condition) {
         }
 
         // binary constraint
-        size_t visitBinaryRelation(const RamBinaryRelation& binRel) override {
+        size_t visitConstraint(const RamConstraint& binRel) override {
             return std::max(getLevel(binRel.getLHS()), getLevel(binRel.getRHS()));
         }
 
@@ -198,7 +198,7 @@ size_t getLevel(const RamCondition* condition) {
 
 /** get indexable element */
 std::unique_ptr<RamValue> RamAggregate::getIndexElement(RamCondition* c, size_t& element, size_t level) {
-    if (auto* binRelOp = dynamic_cast<RamBinaryRelation*>(c)) {
+    if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamValue* rhs = binRelOp->getRHS();
@@ -242,13 +242,13 @@ void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
                     }
                 };
 
-                addCondition(std::make_unique<RamBinaryRelation>(
+                addCondition(std::make_unique<RamConstraint>(
                         BinaryConstraintOp::EQ, std::move(field), std::move(value)));
             }
         } else {
             std::unique_ptr<RamValue> field(new RamElementAccess(getIdentifier(), element));
             std::unique_ptr<RamCondition> eq(
-                    new RamBinaryRelation(BinaryConstraintOp::EQ, std::move(field), std::move(value)));
+                    new RamConstraint(BinaryConstraintOp::EQ, std::move(field), std::move(value)));
             if (condition != nullptr) {
                 condition = std::make_unique<RamAnd>(std::move(condition), std::move(eq));
             } else {

@@ -21,6 +21,7 @@
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstComponentChecker.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstPragma.h"
@@ -75,6 +76,8 @@ public:
 class LogicbloxConverter : private AstVisitor<void, std::ostream&> {
     // literals aggregated to be added to the end of a rule while converting
     std::vector<std::string> extra_literals;
+    const IOType* ioTypes;
+
     std::ostream& iout;
     std::ostream& eout;
     std::ostream& dout;
@@ -93,8 +96,9 @@ public:
         eout << "\n";
     }
 
-    void convert(std::ostream& out, const AstProgram& program) {
-        visit(program, out);
+    void convert(std::ostream& out, const AstTranslationUnit& tu) {
+        ioTypes = tu.getAnalysis<IOType>();
+        visit(*tu.getProgram(), out);
     }
 
 private:
@@ -146,7 +150,7 @@ private:
         dout << ".";
         dout << "\n";
 
-        if (rel.isInput()) {
+        if (ioTypes->isInput(&rel)) {
             int i = 0;
             iout << "fromFile,"
                  << "\"" << rel.getName() << ".facts\",";
@@ -163,7 +167,7 @@ private:
             });
             iout << "\n";
         }
-        if (rel.isOutput() || rel.isPrintSize()) {
+        if (ioTypes->isOutput(&rel) || ioTypes->isPrintSize(&rel)) {
             int i = 0;
             eout << "fromPredicate," << rel.getName() << ",";
             eout << join(rel.getAttributes(), ",", [&](std::ostream& os, AstAttribute* cur) {
@@ -286,7 +290,7 @@ private:
 void toLogicblox(std::ostream& out, std::ostream& impOut, std::ostream& expOut, std::ostream& decOut,
         const AstTranslationUnit& translationUnit) {
     // simply run the converter
-    LogicbloxConverter(impOut, expOut, decOut).convert(out, *translationUnit.getProgram());
+    LogicbloxConverter(impOut, expOut, decOut).convert(out, translationUnit);
 }
 
 int main(int argc, char** argv) {

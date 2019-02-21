@@ -177,41 +177,6 @@ public:
         this->representation = representation;
     }
 
-    /** Check whether relation is an output relation */
-    bool isOutput() const {
-        for (const auto& directive : ioDirectives) {
-            if (directive->isOutput()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** Check whether relation is an input relation */
-    bool isInput() const {
-        for (const auto& directive : ioDirectives) {
-            if (directive->isInput()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** Check whether relation is an input relation */
-    bool isPrintSize() const {
-        for (const auto& directive : ioDirectives) {
-            if (directive->isPrintSize()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** Check whether relation is an output relation */
-    bool isComputed() const {
-        return isOutput() || isPrintSize();
-    }
-
     /** Check whether relation is an overridable relation */
     bool isOverridable() const {
         return (qualifier & OVERRIDABLE_RELATION) != 0;
@@ -262,15 +227,6 @@ public:
             }
         }
         os << ") ";
-        if (isInput()) {
-            os << "input ";
-        }
-        if (isOutput()) {
-            os << "output ";
-        }
-        if (isPrintSize()) {
-            os << "printsize ";
-        }
         if (isOverridable()) {
             os << "overridable ";
         }

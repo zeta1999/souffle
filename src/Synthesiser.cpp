@@ -324,8 +324,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // check whether loop nest can be parallelized
             bool parallel = false;
             if (const auto* scan = dynamic_cast<const RamScan*>(&insert.getOperation())) {
-                parallel = scan->getIdentifier() == 0 && !scan->getRelation().isNullary() &&
-                           !scan->isPureExistenceCheck();
+                parallel = scan->getIdentifier() == 0 && !scan->getRelation().isNullary();
                 if (parallel) {
                     const auto& rel = scan->getRelation();
                     const auto& relName = synthesiser.getRelationName(rel);
@@ -336,7 +335,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << "PARALLEL_START;\n";
                 }
             } else if (const auto* scan = dynamic_cast<const RamIndexScan*>(&insert.getOperation())) {
-                parallel = scan->getIdentifier() == 0 && !scan->isPureExistenceCheck();
+                parallel = scan->getIdentifier() == 0;
                 if (parallel) {
                     const auto& rel = scan->getRelation();
                     const auto& relName = synthesiser.getRelationName(rel);
@@ -575,14 +574,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitNestedOperation(const RamNestedOperation& nested, std::ostream& out) override {
             visit(nested.getOperation(), out);
+            if (Global::config().has("profile") && !nested.getProfileText().empty()) {
+                out << "freqs[" << synthesiser.lookupFreqIdx(nested.getProfileText()) << "]++;\n";
+            }
         }
 
         void visitSearch(const RamSearch& search, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             visitNestedOperation(search, out);
-            if (Global::config().has("profile") && !search.getProfileText().empty()) {
-                out << "freqs[" << synthesiser.lookupFreqIdx(search.getProfileText()) << "]++;\n";
-            }
             PRINT_END_COMMENT(out);
         }
 
@@ -590,8 +589,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             auto identifier = scan.getIdentifier();
 
-            const bool parallel =
-                    identifier == 0 && !scan.getRelation().isNullary() && !scan.isPureExistenceCheck();
+            const bool parallel = identifier == 0 && !scan.getRelation().isNullary();
 
             // get relation name
             const auto& rel = scan.getRelation();
@@ -610,7 +608,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             });
 
             // if this search is a full scan
-            if (scan.isPureExistenceCheck() || scan.getRelation().isNullary()) {
+            if (scan.getRelation().isNullary()) {
                 out << "if(!" << relName << "->"
                     << "empty()) {\n";
                 visitSearch(scan, out);
@@ -648,7 +646,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto identifier = scan.getIdentifier();
 
-            const bool parallel = identifier == 0 && !scan.isPureExistenceCheck();
+            const bool parallel = identifier == 0;
 
             // check list of keys
             auto arity = rel.getArity();
@@ -713,16 +711,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "}});\n";
             out << "auto range = " << relName << "->"
                 << "equalRange_" << keys << "(key," << ctxName << ");\n";
-            if (scan.isPureExistenceCheck()) {
-                out << "if(!range.empty()) {\n";
-                visitSearch(scan, out);
-                out << "}\n";
-            } else {
-                out << "for(const auto& env" << identifier << " : range) {\n";
-                out << nullaryStopStmt;
-                visitSearch(scan, out);
-                out << "}\n";
-            }
+            out << "for(const auto& env" << identifier << " : range) {\n";
+            out << nullaryStopStmt;
+            visitSearch(scan, out);
+            out << "}\n";
             PRINT_END_COMMENT(out);
         }
 

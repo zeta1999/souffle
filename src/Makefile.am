@@ -67,6 +67,7 @@ souffle_sources = \
               AstFunctorDeclaration.h                   \
               AstGroundAnalysis.cpp AstGroundAnalysis.h \
               AstIODirective.h                          \
+              AstIOTypeAnalysis.cpp AstIOTypeAnalysis.h \
               AstLiteral.h                              \
               AstNode.h                                 \
               AstParserUtils.cpp    AstParserUtils.h    \
@@ -83,7 +84,8 @@ souffle_sources = \
               AstTranslator.cpp     AstTranslator.h     \
               AstType.h                                 \
               AstTypeAnalysis.cpp   AstTypeAnalysis.h   \
-              AstTypeEnvironmentAnalysis.cpp AstTypeEnvironmentAnalysis.h \
+              AstTypeEnvironmentAnalysis.cpp            \
+              AstTypeEnvironmentAnalysis.h              \
               AstTypes.h                                \
               AstUtils.cpp          AstUtils.h          \
               AstVisitor.h                              \
@@ -138,7 +140,8 @@ souffle_sources = \
               SrcLocation.cpp    SrcLocation.h          \
               StringPool.h                              \
               Synthesiser.cpp       Synthesiser.h       \
-              SynthesiserRelation.cpp SynthesiserRelation.h \
+              SynthesiserRelation.cpp                   \
+              SynthesiserRelation.h                     \
               TypeSystem.cpp        TypeSystem.h        \
               WriteStream.h                             \
               WriteStreamCSV.h                          \

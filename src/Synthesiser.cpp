@@ -22,6 +22,7 @@
 #include "IndexSetAnalysis.h"
 #include "LogStatement.h"
 #include "RamCondition.h"
+#include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
@@ -189,6 +190,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     class CodeEmitter : public RamVisitor<void, std::ostream&> {
     private:
         Synthesiser& synthesiser;
+        RamIndexScanKeysAnalysis* keysAnalysis;
 
 // macros to add comments to generated code for debugging
 #ifndef PRINT_BEGIN_COMMENT
@@ -206,7 +208,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         std::function<void(std::ostream&, const RamNode*)> rec;
 
     public:
-        CodeEmitter(Synthesiser& syn) : synthesiser(syn) {
+        CodeEmitter(Synthesiser& syn)
+                : synthesiser(syn),
+                  keysAnalysis(syn.getTranslationUnit().getAnalysis<RamIndexScanKeysAnalysis>()) {
             rec = [&](std::ostream& out, const RamNode* node) { this->visit(*node, out); };
         }
 
@@ -359,7 +363,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     };
 
                     // get index to be queried
-                    auto keys = scan->getRangeQueryColumns();
+                    auto keys = keysAnalysis->getRangeQueryColumns(scan);
 
                     out << "const Tuple<RamDomain," << arity << "> key({{";
                     printKeyTuple();
@@ -653,7 +657,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const auto& rangePattern = scan.getRangePattern();
 
             // get index to be queried
-            auto keys = scan.getRangeQueryColumns();
+            auto keys = keysAnalysis->getRangeQueryColumns(&scan);
 
             // a lambda for printing boundary key values
             auto printKeyTuple = [&]() {

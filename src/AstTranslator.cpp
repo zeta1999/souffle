@@ -532,11 +532,13 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
 std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(const AstClause& clause) {
     const auto head = clause.getHead();
 
-    std::unique_ptr<RamProject> project = std::make_unique<RamProject>(translator.translateRelation(head));
-
+    std::vector<std::unique_ptr<RamValue>> values;
     for (AstArgument* arg : head->getArguments()) {
-        project->addArg(translator.translateValue(arg, valueIndex));
+        values.push_back(translator.translateValue(arg, valueIndex));
     }
+
+    std::unique_ptr<RamProject> project =
+            std::make_unique<RamProject>(translator.translateRelation(head), std::move(values));
 
     // check existence for original tuple if we have provenance
     // only if we don't compile

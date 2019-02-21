@@ -108,7 +108,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamNestedOperation*>(&node));
         const auto& other = static_cast<const RamNestedOperation&>(node);
-        return getOperation() == other.getOperation();
+        return getOperation() == other.getOperation() && getProfileText() == other.getProfileText();
     }
 };
 
@@ -134,8 +134,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSearch*>(&node));
         const auto& other = static_cast<const RamSearch&>(node);
-        return RamNestedOperation::equal(other) && getIdentifier() == other.getIdentifier() &&
-               getProfileText() == other.getProfileText();
+        return RamNestedOperation::equal(other) && getIdentifier() == other.getIdentifier();
     }
 };
 
@@ -592,40 +591,16 @@ protected:
     /** Relation */
     std::unique_ptr<RamRelationReference> relation;
 
-    /** Relation to check whether does not exist */
-    // TODO (#541): rename
-    std::unique_ptr<RamRelationReference> filter;
-
     /* Values for projection */
     std::vector<std::unique_ptr<RamValue>> values;
 
 public:
-    RamProject(std::unique_ptr<RamRelationReference> rel)
-            : RamOperation(RN_Project), relation(std::move(rel)), filter(nullptr) {}
-
-    RamProject(std::unique_ptr<RamRelationReference> rel, const RamRelationReference& filter)
-            : RamOperation(RN_Project), relation(std::move(rel)),
-              filter(std::make_unique<RamRelationReference>(filter)) {}
-
-    /** Add value for a column */
-    void addArg(std::unique_ptr<RamValue> v) {
-        values.push_back(std::move(v));
-    }
+    RamProject(std::unique_ptr<RamRelationReference> rel, std::vector<std::unique_ptr<RamValue>> values)
+            : RamOperation(RN_Project), relation(std::move(rel)), values(std::move(values)) {}
 
     /** Get relation */
     const RamRelationReference& getRelation() const {
         return *relation;
-    }
-
-    /** Check filter */
-    bool hasFilter() const {
-        return (bool)filter;
-    }
-
-    /** Get filter */
-    const RamRelationReference& getFilter() const {
-        assert(hasFilter());
-        return *filter;
     }
 
     /** Get values */
@@ -653,13 +628,12 @@ public:
 
     /** Create clone */
     RamProject* clone() const override {
-        RamProject* res = new RamProject(std::unique_ptr<RamRelationReference>(relation->clone()));
-        if (filter != nullptr) {
-            res->filter = std::make_unique<RamRelationReference>(*filter);
-        }
+        std::vector<std::unique_ptr<RamValue>> newValues;
         for (auto& cur : values) {
-            res->values.push_back(std::unique_ptr<RamValue>(cur->clone()));
+            newValues.push_back(std::unique_ptr<RamValue>(cur->clone()));
         }
+        RamProject* res = new RamProject(
+                std::unique_ptr<RamRelationReference>(relation->clone()), std::move(newValues));
         return res;
     }
 
@@ -676,13 +650,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProject*>(&node));
         const auto& other = static_cast<const RamProject&>(node);
-        bool isFilterEqual = false;
-        if (filter == nullptr && other.filter == nullptr) {
-            isFilterEqual = true;
-        } else if (filter != nullptr && other.filter != nullptr) {
-            isFilterEqual = (*filter == *other.filter);
-        }
-        return getRelation() == other.getRelation() && equal_targets(values, other.values) && isFilterEqual;
+        return getRelation() == other.getRelation() && equal_targets(values, other.values);
     }
 };
 

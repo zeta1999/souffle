@@ -212,10 +212,17 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         // compute all grounded terms
         auto isGrounded = getGroundedTerms(*clause);
 
+        std::set<std::string> reportedVars;
         visitDepthFirst(*clause, [&](const AstArgument& arg) {
             if (!isGrounded[&arg]) {
                 // This argument has already caused an error, so skip it here
                 return;
+            }
+            if (dynamic_cast<const AstVariable*>(&arg) != nullptr) {
+                if (!reportedVars.insert(dynamic_cast<const AstVariable*>(&arg)->getName()).second) {
+                    // This variable's type has already been checked
+                    return;
+                }
             }
             const AnalysisType* type = typeAnalysis.getType(&arg);
             if (!type->isValid()) {

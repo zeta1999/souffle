@@ -128,7 +128,7 @@ public:
                 os << "number";
                 break;
             case Kind::RECORD:
-                os << "record";
+                os << "any record";
                 break;
         }
     }

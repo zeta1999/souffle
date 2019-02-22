@@ -26,11 +26,13 @@
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
+#include "RamExistenceCheck.h"
 #include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamOperationDepth.h"
 #include "RamProgram.h"
+#include "RamProvenanceExistenceCheck.h"
 #include "RamValue.h"
 #include "RamVisitor.h"
 #include "ReadStream.h"
@@ -277,10 +279,15 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
     class ConditionEvaluator : public RamVisitor<bool> {
         Interpreter& interpreter;
         const InterpreterContext& ctxt;
+        RamExistenceCheckAnalysis* existCheckAnalysis;
+        RamProvenanceExistenceCheckAnalysis* provExistCheckAnalysis;
 
     public:
         ConditionEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
-                : interpreter(interp), ctxt(ctxt) {}
+                : interpreter(interp), ctxt(ctxt),
+                  existCheckAnalysis(interp.getTranslationUnit().getAnalysis<RamExistenceCheckAnalysis>()),
+                  provExistCheckAnalysis(
+                          interp.getTranslationUnit().getAnalysis<RamProvenanceExistenceCheckAnalysis>()) {}
 
         // -- connectors operators --
 
@@ -294,9 +301,8 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 
         // -- relation operations --
 
-        bool visitEmptyCheck(const RamEmptyCheck& empty) override {
-            const InterpreterRelation& rel = interpreter.getRelation(empty.getRelation());
-            return rel.empty();
+        bool visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
+            return interpreter.getRelation(emptiness.getRelation()).empty();
         }
 
         bool visitExistenceCheck(const RamExistenceCheck& exists) override {
@@ -310,7 +316,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                 interpreter.reads[exists.getRelation().getName()]++;
             }
             // for total we use the exists test
-            if (exists.isTotal()) {
+            if (existCheckAnalysis->isTotal(&exists)) {
                 RamDomain tuple[arity];
                 for (size_t i = 0; i < arity; i++) {
                     tuple[i] = (values[i]) ? interpreter.evalVal(*values[i], ctxt) : MIN_RAM_DOMAIN;
@@ -328,9 +334,9 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             }
 
             // obtain index
-            auto idx = rel.getIndex(exists.getKey());
+            auto idx = rel.getIndex(existCheckAnalysis->getKey(&exists));
             auto range = idx->lowerUpperBound(low, high);
-            return range.first != range.second;  // if there are none => done
+            return range.first != range.second;  // if there is something => done
         }
 
         bool visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
@@ -354,9 +360,9 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             high[arity - 1] = MAX_RAM_DOMAIN;
 
             // obtain index
-            auto idx = rel.getIndex(provExists.getKey());
+            auto idx = rel.getIndex(provExistCheckAnalysis->getKey(&provExists));
             auto range = idx->lowerUpperBound(low, high);
-            return range.first != range.second;  // if there are none => done
+            return range.first != range.second;  // if there is something => done
         }
 
         // -- comparison operators --

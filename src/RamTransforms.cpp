@@ -35,9 +35,9 @@ namespace {
 std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* condition) {
     std::vector<std::unique_ptr<RamCondition>> conditions;
     while (condition != nullptr) {
-        if (const auto* ramAnd = dynamic_cast<const RamConjunction*>(condition)) {
-            conditions.emplace_back(ramAnd->getRHS().clone());
-            condition = &ramAnd->getLHS();
+        if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
+            conditions.push_back(std::unique_ptr<RamCondition>(ramConj->getRHS().clone()));
+            condition = &ramConj->getLHS();
         } else {
             conditions.emplace_back(condition->clone());
             break;
@@ -181,19 +181,19 @@ std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
-                RamValue* rhs = binRelOp->getRHS();
+                auto* rhs = binRelOp->getRHS()->clone();
                 if (rvla->getLevel(lhs) == identifier &&
                         (rcva->isConstant(rhs) || rvla->getLevel(rhs) < identifier)) {
                     element = lhs->getElement();
-                    return binRelOp->takeRHS();
+                    return std::unique_ptr<RamValue>(rhs);
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
-                RamValue* lhs = binRelOp->getLHS();
+                auto* lhs = binRelOp->getLHS()->clone();
                 if (rvla->getLevel(rhs) == identifier &&
                         (rcva->isConstant(lhs) || rvla->getLevel(lhs) < identifier)) {
                     element = rhs->getElement();
-                    return binRelOp->takeLHS();
+                    return std::unique_ptr<RamValue>(lhs);
                 }
             }
         }
@@ -439,19 +439,20 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     std::unique_ptr<RamCondition> constraint;
 
                     if (nullptr != dynamic_cast<RamScan*>(scan)) {
-                        constraint = std::make_unique<RamNegation>(std::make_unique<RamEmptyCheck>(
+                        constraint = std::make_unique<RamNegation>(std::make_unique<RamEmptinessCheck>(
                                 std::unique_ptr<RamRelationReference>(scan->getRelation().clone())));
                     } else if (auto* indexScan = dynamic_cast<RamIndexScan*>(scan)) {
-                        auto exists = std::make_unique<RamExistenceCheck>(
-                                std::unique_ptr<RamRelationReference>(scan->getRelation().clone()));
+                        std::vector<std::unique_ptr<RamValue>> values;
                         for (RamValue* value : indexScan->getRangePattern()) {
-                            if (nullptr != value) {
-                                exists->addArg(std::unique_ptr<RamValue>(value->clone()));
+                            if (value != nullptr) {
+                                values.push_back(std::unique_ptr<RamValue>(value->clone()));
                             } else {
-                                exists->addArg(nullptr);
+                                values.push_back(nullptr);
                             }
                         }
-                        constraint = std::move(exists);
+                        constraint = std::make_unique<RamExistenceCheck>(
+                                std::unique_ptr<RamRelationReference>(scan->getRelation().clone()),
+                                std::move(values));
                     }
 
                     node = std::make_unique<RamFilter>(std::move(constraint),

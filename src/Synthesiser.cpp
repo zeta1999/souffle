@@ -21,10 +21,12 @@
 #include "IODirectives.h"
 #include "IndexSetAnalysis.h"
 #include "RamCondition.h"
+#include "RamExistenceCheck.h"
 #include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
+#include "RamProvenanceExistenceCheck.h"
 #include "RamRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamValue.h"
@@ -189,6 +191,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     class CodeEmitter : public RamVisitor<void, std::ostream&> {
     private:
         Synthesiser& synthesiser;
+        RamExistenceCheckAnalysis* existCheckAnalysis;
+        RamProvenanceExistenceCheckAnalysis* provExistCheckAnalysis;
         RamIndexScanKeysAnalysis* keysAnalysis;
 
 // macros to add comments to generated code for debugging
@@ -209,6 +213,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     public:
         CodeEmitter(Synthesiser& syn)
                 : synthesiser(syn),
+                  existCheckAnalysis(syn.getTranslationUnit().getAnalysis<RamExistenceCheckAnalysis>()),
+                  provExistCheckAnalysis(
+                          syn.getTranslationUnit().getAnalysis<RamProvenanceExistenceCheckAnalysis>()),
                   keysAnalysis(syn.getTranslationUnit().getAnalysis<RamIndexScanKeysAnalysis>()) {
             rec = [&](std::ostream& out, const RamNode* node) { this->visit(*node, out); };
         }
@@ -908,20 +915,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- conditions --
 
-        void visitConjunction(const RamConjunction& c, std::ostream& out) override {
+        void visitConjunction(const RamConjunction& conj, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "((";
-            visit(c.getLHS(), out);
+            visit(conj.getLHS(), out);
             out << ") && (";
-            visit(c.getRHS(), out);
+            visit(conj.getRHS(), out);
             out << "))";
             PRINT_END_COMMENT(out);
         }
 
-        void visitNegation(const RamNegation& c, std::ostream& out) override {
+        void visitNegation(const RamNegation& neg, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "!(";
-            visit(c.getOperand(), out);
+            visit(neg.getOperand(), out);
             out << ")";
             PRINT_END_COMMENT(out);
         }
@@ -1013,9 +1020,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitEmptyCheck(const RamEmptyCheck& empty, std::ostream& out) override {
+        void visitEmptinessCheck(const RamEmptinessCheck& emptiness, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << synthesiser.getRelationName(empty.getRelation()) << "->"
+            out << synthesiser.getRelationName(emptiness.getRelation()) << "->"
                 << "empty()";
             PRINT_END_COMMENT(out);
         }
@@ -1034,7 +1041,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // if it is total we use the contains function
-            if (exists.isTotal()) {
+            if (existCheckAnalysis->isTotal(&exists)) {
                 out << relName << "->"
                     << "contains(Tuple<RamDomain," << arity << ">({{" << join(exists.getValues(), ",", rec)
                     << "}})," << ctxName << ")" << after;
@@ -1045,7 +1052,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // else we conduct a range query
             out << "!" << relName << "->"
                 << "equalRange";
-            out << "_" << exists.getKey();
+            out << "_" << existCheckAnalysis->getKey(&exists);
             out << "(Tuple<RamDomain," << arity << ">({{";
             out << join(exists.getValues(), ",", [&](std::ostream& out, RamValue* value) {
                 if (!value) {
@@ -1072,7 +1079,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "auto existenceCheck = " << relName << "->"
                 << "equalRange";
             // out << synthesiser.toIndex(ne.getKey());
-            out << "_" << provExists.getKey();
+            out << "_" << provExistCheckAnalysis->getKey(&provExists);
             out << "(Tuple<RamDomain," << arity << ">({{";
             for (size_t i = 0; i < provExists.getValues().size() - 1; i++) {
                 RamValue* val = provExists.getValues()[i];

@@ -343,11 +343,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         /** for negations */
         std::unique_ptr<RamCondition> visitNegation(const AstNegation& neg) override {
             // get contained atom
-            const AstAtom* atom = neg.getAtom();
-
-            // create constraint
-            auto exists = std::make_unique<RamExistenceCheck>(translator.translateRelation(atom));
-
+            const auto* atom = neg.getAtom();
             auto arity = atom->getArity();
 
             // account for two extra provenance columns
@@ -355,31 +351,29 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                 arity -= 2;
             }
 
+            std::vector<std::unique_ptr<RamValue>> values;
+
             for (size_t i = 0; i < arity; i++) {
                 const auto& arg = atom->getArgument(i);
                 // for (const auto& arg : atom->getArguments()) {
-                exists->addArg(translator.translateValue(arg, index));
+                values.push_back(translator.translateValue(arg, index));
             }
 
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
-                exists->addArg(nullptr);
-                exists->addArg(nullptr);
+                values.push_back(nullptr);
+                values.push_back(nullptr);
             }
 
             // add constraint
-            return std::make_unique<RamNegation>(std::move(exists));
+            return std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
+                    translator.translateRelation(atom), std::move(values)));
         }
 
         /** for provenance negation */
         std::unique_ptr<RamCondition> visitProvenanceNegation(const AstProvenanceNegation& neg) override {
             // get contained atom
             const AstAtom* atom = neg.getAtom();
-
-            // create constraint
-            auto provExists =
-                    std::make_unique<RamProvenanceExistenceCheck>(translator.translateRelation(atom));
-
             auto arity = atom->getArity();
 
             // account for two extra provenance columns
@@ -387,21 +381,24 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                 arity -= 2;
             }
 
+            std::vector<std::unique_ptr<RamValue>> values;
+
             for (size_t i = 0; i < arity; i++) {
                 const auto& arg = atom->getArgument(i);
                 // for (const auto& arg : atom->getArguments()) {
-                provExists->addArg(translator.translateValue(arg, index));
+                values.push_back(translator.translateValue(arg, index));
             }
 
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
-                provExists->addArg(nullptr);
+                values.push_back(nullptr);
                 // add the height annotation for provenanceNotExists
-                provExists->addArg(translator.translateValue(atom->getArgument(arity + 1), index));
+                values.push_back(translator.translateValue(atom->getArgument(arity + 1), index));
             }
 
             // add constraint
-            return std::make_unique<RamNegation>(std::move(provExists));
+            return std::make_unique<RamNegation>(std::make_unique<RamProvenanceExistenceCheck>(
+                    translator.translateRelation(atom), std::move(values)));
         }
     };
 
@@ -544,8 +541,9 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     if (Global::config().has("provenance") &&
             ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
                     !Global::config().has("generate")))) {
-        auto uniquenessEnforcement = std::make_unique<RamExistenceCheck>(translator.translateRelation(head));
         auto arity = head->getArity() - 2;
+
+        std::vector<std::unique_ptr<RamValue>> values;
 
         bool isVolatile = true;
         // add args for original tuple
@@ -554,16 +552,18 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
 
             // don't add counters
             visitDepthFirst(*arg, [&](const AstCounter& cur) { isVolatile = false; });
-            uniquenessEnforcement->addArg(translator.translateValue(arg, valueIndex));
+            values.push_back(translator.translateValue(arg, valueIndex));
         }
 
         // add two unnamed args for provenance columns
-        uniquenessEnforcement->addArg(nullptr);
-        uniquenessEnforcement->addArg(nullptr);
+        values.push_back(nullptr);
+        values.push_back(nullptr);
 
         if (isVolatile) {
             return std::make_unique<RamFilter>(
-                    std::make_unique<RamNegation>(std::move(uniquenessEnforcement)), std::move(project));
+                    std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
+                            translator.translateRelation(head), std::move(values))),
+                    std::move(project));
         }
     }
 
@@ -573,32 +573,32 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
 
 std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createOperation(
         const AstClause& clause) {
-    auto* returnValue = new RamReturn();
+    std::vector<std::unique_ptr<RamValue>> values;
 
     // get all values in the body
     for (AstLiteral* lit : clause.getBodyLiterals()) {
         if (auto atom = dynamic_cast<AstAtom*>(lit)) {
             for (AstArgument* arg : atom->getArguments()) {
-                returnValue->addValue(translator.translateValue(arg, valueIndex));
+                values.push_back(translator.translateValue(arg, valueIndex));
             }
         } else if (auto neg = dynamic_cast<AstNegation*>(lit)) {
             for (AstArgument* arg : neg->getAtom()->getArguments()) {
-                returnValue->addValue(translator.translateValue(arg, valueIndex));
+                values.push_back(translator.translateValue(arg, valueIndex));
             }
         } else if (auto con = dynamic_cast<AstBinaryConstraint*>(lit)) {
-            returnValue->addValue(translator.translateValue(con->getLHS(), valueIndex));
-            returnValue->addValue(translator.translateValue(con->getRHS(), valueIndex));
+            values.push_back(translator.translateValue(con->getLHS(), valueIndex));
+            values.push_back(translator.translateValue(con->getRHS(), valueIndex));
         } else if (auto neg = dynamic_cast<AstProvenanceNegation*>(lit)) {
             for (size_t i = 0; i < neg->getAtom()->getArguments().size() - 2; ++i) {
                 auto arg = neg->getAtom()->getArguments()[i];
-                returnValue->addValue(translator.translateValue(arg, valueIndex));
+                values.push_back(translator.translateValue(arg, valueIndex));
             }
-            returnValue->addValue(std::make_unique<RamNumber>(-1));
-            returnValue->addValue(std::make_unique<RamNumber>(-1));
+            values.push_back(std::make_unique<RamNumber>(-1));
+            values.push_back(std::make_unique<RamNumber>(-1));
         }
     }
 
-    return std::unique_ptr<RamOperation>(returnValue);
+    return std::make_unique<RamReturn>(std::move(values));
 }
 
 std::unique_ptr<RamCondition> AstTranslator::ClauseTranslator::createCondition(
@@ -608,7 +608,7 @@ std::unique_ptr<RamCondition> AstTranslator::ClauseTranslator::createCondition(
     // add stopping criteria for nullary relations
     // (if it contains already the null tuple, don't re-compute)
     if (head->getArity() == 0) {
-        return std::make_unique<RamEmptyCheck>(translator.translateRelation(head));
+        return std::make_unique<RamEmptinessCheck>(translator.translateRelation(head));
     }
     return nullptr;
 }
@@ -1115,8 +1115,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     std::unique_ptr<RamCondition> exitCond;
     for (const AstRelation* rel : scc) {
-        addCondition(exitCond,
-                std::make_unique<RamEmptyCheck>(std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
+        addCondition(exitCond, std::make_unique<RamEmptinessCheck>(
+                                       std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
     }
 
     /* construct fixpoint loop  */

@@ -207,26 +207,18 @@ protected:
     /** Values of index per column of table (if indexable) */
     std::vector<std::unique_ptr<RamValue>> queryPattern;
 
-    /** Indexable columns for a range query */
-    SearchColumns keys = 0;
-
 public:
     RamIndexScan(std::unique_ptr<RamRelationReference> r, size_t ident,
-            std::vector<std::unique_ptr<RamValue>> queryPattern, SearchColumns keys,
-            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            std::vector<std::unique_ptr<RamValue>> queryPattern, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
             : RamRelationSearch(RN_IndexScan, std::move(r), ident, std::move(nested), std::move(profileText)),
-              queryPattern(std::move(queryPattern)), keys(keys) {
+              queryPattern(std::move(queryPattern)) {
         assert(getRangePattern().size() == getRelation().getArity());
     }
 
     /** Get range pattern */
     std::vector<RamValue*> getRangePattern() const {
         return toPtrVector(queryPattern);
-    }
-
-    /** Get indexable columns of scan */
-    const SearchColumns& getRangeQueryColumns() const {
-        return keys;
     }
 
     /** Print */
@@ -270,7 +262,7 @@ public:
             }
         }
         RamIndexScan* res = new RamIndexScan(std::unique_ptr<RamRelationReference>(getRelation().clone()),
-                getIdentifier(), std::move(resQueryPattern), keys,
+                getIdentifier(), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
     }
@@ -290,8 +282,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIndexScan*>(&node));
         const auto& other = static_cast<const RamIndexScan&>(node);
-        return RamRelationSearch::equal(other) && equal_targets(queryPattern, other.queryPattern) &&
-               keys == other.keys;
+        return RamRelationSearch::equal(other) && equal_targets(queryPattern, other.queryPattern);
     }
 };
 
@@ -581,7 +572,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamFilter*>(&node));
         const auto& other = static_cast<const RamFilter&>(node);
-        return getCondition() == other.getCondition() && RamNestedOperation::equal(node);
+        return RamNestedOperation::equal(node) && getCondition() == other.getCondition();
     }
 };
 

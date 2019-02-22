@@ -89,6 +89,11 @@ public:
     Synthesiser(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
     virtual ~Synthesiser() = default;
 
+    /** Get translation unit */
+    RamTranslationUnit& getTranslationUnit() {
+        return translationUnit;
+    }
+
     /** Generate code */
     void generateCode(std::ostream& os, const std::string& id, bool& withSharedLibrary);
 };

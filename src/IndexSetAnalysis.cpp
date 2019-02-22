@@ -17,6 +17,7 @@
 #include "IndexSetAnalysis.h"
 #include "Global.h"
 #include "RamCondition.h"
+#include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamTranslationUnit.h"
@@ -286,7 +287,8 @@ void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
     visitDepthFirst(translationUnit.getP(), [&](const RamNode& node) {
         if (const auto* indexScan = dynamic_cast<const RamIndexScan*>(&node)) {
             IndexSet& indexes = getIndexes(indexScan->getRelation());
-            indexes.addSearch(indexScan->getRangeQueryColumns());
+            indexes.addSearch(
+                    translationUnit.getAnalysis<RamIndexScanKeysAnalysis>()->getRangeQueryColumns(indexScan));
         } else if (const auto* agg = dynamic_cast<const RamAggregate*>(&node)) {
             IndexSet& indexes = getIndexes(agg->getRelation());
             indexes.addSearch(agg->getRangeQueryColumns());

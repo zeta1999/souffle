@@ -198,9 +198,6 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
         // Values of index per column of table (if indexable)
         std::vector<std::unique_ptr<RamValue>> queryPattern(rel.getArity());
 
-        // Indexable columns for a range query
-        SearchColumns keys = 0;
-
         // Remaining conditions which weren't handled by an index
         std::unique_ptr<RamCondition> condition;
 
@@ -212,10 +209,12 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
             }
         };
 
+        bool indexable = false;
+
         for (RamCondition* cond : getConditions(filter->getCondition().clone())) {
             size_t element = 0;
             if (std::unique_ptr<RamValue> value = getIndexElement(cond, element, identifier)) {
-                keys |= (1 << element);
+                indexable = true;
                 if (queryPattern[element] == nullptr) {
                     queryPattern[element] = std::move(value);
                 } else {
@@ -226,10 +225,10 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
             }
         }
 
-        if (keys != 0) {
+        if (indexable) {
             // replace scan by index scan
             return std::make_unique<RamIndexScan>(std::unique_ptr<RamRelationReference>(rel.clone()),
-                    identifier, std::move(queryPattern), keys,
+                    identifier, std::move(queryPattern),
                     condition == nullptr
                             ? std::unique_ptr<RamOperation>(filter->getOperation().clone())
                             : std::make_unique<RamFilter>(std::move(condition),

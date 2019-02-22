@@ -26,6 +26,7 @@
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
+#include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamOperationDepth.h"
@@ -435,9 +436,12 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
     class OperationEvaluator : public RamVisitor<void> {
         Interpreter& interpreter;
         InterpreterContext& ctxt;
+        RamIndexScanKeysAnalysis* keysAnalysis;
 
     public:
-        OperationEvaluator(Interpreter& interp, InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
+        OperationEvaluator(Interpreter& interp, InterpreterContext& ctxt)
+                : interpreter(interp), ctxt(ctxt),
+                  keysAnalysis(interp.getTranslationUnit().getAnalysis<RamIndexScanKeysAnalysis>()) {}
 
         // -- Operations -----------------------------
 
@@ -484,7 +488,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             }
 
             // obtain index
-            auto idx = rel.getIndex(scan.getRangeQueryColumns(), nullptr);
+            auto idx = rel.getIndex(keysAnalysis->getRangeQueryColumns(&scan), nullptr);
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);

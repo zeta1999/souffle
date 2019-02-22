@@ -32,50 +32,6 @@ namespace souffle {
  * The signal handler is implemented as a singleton.
  */
 class SignalHandler {
-private:
-    // signal context information
-    std::atomic<const char*> msg;
-
-    // state of signal handler
-    bool isSet = false;
-
-    bool logMessages = false;
-
-    // previous signal handler routines
-    void (*prevFpeHandler)(int) = nullptr;
-    void (*prevIntHandler)(int) = nullptr;
-    void (*prevSegVHandler)(int) = nullptr;
-
-    /**
-     * Signal handler for various types of signals.
-     */
-    static void handler(int signal) {
-        const char* msg = instance()->msg;
-        std::string error;
-        switch (signal) {
-            case SIGINT:
-                error = "Interrupt";
-                break;
-            case SIGFPE:
-                error = "Floating-point arithmetic exception";
-                break;
-            case SIGSEGV:
-                error = "Segmentation violation";
-                break;
-            default:
-                error = "Unknown";
-                break;
-        }
-        if (msg != nullptr) {
-            std::cerr << error << " signal in rule:\n" << msg << std::endl;
-        } else {
-            std::cerr << error << " signal." << std::endl;
-        }
-        exit(1);
-    }
-
-    SignalHandler() : msg(nullptr) {}
-
 public:
     // get singleton
     static SignalHandler* instance() {
@@ -174,6 +130,50 @@ public:
         }
         exit(1);
     }
+
+private:
+    // signal context information
+    std::atomic<const char*> msg;
+
+    // state of signal handler
+    bool isSet = false;
+
+    bool logMessages = false;
+
+    // previous signal handler routines
+    void (*prevFpeHandler)(int) = nullptr;
+    void (*prevIntHandler)(int) = nullptr;
+    void (*prevSegVHandler)(int) = nullptr;
+
+    /**
+     * Signal handler for various types of signals.
+     */
+    static void handler(int signal) {
+        const char* msg = instance()->msg;
+        std::string error;
+        switch (signal) {
+            case SIGINT:
+                error = "Interrupt";
+                break;
+            case SIGFPE:
+                error = "Floating-point arithmetic exception";
+                break;
+            case SIGSEGV:
+                error = "Segmentation violation";
+                break;
+            default:
+                error = "Unknown";
+                break;
+        }
+        if (msg != nullptr) {
+            std::cerr << error << " signal in rule:\n" << msg << std::endl;
+        } else {
+            std::cerr << error << " signal." << std::endl;
+        }
+        exit(1);
+    }
+
+    SignalHandler() : msg(nullptr) {}
 };
 
 }  // namespace souffle

@@ -16,11 +16,10 @@
 
 #pragma once
 
-#include "IndexSetAnalysis.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
-#include "SynthesiserRelation.h"
 #include <map>
+#include <memory>
 #include <ostream>
 #include <set>
 #include <string>
@@ -30,6 +29,7 @@ namespace souffle {
 class RamOperation;
 class RamRelationReference;
 class RamTranslationUnit;
+class SynthesiserRelation;
 
 /**
  * A RAM synthesiser: synthesises a C++ program from a RAM program.

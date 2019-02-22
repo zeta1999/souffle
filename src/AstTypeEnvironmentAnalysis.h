@@ -26,11 +26,6 @@ class AstProgram;
 class AstTranslationUnit;
 
 class TypeEnvironmentAnalysis : public AstAnalysis {
-private:
-    TypeEnvironment env;
-
-    void updateTypeEnvironment(const AstProgram& program);
-
 public:
     static constexpr const char* name = "type-environment";
 
@@ -41,6 +36,11 @@ public:
     const TypeEnvironment& getTypeEnvironment() {
         return env;
     }
+
+private:
+    TypeEnvironment env;
+
+    void updateTypeEnvironment(const AstProgram& program);
 };
 
 }  // end of namespace souffle

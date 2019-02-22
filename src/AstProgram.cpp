@@ -18,6 +18,7 @@
 #include "AstProgram.h"
 #include "AstClause.h"
 #include "AstComponent.h"
+#include "AstFunctorDeclaration.h"
 #include "AstLiteral.h"
 #include "AstRelation.h"
 #include "ErrorReport.h"
@@ -235,17 +236,17 @@ AstProgram* AstProgram::clone() const {
 
     // move components
     for (const auto& cur : components) {
-        res->components.push_back(std::unique_ptr<AstComponent>(cur->clone()));
+        res->components.emplace_back(cur->clone());
     }
 
     // move component instantiations
     for (const auto& cur : instantiations) {
-        res->instantiations.push_back(std::unique_ptr<AstComponentInit>(cur->clone()));
+        res->instantiations.emplace_back(cur->clone());
     }
 
     // move ioDirectives
     for (const auto& cur : ioDirectives) {
-        res->ioDirectives.push_back(std::unique_ptr<AstIODirective>(cur->clone()));
+        res->ioDirectives.emplace_back(cur->clone());
     }
 
     ErrorReport errors;

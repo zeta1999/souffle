@@ -40,6 +40,13 @@ class TypeAnalysis;
 class TypeEnvironment;
 
 class AstSemanticChecker : public AstTransformer {
+public:
+    ~AstSemanticChecker() override = default;
+
+    std::string getName() const override {
+        return "AstSemanticChecker";
+    }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 
@@ -73,23 +80,16 @@ private:
     static void checkWitnessProblem(ErrorReport& report, const AstProgram& program);
     static void checkInlining(
             ErrorReport& report, const AstProgram& program, const PrecedenceGraph& precedenceGraph);
-
-public:
-    ~AstSemanticChecker() override = default;
-
-    std::string getName() const override {
-        return "AstSemanticChecker";
-    }
 };
 
 class AstExecutionPlanChecker : public AstTransformer {
-private:
-    bool transform(AstTranslationUnit& translationUnit) override;
-
 public:
     std::string getName() const override {
         return "AstExecutionPlanChecker";
     }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
 };
 
 }  // end of namespace souffle

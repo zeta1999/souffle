@@ -17,6 +17,7 @@
 #include "ParserDriver.h"
 #include "AstClause.h"
 #include "AstComponent.h"
+#include "AstFunctorDeclaration.h"
 #include "AstIODirective.h"
 #include "AstPragma.h"
 #include "AstProgram.h"

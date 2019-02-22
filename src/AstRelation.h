@@ -73,29 +73,6 @@ namespace souffle {
  *
  */
 class AstRelation : public AstNode {
-protected:
-    /** Name of relation */
-    AstRelationIdentifier name;
-
-    /** Attributes of the relation */
-    std::vector<std::unique_ptr<AstAttribute>> attributes;
-
-    /** Qualifier of relation (i.e., output or not an output relation) */
-    // TODO: Change to a set of qualifiers
-    int qualifier = 0;
-
-    /** Clauses associated with this relation. Clauses could be
-     * either facts or rules.
-     */
-    std::vector<std::unique_ptr<AstClause>> clauses;
-
-    /** IO directives associated with this relation.
-     */
-    std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
-
-    /** Datastructure to use for this relation */
-    RelationRepresentation representation{RelationRepresentation::DEFAULT};
-
 public:
     AstRelation() = default;
 
@@ -242,13 +219,13 @@ public:
         res->name = name;
         res->setSrcLoc(getSrcLoc());
         for (const auto& cur : attributes) {
-            res->attributes.push_back(std::unique_ptr<AstAttribute>(cur->clone()));
+            res->attributes.emplace_back(cur->clone());
         }
         for (const auto& cur : clauses) {
-            res->clauses.push_back(std::unique_ptr<AstClause>(cur->clone()));
+            res->clauses.emplace_back(cur->clone());
         }
         for (const auto& cur : ioDirectives) {
-            res->ioDirectives.push_back(std::unique_ptr<AstIODirective>(cur->clone()));
+            res->ioDirectives.emplace_back(cur->clone());
         }
         res->qualifier = qualifier;
         return res;
@@ -327,6 +304,28 @@ public:
     }
 
 protected:
+    /** Name of relation */
+    AstRelationIdentifier name;
+
+    /** Attributes of the relation */
+    std::vector<std::unique_ptr<AstAttribute>> attributes;
+
+    /** Qualifier of relation (i.e., output or not an output relation) */
+    // TODO: Change to a set of qualifiers
+    int qualifier = 0;
+
+    /** Clauses associated with this relation. Clauses could be
+     * either facts or rules.
+     */
+    std::vector<std::unique_ptr<AstClause>> clauses;
+
+    /** IO directives associated with this relation.
+     */
+    std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
+
+    /** Datastructure to use for this relation */
+    RelationRepresentation representation{RelationRepresentation::DEFAULT};
+
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstRelation*>(&node));

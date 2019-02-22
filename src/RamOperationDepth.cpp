@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "RamOperationDepth.h"
+#include "RamOperation.h"
 #include "RamVisitor.h"
 
 namespace souffle {

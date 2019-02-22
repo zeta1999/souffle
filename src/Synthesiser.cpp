@@ -20,7 +20,6 @@
 #include "Global.h"
 #include "IODirectives.h"
 #include "IndexSetAnalysis.h"
-#include "LogStatement.h"
 #include "RamCondition.h"
 #include "RamIndexScanKeys.h"
 #include "RamNode.h"
@@ -30,6 +29,7 @@
 #include "RamTranslationUnit.h"
 #include "RamValue.h"
 #include "RamVisitor.h"
+#include "RelationRepresentation.h"
 #include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
@@ -40,7 +40,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -1571,7 +1570,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "   RamDomain result=0; \n";
     os << "   try { result = stord(str); } catch(...) { \n";
     os << "     std::cerr << \"error: wrong string provided by to_number(\\\"\";\n";
-    os << "     std::cerr << str << \"\\\") ";
+    os << R"(     std::cerr << str << "\") )";
     os << "functor.\\n\";\n";
     os << "     raise(SIGFPE);\n";
     os << "   } return result;\n";

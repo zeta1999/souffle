@@ -31,7 +31,7 @@ public:
     Cli(int argc, char* argv[]) : args() {
         int c;
         option longOptions[1];
-        longOptions[0] = {0, 0, 0, 0};
+        longOptions[0] = {nullptr, 0, nullptr, 0};
         while ((c = getopt_long(argc, argv, "c:hj::", longOptions, nullptr)) != EOF) {
             // An invalid argument was given
             if (c == '?') {

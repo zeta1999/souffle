@@ -22,8 +22,11 @@
 #include "AstIOTypeAnalysis.h"
 #include "AstRelation.h"
 #include "GraphUtils.h"
+#include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <set>
 #include <stack>
@@ -39,10 +42,6 @@ class AstTranslationUnit;
  * Analysis pass computing the precedence graph of the relations of the datalog progam.
  */
 class PrecedenceGraph : public AstAnalysis {
-private:
-    /** Adjacency list of precedence graph (determined by the dependencies of the relations) */
-    Graph<const AstRelation*, AstNameComparison> backingGraph;
-
 public:
     static constexpr const char* name = "precedence-graph";
 
@@ -54,6 +53,10 @@ public:
     const Graph<const AstRelation*, AstNameComparison>& graph() const {
         return backingGraph;
     }
+
+private:
+    /** Adjacency list of precedence graph (determined by the dependencies of the relations) */
+    Graph<const AstRelation*, AstNameComparison> backingGraph;
 };
 
 /**
@@ -61,11 +64,6 @@ public:
  * of the output relations.
  */
 class RedundantRelations : public AstAnalysis {
-private:
-    PrecedenceGraph* precedenceGraph = nullptr;
-
-    std::set<const AstRelation*> redundantRelations;
-
 public:
     static constexpr const char* name = "redundant-relations";
 
@@ -76,18 +74,17 @@ public:
     const std::set<const AstRelation*>& getRedundantRelations() const {
         return redundantRelations;
     }
+
+private:
+    PrecedenceGraph* precedenceGraph = nullptr;
+
+    std::set<const AstRelation*> redundantRelations;
 };
 
 /**
  * Analysis pass identifying clauses which are recursive.
  */
 class RecursiveClauses : public AstAnalysis {
-private:
-    std::set<const AstClause*> recursiveClauses;
-
-    /** Determines whether the given clause is recursive within the given program */
-    bool computeIsRecursive(const AstClause& clause, const AstTranslationUnit& translationUnit) const;
-
 public:
     static constexpr const char* name = "recursive-clauses";
 
@@ -98,6 +95,12 @@ public:
     bool recursive(const AstClause* clause) const {
         return recursiveClauses.count(clause);
     }
+
+private:
+    std::set<const AstClause*> recursiveClauses;
+
+    /** Determines whether the given clause is recursive within the given program */
+    bool computeIsRecursive(const AstClause& clause, const AstTranslationUnit& translationUnit) const;
 };
 
 /**

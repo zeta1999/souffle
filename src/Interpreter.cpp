@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "Interpreter.h"
+#include "BTree.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
@@ -22,7 +23,6 @@
 #include "IOSystem.h"
 #include "InterpreterIndex.h"
 #include "InterpreterRecords.h"
-#include "LogStatement.h"
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
@@ -30,11 +30,13 @@
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamOperationDepth.h"
+#include "RamProgram.h"
 #include "RamValue.h"
 #include "RamVisitor.h"
 #include "ReadStream.h"
 #include "SignalHandler.h"
 #include "SymbolTable.h"
+#include "Util.h"
 #include "WriteStream.h"
 #include <algorithm>
 #include <cmath>
@@ -42,9 +44,11 @@
 #include <cstdlib>
 #include <exception>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>

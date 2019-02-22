@@ -28,11 +28,9 @@
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
-#include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
 #include "TypeSystem.h"
-#include <cassert>
 #include <cstddef>
 #include <functional>
 #include <map>

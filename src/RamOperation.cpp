@@ -22,6 +22,7 @@
 #include "RamRelation.h"
 #include "RamValue.h"
 #include "RamVisitor.h"
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <memory>

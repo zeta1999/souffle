@@ -16,7 +16,11 @@
 
 #pragma once
 
+#include "AstClause.h"
+#include "AstIODirective.h"
+#include "AstNode.h"
 #include "AstRelation.h"
+#include "AstType.h"
 
 #include <memory>
 #include <string>
@@ -24,8 +28,6 @@
 #include <vector>
 
 namespace souffle {
-
-class ErrorReport;
 
 /**
  * A component type is the class utilized to represent a construct of the form
@@ -36,16 +38,6 @@ class ErrorReport;
  * list of type parameters.
  */
 class AstComponentType : public AstNode {
-    /**
-     * The name of the addressed component.
-     */
-    std::string name;
-
-    /**
-     * The list of associated type parameters.
-     */
-    std::vector<AstTypeIdentifier> typeParams;
-
 public:
     /**
      * Creates a new component type based on the given name and parameters.
@@ -102,6 +94,13 @@ protected:
         const auto& other = static_cast<const AstComponentType&>(node);
         return name == other.name && typeParams == other.typeParams;
     }
+
+private:
+    /** The name of the addressed component. */
+    std::string name;
+
+    /** The list of associated type parameters. */
+    std::vector<AstTypeIdentifier> typeParams;
 };
 
 /**
@@ -109,16 +108,6 @@ protected:
  * binding them to a name.
  */
 class AstComponentInit : public AstNode {
-    /**
-     * The name of the resulting component instance.
-     */
-    std::string instanceName;
-
-    /**
-     * The type of the component to be instantiated.
-     */
-    std::unique_ptr<AstComponentType> componentType;
-
 public:
     // -- getters and setters --
 
@@ -171,57 +160,19 @@ protected:
         const auto& other = static_cast<const AstComponentInit&>(node);
         return instanceName == other.instanceName && componentType == other.componentType;
     }
+
+private:
+    /** The name of the resulting component instance. */
+    std::string instanceName;
+
+    /** The type of the component to be instantiated. */
+    std::unique_ptr<AstComponentType> componentType;
 };
 
 /**
  * A AST node describing a component within the input program.
  */
 class AstComponent : public AstNode {
-    /**
-     * The type of this component, including its name and type parameters.
-     */
-    std::unique_ptr<AstComponentType> type;
-
-    /**
-     * A list of base types to inherit relations and clauses from.
-     */
-    std::vector<std::unique_ptr<AstComponentType>> baseComponents;
-
-    /**
-     * A list of types declared in this component.
-     */
-    std::vector<std::unique_ptr<AstType>> types;
-
-    /**
-     * A list of relations declared in this component.
-     */
-    std::vector<std::unique_ptr<AstRelation>> relations;
-
-    /**
-     * A list of clauses defined in this component.
-     */
-    std::vector<std::unique_ptr<AstClause>> clauses;
-
-    /**
-     * A list of IO directives defined in this component.
-     */
-    std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
-
-    /**
-     * A list of nested components.
-     */
-    std::vector<std::unique_ptr<AstComponent>> components;
-
-    /**
-     * A list of nested component instantiations.
-     */
-    std::vector<std::unique_ptr<AstComponentInit>> instantiations;
-
-    /**
-     * Set of relations that are overwritten
-     */
-    std::set<std::string> overrideRules;
-
 public:
     ~AstComponent() override = default;
 
@@ -254,7 +205,7 @@ public:
     void copyBaseComponents(const AstComponent* other) {
         baseComponents.clear();
         for (const auto& baseComponent : other->getBaseComponents()) {
-            baseComponents.push_back(std::unique_ptr<AstComponentType>(baseComponent->clone()));
+            baseComponents.emplace_back(baseComponent->clone());
         }
     }
 
@@ -320,25 +271,25 @@ public:
         res->setComponentType(std::unique_ptr<AstComponentType>(type->clone()));
 
         for (const auto& cur : baseComponents) {
-            res->baseComponents.push_back(std::unique_ptr<AstComponentType>(cur->clone()));
+            res->baseComponents.emplace_back(cur->clone());
         }
         for (const auto& cur : components) {
-            res->components.push_back(std::unique_ptr<AstComponent>(cur->clone()));
+            res->components.emplace_back(cur->clone());
         }
         for (const auto& cur : instantiations) {
-            res->instantiations.push_back(std::unique_ptr<AstComponentInit>(cur->clone()));
+            res->instantiations.emplace_back(cur->clone());
         }
         for (const auto& cur : types) {
-            res->types.push_back(std::unique_ptr<AstType>(cur->clone()));
+            res->types.emplace_back(cur->clone());
         }
         for (const auto& cur : relations) {
-            res->relations.push_back(std::unique_ptr<AstRelation>(cur->clone()));
+            res->relations.emplace_back(cur->clone());
         }
         for (const auto& cur : clauses) {
-            res->clauses.push_back(std::unique_ptr<AstClause>(cur->clone()));
+            res->clauses.emplace_back(cur->clone());
         }
         for (const auto& cur : ioDirectives) {
-            res->ioDirectives.push_back(std::unique_ptr<AstIODirective>(cur->clone()));
+            res->ioDirectives.emplace_back(cur->clone());
         }
         for (const auto& cur : overrideRules) {
             res->overrideRules.insert(cur);
@@ -451,6 +402,34 @@ protected:
                equal_targets(components, other.components) &&
                equal_targets(instantiations, other.instantiations);
     }
+
+private:
+    /** The type of this component, including its name and type parameters. */
+    std::unique_ptr<AstComponentType> type;
+
+    /** A list of base types to inherit relations and clauses from. */
+    std::vector<std::unique_ptr<AstComponentType>> baseComponents;
+
+    /** A list of types declared in this component. */
+    std::vector<std::unique_ptr<AstType>> types;
+
+    /** A list of relations declared in this component. */
+    std::vector<std::unique_ptr<AstRelation>> relations;
+
+    /** A list of clauses defined in this component. */
+    std::vector<std::unique_ptr<AstClause>> clauses;
+
+    /** A list of IO directives defined in this component. */
+    std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
+
+    /** A list of nested components. */
+    std::vector<std::unique_ptr<AstComponent>> components;
+
+    /** A list of nested component instantiations. */
+    std::vector<std::unique_ptr<AstComponentInit>> instantiations;
+
+    /** Set of relations that are overwritten */
+    std::set<std::string> overrideRules;
 };
 
 }  // end of namespace souffle

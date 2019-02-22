@@ -272,7 +272,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
             if (rel) {
                 rel->addClause(std::unique_ptr<AstClause>(cur->clone()));
             } else {
-                orphans.push_back(std::unique_ptr<AstClause>(cur->clone()));
+                orphans.emplace_back(cur->clone());
             }
         }
     }

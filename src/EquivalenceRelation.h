@@ -32,13 +32,6 @@ template <typename TupleType>
 class EquivalenceRelation {
     using value_type = typename TupleType::value_type;
 
-    // marked as mutable due to difficulties with the const enforcement via the Relation API
-    // const operations *may* safely change internal state (i.e. collapse djset forest)
-    mutable souffle::SparseDisjointSet<value_type> sds;
-
-    // read/write lock on equivalencePartition
-    mutable souffle::shared_mutex statesLock;
-
     // mapping from representative to disjoint set
     // just a cache, essentially, used for iteration over
     using StatesList = souffle::PiggyList<value_type>;
@@ -46,9 +39,6 @@ class EquivalenceRelation {
     using StorePair = std::pair<value_type, StatesBucket>;
     using StatesMap = souffle::LambdaBTreeSet<StorePair, std::function<StatesBucket(StorePair&)>,
             souffle::EqrelMapComparator<StorePair>>;
-    mutable StatesMap equivalencePartition;
-    // whether the cache is stale
-    mutable std::atomic<bool> statesMapStale;
 
 public:
     EquivalenceRelation() : statesMapStale(false){};
@@ -163,12 +153,6 @@ public:
         }
     }
 
-protected:
-    bool containsElement(value_type e) const {
-        return this->sds.nodeExists(e);
-    }
-
-public:
     /**
      * Returns whether there exists a pair with these two nodes
      * @param x front of pair
@@ -220,67 +204,11 @@ public:
         return retVal;
     }
 
-private:
-    /**
-     * Generate a cache of the sets such that they can be iterated over efficiently.
-     * Each set is partitioned into a PiggyList.
-     */
-    void genAllDisjointSetLists() const {
-        statesLock.lock();
-
-        // no need to generate again, already done.
-        if (!this->statesMapStale.load(std::memory_order_acquire)) {
-            statesLock.unlock();
-            return;
-        }
-
-        // btree version
-        emptyPartition();
-
-        size_t dSetSize = this->sds.ds.a_blocks.size();
-        for (size_t i = 0; i < dSetSize; ++i) {
-            typename TupleType::value_type sparseVal = this->sds.toSparse(i);
-            parent_t rep = this->sds.findNode(sparseVal);
-
-            StorePair p = {rep, nullptr};
-            StatesList* mapList = equivalencePartition.insert(p, [&](StorePair& sp) {
-                auto* r = new StatesList(1);
-                sp.second = r;
-                return r;
-            });
-            mapList->append(sparseVal);
-        }
-
-        statesMapStale.store(false, std::memory_order_release);
-        statesLock.unlock();
-    }
-
-public:
     // an almighty iterator for several types of iteration.
     // Unfortunately, subclassing isn't an option with souffle
     //   - we don't deal with pointers (so no virtual)
     //   - and a single iter type is expected (see Relation::iterator e.g.) (i think)
     class iterator : public std::iterator<std::forward_iterator_tag, TupleType> {
-        const EquivalenceRelation* br = nullptr;
-        // special tombstone value to notify that this iter represents the end
-        bool isEndVal = false;
-
-        // all the different types of iterator this can be
-        enum IterType { ALL, ANTERIOR, ANTPOST, WITHIN };
-        IterType ityp;
-
-        TupleType cPair;
-
-        // the disjoint set that we're currently iterating through
-        StatesBucket djSetList;
-        typename StatesMap::iterator djSetMapListIt;
-        typename StatesMap::iterator djSetMapListEnd;
-
-        // used for ALL, and POSTERIOR (just a current index in the cList)
-        size_t cAnteriorIndex = 0;
-        // used for ALL, and ANTERIOR (just a current index in the cList)
-        size_t cPosteriorIndex = 0;
-
     public:
         // one iterator for signalling the end (simplifies)
         explicit iterator(const EquivalenceRelation* br, bool /* signalIsEndIterator */)
@@ -461,6 +389,27 @@ public:
 
             return *this;
         }
+
+    private:
+        const EquivalenceRelation* br = nullptr;
+        // special tombstone value to notify that this iter represents the end
+        bool isEndVal = false;
+
+        // all the different types of iterator this can be
+        enum IterType { ALL, ANTERIOR, ANTPOST, WITHIN };
+        IterType ityp;
+
+        TupleType cPair;
+
+        // the disjoint set that we're currently iterating through
+        StatesBucket djSetList;
+        typename StatesMap::iterator djSetMapListIt;
+        typename StatesMap::iterator djSetMapListEnd;
+
+        // used for ALL, and POSTERIOR (just a current index in the cList)
+        size_t cAnteriorIndex = 0;
+        // used for ALL, and ANTERIOR (just a current index in the cList)
+        size_t cPosteriorIndex = 0;
     };
 
 public:
@@ -637,6 +586,57 @@ public:
     iterator find(const TupleType& t) const {
         operation_hints context;
         return find(t, context);
+    }
+
+protected:
+    bool containsElement(value_type e) const {
+        return this->sds.nodeExists(e);
+    }
+
+private:
+    // marked as mutable due to difficulties with the const enforcement via the Relation API
+    // const operations *may* safely change internal state (i.e. collapse djset forest)
+    mutable souffle::SparseDisjointSet<value_type> sds;
+
+    // read/write lock on equivalencePartition
+    mutable souffle::shared_mutex statesLock;
+
+    mutable StatesMap equivalencePartition;
+    // whether the cache is stale
+    mutable std::atomic<bool> statesMapStale;
+
+    /**
+     * Generate a cache of the sets such that they can be iterated over efficiently.
+     * Each set is partitioned into a PiggyList.
+     */
+    void genAllDisjointSetLists() const {
+        statesLock.lock();
+
+        // no need to generate again, already done.
+        if (!this->statesMapStale.load(std::memory_order_acquire)) {
+            statesLock.unlock();
+            return;
+        }
+
+        // btree version
+        emptyPartition();
+
+        size_t dSetSize = this->sds.ds.a_blocks.size();
+        for (size_t i = 0; i < dSetSize; ++i) {
+            typename TupleType::value_type sparseVal = this->sds.toSparse(i);
+            parent_t rep = this->sds.findNode(sparseVal);
+
+            StorePair p = {rep, nullptr};
+            StatesList* mapList = equivalencePartition.insert(p, [&](StorePair& sp) {
+                auto* r = new StatesList(1);
+                sp.second = r;
+                return r;
+            });
+            mapList->append(sparseVal);
+        }
+
+        statesMapStale.store(false, std::memory_order_release);
+        statesLock.unlock();
     }
 };
 }  // namespace souffle

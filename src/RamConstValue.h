@@ -17,9 +17,11 @@
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamValue.h"
 
 namespace souffle {
+
+class RamValue;
+class RamTranslationUnit;
 
 /*
  * Class for a constant check

@@ -17,10 +17,12 @@
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamCondition.h"
-#include "RamValueLevel.h"
 
 namespace souffle {
+
+class RamCondition;
+class RamTranslationUnit;
+class RamValueLevelAnalysis;
 
 /*
  * Class for a level analysis

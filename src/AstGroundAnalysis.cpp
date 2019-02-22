@@ -19,9 +19,9 @@
 #include "AstClause.h"
 #include "AstConstraintAnalysis.h"
 #include "AstLiteral.h"
-#include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "Constraints.h"
+#include "Util.h"
 #include <map>
 #include <memory>
 #include <ostream>

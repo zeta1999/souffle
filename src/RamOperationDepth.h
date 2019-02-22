@@ -17,9 +17,11 @@
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamOperation.h"
 
 namespace souffle {
+
+class RamOperation;
+class RamTranslationUnit;
 
 /*
  * Class to compute the depth

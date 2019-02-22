@@ -17,13 +17,10 @@
 #pragma once
 
 #include "RamCondition.h"
-#include "RamConditionLevel.h"
-#include "RamConstValue.h"
 #include "RamNode.h"
 #include "RamRelation.h"
 #include "RamTypes.h"
 #include "RamValue.h"
-#include "RamValueLevel.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -621,7 +618,7 @@ public:
     RamProject* clone() const override {
         std::vector<std::unique_ptr<RamValue>> newValues;
         for (auto& cur : values) {
-            newValues.push_back(std::unique_ptr<RamValue>(cur->clone()));
+            newValues.emplace_back(cur->clone());
         }
         RamProject* res = new RamProject(
                 std::unique_ptr<RamRelationReference>(relation->clone()), std::move(newValues));
@@ -701,7 +698,7 @@ public:
     RamReturn* clone() const override {
         auto* res = new RamReturn();
         for (auto& cur : values) {
-            res->values.push_back(std::unique_ptr<RamValue>(cur->clone()));
+            res->values.emplace_back(cur->clone());
         }
         return res;
     }

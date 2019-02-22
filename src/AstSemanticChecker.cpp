@@ -18,6 +18,7 @@
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstFunctorDeclaration.h"
 #include "AstGroundAnalysis.h"
 #include "AstIODirective.h"
 #include "AstLiteral.h"
@@ -37,9 +38,11 @@
 #include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
+#include "RelationRepresentation.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <iostream>

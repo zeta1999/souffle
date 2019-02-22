@@ -1,0 +1,96 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the type system on records
+
+.number_type N1
+.type R1 = [ x : N1 ]
+.type R2 = []
+.type R3 = [ x : R1, y : R3 ]
+
+.decl OutR1(x : R1)
+.decl OutR2(x : R2)
+.decl OutR3(x : R3)
+.decl OutN1(x : N1)
+.decl OutNumber(x : number)
+.decl InN1(x : N1)
+.decl InNumber(x : number)
+.decl InR1(x : R1)
+.decl InR2(x : R2)
+.decl InR3(x : R3)
+
+// Check records are allowed in facts (no errors)
+OutR1(nil).
+OutR1(*R1[1]).
+OutR2(*R2[]).
+OutR3(*R3[nil,*R3[*R1[2],nil]]).
+
+// Check records can be copied (no errors)
+OutR1(x) :- InR1(x).
+OutR3(x) :- InR3(*R3[_,x]).
+OutR1(x) :- InR3(*R3[x,_]).
+OutR3(*R3[x,nil]) :- InR1(x).
+OutR3(*R3[nil,x]) :- InR3(x).
+OutR2(x) :- InR1(x), x = nil.
+
+// Check record types cannot be mixed (errors)
+OutR1(x) :- InR2(x).                                // error
+OutR1(x) :- InR3(x).                                // error
+OutR2(x) :- InR1(x).                                // error
+OutR2(x) :- InR3(x).                                // error
+OutR3(x) :- InR1(x).                                // error
+OutR3(x) :- InR2(x).                                // error
+OutR1(x) :- InR1(x), !InR2(x).                      // error
+OutR3(x) :- InR3(x), x = *R2[].                     // error
+OutR2(x) :- InR2(x), InR1(y), x = y.                // error
+OutR1(x) :- InR2(x), InR3(x).                       // error
+
+// Check values can be extracted from records (no errors)
+OutN1(x) :- InR1(*R1[x]).
+OutNumber(x) :- InR1(*R1[x]).
+OutN1(x) :- InR3(*R3[*R1[x],_]).
+
+// Check values can be inserted into records (some errors)
+OutR1(*R1[x]) :- InN1(x).
+OutR1(*R1[x]) :- InNumber(x).                       // error
+OutR3(*R3[*R1[x],y]) :- InN1(x), InR3(y).
+
+// Check grounded but poorly types records (some errors)
+OutR1(x) :- InNumber(y), x = *R1 [y], InR1(x).
+OutR1(x) :- InNumber(y), x = *R1 [y], !InR1(x).     // error
+OutR1(x) :- !InNumber(y), x = *R1 [y], InR1(x).
+OutR1(x) :- !InNumber(y), x = *R1 [y], !InR1(x).    // error
+
+// Check records work with components (no errors)
+.comp component<T1, T2, T3> {
+    .type R4 = [x : N1]
+    .type R5 = []
+    .type R6 = [x : R6]
+    .decl InT1(x : T1)
+    .decl InR2(x : R2)
+    .decl InT3(x : T3)
+    .decl InR4(x : R4)
+    .decl InR5(x : R5)
+    .decl InR6(x : R6)
+    .decl OutT1(x : T1)
+    .decl OutT2(x : T2)
+    .decl OutR3(x : R3)
+    .decl OutR4(x : R4)
+    .decl OutR5(x : R5)
+    .decl OutR6(x : R6)
+    OutT1(*T1[x]) :- InT1(*T1[x]).
+    OutT2(*T2[]) :- InR2(*R2[]).
+    OutR3(*R3[x,y]) :- InT3(*T3[x,y]).
+    OutR4(*R4[x]) :- InR4(*R4[x]).
+    OutR5(*R5[]) :- InR5(*R5[]).
+    OutR6(*R6[x]) :- InR6(*R6[x]).
+    OutT1(*T1[x]) :- InR4(*R4[x]).
+    OutT2(*T2[]) :- InR5(*R5[]).
+    OutR4(*R4[x]) :- InT1(*T1[x]).
+    OutR5(*R5[]) :- InR2(*R2[]).
+}
+
+.init instance = component<R1,R2,R3>

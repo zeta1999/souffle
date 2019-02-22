@@ -1,0 +1,109 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the type system on functors
+
+.number_type N1
+.number_type N2
+.type N12 = N1 | N2
+.symbol_type S1
+.symbol_type S2
+.type S12 = S1 | S2
+.functor f(number, symbol, symbol) : symbol
+.functor g(symbol) : number
+
+.decl InN1(x : N1)
+.decl InN2(x : N2)
+.decl InN12(x : N12)
+.decl InNumber(x : number)
+.decl InS1(x : S1)
+.decl InS2(x : S2)
+.decl InS12(x : S12)
+.decl InSymbol(x : symbol)
+.decl OutN1(x : N1)
+.decl OutN2(x : N2)
+.decl OutN12(x : N12)
+.decl OutNumber(x : number)
+.decl OutS1(x : S1)
+.decl OutS2(x : S2)
+.decl OutS12(x : S12)
+.decl OutSymbol(x : symbol)
+
+// Check numeric functor inputs
+OutNumber(x+y) :- InN1(x), InN2(y).
+OutNumber(x+y) :- InN1(x), InN12(y).
+OutNumber(x+y) :- InN1(x), InNumber(y).
+OutNumber(x+y) :- InN12(x), InNumber(y).
+OutNumber(-x) :- InN2(x).
+OutNumber(-x) :- InN12(x).
+OutNumber(-x) :- InNumber(x).
+OutNumber(x-y) :- InN1(x), InN2(y).
+OutNumber(x*y) :- InN1(x), InN12(y).
+OutNumber(x/y) :- InN1(x), InNumber(y).
+OutNumber(x^y) :- InN12(x), InNumber(y).
+OutNumber(x%y) :- InN1(x), InN1(y).
+OutNumber(min(x,y)) :- InNumber(x), InN2(y).
+OutNumber(max(x,y)) :- InN1(x), InN12(y).
+OutSymbol(to_string(x)) :- InN2(x).
+OutNumber(-x) :- InS2(x).                                           // error
+OutNumber(x-y) :- InS1(x), InN2(y).                                 // error
+OutNumber(x*y) :- InN1(x), InS12(y).                                // error
+OutNumber(x/y) :- InS1(x), InSymbol(y).                             // error
+
+// Check symbolic functor inputs
+OutSymbol(cat(x,y)) :- InS1(x), InS2(y).
+OutSymbol(cat(x,y)) :- InS1(x), InS12(y).
+OutSymbol(cat(x,y)) :- InS1(x), InSymbol(y).
+OutSymbol(cat(x,y)) :- InS12(x), InSymbol(y).
+OutNumber(strlen(x)) :- InS1(x).
+OutNumber(strlen(x)) :- InS12(x).
+OutNumber(strlen(x)) :- InSymbol(x).
+OutNumber(ord(x)) :- InS2(x).
+OutNumber(to_number(x)) :- InSymbol(x).
+OutNumber(@g(x)) :- InS1(x).
+OutNumber(strlen(x)) :- InN1(x).                                    // error
+OutNumber(@g(x)) :- InNumber(x).                                    // error
+OutSymbol(cat(x,y)) :- InS1(x), InN2(y).                            // error
+OutSymbol(cat(x,y)) :- InN1(x), InS12(y).                           // error
+OutSymbol(cat(x,y)) :- InN1(x), InNumber(y).                        // error
+
+// Check mixed functor inputs
+OutSymbol(substr(x,y,z)) :- InN1(x), InN2(y), InNumber(z).          // error
+OutSymbol(substr(x,y,z)) :- InSymbol(x), InN12(y), InN12(z).
+OutSymbol(substr(x,y,z)) :- InS12(x), InS12(y), InN1(z).            // error
+OutSymbol(substr(x,y,z)) :- InS1(x), InNumber(y), InSymbol(z).      // error
+OutSymbol(@f(x,y,z)) :- InNumber(x), InSymbol(y), InN2(z).          // error
+OutSymbol(@f(x,y,z)) :- InN12(x), InN1(y), InS12(z).                // error
+OutSymbol(@f(x,y,z)) :- InN2(x), InS1(y), InS2(z).
+OutSymbol(@f(x,y,z)) :- InS2(x), InS2(y), InS1(z).                  // error
+
+// Check numeric functor outputs
+OutN1(max(x,y)) :- InN1(x), InN1(y).
+OutN1(min(x,y)) :- InN1(x), InN2(y).                                // error
+OutN1(max(x,y)) :- InN1(x), InN12(y).                               // error
+OutN1(min(x,y)) :- InN1(x), InNumber(y).                            // error
+OutN12(max(x,y)) :- InN1(x), InN1(y).
+OutN12(min(x,y)) :- InN1(x), InN2(y).
+OutN12(max(x,y)) :- InN2(x), InN12(y).
+OutN12(min(x,y)) :- InN12(x), InNumber(y).                          // error
+OutN1(x+y) :- InN2(x), InNumber(y).                                 // error
+OutN2(to_number(x)) :- InS12(x).                                    // error
+OutN12(-x) :- InN12(x).                                             // error
+OutN1(@g(x)) :- InSymbol(x).                                        // error
+OutSymbol(x^y) :- InN2(x), InN2(y).                                 // error
+OutSymbol(ord(x)) :- InSymbol(x).                                   // error
+OutSymbol(-x) :- InN1(x).                                           // error
+OutSymbol(@g(x)) :- InS12(x).                                       // error
+
+// Check symbolic functor outputs
+OutS2(to_string(x)) :- InNumber(x).                                 // error
+OutS12(cat(x,y)) :- InSymbol(x), InS1(y).                           // error
+OutS2(substr(x,y,z)) :- InSymbol(x), InN2(y), InN1(z).              // error
+OutS1(@f(x,y,z)) :- InN12(x), InSymbol(y), InS12(z).                // error
+OutNumber(to_string(x)) :- InNumber(x).                             // error
+OutNumber(cat(x,y)) :- InSymbol(x), InS1(y).                        // error
+OutNumber(substr(x,y,z)) :- InSymbol(x), InN2(y), InN1(z).          // error
+OutNumber(@f(x,y,z)) :- InN12(x), InSymbol(y), InS12(z).            // error

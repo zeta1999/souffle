@@ -1,0 +1,178 @@
+Warning: No rules/facts defined for relation InS1 in file type_system5.dl at line 15
+.decl InS1(x : S1)
+------^------------
+Warning: No rules/facts defined for relation InS2 in file type_system5.dl at line 16
+.decl InS2(x : S2)
+------^------------
+Warning: No rules/facts defined for relation InS3 in file type_system5.dl at line 17
+.decl InS3(x : S3)
+------^------------
+Warning: No rules/facts defined for relation InU12 in file type_system5.dl at line 18
+.decl InU12(x : U12)
+------^--------------
+Warning: No rules/facts defined for relation InU23 in file type_system5.dl at line 19
+.decl InU23(x : U23)
+------^--------------
+Warning: No rules/facts defined for relation InSymbol in file type_system5.dl at line 20
+.decl InSymbol(x : symbol)
+------^--------------------
+Warning: No rules/facts defined for relation InNumber in file type_system5.dl at line 21
+.decl InNumber(x : number)
+------^--------------------
+Error: Relation expects value of type S1 but got argument of type S2 in file type_system5.dl at line 31
+OutS1(x) :- InS2(x).                        // error
+------^----------------------------------------------
+Error: Relation expects value of type S1 but got argument of type S3 in file type_system5.dl at line 32
+OutS1(x) :- InS3(x).                        // error
+------^----------------------------------------------
+Error: Relation expects value of type S1 but got argument of type U12 in file type_system5.dl at line 33
+OutS1(x) :- InU12(x).                       // error
+------^----------------------------------------------
+Error: Relation expects value of type S1 but got argument of type U23 in file type_system5.dl at line 34
+OutS1(x) :- InU23(x).                       // error
+------^----------------------------------------------
+Error: Relation expects value of type S1 but got argument of type symbol in file type_system5.dl at line 35
+OutS1(x) :- InSymbol(x).                    // error
+------^----------------------------------------------
+Error: Relation expects value of type S1 but got argument of type number in file type_system5.dl at line 36
+OutS1(x) :- InNumber(x).                    // error
+------^----------------------------------------------
+Error: Relation expects value of type U12 but got argument of type S3 in file type_system5.dl at line 39
+OutU12(x) :- InS3(x).                       // error
+-------^---------------------------------------------
+Error: Relation expects value of type U12 but got argument of type U23 in file type_system5.dl at line 41
+OutU12(x) :- InU23(x).                      // error
+-------^---------------------------------------------
+Error: Relation expects value of type U12 but got argument of type symbol in file type_system5.dl at line 42
+OutU12(x) :- InSymbol(x).                   // error
+-------^---------------------------------------------
+Error: Relation expects value of type U12 but got argument of type number in file type_system5.dl at line 43
+OutU12(x) :- InNumber(x).                   // error
+-------^---------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_system5.dl at line 50
+OutSymbol(x) :- InNumber(x).                // error
+----------^------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_system5.dl at line 53
+OutS2(x) :- InS1(x), InS2(x).               // error
+------^----------------------------------------------
+Error: Relation expects value of type S2 but got argument of type S1 in file type_system5.dl at line 54
+OutS2(x) :- InS1(x), InU12(x).              // error
+------^----------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_system5.dl at line 55
+OutS2(x) :- InS1(x), InU23(x).              // error
+------^----------------------------------------------
+Error: Relation expects value of type S2 but got argument of type S1 in file type_system5.dl at line 56
+OutS2(x) :- InS1(x), InSymbol(x).           // error
+------^----------------------------------------------
+Error: Relation expects value of type S2 but got argument of type U12 in file type_system5.dl at line 61
+OutS2(x) :- InU12(x), InSymbol(x).          // error
+------^----------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_system5.dl at line 62
+OutS2(x) :- InS2(x), InNumber(x).           // error
+------^----------------------------------------------
+Error: Relation expects value of type U23 but got argument of type S1 in file type_system5.dl at line 63
+OutU23(x) :- InS1(x), InU12(x).             // error
+-------^---------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_system5.dl at line 64
+OutU23(x) :- InS2(x), InS3(x).              // error
+-------^---------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_system5.dl at line 67
+OutU23(x) :- InS3(x), InU12(x).             // error
+-------^---------------------------------------------
+Error: Relation expects value of type U23 but got argument of type U12 in file type_system5.dl at line 70
+OutU23(x) :- InU12(x), InSymbol(x).         // error
+-------^---------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_system5.dl at line 72
+OutU23(x) :- InU23(x), InNumber(x).         // error
+-------^---------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_system5.dl at line 73
+OutSymbol(x) :- InS2(x), InS3(x).           // error
+----------^------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_system5.dl at line 76
+OutSymbol(x) :- InS3(x), InU12(x).          // error
+----------^------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_system5.dl at line 79
+OutSymbol(x) :- InSymbol(x), InNumber(x).   // error
+----------^------------------------------------------
+Error: Relation expects value of type S1 but got argument of type S3 in file type_system5.dl at line 82
+OutS3(x) :- InS3(x), !InS1(x).              // error
+---------------------------^-------------------------
+Error: Relation expects value of type U12 but got argument of type S3 in file type_system5.dl at line 84
+OutS3(x) :- InS3(x), !InU12(x).             // error
+----------------------------^------------------------
+Error: Relation expects value of type S3 but got argument of type S1 in file type_system5.dl at line 87
+OutS3(x) :- InS1(x), !InU12(x).             // error
+------^----------------------------------------------
+Error: Relation expects value of type S3 but got argument of type U23 in file type_system5.dl at line 88
+OutS3(x) :- InU23(x), !InS3(x).             // error
+------^----------------------------------------------
+Error: Relation expects value of type S3 but got argument of type U23 in file type_system5.dl at line 88
+OutS3(x) :- InU23(x), !InS3(x).             // error
+----------------------------^------------------------
+Error: Relation expects value of type S3 but got argument of type symbol in file type_system5.dl at line 89
+OutS3(x) :- InSymbol(x), !InU12(x).         // error
+------^----------------------------------------------
+Error: Relation expects value of type U12 but got argument of type symbol in file type_system5.dl at line 89
+OutS3(x) :- InSymbol(x), !InU12(x).         // error
+--------------------------------^--------------------
+Error: Relation expects value of type number but got argument of type S3 in file type_system5.dl at line 90
+OutS3(x) :- InS3(x), !InNumber(x).          // error
+-------------------------------^---------------------
+Error: Relation expects value of type S2 but got argument of type S1 in file type_system5.dl at line 92
+OutU12(x) :- InS1(x), !InS2(x).             // error
+----------------------------^------------------------
+Error: Relation expects value of type U12 but got argument of type S3 in file type_system5.dl at line 93
+OutU12(x) :- InS3(x), !InU12(x).            // error
+-------^---------------------------------------------
+Error: Relation expects value of type U12 but got argument of type S3 in file type_system5.dl at line 93
+OutU12(x) :- InS3(x), !InU12(x).            // error
+-----------------------------^-----------------------
+Error: Relation expects value of type S1 but got argument of type U12 in file type_system5.dl at line 94
+OutU12(x) :- InU12(x), !InS1(x).            // error
+-----------------------------^-----------------------
+Error: Relation expects value of type S3 but got argument of type U12 in file type_system5.dl at line 95
+OutU12(x) :- InU12(x), !InS3(x).            // error
+-----------------------------^-----------------------
+Error: Relation expects value of type U23 but got argument of type U12 in file type_system5.dl at line 97
+OutU12(x) :- InU12(x), !InU23(x).           // error
+------------------------------^----------------------
+Error: Relation expects value of type U12 but got argument of type U23 in file type_system5.dl at line 99
+OutU12(x) :- InU23(x), !InS3(x).            // error
+-------^---------------------------------------------
+Error: Relation expects value of type S3 but got argument of type U23 in file type_system5.dl at line 99
+OutU12(x) :- InU23(x), !InS3(x).            // error
+-----------------------------^-----------------------
+Error: Relation expects value of type U12 but got argument of type symbol in file type_system5.dl at line 100
+OutU12(x) :- InSymbol(x), !InS3(x).         // error
+-------^---------------------------------------------
+Error: Relation expects value of type S3 but got argument of type symbol in file type_system5.dl at line 100
+OutU12(x) :- InSymbol(x), !InS3(x).         // error
+--------------------------------^--------------------
+Error: Relation expects value of type number but got argument of type U12 in file type_system5.dl at line 101
+OutU12(x) :- InU12(x), !InNumber(x).        // error
+---------------------------------^-------------------
+Error: Relation expects value of type S1 but got argument of type S3 in file type_system5.dl at line 102
+OutSymbol(x) :- InS3(x), !InS1(x).          // error
+-------------------------------^---------------------
+Error: Relation expects value of type U12 but got argument of type S3 in file type_system5.dl at line 104
+OutSymbol(x) :- InS3(x), !InU12(x).         // error
+--------------------------------^--------------------
+Error: Relation expects value of type S1 but got argument of type U23 in file type_system5.dl at line 107
+OutSymbol(x) :- InU23(x), !InS1(x).         // error
+--------------------------------^--------------------
+Error: Relation expects value of type S3 but got argument of type U23 in file type_system5.dl at line 108
+OutSymbol(x) :- InU23(x), !InS3(x).         // error
+--------------------------------^--------------------
+Error: Relation expects value of type U12 but got argument of type U23 in file type_system5.dl at line 109
+OutSymbol(x) :- InU23(x), !InU12(x).        // error
+---------------------------------^-------------------
+Error: Relation expects value of type S2 but got argument of type symbol in file type_system5.dl at line 112
+OutSymbol(x) :- InSymbol(x), !InS2(x).      // error
+-----------------------------------^-----------------
+Error: Relation expects value of type U23 but got argument of type symbol in file type_system5.dl at line 113
+OutSymbol(x) :- InSymbol(x), !InU23(x).     // error
+------------------------------------^----------------
+Error: Relation expects value of type number but got argument of type symbol in file type_system5.dl at line 115
+OutSymbol(x) :- InSymbol(x), !InNumber(x).  // error
+---------------------------------------^-------------
+52 errors generated, evaluation aborted

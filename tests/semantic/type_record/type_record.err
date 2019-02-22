@@ -1,0 +1,91 @@
+Warning: No rules/facts defined for relation InN1 in file type_record.dl at line 19
+.decl InN1(x : N1)
+------^------------
+Warning: No rules/facts defined for relation InNumber in file type_record.dl at line 20
+.decl InNumber(x : number)
+------^--------------------
+Warning: No rules/facts defined for relation InR1 in file type_record.dl at line 21
+.decl InR1(x : R1)
+------^------------
+Warning: No rules/facts defined for relation InR2 in file type_record.dl at line 22
+.decl InR2(x : R2)
+------^------------
+Warning: No rules/facts defined for relation InR3 in file type_record.dl at line 23
+.decl InR3(x : R3)
+------^------------
+Error: Relation expects value of type R1 but got argument of type R2 in file type_record.dl at line 40
+OutR1(x) :- InR2(x).                                // error
+------^------------------------------------------------------
+Error: Relation expects value of type R1 but got argument of type R3 in file type_record.dl at line 41
+OutR1(x) :- InR3(x).                                // error
+------^------------------------------------------------------
+Error: Relation expects value of type R2 but got argument of type R1 in file type_record.dl at line 42
+OutR2(x) :- InR1(x).                                // error
+------^------------------------------------------------------
+Error: Relation expects value of type R2 but got argument of type R3 in file type_record.dl at line 43
+OutR2(x) :- InR3(x).                                // error
+------^------------------------------------------------------
+Error: Relation expects value of type R3 but got argument of type R1 in file type_record.dl at line 44
+OutR3(x) :- InR1(x).                                // error
+------^------------------------------------------------------
+Error: Relation expects value of type R3 but got argument of type R2 in file type_record.dl at line 45
+OutR3(x) :- InR2(x).                                // error
+------^------------------------------------------------------
+Error: Relation expects value of type R2 but got argument of type R1 in file type_record.dl at line 46
+OutR1(x) :- InR1(x), !InR2(x).                      // error
+---------------------------^---------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_record.dl at line 47
+OutR3(x) :- InR3(x), x = *R2[].                     // error
+------^------------------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_record.dl at line 47
+OutR3(x) :- InR3(x), x = *R2[].                     // error
+-------------------------^-----------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_record.dl at line 48
+OutR2(x) :- InR2(x), InR1(y), x = y.                // error
+------^------------------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_record.dl at line 48
+OutR2(x) :- InR2(x), InR1(y), x = y.                // error
+--------------------------^----------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_record.dl at line 49
+OutR1(x) :- InR2(x), InR3(x).                       // error
+------^------------------------------------------------------
+Error: Unable to deduce type R1 as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_record.dl at line 58
+OutR1(*R1[x]) :- InNumber(x).                       // error
+------^------------------------------------------------------
+Error: Record constructor expects element to have type N1 but instead it has type number in file type_record.dl at line 58
+OutR1(*R1[x]) :- InNumber(x).                       // error
+----------^--------------------------------------------------
+Error: Unable to deduce type R1 as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_record.dl at line 63
+OutR1(x) :- InNumber(y), x = *R1 [y], !InR1(x).     // error
+-----------------------------^-------------------------------
+Error: Record constructor expects element to have type N1 but instead it has type number in file type_record.dl at line 63
+OutR1(x) :- InNumber(y), x = *R1 [y], !InR1(x).     // error
+----------------------------------^--------------------------
+Error: Ungrounded variable x in file type_record.dl at line 65
+OutR1(x) :- !InNumber(y), x = *R1 [y], !InR1(x).    // error
+------^------------------------------------------------------
+Error: Ungrounded variable y in file type_record.dl at line 65
+OutR1(x) :- !InNumber(y), x = *R1 [y], !InR1(x).    // error
+----------------------^--------------------------------------
+Error: Ungrounded record in file type_record.dl at line 65
+OutR1(x) :- !InNumber(y), x = *R1 [y], !InR1(x).    // error
+------------------------------^------------------------------
+Warning: No rules/facts defined for relation instance.InT1 in file type_record.dl at line 72
+    .decl InT1(x : T1)
+----------^------------
+Warning: No rules/facts defined for relation instance.InR2 in file type_record.dl at line 73
+    .decl InR2(x : R2)
+----------^------------
+Warning: No rules/facts defined for relation instance.InT3 in file type_record.dl at line 74
+    .decl InT3(x : T3)
+----------^------------
+Warning: No rules/facts defined for relation instance.InR4 in file type_record.dl at line 75
+    .decl InR4(x : R4)
+----------^------------
+Warning: No rules/facts defined for relation instance.InR5 in file type_record.dl at line 76
+    .decl InR5(x : R5)
+----------^------------
+Warning: No rules/facts defined for relation instance.InR6 in file type_record.dl at line 77
+    .decl InR6(x : R6)
+----------^------------
+19 errors generated, evaluation aborted

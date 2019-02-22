@@ -1,0 +1,112 @@
+Warning: No rules/facts defined for relation InNumber in file type_casts.dl at line 19
+.decl InNumber(x : number)
+------^--------------------
+Warning: No rules/facts defined for relation InN1 in file type_casts.dl at line 20
+.decl InN1(x : N1)
+------^------------
+Warning: No rules/facts defined for relation InN2 in file type_casts.dl at line 21
+.decl InN2(x : N2)
+------^------------
+Warning: No rules/facts defined for relation InN3 in file type_casts.dl at line 22
+.decl InN3(x : N3)
+------^------------
+Warning: No rules/facts defined for relation InSymbol in file type_casts.dl at line 23
+.decl InSymbol(x : symbol)
+------^--------------------
+Warning: No rules/facts defined for relation InS1 in file type_casts.dl at line 24
+.decl InS1(x : S1)
+------^------------
+Warning: No rules/facts defined for relation InS2 in file type_casts.dl at line 25
+.decl InS2(x : S2)
+------^------------
+Warning: No rules/facts defined for relation InS3 in file type_casts.dl at line 26
+.decl InS3(x : S3)
+------^------------
+Warning: No rules/facts defined for relation InR1 in file type_casts.dl at line 27
+.decl InR1(x : R1)
+------^------------
+Warning: No rules/facts defined for relation InR2 in file type_casts.dl at line 28
+.decl InR2(x : R2)
+------^------------
+Warning: No rules/facts defined for relation InR3 in file type_casts.dl at line 29
+.decl InR3(x : R3)
+------^------------
+Warning: Casts from symbol values to number types may cause runtime errors in file type_casts.dl at line 68
+OutNumber(x) :- x = as(y,number), InSymbol(y).              // warning
+--------------------^--------------------------------------------------
+Warning: Casts from any record values to symbol types may cause runtime errors in file type_casts.dl at line 70
+OutS3(as(x,S3)) :- InR3(x).                                 // warning
+------^----------------------------------------------------------------
+Warning: Casts from any record values to number types may cause runtime errors in file type_casts.dl at line 71
+OutN2(as(x,N2)) :- InR1(x).                                 // warning
+------^----------------------------------------------------------------
+Warning: Casts from number values to any record types may cause runtime errors in file type_casts.dl at line 72
+OutR2(as(x,R2)) :- InNumber(x).                             // warning
+------^----------------------------------------------------------------
+Warning: Casts from symbol values to any record types may cause runtime errors in file type_casts.dl at line 73
+OutR1(as(x,R1)) :- InS1(x).                                 // warning
+------^----------------------------------------------------------------
+Warning: Casting a record to the wrong record type may cause runtime errors in file type_casts.dl at line 76
+OutR1(as(x,R1)) :- InR2(x).                                 // warning
+------^----------------------------------------------------------------
+Warning: Casting a record to the wrong record type may cause runtime errors in file type_casts.dl at line 77
+OutR1(as(x,R1)) :- InR3(x).                                 // warning
+------^----------------------------------------------------------------
+Warning: Casting a record to the wrong record type may cause runtime errors in file type_casts.dl at line 78
+OutR2(as(x,R2)) :- InR1(x).                                 // warning
+------^----------------------------------------------------------------
+Warning: Casting a record to the wrong record type may cause runtime errors in file type_casts.dl at line 79
+OutR3(as(x,R3)) :- InR2(x).                                 // warning
+------^----------------------------------------------------------------
+Error: Typecast is to type N3 but is used where the type N1 is expected in file type_casts.dl at line 96
+OutNumber(x) :- InN3(x), InN1(as(x,N3)).                    // error
+------------------------------^--------------------------------------
+Error: Relation expects value of type N2 but got argument of type number in file type_casts.dl at line 107
+OutN2(as(x,number)) :- InN3(x).                             // error
+------^--------------------------------------------------------------
+Error: Relation expects value of type R1 but got argument of type S3 in file type_casts.dl at line 108
+OutR1(as(x,S3)) :- InSymbol(x).                             // error
+------^--------------------------------------------------------------
+Warning: No rules/facts defined for relation c1.InT in file type_casts.dl at line 113
+    .decl InT(x : T)
+----------^----------
+Warning: No rules/facts defined for relation c2.InT in file type_casts.dl at line 113
+    .decl InT(x : T)
+----------^----------
+Warning: No rules/facts defined for relation c1.InN4 in file type_casts.dl at line 114
+    .decl InN4(x : N4)
+----------^------------
+Warning: No rules/facts defined for relation c2.InN4 in file type_casts.dl at line 114
+    .decl InN4(x : N4)
+----------^------------
+Warning: No rules/facts defined for relation c1.InN1 in file type_casts.dl at line 115
+    .decl InN1(x : N1)
+----------^------------
+Warning: No rules/facts defined for relation c2.InN1 in file type_casts.dl at line 115
+    .decl InN1(x : N1)
+----------^------------
+Warning: Casts from number values to symbol types may cause runtime errors in file type_casts.dl at line 120
+    OutT(as(x,T)) :- InN4(x).                               // sometimes warning
+---------^-----------------------------------------------------------------------
+Warning: Casts from number values to symbol types may cause runtime errors in file type_casts.dl at line 121
+    OutT(as(x,T)) :- InN1(x).                               // sometimes warning
+---------^-----------------------------------------------------------------------
+Warning: Casts from symbol values to number types may cause runtime errors in file type_casts.dl at line 122
+    OutN4(as(x,N4)) :- InT(x).                              // sometimes warning
+----------^----------------------------------------------------------------------
+Warning: Casts from symbol values to number types may cause runtime errors in file type_casts.dl at line 125
+    OutN2(as(x,N2)) :- InT(x).                              // sometimes warning
+----------^----------------------------------------------------------------------
+Error: Non-symbolic operand for comparison, instead left operand has type N3 in file type_casts.dl at line 138
+OutNumber(x) :- InN1(x), InN2(y), match(as(x,N3),as(y,N3)). // error
+----------------------------------------^----------------------------
+Error: Non-symbolic operand for comparison, instead right operand has type N3 in file type_casts.dl at line 138
+OutNumber(x) :- InN1(x), InN2(y), match(as(x,N3),as(y,N3)). // error
+-------------------------------------------------^-------------------
+Error: Typecast is to type S3 but is used where the type S2 is expected in file type_casts.dl at line 139
+OutSymbol(x) :- InS1(x), InS2(y), as(x,S3) = y.             // error
+----------------------------------^----------------------------------
+Error: Relation expects value of type N1 but got argument of type N3 in file type_casts.dl at line 140
+OutN2(x) :- InN2(x), !InN1(as(x,N3)).                       // error
+---------------------------^-----------------------------------------
+7 errors generated, evaluation aborted

@@ -1,0 +1,35 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests that types not explicitly present in clauses can be generated and
+// printed correctly by checking the error messages
+
+.number_type N1
+.number_type N2
+.number_type N3
+.number_type N4
+.type U123 = N1 | N2 | N3
+.type U234 = N2 | N3 | N4
+.type U134 = N1 | N3 | N4
+.type U34 = N3 | N4
+
+.decl InU123(x : U123)
+.decl InU234(x : U234)
+.decl InU134(x : U134)
+.decl InN1(x : N1)
+.decl InN3(x : N3)
+.decl InN4(x : N4)
+.decl OutSymbol(x : symbol)
+
+// Test the type of union type intersection is correctly determined and printed
+// by checking the error is correct
+OutSymbol(x) :- InU123(x), InU234(x).                           // Error x has type N2 | N3
+OutSymbol(x) :- InU234(x), InU134(x).                           // Error x has type U34
+
+// Test the type of base type union is correctly determined and printed
+// by checking the error is correct
+OutSymbol(x) :- x = max(y,z), InN1(y), InN4(z).                 // Error x has type N1 | N4
+OutSymbol(x) :- x = max(max(w,y),z), InN1(w), InN3(y), InN4(z). // Error x has type U134

@@ -1,0 +1,63 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the type system on binary constraints
+
+.number_type N1
+.number_type N2
+.type N12 = N1 | N2
+.symbol_type S1
+.symbol_type S2
+.type S12 = S1 | S2
+
+.decl InN1(x : N1)
+.decl InN2(x : N2)
+.decl InN12(x : N12)
+.decl InNumber(x : number)
+.decl InS1(x : S1)
+.decl InS2(x : S2)
+.decl InS12(x : S12)
+.decl InSymbol(x : symbol)
+.decl Out()
+
+// Check != constraint
+Out() :- InN1(x), InN2(y), x != y.
+Out() :- InN1(x), InN12(y), x != y.
+Out() :- InN1(x), InNumber(y), x != y.
+Out() :- InN12(x), InNumber(y), x != y.
+Out() :- InS1(x), InS2(y), x != y.
+Out() :- InS1(x), InS12(y), x != y.
+Out() :- InS1(x), InSymbol(y), x != y.
+Out() :- InS12(x), InSymbol(y), x != y.
+Out() :- InN1(x), InS2(y), x != y.                  // error
+Out() :- InN12(x), InSymbol(y), x != y.             // error
+Out() :- InNumber(x), InS12(y), x != y.             // error
+Out() :- InS1(x), InN12(y), x != y.                 // error
+Out() :- InS12(x), InNumber(y), x != y.             // error
+
+// Check symbolic constraints
+Out() :- InS1(x), InS2(y), match(x,y).
+Out() :- InS1(x), InS12(y), match(x,y).
+Out() :- InS1(x), InSymbol(y), match(x,y).
+Out() :- InS12(x), InSymbol(y), match(x,y).
+Out() :- InS1(x), InS2(y), !match(x,y).
+Out() :- InS12(x), InSymbol(y), contains(x,y).
+Out() :- InS12(x), InS2(y), !contains(x,y).
+Out() :- InS1(x), InN2(y), match(x,y).              // error
+Out() :- InN12(x), InSymbol(y), !match(x,y).        // error
+Out() :- InN12(x), InNumber(y), !contains(x,y).     // error
+
+// Check numeric constraints
+Out() :- InN1(x), InN2(y), x >= y.
+Out() :- InN1(x), InN12(y), x >= y.
+Out() :- InN1(x), InNumber(y), x >= y.
+Out() :- InN12(x), InNumber(y), x >= y.
+Out() :- InN1(x), InN2(y), x > y.
+Out() :- InN1(x), InN12(y), x < y.
+Out() :- InN12(x), InNumber(y), x <= y.
+Out() :- InS1(x), InN2(y), x > y.                   // error
+Out() :- InN12(x), InSymbol(y), x < y.              // error
+Out() :- InS12(x), InSymbol(y), x <= y.             // error

@@ -1,0 +1,31 @@
+Warning: No rules/facts defined for relation InU123 in file dynamictype.dl at line 19
+.decl InU123(x : U123)
+------^----------------
+Warning: No rules/facts defined for relation InU234 in file dynamictype.dl at line 20
+.decl InU234(x : U234)
+------^----------------
+Warning: No rules/facts defined for relation InU134 in file dynamictype.dl at line 21
+.decl InU134(x : U134)
+------^----------------
+Warning: No rules/facts defined for relation InN1 in file dynamictype.dl at line 22
+.decl InN1(x : N1)
+------^------------
+Warning: No rules/facts defined for relation InN3 in file dynamictype.dl at line 23
+.decl InN3(x : N3)
+------^------------
+Warning: No rules/facts defined for relation InN4 in file dynamictype.dl at line 24
+.decl InN4(x : N4)
+------^------------
+Error: Relation expects value of type symbol but got argument of type N2 | N3 in file dynamictype.dl at line 29
+OutSymbol(x) :- InU123(x), InU234(x).                           // Error x has type N2 | N3
+----------^---------------------------------------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type U34 in file dynamictype.dl at line 30
+OutSymbol(x) :- InU234(x), InU134(x).                           // Error x has type U34
+----------^-----------------------------------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type N1 | N4 in file dynamictype.dl at line 34
+OutSymbol(x) :- x = max(y,z), InN1(y), InN4(z).                 // Error x has type N1 | N4
+----------^---------------------------------------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type U134 in file dynamictype.dl at line 35
+OutSymbol(x) :- x = max(max(w,y),z), InN1(w), InN3(y), InN4(z). // Error x has type U134
+----------^------------------------------------------------------------------------------
+4 errors generated, evaluation aborted

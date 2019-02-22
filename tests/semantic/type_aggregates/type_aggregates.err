@@ -1,0 +1,103 @@
+Warning: No rules/facts defined for relation InN in file type_aggregates.dl at line 11
+.decl InN(x : N)
+------^----------
+Warning: No rules/facts defined for relation InNumber in file type_aggregates.dl at line 12
+.decl InNumber(x : number)
+------^--------------------
+Warning: No rules/facts defined for relation InSymbol in file type_aggregates.dl at line 13
+.decl InSymbol(x : symbol)
+------^--------------------
+Error: Relation expects value of type N but got argument of type number in file type_aggregates.dl at line 20
+OutN(y) :- y = sum x : InN(x).              // error
+-----^-----------------------------------------------
+Error: Relation expects value of type N but got argument of type number in file type_aggregates.dl at line 21
+OutN(y) :- y = count : InN(_).              // error
+-----^-----------------------------------------------
+Error: Relation expects value of type N but got argument of type number in file type_aggregates.dl at line 23
+OutN(y) :- y = max x : InNumber(x).         // error
+-----^-----------------------------------------------
+Error: Relation expects value of type N but got argument of type number in file type_aggregates.dl at line 24
+OutN(y) :- y = min x : InNumber(x).         // error
+-----^-----------------------------------------------
+Error: Relation expects value of type N but got argument of type number in file type_aggregates.dl at line 25
+OutN(y) :- y = sum x : InNumber(x).         // error
+-----^-----------------------------------------------
+Error: Relation expects value of type N but got argument of type number in file type_aggregates.dl at line 26
+OutN(y) :- y = count : InNumber(_).         // error
+-----^-----------------------------------------------
+Error: Relation expects value of type N but got argument of type symbol in file type_aggregates.dl at line 28
+OutN(y) :- y = max x : InSymbol(x).         // error
+-----^-----------------------------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file type_aggregates.dl at line 28
+OutN(y) :- y = max x : InSymbol(x).         // error
+-------------------^---------------------------------
+Error: Relation expects value of type N but got argument of type symbol in file type_aggregates.dl at line 29
+OutN(y) :- y = min x : InSymbol(x).         // error
+-----^-----------------------------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file type_aggregates.dl at line 29
+OutN(y) :- y = min x : InSymbol(x).         // error
+-------------------^---------------------------------
+Error: Relation expects value of type N but got argument of type number in file type_aggregates.dl at line 30
+OutN(y) :- y = sum x : InSymbol(x).         // error
+-----^-----------------------------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file type_aggregates.dl at line 30
+OutN(y) :- y = sum x : InSymbol(x).         // error
+-------------------^---------------------------------
+Error: Relation expects value of type N but got argument of type number in file type_aggregates.dl at line 31
+OutN(y) :- y = count : InSymbol(_).         // error
+-----^-----------------------------------------------
+Error: Relation expects value of type number but got argument of type symbol in file type_aggregates.dl at line 43
+OutNumber(y) :- y = max x : InSymbol(x).    // error
+----------^------------------------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file type_aggregates.dl at line 43
+OutNumber(y) :- y = max x : InSymbol(x).    // error
+------------------------^----------------------------
+Error: Relation expects value of type number but got argument of type symbol in file type_aggregates.dl at line 44
+OutNumber(y) :- y = min x : InSymbol(x).    // error
+----------^------------------------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file type_aggregates.dl at line 44
+OutNumber(y) :- y = min x : InSymbol(x).    // error
+------------------------^----------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file type_aggregates.dl at line 45
+OutNumber(y) :- y = sum x : InSymbol(x).    // error
+------------------------^----------------------------
+Error: Relation expects value of type symbol but got argument of type N in file type_aggregates.dl at line 48
+OutSymbol(y) :- y = max x : InN(x).         // error
+----------^------------------------------------------
+Error: Relation expects value of type symbol but got argument of type N in file type_aggregates.dl at line 49
+OutSymbol(y) :- y = min x : InN(x).         // error
+----------^------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_aggregates.dl at line 50
+OutSymbol(y) :- y = sum x : InN(x).         // error
+----------^------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_aggregates.dl at line 51
+OutSymbol(y) :- y = count : InN(_).         // error
+----------^------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_aggregates.dl at line 53
+OutSymbol(y) :- y = max x : InNumber(x).    // error
+----------^------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_aggregates.dl at line 54
+OutSymbol(y) :- y = min x : InNumber(x).    // error
+----------^------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_aggregates.dl at line 55
+OutSymbol(y) :- y = sum x : InNumber(x).    // error
+----------^------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_aggregates.dl at line 56
+OutSymbol(y) :- y = count : InNumber(_).    // error
+----------^------------------------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file type_aggregates.dl at line 58
+OutSymbol(y) :- y = max x : InSymbol(x).    // error
+------------------------^----------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file type_aggregates.dl at line 59
+OutSymbol(y) :- y = min x : InSymbol(x).    // error
+------------------------^----------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_aggregates.dl at line 60
+OutSymbol(y) :- y = sum x : InSymbol(x).    // error
+----------^------------------------------------------
+Error: Aggregation variable is not a number, instead has type symbol in file type_aggregates.dl at line 60
+OutSymbol(y) :- y = sum x : InSymbol(x).    // error
+------------------------^----------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_aggregates.dl at line 61
+OutSymbol(y) :- y = count : InSymbol(_).    // error
+----------^------------------------------------------
+31 errors generated, evaluation aborted

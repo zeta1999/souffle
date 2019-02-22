@@ -1,0 +1,64 @@
+Warning: No rules/facts defined for relation InN1 in file type_binarycons.dl at line 16
+.decl InN1(x : N1)
+------^------------
+Warning: No rules/facts defined for relation InN2 in file type_binarycons.dl at line 17
+.decl InN2(x : N2)
+------^------------
+Warning: No rules/facts defined for relation InN12 in file type_binarycons.dl at line 18
+.decl InN12(x : N12)
+------^--------------
+Warning: No rules/facts defined for relation InNumber in file type_binarycons.dl at line 19
+.decl InNumber(x : number)
+------^--------------------
+Warning: No rules/facts defined for relation InS1 in file type_binarycons.dl at line 20
+.decl InS1(x : S1)
+------^------------
+Warning: No rules/facts defined for relation InS2 in file type_binarycons.dl at line 21
+.decl InS2(x : S2)
+------^------------
+Warning: No rules/facts defined for relation InS12 in file type_binarycons.dl at line 22
+.decl InS12(x : S12)
+------^--------------
+Warning: No rules/facts defined for relation InSymbol in file type_binarycons.dl at line 23
+.decl InSymbol(x : symbol)
+------^--------------------
+Error: Cannot compare operands of different kinds, left operand is a number and right operand is a symbol in file type_binarycons.dl at line 35
+Out() :- InN1(x), InS2(y), x != y.                  // error
+---------------------------^---------------------------------
+Error: Cannot compare operands of different kinds, left operand is a number and right operand is a symbol in file type_binarycons.dl at line 36
+Out() :- InN12(x), InSymbol(y), x != y.             // error
+--------------------------------^----------------------------
+Error: Cannot compare operands of different kinds, left operand is a number and right operand is a symbol in file type_binarycons.dl at line 37
+Out() :- InNumber(x), InS12(y), x != y.             // error
+--------------------------------^----------------------------
+Error: Cannot compare operands of different kinds, left operand is a symbol and right operand is a number in file type_binarycons.dl at line 38
+Out() :- InS1(x), InN12(y), x != y.                 // error
+----------------------------^--------------------------------
+Error: Cannot compare operands of different kinds, left operand is a symbol and right operand is a number in file type_binarycons.dl at line 39
+Out() :- InS12(x), InNumber(y), x != y.             // error
+--------------------------------^----------------------------
+Error: Non-symbolic operand for comparison, instead right operand has type N2 in file type_binarycons.dl at line 49
+Out() :- InS1(x), InN2(y), match(x,y).              // error
+-----------------------------------^-------------------------
+Error: Non-symbolic operand for comparison, instead left operand has type N12 in file type_binarycons.dl at line 50
+Out() :- InN12(x), InSymbol(y), !match(x,y).        // error
+---------------------------------------^---------------------
+Error: Non-symbolic operand for comparison, instead left operand has type N12 in file type_binarycons.dl at line 51
+Out() :- InN12(x), InNumber(y), !contains(x,y).     // error
+------------------------------------------^------------------
+Error: Non-symbolic operand for comparison, instead right operand has type number in file type_binarycons.dl at line 51
+Out() :- InN12(x), InNumber(y), !contains(x,y).     // error
+--------------------------------------------^----------------
+Error: Non-numerical operand for comparison, instead left operand has type S1 in file type_binarycons.dl at line 61
+Out() :- InS1(x), InN2(y), x > y.                   // error
+---------------------------^---------------------------------
+Error: Non-numerical operand for comparison, instead right operand has type symbol in file type_binarycons.dl at line 62
+Out() :- InN12(x), InSymbol(y), x < y.              // error
+------------------------------------^------------------------
+Error: Non-numerical operand for comparison, instead left operand has type S12 in file type_binarycons.dl at line 63
+Out() :- InS12(x), InSymbol(y), x <= y.             // error
+--------------------------------^----------------------------
+Error: Non-numerical operand for comparison, instead right operand has type symbol in file type_binarycons.dl at line 63
+Out() :- InS12(x), InSymbol(y), x <= y.             // error
+-------------------------------------^-----------------------
+13 errors generated, evaluation aborted

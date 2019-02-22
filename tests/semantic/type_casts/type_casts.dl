@@ -1,0 +1,140 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the type system on type casts
+
+.number_type N1
+.number_type N2
+.type N3 = N1 | N2
+.symbol_type S1
+.symbol_type S2
+.type S3 = S1 | S2
+.type R1 = [x : symbol]
+.type R2 = [x : number]
+.type R3 = [x : R1, y : R3]
+
+.decl InNumber(x : number)
+.decl InN1(x : N1)
+.decl InN2(x : N2)
+.decl InN3(x : N3)
+.decl InSymbol(x : symbol)
+.decl InS1(x : S1)
+.decl InS2(x : S2)
+.decl InS3(x : S3)
+.decl InR1(x : R1)
+.decl InR2(x : R2)
+.decl InR3(x : R3)
+
+.decl OutNumber(x : number)
+.decl OutN2(x : N2)
+.decl OutN3(x : N3)
+.decl OutSymbol(x : symbol)
+.decl OutS2(x : S2)
+.decl OutS3(x : S3)
+.decl OutR1(x : R1)
+.decl OutR2(x : R2)
+.decl OutR3(x : R3)
+
+// Check trivial casts (no errors)
+OutNumber(as(x,number)) :- InNumber(x).
+OutSymbol(x) :- x = as(y,symbol), InSymbol(y).
+OutR1(x) :- x = as(y,R1), InR1(y).
+
+// Check up casts (no errors)
+OutNumber(as(x,number)) :- InN1(x).
+OutNumber(x) :- x = as(y,number), InN3(y).
+OutN3(as(x,N3)) :- InN1(x).
+OutSymbol(as(x,symbol)) :- InS1(x).
+OutSymbol(x) :- x = as(y,symbol), InS3(y).
+OutS3(as(x,S3)) :- InS1(x).
+OutR2(as(x,R2)) :- x = nil, InR2(x).
+
+// Check down casts (no errors)
+OutN2(x) :- x = as(y,N2), InNumber(y).
+OutN3(as(x,N3)) :- InNumber(x).
+OutN2(x) :- x = as(y,N2), InN3(y).
+OutS2(x) :- x = as(y,S2), InSymbol(y).
+OutS3(as(x,S3)) :- InSymbol(x).
+OutS2(x) :- x = as(y,S2), InS3(y).
+
+// Check cross casts within the same kind (no errors)
+OutN2(x) :- x = as(y,N2), InN1(y).
+OutS2(x) :- x = as(y,S2), InS1(y).
+
+// Check cross casts between kinds (warnings but no errors)
+OutNumber(x) :- x = as(y,number), InSymbol(y).              // warning
+OutS2(x) :- x = as(y,S2), InS3(y).                          // warning
+OutS3(as(x,S3)) :- InR3(x).                                 // warning
+OutN2(as(x,N2)) :- InR1(x).                                 // warning
+OutR2(as(x,R2)) :- InNumber(x).                             // warning
+OutR1(as(x,R1)) :- InS1(x).                                 // warning
+
+// Casts between records (warnings but not errors)
+OutR1(as(x,R1)) :- InR2(x).                                 // warning
+OutR1(as(x,R1)) :- InR3(x).                                 // warning
+OutR2(as(x,R2)) :- InR1(x).                                 // warning
+OutR3(as(x,R3)) :- InR2(x).                                 // warning
+
+// Casts in facts (no errors)
+OutN3(as(1,N3)).
+OutNumber(as(1+1,number)).
+OutSymbol(as("cat",symbol)).
+OutR1(as(nil,R1)).
+OutR3(as(*R3[as(nil,R1),*R3[nil,nil]],R3)).
+
+// Casts and functors (no errors)
+OutN3(x) :- x = as(y+2,N3), InN1(y).
+OutS2(as(cat(as(y,symbol),","),S2)) :- InSymbol(y).
+
+// Underspecified cast (no errors)
+OutSymbol(x) :- x = as(y,S3), InS1(y).
+
+// Incorrect cast output type (errors)
+OutNumber(x) :- InN3(x), InN1(as(x,N3)).                    // error
+
+// Nested cast (no errors)
+OutNumber(as(as(x,N1),number)) :- InN3(x).
+
+// Casts and aggregates (no errors)
+OutN2(x) :- x = as(max y : InN1(y), N2).
+OutN3(x) :- x = max as(y,N3) : InNumber(y).
+OutNumber(x) :- x = count : {InS3(y), InS1(as(y,S1))}.
+
+// Cast to incompatible type (errors)
+OutN2(as(x,number)) :- InN3(x).                             // error
+OutR1(as(x,S3)) :- InSymbol(x).                             // error
+
+// Casts and components (no errors, some warnings)
+.comp component<T> {
+    .number_type N4
+    .decl InT(x : T)
+    .decl InN4(x : N4)
+    .decl InN1(x : N1)
+    .decl OutT(x : T)
+    .decl OutN4(x : N4)
+    .decl OutN2(x : N2)
+    OutT(as(x,T)) :- InT(x).
+    OutT(as(x,T)) :- InN4(x).                               // sometimes warning
+    OutT(as(x,T)) :- InN1(x).                               // sometimes warning
+    OutN4(as(x,N4)) :- InT(x).                              // sometimes warning
+    OutN4(as(x,N4)) :- InN4(x).
+    OutN4(as(x,N4)) :- InN1(x).
+    OutN2(as(x,N2)) :- InT(x).                              // sometimes warning
+    OutN2(as(x,N2)) :- InN4(x).
+    OutN2(as(x,N2)) :- InN1(x).
+}
+.init c1 = component<N3>
+.init c2 = component<symbol>                                // causes above warnings
+
+// Casts and constraints (no errors)
+OutNumber(x) :- InN1(x), InN2(y), as(x,N3) >= as(y,N3).
+OutSymbol(x) :- InS1(x), InS2(y), as(x,S3) = as(y,S3).
+OutN2(x) :- InN2(x), !InN1(as(x,N1)).
+
+// Casts and constraints (errors)
+OutNumber(x) :- InN1(x), InN2(y), match(as(x,N3),as(y,N3)). // error
+OutSymbol(x) :- InS1(x), InS2(y), as(x,S3) = y.             // error
+OutN2(x) :- InN2(x), !InN1(as(x,N3)).                       // error

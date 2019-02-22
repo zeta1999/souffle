@@ -1,0 +1,127 @@
+Warning: No rules/facts defined for relation InN1 in file type_equality.dl at line 15
+.decl InN1(x : N1)
+------^------------
+Warning: No rules/facts defined for relation InN2 in file type_equality.dl at line 16
+.decl InN2(x : N2)
+------^------------
+Warning: No rules/facts defined for relation InN3 in file type_equality.dl at line 17
+.decl InN3(x : N3)
+------^------------
+Warning: No rules/facts defined for relation InU12 in file type_equality.dl at line 18
+.decl InU12(x : U12)
+------^--------------
+Warning: No rules/facts defined for relation InU23 in file type_equality.dl at line 19
+.decl InU23(x : U23)
+------^--------------
+Warning: No rules/facts defined for relation InNumber in file type_equality.dl at line 20
+.decl InNumber(x : number)
+------^--------------------
+Warning: No rules/facts defined for relation InSymbol in file type_equality.dl at line 21
+.decl InSymbol(x : symbol)
+------^--------------------
+Error: Relation expects value of type N1 but got argument of type N2 in file type_equality.dl at line 31
+OutN1(x) :- InN2(y), x=y.                                       // error
+------^------------------------------------------------------------------
+Error: Relation expects value of type N1 but got argument of type U12 in file type_equality.dl at line 32
+OutN1(x) :- InU12(y), x=y.                                      // error
+------^------------------------------------------------------------------
+Error: Relation expects value of type N1 but got argument of type U23 in file type_equality.dl at line 33
+OutN1(x) :- InU23(y), x=y.                                      // error
+------^------------------------------------------------------------------
+Error: Relation expects value of type N1 but got argument of type symbol in file type_equality.dl at line 34
+OutN1(x) :- InSymbol(y), x=y.                                   // error
+------^------------------------------------------------------------------
+Error: Relation expects value of type N1 but got argument of type number in file type_equality.dl at line 35
+OutN1(x) :- InNumber(y), x=y.                                   // error
+------^------------------------------------------------------------------
+Error: Relation expects value of type U12 but got argument of type N3 in file type_equality.dl at line 37
+OutU12(x) :- InN3(y), x=y.                                      // error
+-------^-----------------------------------------------------------------
+Error: Relation expects value of type U12 but got argument of type U23 in file type_equality.dl at line 39
+OutU12(x) :- InU23(y), x=y.                                     // error
+-------^-----------------------------------------------------------------
+Error: Relation expects value of type number but got argument of type symbol in file type_equality.dl at line 42
+OutNumber(x) :- InSymbol(y), x=y.                               // error
+----------^--------------------------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_equality.dl at line 46
+OutN2(x) :- InN1(x), x=y, InN2(y).                              // error
+------^------------------------------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_equality.dl at line 46
+OutN2(x) :- InN1(x), x=y, InN2(y).                              // error
+-------------------------------^-----------------------------------------
+Error: Relation expects value of type N2 but got argument of type U12 in file type_equality.dl at line 51
+OutN2(x) :- InU12(x), x=y, InNumber(y).                         // error
+------^------------------------------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_equality.dl at line 52
+OutN2(x) :- InN2(x), x=y, InSymbol(y).                          // error
+------^------------------------------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_equality.dl at line 52
+OutN2(x) :- InN2(x), x=y, InSymbol(y).                          // error
+-----------------------------------^-------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_equality.dl at line 54
+OutU23(x) :- InN3(x), x=y, InU12(y).                            // error
+-------^-----------------------------------------------------------------
+Error: Unable to deduce valid type for expression, as base types are disjoint in file type_equality.dl at line 54
+OutU23(x) :- InN3(x), x=y, InU12(y).                            // error
+---------------------------------^---------------------------------------
+Error: Relation expects value of type N1 but got argument of type N3 in file type_equality.dl at line 58
+OutN3(x) :- InN3(x), x=y, !InN1(y).                             // error
+--------------------------------^----------------------------------------
+Error: Relation expects value of type U12 but got argument of type N3 in file type_equality.dl at line 60
+OutN3(x) :- InN3(x), x=y, !InU12(y).                            // error
+---------------------------------^---------------------------------------
+Error: Relation expects value of type N3 but got argument of type U23 in file type_equality.dl at line 62
+OutN3(x) :- InU23(x), x=y, !InN2(y).                            // error
+------^------------------------------------------------------------------
+Error: Relation expects value of type N2 but got argument of type U23 in file type_equality.dl at line 62
+OutN3(x) :- InU23(x), x=y, !InN2(y).                            // error
+---------------------------------^---------------------------------------
+Error: Relation expects value of type N3 but got argument of type number in file type_equality.dl at line 63
+OutN3(x) :- InNumber(x), x=y, !InU12(y).                        // error
+------^------------------------------------------------------------------
+Error: Relation expects value of type U12 but got argument of type number in file type_equality.dl at line 63
+OutN3(x) :- InNumber(x), x=y, !InU12(y).                        // error
+-------------------------------------^-----------------------------------
+Error: Relation expects value of type U12 but got argument of type N3 in file type_equality.dl at line 65
+OutU12(x) :- InN3(x), x=y, !InU12(y).                           // error
+-------^-----------------------------------------------------------------
+Error: Relation expects value of type U12 but got argument of type N3 in file type_equality.dl at line 65
+OutU12(x) :- InN3(x), x=y, !InU12(y).                           // error
+----------------------------------^--------------------------------------
+Error: Relation expects value of type N1 but got argument of type U12 in file type_equality.dl at line 66
+OutU12(x) :- InU12(x), x=y, !InN1(y).                           // error
+----------------------------------^--------------------------------------
+Error: Relation expects value of type U23 but got argument of type U12 in file type_equality.dl at line 67
+OutU12(x) :- InU12(x), x=y, !InU23(y).                          // error
+-----------------------------------^-------------------------------------
+Error: Relation expects value of type U12 but got argument of type U23 in file type_equality.dl at line 69
+OutU12(x) :- InU23(x), x=y, !InN3(y).                           // error
+-------^-----------------------------------------------------------------
+Error: Relation expects value of type N3 but got argument of type U23 in file type_equality.dl at line 69
+OutU12(x) :- InU23(x), x=y, !InN3(y).                           // error
+----------------------------------^--------------------------------------
+Error: Relation expects value of type U12 but got argument of type number in file type_equality.dl at line 70
+OutU12(x) :- InNumber(x), x=y, !InN3(y).                        // error
+-------^-----------------------------------------------------------------
+Error: Relation expects value of type N3 but got argument of type number in file type_equality.dl at line 70
+OutU12(x) :- InNumber(x), x=y, !InN3(y).                        // error
+-------------------------------------^-----------------------------------
+Error: Relation expects value of type N3 but got argument of type U23 in file type_equality.dl at line 71
+OutNumber(x) :- InU23(x), x=y, !InN3(y).                        // error
+-------------------------------------^-----------------------------------
+Error: Relation expects value of type N2 but got argument of type number in file type_equality.dl at line 72
+OutNumber(x) :- InNumber(x), x=y, !InN2(y).                     // error
+----------------------------------------^--------------------------------
+Error: Relation expects value of type U23 but got argument of type number in file type_equality.dl at line 73
+OutNumber(x) :- InNumber(x), x=y, !InU23(y).                    // error
+-----------------------------------------^-------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_equality.dl at line 75
+OutNumber(x) :- InNumber(x), x=y, !InSymbol(y).                 // error
+--------------------------------------------^----------------------------
+Error: Relation expects value of type N2 but got argument of type number in file type_equality.dl at line 78
+OutN2(x) :- InNumber(y), y=a, a=b, b=c, c=d, d=x, !InN2(x).     // error
+------^------------------------------------------------------------------
+Error: Relation expects value of type N2 but got argument of type number in file type_equality.dl at line 78
+OutN2(x) :- InNumber(y), y=a, a=b, b=c, c=d, d=x, !InN2(x).     // error
+--------------------------------------------------------^----------------
+35 errors generated, evaluation aborted

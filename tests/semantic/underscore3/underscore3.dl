@@ -1,0 +1,27 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the type system on underscores
+
+.type R = [ x : number, y : R ]
+.decl In(x : number)
+.decl Out()
+.decl Record(x : R)
+
+// Check underscores are allowed in atoms
+Out() :- In(_).
+
+// Check underscores are allowed in negations
+Out() :- !In(_).
+
+// Check underscores are allowed in records
+Out() :- Record(*R[_,nil]).
+Out() :- Record(*R[1,_]).
+Out() :- !Record(*R[_,*R[1,nil]]).      // error
+Out() :- !Record(*R[1,_]).              // error
+
+// Check underscores do not share their type
+Record(_) :- _ = nil.                   // error

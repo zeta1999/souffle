@@ -1,0 +1,92 @@
+Warning: No rules/facts defined for relation InR0 in file record_arity.dl at line 16
+.decl InR0(x : R0)
+------^------------
+Warning: No rules/facts defined for relation InR1 in file record_arity.dl at line 17
+.decl InR1(x : R1)
+------^------------
+Warning: No rules/facts defined for relation InR2 in file record_arity.dl at line 18
+.decl InR2(x : R2)
+------^------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 24
+OutR0(*R0[3]).                      // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 25
+OutR0(*R0[2,2]).                    // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 26
+OutR0(*R0[1,1,1]).                  // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 27
+OutR1(*R1[]).                       // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 28
+OutR1(*R1[2,2]).                    // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 29
+OutR1(*R1[1,1,1]).                  // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 30
+OutR2(*R2[]).                       // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 31
+OutR2(*R2[2]).                      // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 32
+OutR2(*R2[1,1]).                    // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 35
+OutR0(*R0[3]) :- InR0(*R0[]).       // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 36
+OutR0(*R0[2,2]) :- InR0(*R0[]).     // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 37
+OutR0(*R0[1,1,1]) :- InR0(*R0[]).   // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 38
+OutR1(*R1[]) :- InR0(*R0[]).        // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 39
+OutR1(*R1[2,2]) :- InR0(*R0[]).     // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 40
+OutR1(*R1[1,1,1]) :- InR0(*R0[]).   // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 41
+OutR2(*R2[]) :- InR0(*R0[]).        // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 42
+OutR2(*R2[2]) :- InR0(*R0[]).       // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 43
+OutR2(*R2[1,1]) :- InR0(*R0[]).     // error
+------^--------------------------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 46
+OutR0(*R0[]) :- InR0(*R0[3]).       // error
+---------------------^-----------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 47
+OutR0(*R0[]) :- InR0(*R0[2,2]).     // error
+---------------------^-----------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 48
+OutR0(*R0[]) :- InR0(*R0[1,1,1]).   // error
+---------------------^-----------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 49
+OutR0(*R0[]) :- InR1(*R1[]).        // error
+---------------------^-----------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 50
+OutR0(*R0[]) :- InR1(*R1[2,2]).     // error
+---------------------^-----------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 51
+OutR0(*R0[]) :- InR1(*R1[1,1,1]).   // error
+---------------------^-----------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 52
+OutR0(*R0[]) :- InR2(*R2[]).        // error
+---------------------^-----------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 53
+OutR0(*R0[]) :- InR2(*R2[2]).       // error
+---------------------^-----------------------
+Error: Wrong number of arguments given to record in file record_arity.dl at line 54
+OutR0(*R0[]) :- InR2(*R2[1,1]).     // error
+---------------------^-----------------------
+Error: Not all clauses could be typechecked due to other errors present
+28 errors generated, evaluation aborted

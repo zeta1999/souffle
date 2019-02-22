@@ -1,0 +1,74 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the type system on constants
+
+.symbol_type S1
+.symbol_type S2
+.type U12 = S1 | S2
+.type R = [ x : number, y : R ]
+
+.decl InS1(x : S1)
+.decl InU12(x : U12)
+.decl InSymbol(x : symbol)
+.decl InR(x : R)
+.decl InNumber(x : number)
+.decl OutS1(x : S1)
+.decl OutU12(x : U12)
+.decl OutSymbol(x : symbol)
+.decl OutR(x : R)
+.decl OutNumber(x : number)
+.decl Out()
+
+// Check when constants are allowed in facts
+OutS1("a").
+OutU12("").
+OutSymbol("   _n    ").
+OutR(nil).
+OutR(*R[1,nil]).
+OutNumber(2).
+OutU12(1).                                              // error
+OutR("a").                                              // error
+OutNumber(nil).                                         // error
+
+// Check when constants are allowed in atoms
+Out() :- InS1("").
+Out() :- InU12("    {}    ").
+Out() :- InSymbol("b").
+Out() :- InR(nil).
+Out() :- InR(*R[3,nil]).
+Out() :- InNumber(1).
+Out() :- InS1(nil).                                     // error
+Out() :- InR(2).                                        // error
+Out() :- InNumber("x").                                 // error
+
+// Check when constants are allowed in constraints
+Out() :- InS1(x), x != "a".
+Out() :- !InNumber(2).
+Out() :- InNumber(x), x >= 2.
+Out() :- InSymbol(x), !match("a",x).
+Out() :- 1 = 2.
+Out() :- InR(x), x = *R[1,nil].
+Out() :- InR(x), x = "".                                // error
+Out() :- InNumber(x), x < "bfs".                        // error
+Out() :- !InU12(nil).                                   // error
+
+// Check when constants are allowed in functors
+OutNumber(1+1).
+OutS1(cat(x,y)) :- x = "ab", y = "cd".
+OutU12(to_string(x)) :- x = 3.
+OutNumber(y) :- y = "a"*1.                              // error
+OutNumber(x) :- x = max(1,2).
+
+// Check when constants are allowed in aggregates
+OutNumber(y) :- y = max 1 : InSymbol(_).
+OutNumber(y) :- y = min 2 : InSymbol("a").
+OutNumber(y) :- y = sum 3 : InSymbol(_).
+OutNumber(y) :- y = count : InSymbol("a").
+OutS1(y) :- y = max 4 : InNumber(3).                    // error
+OutU12(y) :- y = min 5 : InNumber(_).                   // error
+OutSymbol(y) :- y = sum 0 : InNumber(_).                // error
+OutS1(y) :- y = count : InNumber(2).                    // error

@@ -1,0 +1,136 @@
+Warning: No rules/facts defined for relation InN1 in file type_functors.dl at line 18
+.decl InN1(x : N1)
+------^------------
+Warning: No rules/facts defined for relation InN2 in file type_functors.dl at line 19
+.decl InN2(x : N2)
+------^------------
+Warning: No rules/facts defined for relation InN12 in file type_functors.dl at line 20
+.decl InN12(x : N12)
+------^--------------
+Warning: No rules/facts defined for relation InNumber in file type_functors.dl at line 21
+.decl InNumber(x : number)
+------^--------------------
+Warning: No rules/facts defined for relation InS1 in file type_functors.dl at line 22
+.decl InS1(x : S1)
+------^------------
+Warning: No rules/facts defined for relation InS2 in file type_functors.dl at line 23
+.decl InS2(x : S2)
+------^------------
+Warning: No rules/facts defined for relation InS12 in file type_functors.dl at line 24
+.decl InS12(x : S12)
+------^--------------
+Warning: No rules/facts defined for relation InSymbol in file type_functors.dl at line 25
+.decl InSymbol(x : symbol)
+------^--------------------
+Error: Non-numeric argument for functor, instead argument has type S2 in file type_functors.dl at line 51
+OutNumber(-x) :- InS2(x).                                           // error
+-----------^-----------------------------------------------------------------
+Error: Non-numeric argument for functor, instead argument has type S1 in file type_functors.dl at line 52
+OutNumber(x-y) :- InS1(x), InN2(y).                                 // error
+----------^------------------------------------------------------------------
+Error: Non-numeric argument for functor, instead argument has type S12 in file type_functors.dl at line 53
+OutNumber(x*y) :- InN1(x), InS12(y).                                // error
+------------^----------------------------------------------------------------
+Error: Non-numeric argument for functor, instead argument has type S1 in file type_functors.dl at line 54
+OutNumber(x/y) :- InS1(x), InSymbol(y).                             // error
+----------^------------------------------------------------------------------
+Error: Non-numeric argument for functor, instead argument has type symbol in file type_functors.dl at line 54
+OutNumber(x/y) :- InS1(x), InSymbol(y).                             // error
+------------^----------------------------------------------------------------
+Error: Non-symbolic argument for functor, instead argument has type N1 in file type_functors.dl at line 67
+OutNumber(strlen(x)) :- InN1(x).                                    // error
+-----------------^-----------------------------------------------------------
+Error: Non-symbolic argument for functor, instead argument has type number in file type_functors.dl at line 68
+OutNumber(@g(x)) :- InNumber(x).                                    // error
+-------------^---------------------------------------------------------------
+Error: Non-symbolic argument for functor, instead argument has type N2 in file type_functors.dl at line 69
+OutSymbol(cat(x,y)) :- InS1(x), InN2(y).                            // error
+----------------^------------------------------------------------------------
+Error: Non-symbolic argument for functor, instead argument has type N1 in file type_functors.dl at line 70
+OutSymbol(cat(x,y)) :- InN1(x), InS12(y).                           // error
+--------------^--------------------------------------------------------------
+Error: Non-symbolic argument for functor, instead argument has type N1 in file type_functors.dl at line 71
+OutSymbol(cat(x,y)) :- InN1(x), InNumber(y).                        // error
+--------------^--------------------------------------------------------------
+Error: Non-symbolic argument for functor, instead argument has type number in file type_functors.dl at line 71
+OutSymbol(cat(x,y)) :- InN1(x), InNumber(y).                        // error
+----------------^------------------------------------------------------------
+Error: Non-symbolic argument for functor, instead argument has type N1 in file type_functors.dl at line 74
+OutSymbol(substr(x,y,z)) :- InN1(x), InN2(y), InNumber(z).          // error
+-----------------^-----------------------------------------------------------
+Error: Non-numeric argument for functor, instead argument has type S12 in file type_functors.dl at line 76
+OutSymbol(substr(x,y,z)) :- InS12(x), InS12(y), InN1(z).            // error
+-------------------^---------------------------------------------------------
+Error: Non-numeric argument for functor, instead argument has type symbol in file type_functors.dl at line 77
+OutSymbol(substr(x,y,z)) :- InS1(x), InNumber(y), InSymbol(z).      // error
+---------------------^-------------------------------------------------------
+Error: Non-symbolic argument for functor, instead argument has type N2 in file type_functors.dl at line 78
+OutSymbol(@f(x,y,z)) :- InNumber(x), InSymbol(y), InN2(z).          // error
+-----------------^-----------------------------------------------------------
+Error: Non-symbolic argument for functor, instead argument has type N1 in file type_functors.dl at line 79
+OutSymbol(@f(x,y,z)) :- InN12(x), InN1(y), InS12(z).                // error
+---------------^-------------------------------------------------------------
+Error: Non-numeric argument for functor, instead argument has type S2 in file type_functors.dl at line 81
+OutSymbol(@f(x,y,z)) :- InS2(x), InS2(y), InS1(z).                  // error
+-------------^---------------------------------------------------------------
+Error: Relation expects value of type N1 but got argument of type N12 in file type_functors.dl at line 85
+OutN1(min(x,y)) :- InN1(x), InN2(y).                                // error
+------^----------------------------------------------------------------------
+Error: Relation expects value of type N1 but got argument of type N12 in file type_functors.dl at line 86
+OutN1(max(x,y)) :- InN1(x), InN12(y).                               // error
+------^----------------------------------------------------------------------
+Error: Relation expects value of type N1 but got argument of type number in file type_functors.dl at line 87
+OutN1(min(x,y)) :- InN1(x), InNumber(y).                            // error
+------^----------------------------------------------------------------------
+Error: Relation expects value of type N12 but got argument of type number in file type_functors.dl at line 91
+OutN12(min(x,y)) :- InN12(x), InNumber(y).                          // error
+-------^---------------------------------------------------------------------
+Error: Relation expects value of type N1 but got argument of type number in file type_functors.dl at line 92
+OutN1(x+y) :- InN2(x), InNumber(y).                                 // error
+------^----------------------------------------------------------------------
+Error: Relation expects value of type N2 but got argument of type number in file type_functors.dl at line 93
+OutN2(to_number(x)) :- InS12(x).                                    // error
+------^----------------------------------------------------------------------
+Error: Relation expects value of type N12 but got argument of type number in file type_functors.dl at line 94
+OutN12(-x) :- InN12(x).                                             // error
+-------^---------------------------------------------------------------------
+Error: Relation expects value of type N1 but got argument of type number in file type_functors.dl at line 95
+OutN1(@g(x)) :- InSymbol(x).                                        // error
+------^----------------------------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_functors.dl at line 96
+OutSymbol(x^y) :- InN2(x), InN2(y).                                 // error
+----------^------------------------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_functors.dl at line 97
+OutSymbol(ord(x)) :- InSymbol(x).                                   // error
+----------^------------------------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_functors.dl at line 98
+OutSymbol(-x) :- InN1(x).                                           // error
+----------^------------------------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_functors.dl at line 99
+OutSymbol(@g(x)) :- InS12(x).                                       // error
+----------^------------------------------------------------------------------
+Error: Relation expects value of type S2 but got argument of type symbol in file type_functors.dl at line 102
+OutS2(to_string(x)) :- InNumber(x).                                 // error
+------^----------------------------------------------------------------------
+Error: Relation expects value of type S12 but got argument of type symbol in file type_functors.dl at line 103
+OutS12(cat(x,y)) :- InSymbol(x), InS1(y).                           // error
+-------^---------------------------------------------------------------------
+Error: Relation expects value of type S2 but got argument of type symbol in file type_functors.dl at line 104
+OutS2(substr(x,y,z)) :- InSymbol(x), InN2(y), InN1(z).              // error
+------^----------------------------------------------------------------------
+Error: Relation expects value of type S1 but got argument of type symbol in file type_functors.dl at line 105
+OutS1(@f(x,y,z)) :- InN12(x), InSymbol(y), InS12(z).                // error
+------^----------------------------------------------------------------------
+Error: Relation expects value of type number but got argument of type symbol in file type_functors.dl at line 106
+OutNumber(to_string(x)) :- InNumber(x).                             // error
+----------^------------------------------------------------------------------
+Error: Relation expects value of type number but got argument of type symbol in file type_functors.dl at line 107
+OutNumber(cat(x,y)) :- InSymbol(x), InS1(y).                        // error
+----------^------------------------------------------------------------------
+Error: Relation expects value of type number but got argument of type symbol in file type_functors.dl at line 108
+OutNumber(substr(x,y,z)) :- InSymbol(x), InN2(y), InN1(z).          // error
+----------^------------------------------------------------------------------
+Error: Relation expects value of type number but got argument of type symbol in file type_functors.dl at line 109
+OutNumber(@f(x,y,z)) :- InN12(x), InSymbol(y), InS12(z).            // error
+----------^------------------------------------------------------------------
+37 errors generated, evaluation aborted

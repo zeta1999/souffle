@@ -1,0 +1,80 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the type system on equality constraints
+
+.number_type N1
+.number_type N2
+.number_type N3
+.type U12 = N1 | N2
+.type U23 = N2 | N3
+
+.decl InN1(x : N1)
+.decl InN2(x : N2)
+.decl InN3(x : N3)
+.decl InU12(x : U12)
+.decl InU23(x : U23)
+.decl InNumber(x : number)
+.decl InSymbol(x : symbol)
+.decl OutN1(x : N1)
+.decl OutN2(x : N2)
+.decl OutN3(x : N3)
+.decl OutU12(x : U12)
+.decl OutU23(x : U23)
+.decl OutNumber(x : number)
+
+// Check when equalities cause copies (some errors)
+OutN1(x) :- InN1(y), x=y.
+OutN1(x) :- InN2(y), x=y.                                       // error
+OutN1(x) :- InU12(y), x=y.                                      // error
+OutN1(x) :- InU23(y), x=y.                                      // error
+OutN1(x) :- InSymbol(y), x=y.                                   // error
+OutN1(x) :- InNumber(y), x=y.                                   // error
+OutU12(x) :- InN2(y), x=y.
+OutU12(x) :- InN3(y), x=y.                                      // error
+OutU12(x) :- InU12(y), x=y.
+OutU12(x) :- InU23(y), x=y.                                     // error
+OutNumber(x) :- InN3(y), x=y.
+OutNumber(x) :- InU12(y), x=y.
+OutNumber(x) :- InSymbol(y), x=y.                               // error
+OutNumber(x) :- InNumber(y), x=y.
+
+// Check when equalities cause intersections (some errors)
+OutN2(x) :- InN1(x), x=y, InN2(y).                              // error
+OutN2(x) :- InN2(x), x=y, InU12(y).
+OutN2(x) :- InN2(x), x=y, InU23(y).
+OutN2(x) :- InN2(x), x=y, InNumber(y).
+OutN2(x) :- InU12(x), x=y, InU23(y).
+OutN2(x) :- InU12(x), x=y, InNumber(y).                         // error
+OutN2(x) :- InN2(x), x=y, InSymbol(y).                          // error
+OutU23(x) :- InN2(x), x=y, InU12(y).
+OutU23(x) :- InN3(x), x=y, InU12(y).                            // error
+OutU23(x) :- InU12(x), x=y, InU23(y).
+
+// Check when equalities effect constraints (some errors)
+OutN3(x) :- InN3(x), x=y, !InN1(y).                             // error
+OutN3(x) :- InN3(x), x=y, !InN3(y).
+OutN3(x) :- InN3(x), x=y, !InU12(y).                            // error
+OutN3(x) :- InN3(x), x=y, !InU23(y).
+OutN3(x) :- InU23(x), x=y, !InN2(y).                            // error
+OutN3(x) :- InNumber(x), x=y, !InU12(y).                        // error
+OutU12(x) :- InN1(x), x=y, !InU12(y).
+OutU12(x) :- InN3(x), x=y, !InU12(y).                           // error
+OutU12(x) :- InU12(x), x=y, !InN1(y).                           // error
+OutU12(x) :- InU12(x), x=y, !InU23(y).                          // error
+OutU12(x) :- InU12(x), x=y, !InNumber(y).
+OutU12(x) :- InU23(x), x=y, !InN3(y).                           // error
+OutU12(x) :- InNumber(x), x=y, !InN3(y).                        // error
+OutNumber(x) :- InU23(x), x=y, !InN3(y).                        // error
+OutNumber(x) :- InNumber(x), x=y, !InN2(y).                     // error
+OutNumber(x) :- InNumber(x), x=y, !InU23(y).                    // error
+OutNumber(x) :- InNumber(x), x=y, !InNumber(y).
+OutNumber(x) :- InNumber(x), x=y, !InSymbol(y).                 // error
+
+// Check long chains of equalities (some errors)
+OutN2(x) :- InNumber(y), y=a, a=b, b=c, c=d, d=x, !InN2(x).     // error
+OutN2(x) :- InU12(y), y=a, InNumber(a), a=x, x=b, !InNumber(b), b=z, InU23(z).
+OutN2(x) :- InN2(x), x=a, a=b, b=c, c=d, InN1(y), d = max(y,d).

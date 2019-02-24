@@ -284,11 +284,11 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 
         // -- connectors operators --
 
-        bool visitAnd(const RamAnd& conj) override {
+        bool visitConjunction(const RamConjunction& conj) override {
             return visit(conj.getLHS()) && visit(conj.getRHS());
         }
 
-        bool visitNot(const RamNot& neg) override {
+        bool visitNegation(const RamNegation& neg) override {
             return !visit(neg.getOperand());
         }
 
@@ -299,7 +299,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             return rel.empty();
         }
 
-        bool visitExists(const RamExists& exists) override {
+        bool visitExistenceCheck(const RamExistenceCheck& exists) override {
             const InterpreterRelation& rel = interpreter.getRelation(exists.getRelation());
 
             // construct the pattern tuple
@@ -333,7 +333,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             return range.first != range.second;  // if there are none => done
         }
 
-        bool visitProvenanceExists(const RamProvenanceExists& provExists) override {
+        bool visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
             const InterpreterRelation& rel = interpreter.getRelation(provExists.getRelation());
 
             // construct the pattern tuple

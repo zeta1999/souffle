@@ -350,7 +350,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             const AstAtom* atom = neg.getAtom();
 
             // create constraint
-            auto exists = std::make_unique<RamExists>(translator.translateRelation(atom));
+            auto exists = std::make_unique<RamExistenceCheck>(translator.translateRelation(atom));
 
             auto arity = atom->getArity();
 
@@ -372,7 +372,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             }
 
             // add constraint
-            return std::make_unique<RamNot>(std::move(exists));
+            return std::make_unique<RamNegation>(std::move(exists));
         }
 
         /** for provenance negation */
@@ -381,7 +381,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             const AstAtom* atom = neg.getAtom();
 
             // create constraint
-            auto provExists = std::make_unique<RamProvenanceExists>(translator.translateRelation(atom));
+            auto provExists = std::make_unique<RamProvenanceExistenceCheck>(translator.translateRelation(atom));
 
             auto arity = atom->getArity();
 
@@ -404,7 +404,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             }
 
             // add constraint
-            return std::make_unique<RamNot>(std::move(provExists));
+            return std::make_unique<RamNegation>(std::move(provExists));
         }
     };
 
@@ -547,7 +547,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     if (Global::config().has("provenance") &&
             ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
                     !Global::config().has("generate")))) {
-        auto uniquenessEnforcement = std::make_unique<RamExists>(translator.translateRelation(head));
+        auto uniquenessEnforcement = std::make_unique<RamExistenceCheck>(translator.translateRelation(head));
         auto arity = head->getArity() - 2;
 
         bool isVolatile = true;
@@ -566,7 +566,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
 
         if (isVolatile) {
             return std::make_unique<RamFilter>(
-                    std::make_unique<RamNot>(std::move(uniquenessEnforcement)), std::move(project));
+                    std::make_unique<RamNegation>(std::move(uniquenessEnforcement)), std::move(project));
         }
     }
 
@@ -1112,7 +1112,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     /* construct exit conditions for odd and even iteration */
     auto addCondition = [](std::unique_ptr<RamCondition>& cond, std::unique_ptr<RamCondition> clause) {
-        cond = ((cond) ? std::make_unique<RamAnd>(std::move(cond), std::move(clause)) : std::move(clause));
+        cond = ((cond) ? std::make_unique<RamConjunction>(std::move(cond), std::move(clause)) : std::move(clause));
     };
 
     std::unique_ptr<RamCondition> exitCond;

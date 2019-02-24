@@ -39,12 +39,12 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         ConditionLevelVisitor(RamValueLevelAnalysis* rvla) : rvla(rvla) {}
 
         // conjunction
-        size_t visitAnd(const RamAnd& conj) override {
+        size_t visitConjunction(const RamConjunction& conj) override {
             return std::max(visit(conj.getLHS()), visit(conj.getRHS()));
         }
 
         // negation
-        size_t visitNot(const RamNot& neg) override {
+        size_t visitNegation(const RamNegation& neg) override {
             return visit(neg.getOperand());
         }
 
@@ -54,7 +54,7 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         }
 
         // not exists check
-        size_t visitExists(const RamExists& exists) override {
+        size_t visitExistenceCheck(const RamExistenceCheck& exists) override {
             size_t level = 0;
             for (const auto& cur : exists.getValues()) {
                 if (cur) {
@@ -65,7 +65,7 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         }
 
         // not exists check for a provenance existence check
-        size_t visitProvenanceExists(const RamProvenanceExists& provExists) override {
+        size_t visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
             size_t level = 0;
             for (const auto& cur : provExists.getValues()) {
                 if (cur) {

@@ -153,12 +153,12 @@ size_t getLevel(const RamCondition* condition) {
     class ConditionLevelVisitor : public RamVisitor<size_t> {
     public:
         // conjunction
-        size_t visitAnd(const RamAnd& conj) override {
+        size_t visitConjunction(const RamConjunction& conj) override {
             return std::max(visit(conj.getLHS()), visit(conj.getRHS()));
         }
 
         // negation
-        size_t visitNot(const RamNot& neg) override {
+        size_t visitNegation(const RamNegation& neg) override {
             return visit(neg.getOperand());
         }
 
@@ -168,7 +168,7 @@ size_t getLevel(const RamCondition* condition) {
         }
 
         // not exists check
-        size_t visitExists(const RamExists& exists) override {
+        size_t visitExistenceCheck(const RamExistenceCheck& exists) override {
             size_t level = 0;
             for (const auto& cur : exists.getValues()) {
                 if (cur != nullptr) {
@@ -179,7 +179,7 @@ size_t getLevel(const RamCondition* condition) {
         }
 
         // not exists check for a provenance existence check
-        size_t visitProvenanceExists(const RamProvenanceExists& provExists) override {
+        size_t visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
             size_t level = 0;
             for (const auto& cur : provExists.getValues()) {
                 if (cur != nullptr) {
@@ -237,7 +237,7 @@ void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
                 auto addCondition = [&](std::unique_ptr<RamCondition> c) {
                     assert(getLevel(c.get()) == getIdentifier());
                     if (condition != nullptr) {
-                        condition = std::make_unique<RamAnd>(std::move(condition), std::move(c));
+                        condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
                     } else {
                         condition = std::move(c);
                     }
@@ -251,7 +251,7 @@ void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
             std::unique_ptr<RamCondition> eq(
                     new RamConstraint(BinaryConstraintOp::EQ, std::move(field), std::move(value)));
             if (condition != nullptr) {
-                condition = std::make_unique<RamAnd>(std::move(condition), std::move(eq));
+                condition = std::make_unique<RamConjunction>(std::move(condition), std::move(eq));
             } else {
                 condition.swap(eq);
             }

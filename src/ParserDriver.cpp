@@ -122,7 +122,7 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
                 {DiagnosticMessage("Previous definition", prev->getSrcLoc())});
         translationUnit->getErrorReport().addDiagnostic(err);
     } else {
-        if (!r->getStores().empty() || !r->getLoads().empty() || !r->getPrintSizes().empty()) {
+        if (!r->getStores().empty() || !r->getLoads().empty()) {
             translationUnit->getErrorReport().addWarning(
                     "Deprecated io qualifier was used in relation " + toString(name), r->getSrcLoc());
         }
@@ -131,26 +131,24 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
 }
 
 void ParserDriver::addStore(std::unique_ptr<AstStore> d) {
+    if (dynamic_cast<AstPrintSize*>(d.get()) != nullptr) {
+        for (const auto& cur : translationUnit->getProgram()->getStores()) {
+            if (cur->getName() == d->getName() && dynamic_cast<AstPrintSize*>(cur.get()) != nullptr) {
+                Diagnostic err(Diagnostic::ERROR,
+                        DiagnosticMessage(
+                                "Redefinition of printsize directives for relation " + toString(d->getName()),
+                                d->getSrcLoc()),
+                        {DiagnosticMessage("Previous definition", cur->getSrcLoc())});
+                translationUnit->getErrorReport().addDiagnostic(err);
+                return;
+            }
+        }
+    }
     translationUnit->getProgram()->addStore(std::move(d));
 }
 
 void ParserDriver::addLoad(std::unique_ptr<AstLoad> d) {
     translationUnit->getProgram()->addLoad(std::move(d));
-}
-
-void ParserDriver::addPrintSize(std::unique_ptr<AstPrintSize> d) {
-    for (const auto& cur : translationUnit->getProgram()->getPrintSizes()) {
-        if (cur->getName() == d->getName()) {
-            Diagnostic err(Diagnostic::ERROR,
-                    DiagnosticMessage(
-                            "Redefinition of printsize directives for relation " + toString(d->getName()),
-                            d->getSrcLoc()),
-                    {DiagnosticMessage("Previous definition", cur->getSrcLoc())});
-            translationUnit->getErrorReport().addDiagnostic(err);
-            return;
-        }
-    }
-    translationUnit->getProgram()->addPrintSize(std::move(d));
 }
 
 void ParserDriver::addType(std::unique_ptr<AstType> type) {

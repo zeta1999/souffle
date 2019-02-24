@@ -26,13 +26,6 @@
 #include <utility>
 
 namespace souffle {
-/**
- * Obtains a reference to the lock synchronizing output operations.
- */
-inline Lock& getOutputLock() {
-    static Lock outputLock;
-    return outputLock;
-}
 
 /**
  * The class utilized to times for the souffle profiling tool. This class

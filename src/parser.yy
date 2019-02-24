@@ -192,7 +192,6 @@
 %type <AstIO *>                          key_value_pairs non_empty_key_value_pairs iodirective_body
 %type <std::vector<AstIO *>>             iodirective_list
 %type <std::vector<AstLoad *>>           load_head
-%type <std::vector<AstPrintSize *>>      printsize_head
 %type <std::vector<AstStore *>>          store_head
 %printer { yyoutput << $$; } <*>;
 
@@ -228,9 +227,6 @@ unit
     }
   | unit load_head {
         for(const auto& cur : $2) driver.addLoad(std::unique_ptr<AstLoad>(cur));
-    }
-  | unit printsize_head {
-        for(const auto& cur : $2) driver.addPrintSize(std::unique_ptr<AstPrintSize>(cur));
     }
   | unit store_head {
         for(const auto& cur : $2) driver.addStore(std::unique_ptr<AstStore>(cur));
@@ -502,16 +498,16 @@ load_head
           $$.push_back(new AstLoad(*cur));
       }
     }
-printsize_head
-  : PRINTSIZE_DECL iodirective_list {
-      for (auto* cur : $2) {
-          $$.push_back(new AstPrintSize(*cur));
-      }
-    }
 store_head
   : OUTPUT_DECL iodirective_list {
       for (auto* cur : $2) {
           $$.push_back(new AstStore(*cur));
+      }
+    }
+  | PRINTSIZE_DECL iodirective_list {
+      for (auto* cur : $2) {
+          auto tmp = new AstPrintSize(*cur);
+          $$.push_back(tmp);
       }
     }
 
@@ -1067,10 +1063,6 @@ component_body
   | component_body load_head {
         $$ = $1;
         for(const auto& cur : $2) $$->addLoad(std::unique_ptr<AstLoad>(cur));
-    }
-  | component_body printsize_head {
-        $$ = $1;
-        for(const auto& cur : $2) $$->addPrintSize(std::unique_ptr<AstPrintSize>(cur));
     }
   | component_body store_head {
         $$ = $1;

@@ -496,8 +496,6 @@ public:
     }
 };
 
-}  // end of namespace souffle
-
 #else
 
 namespace souffle {
@@ -601,6 +599,14 @@ public:
     }
 };
 
-}  // end of namespace souffle
-
 #endif
+
+/**
+ * Obtains a reference to the lock synchronizing output operations.
+ */
+inline Lock& getOutputLock() {
+    static Lock outputLock;
+    return outputLock;
+}
+
+}  // end of namespace souffle

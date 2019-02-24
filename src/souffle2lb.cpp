@@ -167,7 +167,7 @@ private:
             });
             iout << "\n";
         }
-        if (ioTypes->isOutput(&rel) || ioTypes->isPrintSize(&rel)) {
+        if (ioTypes->isOutput(&rel)) {
             int i = 0;
             eout << "fromPredicate," << rel.getName() << ",";
             eout << join(rel.getAttributes(), ",", [&](std::ostream& os, AstAttribute* cur) {

@@ -602,7 +602,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
                                     toString(attr->getTypeName()),
                             attr->getSrcLoc());
                 }
-                if (ioTypes.isOutput(&relation)) {
+                if (ioTypes.isOutput(&relation) && !ioTypes.isPrintSize(&relation)) {
                     report.addWarning(
                             "Record types in output relations are not printed verbatim: attribute " +
                                     attr->getAttributeName() + " has record type " +
@@ -791,9 +791,6 @@ void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram
         }
     };
     for (const auto& directive : program.getLoads()) {
-        checkIODirective(directive.get());
-    }
-    for (const auto& directive : program.getPrintSizes()) {
         checkIODirective(directive.get());
     }
     for (const auto& directive : program.getStores()) {

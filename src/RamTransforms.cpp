@@ -439,7 +439,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     std::unique_ptr<RamCondition> constraint;
 
                     if (nullptr != dynamic_cast<RamScan*>(scan)) {
-                        constraint = std::make_unique<RamNegation>(std::make_unique<RamEmpty>(
+                        constraint = std::make_unique<RamNegation>(std::make_unique<RamEmptyCheck>(
                                 std::unique_ptr<RamRelationReference>(scan->getRelation().clone())));
                     } else if (auto* indexScan = dynamic_cast<RamIndexScan*>(scan)) {
                         auto exists = std::make_unique<RamExistenceCheck>(

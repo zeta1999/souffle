@@ -44,7 +44,7 @@ enum RamNodeType {
     // Conditions
     RN_ExistenceCheck,
     RN_ProvenanceExistenceCheck,
-    RN_Empty,
+    RN_EmptyCheck,
     RN_Conjunction,
     RN_Negation,
     RN_Constraint,

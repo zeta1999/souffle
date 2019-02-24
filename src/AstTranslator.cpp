@@ -611,7 +611,7 @@ std::unique_ptr<RamCondition> AstTranslator::ClauseTranslator::createCondition(
     // add stopping criteria for nullary relations
     // (if it contains already the null tuple, don't re-compute)
     if (head->getArity() == 0) {
-        return std::make_unique<RamEmpty>(translator.translateRelation(head));
+        return std::make_unique<RamEmptyCheck>(translator.translateRelation(head));
     }
     return nullptr;
 }
@@ -1118,7 +1118,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
     std::unique_ptr<RamCondition> exitCond;
     for (const AstRelation* rel : scc) {
         addCondition(exitCond,
-                std::make_unique<RamEmpty>(std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
+                std::make_unique<RamEmptyCheck>(std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
     }
 
     /* construct fixpoint loop  */

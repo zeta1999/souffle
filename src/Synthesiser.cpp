@@ -1026,7 +1026,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitEmpty(const RamEmpty& empty, std::ostream& out) override {
+        void visitEmptyCheck(const RamEmptyCheck& empty, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << synthesiser.getRelationName(empty.getRelation()) << "->"
                 << "empty()";
@@ -1348,8 +1348,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitPack(const RamPack& pack, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "pack("
-                << "ram::Tuple<RamDomain," << pack.getValues().size() << ">({"
-                << join(pack.getValues(), ",", rec) << "})"
+                << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">({"
+                << join(pack.getArguments(), ",", rec) << "})"
                 << ")";
             PRINT_END_COMMENT(out);
         }

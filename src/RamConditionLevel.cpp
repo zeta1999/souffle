@@ -76,7 +76,7 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         }
 
         // emptiness check
-        size_t visitEmpty(const RamEmpty& emptiness) override {
+        size_t visitEmptyCheck(const RamEmptyCheck& emptiness) override {
             return 0;  // can be in the top level
         }
     };

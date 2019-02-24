@@ -245,7 +245,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
         // -- records --
         RamDomain visitPack(const RamPack& op) override {
-            auto values = op.getValues();
+            auto values = op.getArguments();
             auto arity = values.size();
             RamDomain data[arity];
             for (size_t i = 0; i < arity; ++i) {
@@ -294,7 +294,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 
         // -- relation operations --
 
-        bool visitEmpty(const RamEmpty& empty) override {
+        bool visitEmptyCheck(const RamEmptyCheck& empty) override {
             const InterpreterRelation& rel = interpreter.getRelation(empty.getRelation());
             return rel.empty();
         }

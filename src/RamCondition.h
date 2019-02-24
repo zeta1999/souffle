@@ -114,7 +114,8 @@ protected:
     std::unique_ptr<RamCondition> operand;
 
 public:
-    RamNegation(std::unique_ptr<RamCondition> operand) : RamCondition(RN_Negation), operand(std::move(operand)) {}
+    RamNegation(std::unique_ptr<RamCondition> operand)
+            : RamCondition(RN_Negation), operand(std::move(operand)) {}
 
     /** Get operand of negation */
     const RamCondition& getOperand() const {
@@ -235,7 +236,7 @@ protected:
 };
 
 /**
- * Existence check for a tuple(-pattern) in a relation 
+ * Existence check for a tuple(-pattern) in a relation
  */
 class RamExistenceCheck : public RamCondition {
 protected:
@@ -310,7 +311,8 @@ public:
 
     /** Create clone */
     RamExistenceCheck* clone() const override {
-        RamExistenceCheck* res = new RamExistenceCheck(std::unique_ptr<RamRelationReference>(relation->clone()));
+        RamExistenceCheck* res =
+                new RamExistenceCheck(std::unique_ptr<RamRelationReference>(relation->clone()));
         for (auto& cur : arguments) {
             RamValue* val = nullptr;
             if (cur != nullptr) {
@@ -341,7 +343,7 @@ protected:
 };
 
 /**
- * Existence check for provenance. 
+ * Existence check for provenance.
  */
 class RamProvenanceExistenceCheck : public RamCondition {
 protected:
@@ -456,7 +458,8 @@ class RamEmptyCheck : public RamCondition {
     std::unique_ptr<RamRelationReference> relation;
 
 public:
-    RamEmptyCheck(std::unique_ptr<RamRelationReference> rel) : RamCondition(RN_EmptyCheck), relation(std::move(rel)) {}
+    RamEmptyCheck(std::unique_ptr<RamRelationReference> rel)
+            : RamCondition(RN_EmptyCheck), relation(std::move(rel)) {}
 
     /** Get relation */
     const RamRelationReference& getRelation() const {

@@ -381,7 +381,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             const AstAtom* atom = neg.getAtom();
 
             // create constraint
-            auto provExists = std::make_unique<RamProvenanceExistenceCheck>(translator.translateRelation(atom));
+            auto provExists =
+                    std::make_unique<RamProvenanceExistenceCheck>(translator.translateRelation(atom));
 
             auto arity = atom->getArity();
 
@@ -1112,7 +1113,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     /* construct exit conditions for odd and even iteration */
     auto addCondition = [](std::unique_ptr<RamCondition>& cond, std::unique_ptr<RamCondition> clause) {
-        cond = ((cond) ? std::make_unique<RamConjunction>(std::move(cond), std::move(clause)) : std::move(clause));
+        cond = ((cond) ? std::make_unique<RamConjunction>(std::move(cond), std::move(clause))
+                       : std::move(clause));
     };
 
     std::unique_ptr<RamCondition> exitCond;

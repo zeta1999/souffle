@@ -1071,7 +1071,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists, std::ostream& out) override {
+        void visitProvenanceExistenceCheck(
+                const RamProvenanceExistenceCheck& provExists, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // get some details
             const auto& rel = provExists.getRelation();

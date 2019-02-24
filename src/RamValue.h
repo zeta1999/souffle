@@ -81,7 +81,7 @@ public:
         }
     }
 
-    /** Get operator symbol */ 
+    /** Get operator symbol */
     FunctorOp getOperator() const {
         return operation;
     }
@@ -91,13 +91,13 @@ public:
         return toPtrVector(arguments);
     }
 
-    /** Get i-th argument value */ 
+    /** Get i-th argument value */
     const RamValue* getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return arguments[i].get();
     }
 
-    /** Get number of arguments */ 
+    /** Get number of arguments */
     size_t getArgCount() const {
         return arguments.size();
     }
@@ -169,18 +169,18 @@ public:
         return toPtrVector(arguments);
     }
 
-    /** Get i-th argument value */ 
+    /** Get i-th argument value */
     const RamValue* getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return arguments[i].get();
     }
 
-    /** Get number of arguments */ 
+    /** Get number of arguments */
     size_t getArgCount() const {
         return arguments.size();
     }
 
-    /** Get operator name */ 
+    /** Get operator name */
     const std::string& getName() const {
         return name;
     }

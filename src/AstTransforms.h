@@ -94,11 +94,11 @@ public:
      * @param program the program to be processed
      * @return whether the program was modified
      */
-    static bool removeRelationCopies(AstProgram& program);
+    static bool removeRelationCopies(AstTranslationUnit& translationUnit);
 
 private:
     bool transform(AstTranslationUnit& translationUnit) override {
-        return removeRelationCopies(*translationUnit.getProgram());
+        return removeRelationCopies(translationUnit);
     }
 };
 

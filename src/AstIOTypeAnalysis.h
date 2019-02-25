@@ -44,6 +44,10 @@ public:
         return printSizeRelations.count(relation) != 0;
     }
 
+    bool isIO(const AstRelation* relation) const {
+        return isInput(relation) || isOutput(relation) || isPrintSize(relation);
+    }
+
 private:
     std::set<const AstRelation*> inputRelations;
     std::set<const AstRelation*> outputRelations;

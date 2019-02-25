@@ -15,7 +15,7 @@
  ***********************************************************************/
 
 #include "AstIOTypeAnalysis.h"
-#include "AstIODirective.h"
+#include "AstIO.h"
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
 #include "AstVisitor.h"
@@ -23,7 +23,7 @@
 namespace souffle {
 
 void IOType::run(const AstTranslationUnit& translationUnit) {
-    visitDepthFirst(*translationUnit.getProgram(), [&](const AstIODirective& directive) {
+    visitDepthFirst(*translationUnit.getProgram(), [&](const AstLoad& directive) {
         if (directive.getNames().empty()) {
             return;
         }
@@ -33,15 +33,31 @@ void IOType::run(const AstTranslationUnit& translationUnit) {
             return;
         }
 
-        if (directive.isInput()) {
-            inputRelations.insert(relation);
+        inputRelations.insert(relation);
+    });
+    visitDepthFirst(*translationUnit.getProgram(), [&](const AstStore& directive) {
+        if (directive.getNames().empty()) {
+            return;
         }
-        if (directive.isOutput()) {
-            outputRelations.insert(relation);
+
+        auto* relation = translationUnit.getProgram()->getRelation(directive.getName());
+        if (relation == nullptr) {
+            return;
         }
-        if (directive.isPrintSize()) {
-            printSizeRelations.insert(relation);
+
+        outputRelations.insert(relation);
+    });
+    visitDepthFirst(*translationUnit.getProgram(), [&](const AstPrintSize& directive) {
+        if (directive.getNames().empty()) {
+            return;
         }
+
+        auto* relation = translationUnit.getProgram()->getRelation(directive.getName());
+        if (relation == nullptr) {
+            return;
+        }
+
+        printSizeRelations.insert(relation);
     });
 }
 

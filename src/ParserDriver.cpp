@@ -18,14 +18,16 @@
 #include "AstClause.h"
 #include "AstComponent.h"
 #include "AstFunctorDeclaration.h"
-#include "AstIODirective.h"
+#include "AstIO.h"
 #include "AstPragma.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
 #include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
+#include "DebugReport.h"
 #include "ErrorReport.h"
+#include "SymbolTable.h"
 #include "Util.h"
 #include <memory>
 #include <utility>
@@ -120,7 +122,7 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
                 {DiagnosticMessage("Previous definition", prev->getSrcLoc())});
         translationUnit->getErrorReport().addDiagnostic(err);
     } else {
-        if (!r->getIODirectives().empty()) {
+        if (!r->getStores().empty() || !r->getLoads().empty() || !r->getPrintSizes().empty()) {
             translationUnit->getErrorReport().addWarning(
                     "Deprecated io qualifier was used in relation " + toString(name), r->getSrcLoc());
         }
@@ -128,9 +130,17 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
     }
 }
 
-void ParserDriver::addIODirective(std::unique_ptr<AstIODirective> d) {
-    for (const auto& cur : translationUnit->getProgram()->getIODirectives()) {
-        if ((cur->isPrintSize() && d->isPrintSize()) && cur->getName() == d->getName()) {
+void ParserDriver::addStore(std::unique_ptr<AstStore> d) {
+    translationUnit->getProgram()->addStore(std::move(d));
+}
+
+void ParserDriver::addLoad(std::unique_ptr<AstLoad> d) {
+    translationUnit->getProgram()->addLoad(std::move(d));
+}
+
+void ParserDriver::addPrintSize(std::unique_ptr<AstPrintSize> d) {
+    for (const auto& cur : translationUnit->getProgram()->getPrintSizes()) {
+        if (cur->getName() == d->getName()) {
             Diagnostic err(Diagnostic::ERROR,
                     DiagnosticMessage(
                             "Redefinition of printsize directives for relation " + toString(d->getName()),
@@ -140,7 +150,7 @@ void ParserDriver::addIODirective(std::unique_ptr<AstIODirective> d) {
             return;
         }
     }
-    translationUnit->getProgram()->addIODirective(std::move(d));
+    translationUnit->getProgram()->addPrintSize(std::move(d));
 }
 
 void ParserDriver::addType(std::unique_ptr<AstType> type) {

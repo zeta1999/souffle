@@ -20,7 +20,7 @@
 #include "AstClause.h"
 #include "AstFunctorDeclaration.h"
 #include "AstGroundAnalysis.h"
-#include "AstIODirective.h"
+#include "AstIO.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -110,7 +110,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     checkNamespaces(report, program);
     checkIODirectives(report, program);
     checkWitnessProblem(report, program);
-    checkInlining(report, program, precedenceGraph);
+    checkInlining(report, program, precedenceGraph, ioTypes);
 
     // get the list of components to be checked
     std::vector<const AstNode*> nodes;
@@ -777,7 +777,7 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
 }
 
 void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram& program) {
-    for (const auto& directive : program.getIODirectives()) {
+    auto checkIODirective = [&](const AstIO* directive) {
 #ifdef USE_MPI
         // TODO (lyndonhenry): should permit sqlite as an io directive for use with mpi
         auto it = directive->getIODirectiveMap().find("IO");
@@ -789,6 +789,15 @@ void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram
         if (r == nullptr) {
             report.addError("Undefined relation " + toString(directive->getName()), directive->getSrcLoc());
         }
+    };
+    for (const auto& directive : program.getLoads()) {
+        checkIODirective(directive.get());
+    }
+    for (const auto& directive : program.getPrintSizes()) {
+        checkIODirective(directive.get());
+    }
+    for (const auto& directive : program.getStores()) {
+        checkIODirective(directive.get());
     }
 }
 
@@ -1026,14 +1035,14 @@ std::vector<AstRelationIdentifier> findInlineCycle(const PrecedenceGraph& preced
     return result;
 }
 
-void AstSemanticChecker::checkInlining(
-        ErrorReport& report, const AstProgram& program, const PrecedenceGraph& precedenceGraph) {
+void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& program,
+        const PrecedenceGraph& precedenceGraph, const IOType& ioTypes) {
     // Find all inlined relations
     AstRelationSet inlinedRelations;
     for (const auto& relation : program.getRelations()) {
         if (relation->isInline()) {
             inlinedRelations.insert(relation);
-            if (!relation->getIODirectives().empty()) {
+            if (ioTypes.isIO(relation)) {
                 report.addError("IO relation " + toString(relation->getName()) + " cannot be inlined",
                         relation->getSrcLoc());
             }

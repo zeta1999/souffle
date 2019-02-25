@@ -90,4 +90,6 @@ int main(int argc, char** argv){
     prog->run();
     std::cout<<"source2sink - run 3"<<std::endl;
     printSource2sink(prog);
+
+    delete prog;
 }

@@ -496,31 +496,33 @@ load_head
   : INPUT_DECL iodirective_list {
       for (auto* cur : $2) {
           $$.push_back(new AstLoad(*cur));
+          delete cur;
       }
     }
 store_head
   : OUTPUT_DECL iodirective_list {
       for (auto* cur : $2) {
           $$.push_back(new AstStore(*cur));
+          delete cur;
       }
     }
   | PRINTSIZE_DECL iodirective_list {
       for (auto* cur : $2) {
-          auto tmp = new AstPrintSize(*cur);
-          $$.push_back(tmp);
+          $$.push_back(new AstPrintSize(*cur));
+          delete cur;
       }
     }
 
 iodirective_list
   : iodirective_body {
-      $$.emplace_back($1);
+      $$.push_back($1);
     }
   | IDENT COMMA iodirective_list {
       $$.swap($3);
       auto tmp = $$.back()->clone();
       tmp->setName($1);
       tmp->setSrcLoc(@1);
-      $$.emplace_back(tmp);
+      $$.push_back(tmp);
     }
 
 iodirective_body

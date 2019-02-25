@@ -205,14 +205,16 @@ public:
 
 /**
  * @class AstPrintSize
- * @brief Intermediate representation of a store operation.
+ * @brief Intermediate representation of a summary store operation.
  */
-class AstPrintSize : public AstIO {
+class AstPrintSize : public AstStore {
 public:
-    AstPrintSize(const AstIO& io) : AstIO(io) {
-        setSrcLoc(io.getSrcLoc());
+    AstPrintSize(const AstIO& io) : AstStore(io) {
+        addKVP("IO", "stdoutprintsize");
     }
-    AstPrintSize() = default;
+    AstPrintSize() {
+        addKVP("IO", "stdoutprintsize");
+    }
     ~AstPrintSize() override = default;
 
     /** Output to a given output stream */
@@ -232,6 +234,7 @@ public:
     AstPrintSize* clone() const override {
         auto res = new AstPrintSize();
         res->names = names;
+        res->kvps = kvps;
         res->setSrcLoc(getSrcLoc());
         return res;
     }

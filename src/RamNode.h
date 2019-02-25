@@ -65,7 +65,6 @@ enum RamNodeType {
     RN_Insert,
     RN_Clear,
     RN_Drop,
-    RN_PrintSize,
     RN_LogSize,
     RN_Return,
 

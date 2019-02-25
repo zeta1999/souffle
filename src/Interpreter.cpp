@@ -784,14 +784,6 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
             return true;
         }
 
-        bool visitPrintSize(const RamPrintSize& print) override {
-            auto lease = getOutputLock().acquire();
-            (void)lease;
-            const InterpreterRelation& rel = interpreter.getRelation(print.getRelation());
-            std::cout << print.getMessage() << rel.size() << "\n";
-            return true;
-        }
-
         bool visitLogSize(const RamLogSize& size) override {
             const InterpreterRelation& rel = interpreter.getRelation(size.getRelation());
             ProfileEventSingleton::instance().makeQuantityEvent(

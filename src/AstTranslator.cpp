@@ -1220,12 +1220,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         appendStmt(current, std::move(statement));
     };
 
-    // a function to print the size of relations
-    const auto& makeRamPrintSize = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
-        appendStmt(current, std::make_unique<RamPrintSize>(
-                                    std::unique_ptr<RamRelationReference>(translateRelation(relation))));
-    };
-
     // a function to store relations
     const auto& makeRamStore = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                        const std::string& outputDirectory, const std::string& fileExtension) {
@@ -1345,15 +1339,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
                                          *((const AstRelation*)*allInterns.begin()), recursiveClauses)
                                : translateRecursiveRelation(allInterns, recursiveClauses);
         appendStmt(current, std::move(bodyStatement));
-
-        auto* ioTypes = translationUnit.getAnalysis<IOType>();
-
-        // print the size of all printsize relations in the current SCC
-        for (const auto& relation : allInterns) {
-            if (ioTypes->isPrintSize(relation)) {
-                makeRamPrintSize(current, relation);
-            }
-        }
 #ifdef USE_MPI
         // note that the order of sends is first by relation then second destination
         if (Global::config().get("engine") == "mpi") {

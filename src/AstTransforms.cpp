@@ -379,7 +379,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& t
             }
         });
 
-        if (!usedInAggregate && !ioTypes->isOutput(rel) && !ioTypes->isPrintSize(rel)) {
+        if (!usedInAggregate && !ioTypes->isOutput(rel)) {
             program.removeRelation(rel->getName());
             changed = true;
         }

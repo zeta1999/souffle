@@ -32,14 +32,14 @@ namespace souffle {
 
 namespace {
 
-std::vector<RamCondition*> getConditions(const RamCondition* condition) {
-    std::vector<RamCondition*> conditions;
+std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* condition) {
+    std::vector<std::unique_ptr<RamCondition>> conditions;
     while (condition != nullptr) {
         if (const auto* ramAnd = dynamic_cast<const RamConjunction*>(condition)) {
-            conditions.push_back(ramAnd->getRHS().clone());
+            conditions.emplace_back(ramAnd->getRHS().clone());
             condition = &ramAnd->getLHS();
         } else {
-            conditions.push_back(condition->clone());
+            conditions.emplace_back(condition->clone());
             break;
         }
     }
@@ -222,17 +222,17 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
 
         bool indexable = false;
 
-        for (RamCondition* cond : getConditions(filter->getCondition().clone())) {
+        for (auto& cond : getConditions(&filter->getCondition())) {
             size_t element = 0;
-            if (std::unique_ptr<RamValue> value = getIndexElement(cond, element, identifier)) {
+            if (std::unique_ptr<RamValue> value = getIndexElement(cond.get(), element, identifier)) {
                 indexable = true;
                 if (queryPattern[element] == nullptr) {
                     queryPattern[element] = std::move(value);
                 } else {
-                    addCondition(std::unique_ptr<RamCondition>(cond));
+                    addCondition(std::move(cond));
                 }
             } else {
-                addCondition(std::unique_ptr<RamCondition>(cond));
+                addCondition(std::move(cond));
             }
         }
 
@@ -362,8 +362,8 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                 bool isExistCheck = true;
                 visitDepthFirst(scan->getOperation(), [&](const RamFilter& filter) {
                     if (isExistCheck) {
-                        for (const RamCondition* c : getConditions(filter.getCondition().clone())) {
-                            if (dependsOn(c, identifier)) {
+                        for (auto& c : getConditions(&filter.getCondition())) {
+                            if (dependsOn(c.get(), identifier)) {
                                 isExistCheck = false;
                                 break;
                             }

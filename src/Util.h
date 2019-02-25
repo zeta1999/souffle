@@ -1124,7 +1124,7 @@ inline std::string baseName(const std::string& filename) {
  * File name, with extension removed.
  */
 inline std::string simpleName(const std::string& path) {
-    std::string name = path;
+    std::string name = baseName(path);
     const size_t lastDot = name.find_last_of('.');
     // file has no extension
     if (lastDot == std::string::npos) return name;

@@ -19,7 +19,7 @@
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstFunctorDeclaration.h"
-#include "AstIODirective.h"
+#include "AstIO.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -110,14 +110,12 @@ std::vector<IODirectives> AstTranslator::getInputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> inputDirectives;
 
-    for (const auto& current : rel->getIODirectives()) {
-        if (current->isInput()) {
-            IODirectives ioDirectives;
-            for (const auto& currentPair : current->getIODirectiveMap()) {
-                ioDirectives.set(currentPair.first, currentPair.second);
-            }
-            inputDirectives.push_back(ioDirectives);
+    for (const auto& current : rel->getLoads()) {
+        IODirectives ioDirectives;
+        for (const auto& currentPair : current->getIODirectiveMap()) {
+            ioDirectives.set(currentPair.first, currentPair.second);
         }
+        inputDirectives.push_back(ioDirectives);
     }
 
     if (inputDirectives.empty()) {
@@ -142,14 +140,12 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> outputDirectives;
 
-    for (const auto& current : rel->getIODirectives()) {
-        if (current->isOutput()) {
-            IODirectives ioDirectives;
-            for (const auto& currentPair : current->getIODirectiveMap()) {
-                ioDirectives.set(currentPair.first, currentPair.second);
-            }
-            outputDirectives.push_back(ioDirectives);
+    for (const auto& current : rel->getStores()) {
+        IODirectives ioDirectives;
+        for (const auto& currentPair : current->getIODirectiveMap()) {
+            ioDirectives.set(currentPair.first, currentPair.second);
         }
+        outputDirectives.push_back(ioDirectives);
     }
 
     // If stdout is requested then remove all directives from the datalog file.

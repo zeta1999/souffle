@@ -19,7 +19,7 @@
 
 #include "AstAttribute.h"
 #include "AstClause.h"
-#include "AstIODirective.h"
+#include "AstIO.h"
 #include "AstNode.h"
 #include "AstRelationIdentifier.h"
 #include "AstType.h"
@@ -126,22 +126,19 @@ public:
         }
 
         if (q & INPUT_RELATION) {
-            ioDirectives.push_back(std::make_unique<AstIODirective>());
-            ioDirectives.back()->setAsInput();
-            ioDirectives.back()->setName(getName());
-            ioDirectives.back()->setSrcLoc(getSrcLoc());
+            loads.emplace_back(new AstLoad());
+            loads.back()->setName(getName());
+            loads.back()->setSrcLoc(getSrcLoc());
         }
         if (q & OUTPUT_RELATION) {
-            ioDirectives.push_back(std::make_unique<AstIODirective>());
-            ioDirectives.back()->setAsOutput();
-            ioDirectives.back()->setName(getName());
-            ioDirectives.back()->setSrcLoc(getSrcLoc());
+            stores.emplace_back(new AstStore());
+            stores.back()->setName(getName());
+            stores.back()->setSrcLoc(getSrcLoc());
         }
         if (q & PRINTSIZE_RELATION) {
-            ioDirectives.push_back(std::make_unique<AstIODirective>());
-            ioDirectives.back()->setAsPrintSize();
-            ioDirectives.back()->setName(getName());
-            ioDirectives.back()->setSrcLoc(getSrcLoc());
+            printSize = std::make_unique<AstPrintSize>();
+            printSize->setName(getName());
+            printSize->setSrcLoc(getSrcLoc());
         }
     }
 
@@ -224,8 +221,14 @@ public:
         for (const auto& cur : clauses) {
             res->clauses.emplace_back(cur->clone());
         }
-        for (const auto& cur : ioDirectives) {
-            res->ioDirectives.emplace_back(cur->clone());
+        for (const auto& cur : stores) {
+            res->stores.emplace_back(cur->clone());
+        }
+        for (const auto& cur : loads) {
+            res->loads.emplace_back(cur->clone());
+        }
+        if (printSize != nullptr) {
+            res->printSize = std::unique_ptr<AstPrintSize>(printSize->clone());
         }
         res->qualifier = qualifier;
         return res;
@@ -239,8 +242,14 @@ public:
         for (auto& cur : clauses) {
             cur = map(std::move(cur));
         }
-        for (auto& cur : ioDirectives) {
+        for (auto& cur : stores) {
             cur = map(std::move(cur));
+        }
+        for (auto& cur : loads) {
+            cur = map(std::move(cur));
+        }
+        if (printSize != nullptr) {
+            printSize = map(std::move(printSize));
         }
     }
 
@@ -288,19 +297,45 @@ public:
         for (const auto& cur : clauses) {
             res.push_back(cur.get());
         }
-        for (const auto& cur : ioDirectives) {
+        for (const auto& cur : stores) {
             res.push_back(cur.get());
+        }
+        for (const auto& cur : loads) {
+            res.push_back(cur.get());
+        }
+        if (printSize != nullptr) {
+            res.push_back(printSize.get());
         }
         return res;
     }
 
-    void addIODirectives(std::unique_ptr<AstIODirective> directive) {
+    void addStore(std::unique_ptr<AstStore> directive) {
         assert(directive && "Undefined directive");
-        ioDirectives.push_back(std::move(directive));
+        stores.push_back(std::move(directive));
     }
 
-    std::vector<AstIODirective*> getIODirectives() const {
-        return toPtrVector(ioDirectives);
+    void addLoad(std::unique_ptr<AstLoad> directive) {
+        assert(directive && "Undefined directive");
+        loads.push_back(std::move(directive));
+    }
+
+    void setPrintSize(std::unique_ptr<AstPrintSize> directive) {
+        assert(directive && "Undefined directive");
+        printSize = std::move(directive);
+    }
+
+    std::vector<AstStore*> getStores() const {
+        return toPtrVector(stores);
+    }
+    std::vector<AstLoad*> getLoads() const {
+        return toPtrVector(loads);
+    }
+    std::vector<AstPrintSize*> getPrintSizes() const {
+        std::vector<AstPrintSize*> printSizes;
+        if (printSize != nullptr) {
+            printSizes.push_back(printSize.get());
+        }
+        return printSizes;
     }
 
 protected:
@@ -319,9 +354,10 @@ protected:
      */
     std::vector<std::unique_ptr<AstClause>> clauses;
 
-    /** IO directives associated with this relation.
-     */
-    std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
+    /** IO directives associated with this relation. */
+    std::vector<std::unique_ptr<AstStore>> stores;
+    std::vector<std::unique_ptr<AstLoad>> loads;
+    std::unique_ptr<AstPrintSize> printSize;
 
     /** Datastructure to use for this relation */
     RelationRepresentation representation{RelationRepresentation::DEFAULT};

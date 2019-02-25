@@ -19,6 +19,7 @@
 
 #include "AstComponent.h"
 #include "AstFunctorDeclaration.h"
+#include "AstIO.h"
 #include "AstNode.h"
 #include "AstPragma.h"
 #include "AstRelation.h"
@@ -37,7 +38,10 @@
 namespace souffle {
 
 class AstClause;
-class AstIODirective;
+class AstLoad;
+class AstPrintSize;
+class AstStore;
+class AstRelation;
 
 /**
  *  Intermediate representation of a datalog program
@@ -74,7 +78,9 @@ public:
     std::vector<AstRelation*> getRelations() const;
 
     /** Get all io directives in the program */
-    const std::vector<std::unique_ptr<AstIODirective>>& getIODirectives() const;
+    const std::vector<std::unique_ptr<AstLoad>>& getLoads() const;
+    const std::vector<std::unique_ptr<AstPrintSize>>& getPrintSizes() const;
+    const std::vector<std::unique_ptr<AstStore>>& getStores() const;
 
     /** Get all pragma directives in the program */
     const std::vector<std::unique_ptr<AstPragma>>& getPragmaDirectives() const;
@@ -150,7 +156,13 @@ public:
         for (const auto& cur : pragmaDirectives) {
             res.push_back(cur.get());
         }
-        for (const auto& cur : ioDirectives) {
+        for (const auto& cur : loads) {
+            res.push_back(cur.get());
+        }
+        for (const auto& cur : printSizes) {
+            res.push_back(cur.get());
+        }
+        for (const auto& cur : stores) {
             res.push_back(cur.get());
         }
         return res;
@@ -202,7 +214,13 @@ protected:
         if (!equal_targets(clauses, other.clauses)) {
             return false;
         }
-        if (!equal_targets(ioDirectives, other.ioDirectives)) {
+        if (!equal_targets(loads, other.loads)) {
+            return false;
+        }
+        if (!equal_targets(printSizes, other.printSizes)) {
+            return false;
+        }
+        if (!equal_targets(stores, other.stores)) {
             return false;
         }
 
@@ -228,7 +246,9 @@ private:
     std::vector<std::unique_ptr<AstClause>> clauses;
 
     /** The list of IO directives provided by the user */
-    std::vector<std::unique_ptr<AstIODirective>> ioDirectives;
+    std::vector<std::unique_ptr<AstLoad>> loads;
+    std::vector<std::unique_ptr<AstPrintSize>> printSizes;
+    std::vector<std::unique_ptr<AstStore>> stores;
 
     /** Program components */
     std::vector<std::unique_ptr<AstComponent>> components;
@@ -258,7 +278,9 @@ private:
     void addClause(std::unique_ptr<AstClause> clause);
 
     /** Add an IO directive to the program */
-    void addIODirective(std::unique_ptr<AstIODirective> directive);
+    void addLoad(std::unique_ptr<AstLoad> directive);
+    void addPrintSize(std::unique_ptr<AstPrintSize> directive);
+    void addStore(std::unique_ptr<AstStore> directive);
 
     /** Add a pragma to the program */
     void addPragma(std::unique_ptr<AstPragma> r);

@@ -28,9 +28,11 @@ class AstClause;
 class AstComponent;
 class AstComponentInit;
 class AstFunctorDeclaration;
-class AstIODirective;
+class AstLoad;
 class AstPragma;
+class AstPrintsize;
 class AstRelation;
+class AstStore;
 class AstTranslationUnit;
 class AstType;
 class DebugReport;
@@ -55,7 +57,9 @@ public:
 
     void addRelation(std::unique_ptr<AstRelation> r);
     void addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> f);
-    void addIODirective(std::unique_ptr<AstIODirective> d);
+    void addStore(std::unique_ptr<AstStore> d);
+    void addLoad(std::unique_ptr<AstLoad> d);
+    void addPrintSize(std::unique_ptr<AstPrintSize> d);
     void addType(std::unique_ptr<AstType> type);
     void addClause(std::unique_ptr<AstClause> c);
     void addComponent(std::unique_ptr<AstComponent> c);

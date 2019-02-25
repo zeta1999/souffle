@@ -16,7 +16,7 @@
 
 #include "MagicSet.h"
 #include "AstAttribute.h"
-#include "AstIODirective.h"
+#include "AstIO.h"
 #include "AstIOTypeAnalysis.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -1086,7 +1086,8 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
     std::vector<AstRelationIdentifier> outputQueries = adornment->getRelations();
     std::set<AstRelationIdentifier> addAsOutput;
     std::set<AstRelationIdentifier> addAsPrintSize;
-    std::map<AstRelationIdentifier, std::vector<AstIODirective*>> outputDirectives;
+    std::map<AstRelationIdentifier, std::vector<std::unique_ptr<AstStore>>> outputDirectives;
+    std::map<AstRelationIdentifier, std::vector<std::unique_ptr<AstPrintSize>>> printSizeDirectives;
 
     // ignore negated atoms
     for (AstRelationIdentifier relation : negatedAtoms) {
@@ -1144,18 +1145,17 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 // also - update input directives to correctly use default fact file names
                 if (ioTypes->isInput(originalRelation)) {
                     IODirectives inputDirectives;  // to more easily work with the directive
-                    auto* newDirective = new AstIODirective();
+                    auto* newDirective = new AstLoad();
                     inputDirectives.setRelationName(newRelName.getNames()[0]);
                     newDirective->addName(newRelName);
-                    newDirective->setAsInput();
-                    for (AstIODirective* current : originalRelation->getIODirectives()) {
-                        if (current->isInput()) {
-                            for (const auto& currentPair : current->getIODirectiveMap()) {
+                    visitDepthFirst(*program, [&](const AstLoad& current) {
+                        if (current.getName() == originalName) {
+                            for (const auto& currentPair : current.getIODirectiveMap()) {
                                 newDirective->addKVP(currentPair.first, currentPair.second);
                                 inputDirectives.set(currentPair.first, currentPair.second);
                             }
                         }
-                    }
+                    });
                     if (!inputDirectives.has("IO")) {
                         inputDirectives.setIOType("file");
                         newDirective->addKVP("IO", "file");
@@ -1164,7 +1164,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         newDirective->addKVP("filename", originalName.getNames()[0] + ".facts");
                     }
 
-                    newRelation->addIODirectives(std::unique_ptr<AstIODirective>(newDirective));
+                    newRelation->addLoad(std::unique_ptr<AstLoad>(newDirective));
                 }
 
                 // add the created adorned relation to the program
@@ -1402,18 +1402,22 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         // for restoration later on
         if (ioTypes->isOutput(relation)) {
             addAsOutput.insert(relationName);
-            std::vector<AstIODirective*> clonedDirectives;
-            for (AstIODirective* iodir : relation->getIODirectives()) {
-                clonedDirectives.push_back(iodir->clone());
-            }
-            outputDirectives[relationName] = clonedDirectives;
+            std::vector<std::unique_ptr<AstStore>> clonedDirectives;
+            visitDepthFirst(*program, [&](const AstStore current) {
+                if (current.getName() == relationName) {
+                    clonedDirectives.emplace_back(current.clone());
+                }
+            });
+            outputDirectives[relationName] = std::move(clonedDirectives);
         } else if (ioTypes->isPrintSize(relation)) {
             addAsPrintSize.insert(relationName);
-            std::vector<AstIODirective*> clonedDirectives;
-            for (AstIODirective* iodir : relation->getIODirectives()) {
-                clonedDirectives.push_back(iodir->clone());
-            }
-            outputDirectives[relationName] = clonedDirectives;
+            std::vector<std::unique_ptr<AstPrintSize>> clonedDirectives;
+            visitDepthFirst(*program, [&](const AstPrintSize current) {
+                if (current.getName() == relationName) {
+                    clonedDirectives.emplace_back(current.clone());
+                }
+            });
+            printSizeDirectives[relationName] = std::move(clonedDirectives);
         }
 
         // do not delete negated atoms, ignored atoms, or atoms added by aggregate relations
@@ -1455,16 +1459,15 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
             // rename it back to its original name
             outputRelation->setName(oldName);
-
-            // set as output relation
-            auto* newdir = new AstIODirective();
-            if (addAsOutput.find(oldName) != addAsOutput.end()) {
-                newdir->setAsOutput();
-            } else {
-                newdir->setAsPrintSize();
-            }
-            outputRelation->addIODirectives(std::unique_ptr<AstIODirective>(newdir));
-
+            /*
+             * Should this actually happen? If so, where do the attributes come from?
+                        // set as output relation
+                        if (addAsOutput.find(oldName) != addAsOutput.end()) {
+                            outputRelation->addStore(std::make_unique<AstStore>());
+                        } else {
+                            outputRelation->setPrintSize(std::make_unique<AstPrintSize>());
+                        }
+            */
             // add the new output to the program
             program->appendRelation(std::unique_ptr<AstRelation>(outputRelation));
         }
@@ -1493,9 +1496,14 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
     }
 
     // add in all the output directives to their corresponding relations
-    for (std::pair<AstRelationIdentifier, std::vector<AstIODirective*>> iopair : outputDirectives) {
-        for (AstIODirective* iodir : iopair.second) {
-            program->getRelation(iopair.first)->addIODirectives(std::unique_ptr<AstIODirective>(iodir));
+    for (auto& iopair : outputDirectives) {
+        for (auto& iodir : iopair.second) {
+            program->getRelation(iopair.first)->addStore(std::move(iodir));
+        }
+    }
+    for (auto& iopair : printSizeDirectives) {
+        for (auto& iodir : iopair.second) {
+            program->getRelation(iopair.first)->setPrintSize(std::move(iodir));
         }
     }
 

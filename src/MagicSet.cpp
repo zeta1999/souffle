@@ -730,7 +730,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
         AstRelationIdentifier relName = rel->getName();
 
         // find computed relations for the topdown part
-        if (ioTypes->isOutput(rel) || ioTypes->isPrintSize(rel)) {
+        if (ioTypes->isOutput(rel)) {
             outputQueries.push_back(rel->getName());
             // add relation to adornment
             adornmentRelations.push_back(rel->getName());
@@ -1409,15 +1409,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 }
             });
             outputDirectives[relationName] = std::move(clonedDirectives);
-        } else if (ioTypes->isPrintSize(relation)) {
-            addAsPrintSize.insert(relationName);
-            std::vector<std::unique_ptr<AstPrintSize>> clonedDirectives;
-            visitDepthFirst(*program, [&](const AstPrintSize current) {
-                if (current.getName() == relationName) {
-                    clonedDirectives.emplace_back(current.clone());
-                }
-            });
-            printSizeDirectives[relationName] = std::move(clonedDirectives);
         }
 
         // do not delete negated atoms, ignored atoms, or atoms added by aggregate relations
@@ -1499,11 +1490,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
     for (auto& iopair : outputDirectives) {
         for (auto& iodir : iopair.second) {
             program->getRelation(iopair.first)->addStore(std::move(iodir));
-        }
-    }
-    for (auto& iopair : printSizeDirectives) {
-        for (auto& iodir : iopair.second) {
-            program->getRelation(iopair.first)->setPrintSize(std::move(iodir));
         }
     }
 

@@ -439,19 +439,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitPrintSize(const RamPrintSize& print, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            out << "if (performIO) {\n";
-            out << "{ auto lease = getOutputLock().acquire(); \n";
-            out << "(void)lease;\n";
-            out << "std::cout << R\"(" << print.getMessage() << ")\" <<  ";
-            out << synthesiser.getRelationName(print.getRelation()) << "->"
-                << "size() << std::endl;\n";
-            out << "}";
-            out << "}\n";
-            PRINT_END_COMMENT(out);
-        }
-
         void visitLogSize(const RamLogSize& size, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "ProfileEventSingleton::instance().makeQuantityEvent( R\"(";
@@ -1643,8 +1630,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     visitDepthFirst(*(prog.getMain()),
             [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
     visitDepthFirst(*(prog.getMain()),
-            [&](const RamPrintSize& size) { storeRelations.insert(size.getRelation().getName()); });
-    visitDepthFirst(*(prog.getMain()),
             [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
     visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
         // get some table details
@@ -1894,13 +1879,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
                 os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
             }
-        } else if (auto print = dynamic_cast<const RamPrintSize*>(&node)) {
-            os << "{ auto lease = getOutputLock().acquire(); \n";
-            os << "(void)lease;\n";
-            os << "std::cout << R\"(" << print->getMessage() << ")\" <<  ";
-            os << getRelationName(print->getRelation()) << "->"
-               << "size() << std::endl;\n";
-            os << "}";
         }
     });
     os << "}\n";  // end of printAll() method

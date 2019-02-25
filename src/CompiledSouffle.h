@@ -131,7 +131,7 @@ public:
         }
         return relation.contains(t);
     }
-    std::size_t size() override {
+    std::size_t size() const override {
         return relation.size();
     }
     std::string getName() const override {

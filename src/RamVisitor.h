@@ -88,11 +88,11 @@ struct RamVisitor : public ram_visitor_tag {
             FORWARD(Argument);
 
             // conditions
-            FORWARD(Empty);
-            FORWARD(Exists);
-            FORWARD(ProvenanceExists);
-            FORWARD(And);
-            FORWARD(Not);
+            FORWARD(EmptyCheck);
+            FORWARD(ExistenceCheck);
+            FORWARD(ProvenanceExistenceCheck);
+            FORWARD(Conjunction);
+            FORWARD(Negation);
             FORWARD(Constraint);
 
             // operations
@@ -197,12 +197,12 @@ protected:
     LINK(Operation, Node)
 
     // -- conditions --
-    LINK(And, Condition)
-    LINK(Not, Condition)
+    LINK(Conjunction, Condition)
+    LINK(Negation, Condition)
     LINK(Constraint, Condition)
-    LINK(Exists, Condition)
-    LINK(ProvenanceExists, Condition)
-    LINK(Empty, Condition)
+    LINK(ExistenceCheck, Condition)
+    LINK(ProvenanceExistenceCheck, Condition)
+    LINK(EmptyCheck, Condition)
 
     LINK(Condition, Node)
 

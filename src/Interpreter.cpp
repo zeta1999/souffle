@@ -245,7 +245,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
 
         // -- records --
         RamDomain visitPack(const RamPack& op) override {
-            auto values = op.getValues();
+            auto values = op.getArguments();
             auto arity = values.size();
             RamDomain data[arity];
             for (size_t i = 0; i < arity; ++i) {
@@ -284,22 +284,22 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 
         // -- connectors operators --
 
-        bool visitAnd(const RamAnd& conj) override {
+        bool visitConjunction(const RamConjunction& conj) override {
             return visit(conj.getLHS()) && visit(conj.getRHS());
         }
 
-        bool visitNot(const RamNot& neg) override {
+        bool visitNegation(const RamNegation& neg) override {
             return !visit(neg.getOperand());
         }
 
         // -- relation operations --
 
-        bool visitEmpty(const RamEmpty& empty) override {
+        bool visitEmptyCheck(const RamEmptyCheck& empty) override {
             const InterpreterRelation& rel = interpreter.getRelation(empty.getRelation());
             return rel.empty();
         }
 
-        bool visitExists(const RamExists& exists) override {
+        bool visitExistenceCheck(const RamExistenceCheck& exists) override {
             const InterpreterRelation& rel = interpreter.getRelation(exists.getRelation());
 
             // construct the pattern tuple
@@ -333,7 +333,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             return range.first != range.second;  // if there are none => done
         }
 
-        bool visitProvenanceExists(const RamProvenanceExists& provExists) override {
+        bool visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
             const InterpreterRelation& rel = interpreter.getRelation(provExists.getRelation());
 
             // construct the pattern tuple

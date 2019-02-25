@@ -81,20 +81,23 @@ public:
         }
     }
 
+    /** Get operator symbol */
     FunctorOp getOperator() const {
         return operation;
     }
 
-    /** Get values */
+    /** Get argument values */
     std::vector<RamValue*> getArguments() const {
         return toPtrVector(arguments);
     }
 
+    /** Get i-th argument value */
     const RamValue* getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return arguments[i].get();
     }
 
+    /** Get number of arguments */
     size_t getArgCount() const {
         return arguments.size();
     }
@@ -108,6 +111,7 @@ public:
         return res;
     }
 
+    /* Clone */
     RamIntrinsicOperator* clone() const override {
         std::vector<std::unique_ptr<RamValue>> argsCopy;
         for (auto& arg : arguments) {
@@ -138,12 +142,13 @@ protected:
  */
 class RamUserDefinedOperator : public RamValue {
 private:
-    /** Argument of unary function */
+    /** Arguments of user defined operator */
     std::vector<std::unique_ptr<RamValue>> arguments;
-    /** Name of user-defined unary functor */
+
+    /** Name of user-defined operator */
     const std::string name;
 
-    /** Argument type */
+    /** Argument types */
     const std::string type;
 
 public:
@@ -159,24 +164,28 @@ public:
         os << ")";
     }
 
-    /** Get values */
+    /** Get argument values */
     std::vector<RamValue*> getArguments() const {
         return toPtrVector(arguments);
     }
 
+    /** Get i-th argument value */
     const RamValue* getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return arguments[i].get();
     }
 
+    /** Get number of arguments */
     size_t getArgCount() const {
         return arguments.size();
     }
 
+    /** Get operator name */
     const std::string& getName() const {
         return name;
     }
 
+    /** Get types of arguments */
     const std::string& getType() const {
         return type;
     }
@@ -219,17 +228,16 @@ protected:
 /**
  * Access element from the current tuple in a tuple environment
  */
-// TODO (#541): add reference to attributes of a relation
 class RamElementAccess : public RamValue {
 private:
     /** Level information */
-    // TODO (#541): move to analysis
     size_t level;
 
     /** Element number */
     size_t element;
 
     /** Name of attribute */
+    // TODO (#541): add reference to attributes of a relation
     std::string name;
 
 public:
@@ -295,7 +303,6 @@ public:
     RamNumber(RamDomain c) : RamValue(RN_Number), constant(c) {}
 
     /** Get constant */
-    // TODO (#541):  move to analysis
     RamDomain getConstant() const {
         return constant;
     }
@@ -371,17 +378,12 @@ protected:
 class RamPack : public RamValue {
 private:
     /** Arguments */
-    // TODO (#541): use type for vector-ram-value
     std::vector<std::unique_ptr<RamValue>> arguments;
 
 public:
     RamPack(std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_Pack), arguments(std::move(args)) {}
 
-    /** Get values */
-    // TODO (#541): remove getter
-    std::vector<RamValue*> getValues() const {
-        return toPtrVector(arguments);
-    }
+    /** Get arguments */
     std::vector<RamValue*> getArguments() const {
         return toPtrVector(arguments);
     }

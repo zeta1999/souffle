@@ -35,7 +35,7 @@ namespace {
 std::vector<RamCondition*> getConditions(const RamCondition* condition) {
     std::vector<RamCondition*> conditions;
     while (condition != nullptr) {
-        if (const auto* ramAnd = dynamic_cast<const RamAnd*>(condition)) {
+        if (const auto* ramAnd = dynamic_cast<const RamConjunction*>(condition)) {
             conditions.push_back(ramAnd->getRHS().clone());
             condition = &ramAnd->getLHS();
         } else {
@@ -69,7 +69,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 
         void addCondition(std::unique_ptr<RamCondition> c) const {
             if (condition != nullptr) {
-                condition = std::make_unique<RamAnd>(std::move(condition), std::move(c));
+                condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
             } else {
                 condition = std::move(c);
             }
@@ -214,7 +214,7 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
 
         auto addCondition = [&](std::unique_ptr<RamCondition> c) {
             if (condition != nullptr) {
-                condition = std::make_unique<RamAnd>(std::move(condition), std::move(c));
+                condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
             } else {
                 condition = std::move(c);
             }
@@ -422,7 +422,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     });
                 }
                 if (isExistCheck) {
-                    visitDepthFirst(scan->getOperation(), [&](const RamExists& exists) {
+                    visitDepthFirst(scan->getOperation(), [&](const RamExistenceCheck& exists) {
                         if (isExistCheck) {
                             for (const RamValue* value : exists.getValues()) {
                                 if (value != nullptr && !context->rcva->isConstant(value) &&
@@ -439,10 +439,10 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     std::unique_ptr<RamCondition> constraint;
 
                     if (nullptr != dynamic_cast<RamScan*>(scan)) {
-                        constraint = std::make_unique<RamNot>(std::make_unique<RamEmpty>(
+                        constraint = std::make_unique<RamNegation>(std::make_unique<RamEmptyCheck>(
                                 std::unique_ptr<RamRelationReference>(scan->getRelation().clone())));
                     } else if (auto* indexScan = dynamic_cast<RamIndexScan*>(scan)) {
-                        auto exists = std::make_unique<RamExists>(
+                        auto exists = std::make_unique<RamExistenceCheck>(
                                 std::unique_ptr<RamRelationReference>(scan->getRelation().clone()));
                         for (RamValue* value : indexScan->getRangePattern()) {
                             if (nullptr != value) {

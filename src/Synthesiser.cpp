@@ -174,9 +174,9 @@ std::set<RamRelationReference> Synthesiser::getReferencedRelations(const RamOper
             res.insert(scan->getRelation());
         } else if (auto agg = dynamic_cast<const RamAggregate*>(&node)) {
             res.insert(agg->getRelation());
-        } else if (auto exists = dynamic_cast<const RamExists*>(&node)) {
+        } else if (auto exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
             res.insert(exists->getRelation());
-        } else if (auto provExists = dynamic_cast<const RamProvenanceExists*>(&node)) {
+        } else if (auto provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
             res.insert(provExists->getRelation());
         } else if (auto project = dynamic_cast<const RamProject*>(&node)) {
             res.insert(project->getRelation());
@@ -921,7 +921,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- conditions --
 
-        void visitAnd(const RamAnd& c, std::ostream& out) override {
+        void visitConjunction(const RamConjunction& c, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "((";
             visit(c.getLHS(), out);
@@ -931,7 +931,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitNot(const RamNot& c, std::ostream& out) override {
+        void visitNegation(const RamNegation& c, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "!(";
             visit(c.getOperand(), out);
@@ -1026,14 +1026,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitEmpty(const RamEmpty& empty, std::ostream& out) override {
+        void visitEmptyCheck(const RamEmptyCheck& empty, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << synthesiser.getRelationName(empty.getRelation()) << "->"
                 << "empty()";
             PRINT_END_COMMENT(out);
         }
 
-        void visitExists(const RamExists& exists, std::ostream& out) override {
+        void visitExistenceCheck(const RamExistenceCheck& exists, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // get some details
             const auto& rel = exists.getRelation();
@@ -1071,7 +1071,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitProvenanceExists(const RamProvenanceExists& provExists, std::ostream& out) override {
+        void visitProvenanceExistenceCheck(
+                const RamProvenanceExistenceCheck& provExists, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // get some details
             const auto& rel = provExists.getRelation();
@@ -1348,8 +1349,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitPack(const RamPack& pack, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "pack("
-                << "ram::Tuple<RamDomain," << pack.getValues().size() << ">({"
-                << join(pack.getValues(), ",", rec) << "})"
+                << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">({"
+                << join(pack.getArguments(), ",", rec) << "})"
                 << ")";
             PRINT_END_COMMENT(out);
         }

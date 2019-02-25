@@ -291,10 +291,10 @@ void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
         } else if (const auto* agg = dynamic_cast<const RamAggregate*>(&node)) {
             IndexSet& indexes = getIndexes(agg->getRelation());
             indexes.addSearch(agg->getRangeQueryColumns());
-        } else if (const auto* exists = dynamic_cast<const RamExists*>(&node)) {
+        } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
             IndexSet& indexes = getIndexes(exists->getRelation());
             indexes.addSearch(exists->getKey());
-        } else if (const auto* provExists = dynamic_cast<const RamProvenanceExists*>(&node)) {
+        } else if (const auto* provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
             IndexSet& indexes = getIndexes(provExists->getRelation());
             indexes.addSearch(provExists->getKey());
         }

@@ -180,12 +180,6 @@ private:
     /** Attribute Names */
     std::vector<std::string> attrNames;
 
-    /** Input relation flag */
-    bool relInput;
-
-    /** Output relation flag */
-    bool relOutput;
-
     /** Unique id for wrapper */
     // TODO (#541): replace unique id by dynamic type checking for C++
     uint32_t id;

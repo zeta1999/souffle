@@ -25,6 +25,7 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace souffle {
@@ -47,6 +48,8 @@ private:
 
     DebugReport& debugReport;
 
+    mutable std::mutex analysisLock;
+
 public:
     RamTranslationUnit(std::unique_ptr<RamProgram> program, SymbolTable& sym, ErrorReport& e, DebugReport& d)
             : program(std::move(program)), symbolTable(sym), errorReport(e), debugReport(d) {}
@@ -59,8 +62,14 @@ public:
         auto it = analyses.find(name);
         if (it == analyses.end()) {
             // analysis does not exist yet, create instance and run it.
-            analyses[name] = std::make_unique<Analysis>();
-            analyses[name]->run(*this);
+            auto analysis = std::make_unique<Analysis>();
+            analysis->run(*this);
+            // Check it hasn't been created by someone else, and insert if not
+            std::lock_guard<std::mutex> guard(analysisLock);
+            it = analyses.find(name);
+            if (it == analyses.end()) {
+                analyses[name] = std::move(analysis);
+            }
         }
         return dynamic_cast<Analysis*>(analyses[name].get());
     }

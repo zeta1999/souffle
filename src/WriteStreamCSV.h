@@ -180,7 +180,7 @@ protected:
         assert(false && "attempting to iterate over a print size operation");
     }
 
-    void writeSize(std::size_t size) {
+    void writeSize(std::size_t size) override {
         std::cout << size << "\n";
     }
 

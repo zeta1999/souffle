@@ -71,14 +71,6 @@ public:
     // Get clauses that can be typechecked
     static std::vector<const AstClause*> getValidClauses(const AstProgram& program);
 
-private:
-    std::map<const AstArgument*, const AnalysisType*> argumentTypes{};
-    std::stringstream analysisLogs{};
-    TypeLattice lattice{};
-
-    static std::set<const AstArgument*> getArguments(
-            std::map<std::string, const AstVariable*>* variables, const AstClause& clause);
-
     /**
      * Analyse the given clause and computes for each contained argument a potential type. If the type is a
      * bottom or top type, no consistent typing can be found and the rule can not be properly typed.
@@ -91,6 +83,14 @@ private:
      */
     static std::map<const AstArgument*, const AnalysisType*> analyseTypes(TypeLattice& lat,
             const AstClause& clause, const AstProgram& program, std::ostream* debugStream = nullptr);
+
+private:
+    std::map<const AstArgument*, const AnalysisType*> argumentTypes{};
+    std::stringstream analysisLogs{};
+    TypeLattice lattice{};
+
+    static std::set<const AstArgument*> getArguments(
+            std::map<std::string, const AstVariable*>* variables, const AstClause& clause);
 };
 
 }  // end of namespace souffle

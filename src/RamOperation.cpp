@@ -190,7 +190,7 @@ size_t getLevel(const RamCondition* condition) {
         }
 
         // emptiness check
-        size_t visitEmptyCheck(const RamEmptyCheck& emptiness) override {
+        size_t visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
             return 0;  // can be in the top level
         }
     };
@@ -205,14 +205,14 @@ std::unique_ptr<RamValue> RamAggregate::getIndexElement(RamCondition* c, size_t&
                 RamValue* rhs = binRelOp->getRHS();
                 if (lhs->getLevel() == level && (isConstant(rhs) || getLevel(rhs) < level)) {
                     element = lhs->getElement();
-                    return binRelOp->takeRHS();
+                    return std::unique_ptr<RamValue>(rhs->clone());
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamValue* lhs = binRelOp->getLHS();
                 if (rhs->getLevel() == level && (isConstant(lhs) || getLevel(lhs) < level)) {
                     element = rhs->getElement();
-                    return binRelOp->takeLHS();
+                    return std::unique_ptr<RamValue>(lhs->clone());
                 }
             }
         }

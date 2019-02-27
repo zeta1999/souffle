@@ -192,16 +192,6 @@ public:
         return rhs.get();
     }
 
-    /** Take left-hand side */
-    std::unique_ptr<RamValue> takeLHS() {
-        return std::move(lhs);
-    }
-
-    /** Take right-hand side */
-    std::unique_ptr<RamValue> takeRHS() {
-        return std::move(rhs);
-    }
-
     /** Get operator symbol */
     BinaryConstraintOp getOperator() const {
         return op;
@@ -236,19 +226,20 @@ protected:
 };
 
 /**
- * Existence check for a tuple(-pattern) in a relation
+ * Abstract existence check
  */
-class RamExistenceCheck : public RamCondition {
+class RamAbstractExistenceCheck : public RamCondition {
 protected:
     /* Relation */
     std::unique_ptr<RamRelationReference> relation;
 
     /** Pattern -- nullptr if undefined */
-    std::vector<std::unique_ptr<RamValue>> arguments;
+    std::vector<std::unique_ptr<RamValue>> values;
 
 public:
-    RamExistenceCheck(std::unique_ptr<RamRelationReference> rel)
-            : RamCondition(RN_ExistenceCheck), relation(std::move(rel)) {}
+    RamAbstractExistenceCheck(RamNodeType type, std::unique_ptr<RamRelationReference> rel,
+            std::vector<std::unique_ptr<RamValue>> vals)
+            : RamCondition(type), relation(std::move(rel)), values(std::move(vals)) {}
 
     /** Get relation */
     const RamRelationReference& getRelation() const {
@@ -257,18 +248,49 @@ public:
 
     /** Get arguments */
     std::vector<RamValue*> getValues() const {
-        return toPtrVector(arguments);
+        return toPtrVector(values);
     }
 
-    /** Add argument */
-    void addArg(std::unique_ptr<RamValue> v) {
-        arguments.push_back(std::move(v));
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        std::vector<const RamNode*> res = {relation.get()};
+        for (const auto& cur : values) {
+            res.push_back(cur.get());
+        }
+        return res;
     }
+
+    /** Apply */
+    void apply(const RamNodeMapper& map) override {
+        relation = map(std::move(relation));
+        for (auto& val : values) {
+            if (val != nullptr) {
+                val = map(std::move(val));
+            }
+        }
+    }
+
+protected:
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamAbstractExistenceCheck*>(&node));
+        const auto& other = static_cast<const RamAbstractExistenceCheck&>(node);
+        return getRelation() == other.getRelation() && equal_targets(values, other.values);
+    }
+};
+
+/**
+ * Existence check for a tuple(-pattern) in a relation
+ */
+class RamExistenceCheck : public RamAbstractExistenceCheck {
+public:
+    RamExistenceCheck(std::unique_ptr<RamRelationReference> rel, std::vector<std::unique_ptr<RamValue>> vals)
+            : RamAbstractExistenceCheck(RN_ExistenceCheck, std::move(rel), std::move(vals)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
         os << "("
-           << join(arguments, ",",
+           << join(values, ",",
                       [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
                           if (!value) {
                               out << "_";
@@ -279,103 +301,42 @@ public:
            << ") ∈ " << relation->getName();
     }
 
-    /** Get key */
-    SearchColumns getKey() const {
-        SearchColumns res = 0;
-        for (unsigned i = 0; i < arguments.size(); i++) {
-            if (arguments[i]) {
-                res |= (1 << i);
-            }
-        }
-        return res;
-    }
-
-    /** Is key total */
-    bool isTotal() const {
-        for (const auto& cur : arguments) {
-            if (!cur) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res = {relation.get()};
-        for (const auto& cur : arguments) {
-            res.push_back(cur.get());
-        }
-        return res;
-    }
-
     /** Create clone */
     RamExistenceCheck* clone() const override {
-        RamExistenceCheck* res =
-                new RamExistenceCheck(std::unique_ptr<RamRelationReference>(relation->clone()));
-        for (auto& cur : arguments) {
+        std::vector<std::unique_ptr<RamValue>> newValues;
+        for (auto& cur : values) {
             RamValue* val = nullptr;
             if (cur != nullptr) {
                 val = cur->clone();
             }
-            res->arguments.emplace_back(val);
+            newValues.emplace_back(val);
         }
+        RamExistenceCheck* res = new RamExistenceCheck(
+                std::unique_ptr<RamRelationReference>(relation->clone()), std::move(newValues));
         return res;
-    }
-
-    /** Apply */
-    void apply(const RamNodeMapper& map) override {
-        relation = map(std::move(relation));
-        for (auto& val : arguments) {
-            if (val != nullptr) {
-                val = map(std::move(val));
-            }
-        }
     }
 
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamExistenceCheck*>(&node));
-        const auto& other = static_cast<const RamExistenceCheck&>(node);
-        return getRelation() == other.getRelation() && equal_targets(arguments, other.arguments);
+        return RamAbstractExistenceCheck::equal(node);
     }
 };
 
 /**
- * Existence check for provenance.
+ * Existence check for a relation for provenance existence check
  */
-class RamProvenanceExistenceCheck : public RamCondition {
-protected:
-    /* Relation */
-    std::unique_ptr<RamRelationReference> relation;
-
-    /** Pattern -- nullptr if undefined */
-    std::vector<std::unique_ptr<RamValue>> arguments;
-
+class RamProvenanceExistenceCheck : public RamAbstractExistenceCheck {
 public:
-    RamProvenanceExistenceCheck(std::unique_ptr<RamRelationReference> rel)
-            : RamCondition(RN_ProvenanceExistenceCheck), relation(std::move(rel)) {}
-
-    /** Get relation */
-    const RamRelationReference& getRelation() const {
-        return *relation;
-    }
-
-    /** Get arguments */
-    std::vector<RamValue*> getValues() const {
-        return toPtrVector(arguments);
-    }
-
-    /** Add argument */
-    void addArg(std::unique_ptr<RamValue> v) {
-        arguments.push_back(std::move(v));
-    }
+    RamProvenanceExistenceCheck(
+            std::unique_ptr<RamRelationReference> rel, std::vector<std::unique_ptr<RamValue>> vals)
+            : RamAbstractExistenceCheck(RN_ProvenanceExistenceCheck, std::move(rel), std::move(vals)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
         os << "("
-           << join(arguments, ",",
+           << join(values, ",",
                       [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
                           if (!value) {
                               out << "_";
@@ -383,83 +344,42 @@ public:
                               out << *value;
                           }
                       })
-           << ")_provenance ∈ " << relation->getName();
-    }
-
-    /** Get key */
-    SearchColumns getKey() const {
-        SearchColumns res = 0;
-        // arguments.size() - 1 because we discard the height annotation
-        for (unsigned i = 0; i < arguments.size() - 1; i++) {
-            if (arguments[i]) {
-                res |= (1 << i);
-            }
-        }
-        return res;
-    }
-
-    /** Is key total */
-    bool isTotal() const {
-        for (const auto& cur : arguments) {
-            if (!cur) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res = {relation.get()};
-        for (const auto& cur : arguments) {
-            res.push_back(cur.get());
-        }
-        return res;
+           << ") prov∈ " << relation->getName();
     }
 
     /** Create clone */
     RamProvenanceExistenceCheck* clone() const override {
-        RamProvenanceExistenceCheck* res =
-                new RamProvenanceExistenceCheck(std::unique_ptr<RamRelationReference>(relation->clone()));
-        for (auto& cur : arguments) {
+        std::vector<std::unique_ptr<RamValue>> newValues;
+        for (auto& cur : values) {
             RamValue* val = nullptr;
             if (cur != nullptr) {
                 val = cur->clone();
             }
-            res->arguments.emplace_back(val);
+            newValues.emplace_back(val);
         }
+        RamProvenanceExistenceCheck* res = new RamProvenanceExistenceCheck(
+                std::unique_ptr<RamRelationReference>(relation->clone()), std::move(newValues));
         return res;
-    }
-
-    /** Apply */
-    void apply(const RamNodeMapper& map) override {
-        relation = map(std::move(relation));
-        for (auto& val : arguments) {
-            if (val != nullptr) {
-                val = map(std::move(val));
-            }
-        }
     }
 
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(dynamic_cast<const RamProvenanceExistenceCheck*>(&node));
-        const auto& other = static_cast<const RamProvenanceExistenceCheck&>(node);
-        return getRelation() == other.getRelation() && equal_targets(arguments, other.arguments);
+        return RamAbstractExistenceCheck::equal(node);
     }
 };
 
 /**
  * Emptiness check for a relation
  */
-class RamEmptyCheck : public RamCondition {
+class RamEmptinessCheck : public RamCondition {
     /** Relation */
     std::unique_ptr<RamRelationReference> relation;
 
 public:
-    RamEmptyCheck(std::unique_ptr<RamRelationReference> rel)
-            : RamCondition(RN_EmptyCheck), relation(std::move(rel)) {}
+    RamEmptinessCheck(std::unique_ptr<RamRelationReference> rel)
+            : RamCondition(RN_EmptinessCheck), relation(std::move(rel)) {}
 
     /** Get relation */
     const RamRelationReference& getRelation() const {
@@ -477,8 +397,9 @@ public:
     }
 
     /** Create clone */
-    RamEmptyCheck* clone() const override {
-        RamEmptyCheck* res = new RamEmptyCheck(std::unique_ptr<RamRelationReference>(relation->clone()));
+    RamEmptinessCheck* clone() const override {
+        RamEmptinessCheck* res =
+                new RamEmptinessCheck(std::unique_ptr<RamRelationReference>(relation->clone()));
         return res;
     }
 
@@ -490,8 +411,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamEmptyCheck*>(&node));
-        const auto& other = static_cast<const RamEmptyCheck&>(node);
+        assert(nullptr != dynamic_cast<const RamEmptinessCheck*>(&node));
+        const auto& other = static_cast<const RamEmptinessCheck&>(node);
         return getRelation() == other.getRelation();
     }
 };

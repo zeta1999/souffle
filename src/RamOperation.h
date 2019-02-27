@@ -648,7 +648,8 @@ protected:
     std::vector<std::unique_ptr<RamValue>> values;
 
 public:
-    RamReturn() : RamOperation(RN_Return) {}
+    RamReturn(std::vector<std::unique_ptr<RamValue>> vals)
+            : RamOperation(RN_Return), values(std::move(vals)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const std::string tabs(tabpos, '\t');
@@ -669,10 +670,6 @@ public:
         }
 
         os << ")";
-    }
-
-    void addValue(std::unique_ptr<RamValue> val) {
-        values.push_back(std::move(val));
     }
 
     std::vector<RamValue*> getValues() const {
@@ -696,11 +693,11 @@ public:
 
     /** Create clone */
     RamReturn* clone() const override {
-        auto* res = new RamReturn();
+        std::vector<std::unique_ptr<RamValue>> newValues;
         for (auto& cur : values) {
-            res->values.emplace_back(cur->clone());
+            newValues.emplace_back(cur->clone());
         }
-        return res;
+        return new RamReturn(std::move(newValues));
     }
 
     /** Apply mapper */

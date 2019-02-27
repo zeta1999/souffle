@@ -354,9 +354,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             std::vector<std::unique_ptr<RamValue>> values;
 
             for (size_t i = 0; i < arity; i++) {
-                const auto& arg = atom->getArgument(i);
-                // for (const auto& arg : atom->getArguments()) {
-                values.push_back(translator.translateValue(arg, index));
+                values.push_back(translator.translateValue(atom->getArgument(i), index));
             }
 
             // we don't care about the provenance columns when doing the existence check

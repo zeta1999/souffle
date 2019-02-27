@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamProvenanceExistenceCheck.h
+ * @file RamProvenanceExistenceCheckAnalysis.h
  *
  * Get the index pattern of a RAM provenance existence check
  *
@@ -17,9 +17,11 @@
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamOperation.h"
+#include "RamTypes.h"
 
 namespace souffle {
+
+class RamProvenanceExistenceCheck;
 
 /*
  * Class to compute the index pattern

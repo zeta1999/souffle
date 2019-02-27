@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamExistenceCheck.h
+ * @file RamExistenceCheckAnalysis.h
  *
  * Get the index pattern of a RAM existence check
  *
@@ -17,9 +17,11 @@
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamOperation.h"
+#include "RamTypes.h"
 
 namespace souffle {
+
+class RamExistenceCheck;
 
 /*
  * Class to compute the index pattern

@@ -202,17 +202,17 @@ std::unique_ptr<RamValue> RamAggregate::getIndexElement(RamCondition* c, size_t&
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
-                auto* rhs = binRelOp->getRHS()->clone();
+                RamValue* rhs = binRelOp->getRHS();
                 if (lhs->getLevel() == level && (isConstant(rhs) || getLevel(rhs) < level)) {
                     element = lhs->getElement();
-                    return std::unique_ptr<RamValue>(rhs);
+                    return std::unique_ptr<RamValue>(rhs->clone());
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
-                auto* lhs = binRelOp->getLHS()->clone();
+                RamValue* lhs = binRelOp->getLHS();
                 if (rhs->getLevel() == level && (isConstant(lhs) || getLevel(lhs) < level)) {
                     element = rhs->getElement();
-                    return std::unique_ptr<RamValue>(lhs);
+                    return std::unique_ptr<RamValue>(lhs->clone());
                 }
             }
         }

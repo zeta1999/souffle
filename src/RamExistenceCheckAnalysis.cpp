@@ -8,24 +8,23 @@
 
 /************************************************************************
  *
- * @file RamProvenanceExistenceCheck.cpp
+ * @file RamExistenceCheckAnalysis.cpp
  *
- * Implementation of RAM Provenance Existence Check Analysis
+ * Implementation of RAM Existence Check Analysis
  *
  ***********************************************************************/
 
-#include "RamProvenanceExistenceCheck.h"
-#include "RamVisitor.h"
+#include "RamExistenceCheckAnalysis.h"
+#include "RamOperation.h"
+#include "RamTypes.h"
 
 namespace souffle {
 
 /** Get key */
-SearchColumns RamProvenanceExistenceCheckAnalysis::getKey(
-        const RamProvenanceExistenceCheck* provExistCheck) const {
-    const auto values = provExistCheck->getValues();
+SearchColumns RamExistenceCheckAnalysis::getKey(const RamExistenceCheck* existCheck) const {
+    const auto values = existCheck->getValues();
     SearchColumns res = 0;
-    // values.size() - 1 because we discard the height annotation
-    for (std::size_t i = 0; i < values.size() - 1; i++) {
+    for (std::size_t i = 0; i < values.size(); i++) {
         if (values[i] != nullptr) {
             res |= (1 << i);
         }
@@ -34,8 +33,8 @@ SearchColumns RamProvenanceExistenceCheckAnalysis::getKey(
 }
 
 /** Is key total */
-bool RamProvenanceExistenceCheckAnalysis::isTotal(const RamProvenanceExistenceCheck* provExistCheck) const {
-    for (const auto& cur : provExistCheck->getValues()) {
+bool RamExistenceCheckAnalysis::isTotal(const RamExistenceCheck* existCheck) const {
+    for (const auto& cur : existCheck->getValues()) {
         if (cur == nullptr) {
             return false;
         }

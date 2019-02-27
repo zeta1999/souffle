@@ -309,7 +309,7 @@ public:
             if (cur != nullptr) {
                 val = cur->clone();
             }
-            newValues.push_back(std::unique_ptr<RamValue>(val));
+            newValues.emplace_back(val);
         }
         RamExistenceCheck* res = new RamExistenceCheck(
                 std::unique_ptr<RamRelationReference>(relation->clone()), std::move(newValues));
@@ -355,7 +355,7 @@ public:
             if (cur != nullptr) {
                 val = cur->clone();
             }
-            newValues.push_back(std::unique_ptr<RamValue>(val));
+            newValues.emplace_back(val);
         }
         RamProvenanceExistenceCheck* res = new RamProvenanceExistenceCheck(
                 std::unique_ptr<RamRelationReference>(relation->clone()), std::move(newValues));

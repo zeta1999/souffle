@@ -36,7 +36,7 @@ std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* con
     std::vector<std::unique_ptr<RamCondition>> conditions;
     while (condition != nullptr) {
         if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
-            conditions.push_back(std::unique_ptr<RamCondition>(ramConj->getRHS().clone()));
+            conditions.emplace_back(ramConj->getRHS().clone());
             condition = &ramConj->getLHS();
         } else {
             conditions.emplace_back(condition->clone());
@@ -181,19 +181,19 @@ std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
-                auto* rhs = binRelOp->getRHS()->clone();
+                RamValue* rhs = binRelOp->getRHS();
                 if (rvla->getLevel(lhs) == identifier &&
                         (rcva->isConstant(rhs) || rvla->getLevel(rhs) < identifier)) {
                     element = lhs->getElement();
-                    return std::unique_ptr<RamValue>(rhs);
+                    return std::unique_ptr<RamValue>(rhs->clone());
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
-                auto* lhs = binRelOp->getLHS()->clone();
+                RamValue* lhs = binRelOp->getLHS();
                 if (rvla->getLevel(rhs) == identifier &&
                         (rcva->isConstant(lhs) || rvla->getLevel(lhs) < identifier)) {
                     element = rhs->getElement();
-                    return std::unique_ptr<RamValue>(lhs);
+                    return std::unique_ptr<RamValue>(lhs->clone());
                 }
             }
         }
@@ -445,7 +445,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                         std::vector<std::unique_ptr<RamValue>> values;
                         for (RamValue* value : indexScan->getRangePattern()) {
                             if (value != nullptr) {
-                                values.push_back(std::unique_ptr<RamValue>(value->clone()));
+                                values.emplace_back(value->clone());
                             } else {
                                 values.push_back(nullptr);
                             }

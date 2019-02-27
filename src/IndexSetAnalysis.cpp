@@ -16,11 +16,11 @@
 
 #include "IndexSetAnalysis.h"
 #include "RamCondition.h"
-#include "RamExistenceCheck.h"
+#include "RamExistenceCheckAnalysis.h"
 #include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
-#include "RamProvenanceExistenceCheck.h"
+#include "RamProvenanceExistenceCheckAnalysis.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
 #include <cstdint>

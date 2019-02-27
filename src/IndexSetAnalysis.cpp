@@ -27,10 +27,6 @@
 #include <iterator>
 #include <queue>
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
 namespace souffle {
 
 /**

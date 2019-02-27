@@ -31,6 +31,7 @@
 
 namespace souffle {
 
+// TODO: why all these forward declarations?
 class AstArgument;
 class AstClause;
 class AstProgram;
@@ -58,6 +59,7 @@ public:
     }
 
     TypeLattice& getLattice() {
+        // TODO: why is there a non-const one?
         return lattice;
     }
 
@@ -66,6 +68,7 @@ public:
     }
 
     // Check if any clauses could not be typechecked
+    // TODO: rename to match cpp
     static bool anyInvalidClauses(const AstProgram& program);
 
     // Get clauses that can be typechecked
@@ -89,6 +92,7 @@ private:
     std::stringstream analysisLogs{};
     TypeLattice lattice{};
 
+    // TODO: Vec<>* -> Vec<>&
     static std::set<const AstArgument*> getArguments(
             std::map<std::string, const AstVariable*>* variables, const AstClause& clause);
 };

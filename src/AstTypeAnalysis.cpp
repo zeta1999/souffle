@@ -46,6 +46,10 @@
 
 namespace souffle {
 
+// TODO: check convention here - should it be type_sol?
+using typeSol = std::map<const AstArgument*, const AnalysisType*>;
+
+// TODO: change vec<>* to vec<>&?
 const AstArgument* getVar(std::map<std::string, const AstVariable*>* mapping, const AstArgument* arg) {
     if (dynamic_cast<const AstVariable*>(arg) == nullptr) {
         return arg;
@@ -57,10 +61,10 @@ const AstArgument* getVar(std::map<std::string, const AstVariable*>* mapping, co
     return mapping->at(var->getName());
 }
 
-using typeSol = std::map<const AstArgument*, const AnalysisType*>;
-
 class TypeConstraint {
 public:
+    // TODO: commenting/style
+    // TODO: references
     virtual typeSol resolve(const typeSol existing, TypeLattice& lattice) const = 0;
     virtual bool isSatisfied(const typeSol solution, TypeLattice& lattice) const = 0;
     virtual void print(std::ostream& os) const = 0;
@@ -72,6 +76,7 @@ public:
 
 class FixedConstraint : public TypeConstraint {
 private:
+    // TODO: what is this pointing to?
     const AstArgument* variable;
     const AnalysisType* bound;
 
@@ -98,10 +103,12 @@ public:
 
 class VarConstraint : public TypeConstraint {
 private:
+    // TODO: poitners to what?
     const AstArgument* variable;
     const AstArgument* bound;
 
 public:
+    // TODO: comment and space out
     VarConstraint(const AstArgument* variable, const AstArgument* bound) : variable(variable), bound(bound){};
     VarConstraint(const VarConstraint& other) = default;
     VarConstraint& operator=(const VarConstraint& other) = default;
@@ -198,6 +205,7 @@ private:
     std::vector<ImplicationConstraint> implCons{};
 
 public:
+    // TODO: spacing out and commening
     TypeConstraints() = default;
     TypeConstraints(FixedConstraint con) : fixedCons(1, con) {}
     TypeConstraints(VarConstraint con) : varCons(1, con) {}
@@ -478,10 +486,13 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
         debugStream = &analysisLogs;
     }
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
+    // TODO: figure out point of environment here
     lattice.setEnvironment(&typeEnvAnalysis->getTypeEnvironment());
+
+    // TODO: when is a lattice not valid?
     if (lattice.isValid()) {
         const AstProgram& program = *translationUnit.getProgram();
-        if (anyInvalidClauses(program) && debugStream != nullptr) {
+        if (debugStream != nullptr && anyInvalidClauses(program)) {
             *debugStream << "Some clauses were skipped as they cannot be typechecked" << std::endl
                          << std::endl;
         }
@@ -501,6 +512,8 @@ void TypeAnalysis::print(std::ostream& os) const {
     }
 }
 
+// TODO: rename to hasInvalidClauses
+// TODO: combine iwth the bottom one
 bool TypeAnalysis::anyInvalidClauses(const AstProgram& program) {
     for (const AstRelation* rel : program.getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {

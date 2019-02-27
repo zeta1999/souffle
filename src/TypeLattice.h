@@ -14,6 +14,7 @@ class TypeEnvironment;
 class Type;
 
 // Forward declarations
+// TODO: so are the other ones? check if needed btw
 class PrimitiveAType;
 class ConstantAType;
 class TypeLattice;
@@ -21,6 +22,7 @@ class TypeLattice;
 enum class Kind { SYMBOL, NUMBER, RECORD };
 
 class AnalysisType {
+    // TODO: why?
     friend class TypeLattice;
 
 protected:
@@ -63,6 +65,7 @@ public:
 };
 
 class BotAType : public AnalysisType {
+    // TODO: why?
     friend class TypeLattice;
 
 private:
@@ -241,6 +244,7 @@ public:
 };
 
 class UnionAType : public InnerAType {
+    // TODO: why this?
     friend class TypeLattice;
 
 private:
@@ -275,6 +279,7 @@ private:
     std::map<Kind, PrimitiveAType> primitives{};
     std::map<Kind, ConstantAType> constants{};
     std::map<Kind, BotPrimAType> botprims{};
+    // TODO: why is a deque needed?
     std::deque<BaseAType> bases{};
     std::deque<RecordAType> records{};
     std::deque<UnionAType> unions{};
@@ -287,6 +292,7 @@ private:
     TypeLattice(const TypeEnvironment* env);
 
     // Temporary constructor, produces invalid lattice
+    // TODO: check this
     TypeLattice() : valid(false), env(), top(this), bot(this) {}
 
     // Makes previously invalid lattice valid again
@@ -300,6 +306,7 @@ public:
     }
 
     // Find the highest common subtype (intersection)
+    // TODO: why do these take in pointers but hteyre stored as normal types?
     const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);
 
     // Find the lowest common supertype (union)

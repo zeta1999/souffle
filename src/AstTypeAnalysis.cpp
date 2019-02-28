@@ -113,6 +113,7 @@ public:
     }
 };
 
+// TODO: what does this cover?
 class VarConstraint : public TypeConstraint {
 private:
     // TODO: poitners to what?
@@ -125,11 +126,15 @@ public:
     VarConstraint(const VarConstraint& other) = default;
     VarConstraint& operator=(const VarConstraint& other) = default;
 
+    // TODO: what is bound here??
     typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         assert(existing.find(bound) != existing.end() && "Bound does not have a type");
+
         typeSol ret(existing);
         ret[variable] = lattice.meet(existing.at(variable), existing.at(bound));
+
+        // check that the lattice now satisfies this constraint
         assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
@@ -145,6 +150,7 @@ public:
     }
 };
 
+// TODO: write a little decsrption for each constriant
 class UnionConstraint : public TypeConstraint {
 private:
     const AstArgument* variable;
@@ -162,9 +168,11 @@ public:
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         assert(existing.find(firstBound) != existing.end() && "First bound does not have a type");
         assert(existing.find(secondBound) != existing.end() && "Second bound does not have a type");
+
         typeSol ret(existing);
-        ret[variable] = lattice.meet(
-                existing.at(variable), lattice.join(existing.at(firstBound), existing.at(secondBound)));
+        ret[variable] =
+                lattice.meet(existing.at(variable), lattice.join(existing.at(firstBound), existing.at(secondBound)));
+
         assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
@@ -510,8 +518,8 @@ std::set<const AstArgument*> TypeAnalysis::getArguments(
 typeSol TypeAnalysis::analyseTypes(
         TypeLattice& lattice, const AstClause& clause, const AstProgram& program, std::ostream* debugStream) {
     std::map<std::string, const AstVariable*> variables;
-    TypeConstraints typeCons = getConstraints(lattice, &variables, clause, program);
-    typeSol types = typeCons.solve(lattice, getArguments(&variables, clause));
+    TypeConstraints typeCons = getConstraints(lattice, variables, clause, program);
+    typeSol types = typeCons.solve(lattice, getArguments(variables, clause));
 
     if (debugStream != nullptr) {
         *debugStream << "Clause:\n" << clause << std::endl << std::endl;
@@ -524,7 +532,7 @@ typeSol TypeAnalysis::analyseTypes(
     }
 
     // Make sure each argument object has a type
-    visitDepthFirst(clause, [&](const AstVariable& var) { types[&var] = types[getVar(&variables, &var)]; });
+    visitDepthFirst(clause, [&](const AstVariable& var) { types[&var] = types[getVar(variables, &var)]; });
     return types;
 }
 

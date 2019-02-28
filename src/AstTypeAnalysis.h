@@ -94,7 +94,7 @@ private:
 
     // TODO: Vec<>* -> Vec<>&
     static std::set<const AstArgument*> getArguments(
-            std::map<std::string, const AstVariable*>* variables, const AstClause& clause);
+            std::map<std::string, const AstVariable*>& variables, const AstClause& clause);
 };
 
 }  // end of namespace souffle

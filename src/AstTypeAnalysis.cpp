@@ -49,25 +49,34 @@ namespace souffle {
 // TODO: check convention here - should it be type_sol?
 using typeSol = std::map<const AstArgument*, const AnalysisType*>;
 
-// TODO: change vec<>* to vec<>&?
-const AstArgument* getVar(std::map<std::string, const AstVariable*>* mapping, const AstArgument* arg) {
+// TODO: what is getVar actually doign here for non-vars? seems to be called on general arguments a lot -
+// maybe rename?
+const AstArgument* getVar(std::map<std::string, const AstVariable*>& mapping, const AstArgument* arg) {
     if (dynamic_cast<const AstVariable*>(arg) == nullptr) {
         return arg;
     }
+
+    // TODO: commenting
     const auto* var = dynamic_cast<const AstVariable*>(arg);
-    if (mapping->find(var->getName()) == mapping->end()) {
-        (*mapping)[var->getName()] = var;
+    if (mapping.find(var->getName()) == mapping.end()) {
+        mapping[var->getName()] = var;
     }
-    return mapping->at(var->getName());
+    return mapping.at(var->getName());
 }
 
+// TODO: equal method?
 class TypeConstraint {
 public:
     // TODO: commenting/style
     // TODO: references
     virtual typeSol resolve(const typeSol existing, TypeLattice& lattice) const = 0;
+
+    // TODO
     virtual bool isSatisfied(const typeSol solution, TypeLattice& lattice) const = 0;
+
+    // TODO
     virtual void print(std::ostream& os) const = 0;
+
     friend std::ostream& operator<<(std::ostream& out, const TypeConstraint& other) {
         other.print(out);
         return out;
@@ -85,6 +94,7 @@ public:
             : variable(variable), bound(bound){};
     FixedConstraint(const FixedConstraint& other) = default;
     FixedConstraint& operator=(const FixedConstraint& other) = default;
+
     typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         typeSol ret(existing);
@@ -92,10 +102,12 @@ public:
         assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
+
     bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         return lattice.isSubtype(solution.at(variable), bound);
     }
+
     void print(std::ostream& os) const override {
         os << "type(" << *variable << ") <: " << *bound;
     }
@@ -112,6 +124,7 @@ public:
     VarConstraint(const AstArgument* variable, const AstArgument* bound) : variable(variable), bound(bound){};
     VarConstraint(const VarConstraint& other) = default;
     VarConstraint& operator=(const VarConstraint& other) = default;
+
     typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         assert(existing.find(bound) != existing.end() && "Bound does not have a type");
@@ -120,11 +133,13 @@ public:
         assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
+
     bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         assert(solution.find(bound) != solution.end() && "Bound does not have a type");
         return lattice.isSubtype(solution.at(variable), solution.at(bound));
     }
+
     void print(std::ostream& os) const override {
         os << "type(" << *variable << ") <: type(" << *bound << ")";
     }
@@ -142,6 +157,7 @@ public:
             : variable(variable), firstBound(firstBound), secondBound(secondBound){};
     UnionConstraint(const UnionConstraint& other) = default;
     UnionConstraint& operator=(const UnionConstraint& other) = default;
+
     typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         assert(existing.find(firstBound) != existing.end() && "First bound does not have a type");
@@ -152,6 +168,7 @@ public:
         assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
+
     bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         assert(solution.find(firstBound) != solution.end() && "First bound does not have a type");
@@ -159,6 +176,7 @@ public:
         return lattice.isSubtype(
                 solution.at(variable), lattice.join(solution.at(firstBound), solution.at(secondBound)));
     }
+
     void print(std::ostream& os) const override {
         os << "type(" << *variable << ") <: (type(" << *firstBound << ") ∪ type(" << *secondBound << "))";
     }
@@ -173,9 +191,11 @@ public:
     ImplicationConstraint(const AstArgument* variable, const AnalysisType* bound) : result(variable, bound){};
     ImplicationConstraint(const ImplicationConstraint& other) = default;
     ImplicationConstraint& operator=(const ImplicationConstraint& other) = default;
+
     void addRequirement(FixedConstraint req) {
         requirements.push_back(req);
     }
+
     typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
         if (isSatisfied(existing, lattice)) {
             return typeSol(existing);
@@ -184,6 +204,7 @@ public:
         assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
+
     bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
         for (FixedConstraint req : requirements) {
             if (!req.isSatisfied(solution, lattice)) {
@@ -192,12 +213,14 @@ public:
         }
         return result.isSatisfied(solution, lattice);
     }
+
     void print(std::ostream& os) const override {
         os << "(" << join(requirements) << ") -> (" << result << ")";
     }
 };
 
 class TypeConstraints {
+    // TODO: mvoe private to bottom
 private:
     std::vector<FixedConstraint> fixedCons{};
     std::vector<VarConstraint> varCons{};
@@ -211,6 +234,8 @@ public:
     TypeConstraints(VarConstraint con) : varCons(1, con) {}
     TypeConstraints(UnionConstraint con) : unionCons(1, con) {}
     TypeConstraints(ImplicationConstraint con) : implCons(1, con) {}
+
+    // TODO: some way to clean this up (like abstract it away)
     void addConstraint(FixedConstraint con) {
         fixedCons.push_back(con);
     }
@@ -223,12 +248,14 @@ public:
     void addConstraint(ImplicationConstraint con) {
         implCons.push_back(con);
     }
+
     void addAll(const TypeConstraints& other) {
         fixedCons.insert(fixedCons.end(), other.fixedCons.begin(), other.fixedCons.end());
         varCons.insert(varCons.end(), other.varCons.begin(), other.varCons.end());
         unionCons.insert(unionCons.end(), other.unionCons.begin(), other.unionCons.end());
         implCons.insert(implCons.end(), other.implCons.begin(), other.implCons.end());
     }
+
     std::vector<const TypeConstraint*> getAll() const {
         std::vector<const TypeConstraint*> all;
         for (const FixedConstraint& con : fixedCons) {
@@ -245,15 +272,18 @@ public:
         }
         return all;
     }
+
     void print(std::ostream& os) const {
         for (const TypeConstraint* con : getAll()) {
             os << "      " << *con << std::endl;
         }
     }
+
     friend std::ostream& operator<<(std::ostream& out, const TypeConstraints& other) {
         other.print(out);
         return out;
     }
+
     typeSol solve(TypeLattice& lattice, std::set<const AstArgument*> arguments) const {
         typeSol currentSol;
         for (const AstArgument* arg : arguments) {
@@ -275,24 +305,27 @@ public:
                 currentSol = cons.resolve(currentSol, lattice);
             }
         } while (oldSol != currentSol);
+
         for (const TypeConstraint* con : getAll()) {
             assert(con->isSatisfied(oldSol, lattice) && "All constraints are satisified");
         }
+
         return oldSol;
     }
 };
 
 TypeConstraints getConstraints(const TypeLattice& lattice,
-        std::map<std::string, const AstVariable*>* variables, const AstClause& clause,
+        std::map<std::string, const AstVariable*>& variables, const AstClause& clause,
         const AstProgram& program) {
+    // TODO: CLEAN THIS UP - move out imo!!!
     class ConstraintFinder : public AstVisitor<TypeConstraints> {
     private:
         const TypeLattice& lattice;
-        std::map<std::string, const AstVariable*>* variables;
+        std::map<std::string, const AstVariable*>& variables;
         const AstProgram& program;
 
     public:
-        ConstraintFinder(const TypeLattice& lattice, std::map<std::string, const AstVariable*>* variables,
+        ConstraintFinder(const TypeLattice& lattice, std::map<std::string, const AstVariable*>& variables,
                 const AstProgram& program)
                 : lattice(lattice), variables(variables), program(program) {}
         // By default, just extract the constraints generated by all children
@@ -303,23 +336,29 @@ TypeConstraints getConstraints(const TypeLattice& lattice,
             }
             return cons;
         }
+
         TypeConstraints visitCounter(const AstCounter& counter) {
             return TypeConstraints(FixedConstraint(&counter, lattice.getConstant(Kind::NUMBER)));
         }
+
         TypeConstraints visitNumberConstant(const AstNumberConstant& constant) {
             return TypeConstraints(FixedConstraint(&constant, lattice.getConstant(Kind::NUMBER)));
         }
+
         TypeConstraints visitStringConstant(const AstStringConstant& constant) {
             return TypeConstraints(FixedConstraint(&constant, lattice.getConstant(Kind::SYMBOL)));
         }
+
         TypeConstraints visitNullConstant(const AstNullConstant& constant) {
             return TypeConstraints(FixedConstraint(&constant, lattice.getConstant(Kind::RECORD)));
         }
+
         TypeConstraints visitTypeCast(const AstTypeCast& cast) {
             TypeConstraints cons = visitNode(cast);
             cons.addConstraint(FixedConstraint(&cast, lattice.getType(cast.getType())));
             return cons;
         }
+
         TypeConstraints visitIntrinsicFunctor(const AstIntrinsicFunctor& functor) {
             TypeConstraints cons = visitNode(functor);
             if (functor.getFunction() == FunctorOp::MAX || functor.getFunction() == FunctorOp::MIN) {
@@ -352,6 +391,7 @@ TypeConstraints getConstraints(const TypeLattice& lattice,
             }
             return cons;
         }
+
         TypeConstraints visitUserDefinedFunctor(const AstUserDefinedFunctor& functor) {
             TypeConstraints cons = visitNode(functor);
             AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(functor.getName());
@@ -381,6 +421,7 @@ TypeConstraints getConstraints(const TypeLattice& lattice,
             cons.addConstraint(constCons);
             return cons;
         }
+
         TypeConstraints visitRecordInit(const AstRecordInit& record) {
             TypeConstraints cons = visitNode(record);
             auto* type =
@@ -401,6 +442,7 @@ TypeConstraints getConstraints(const TypeLattice& lattice,
             cons.addConstraint(secondCons);
             return cons;
         }
+
         TypeConstraints visitAggregator(const AstAggregator& aggregate) {
             TypeConstraints cons = visitNode(aggregate);
             if (aggregate.getOperator() == AstAggregator::count ||
@@ -415,6 +457,7 @@ TypeConstraints getConstraints(const TypeLattice& lattice,
             }
             return cons;
         }
+
         TypeConstraints visitAtom(const AstAtom& atom) {
             TypeConstraints cons = visitNode(atom);
             AstRelation* relation = program.getRelation(atom.getName());
@@ -425,10 +468,12 @@ TypeConstraints getConstraints(const TypeLattice& lattice,
             }
             return cons;
         }
+
         TypeConstraints visitNegation(const AstNegation& negation) {
             // Only return constraints generated by children except the atom being negated
             return visitNode(*negation.getAtom());
         }
+
         TypeConstraints visitBinaryConstraint(const AstBinaryConstraint& binary) {
             TypeConstraints cons = visitNode(binary);
             if (binary.getOperator() == BinaryConstraintOp::EQ) {
@@ -439,6 +484,7 @@ TypeConstraints getConstraints(const TypeLattice& lattice,
             }
             return cons;
         }
+
         TypeConstraints visitClause(const AstClause& clause) {
             TypeConstraints cons;
             // Get constraints from body atoms only
@@ -450,11 +496,12 @@ TypeConstraints getConstraints(const TypeLattice& lattice,
             return cons;
         }
     } finder(lattice, variables, program);
+
     return finder.visit(clause);
 }
 
 std::set<const AstArgument*> TypeAnalysis::getArguments(
-        std::map<std::string, const AstVariable*>* variables, const AstClause& clause) {
+        std::map<std::string, const AstVariable*>& variables, const AstClause& clause) {
     std::set<const AstArgument*> args;
     visitDepthFirst(clause, [&](const AstArgument& arg) { args.insert(getVar(variables, &arg)); });
     return args;
@@ -465,6 +512,7 @@ typeSol TypeAnalysis::analyseTypes(
     std::map<std::string, const AstVariable*> variables;
     TypeConstraints typeCons = getConstraints(lattice, &variables, clause, program);
     typeSol types = typeCons.solve(lattice, getArguments(&variables, clause));
+
     if (debugStream != nullptr) {
         *debugStream << "Clause:\n" << clause << std::endl << std::endl;
         *debugStream << "   Constraints:\n" << typeCons << std::endl;
@@ -474,6 +522,7 @@ typeSol TypeAnalysis::analyseTypes(
         }
         *debugStream << std::endl;
     }
+
     // Make sure each argument object has a type
     visitDepthFirst(clause, [&](const AstVariable& var) { types[&var] = types[getVar(&variables, &var)]; });
     return types;
@@ -537,6 +586,7 @@ bool TypeAnalysis::anyInvalidClauses(const AstProgram& program) {
                     }
                 }
             });
+
             visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
                 AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
                 if (funDecl == nullptr) {
@@ -545,6 +595,7 @@ bool TypeAnalysis::anyInvalidClauses(const AstProgram& program) {
                     skipClause = true;
                 }
             });
+
             visitDepthFirst(*clause, [&](const AstRecordInit& record) {
                 const auto* recordType =
                         dynamic_cast<const AstRecordType*>(program.getType(record.getType()));
@@ -554,6 +605,7 @@ bool TypeAnalysis::anyInvalidClauses(const AstProgram& program) {
                     skipClause = true;
                 }
             });
+
             visitDepthFirst(*clause, [&](const AstTypeCast& cast) {
                 if (cast.getType() == "symbol" || cast.getType() == "number") {
                     return;
@@ -562,6 +614,7 @@ bool TypeAnalysis::anyInvalidClauses(const AstProgram& program) {
                     skipClause = true;
                 }
             });
+
             if (skipClause) {
                 return true;
             }
@@ -594,6 +647,7 @@ std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& pr
                     }
                 }
             });
+
             visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
                 AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
                 if (funDecl == nullptr) {
@@ -602,6 +656,7 @@ std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& pr
                     skipClause = true;
                 }
             });
+
             visitDepthFirst(*clause, [&](const AstRecordInit& record) {
                 const auto* recordType =
                         dynamic_cast<const AstRecordType*>(program.getType(record.getType()));
@@ -611,6 +666,7 @@ std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& pr
                     skipClause = true;
                 }
             });
+
             visitDepthFirst(*clause, [&](const AstTypeCast& cast) {
                 if (cast.getType() == "symbol" || cast.getType() == "number") {
                     return;
@@ -619,6 +675,7 @@ std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& pr
                     skipClause = true;
                 }
             });
+
             if (!skipClause) {
                 valid.push_back(clause);
             }

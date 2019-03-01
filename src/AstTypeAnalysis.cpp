@@ -46,8 +46,7 @@
 
 namespace souffle {
 
-// TODO: check convention here - should it be type_sol?
-using typeSol = std::map<const AstArgument*, const AnalysisType*>;
+using TypeSolution = std::map<const AstArgument*, const AnalysisType*>;
 
 // TODO: what is getVar actually doign here for non-vars? seems to be called on general arguments a lot -
 // maybe rename?
@@ -69,10 +68,10 @@ class TypeConstraint {
 public:
     // TODO: commenting/style
     // TODO: references
-    virtual typeSol resolve(const typeSol existing, TypeLattice& lattice) const = 0;
+    virtual TypeSolution resolve(const TypeSolution, TypeLattice& lattice) const = 0;
 
     // TODO
-    virtual bool isSatisfied(const typeSol solution, TypeLattice& lattice) const = 0;
+    virtual bool isSatisfied(const TypeSolution existing, TypeLattice& lattice) const = 0;
 
     // TODO
     virtual void print(std::ostream& os) const = 0;
@@ -95,15 +94,15 @@ public:
     FixedConstraint(const FixedConstraint& other) = default;
     FixedConstraint& operator=(const FixedConstraint& other) = default;
 
-    typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
+    TypeSolution resolve(const TypeSolution existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
-        typeSol ret(existing);
+        TypeSolution ret(existing);
         ret[variable] = lattice.meet(existing.at(variable), bound);
         assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
 
-    bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
+    bool isSatisfied(const TypeSolution solution, TypeLattice& lattice) const override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         return lattice.isSubtype(solution.at(variable), bound);
     }
@@ -127,11 +126,11 @@ public:
     VarConstraint& operator=(const VarConstraint& other) = default;
 
     // TODO: what is bound here??
-    typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
+    TypeSolution resolve(const TypeSolution existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         assert(existing.find(bound) != existing.end() && "Bound does not have a type");
 
-        typeSol ret(existing);
+        TypeSolution ret(existing);
         ret[variable] = lattice.meet(existing.at(variable), existing.at(bound));
 
         // check that the lattice now satisfies this constraint
@@ -139,7 +138,7 @@ public:
         return ret;
     }
 
-    bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
+    bool isSatisfied(const TypeSolution solution, TypeLattice& lattice) const override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         assert(solution.find(bound) != solution.end() && "Bound does not have a type");
         return lattice.isSubtype(solution.at(variable), solution.at(bound));
@@ -164,12 +163,12 @@ public:
     UnionConstraint(const UnionConstraint& other) = default;
     UnionConstraint& operator=(const UnionConstraint& other) = default;
 
-    typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
+    TypeSolution resolve(const TypeSolution existing, TypeLattice& lattice) const override {
         assert(existing.find(variable) != existing.end() && "Variable does not have a type");
         assert(existing.find(firstBound) != existing.end() && "First bound does not have a type");
         assert(existing.find(secondBound) != existing.end() && "Second bound does not have a type");
 
-        typeSol ret(existing);
+        TypeSolution ret(existing);
         ret[variable] =
                 lattice.meet(existing.at(variable), lattice.join(existing.at(firstBound), existing.at(secondBound)));
 
@@ -177,7 +176,7 @@ public:
         return ret;
     }
 
-    bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
+    bool isSatisfied(const TypeSolution solution, TypeLattice& lattice) const override {
         assert(solution.find(variable) != solution.end() && "Variable does not have a type");
         assert(solution.find(firstBound) != solution.end() && "First bound does not have a type");
         assert(solution.find(secondBound) != solution.end() && "Second bound does not have a type");
@@ -204,16 +203,16 @@ public:
         requirements.push_back(req);
     }
 
-    typeSol resolve(const typeSol existing, TypeLattice& lattice) const override {
+    TypeSolution resolve(const TypeSolution existing, TypeLattice& lattice) const override {
         if (isSatisfied(existing, lattice)) {
-            return typeSol(existing);
+            return TypeSolution(existing);
         }
-        typeSol ret = result.resolve(existing, lattice);
+        TypeSolution ret = result.resolve(existing, lattice);
         assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
 
-    bool isSatisfied(const typeSol solution, TypeLattice& lattice) const override {
+    bool isSatisfied(const TypeSolution solution, TypeLattice& lattice) const override {
         for (FixedConstraint req : requirements) {
             if (!req.isSatisfied(solution, lattice)) {
                 return true;
@@ -292,15 +291,15 @@ public:
         return out;
     }
 
-    typeSol solve(TypeLattice& lattice, std::set<const AstArgument*> arguments) const {
-        typeSol currentSol;
+    TypeSolution solve(TypeLattice& lattice, std::set<const AstArgument*> arguments) const {
+        TypeSolution currentSol;
         for (const AstArgument* arg : arguments) {
             currentSol[arg] = lattice.getTop();
         }
         for (FixedConstraint con : fixedCons) {
             currentSol = con.resolve(currentSol, lattice);
         }
-        typeSol oldSol;
+        TypeSolution oldSol;
         do {
             oldSol = currentSol;
             for (VarConstraint cons : varCons) {
@@ -515,11 +514,11 @@ std::set<const AstArgument*> TypeAnalysis::getArguments(
     return args;
 }
 
-typeSol TypeAnalysis::analyseTypes(
+TypeSolution TypeAnalysis::analyseTypes(
         TypeLattice& lattice, const AstClause& clause, const AstProgram& program, std::ostream* debugStream) {
     std::map<std::string, const AstVariable*> variables;
     TypeConstraints typeCons = getConstraints(lattice, variables, clause, program);
-    typeSol types = typeCons.solve(lattice, getArguments(variables, clause));
+    TypeSolution types = typeCons.solve(lattice, getArguments(variables, clause));
 
     if (debugStream != nullptr) {
         *debugStream << "Clause:\n" << clause << std::endl << std::endl;
@@ -555,7 +554,7 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
         }
         for (const AstClause* clause : getValidClauses(program)) {
             // Perform the type analysis
-            typeSol clauseArgumentTypes = analyseTypes(lattice, *clause, program, debugStream);
+            TypeSolution clauseArgumentTypes = analyseTypes(lattice, *clause, program, debugStream);
             argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
         }
     }

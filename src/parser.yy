@@ -205,7 +205,7 @@
 %left STAR SLASH PERCENT
 %precedence BW_NOT L_NOT
 %precedence NEG
-%left CARET
+%right CARET
 
 %%
 %start program;

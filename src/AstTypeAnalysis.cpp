@@ -61,140 +61,173 @@ const AstArgument* getVar(std::map<std::string, const AstVariable*>& mapping, co
     return mapping.at(var->getName());
 }
 
+// TODO: maybe turn TypeSolution into a class that contains these constraints instead?
+// TODO: type-solution should probably contain the type lattice?
+
+// TODO: how does the lattice update on resolution? why is it passed in?
 // TODO: equal method?
-// TODO: comments
+/** A type constraint imposed on an argument in a Datalog program */
 class TypeConstraint {
 public:
-    // TODO: commenting/style
-    // TODO: references
+    /** Updates the given type mapping to satisfy the represented type constraint */
     virtual TypeSolution resolve(const TypeSolution, TypeLattice& lattice) const = 0;
 
-    // TODO
+    /** Checks if a given type mapping satisfies the represented type constraint */
     virtual bool isSatisfied(const TypeSolution existing, TypeLattice& lattice) const = 0;
 
-    // TODO
+    /** Output to a given output stream */
     virtual void print(std::ostream& os) const = 0;
 
+    /** Print the constraint onto an output stream */
     friend std::ostream& operator<<(std::ostream& out, const TypeConstraint& other) {
         other.print(out);
         return out;
     }
 };
 
+// TODO: existing->current
+
+/**
+ * Subclass of type constraint that represents a fixed constraint.
+ * i.e. t <: T, where t is a type variable and T is a type constant.
+ */
 class FixedConstraint : public TypeConstraint {
 private:
-    // TODO: what is this pointing to?
-    const AstArgument* variable;
-    const AnalysisType* bound;
+    const AstArgument* argument;
+    const AnalysisType* imposedType;
 
 public:
-    FixedConstraint(const AstArgument* variable, const AnalysisType* bound)
-            : variable(variable), bound(bound){};
+    FixedConstraint(const AstArgument* argument, const AnalysisType* imposedType)
+            : argument(argument), imposedType(imposedType) {}
     FixedConstraint(const FixedConstraint& other) = default;
     FixedConstraint& operator=(const FixedConstraint& other) = default;
 
+    /** Updates the given type mapping to satisfy the represented type constraint */
     TypeSolution resolve(const TypeSolution existing, TypeLattice& lattice) const override {
-        assert(existing.find(variable) != existing.end() && "Variable does not have a type");
+        assert(existing.find(argument) != existing.end() && "Argument does not have a type");
+
+        // create a copy of the existing type solution
+        // TODO: why a copy and not update hte type solution itself?
         TypeSolution ret(existing);
-        ret[variable] = lattice.meet(existing.at(variable), bound);
-        assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
+
+        // argument is now constrained to be a subtype of the given type
+        ret[argument] = lattice.meet(existing.at(argument), imposedType);
+        assert(isSatisfied(ret, lattice) && "Constraint resolution failed");
         return ret;
     }
 
+    /** Checks if a given type mapping satisfies the represented type constraint */
     bool isSatisfied(const TypeSolution solution, TypeLattice& lattice) const override {
-        assert(solution.find(variable) != solution.end() && "Variable does not have a type");
-        return lattice.isSubtype(solution.at(variable), bound);
+        assert(solution.find(argument) != solution.end() && "Argument does not have a type");
+        // TODO: getType if class converted
+        return lattice.isSubtype(solution.at(argument), imposedType);
     }
 
     void print(std::ostream& os) const override {
-        os << "type(" << *variable << ") <: " << *bound;
+        os << "type(" << *argument << ") <: " << *imposedType;
     }
 };
 
-// TODO: what does this cover?
+/**
+ * Subclass of type constraint that represents a variable constraint.
+ * i.e. t1 <: t2, where t1 and t2 are type variables.
+ */
 class VarConstraint : public TypeConstraint {
 private:
-    // TODO: poitners to what?
-    const AstArgument* variable;
-    const AstArgument* bound;
+    const AstArgument* left;
+    const AstArgument* right;
 
 public:
-    // TODO: comment and space out
-    VarConstraint(const AstArgument* variable, const AstArgument* bound) : variable(variable), bound(bound){};
+    VarConstraint(const AstArgument* left, const AstArgument* right) : left(left), right(right) {}
     VarConstraint(const VarConstraint& other) = default;
     VarConstraint& operator=(const VarConstraint& other) = default;
 
-    // TODO: what is bound here??
+    /** Updates the given type mapping to satisfy the represented type constraint */
     TypeSolution resolve(const TypeSolution existing, TypeLattice& lattice) const override {
-        assert(existing.find(variable) != existing.end() && "Variable does not have a type");
-        assert(existing.find(bound) != existing.end() && "Bound does not have a type");
+        assert(existing.find(left) != existing.end() && "Lower bound does not have a type");
+        assert(existing.find(right) != existing.end() && "Upper bound does not have a type");
 
+        // create a copy of the existing type solution
         TypeSolution ret(existing);
-        ret[variable] = lattice.meet(existing.at(variable), existing.at(bound));
 
-        // check that the lattice now satisfies this constraint
+        // left is now constraint to be a subtype of right
+        ret[left] = lattice.meet(existing.at(left), existing.at(right));
         assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
         return ret;
     }
 
+    /** Checks if a given type mapping satisfies the represented type constraint */
     bool isSatisfied(const TypeSolution solution, TypeLattice& lattice) const override {
-        assert(solution.find(variable) != solution.end() && "Variable does not have a type");
-        assert(solution.find(bound) != solution.end() && "Bound does not have a type");
-        return lattice.isSubtype(solution.at(variable), solution.at(bound));
+        assert(solution.find(left) != solution.end() && "Lower bound does not have a type");
+        assert(solution.find(right) != solution.end() && "Upper bound does not have a type");
+        return lattice.isSubtype(solution.at(left), solution.at(right));
     }
 
     void print(std::ostream& os) const override {
-        os << "type(" << *variable << ") <: type(" << *bound << ")";
+        os << "type(" << *left << ") <: type(" << *right << ")";
     }
 };
 
-// TODO: write a little decsrption for each constriant
+/**
+ * Subclass of type constraint that represents a union constraint.
+ * i.e. t <: t1 U t2, where t, t1, and t2 are type variables.
+ */
 class UnionConstraint : public TypeConstraint {
 private:
-    const AstArgument* variable;
+    // TODO: change to a vector of bounds instead
+    const AstArgument* argument;
     const AstArgument* firstBound;
     const AstArgument* secondBound;
 
 public:
     UnionConstraint(
-            const AstArgument* variable, const AstArgument* firstBound, const AstArgument* secondBound)
-            : variable(variable), firstBound(firstBound), secondBound(secondBound){};
+            const AstArgument* argument, const AstArgument* firstBound, const AstArgument* secondBound)
+            : argument(argument), firstBound(firstBound), secondBound(secondBound) {}
     UnionConstraint(const UnionConstraint& other) = default;
     UnionConstraint& operator=(const UnionConstraint& other) = default;
 
+    /** Updates the given type mapping to satisfy the represented type constraint */
     TypeSolution resolve(const TypeSolution existing, TypeLattice& lattice) const override {
-        assert(existing.find(variable) != existing.end() && "Variable does not have a type");
+        assert(existing.find(argument) != existing.end() && "Argument does not have a type");
         assert(existing.find(firstBound) != existing.end() && "First bound does not have a type");
         assert(existing.find(secondBound) != existing.end() && "Second bound does not have a type");
 
+        // create a copy of the existing type solution
         TypeSolution ret(existing);
-        ret[variable] = lattice.meet(
-                existing.at(variable), lattice.join(existing.at(firstBound), existing.at(secondBound)));
 
-        assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
+        // argument is now a subtype of any of the right-hand types
+        ret[argument] = lattice.meet(
+                existing.at(argument), lattice.join(existing.at(firstBound), existing.at(secondBound)));
+        assert(isSatisfied(ret, lattice) && "Constraint resolution failed");
         return ret;
     }
 
+    /** Checks if a given type mapping satisfies the represented type constraint */
     bool isSatisfied(const TypeSolution solution, TypeLattice& lattice) const override {
-        assert(solution.find(variable) != solution.end() && "Variable does not have a type");
+        assert(solution.find(argument) != solution.end() && "Argument does not have a type");
         assert(solution.find(firstBound) != solution.end() && "First bound does not have a type");
         assert(solution.find(secondBound) != solution.end() && "Second bound does not have a type");
         return lattice.isSubtype(
-                solution.at(variable), lattice.join(solution.at(firstBound), solution.at(secondBound)));
+                solution.at(argument), lattice.join(solution.at(firstBound), solution.at(secondBound)));
     }
 
     void print(std::ostream& os) const override {
-        os << "type(" << *variable << ") <: (type(" << *firstBound << ") ∪ type(" << *secondBound << "))";
+        os << "type(" << *argument << ") <: (type(" << *firstBound << ") ∪ type(" << *secondBound << "))";
     }
 };
 
+/**
+ * Subclass of type constraint that represents an implication constraint.
+ * i.e. (t1 <: T1, t2 <: T2, ..., tN <: TN) => (t0 <: T0).
+ */
+// TODO: look more at this
 class ImplicationConstraint : public TypeConstraint {
 private:
     std::vector<FixedConstraint> requirements{};
     FixedConstraint result;
 
 public:
-    ImplicationConstraint(const AstArgument* variable, const AnalysisType* bound) : result(variable, bound){};
+    ImplicationConstraint(const AstArgument* variable, const AnalysisType* bound) : result(variable, bound) {}
     ImplicationConstraint(const ImplicationConstraint& other) = default;
     ImplicationConstraint& operator=(const ImplicationConstraint& other) = default;
 
@@ -202,15 +235,20 @@ public:
         requirements.push_back(req);
     }
 
+    /** Updates the given type mapping to satisfy the represented type constraint */
     TypeSolution resolve(const TypeSolution existing, TypeLattice& lattice) const override {
+        // skip if already satisfied
         if (isSatisfied(existing, lattice)) {
             return TypeSolution(existing);
         }
+
+        // not satisfied, so all hold except the consequent
         TypeSolution ret = result.resolve(existing, lattice);
-        assert(isSatisfied(ret, lattice) && "Resolving constraint failed");
+        assert(isSatisfied(ret, lattice) && "Constraint resolution failed");
         return ret;
     }
 
+    /** Checks if a given type mapping satisfies the represented type constraint */
     bool isSatisfied(const TypeSolution solution, TypeLattice& lattice) const override {
         for (FixedConstraint req : requirements) {
             if (!req.isSatisfied(solution, lattice)) {
@@ -568,7 +606,7 @@ void TypeAnalysis::print(std::ostream& os) const {
 }
 
 bool TypeAnalysis::hasInvalidClauses(const AstProgram& program) {
-    return !getValidClauses.empty();
+    return !getValidClauses(program).empty();
 }
 
 std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& program) {

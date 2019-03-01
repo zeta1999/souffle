@@ -68,8 +68,7 @@ public:
     }
 
     // Check if any clauses could not be typechecked
-    // TODO: rename to match cpp
-    static bool anyInvalidClauses(const AstProgram& program);
+    static bool hasInvalidClauses(const AstProgram& program);
 
     // Get clauses that can be typechecked
     static std::vector<const AstClause*> getValidClauses(const AstProgram& program);

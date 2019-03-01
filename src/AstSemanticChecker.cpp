@@ -198,7 +198,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     // get the list of components to be checked
     if (lattice.isValid()) {
-        if (TypeAnalysis::anyInvalidClauses(program)) {
+        if (TypeAnalysis::hasInvalidClauses(program)) {
             nodes = TypeAnalysis::getValidClauses(program);
             report.addError("Not all clauses could be typechecked due to other errors present");
         }

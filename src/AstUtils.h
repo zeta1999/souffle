@@ -35,6 +35,8 @@ class AstRecordInit;
 //                      General Utilities
 // ---------------------------------------------------------------
 
+// TODO: maybe add get everythign thats satifies a given predicate
+
 /**
  * Obtains a list of all variables referenced within the AST rooted
  * by the given root node.

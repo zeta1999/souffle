@@ -18,7 +18,6 @@
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
-// #include "AstConstraintAnalysis.h"
 #include "AstFunctorDeclaration.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
@@ -26,11 +25,6 @@
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
-// #include "AstTypeEnvironmentAnalysis.h"
-// #include "AstUtils.h"
-// #include "AstVisitor.h"
-// #include "Constraints.h"
-// #include "Global.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
@@ -43,6 +37,10 @@
 #include <ostream>
 #include <set>
 #include <vector>
+
+// chekc these ones out
+// #include "Constraints.h"
+// #include "AstConstraintAnalysis.h"
 
 namespace souffle {
 
@@ -64,6 +62,7 @@ const AstArgument* getVar(std::map<std::string, const AstVariable*>& mapping, co
 }
 
 // TODO: equal method?
+// TODO: comments
 class TypeConstraint {
 public:
     // TODO: commenting/style
@@ -504,7 +503,7 @@ public:
 TypeConstraints getConstraints(const TypeLattice& lattice,
         std::map<std::string, const AstVariable*>& variables, const AstClause& clause,
         const AstProgram& program) {
-    ConstraintFinder(lattice, variables, program).visit(clause);
+    return ConstraintFinder(lattice, variables, program).visit(clause);
 }
 
 std::set<const AstArgument*> TypeAnalysis::getArguments(
@@ -548,7 +547,7 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     // TODO: when is a lattice not valid?
     if (lattice.isValid()) {
         const AstProgram& program = *translationUnit.getProgram();
-        if (debugStream != nullptr && anyInvalidClauses(program)) {
+        if (debugStream != nullptr && hasInvalidClauses(program)) {
             *debugStream << "Some clauses were skipped as they cannot be typechecked" << std::endl
                          << std::endl;
         }
@@ -568,66 +567,8 @@ void TypeAnalysis::print(std::ostream& os) const {
     }
 }
 
-// TODO: rename to hasInvalidClauses
-// TODO: combine iwth the bottom one
-bool TypeAnalysis::anyInvalidClauses(const AstProgram& program) {
-    for (const AstRelation* rel : program.getRelations()) {
-        for (const AstClause* clause : rel->getClauses()) {
-            // TODO (azreika [olligobber]) : fix this up
-            bool skipClause = false;
-            visitDepthFirst(*clause, [&](const AstAtom& atom) {
-                auto* relDecl = program.getRelation(atom.getName());
-                if (relDecl == nullptr) {
-                    skipClause = true;
-                } else if (relDecl->getArity() != atom.getArity()) {
-                    skipClause = true;
-                } else {
-                    for (const AstAttribute* attribute : relDecl->getAttributes()) {
-                        if (attribute->getTypeName() == "symbol" || attribute->getTypeName() == "number") {
-                            continue;
-                        }
-                        if (program.getType(attribute->getTypeName()) == nullptr) {
-                            skipClause = true;
-                            break;
-                        }
-                    }
-                }
-            });
-
-            visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
-                AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-                if (funDecl == nullptr) {
-                    skipClause = true;
-                } else if (funDecl->getArgCount() != fun.getArgCount()) {
-                    skipClause = true;
-                }
-            });
-
-            visitDepthFirst(*clause, [&](const AstRecordInit& record) {
-                const auto* recordType =
-                        dynamic_cast<const AstRecordType*>(program.getType(record.getType()));
-                if (recordType == nullptr) {
-                    skipClause = true;
-                } else if (record.getArguments().size() != recordType->getFields().size()) {
-                    skipClause = true;
-                }
-            });
-
-            visitDepthFirst(*clause, [&](const AstTypeCast& cast) {
-                if (cast.getType() == "symbol" || cast.getType() == "number") {
-                    return;
-                }
-                if (program.getType(cast.getType()) == nullptr) {
-                    skipClause = true;
-                }
-            });
-
-            if (skipClause) {
-                return true;
-            }
-        }
-    }
-    return false;
+bool TypeAnalysis::hasInvalidClauses(const AstProgram& program) {
+    return !getValidClauses.empty();
 }
 
 std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& program) {

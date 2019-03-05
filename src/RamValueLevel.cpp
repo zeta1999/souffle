@@ -32,7 +32,7 @@ size_t RamValueLevelAnalysis::getLevel(const RamValue* value) const {
 
         // tuple element access
         size_t visitElementAccess(const RamElementAccess& elem) override {
-            return elem.getLevel();
+            return elem.getIdentifier();
         }
 
         // auto increment

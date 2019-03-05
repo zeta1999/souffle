@@ -1110,7 +1110,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitElementAccess(const RamElementAccess& access, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "env" << access.getLevel() << "[" << access.getElement() << "]";
+            out << "env" << access.getIdentifier() << "[" << access.getElement() << "]";
             PRINT_END_COMMENT(out);
         }
 

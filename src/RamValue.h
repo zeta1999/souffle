@@ -230,32 +230,31 @@ protected:
  */
 class RamElementAccess : public RamValue {
 private:
-    /** Level information */
-    size_t level;
+    /** Identifier for the tuple */
+    size_t identifier;
 
     /** Element number */
     size_t element;
 
-    /** Name of attribute */
-    // TODO (#541): add reference to attributes of a relation
-    std::string name;
+    /** Relation */
+    std::unique_ptr<RamRelationReference> relation;
 
 public:
-    RamElementAccess(size_t l, size_t e, std::string n = "")
-            : RamValue(RN_ElementAccess), level(l), element(e), name(std::move(n)) {}
+    RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> rel = nullptr)
+            : RamValue(RN_ElementAccess), identifier(ident), element(elem), relation(std::move(rel)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
-        if (name.empty()) {
-            os << "env(t" << level << ", i" << element << ")";
+        if (nullptr == relation) {
+            os << "env(t" << identifier << ", i" << element << ")";
         } else {
-            os << "t" << level << "." << name;
+            os << "t" << identifier << "." << getName();
         }
     }
 
-    /** Get level */
-    size_t getLevel() const {
-        return level;
+    /** Get identifier */
+    size_t getIdentifier() const {
+        return identifier;
     }
 
     /** Get element */
@@ -264,8 +263,9 @@ public:
     }
 
     /** Get name */
-    const std::string& getName() const {
-        return name;
+    // TODO (#541): Move to a RAM analysis
+    const std::string getName() const {
+        return relation->getArg(element);
     }
 
     /** Obtain list of child nodes */
@@ -275,8 +275,12 @@ public:
 
     /** Create clone */
     RamElementAccess* clone() const override {
-        RamElementAccess* res = new RamElementAccess(level, element, name);
-        return res;
+        if (relation != nullptr) {
+            return new RamElementAccess(
+                    identifier, element, std::unique_ptr<RamRelationReference>(relation->clone()));
+        } else {
+            return new RamElementAccess(identifier, element);
+        }
     }
 
     /** Apply mapper */
@@ -287,8 +291,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamElementAccess*>(&node));
         const auto& other = static_cast<const RamElementAccess&>(node);
-        return getLevel() == other.getLevel() && getElement() == other.getElement() &&
-               getName() == other.getName();
+        return getIdentifier() == other.getIdentifier() && getElement() == other.getElement();
     }
 };
 

@@ -261,6 +261,7 @@ jobs:
   # Make the OSX packages and if successful upload to github releases.
   - <<: *osxpackage
     env: "osx-package"
+    before_deploy: .travis/bintray_json.sh osx
     deploy:
       - provider: releases
         skip_cleanup: true
@@ -270,6 +271,20 @@ jobs:
         on:
           repo: souffle-lang/souffle
           tags: true
+      - provider: bintray
+        skip-cleanup: true
+        file: bintray-osx.json
+        user: souffle-lang
+        key: $BINTRAY_KEY
+        on:
+          branch: master
+          repo: souffle-lang/souffle
+      - provider: script
+        skip-cleanup: true
+        script: ".travis/osx/brew.sh"
+        on:
+          branch: master
+          repo: souffle-lang/souffle
   # Generate doxygen html
   - stage: Packaging
     env: "documenting"

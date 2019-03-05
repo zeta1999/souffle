@@ -281,7 +281,7 @@ jobs:
           repo: souffle-lang/souffle
       - provider: script
         skip-cleanup: true
-        script: ".travis/osx/brew.sh"
+        script: ".travis/osx/brew.sh $HOMEBREW_SOUFFLE_KEY"
         on:
           branch: master
           repo: souffle-lang/souffle

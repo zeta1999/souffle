@@ -96,7 +96,7 @@ size_t getLevel(const RamValue* value) {
 
         // tuple element access
         size_t visitElementAccess(const RamElementAccess& elem) override {
-            return elem.getLevel();
+            return elem.getIdentifier();
         }
 
         // auto increment
@@ -202,14 +202,14 @@ std::unique_ptr<RamValue> RamAggregate::getIndexElement(RamCondition* c, size_t&
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamValue* rhs = binRelOp->getRHS();
-                if (lhs->getLevel() == level && (isConstant(rhs) || getLevel(rhs) < level)) {
+                if (lhs->getIdentifier() == level && (isConstant(rhs) || getLevel(rhs) < level)) {
                     element = lhs->getElement();
                     return binRelOp->takeRHS();
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamValue* lhs = binRelOp->getLHS();
-                if (rhs->getLevel() == level && (isConstant(lhs) || getLevel(lhs) < level)) {
+                if (rhs->getIdentifier() == level && (isConstant(lhs) || getLevel(lhs) < level)) {
                     element = rhs->getElement();
                     return binRelOp->takeLHS();
                 }

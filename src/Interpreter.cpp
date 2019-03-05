@@ -66,7 +66,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
         }
 
         RamDomain visitElementAccess(const RamElementAccess& access) override {
-            return ctxt[access.getLevel()][access.getElement()];
+            return ctxt[access.getIdentifier()][access.getElement()];
         }
 
         RamDomain visitAutoIncrement(const RamAutoIncrement&) override {

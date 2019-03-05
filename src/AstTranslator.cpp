@@ -63,6 +63,15 @@ namespace souffle {
 class ErrorReport;
 class SymbolTable;
 
+std::unique_ptr<RamElementAccess> AstTranslator::makeRamElementAccess(const Location& loc) {
+    if (loc.relation != nullptr) {
+        return std::make_unique<RamElementAccess>(
+                loc.identifier, loc.element, std::unique_ptr<RamRelationReference>(loc.relation->clone()));
+    } else {
+        return std::make_unique<RamElementAccess>(loc.identifier, loc.element);
+    }
+}
+
 /** get symbol mask */
 SymbolMask AstTranslator::getSymbolMask(const AstRelation& rel) {
     auto arity = rel.getArity();
@@ -263,8 +272,7 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
 
         std::unique_ptr<RamValue> visitVariable(const AstVariable& var) override {
             assert(index.isDefined(var) && "variable not grounded");
-            const Location& loc = index.getDefinitionPoint(var);
-            return std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name);
+            return makeRamElementAccess(index.getDefinitionPoint(var));
         }
 
         std::unique_ptr<RamValue> visitUnnamedVariable(const AstUnnamedVariable& var) override {
@@ -307,8 +315,7 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
 
         std::unique_ptr<RamValue> visitAggregator(const AstAggregator& agg) override {
             // here we look up the location the aggregation result gets bound
-            auto loc = index.getAggregatorLocation(agg);
-            return std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name);
+            return translator.makeRamElementAccess(index.getAggregatorLocation(agg));
         }
 
         std::unique_ptr<RamValue> visitSubroutineArgument(const AstSubroutineArgument& subArg) override {
@@ -465,7 +472,8 @@ void AstTranslator::ClauseTranslator::indexValues(const AstNode* curNode,
         // check for variable references
         if (auto var = dynamic_cast<const AstVariable*>(arg)) {
             if (pos < relation->getArity()) {
-                valueIndex.addVarReference(*var, arg_level[cur], pos, relation->getArg(pos));
+                valueIndex.addVarReference(
+                        *var, arg_level[cur], pos, std::unique_ptr<RamRelationReference>(relation->clone()));
             } else {
                 valueIndex.addVarReference(*var, arg_level[cur], pos);
             }
@@ -474,10 +482,8 @@ void AstTranslator::ClauseTranslator::indexValues(const AstNode* curNode,
         // check for nested records
         if (auto rec = dynamic_cast<const AstRecordInit*>(arg)) {
             // introduce new nesting level for unpack
-            int unpack_level = level++;
             op_nesting.push_back(rec);
-            arg_level[getArgList(rec, nodeArgs)] = unpack_level;
-            valueIndex.setRecordUnpackLevel(*rec, unpack_level);
+            arg_level[getArgList(rec, nodeArgs)] = level++;
 
             // register location of record
             valueIndex.setRecordDefinition(*rec, arg_level[cur], pos);
@@ -520,7 +526,7 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
         for (size_t pos = 0; pos < atom.getArguments().size(); ++pos) {
             if (const auto* var = dynamic_cast<const AstVariable*>(atom.getArgument(pos))) {
                 valueIndex.addVarReference(
-                        *var, aggLoc, (int)pos, translator.translateRelation(&atom)->getArg(pos));
+                        *var, aggLoc, (int)pos, std::move(translator.translateRelation(&atom)));
             }
         };
 
@@ -656,11 +662,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         const Location& first = *cur.second.begin();
         // all other appearances
         for (const Location& loc : cur.second) {
-            if (first != loc && !valueIndex.isAggregator(loc.level)) {
+            if (first != loc && !valueIndex.isAggregator(loc.identifier)) {
                 op = std::make_unique<RamFilter>(
                         std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
-                                std::make_unique<RamElementAccess>(first.level, first.element, first.name),
-                                std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name)),
+                                makeRamElementAccess(first), makeRamElementAccess(loc)),
                         std::move(op));
             }
         }
@@ -686,8 +691,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamElementAccess>(
-                                            curLevel, pos, translator.translateRelation(atom)->getArg(pos)),
-                                    std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name)),
+                                            curLevel, pos, std::move(translator.translateRelation(atom))),
+                                    makeRamElementAccess(loc)),
                             std::move(op));
                 }
             }
@@ -733,16 +738,16 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
                 aggregate->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
                         std::make_unique<RamElementAccess>(
-                                level, pos, translator.translateRelation(atom)->getArg(pos)),
+                                level, pos, std::move(translator.translateRelation(atom))),
                         std::make_unique<RamNumber>(c->getIndex())));
             } else if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {
                 // all other appearances
                 for (const Location& loc : valueIndex.getVariableReferences().find(var->getName())->second) {
-                    if (level != loc.level || (int)pos != loc.element) {
+                    if (level != loc.identifier || (int)pos != loc.element) {
                         aggregate->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
-                                std::make_unique<RamElementAccess>(loc.level, loc.element, loc.name),
+                                makeRamElementAccess(loc),
                                 std::make_unique<RamElementAccess>(
-                                        level, pos, translator.translateRelation(atom)->getArg(pos))));
+                                        level, pos, std::move(translator.translateRelation(atom)))));
                         break;
                     }
                 }
@@ -767,7 +772,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamElementAccess>(
-                                            level, pos, translator.translateRelation(atom)->getArg(pos)),
+                                            level, pos, std::move(translator.translateRelation(atom))),
                                     std::make_unique<RamNumber>(c->getIndex())),
                             std::move(op));
                 }
@@ -813,7 +818,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add an unpack level
             const Location& loc = valueIndex.getDefinitionPoint(*rec);
             op = std::make_unique<RamLookup>(
-                    std::move(op), level, loc.level, loc.element, rec->getArguments().size());
+                    std::move(op), level, loc.identifier, loc.element, rec->getArguments().size());
         } else {
             std::cout << "Unsupported AST node type: " << typeid(*cur).name() << "\n";
             assert(false && "Unsupported AST node for creation of scan-level!");

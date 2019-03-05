@@ -662,8 +662,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         for (const Location& loc : cur.second) {
             if (first != loc && !valueIndex.isAggregator(loc.identifier)) {
                 op = std::make_unique<RamFilter>(
-                        std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
-                                makeRamElementAccess(first), makeRamElementAccess(loc)),
+                        std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, makeRamElementAccess(first),
+                                makeRamElementAccess(loc)),
                         std::move(op));
             }
         }
@@ -742,7 +742,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 // all other appearances
                 for (const Location& loc : valueIndex.getVariableReferences().find(var->getName())->second) {
                     if (level != loc.identifier || (int)pos != loc.element) {
-                        aggregate->addCondition(std::make_unique<RamBinaryRelation>(BinaryConstraintOp::EQ,
+                        aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                 makeRamElementAccess(loc),
                                 std::make_unique<RamElementAccess>(
                                         level, pos, std::move(translator.translateRelation(atom)))));

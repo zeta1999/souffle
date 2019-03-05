@@ -18,6 +18,7 @@
 
 #include "AstArgument.h"
 #include "AstRelationIdentifier.h"
+#include "RamRelation.h"
 #include "RelationRepresentation.h"
 #include "SymbolMask.h"
 #include "Util.h"
@@ -40,9 +41,9 @@ class AstRelation;
 class AstTranslationUnit;
 class IODirectives;
 class RamCondition;
+class RamElementAccess;
 class RamOperation;
 class RamProgram;
-class RamRelationReference;
 class RamStatement;
 class RamTranslationUnit;
 class RamValue;
@@ -75,17 +76,18 @@ private:
     struct Location {
         int identifier;
         int element;
-        std::unique_ptr<RamRelationReference> relation;
+        std::unique_ptr<RamRelationReference> relation{nullptr};
 
         Location() = default;
 
         Location(int ident, int elem, std::unique_ptr<RamRelationReference> rel = nullptr)
                 : identifier(ident), element(elem), relation(std::move(rel)) {}
 
-        Location(const Location& l)
-                : identifier(l.identifier), element(l.element),
-                  relation(std::unique_ptr<RamRelationReference>(
-                          l.relation == nullptr ? nullptr : l.relation->clone())) {}
+        Location(const Location& l) : identifier(l.identifier), element(l.element) {
+            if (l.relation != nullptr) {
+                relation = std::unique_ptr<RamRelationReference>(l.relation->clone());
+            }
+        }
 
         Location& operator=(Location other) {
             identifier = other.identifier;

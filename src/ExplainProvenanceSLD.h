@@ -31,63 +31,6 @@
 namespace souffle {
 
 class ExplainProvenanceSLD : public ExplainProvenance {
-private:
-    std::map<std::pair<std::string, size_t>, std::vector<std::string>> info;
-    std::map<std::pair<std::string, size_t>, std::string> rules;
-    std::vector<std::vector<RamDomain>> subproofs;
-    std::vector<std::string> constraintList = {
-            "=", "!=", "<", "<=", ">=", ">", "match", "contains", "not_match", "not_contains"};
-
-    std::pair<int, int> findTuple(const std::string& relName, std::vector<RamDomain> tup) {
-        auto rel = prog.getRelation(relName);
-
-        if (rel == nullptr) {
-            return std::make_pair(-1, -1);
-        }
-
-        // find correct tuple
-        for (auto& tuple : *rel) {
-            bool match = true;
-            std::vector<RamDomain> currentTuple;
-
-            for (size_t i = 0; i < rel->getArity() - 2; i++) {
-                RamDomain n;
-                if (*rel->getAttrType(i) == 's') {
-                    std::string s;
-                    tuple >> s;
-                    n = prog.getSymbolTable().lookupExisting(s);
-                } else {
-                    tuple >> n;
-                }
-
-                currentTuple.push_back(n);
-
-                if (n != tup[i]) {
-                    match = false;
-                    break;
-                }
-            }
-
-            if (match) {
-                RamDomain ruleNum;
-                tuple >> ruleNum;
-
-                RamDomain levelNum;
-                tuple >> levelNum;
-
-                return std::make_pair(ruleNum, levelNum);
-            }
-        }
-
-        // if no tuple exists
-        return std::make_pair(-1, -1);
-    }
-
-    void printRelationOutput(
-            const SymbolMask& symMask, const IODirectives& ioDir, const Relation& rel) override {
-        WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), ioDir, true)->writeAll(rel);
-    }
-
 public:
     ExplainProvenanceSLD(SouffleProgram& prog) : ExplainProvenance(prog) {
         setup();
@@ -362,6 +305,63 @@ public:
                << stringify(cur.second) << "\"}";
         }
         os << "\n]\n";
+    }
+
+private:
+    std::map<std::pair<std::string, size_t>, std::vector<std::string>> info;
+    std::map<std::pair<std::string, size_t>, std::string> rules;
+    std::vector<std::vector<RamDomain>> subproofs;
+    std::vector<std::string> constraintList = {
+            "=", "!=", "<", "<=", ">=", ">", "match", "contains", "not_match", "not_contains"};
+
+    std::pair<int, int> findTuple(const std::string& relName, std::vector<RamDomain> tup) {
+        auto rel = prog.getRelation(relName);
+
+        if (rel == nullptr) {
+            return std::make_pair(-1, -1);
+        }
+
+        // find correct tuple
+        for (auto& tuple : *rel) {
+            bool match = true;
+            std::vector<RamDomain> currentTuple;
+
+            for (size_t i = 0; i < rel->getArity() - 2; i++) {
+                RamDomain n;
+                if (*rel->getAttrType(i) == 's') {
+                    std::string s;
+                    tuple >> s;
+                    n = prog.getSymbolTable().lookupExisting(s);
+                } else {
+                    tuple >> n;
+                }
+
+                currentTuple.push_back(n);
+
+                if (n != tup[i]) {
+                    match = false;
+                    break;
+                }
+            }
+
+            if (match) {
+                RamDomain ruleNum;
+                tuple >> ruleNum;
+
+                RamDomain levelNum;
+                tuple >> levelNum;
+
+                return std::make_pair(ruleNum, levelNum);
+            }
+        }
+
+        // if no tuple exists
+        return std::make_pair(-1, -1);
+    }
+
+    void printRelationOutput(
+            const SymbolMask& symMask, const IODirectives& ioDir, const Relation& rel) override {
+        WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), ioDir, true)->writeAll(rel);
     }
 };
 

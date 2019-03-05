@@ -22,6 +22,7 @@
 #include "RamRelation.h"
 #include "RamValue.h"
 #include "RamVisitor.h"
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <memory>
@@ -152,22 +153,22 @@ size_t getLevel(const RamCondition* condition) {
     class ConditionLevelVisitor : public RamVisitor<size_t> {
     public:
         // conjunction
-        size_t visitAnd(const RamAnd& conj) override {
+        size_t visitConjunction(const RamConjunction& conj) override {
             return std::max(visit(conj.getLHS()), visit(conj.getRHS()));
         }
 
         // negation
-        size_t visitNot(const RamNot& neg) override {
+        size_t visitNegation(const RamNegation& neg) override {
             return visit(neg.getOperand());
         }
 
         // binary constraint
-        size_t visitBinaryRelation(const RamBinaryRelation& binRel) override {
+        size_t visitConstraint(const RamConstraint& binRel) override {
             return std::max(getLevel(binRel.getLHS()), getLevel(binRel.getRHS()));
         }
 
         // not exists check
-        size_t visitExists(const RamExists& exists) override {
+        size_t visitExistenceCheck(const RamExistenceCheck& exists) override {
             size_t level = 0;
             for (const auto& cur : exists.getValues()) {
                 if (cur != nullptr) {
@@ -178,7 +179,7 @@ size_t getLevel(const RamCondition* condition) {
         }
 
         // not exists check for a provenance existence check
-        size_t visitProvenanceExists(const RamProvenanceExists& provExists) override {
+        size_t visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
             size_t level = 0;
             for (const auto& cur : provExists.getValues()) {
                 if (cur != nullptr) {
@@ -189,7 +190,7 @@ size_t getLevel(const RamCondition* condition) {
         }
 
         // emptiness check
-        size_t visitEmpty(const RamEmpty& emptiness) override {
+        size_t visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
             return 0;  // can be in the top level
         }
     };
@@ -198,20 +199,20 @@ size_t getLevel(const RamCondition* condition) {
 
 /** get indexable element */
 std::unique_ptr<RamValue> RamAggregate::getIndexElement(RamCondition* c, size_t& element, size_t level) {
-    if (auto* binRelOp = dynamic_cast<RamBinaryRelation*>(c)) {
+    if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamValue* rhs = binRelOp->getRHS();
                 if (lhs->getIdentifier() == level && (isConstant(rhs) || getLevel(rhs) < level)) {
                     element = lhs->getElement();
-                    return binRelOp->takeRHS();
+                    return std::unique_ptr<RamValue>(rhs->clone());
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamValue* lhs = binRelOp->getLHS();
                 if (rhs->getIdentifier() == level && (isConstant(lhs) || getLevel(lhs) < level)) {
                     element = rhs->getElement();
-                    return binRelOp->takeLHS();
+                    return std::unique_ptr<RamValue>(lhs->clone());
                 }
             }
         }
@@ -236,21 +237,21 @@ void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
                 auto addCondition = [&](std::unique_ptr<RamCondition> c) {
                     assert(getLevel(c.get()) == getIdentifier());
                     if (condition != nullptr) {
-                        condition = std::make_unique<RamAnd>(std::move(condition), std::move(c));
+                        condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
                     } else {
                         condition = std::move(c);
                     }
                 };
 
-                addCondition(std::make_unique<RamBinaryRelation>(
+                addCondition(std::make_unique<RamConstraint>(
                         BinaryConstraintOp::EQ, std::move(field), std::move(value)));
             }
         } else {
             std::unique_ptr<RamValue> field(new RamElementAccess(getIdentifier(), element));
             std::unique_ptr<RamCondition> eq(
-                    new RamBinaryRelation(BinaryConstraintOp::EQ, std::move(field), std::move(value)));
+                    new RamConstraint(BinaryConstraintOp::EQ, std::move(field), std::move(value)));
             if (condition != nullptr) {
-                condition = std::make_unique<RamAnd>(std::move(condition), std::move(eq));
+                condition = std::make_unique<RamConjunction>(std::move(condition), std::move(eq));
             } else {
                 condition.swap(eq);
             }

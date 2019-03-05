@@ -25,7 +25,9 @@
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
+#include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
+#include "RelationRepresentation.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>

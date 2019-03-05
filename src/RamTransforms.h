@@ -21,6 +21,8 @@
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
 #include "RamValueLevel.h"
+#include <memory>
+#include <string>
 
 namespace souffle {
 

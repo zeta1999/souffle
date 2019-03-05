@@ -7,7 +7,11 @@
  */
 
 #include "SynthesiserRelation.h"
-
+#include "RelationRepresentation.h"
+#include "Util.h"
+#include <algorithm>
+#include <cassert>
+#include <map>
 #include <numeric>
 #include <set>
 

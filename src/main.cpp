@@ -27,7 +27,6 @@
 #include "Interpreter.h"
 #include "InterpreterInterface.h"
 #include "ParserDriver.h"
-#include "PrecedenceGraph.h"
 #include "RamProgram.h"
 #include "RamSemanticChecker.h"
 #include "RamTransformer.h"
@@ -45,6 +44,7 @@
 
 #ifdef USE_MPI
 #include "Mpi.h"
+#include "PrecedenceGraph.h"
 #endif
 
 #include <cassert>
@@ -53,8 +53,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <iterator>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -550,7 +550,7 @@ int main(int argc, char** argv) {
         }
         compileCmd += " ";
 
-        std::unique_ptr<Synthesiser> synthesiser = std::make_unique<Synthesiser>();
+        std::unique_ptr<Synthesiser> synthesiser = std::make_unique<Synthesiser>(*ramTranslationUnit);
 
         try {
             // Find the base filename for code generation and execution
@@ -575,7 +575,7 @@ int main(int argc, char** argv) {
 
             bool withSharedLibrary;
             std::ofstream os(sourceFilename);
-            synthesiser->generateCode(*ramTranslationUnit, os, baseIdentifier, withSharedLibrary);
+            synthesiser->generateCode(os, baseIdentifier, withSharedLibrary);
             os.close();
 
             if (withSharedLibrary) {

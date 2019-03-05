@@ -15,8 +15,12 @@
  ***********************************************************************/
 
 #include "RamConditionLevel.h"
+#include "RamCondition.h"
 #include "RamTranslationUnit.h"
+#include "RamValueLevel.h"
 #include "RamVisitor.h"
+#include <algorithm>
+#include <vector>
 
 namespace souffle {
 
@@ -35,22 +39,22 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         ConditionLevelVisitor(RamValueLevelAnalysis* rvla) : rvla(rvla) {}
 
         // conjunction
-        size_t visitAnd(const RamAnd& conj) override {
+        size_t visitConjunction(const RamConjunction& conj) override {
             return std::max(visit(conj.getLHS()), visit(conj.getRHS()));
         }
 
         // negation
-        size_t visitNot(const RamNot& neg) override {
+        size_t visitNegation(const RamNegation& neg) override {
             return visit(neg.getOperand());
         }
 
-        // binary constraint
-        size_t visitBinaryRelation(const RamBinaryRelation& binRel) override {
+        // constraint
+        size_t visitConstraint(const RamConstraint& binRel) override {
             return std::max(rvla->getLevel(binRel.getLHS()), rvla->getLevel(binRel.getRHS()));
         }
 
-        // not exists check
-        size_t visitExists(const RamExists& exists) override {
+        // existence check
+        size_t visitExistenceCheck(const RamExistenceCheck& exists) override {
             size_t level = 0;
             for (const auto& cur : exists.getValues()) {
                 if (cur) {
@@ -60,8 +64,8 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
             return level;
         }
 
-        // not exists check for a provenance existence check
-        size_t visitProvenanceExists(const RamProvenanceExists& provExists) override {
+        // provenance existence check
+        size_t visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
             size_t level = 0;
             for (const auto& cur : provExists.getValues()) {
                 if (cur) {
@@ -72,7 +76,7 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         }
 
         // emptiness check
-        size_t visitEmpty(const RamEmpty& emptiness) override {
+        size_t visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
             return 0;  // can be in the top level
         }
     };

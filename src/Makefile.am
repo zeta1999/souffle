@@ -66,7 +66,8 @@ souffle_sources = \
               AstConstraintAnalysis.h                   \
               AstFunctorDeclaration.h                   \
               AstGroundAnalysis.cpp AstGroundAnalysis.h \
-              AstIODirective.h                          \
+              AstIO.h                                   \
+              AstIOTypeAnalysis.cpp AstIOTypeAnalysis.h \
               AstLiteral.h                              \
               AstNode.h                                 \
               AstParserUtils.cpp    AstParserUtils.h    \
@@ -83,7 +84,8 @@ souffle_sources = \
               AstTranslator.cpp     AstTranslator.h     \
               AstType.h                                 \
               AstTypeAnalysis.cpp   AstTypeAnalysis.h   \
-              AstTypeEnvironmentAnalysis.cpp AstTypeEnvironmentAnalysis.h \
+              AstTypeEnvironmentAnalysis.cpp            \
+              AstTypeEnvironmentAnalysis.h              \
               AstTypes.h                                \
               AstUtils.cpp          AstUtils.h          \
               AstVisitor.h                              \
@@ -114,6 +116,9 @@ souffle_sources = \
               ProvenanceTransformer.cpp                 \
               RamAnalysis.h                             \
               RamConstValue.cpp RamConstValue.h         \
+              RamExistenceCheckAnalysis.cpp RamExistenceCheckAnalysis.h \
+              RamProvenanceExistenceCheckAnalysis.cpp RamProvenanceExistenceCheckAnalysis.h \
+              RamIndexScanKeys.cpp  RamIndexScanKeys.h  \
               RamConditionLevel.cpp RamConditionLevel.h \
               RamOperationDepth.cpp RamOperationDepth.h \
               RamValueLevel.cpp RamValueLevel.h         \
@@ -138,7 +143,8 @@ souffle_sources = \
               SrcLocation.cpp    SrcLocation.h          \
               StringPool.h                              \
               Synthesiser.cpp       Synthesiser.h       \
-              SynthesiserRelation.cpp SynthesiserRelation.h \
+              SynthesiserRelation.cpp                   \
+              SynthesiserRelation.h                     \
               TypeSystem.cpp        TypeSystem.h        \
               WriteStream.h                             \
               WriteStreamCSV.h                          \

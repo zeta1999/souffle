@@ -19,6 +19,7 @@
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstConstraintAnalysis.h"
+#include "AstFunctorDeclaration.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -31,6 +32,7 @@
 #include "Constraints.h"
 #include "Global.h"
 #include "TypeSystem.h"
+#include "Util.h"
 #include <cassert>
 #include <map>
 #include <memory>
@@ -340,7 +342,7 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
             if (debugStream != nullptr) {
                 // Store an annotated clause for printing purposes
                 AstClause* annotatedClause = createAnnotatedClause(clause, clauseArgumentTypes);
-                annotatedClauses.push_back(std::unique_ptr<AstClause>(annotatedClause));
+                annotatedClauses.emplace_back(annotatedClause);
             }
         }
     }

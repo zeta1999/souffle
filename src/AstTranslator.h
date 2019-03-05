@@ -17,30 +17,35 @@
 #pragma once
 
 #include "AstArgument.h"
-#include "AstClause.h"
 #include "AstRelationIdentifier.h"
-#include "AstUtils.h"
-#include "IODirectives.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
-#include "RamValue.h"
+#include "RelationRepresentation.h"
 #include "SymbolMask.h"
-
+#include "Util.h"
+#include <cassert>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <set>
 #include <string>
+#include <utility>
 
 namespace souffle {
 
 // forward declarations
+class AstAtom;
 class AstClause;
+class AstLiteral;
 class AstProgram;
 class AstRelation;
 class AstTranslationUnit;
+class IODirectives;
+class RamCondition;
+class RamOperation;
 class RamProgram;
+class RamRelationReference;
 class RamStatement;
 class RamTranslationUnit;
+class RamValue;
 class RecursiveClauses;
 class TypeEnvironment;
 
@@ -48,6 +53,12 @@ class TypeEnvironment;
  * Main class for AST Translator
  */
 class AstTranslator {
+public:
+    AstTranslator() = default;
+
+    /** translates AST to translation unit  */
+    std::unique_ptr<RamTranslationUnit> translateUnit(AstTranslationUnit& tu);
+
 private:
     /** AST program */
     const AstProgram* program = nullptr;
@@ -285,8 +296,8 @@ private:
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity,
             const std::vector<std::string> attributeNames,
-            const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
-            const bool computed, const bool output, const RelationRepresentation structure);
+            const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask,
+            const RelationRepresentation structure);
 
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity);
@@ -376,12 +387,6 @@ private:
 
     /** translate AST to RAM Program */
     void translateProgram(const AstTranslationUnit& translationUnit);
-
-public:
-    AstTranslator() = default;
-
-    /** translates AST to translation unit  */
-    std::unique_ptr<RamTranslationUnit> translateUnit(AstTranslationUnit& tu);
 };
 
 }  // end of namespace souffle

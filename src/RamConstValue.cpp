@@ -15,8 +15,9 @@
  ***********************************************************************/
 
 #include "RamConstValue.h"
-#include "RamTranslationUnit.h"
+#include "RamValue.h"
 #include "RamVisitor.h"
+#include <vector>
 
 namespace souffle {
 

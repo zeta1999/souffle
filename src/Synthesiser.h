@@ -16,11 +16,10 @@
 
 #pragma once
 
-#include "IndexSetAnalysis.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
-#include "SynthesiserRelation.h"
 #include <map>
+#include <memory>
 #include <ostream>
 #include <set>
 #include <string>
@@ -30,12 +29,16 @@ namespace souffle {
 class RamOperation;
 class RamRelationReference;
 class RamTranslationUnit;
+class SynthesiserRelation;
 
 /**
  * A RAM synthesiser: synthesises a C++ program from a RAM program.
  */
 class Synthesiser {
 private:
+    /** RAM translation unit */
+    RamTranslationUnit& translationUnit;
+
     /** RAM identifier to C++ identifier map */
     std::map<const std::string, const std::string> identifiers;
 
@@ -83,11 +86,15 @@ protected:
     size_t lookupReadIdx(const std::string& txt);
 
 public:
-    Synthesiser() = default;
+    Synthesiser(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
     virtual ~Synthesiser() = default;
 
+    /** Get translation unit */
+    RamTranslationUnit& getTranslationUnit() {
+        return translationUnit;
+    }
+
     /** Generate code */
-    void generateCode(
-            const RamTranslationUnit& tu, std::ostream& os, const std::string& id, bool& withSharedLibrary);
+    void generateCode(std::ostream& os, const std::string& id, bool& withSharedLibrary);
 };
 }  // end of namespace souffle

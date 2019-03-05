@@ -25,6 +25,7 @@
 #include "AstTranslationUnit.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
+#include "FunctorOps.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>

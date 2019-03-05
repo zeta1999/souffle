@@ -380,7 +380,7 @@ public:
     RamFact* clone() const override {
         RamFact* res = new RamFact(std::unique_ptr<RamRelationReference>(relation->clone()), {});
         for (auto& cur : values) {
-            res->values.push_back(std::unique_ptr<RamValue>(cur->clone()));
+            res->values.emplace_back(cur->clone());
         }
         return res;
     }
@@ -988,48 +988,6 @@ protected:
         const auto& other = static_cast<const RamLogSize&>(node);
         RamRelationStatement::equal(other);
         return getMessage() == other.getMessage();
-    }
-};
-
-/**
- * Print relation size and a print message
- *
- * Print relation size for the printsize qualifier for relations.
- */
-class RamPrintSize : public RamRelationStatement {
-protected:
-    /** print message */
-    std::string message;
-
-public:
-    RamPrintSize(std::unique_ptr<RamRelationReference> rel)
-            : RamRelationStatement(RN_PrintSize, std::move(rel)), message(relation->getName() + "\t") {}
-
-    /** Get message */
-    const std::string& getMessage() const {
-        return message;
-    }
-
-    /** Pretty print */
-    void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "PRINTSIZE " << getRelation().getName() << " TEXT ";
-        os << "\"" << stringify(message) << "\"";
-    }
-
-    /** Create clone */
-    RamPrintSize* clone() const override {
-        RamPrintSize* res = new RamPrintSize(std::unique_ptr<RamRelationReference>(relation->clone()));
-        return res;
-    }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamPrintSize*>(&node));
-        const auto& other = static_cast<const RamPrintSize&>(node);
-        RamRelationStatement::equal(other);
-        return message == other.message;
     }
 };
 

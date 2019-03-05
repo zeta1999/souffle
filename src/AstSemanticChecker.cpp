@@ -18,8 +18,9 @@
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstFunctorDeclaration.h"
 #include "AstGroundAnalysis.h"
-#include "AstIODirective.h"
+#include "AstIO.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -37,9 +38,11 @@
 #include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
+#include "RelationRepresentation.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <iostream>
@@ -58,14 +61,17 @@ bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
     auto* typeAnalysis = translationUnit.getAnalysis<TypeAnalysis>();
     auto* precedenceGraph = translationUnit.getAnalysis<PrecedenceGraph>();
     auto* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
+    auto* ioTypes = translationUnit.getAnalysis<IOType>();
+
     checkProgram(translationUnit.getErrorReport(), *translationUnit.getProgram(), typeEnv, *typeAnalysis,
-            *precedenceGraph, *recursiveClauses);
+            *precedenceGraph, *recursiveClauses, *ioTypes);
     return false;
 }
 
 void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& program,
         const TypeEnvironment& typeEnv, const TypeAnalysis& typeAnalysis,
-        const PrecedenceGraph& precedenceGraph, const RecursiveClauses& recursiveClauses) {
+        const PrecedenceGraph& precedenceGraph, const RecursiveClauses& recursiveClauses,
+        const IOType& ioTypes) {
     // suppress warnings for given relations
     if (Global::config().has("suppress-warnings")) {
         std::vector<std::string> suppressedRelations =
@@ -100,11 +106,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     // -- conduct checks --
     // TODO: re-write to use visitors
     checkTypes(report, program);
-    checkRules(report, typeEnv, program, recursiveClauses);
+    checkRules(report, typeEnv, program, recursiveClauses, ioTypes);
     checkNamespaces(report, program);
     checkIODirectives(report, program);
     checkWitnessProblem(report, program);
-    checkInlining(report, program, precedenceGraph);
+    checkInlining(report, program, precedenceGraph, ioTypes);
 
     // get the list of components to be checked
     std::vector<const AstNode*> nodes;
@@ -560,7 +566,7 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
 }
 
 void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const TypeEnvironment& typeEnv,
-        const AstProgram& program, const AstRelation& relation) {
+        const AstProgram& program, const AstRelation& relation, const IOType& ioTypes) {
     for (size_t i = 0; i < relation.getArity(); i++) {
         AstAttribute* attr = relation.getAttribute(i);
         AstTypeIdentifier typeName = attr->getTypeName();
@@ -588,7 +594,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
                 // TODO (#467) remove the next line to enable subprogram compilation for record types
                 Global::config().unset("engine");
 
-                if (relation.isInput()) {
+                if (ioTypes.isInput(&relation)) {
                     report.addError(
                             "Input relations must not have record types. "
                             "Attribute " +
@@ -596,7 +602,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
                                     toString(attr->getTypeName()),
                             attr->getSrcLoc());
                 }
-                if (relation.isOutput()) {
+                if (ioTypes.isOutput(&relation) && !ioTypes.isPrintSize(&relation)) {
                     report.addWarning(
                             "Record types in output relations are not printed verbatim: attribute " +
                                     attr->getAttributeName() + " has record type " +
@@ -609,7 +615,8 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
 }
 
 void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironment& typeEnv,
-        const AstProgram& program, const AstRelation& relation, const RecursiveClauses& recursiveClauses) {
+        const AstProgram& program, const AstRelation& relation, const RecursiveClauses& recursiveClauses,
+        const IOType& ioTypes) {
     if (relation.getRepresentation() == RelationRepresentation::EQREL) {
         if (relation.getArity() == 2) {
             if (relation.getAttribute(0)->getTypeName() != relation.getAttribute(1)->getTypeName()) {
@@ -624,7 +631,7 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     }
 
     // start with declaration
-    checkRelationDeclaration(report, typeEnv, program, relation);
+    checkRelationDeclaration(report, typeEnv, program, relation, ioTypes);
 
     // check clauses
     for (AstClause* c : relation.getClauses()) {
@@ -632,16 +639,16 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     }
 
     // check whether this relation is empty
-    if (relation.clauseSize() == 0 && !relation.isInput() && !relation.isSuppressed()) {
+    if (relation.clauseSize() == 0 && !ioTypes.isInput(&relation) && !relation.isSuppressed()) {
         report.addWarning(
                 "No rules/facts defined for relation " + toString(relation.getName()), relation.getSrcLoc());
     }
 }
 
 void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& typeEnv,
-        const AstProgram& program, const RecursiveClauses& recursiveClauses) {
+        const AstProgram& program, const RecursiveClauses& recursiveClauses, const IOType& ioTypes) {
     for (AstRelation* cur : program.getRelations()) {
-        checkRelation(report, typeEnv, program, *cur, recursiveClauses);
+        checkRelation(report, typeEnv, program, *cur, recursiveClauses, ioTypes);
     }
 
     for (AstClause* cur : program.getOrphanClauses()) {
@@ -770,7 +777,7 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
 }
 
 void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram& program) {
-    for (const auto& directive : program.getIODirectives()) {
+    auto checkIODirective = [&](const AstIO* directive) {
 #ifdef USE_MPI
         // TODO (lyndonhenry): should permit sqlite as an io directive for use with mpi
         auto it = directive->getIODirectiveMap().find("IO");
@@ -782,6 +789,12 @@ void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram
         if (r == nullptr) {
             report.addError("Undefined relation " + toString(directive->getName()), directive->getSrcLoc());
         }
+    };
+    for (const auto& directive : program.getLoads()) {
+        checkIODirective(directive.get());
+    }
+    for (const auto& directive : program.getStores()) {
+        checkIODirective(directive.get());
     }
 }
 
@@ -1019,26 +1032,19 @@ std::vector<AstRelationIdentifier> findInlineCycle(const PrecedenceGraph& preced
     return result;
 }
 
-void AstSemanticChecker::checkInlining(
-        ErrorReport& report, const AstProgram& program, const PrecedenceGraph& precedenceGraph) {
+void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& program,
+        const PrecedenceGraph& precedenceGraph, const IOType& ioTypes) {
     // Find all inlined relations
     AstRelationSet inlinedRelations;
-    visitDepthFirst(program, [&](const AstRelation& relation) {
-        if (relation.isInline()) {
-            inlinedRelations.insert(&relation);
-
-            // Inlined relations cannot be computed or input relations
-            if (relation.isComputed()) {
-                report.addError("Computed relation " + toString(relation.getName()) + " cannot be inlined",
-                        relation.getSrcLoc());
-            }
-
-            if (relation.isInput()) {
-                report.addError("Input relation " + toString(relation.getName()) + " cannot be inlined",
-                        relation.getSrcLoc());
+    for (const auto& relation : program.getRelations()) {
+        if (relation->isInline()) {
+            inlinedRelations.insert(relation);
+            if (ioTypes.isIO(relation)) {
+                report.addError("IO relation " + toString(relation->getName()) + " cannot be inlined",
+                        relation->getSrcLoc());
             }
         }
-    });
+    }
 
     // Check 1:
     // Let G' be the subgraph of the precedence graph G containing only those nodes

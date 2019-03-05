@@ -17,11 +17,12 @@
 #pragma once
 
 #include "AstAnalysis.h"
-#include "AstTypeEnvironmentAnalysis.h"
 #include "TypeSystem.h"
+#include <cassert>
 #include <map>
 #include <memory>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -32,11 +33,6 @@ class AstProgram;
 class AstTranslationUnit;
 
 class TypeAnalysis : public AstAnalysis {
-private:
-    std::map<const AstArgument*, TypeSet> argumentTypes;
-    std::vector<std::unique_ptr<AstClause>> annotatedClauses;
-    std::stringstream analysisLogs;
-
 public:
     static constexpr const char* name = "type-analysis";
 
@@ -65,6 +61,11 @@ public:
      */
     static std::map<const AstArgument*, TypeSet> analyseTypes(const TypeEnvironment& env,
             const AstClause& clause, const AstProgram* program, std::ostream* logs = nullptr);
+
+private:
+    std::map<const AstArgument*, TypeSet> argumentTypes;
+    std::vector<std::unique_ptr<AstClause>> annotatedClauses;
+    std::stringstream analysisLogs;
 };
 
 }  // end of namespace souffle

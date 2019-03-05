@@ -67,7 +67,7 @@ inline souffle::SouffleProgram* getInstance(const char* p) {
 /**
  * Relation wrapper used internally in the generated Datalog program
  */
-template <uint32_t id, class RelType, class TupleType, size_t Arity, bool IsInputRel, bool IsOutputRel>
+template <uint32_t id, class RelType, class TupleType, size_t Arity>
 class RelationWrapper : public Relation {
 private:
     RelType& relation;
@@ -131,13 +131,7 @@ public:
         }
         return relation.contains(t);
     }
-    bool isInput() const override {
-        return IsInputRel;
-    }
-    bool isOutput() const override {
-        return IsOutputRel;
-    }
-    std::size_t size() override {
+    std::size_t size() const override {
         return relation.size();
     }
     std::string getName() const override {
@@ -156,6 +150,11 @@ public:
     }
     SymbolTable& getSymbolTable() const override {
         return symTable;
+    }
+
+    /** Eliminate all the tuples in relation*/
+    void purge() override {
+        relation.purge();
     }
 };
 

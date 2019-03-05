@@ -37,7 +37,7 @@
     #include "AstClause.h"
     #include "AstComponent.h"
     #include "AstFunctorDeclaration.h"
-    #include "AstIODirective.h"
+    #include "AstIO.h"
     #include "AstNode.h"
     #include "AstParserUtils.h"
     #include "AstProgram.h"
@@ -189,8 +189,10 @@
 %type <AstUnionType *>                   uniontype
 %type <std::vector<AstTypeIdentifier>>   type_params type_param_list
 %type <std::string>                      comp_override
-%type <AstIODirective *>                 key_value_pairs non_empty_key_value_pairs iodirective_body
-%type <std::vector<AstIODirective *>>    iodirective_head iodirective_list
+%type <AstIO *>                          key_value_pairs non_empty_key_value_pairs iodirective_body
+%type <std::vector<AstIO *>>             iodirective_list
+%type <std::vector<AstLoad *>>           load_head
+%type <std::vector<AstStore *>>          store_head
 %printer { yyoutput << $$; } <*>;
 
 %precedence AS
@@ -203,7 +205,7 @@
 %left STAR SLASH PERCENT
 %precedence BW_NOT L_NOT
 %precedence NEG
-%left CARET
+%right CARET
 
 %%
 %start program;
@@ -223,8 +225,11 @@ unit
   | unit relation_decl {
         for(const auto& cur : $2) driver.addRelation(std::unique_ptr<AstRelation>(cur));
     }
-  | unit iodirective_head {
-        for(const auto& cur : $2) driver.addIODirective(std::unique_ptr<AstIODirective>(cur));
+  | unit load_head {
+        for(const auto& cur : $2) driver.addLoad(std::unique_ptr<AstLoad>(cur));
+    }
+  | unit store_head {
+        for(const auto& cur : $2) driver.addStore(std::unique_ptr<AstStore>(cur));
     }
   | unit fact {
         driver.addClause(std::unique_ptr<AstClause>($2));
@@ -446,7 +451,7 @@ relation_body
 
 non_empty_key_value_pairs
   : IDENT EQUALS STRING {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->addKVP($1, $3);
     }
   | key_value_pairs COMMA IDENT EQUALS STRING {
@@ -454,7 +459,7 @@ non_empty_key_value_pairs
         $$->addKVP($3, $5);
     }
   | IDENT EQUALS IDENT {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->addKVP($1, $3);
     }
   | key_value_pairs COMMA IDENT EQUALS IDENT {
@@ -462,7 +467,7 @@ non_empty_key_value_pairs
         $$->addKVP($3, $5);
     }
   | IDENT EQUALS TRUE {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->addKVP($1, "true");
     }
   | key_value_pairs COMMA IDENT EQUALS TRUE {
@@ -470,7 +475,7 @@ non_empty_key_value_pairs
         $$->addKVP($3, "true");
     }
   | IDENT EQUALS FALSE {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->addKVP($1, "false");
     }
   | key_value_pairs COMMA IDENT EQUALS FALSE {
@@ -483,22 +488,29 @@ key_value_pairs
         $$ = $1;
     }
   | %empty {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->setSrcLoc(@$);
     }
 
-iodirective_head
+load_head
   : INPUT_DECL iodirective_list {
-      $$.swap($2);
-      for (auto& cur : $$) cur->setAsInput();
+      for (auto* cur : $2) {
+          $$.push_back(new AstLoad(*cur));
+          delete cur;
+      }
     }
-  | OUTPUT_DECL iodirective_list {
-      $$.swap($2);
-      for (auto& cur : $$) cur->setAsOutput();
+store_head
+  : OUTPUT_DECL iodirective_list {
+      for (auto* cur : $2) {
+          $$.push_back(new AstStore(*cur));
+          delete cur;
+      }
     }
   | PRINTSIZE_DECL iodirective_list {
-      $$.swap($2);
-      for (auto& cur : $$) cur->setAsPrintSize();
+      for (auto* cur : $2) {
+          $$.push_back(new AstPrintSize(*cur));
+          delete cur;
+      }
     }
 
 iodirective_list
@@ -521,7 +533,7 @@ iodirective_body
         delete $1;
     }
   | rel_id {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->setName(*$1);
         $$->setSrcLoc(@1);
         delete $1;
@@ -1050,9 +1062,13 @@ component_body
         $$ = $1;
         for(const auto& cur : $2) $$->addRelation(std::unique_ptr<AstRelation>(cur));
     }
-  | component_body iodirective_head {
+  | component_body load_head {
         $$ = $1;
-        for(const auto& cur : $2) $$->addIODirective(std::unique_ptr<AstIODirective>(cur));
+        for(const auto& cur : $2) $$->addLoad(std::unique_ptr<AstLoad>(cur));
+    }
+  | component_body store_head {
+        $$ = $1;
+        for(const auto& cur : $2) $$->addStore(std::unique_ptr<AstStore>(cur));
     }
   | component_body fact {
         $$ = $1;

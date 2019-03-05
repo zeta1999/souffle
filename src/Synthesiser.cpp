@@ -20,15 +20,18 @@
 #include "Global.h"
 #include "IODirectives.h"
 #include "IndexSetAnalysis.h"
-#include "LogStatement.h"
 #include "RamCondition.h"
+#include "RamExistenceCheckAnalysis.h"
+#include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
+#include "RamProvenanceExistenceCheckAnalysis.h"
 #include "RamRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamValue.h"
 #include "RamVisitor.h"
+#include "RelationRepresentation.h"
 #include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
@@ -39,7 +42,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -174,9 +176,9 @@ std::set<RamRelationReference> Synthesiser::getReferencedRelations(const RamOper
             res.insert(scan->getRelation());
         } else if (auto agg = dynamic_cast<const RamAggregate*>(&node)) {
             res.insert(agg->getRelation());
-        } else if (auto exists = dynamic_cast<const RamExists*>(&node)) {
+        } else if (auto exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
             res.insert(exists->getRelation());
-        } else if (auto provExists = dynamic_cast<const RamProvenanceExists*>(&node)) {
+        } else if (auto provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
             res.insert(provExists->getRelation());
         } else if (auto project = dynamic_cast<const RamProject*>(&node)) {
             res.insert(project->getRelation());
@@ -189,6 +191,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     class CodeEmitter : public RamVisitor<void, std::ostream&> {
     private:
         Synthesiser& synthesiser;
+        RamExistenceCheckAnalysis* existCheckAnalysis;
+        RamProvenanceExistenceCheckAnalysis* provExistCheckAnalysis;
+        RamIndexScanKeysAnalysis* keysAnalysis;
 
 // macros to add comments to generated code for debugging
 #ifndef PRINT_BEGIN_COMMENT
@@ -206,7 +211,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         std::function<void(std::ostream&, const RamNode*)> rec;
 
     public:
-        CodeEmitter(Synthesiser& syn) : synthesiser(syn) {
+        CodeEmitter(Synthesiser& syn)
+                : synthesiser(syn),
+                  existCheckAnalysis(syn.getTranslationUnit().getAnalysis<RamExistenceCheckAnalysis>()),
+                  provExistCheckAnalysis(
+                          syn.getTranslationUnit().getAnalysis<RamProvenanceExistenceCheckAnalysis>()),
+                  keysAnalysis(syn.getTranslationUnit().getAnalysis<RamIndexScanKeysAnalysis>()) {
             rec = [&](std::ostream& out, const RamNode* node) { this->visit(*node, out); };
         }
 
@@ -324,8 +334,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // check whether loop nest can be parallelized
             bool parallel = false;
             if (const auto* scan = dynamic_cast<const RamScan*>(&insert.getOperation())) {
-                parallel = scan->getIdentifier() == 0 && !scan->getRelation().isNullary() &&
-                           !scan->isPureExistenceCheck();
+                parallel = scan->getIdentifier() == 0 && !scan->getRelation().isNullary();
                 if (parallel) {
                     const auto& rel = scan->getRelation();
                     const auto& relName = synthesiser.getRelationName(rel);
@@ -336,7 +345,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << "PARALLEL_START;\n";
                 }
             } else if (const auto* scan = dynamic_cast<const RamIndexScan*>(&insert.getOperation())) {
-                parallel = scan->getIdentifier() == 0 && !scan->isPureExistenceCheck();
+                parallel = scan->getIdentifier() == 0;
                 if (parallel) {
                     const auto& rel = scan->getRelation();
                     const auto& relName = synthesiser.getRelationName(rel);
@@ -360,7 +369,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     };
 
                     // get index to be queried
-                    auto keys = scan->getRangeQueryColumns();
+                    auto keys = keysAnalysis->getRangeQueryColumns(scan);
 
                     out << "const Tuple<RamDomain," << arity << "> key({{";
                     printKeyTuple();
@@ -434,19 +443,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << synthesiser.getRelationName(drop.getRelation()) << "->"
                 << "purge();\n";
 
-            PRINT_END_COMMENT(out);
-        }
-
-        void visitPrintSize(const RamPrintSize& print, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            out << "if (performIO) {\n";
-            out << "{ auto lease = getOutputLock().acquire(); \n";
-            out << "(void)lease;\n";
-            out << "std::cout << R\"(" << print.getMessage() << ")\" <<  ";
-            out << synthesiser.getRelationName(print.getRelation()) << "->"
-                << "size() << std::endl;\n";
-            out << "}";
-            out << "}\n";
             PRINT_END_COMMENT(out);
         }
 
@@ -575,14 +571,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitNestedOperation(const RamNestedOperation& nested, std::ostream& out) override {
             visit(nested.getOperation(), out);
+            if (Global::config().has("profile") && !nested.getProfileText().empty()) {
+                out << "freqs[" << synthesiser.lookupFreqIdx(nested.getProfileText()) << "]++;\n";
+            }
         }
 
         void visitSearch(const RamSearch& search, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             visitNestedOperation(search, out);
-            if (Global::config().has("profile") && !search.getProfileText().empty()) {
-                out << "freqs[" << synthesiser.lookupFreqIdx(search.getProfileText()) << "]++;\n";
-            }
             PRINT_END_COMMENT(out);
         }
 
@@ -590,8 +586,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             auto identifier = scan.getIdentifier();
 
-            const bool parallel =
-                    identifier == 0 && !scan.getRelation().isNullary() && !scan.isPureExistenceCheck();
+            const bool parallel = identifier == 0 && !scan.getRelation().isNullary();
 
             // get relation name
             const auto& rel = scan.getRelation();
@@ -610,7 +605,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             });
 
             // if this search is a full scan
-            if (scan.isPureExistenceCheck() || scan.getRelation().isNullary()) {
+            if (scan.getRelation().isNullary()) {
                 out << "if(!" << relName << "->"
                     << "empty()) {\n";
                 visitSearch(scan, out);
@@ -648,14 +643,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto identifier = scan.getIdentifier();
 
-            const bool parallel = identifier == 0 && !scan.isPureExistenceCheck();
+            const bool parallel = identifier == 0;
 
             // check list of keys
             auto arity = rel.getArity();
             const auto& rangePattern = scan.getRangePattern();
 
             // get index to be queried
-            auto keys = scan.getRangeQueryColumns();
+            auto keys = keysAnalysis->getRangeQueryColumns(&scan);
 
             // a lambda for printing boundary key values
             auto printKeyTuple = [&]() {
@@ -713,16 +708,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "}});\n";
             out << "auto range = " << relName << "->"
                 << "equalRange_" << keys << "(key," << ctxName << ");\n";
-            if (scan.isPureExistenceCheck()) {
-                out << "if(!range.empty()) {\n";
-                visitSearch(scan, out);
-                out << "}\n";
-            } else {
-                out << "for(const auto& env" << identifier << " : range) {\n";
-                out << nullaryStopStmt;
-                visitSearch(scan, out);
-                out << "}\n";
-            }
+            out << "for(const auto& env" << identifier << " : range) {\n";
+            out << nullaryStopStmt;
+            visitSearch(scan, out);
+            out << "}\n";
             PRINT_END_COMMENT(out);
         }
 
@@ -917,46 +906,34 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     << join(project.getValues(), "),static_cast<RamDomain>(", rec) << ")}});\n";
             }
 
-            // check filter
-            if (project.hasFilter()) {
-                auto relFilter = synthesiser.getRelationName(project.getFilter());
-                auto ctxFilter = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(project.getFilter()) + ")";
-                out << "if (!" << relFilter << ".contains(tuple," << ctxFilter << ")) {";
-            }
-
             // insert tuple
             out << relName << "->"
                 << "insert(tuple," << ctxName << ");\n";
-
-            // end filter
-            if (project.hasFilter()) {
-                out << "}";
-            }
 
             PRINT_END_COMMENT(out);
         }
 
         // -- conditions --
 
-        void visitAnd(const RamAnd& c, std::ostream& out) override {
+        void visitConjunction(const RamConjunction& conj, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "((";
-            visit(c.getLHS(), out);
+            visit(conj.getLHS(), out);
             out << ") && (";
-            visit(c.getRHS(), out);
+            visit(conj.getRHS(), out);
             out << "))";
             PRINT_END_COMMENT(out);
         }
 
-        void visitNot(const RamNot& c, std::ostream& out) override {
+        void visitNegation(const RamNegation& neg, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "!(";
-            visit(c.getOperand(), out);
+            visit(neg.getOperand(), out);
             out << ")";
             PRINT_END_COMMENT(out);
         }
 
-        void visitBinaryRelation(const RamBinaryRelation& rel, std::ostream& out) override {
+        void visitConstraint(const RamConstraint& rel, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             switch (rel.getOperator()) {
                 // comparison operators
@@ -1043,14 +1020,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitEmpty(const RamEmpty& empty, std::ostream& out) override {
+        void visitEmptinessCheck(const RamEmptinessCheck& emptiness, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << synthesiser.getRelationName(empty.getRelation()) << "->"
+            out << synthesiser.getRelationName(emptiness.getRelation()) << "->"
                 << "empty()";
             PRINT_END_COMMENT(out);
         }
 
-        void visitExists(const RamExists& exists, std::ostream& out) override {
+        void visitExistenceCheck(const RamExistenceCheck& exists, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // get some details
             const auto& rel = exists.getRelation();
@@ -1064,7 +1041,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // if it is total we use the contains function
-            if (exists.isTotal()) {
+            if (existCheckAnalysis->isTotal(&exists)) {
                 out << relName << "->"
                     << "contains(Tuple<RamDomain," << arity << ">({{" << join(exists.getValues(), ",", rec)
                     << "}})," << ctxName << ")" << after;
@@ -1075,7 +1052,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // else we conduct a range query
             out << "!" << relName << "->"
                 << "equalRange";
-            out << "_" << exists.getKey();
+            out << "_" << existCheckAnalysis->getKey(&exists);
             out << "(Tuple<RamDomain," << arity << ">({{";
             out << join(exists.getValues(), ",", [&](std::ostream& out, RamValue* value) {
                 if (!value) {
@@ -1088,7 +1065,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitProvenanceExists(const RamProvenanceExists& provExists, std::ostream& out) override {
+        void visitProvenanceExistenceCheck(
+                const RamProvenanceExistenceCheck& provExists, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // get some details
             const auto& rel = provExists.getRelation();
@@ -1101,7 +1079,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "auto existenceCheck = " << relName << "->"
                 << "equalRange";
             // out << synthesiser.toIndex(ne.getKey());
-            out << "_" << provExists.getKey();
+            out << "_" << provExistCheckAnalysis->getKey(&provExists);
             out << "(Tuple<RamDomain," << arity << ">({{";
             for (size_t i = 0; i < provExists.getValues().size() - 1; i++) {
                 RamValue* val = provExists.getValues()[i];
@@ -1365,8 +1343,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitPack(const RamPack& pack, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "pack("
-                << "ram::Tuple<RamDomain," << pack.getValues().size() << ">({"
-                << join(pack.getValues(), ",", rec) << "})"
+                << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">({"
+                << join(pack.getArguments(), ",", rec) << "})"
                 << ")";
             PRINT_END_COMMENT(out);
         }
@@ -1476,14 +1454,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     CodeEmitter(*this).visit(stmt, out);
 }
 
-void Synthesiser::generateCode(
-        const RamTranslationUnit& unit, std::ostream& os, const std::string& id, bool& withSharedLibrary) {
+void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& withSharedLibrary) {
     // ---------------------------------------------------------------
     //                      Auto-Index Generation
     // ---------------------------------------------------------------
-    const SymbolTable& symTable = unit.getSymbolTable();
-    const RamProgram& prog = unit.getP();
-    auto* idxAnalysis = unit.getAnalysis<IndexSetAnalysis>();
+    const SymbolTable& symTable = translationUnit.getSymbolTable();
+    const RamProgram& prog = translationUnit.getP();
+    auto* idxAnalysis = translationUnit.getAnalysis<IndexSetAnalysis>();
 
     // ---------------------------------------------------------------
     //                      Code Generation
@@ -1588,7 +1565,7 @@ void Synthesiser::generateCode(
     os << "   RamDomain result=0; \n";
     os << "   try { result = stord(str); } catch(...) { \n";
     os << "     std::cerr << \"error: wrong string provided by to_number(\\\"\";\n";
-    os << "     std::cerr << str << \"\\\") ";
+    os << R"(     std::cerr << str << "\") )";
     os << "functor.\\n\";\n";
     os << "     raise(SIGFPE);\n";
     os << "   } return result;\n";
@@ -1655,6 +1632,12 @@ void Synthesiser::generateCode(
     std::string registerRel;  // registration of relations
     int relCtr = 0;
     std::string tempType;  // string to hold the type of the temporary relations
+    std::set<std::string> storeRelations;
+    std::set<std::string> loadRelations;
+    visitDepthFirst(*(prog.getMain()),
+            [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
+    visitDepthFirst(*(prog.getMain()),
+            [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
     visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
         // get some table details
         const auto& rel = create.getRelation();
@@ -1675,14 +1658,12 @@ void Synthesiser::generateCode(
         os << "// -- Table: " << raw_name << "\n";
 
         os << "std::unique_ptr<" << type << "> " << name << " = std::make_unique<" << type << ">();\n";
-        if ((rel.isInput() || rel.isComputed() || Global::config().has("provenance")) && !rel.isTemp()) {
+        if (!rel.isTemp()) {
             os << "souffle::RelationWrapper<";
             os << relCtr++ << ",";
             os << type << ",";
             os << "Tuple<RamDomain," << arity << ">,";
-            os << arity << ",";
-            os << (rel.isInput() ? "true" : "false") << ",";
-            os << (rel.isComputed() ? "true" : "false");
+            os << arity;
             os << "> wrapper_" << name << ";\n";
 
             // construct types
@@ -1708,8 +1689,11 @@ void Synthesiser::generateCode(
             }
             initCons += "\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
                         tupleType + "," + tupleName + ")";
-            registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + "," +
-                           std::to_string(rel.isInput()) + "," + std::to_string(rel.isOutput()) + ");\n";
+            registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + ",";
+            registerRel += (loadRelations.count(rel.getName()) > 0) ? "true" : "false";
+            registerRel += ",";
+            registerRel += (storeRelations.count(rel.getName()) > 0) ? "true" : "false";
+            registerRel += ");\n";
         }
     });
 
@@ -1902,13 +1886,6 @@ void Synthesiser::generateCode(
 
                 os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
             }
-        } else if (auto print = dynamic_cast<const RamPrintSize*>(&node)) {
-            os << "{ auto lease = getOutputLock().acquire(); \n";
-            os << "(void)lease;\n";
-            os << "std::cout << R\"(" << print->getMessage() << ")\" <<  ";
-            os << getRelationName(print->getRelation()) << "->"
-               << "size() << std::endl;\n";
-            os << "}";
         }
     });
     os << "}\n";  // end of printAll() method

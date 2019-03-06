@@ -92,10 +92,6 @@ public:
  * i.e. t <: T, where t is a type variable and T is a type constant.
  */
 class FixedConstraint : public TypeConstraint {
-private:
-    const AstArgument* argument;
-    const AnalysisType* imposedType;
-
 public:
     FixedConstraint(const AstArgument* argument, const AnalysisType* imposedType)
             : argument(argument), imposedType(imposedType) {}
@@ -126,6 +122,10 @@ public:
     void print(std::ostream& os) const override {
         os << "type(" << *argument << ") <: " << *imposedType;
     }
+
+private:
+    const AstArgument* argument;
+    const AnalysisType* imposedType;
 };
 
 /**
@@ -133,10 +133,6 @@ public:
  * i.e. t1 <: t2, where t1 and t2 are type variables.
  */
 class VarConstraint : public TypeConstraint {
-private:
-    const AstArgument* left;
-    const AstArgument* right;
-
 public:
     VarConstraint(const AstArgument* left, const AstArgument* right) : left(left), right(right) {}
     VarConstraint(const VarConstraint& other) = default;
@@ -166,6 +162,10 @@ public:
     void print(std::ostream& os) const override {
         os << "type(" << *left << ") <: type(" << *right << ")";
     }
+
+private:
+    const AstArgument* left;
+    const AstArgument* right;
 };
 
 /**
@@ -173,12 +173,6 @@ public:
  * i.e. t <: t1 U t2, where t, t1, and t2 are type variables.
  */
 class UnionConstraint : public TypeConstraint {
-private:
-    // TODO: change to a vector of bounds instead
-    const AstArgument* argument;
-    const AstArgument* firstBound;
-    const AstArgument* secondBound;
-
 public:
     UnionConstraint(
             const AstArgument* argument, const AstArgument* firstBound, const AstArgument* secondBound)
@@ -214,6 +208,12 @@ public:
     void print(std::ostream& os) const override {
         os << "type(" << *argument << ") <: (type(" << *firstBound << ") ∪ type(" << *secondBound << "))";
     }
+
+private:
+    // TODO: change to a vector of bounds instead
+    const AstArgument* argument;
+    const AstArgument* firstBound;
+    const AstArgument* secondBound;
 };
 
 /**
@@ -222,10 +222,6 @@ public:
  */
 // TODO: look more at this
 class ImplicationConstraint : public TypeConstraint {
-private:
-    std::vector<FixedConstraint> requirements{};
-    FixedConstraint result;
-
 public:
     ImplicationConstraint(const AstArgument* variable, const AnalysisType* bound) : result(variable, bound) {}
     ImplicationConstraint(const ImplicationConstraint& other) = default;
@@ -261,16 +257,18 @@ public:
     void print(std::ostream& os) const override {
         os << "(" << join(requirements) << ") -> (" << result << ")";
     }
+
+private:
+    std::vector<FixedConstraint> requirements{};
+    FixedConstraint result;
 };
 
-class TypeConstraints {
-    // TODO: mvoe private to bottom
-private:
-    std::vector<FixedConstraint> fixedCons{};
-    std::vector<VarConstraint> varCons{};
-    std::vector<UnionConstraint> unionCons{};
-    std::vector<ImplicationConstraint> implCons{};
+// TODO: mvoe private to bottom in all of these
 
+// TODO: move some to header file
+
+/** A collection of type constraints */
+class TypeConstraints {
 public:
     // TODO: spacing out and commening
     TypeConstraints() = default;
@@ -300,7 +298,9 @@ public:
         implCons.insert(implCons.end(), other.implCons.begin(), other.implCons.end());
     }
 
-    std::vector<const TypeConstraint*> getAll() const {
+    // TODO: why is it pointers here
+    std::vector<const TypeConstraint*> getConstraints() const {
+        // TODO: change to sets
         std::vector<const TypeConstraint*> all;
         for (const FixedConstraint& con : fixedCons) {
             all.push_back(&con);
@@ -318,7 +318,8 @@ public:
     }
 
     void print(std::ostream& os) const {
-        for (const TypeConstraint* con : getAll()) {
+        // TODO: why is this like this
+        for (const TypeConstraint* con : getConstraints()) {
             os << "      " << *con << std::endl;
         }
     }
@@ -328,6 +329,7 @@ public:
         return out;
     }
 
+    // TODO: comment
     TypeSolution solve(TypeLattice& lattice, std::set<const AstArgument*> arguments) const {
         TypeSolution currentSol;
         for (const AstArgument* arg : arguments) {
@@ -350,21 +352,24 @@ public:
             }
         } while (oldSol != currentSol);
 
-        for (const TypeConstraint* con : getAll()) {
+        for (const TypeConstraint* con : getConstraints()) {
             assert(con->isSatisfied(oldSol, lattice) && "All constraints are satisified");
         }
 
         return oldSol;
     }
+
+private:
+    // TODO: pointers?
+    // TODO: change to sets
+    std::vector<FixedConstraint> fixedCons{};
+    std::vector<VarConstraint> varCons{};
+    std::vector<UnionConstraint> unionCons{};
+    std::vector<ImplicationConstraint> implCons{};
 };
 
 // TODO: comment this what is this
 class ConstraintFinder : public AstVisitor<TypeConstraints> {
-private:
-    const TypeLattice& lattice;
-    std::map<std::string, const AstVariable*>& variables;
-    const AstProgram& program;
-
 public:
     ConstraintFinder(const TypeLattice& lattice, std::map<std::string, const AstVariable*>& variables,
             const AstProgram& program)
@@ -526,18 +531,25 @@ public:
 
     TypeConstraints visitClause(const AstClause& clause) {
         TypeConstraints cons;
+
         // Get constraints from body atoms only
         for (const AstLiteral* literal : clause.getBodyLiterals()) {
             cons.addAll(visit(*literal));
         }
+
         // Get constraints generated by children of the head, not the head itself
+        // TODO: why this
         cons.addAll(visitNode(*clause.getHead()));
         return cons;
     }
+
+private:
+    const TypeLattice& lattice;
+    std::map<std::string, const AstVariable*>& variables;
+    const AstProgram& program;
 };
 
 // TODO: move some to be static methods?
-
 TypeConstraints getConstraints(const TypeLattice& lattice,
         std::map<std::string, const AstVariable*>& variables, const AstClause& clause,
         const AstProgram& program) {

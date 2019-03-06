@@ -617,60 +617,75 @@ void TypeAnalysis::print(std::ostream& os) const {
     }
 }
 
-// TODO: merge with bottom one
+// TODO: documentation
+// TODO: get rid of this somehow?
+bool TypeAnalysis::isValidClause(const AstProgram& program, const AstClause* clause) {
+    bool valid = true;
+
+    // -- check atoms --
+    visitDepthFirst(*clause, [&](const AstAtom& atom) {
+        auto* rel = program.getRelation(atom.getName());
+        if (rel == nullptr) {
+            // undefined relation
+            valid = false;
+        } else if (rel->getArity() != atom.getArity()) {
+            // non-matching arity
+            valid = false;
+        } else {
+            // all attributes should have defined types
+            for (const AstAttribute* attribute : rel->getAttributes()) {
+                if (attribute->getTypeName() == "symbol" || attribute->getTypeName() == "number") {
+                    // TODO: can i get rid of this?
+                    // base-type; valid
+                    continue;
+                }
+
+                if (program.getType(attribute->getTypeName()) == nullptr) {
+                    valid = false;
+                    break;
+                }
+            }
+        }
+    });
+
+    // -- check user-defined functors --
+    visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
+        AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+        if (funDecl == nullptr) {
+            valid = false;
+        } else if (funDecl->getArgCount() != fun.getArgCount()) {
+            valid = false;
+        }
+    });
+
+    // -- check records --
+    visitDepthFirst(*clause, [&](const AstRecordInit& record) {
+        const auto* recordType = dynamic_cast<const AstRecordType*>(program.getType(record.getType()));
+        if (recordType == nullptr) {
+            valid = false;
+        } else if (record.getArguments().size() != recordType->getFields().size()) {
+            valid = false;
+        }
+    });
+
+    // -- check typecasts --
+    visitDepthFirst(*clause, [&](const AstTypeCast& cast) {
+        if (cast.getType() == "symbol" || cast.getType() == "number") {
+            return;
+        }
+
+        if (program.getType(cast.getType()) == nullptr) {
+            valid = false;
+        }
+    });
+
+    return valid;
+}
+
 bool TypeAnalysis::hasInvalidClauses(const AstProgram& program) {
     for (const AstRelation* rel : program.getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {
-            // TODO (azreika [olligobber]) : fix this up
-            bool skipClause = false;
-            visitDepthFirst(*clause, [&](const AstAtom& atom) {
-                auto* relDecl = program.getRelation(atom.getName());
-                if (relDecl == nullptr) {
-                    skipClause = true;
-                } else if (relDecl->getArity() != atom.getArity()) {
-                    skipClause = true;
-                } else {
-                    for (const AstAttribute* attribute : relDecl->getAttributes()) {
-                        if (attribute->getTypeName() == "symbol" || attribute->getTypeName() == "number") {
-                            continue;
-                        }
-                        if (program.getType(attribute->getTypeName()) == nullptr) {
-                            skipClause = true;
-                            break;
-                        }
-                    }
-                }
-            });
-
-            visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
-                AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-                if (funDecl == nullptr) {
-                    skipClause = true;
-                } else if (funDecl->getArgCount() != fun.getArgCount()) {
-                    skipClause = true;
-                }
-            });
-
-            visitDepthFirst(*clause, [&](const AstRecordInit& record) {
-                const auto* recordType =
-                        dynamic_cast<const AstRecordType*>(program.getType(record.getType()));
-                if (recordType == nullptr) {
-                    skipClause = true;
-                } else if (record.getArguments().size() != recordType->getFields().size()) {
-                    skipClause = true;
-                }
-            });
-
-            visitDepthFirst(*clause, [&](const AstTypeCast& cast) {
-                if (cast.getType() == "symbol" || cast.getType() == "number") {
-                    return;
-                }
-                if (program.getType(cast.getType()) == nullptr) {
-                    skipClause = true;
-                }
-            });
-
-            if (skipClause) {
+            if (!isValidClause(program, clause)) {
                 return true;
             }
         }
@@ -682,56 +697,7 @@ std::vector<const AstClause*> TypeAnalysis::getValidClauses(const AstProgram& pr
     std::vector<const AstClause*> valid;
     for (const AstRelation* rel : program.getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {
-            // TODO (azreika [olligobber]) : fix this up
-            bool skipClause = false;
-            visitDepthFirst(*clause, [&](const AstAtom& atom) {
-                auto* relDecl = program.getRelation(atom.getName());
-                if (relDecl == nullptr) {
-                    skipClause = true;
-                } else if (relDecl->getArity() != atom.getArity()) {
-                    skipClause = true;
-                } else {
-                    for (const AstAttribute* attribute : relDecl->getAttributes()) {
-                        if (attribute->getTypeName() == "symbol" || attribute->getTypeName() == "number") {
-                            continue;
-                        }
-                        if (program.getType(attribute->getTypeName()) == nullptr) {
-                            skipClause = true;
-                            break;
-                        }
-                    }
-                }
-            });
-
-            visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
-                AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-                if (funDecl == nullptr) {
-                    skipClause = true;
-                } else if (funDecl->getArgCount() != fun.getArgCount()) {
-                    skipClause = true;
-                }
-            });
-
-            visitDepthFirst(*clause, [&](const AstRecordInit& record) {
-                const auto* recordType =
-                        dynamic_cast<const AstRecordType*>(program.getType(record.getType()));
-                if (recordType == nullptr) {
-                    skipClause = true;
-                } else if (record.getArguments().size() != recordType->getFields().size()) {
-                    skipClause = true;
-                }
-            });
-
-            visitDepthFirst(*clause, [&](const AstTypeCast& cast) {
-                if (cast.getType() == "symbol" || cast.getType() == "number") {
-                    return;
-                }
-                if (program.getType(cast.getType()) == nullptr) {
-                    skipClause = true;
-                }
-            });
-
-            if (!skipClause) {
+            if (isValidClause(program, clause)) {
                 valid.push_back(clause);
             }
         }

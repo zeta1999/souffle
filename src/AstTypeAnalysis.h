@@ -67,6 +67,9 @@ public:
         return lattice;
     }
 
+    // Check if the clause can be typechecked within the given program
+    static bool isValidClause(const AstProgram& program, const AstClause* clause);
+
     // Check if any clauses could not be typechecked
     static bool hasInvalidClauses(const AstProgram& program);
 

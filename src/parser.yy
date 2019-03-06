@@ -229,19 +229,19 @@ unit
         driver.addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration>($2));
     }
   | unit relation_decl {
-        for(auto* cur : $2) {
+        for (auto* cur : $2) {
             driver.addRelation(std::unique_ptr<AstRelation>(cur));
         }
         $2.clear();
     }
   | unit load_head {
-        for(auto* cur : $2) {
+        for (auto* cur : $2) {
             driver.addLoad(std::unique_ptr<AstLoad>(cur));
         }
         $2.clear();
     }
   | unit store_head {
-        for(auto* cur : $2) {
+        for (auto* cur : $2) {
             driver.addStore(std::unique_ptr<AstStore>(cur));
         }
         $2.clear();
@@ -250,7 +250,7 @@ unit
         driver.addClause(std::unique_ptr<AstClause>($2));
     }
   | unit rule {
-        for(auto* cur : $2) {
+        for (auto* cur : $2) {
             driver.addClause(std::unique_ptr<AstClause>(cur));
         }
         $2.clear();
@@ -720,7 +720,7 @@ arg
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
         }
-        for(const auto& cur : bodies[0]->getBodyLiterals()) {
+        for (const auto& cur : bodies[0]->getBodyLiterals()) {
             res->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
         delete bodies[0];
@@ -742,7 +742,7 @@ arg
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
         }
-        for(const auto& cur : bodies[0]->getBodyLiterals()) {
+        for (const auto& cur : bodies[0]->getBodyLiterals()) {
 	    res->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
         delete bodies[0];
@@ -764,7 +764,7 @@ arg
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
         }
-        for(const auto& cur : bodies[0]->getBodyLiterals()) {
+        for (const auto& cur : bodies[0]->getBodyLiterals()) {
             res->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
         delete bodies[0];
@@ -786,7 +786,7 @@ arg
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
         }
-        for(const auto& cur : bodies[0]->getBodyLiterals()) {
+        for (const auto& cur : bodies[0]->getBodyLiterals()) {
             res->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
         delete bodies[0];
@@ -1015,7 +1015,7 @@ rule_def
                 $$.push_back(cur);
             }
         }
-        for(auto* head : $1) {
+        for (auto* head : $1) {
             delete head;
         }
         $1.clear();
@@ -1032,11 +1032,11 @@ rule
     }
   | rule STRICT {
         std::swap($$, $1);
-        for(auto* cur : $$) cur->setFixedExecutionPlan();
+        for (auto* cur : $$) cur->setFixedExecutionPlan();
     }
   | rule exec_plan {
         std::swap($$, $1);
-        for(auto* cur : $$) cur->setExecutionPlan(std::unique_ptr<AstExecutionPlan>($2->clone()));
+        for (auto* cur : $$) cur->setExecutionPlan(std::unique_ptr<AstExecutionPlan>($2->clone()));
         delete $2;
     }
 
@@ -1089,21 +1089,21 @@ component_body
     }
   | component_body relation_decl {
         $$ = $1;
-        for(auto* cur : $2) {
+        for (auto* cur : $2) {
             $$->addRelation(std::unique_ptr<AstRelation>(cur));
         }
         $2.clear();
     }
   | component_body load_head {
         $$ = $1;
-        for(auto* cur : $2) {
+        for (auto* cur : $2) {
             $$->addLoad(std::unique_ptr<AstLoad>(cur));
         }
         $2.clear();
     }
   | component_body store_head {
         $$ = $1;
-        for(auto* cur : $2) {
+        for (auto* cur : $2) {
             $$->addStore(std::unique_ptr<AstStore>(cur));
         }
         $2.clear();
@@ -1114,7 +1114,7 @@ component_body
     }
   | component_body rule {
         $$ = $1;
-        for(auto* cur : $2) {
+        for (auto* cur : $2) {
             $$->addClause(std::unique_ptr<AstClause>(cur));
         }
         $2.clear();

@@ -4,10 +4,8 @@
 
 namespace souffle {
 
-// TODO: refs etc., double check everything
-
 const AnalysisType* TypeLattice::meet(const AnalysisType* lhs, const AnalysisType* rhs) {
-    // A ^ B = A if A <= B
+    // A ^ B = A if A <: B
     if (isSubtype(lhs, rhs)) {
         return lhs;
     }
@@ -73,7 +71,7 @@ const AnalysisType* TypeLattice::meet(const AnalysisType* lhs, const AnalysisTyp
 }
 
 const AnalysisType* TypeLattice::join(const AnalysisType* lhs, const AnalysisType* rhs) {
-    // A ^ B = B if A <= B
+    // A v B = B if A <: B
     if (isSubtype(lhs, rhs)) {
         return rhs;
     }
@@ -133,7 +131,7 @@ const AnalysisType* TypeLattice::join(const AnalysisType* lhs, const AnalysisTyp
 }
 
 bool TypeLattice::isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) const {
-    // t <= t
+    // t <: t
     if (lhs == rhs) {
         return true;
     }

@@ -18,7 +18,7 @@ public:
 
     // -- validity --
 
-    // checks that the type is not any form of top or botom type
+    // checks that the type is not any form of top or bottom type
     virtual bool isValidType() const = 0;
 
     // -- operators --
@@ -130,7 +130,7 @@ public:
     }
 
     bool isValidType() const override {
-        return false;
+        return (kind != Kind::RECORD);
     }
 
     void print(std::ostream& out) const override {
@@ -142,7 +142,7 @@ public:
                 out << "number";
                 break;
             case Kind::RECORD:
-                out << "record";
+                out << "any record";
                 break;
         }
     }

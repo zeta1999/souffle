@@ -1,4 +1,5 @@
 #include "AnalysisType.h"
+#include "Util.h"
 
 namespace souffle {
 

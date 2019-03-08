@@ -30,7 +30,7 @@ set -e
 set -x
 
 # set up brew script
-for f in *.pkg
+for f in *.tar.gz
 do
   if [ ! -e "$f" ];
   then

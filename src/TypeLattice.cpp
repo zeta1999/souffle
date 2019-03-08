@@ -1,366 +1,236 @@
 #include "TypeLattice.h"
-#include "AstType.h"
-#include "TypeSystem.h"
-#include "Util.h"
-#include <deque>
-#include <map>
-#include <set>
-#include <sstream>
-#include <vector>
+#include "AnalysisType.h"
+#include <cassert>
 
 namespace souffle {
 
-const PrimitiveAType* InnerAType::getPrimitive() const {
-    return lattice->getPrimitive(this->getKind());
-}
+// TODO: refs etc., double check everything
 
-const ConstantAType* InnerAType::getConstant() const {
-    return lattice->getConstant(this->getKind());
-}
+const AnalysisType TypeLattice::meet(const AnalysisType lhs, const AnalysisType rhs) {
+    // A ^ B = A if A <= B
+    if (isSubtype(lhs, rhs)) {
+        return lhs;
+    }
+    if (isSubtype(rhs, lhs)) {
+        return rhs;
+    }
 
-UnionAType::UnionAType(const TypeLattice* lattice, std::set<const BaseAType*> bases)
-        : InnerAType(lattice), bases(bases) {
-    std::stringstream repr;
-    repr << join(bases, " | ", print_deref<const BaseAType*>());
-    representation = repr.str();
-    assert(!bases.empty() && "Empty union is not allowed");
-    assert(bases.size() > 1 && "Union with one element is just a base type");
-    Kind kind = (*bases.begin())->getKind();
-    for (const BaseAType* b : bases) {
-        assert(b->getKind() == kind && "All components of union must have the same type");
-    }
-}
+    // neither are top or bottom, so they are inner types
+    const auto* lhsInner = dynamic_cast<const InnerAnalysisType*>(&lhs);
+    const auto* rhsInner = dynamic_cast<const InnerAnalysisType*>(&rhs);
+    assert(lhsInner != nullptr && "unsupported analysis type");
+    assert(rhsInner != nullptr && "unsupported analysis type");
 
-UnionAType::UnionAType(const TypeLattice* lattice, std::set<const BaseAType*> bases, AstTypeIdentifier name)
-        : InnerAType(lattice), representation(toString(name)), bases(bases) {
-    assert(!bases.empty() && "Empty union is not allowed");
-    assert(bases.size() > 1 && "Union with one element is just a base type");
-    Kind kind = (*bases.begin())->getKind();
-    for (const BaseAType* b : bases) {
-        assert(b->getKind() == kind && "All components of union must have the same type");
+    // each kind has a separate sublattice
+    if (lhsInner->getKind() != rhsInner->getKind()) {
+        // lhs and rhs are in different sublattices
+        return BottomAnalysisType();
     }
-}
 
-void UnionAType::setName(AstTypeIdentifier name) {
-    representation = toString(name);
-}
+    // so both have the same kind
+    Kind kind = lhsInner->getKind();
 
-const AnalysisType* TypeLattice::meet(const AnalysisType* first, const AnalysisType* second) {
-    assert(first->lattice == this && "Type must be in this lattice");
-    assert(second->lattice == this && "Type must be in this lattice");
-    if (isSubtype(first, second)) {
-        return first;
-    }
-    if (isSubtype(second, first)) {
-        return second;
-    }
-    // Neither can be top or bottom, so they are inner types
-    const auto* firstInner = dynamic_cast<const InnerAType*>(first);
-    const auto* secondInner = dynamic_cast<const InnerAType*>(second);
-    assert(firstInner != nullptr && "Unsupported type");
-    assert(secondInner != nullptr && "Unsupported type");
-    if (firstInner->getKind() != secondInner->getKind()) {
-        // The types are in different sub-lattices
-        return &bot;
-    }
-    Kind kind = firstInner->getKind();
+    // records do not allow subtyping so they must be different records
     if (kind == Kind::RECORD) {
-        // They aren't subtypes, so they must be different records
-        return getBotPrim(kind);
+        return BottomPrimitiveAnalysisType(kind);
     }
-    if (dynamic_cast<const BaseAType*>(first) != nullptr ||
-            dynamic_cast<const BaseAType*>(second) != nullptr) {
-        // One is a base type, but they are not subtypes, and hence must be disjoint
-        return getBotPrim(kind);
+
+    if (dynamic_cast<const BaseAnalysisType*>(&lhs) != nullptr ||
+            dynamic_cast<const BaseAnalysisType*>(&rhs) != nullptr) {
+        // one is a base type, but they are not subtypes
+        // therefore, disjoint but same kind
+        return BottomPrimitiveAnalysisType(kind);
     }
-    // The only option is for both to be union types
-    const auto* firstUnion = dynamic_cast<const UnionAType*>(first);
-    const auto* secondUnion = dynamic_cast<const UnionAType*>(second);
-    assert(firstUnion != nullptr && "Unsupported type");
-    assert(secondUnion != nullptr && "Unsupported type");
-    std::set<const BaseAType*> intersection;
-    for (const BaseAType* base : firstUnion->getBases()) {
-        if (secondUnion->getBases().count(base) > 0) {
+
+    // neither is a subtype of the other, and they both have the same kind
+    // therefore, they are both union types
+    const auto* lhsUnion = dynamic_cast<const UnionAnalysisType*>(&lhs);
+    const auto* rhsUnion = dynamic_cast<const UnionAnalysisType*>(&rhs);
+    assert(lhsUnion != nullptr && "unsupported analysis type");
+    assert(rhsUnion != nullptr && "unsupported analysis type");
+
+    // A ^ B = the intersection of the base types
+    std::set<BaseAnalysisType> intersection;
+    for (const BaseAnalysisType& base : lhsUnion->getBaseTypes()) {
+        if (rhsUnion.find(base) != rhsUnion.end()) {
             intersection.insert(base);
         }
     }
+
     if (intersection.size() == 0) {
-        // Types are disjoint
-        return getBotPrim(kind);
+        // types are disjoint
+        return BottomPrimitiveAnalysisType(kind);
     }
+
     if (intersection.size() == 1) {
+        // intersection is a single base type
         return *intersection.begin();
     }
-    for (UnionAType& other : unions) {
-        if (other.getBases() == intersection) {
-            return &other;
-        }
-    }
-    unions.push_back(UnionAType(this, intersection));
-    return &unions.back();
+
+    // result is a union type
+    return UnionAnalysisType(intersection);
 }
 
-const AnalysisType* TypeLattice::join(const AnalysisType* first, const AnalysisType* second) {
-    assert(first->lattice == this && "Type must be in this lattice");
-    assert(second->lattice == this && "Type must be in this lattice");
-    if (isSubtype(first, second)) {
-        return second;
+const AnalysisType TypeLattice::join(const AnalysisType lhs, const AnalysisType rhs) {
+    // A ^ B = B if A <= B
+    if (isSubtype(lhs, rhs)) {
+        return rhs;
     }
-    if (isSubtype(second, first)) {
-        return first;
+    if (isSubtype(rhs, lhs)) {
+        return lhs;
     }
-    // Neither can be top or bottom, so they are inner types
-    const auto* firstInner = dynamic_cast<const InnerAType*>(first);
-    const auto* secondInner = dynamic_cast<const InnerAType*>(second);
-    assert(firstInner != nullptr && "Unsupported type");
-    assert(secondInner != nullptr && "Unsupported type");
-    if (firstInner->getKind() != secondInner->getKind()) {
-        // The types are in different sub-lattices
-        return &top;
+
+    // neither are top or bottom, so they are inner types
+    const auto* lhsInner = dynamic_cast<const InnerAnalysisType*>(&lhs);
+    const auto* rhsInner = dynamic_cast<const InnerAnalysisType*>(&rhs);
+    assert(lhsInner != nullptr && "unsupported analysis type");
+    assert(rhsInner != nullptr && "unsupported analysis type");
+
+    // each kind has a separate lattice
+    if (lhsInner->getKind() != rhsInner->getKind()) {
+        // lhs and rhs are in different sublattices
+        return TopAnalysisType();
     }
-    Kind kind = firstInner->getKind();
+
+    // so both have the same kind
+    Kind kind = lhsInner->getKind();
+
+    // records do not allow subtyping so they must be different records
     if (kind == Kind::RECORD) {
-        // They aren't subtypes, so they must be different records
-        return getPrimitive(kind);
+        return TopPrimitiveAnalysisType(kind);
     }
-    // The output must be some union type containing both inputs
-    std::set<const BaseAType*> contents;
-    if (dynamic_cast<const BaseAType*>(first) != nullptr) {
-        contents.insert(dynamic_cast<const BaseAType*>(first));
-    } else if (dynamic_cast<const UnionAType*>(first) != nullptr) {
-        contents = dynamic_cast<const UnionAType*>(first)->getBases();
-    } else {
-        assert(false && "Unsupported type");
-    }
-    if (dynamic_cast<const BaseAType*>(second) != nullptr) {
-        contents.insert(dynamic_cast<const BaseAType*>(second));
-    } else if (dynamic_cast<const UnionAType*>(second) != nullptr) {
-        for (const BaseAType* base : dynamic_cast<const UnionAType*>(second)->getBases()) {
+
+    // therefore must be distinct union or base types
+    std::set<const BaseAnalysisType> contents;
+
+    // take care of lhs
+    if (auto* bat = dynamic_cast<const BaseAnalysisType*>(&lhs)) {
+        contents.insert(*bat);
+    } else if (auto* uat = dynamic_cast<const UnionAnalysisType*>(&lhs)) {
+        for (const BaseAnalysisType& base : uat->getBases()) {
             contents.insert(base);
         }
     } else {
-        assert(false && "Unsupported type");
+        assert(false && "unsupported analysis type");
     }
-    assert(contents.size() > 1 && "Union of non-equal non-empty sets somehow has less than 2 elements");
-    for (UnionAType& other : unions) {
-        if (other.getBases() == contents) {
-            return &other;
+
+    // take care of rhs
+    if (auto* bat = dynamic_cast<const BaseAnalysisType*>(&rhs)) {
+        contents.insert(*bat);
+    } else if (auto* uat = dynamic_cast<const UnionAnalysisType*>(&rhs)) {
+        for (const BaseAnalysisType& base : uat->getBases()) {
+            contents.insert(base);
         }
+    } else {
+        assert(false && "unsupported analysis type");
     }
-    unions.push_back(UnionAType(this, contents));
-    return &unions.back();
+
+    // check that the universe isn't broken
+    assert(contents.size() > 1 && "union of distinct non-empty sets somehow has less than two elements");
+
+    return UnionAnalysisType(contents);
 }
 
-bool TypeLattice::isSubtype(const AnalysisType* first, const AnalysisType* second) const {
-    assert(first->lattice == this && "Type must be in this lattice");
-    assert(second->lattice == this && "Type must be in this lattice");
-    if (first == second) {
-        // Most subtype checks fall into this case
+bool TypeLattice::isSubtype(const AnalysisType& lhs, const AnalysisType& rhs) const {
+    // t <= t
+    if (lhs == rhs) {
         return true;
     }
-    if (dynamic_cast<const TopAType*>(second) != nullptr) {
-        // Everything is a subtype of top
+
+    // all types are a subtype of top
+    if (dynamic_cast<const TopAnalysisType*>(&rhs) != nullptr) {
         return true;
     }
-    if (dynamic_cast<const TopAType*>(first) != nullptr) {
-        // Everything else is not a supertype of top
+
+    // top is not a subtype of any t != top
+    if (dynamic_cast<const TopAnalysisType*>(&lhs) != nullptr) {
         return false;
     }
-    if (dynamic_cast<const BotAType*>(first) != nullptr) {
-        // Everything is a supertype of bottom
+
+    // bottom is a subtype of all types
+    if (dynamic_cast<const BottomAnalysisType*>(&lhs) != nullptr) {
         return true;
     }
-    if (dynamic_cast<const BotAType*>(second) != nullptr) {
-        // Everything else is not a subtype of bottom
+
+    // bottom is not a subtype of any t != bottom
+    if (dynamic_cast<const BottomAnalysisType*>(&rhs) != nullptr) {
         return false;
     }
-    // Neither are top/bottom, so they are both inner types
-    const auto* firstInner = dynamic_cast<const InnerAType*>(first);
-    const auto* secondInner = dynamic_cast<const InnerAType*>(second);
-    assert(firstInner != nullptr && "Unsupported type");
-    assert(secondInner != nullptr && "Unsupported type");
-    if (firstInner->getKind() != secondInner->getKind()) {
-        // The types are unrelated
+
+    // not top or bottom, so both types are different inner types
+    const auto* lhsInner = dynamic_cast<const InnerAnalysisType&>(first);
+    const auto* rhsInner = dynamic_cast<const InnerAnalysisType&>(second);
+    assert(lhsInner != nullptr && "unsupported analysis type");
+    assert(rhsInner != nullptr && "unsupported analysis type");
+
+    // must have the same kind
+    if (lhsInner->getKind() != rhsInner->getKind()) {
         return false;
     }
-    // Now we know both types are in the same sub-lattice
-    if (dynamic_cast<const PrimitiveAType*>(second) != nullptr) {
-        // Everything is a subtype of top
+
+    // so lhs and rhs are different inner types in the same sublattice!
+
+    // primitive types are the top of every sublattice
+    if (dynamic_cast<const TopPrimitiveAnalysisType*>(&rhs) != nullptr) {
         return true;
     }
-    if (dynamic_cast<const PrimitiveAType*>(first) != nullptr) {
-        // Everything else is not a supertype of top
+    if (dynamic_cast<const TopPrimitiveAnalysisType*>(&lhs) != nullptr) {
         return false;
     }
-    if (dynamic_cast<const ConstantAType*>(first) != nullptr) {
-        // Everything is a supertype of bottom
+
+    // constant types are the bottom of every sublattice
+    if (dynamic_cast<const ConstantAnalysisType*>(&lhs) != nullptr) {
         return true;
     }
-    if (dynamic_cast<const ConstantAType*>(second) != nullptr) {
-        // Everything else is not a subtype of bottom
+    if (dynamic_cast<const ConstantAnalysisType*>(&rhs) != nullptr) {
         return false;
     }
-    if (dynamic_cast<const BotPrimAType*>(first) != nullptr) {
-        // Everything else is a supertype of the second bottom
+
+    // every non-constant is a supertype of the bottom primitive type
+    if (dynamic_cast<const BottomPrimitiveAnalysisType*>(&lhs) != nullptr) {
         return true;
     }
-    if (dynamic_cast<const BotPrimAType*>(second) != nullptr) {
-        // Everything else is not a subtype of the second bottom
+    if (dynamic_cast<const BottomPrimitiveAnalysisType*>(&rhs) != nullptr) {
         return false;
     }
-    if (firstInner->getKind() == Kind::RECORD) {
-        // Record subtyping is not supported for types other than top/bottom/constant
+
+    // therefore must be distinct union or base types!
+    if (lhsInner->getKind() == Kind::RECORD) {
+        // records cannot have unions, so must be distinct base record types
         return false;
     }
-    if (dynamic_cast<const BaseAType*>(second) != nullptr) {
-        // The other type cannot be this base type or lower
+
+    // the only remaining subtype of a base type is the base type itself
+    // but the two types are distinct
+    if (dynamic_cast<const BaseAnalysisType*>(&rhs) != nullptr) {
         return false;
     }
-    // The only remaining possibility for the second type is to be a union type
-    const auto* secondUnion = dynamic_cast<const UnionAType*>(second);
-    assert(secondUnion != nullptr && "Unsupported type");
-    const std::set<const BaseAType*>& secondBases = secondUnion->getBases();
-    if (dynamic_cast<const BaseAType*>(first) != nullptr) {
-        // Check if the base type is in the union
-        return secondBases.count(dynamic_cast<const BaseAType*>(first)) > 0;
+
+    // rhs must now be a union type
+    const auto* rhsUnion = dynamic_cast<const UnionAnalysisType*>(&rhs);
+    assert(rhsUnion != nullptr && "unsupported analysis type");
+
+    // unions are a collection of base types
+    const std::set<const BaseAnalysisType>& rhsBaseTypes = rhsUnion->getBaseTypes();
+
+    if (const auto* lhsBaseType = dynamic_cast<const BaseAnalysisType*>(&lhs)) {
+        // check if the base type is in the union
+        return rhsBaseTypes.find(lhsBaseType) != rhsBaseTypes.end();
     }
-    // The only remaining possibility for the first type is to be a union type
-    const auto* firstUnion = dynamic_cast<const UnionAType*>(first);
-    assert(firstUnion != nullptr && "Unsupported type");
-    // Check if the sets of base types are subsets
-    for (const BaseAType* base : firstUnion->getBases()) {
-        if (secondBases.count(base) == 0) {
+
+    // lhs must be a union as well
+    const auto* lhsUnion = dynamic_cast<const UnionAnalysisType*>(&lhs);
+    assert(lhsUnion != nullptr && "unsupported analysis type");
+
+    // lhs base types must all be in the rhs
+    for (const BaseAnalysisType& base : lhsUnion->getBaseTypes()) {
+        if (rhsBaseTypes.find(lhsBaseType) == rhsBaseTypes.end()) {
             return false;
         }
     }
+
+    // therefore, lhs = rhs
     return true;
-}
-
-const InnerAType* TypeLattice::addType(const Type* type) {
-    assert(env->isType(*type) && "Type must be in environment");
-    if (aliases.count(type->getName()) == 0) {
-        if (dynamic_cast<const PrimitiveType*>(type) != nullptr) {
-            auto* baseType = dynamic_cast<const PrimitiveType*>(type);
-            Kind kind;
-            if (baseType->getBaseType().getName() == "symbol") {
-                kind = Kind::SYMBOL;
-            } else if (baseType->getBaseType().getName() == "number") {
-                kind = Kind::NUMBER;
-            } else {
-                assert(false && "Unsupported primitive type");
-            }
-            bases.push_back(BaseAType(this, kind, AstTypeIdentifier(type->getName())));
-            aliases[type->getName()] = &bases.back();
-        } else if (dynamic_cast<const RecordType*>(type) != nullptr) {
-            // Add the record now to avoid infinite recursion
-            records.push_back(RecordAType(this, type->getName()));
-            RecordAType& thisRecord = records.back();
-            aliases[type->getName()] = &thisRecord;
-            // Now add fields recursively
-            auto* recordType = dynamic_cast<const RecordType*>(type);
-            for (RecordType::Field field : recordType->getFields()) {
-                thisRecord.addField(addType(&field.type));
-            }
-        } else if (dynamic_cast<const UnionType*>(type) != nullptr) {
-            auto* unionType = dynamic_cast<const UnionType*>(type);
-            std::set<const BaseAType*> memberTypes;
-            bool isPrimitive = false;
-            Kind kind;
-            if (unionType->getElementTypes().size() <= 0) {
-                this->valid = false;
-                return nullptr;
-            }
-            assert(!unionType->getElementTypes().empty() && "Union type cannot be empty");
-            for (const Type* memberType : unionType->getElementTypes()) {
-                const InnerAType* memberAType = addType(memberType);
-                if (dynamic_cast<const PrimitiveAType*>(memberAType) != nullptr) {
-                    if (isPrimitive && kind != memberAType->getKind()) {
-                        this->valid = false;
-                        return nullptr;
-                    } else if (!isPrimitive) {
-                        isPrimitive = true;
-                        kind = memberAType->getKind();
-                        aliases[type->getName()] = &primitives.find(memberAType->getKind())->second;
-                    }
-                } else if (dynamic_cast<const UnionAType*>(memberAType) != nullptr) {
-                    for (const BaseAType* memberBaseType :
-                            dynamic_cast<const UnionAType*>(memberAType)->getBases()) {
-                        memberTypes.insert(memberBaseType);
-                    }
-                } else if (dynamic_cast<const BaseAType*>(memberAType) != nullptr) {
-                    memberTypes.insert(dynamic_cast<const BaseAType*>(memberAType));
-                } else {
-                    assert(!this->isValid() && "Unsupported member type");
-                }
-            }
-            if (!isPrimitive) {
-                kind = (*memberTypes.begin())->getKind();
-            }
-            for (const BaseAType* base : memberTypes) {
-                if (base->getKind() != kind) {
-                    this->valid = false;
-                    isPrimitive = true;
-                    return nullptr;
-                }
-            }
-            if (!isPrimitive) {
-                if (memberTypes.size() == 1) {
-                    aliases[type->getName()] = *memberTypes.begin();
-                } else if (memberTypes.size() > 1) {
-                    bool inLattice = false;
-                    for (UnionAType other : unions) {
-                        if (memberTypes == other.getBases()) {
-                            inLattice = true;
-                            aliases[type->getName()] = &other;
-                        }
-                    }
-                    if (!inLattice) {
-                        unions.push_back(UnionAType(this, memberTypes, type->getName()));
-                        aliases[type->getName()] = &unions.back();
-                    }
-                } else {
-                    assert(!this->isValid() && "Invalid union");
-                }
-            }
-        } else {
-            assert(false && "Unsupported type");
-        }
-    }
-    return aliases[type->getName()];
-}
-
-TypeLattice::TypeLattice(const TypeEnvironment* env) : valid(true), env(env), top(this), bot(this) {
-    for (Kind kind : {Kind::NUMBER, Kind::SYMBOL, Kind::RECORD}) {
-        primitives.insert(std::pair<Kind, PrimitiveAType>(kind, PrimitiveAType(this, kind)));
-        constants.insert(std::pair<Kind, ConstantAType>(kind, ConstantAType(this, kind)));
-        botprims.insert(std::pair<Kind, BotPrimAType>(kind, BotPrimAType(this, kind)));
-    }
-    aliases["number"] = &primitives.find(Kind::NUMBER)->second;
-    aliases["symbol"] = &primitives.find(Kind::SYMBOL)->second;
-    for (const Type& type : env->getAllTypes()) {
-        addType(&type);
-    }
-}
-
-void TypeLattice::setEnvironment(const TypeEnvironment* env) {
-    assert(this->env == nullptr && "Cannot have existing environment");
-    this->valid = true;
-    this->env = env;
-    for (Kind kind : {Kind::NUMBER, Kind::SYMBOL, Kind::RECORD}) {
-        primitives.insert(std::pair<Kind, PrimitiveAType>(kind, PrimitiveAType(this, kind)));
-        constants.insert(std::pair<Kind, ConstantAType>(kind, ConstantAType(this, kind)));
-        botprims.insert(std::pair<Kind, BotPrimAType>(kind, BotPrimAType(this, kind)));
-    }
-    aliases["number"] = &primitives.find(Kind::NUMBER)->second;
-    aliases["symbol"] = &primitives.find(Kind::SYMBOL)->second;
-    for (const Type& type : env->getAllTypes()) {
-        addType(&type);
-    }
-}
-
-const InnerAType* TypeLattice::getType(const Type& type) const {
-    assert(env->isType(type) && "Type must be in environment");
-    return getType(type.getName());
 }
 
 }  // namespace souffle

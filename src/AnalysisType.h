@@ -1,0 +1,303 @@
+#pragma once
+
+#include "AstType.h"
+#include <sstream>
+#include <cassert>
+
+namespace souffle {
+
+enum class Kind { SYMBOL, NUMBER, RECORD };
+
+class AnalysisType {
+public:
+    // -- constructors --
+
+    AnalysisType() = default;
+    AnalysisType(const AnalysisType&) = default;
+    AnalysisType(AnalysisType&&) = default;
+
+    // -- validity --
+
+    // checks that the type is not any form of top or botom type
+    virtual bool isValidType() const = 0;
+
+    // -- operators --
+
+    AnalysisType& operator=(const AnalysisType&) = default;
+    AnalysisType& operator=(AnalysisType&&) = default;
+
+    virtual bool operator==(const AnalysisType& other) const {
+        return this == &other || (typeid(*this) == typeid(other) && equal(other));
+    };
+
+    bool operator!=(const AnalysisType& other) const {
+        return !(*this == other);
+    }
+
+    // -- printing --
+
+    virtual void print(std::ostream& out) const = 0;
+
+    friend std::ostream& operator<<(std::ostream& out, const AnalysisType& type) {
+        type.print(out);
+        return out;
+    }
+
+protected:
+    virtual bool equal(const AnalysisType& other) const = 0;
+};
+
+// top element of the lattice
+class TopAnalysisType : public AnalysisType {
+public:
+    bool isValidType() const override {
+        return false;
+    }
+
+    void print(std::ostream& out) const override {
+        out << "top type";
+    }
+
+protected:
+    bool equal(const AnalysisType& type) const override {
+        // all top types are equivalent
+        assert(dynamic_cast<const TopAnalysisType*>(&type) != nullptr);
+        return true;
+    }
+};
+
+// bottom element of the lattice
+class BottomAnalysisType : public AnalysisType {
+public:
+    bool isValidType() const override {
+        return false;
+    }
+
+    void print(std::ostream& out) const override {
+        out << "bottom type";
+    }
+
+protected:
+    bool equal(const AnalysisType& type) const override {
+        // all bottom types are equivalent
+        assert(dynamic_cast<const BottomAnalysisType*>(&type) != nullptr);
+        return true;
+    }
+};
+
+// element of the lattice that is neither the top element nor the bottom element
+class InnerAnalysisType : public AnalysisType {
+public:
+    InnerAnalysisType() = default;
+
+    // each inner type belongs to a separate sublattice, depending on the kind
+    virtual Kind getKind() const = 0;
+};
+
+// top primitives in the lattice, just below the top element
+class TopPrimitiveAnalysisType : public InnerAnalysisType {
+public:
+    TopPrimitiveAnalysisType(Kind kind) : kind(kind) {}
+
+    Kind getKind() const override {
+        return kind;
+    }
+
+    bool isValidType() const override {
+        return false;
+    }
+
+    void print(std::ostream& out) const override {
+        switch (kind) {
+            case Kind::SYMBOL:
+                out << "symbol";
+                break;
+            case Kind::NUMBER:
+                out << "number";
+                break;
+            case Kind::RECORD:
+                out << "record";
+                break;
+        }
+    }
+
+protected:
+    bool equal(const AnalysisType& type) const override {
+        assert(dynamic_cast<const TopPrimitiveAnalysisType*>(&type) != nullptr);
+        const auto& other = static_cast<const TopPrimitiveAnalysisType&>(type);
+        return kind == other.kind;
+    }
+
+private:
+    Kind kind;
+};
+
+// constant types in the lattice, just above the bottom element
+class ConstantAnalysisType : public InnerAnalysisType {
+public:
+    ConstantAnalysisType(Kind kind) : kind(kind) {}
+
+    Kind getKind() const override {
+        return kind;
+    }
+
+    bool isValidType() const override {
+        return true;
+    }
+
+    void print(std::ostream& out) const override {
+        switch (kind) {
+            case Kind::SYMBOL:
+                out << "symbol constant";
+                break;
+            case Kind::NUMBER:
+                out << "number constant";
+                break;
+            case Kind::RECORD:
+                out << "nil record";
+                break;
+        }
+    }
+
+protected:
+    bool equal(const AnalysisType& type) const override {
+        assert(dynamic_cast<const ConstantAnalysisType*>(&type) != nullptr);
+        const auto& other = static_cast<const ConstantAnalysisType&>(type);
+        return kind == other.kind;
+    }
+
+private:
+    Kind kind;
+};
+
+// bottom primitives in the lattice, just above their respective constant types
+class BottomPrimitiveAnalysisType : public InnerAnalysisType {
+public:
+    BottomPrimitiveAnalysisType(Kind kind) : kind(kind) {}
+
+    Kind getKind() const override {
+        return kind;
+    }
+
+    bool isValidType() const override {
+        return false;
+    }
+
+    void print(std::ostream& out) const override {
+        switch (kind) {
+            case Kind::SYMBOL:
+                out << "bottom symbol";
+                break;
+            case Kind::NUMBER:
+                out << "bottom number";
+                break;
+            case Kind::RECORD:
+                out << "bottom record";
+                break;
+        }
+    }
+
+protected:
+    bool equal(const AnalysisType& type) const override {
+        assert(dynamic_cast<const BottomPrimitiveAnalysisType*>(&type) != nullptr);
+        const auto& other = static_cast<const BottomPrimitiveAnalysisType&>(type);
+        return kind == other.kind;
+    }
+
+private:
+    Kind kind;
+};
+
+// base types in the lattice, sitting just above bottom primitives
+class BaseAnalysisType : public InnerAnalysisType {
+public:
+    BaseAnalysisType(Kind kind, AstTypeIdentifier name) : kind(kind), name(name) {}
+
+    Kind getKind() const override {
+        return kind;
+    }
+
+    bool isValidType() const override {
+        return true;
+    }
+
+    void print(std::ostream& out) const override {
+        out << name;
+    }
+
+protected:
+    bool equal(const AnalysisType& type) const override {
+        assert(dynamic_cast<const BaseAnalysisType*>(&type) != nullptr);
+        const auto& other = static_cast<const BaseAnalysisType&>(type);
+        return kind == other.kind && name == other.name;
+    }
+
+private:
+    Kind kind;
+    AstTypeIdentifier name;
+};
+
+// record base types, sitting just above the record bottom primitive
+class RecordAnalysisType : public BaseAnalysisType {
+public:
+    RecordAnalysisType(AstTypeIdentifier name) : BaseAnalysisType(Kind::RECORD, name) {}
+
+    void addField(const InnerAnalysisType& field) {
+        assert(field.isValidType() && "field must be valid type");
+        fields.push_back(field);
+    }
+
+    void print(std::ostream& out) const override {
+        out << name;
+    }
+
+protected:
+    bool equal(const AnalysisType& type) const override {
+        assert(dynamic_cast<const RecordAnalysisType*>(&type) != nullptr);
+        const auto& other = static_cast<const RecordAnalysisType&>(type);
+        return name == other.name && fields == other.fields;
+    }
+
+private:
+    AstTypeIdentifier name;
+    std::vector<const InnerAnalysisType> fields{};
+};
+
+// union types, sitting between base types and the top primitive types
+class UnionAnalysisType : public InnerAnalysisType {
+public:
+    UnionAnalysisType(std::set<const BaseAnalysisType> baseTypes);
+    UnionAnalysisType(std::set<const BaseAnalysisType> baseTypes, AstTypeIdentifier& name);
+
+    const std::set<const BaseAnalysisType>& getBaseTypes() const {
+        return baseTypes;
+    }
+
+    void setName(AstTypeIdentifier& name);
+
+    Kind getKind() const override {
+        return kind;
+    }
+
+    bool isValidType() const override {
+        return true;
+    }
+
+    void print(std::ostream& out) const override {
+        out << representation;
+    }
+
+protected:
+    bool equal(const AnalysisType& type) const override {
+        assert(dynamic_cast<const UnionAnalysisType*>(&type) != nullptr);
+        const auto& other = static_cast<const UnionAnalysisType&>(type);
+        return kind == other.kind && baseTypes == other.baseTypes;
+    }
+
+private:
+    Kind kind;
+    std::set<const BaseAnalysisType> baseTypes;
+    std::string representation;
+};
+
+} // namespace souffle

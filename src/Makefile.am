@@ -56,6 +56,7 @@ mpi_sources = Mpi.h
 endif
 
 souffle_sources = \
+              AnalysisType.cpp      AnalysisType.h      \
               AstAnalysis.h                             \
               AstArgument.cpp       AstArgument.h       \
               AstAttribute.h                            \

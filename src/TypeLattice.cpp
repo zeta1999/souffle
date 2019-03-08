@@ -106,7 +106,8 @@ const AnalysisType* TypeLattice::join(const AnalysisType* lhs, const AnalysisTyp
     if (auto* bat = dynamic_cast<const BaseAnalysisType*>(lhs)) {
         contents.insert(*bat);
     } else if (auto* uat = dynamic_cast<const UnionAnalysisType*>(lhs)) {
-        for (const BaseAnalysisType& base : uat->getBaseTypes()) {
+        for (const BaseAnalysisType base : uat->getBaseTypes()) {
+            // TODO: make sure this is a copy (and throughout)
             contents.insert(base);
         }
     } else {
@@ -117,7 +118,7 @@ const AnalysisType* TypeLattice::join(const AnalysisType* lhs, const AnalysisTyp
     if (auto* bat = dynamic_cast<const BaseAnalysisType*>(rhs)) {
         contents.insert(*bat);
     } else if (auto* uat = dynamic_cast<const UnionAnalysisType*>(rhs)) {
-        for (const BaseAnalysisType& base : uat->getBaseTypes()) {
+        for (const BaseAnalysisType base : uat->getBaseTypes()) {
             contents.insert(base);
         }
     } else {

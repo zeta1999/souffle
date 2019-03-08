@@ -13,18 +13,22 @@ UnionAnalysisType::UnionAnalysisType(std::set<BaseAnalysisType> baseTypes) : bas
 
     kind = (*baseTypes.begin()).getKind();
     assert(kind != Kind::RECORD && "record unions are not supported");
-    for (const BaseAnalysisType base : baseTypes) {
+    for (const auto& base : baseTypes) {
         assert(base.getKind() == kind && "all union components must have the same kind");
     }
 }
 
 UnionAnalysisType::UnionAnalysisType(std::set<BaseAnalysisType> baseTypes, AstTypeIdentifier& name)
         : UnionAnalysisType(baseTypes) {
-    representation = toString(name);
+    setName(name);
 }
 
 void UnionAnalysisType::setName(AstTypeIdentifier& name) {
     representation = toString(name);
+}
+
+void UnionAnalysisType::setName(std::string repr) {
+    representation = repr;
 }
 
 }  // namespace souffle

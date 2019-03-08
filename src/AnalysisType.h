@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AstType.h"
+#include "Util.h"
 #include <sstream>
 #include <cassert>
 
@@ -61,7 +62,7 @@ public:
     }
 
     TopAnalysisType* clone() const override {
-        return new TopAnalysisType(*this);
+        return new TopAnalysisType();
     }
 
     void print(std::ostream& out) const override {
@@ -88,7 +89,7 @@ public:
     }
 
     BottomAnalysisType* clone() const override {
-        return new BottomAnalysisType(*this);
+        return new BottomAnalysisType();
     }
 
     void print(std::ostream& out) const override {
@@ -112,6 +113,8 @@ public:
 
     // each inner type belongs to a separate sublattice, depending on the kind
     virtual Kind getKind() const = 0;
+
+    virtual InnerAnalysisType* clone() const = 0;
 };
 
 // top primitives in the lattice, just below the top element
@@ -126,7 +129,7 @@ public:
     }
 
     TopPrimitiveAnalysisType* clone() const override {
-        return new TopPrimitiveAnalysisType(*this);
+        return new TopPrimitiveAnalysisType(kind);
     }
 
     bool isValidType() const override {
@@ -174,7 +177,7 @@ public:
     }
 
     ConstantAnalysisType* clone() const override {
-        return new ConstantAnalysisType(*this);
+        return new ConstantAnalysisType(kind);
     }
 
     void print(std::ostream& out) const override {
@@ -218,7 +221,7 @@ public:
     }
 
     BottomPrimitiveAnalysisType* clone() const override {
-        return new BottomPrimitiveAnalysisType(*this);
+        return new BottomPrimitiveAnalysisType(kind);
     }
 
     void print(std::ostream& out) const override {
@@ -258,11 +261,16 @@ public:
     }
 
     BaseAnalysisType* clone() const override {
-        return new BaseAnalysisType(*this);
+        return new BaseAnalysisType(kind, name);
     }
 
     bool isValidType() const override {
         return true;
+    }
+
+    // TODO: HMM implement for others?
+    bool operator<(const BaseAnalysisType& other) const {
+        return kind < other.kind && name < other.name;
     }
 
     void print(std::ostream& out) const override {
@@ -288,13 +296,17 @@ public:
     RecordAnalysisType(const RecordAnalysisType&) = default;
     RecordAnalysisType(RecordAnalysisType&&) = default;
 
-    void addField(const InnerAnalysisType& field) {
-        assert(field.isValidType() && "field must be valid type");
-        fields.emplace_back(field);
+    void addField(std::unique_ptr<InnerAnalysisType> field) {
+        assert(field->isValidType() && "field must be valid type");
+        fields.push_back(std::move(field));
     }
 
     RecordAnalysisType* clone() const override {
-        return new RecordAnalysisType(*this);
+        auto* clone = new RecordAnalysisType(name);
+        for (const auto& field : fields) {
+            clone->addField(std::unique_ptr<InnerAnalysisType>(field->clone()));
+        }
+        return clone;
     }
 
     void print(std::ostream& out) const override {
@@ -327,12 +339,16 @@ public:
 
     void setName(AstTypeIdentifier& name);
 
+    void setName(std::string name);
+
     Kind getKind() const override {
         return kind;
     }
 
     UnionAnalysisType* clone() const override {
-        return new UnionAnalysisType(*this);
+        auto* clone = new UnionAnalysisType(baseTypes);
+        clone->setName(representation);
+        return clone;
     }
 
     bool isValidType() const override {

@@ -39,7 +39,7 @@ then
 
 elif [ "$4" = osx ];
 then
-  FILES="[{\"includePattern\": \"deploy/(.*\.pkg)\", \"uploadPattern\": \"\$1\"}],"
+  FILES="[{\"includePattern\": \"./(.*\.tar.gz)\", \"uploadPattern\": \"\$1\"}],"
 
 else
   DIST=xenial,yakkety,zesty,artful,bionic

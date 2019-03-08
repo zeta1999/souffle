@@ -277,13 +277,13 @@ jobs:
         user: souffle-lang
         key: $BINTRAY_KEY
         on:
-          branch: master
+          tags: true
           repo: souffle-lang/souffle
       - provider: script
         skip-cleanup: true
         script: ".travis/osx/brew.sh $HOMEBREW_SOUFFLE_KEY"
         on:
-          branch: master
+          tags: true
           repo: souffle-lang/souffle
   # Generate doxygen html
   - stage: Packaging

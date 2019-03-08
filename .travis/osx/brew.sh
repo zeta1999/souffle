@@ -30,21 +30,23 @@ set -e
 set -x
 
 # set up brew script
-for f in *.pkg
+for f in *.tar.gz
 do
   if [ ! -e "$f" ];
   then
-    echo "No pkg files found"
+    echo "No tarballs found"
     exit 1
   fi
 
-  pkg=`basename $f .pkg`
+  pkg=`basename $f .tar.gz`
+  sha=$(sha256sum $f|sed 's/ .*$//')
+
   git clone git@github.com:souffle-lang/homebrew-souffle.git
-  cp .travis/osx/souffle.rb.template homebrew-souffle/Formula/souffle.rb
   cd homebrew-souffle/Formula
 
-  sed -i -e "s/FILENAME/$f/" souffle.rb
-  sed -i -e "s/SHA256/$(sha256sum ../../$f|sed 's/ .*$//')/" souffle.rb
+  sed -i -e "s/url \".*\"/url \"https:\/\/dl.bintray.com\/souffle-lang\/osx\/$f\"/" souffle.rb
+  sed -i -e "s/sha256 \".*\"/sha256 \"$sha\"/" souffle.rb
+
   git add souffle.rb
   git commit -m "Update to $pkg"
 

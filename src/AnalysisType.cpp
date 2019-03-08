@@ -2,7 +2,7 @@
 
 namespace souffle {
 
-UnionAnalysisType::UnionAnalysisType(std::set<const BaseAnalysisType> baseTypes) : baseTypes(baseTypes) {
+UnionAnalysisType::UnionAnalysisType(std::set<BaseAnalysisType> baseTypes) : baseTypes(baseTypes) {
     std::stringstream repr;
     repr << join(baseTypes, " | ");
     representation = repr.str();
@@ -17,8 +17,10 @@ UnionAnalysisType::UnionAnalysisType(std::set<const BaseAnalysisType> baseTypes)
     }
 }
 
-UnionAnalysisType::UnionAnalysisType(std::set<const BaseAnalysisType> baseTypes, AstTypeIdentifier& name)
-        : UnionAnalysisType(baseTypes), representation(toString(name)) {}
+UnionAnalysisType::UnionAnalysisType(std::set<BaseAnalysisType> baseTypes, AstTypeIdentifier& name)
+        : UnionAnalysisType(baseTypes) {
+    representation = toString(name);
+}
 
 void UnionAnalysisType::setName(AstTypeIdentifier& name) {
     representation = toString(name);

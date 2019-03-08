@@ -34,6 +34,8 @@ public:
         return !(*this == other);
     }
 
+    virtual AnalysisType* clone() const = 0;
+
     // -- printing --
 
     virtual void print(std::ostream& out) const = 0;
@@ -50,8 +52,16 @@ protected:
 // top element of the lattice
 class TopAnalysisType : public AnalysisType {
 public:
+    TopAnalysisType() = default;
+    TopAnalysisType(const TopAnalysisType&) = default;
+    TopAnalysisType(TopAnalysisType&&) = default;
+
     bool isValidType() const override {
         return false;
+    }
+
+    TopAnalysisType* clone() const override {
+        return new TopAnalysisType(*this);
     }
 
     void print(std::ostream& out) const override {
@@ -69,8 +79,16 @@ protected:
 // bottom element of the lattice
 class BottomAnalysisType : public AnalysisType {
 public:
+    BottomAnalysisType() = default;
+    BottomAnalysisType(const BottomAnalysisType&) = default;
+    BottomAnalysisType(BottomAnalysisType&&) = default;
+
     bool isValidType() const override {
         return false;
+    }
+
+    BottomAnalysisType* clone() const override {
+        return new BottomAnalysisType(*this);
     }
 
     void print(std::ostream& out) const override {
@@ -89,6 +107,8 @@ protected:
 class InnerAnalysisType : public AnalysisType {
 public:
     InnerAnalysisType() = default;
+    InnerAnalysisType(const InnerAnalysisType&) = default;
+    InnerAnalysisType(InnerAnalysisType&&) = default;
 
     // each inner type belongs to a separate sublattice, depending on the kind
     virtual Kind getKind() const = 0;
@@ -98,9 +118,15 @@ public:
 class TopPrimitiveAnalysisType : public InnerAnalysisType {
 public:
     TopPrimitiveAnalysisType(Kind kind) : kind(kind) {}
+    TopPrimitiveAnalysisType(const TopPrimitiveAnalysisType&) = default;
+    TopPrimitiveAnalysisType(TopPrimitiveAnalysisType&&) = default;
 
     Kind getKind() const override {
         return kind;
+    }
+
+    TopPrimitiveAnalysisType* clone() const override {
+        return new TopPrimitiveAnalysisType(*this);
     }
 
     bool isValidType() const override {
@@ -136,6 +162,8 @@ private:
 class ConstantAnalysisType : public InnerAnalysisType {
 public:
     ConstantAnalysisType(Kind kind) : kind(kind) {}
+    ConstantAnalysisType(const ConstantAnalysisType&) = default;
+    ConstantAnalysisType(ConstantAnalysisType&&) = default;
 
     Kind getKind() const override {
         return kind;
@@ -143,6 +171,10 @@ public:
 
     bool isValidType() const override {
         return true;
+    }
+
+    ConstantAnalysisType* clone() const override {
+        return new ConstantAnalysisType(*this);
     }
 
     void print(std::ostream& out) const override {
@@ -174,6 +206,8 @@ private:
 class BottomPrimitiveAnalysisType : public InnerAnalysisType {
 public:
     BottomPrimitiveAnalysisType(Kind kind) : kind(kind) {}
+    BottomPrimitiveAnalysisType(const BottomPrimitiveAnalysisType&) = default;
+    BottomPrimitiveAnalysisType(BottomPrimitiveAnalysisType&&) = default;
 
     Kind getKind() const override {
         return kind;
@@ -181,6 +215,10 @@ public:
 
     bool isValidType() const override {
         return false;
+    }
+
+    BottomPrimitiveAnalysisType* clone() const override {
+        return new BottomPrimitiveAnalysisType(*this);
     }
 
     void print(std::ostream& out) const override {
@@ -212,9 +250,15 @@ private:
 class BaseAnalysisType : public InnerAnalysisType {
 public:
     BaseAnalysisType(Kind kind, AstTypeIdentifier name) : kind(kind), name(name) {}
+    BaseAnalysisType(const BaseAnalysisType&) = default;
+    BaseAnalysisType(BaseAnalysisType&&) = default;
 
     Kind getKind() const override {
         return kind;
+    }
+
+    BaseAnalysisType* clone() const override {
+        return new BaseAnalysisType(*this);
     }
 
     bool isValidType() const override {
@@ -241,10 +285,16 @@ private:
 class RecordAnalysisType : public BaseAnalysisType {
 public:
     RecordAnalysisType(AstTypeIdentifier name) : BaseAnalysisType(Kind::RECORD, name) {}
+    RecordAnalysisType(const RecordAnalysisType&) = default;
+    RecordAnalysisType(RecordAnalysisType&&) = default;
 
     void addField(const InnerAnalysisType& field) {
         assert(field.isValidType() && "field must be valid type");
-        fields.push_back(field);
+        fields.emplace_back(field);
+    }
+
+    RecordAnalysisType* clone() const override {
+        return new RecordAnalysisType(*this);
     }
 
     void print(std::ostream& out) const override {
@@ -260,16 +310,18 @@ protected:
 
 private:
     AstTypeIdentifier name;
-    std::vector<const InnerAnalysisType> fields{};
+    std::vector<std::unique_ptr<InnerAnalysisType>> fields{};
 };
 
 // union types, sitting between base types and the top primitive types
 class UnionAnalysisType : public InnerAnalysisType {
 public:
-    UnionAnalysisType(std::set<const BaseAnalysisType> baseTypes);
-    UnionAnalysisType(std::set<const BaseAnalysisType> baseTypes, AstTypeIdentifier& name);
+    UnionAnalysisType(std::set<BaseAnalysisType> baseTypes);
+    UnionAnalysisType(std::set<BaseAnalysisType> baseTypes, AstTypeIdentifier& name);
+    UnionAnalysisType(const UnionAnalysisType&) = default;
+    UnionAnalysisType(UnionAnalysisType&&) = default;
 
-    const std::set<const BaseAnalysisType>& getBaseTypes() const {
+    const std::set<BaseAnalysisType>& getBaseTypes() const {
         return baseTypes;
     }
 
@@ -277,6 +329,10 @@ public:
 
     Kind getKind() const override {
         return kind;
+    }
+
+    UnionAnalysisType* clone() const override {
+        return new UnionAnalysisType(*this);
     }
 
     bool isValidType() const override {
@@ -296,7 +352,7 @@ protected:
 
 private:
     Kind kind;
-    std::set<const BaseAnalysisType> baseTypes;
+    std::set<BaseAnalysisType> baseTypes;
     std::string representation;
 };
 

@@ -518,8 +518,7 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
         const AstAtom& atom = static_cast<const AstAtom&>(*cur.getBodyLiterals()[0]);
         for (size_t pos = 0; pos < atom.getArguments().size(); ++pos) {
             if (const auto* var = dynamic_cast<const AstVariable*>(atom.getArgument(pos))) {
-                valueIndex.addVarReference(
-                        *var, aggLoc, (int)pos, std::move(translator.translateRelation(&atom)));
+                valueIndex.addVarReference(*var, aggLoc, (int)pos, translator.translateRelation(&atom));
             }
         };
 
@@ -686,11 +685,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             for (size_t pos = 0; pos < atom->argSize(); ++pos) {
                 if (auto* agg = dynamic_cast<AstAggregator*>(atom->getArgument(pos))) {
                     auto loc = valueIndex.getAggregatorLocation(*agg);
-                    op = std::make_unique<RamFilter>(
-                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                    std::make_unique<RamElementAccess>(
-                                            curLevel, pos, std::move(translator.translateRelation(atom))),
-                                    makeRamElementAccess(loc)),
+                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                                             std::make_unique<RamElementAccess>(curLevel, pos,
+                                                                     translator.translateRelation(atom)),
+                                                             makeRamElementAccess(loc)),
                             std::move(op));
                 }
             }
@@ -735,8 +733,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         for (size_t pos = 0; pos < atom->argSize(); ++pos) {
             if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
                 aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                        std::make_unique<RamElementAccess>(
-                                level, pos, std::move(translator.translateRelation(atom))),
+                        std::make_unique<RamElementAccess>(level, pos, translator.translateRelation(atom)),
                         std::make_unique<RamNumber>(c->getIndex())));
             } else if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {
                 // all other appearances
@@ -745,7 +742,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                         aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                 makeRamElementAccess(loc),
                                 std::make_unique<RamElementAccess>(
-                                        level, pos, std::move(translator.translateRelation(atom)))));
+                                        level, pos, translator.translateRelation(atom))));
                         break;
                     }
                 }
@@ -767,11 +764,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add constraints
             for (size_t pos = 0; pos < atom->argSize(); ++pos) {
                 if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
-                    op = std::make_unique<RamFilter>(
-                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                    std::make_unique<RamElementAccess>(
-                                            level, pos, std::move(translator.translateRelation(atom))),
-                                    std::make_unique<RamNumber>(c->getIndex())),
+                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                                             std::make_unique<RamElementAccess>(level, pos,
+                                                                     translator.translateRelation(atom)),
+                                                             std::make_unique<RamNumber>(c->getIndex())),
                             std::move(op));
                 }
             }

@@ -22,7 +22,9 @@ public:
     const AnalysisType* getStoredType(const AnalysisType& type);
 
 private:
+    // TODO: add a comparator here
+    // TODO: const?
     std::set<std::unique_ptr<AnalysisType>> storedTypes;
 };
 
-} // namespace souffle
+} // end of namespace souffle

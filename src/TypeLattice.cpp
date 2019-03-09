@@ -240,9 +240,9 @@ const AnalysisType* TypeLattice::getStoredType(const AnalysisType& type) {
         }
     }
 
-    const auto& newType = std::unique_ptr<AnalysisType>(type.clone());
+    auto newType = std::unique_ptr<AnalysisType>(type.clone());
     storedTypes.insert(std::move(newType));
     return newType.get();
 }
 
-}  // namespace souffle
+}  // end of namespace souffle

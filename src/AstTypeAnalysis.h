@@ -1,101 +1,54 @@
-/*
- * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
- * Licensed under the Universal Permissive License v 1.0 as shown at:
- * - https://opensource.org/licenses/UPL
- * - <souffle root>/licenses/SOUFFLE-UPL.txt
- */
-
-/************************************************************************
- *
- * @file AstTypeAnalysis.h
- *
- * A collection of type analyses operating on AST constructs.
- *
- ***********************************************************************/
-
 #pragma once
 
+#include "AnalysisType.h"
 #include "AstAnalysis.h"
-#include "AstTypeEnvironmentAnalysis.h"
 #include "TypeLattice.h"
-#include "TypeSystem.h"
-#include <cassert>
-#include <map>
-#include <memory>
 #include <ostream>
-#include <sstream>
-#include <utility>
-#include <vector>
 
 namespace souffle {
 
-// TODO: why all these forward declarations?
 class AstArgument;
-class AstClause;
-class AstProgram;
-class AstTranslationUnit;
-class AstVariable;
+
+class TypeSolution {
+public:
+    TypeSolution() = default;
+
+    /** Get the computed type for a given argument */
+    const AnalysisType* getType(const AstArgument* arg) const {
+        auto pos = typeMapping.find(arg);
+        assert(pos != typeMapping.end() && "argument does not have a type");
+        return pos->second;
+    }
+
+    void print(std::ostream& out) const;
+
+private:
+    std::map<const AstArgument*, const AnalysisType*> typeMapping;
+};
 
 class TypeAnalysis : public AstAnalysis {
 public:
-    TypeAnalysis() = default;
+    TypeAnalysis() : lattice(std::make_unique<TypeLattice>()), typeSolution(std::make_unique<TypeSolution>()) {}
 
     static constexpr const char* name = "type-analysis";
 
     void run(const AstTranslationUnit& translationUnit) override;
 
-    void print(std::ostream& os) const override;
+    void print(std::ostream& out) const override;
 
-    /**
-     * Get the computed type for the given argument.
-     */
-    const AnalysisType* getType(const AstArgument* argument) const {
-        assert(lattice.isValid() && "Cannot determine type without a valid lattice");
-        auto found = argumentTypes.find(argument);
-        assert(found != argumentTypes.end() && "Argument must have a type");
-        return found->second;
+    /** Get the computed type for the given argument */
+    const AnalysisType* getType(const AstArgument* arg) const {
+        return typeSolution->getType(arg);
     }
 
-    TypeLattice& getLattice() {
-        // TODO: why is there a non-const one?
-        return lattice;
+    /** Get the type lattice associated with the analysis */
+    TypeLattice* getLattice() const {
+        return lattice.get();
     }
-
-    const TypeLattice& getLattice() const {
-        return lattice;
-    }
-
-    // Check if the clause can be typechecked within the given program
-    static bool isValidClause(const AstProgram& program, const AstClause* clause);
-
-    // Check if any clauses could not be typechecked
-    static bool hasInvalidClauses(const AstProgram& program);
-
-    // Get clauses that can be typechecked
-    static std::vector<const AstClause*> getValidClauses(const AstProgram& program);
-
-    /**
-     * Analyse the given clause and computes for each contained argument a potential type. If the type is a
-     * bottom or top type, no consistent typing can be found and the rule can not be properly typed.
-     *
-     * @param lat a lattice containing available types
-     * @param clause the clause to be typed
-     * @param program the program the clause is contained in
-     * @param debugStream a pointer to the stream where debugging information should be printed
-     * @return a map mapping each contained argument to a type
-     */
-    static std::map<const AstArgument*, const AnalysisType*> analyseTypes(TypeLattice& lat,
-            const AstClause& clause, const AstProgram& program, std::ostream* debugStream = nullptr);
 
 private:
-    std::map<const AstArgument*, const AnalysisType*> argumentTypes{};
-    std::stringstream analysisLogs{};
-    TypeLattice lattice{};
-
-    // TODO: Vec<>* -> Vec<>&
-    static std::set<const AstArgument*> getArguments(
-            std::map<std::string, const AstVariable*>& variables, const AstClause& clause);
+    std::unique_ptr<TypeLattice> lattice;
+    std::unique_ptr<TypeSolution> typeSolution;
 };
 
-}  // end of namespace souffle
+} // end of namespace souffle

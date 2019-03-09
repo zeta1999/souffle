@@ -372,4 +372,4 @@ private:
     std::string representation;
 };
 
-} // namespace souffle
+} // end of namespace souffle

@@ -31,4 +31,4 @@ void UnionAnalysisType::setName(std::string repr) {
     representation = repr;
 }
 
-}  // namespace souffle
+}  // end of namespace souffle

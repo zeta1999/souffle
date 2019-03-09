@@ -5,6 +5,7 @@
 #include "AstArgument.h"
 #include "AstLiteral.h"
 #include "TypeLattice.h"
+#include "Util.h"
 #include <ostream>
 
 namespace souffle {
@@ -56,7 +57,7 @@ public:
     FixedConstraint& operator=(const FixedConstraint& other) = default;
 
     /** Updates the given type solution to satisfy the represented type constraint */
-    void resolve(TypeSolution* currentSolution) const override;
+    void resolve(TypeSolution*) const override;
 
     /** Checks if the given type solution satisfies the represented type constraint */
     bool isSatisfied(const TypeSolution*) const override;
@@ -90,16 +91,20 @@ public:
     VariableConstraint& operator=(const VariableConstraint& other) = default;
 
     /** Updates the given type solution to satisfy the represented type constraint */
-    void resolve(TypeSolution* currentSolution) const override;
+    void resolve(TypeSolution*) const override;
 
     /** Checks if the given type solution satisfies the represented type constraint */
     bool isSatisfied(const TypeSolution*) const override;
 
     /** Clone the type constraint */
-    VariableConstraint* clone() const override;
+    VariableConstraint* clone() const override {
+        return new VariableConstraint(lhs, rhs);
+    }
 
     /** Output to a given output stream */
-    void print(std::ostream& out) const override;
+    void print(std::ostream& out) const override {
+        out << "type(" << *lhs << ") <: type(" << *rhs << ")";
+    }
 
 protected:
     bool equal(const TypeConstraint& other) const override;
@@ -121,16 +126,20 @@ public:
     UnionConstraint& operator=(const UnionConstraint& other) = default;
 
     /** Updates the given type solution to satisfy the represented type constraint */
-    void resolve(TypeSolution* currentSolution) const override;
+    void resolve(TypeSolution*) const override;
 
     /** Checks if the given type solution satisfies the represented type constraint */
     bool isSatisfied(const TypeSolution*) const override;
 
     /** Clone the type constraint */
-    UnionConstraint* clone() const override;
+    UnionConstraint* clone() const override {
+        return new UnionConstraint(argument, firstBound, secondBound);
+    }
 
     /** Output to a given output stream */
-    void print(std::ostream& out) const override;
+    void print(std::ostream& out) const override {
+        out << "type(" << *argument << ") <: (type(" << *firstBound << ") ∪ type(" << *secondBound << "))";
+    }
 
 protected:
     bool equal(const TypeConstraint& other) const override;
@@ -148,7 +157,7 @@ private:
 class ImplicationConstraint : public TypeConstraint {
 public:
     // TODO: sort out the constructors
-    ImplicationConstraint(const AstArgument* variable, const AnalysisType* bound) : result(variable, bound) {}
+    ImplicationConstraint(const AstArgument* variable, const AnalysisType* bound) : consequent(variable, bound) {}
     ImplicationConstraint(const ImplicationConstraint& other) = default;
     ImplicationConstraint& operator=(const ImplicationConstraint& other) = default;
 
@@ -158,7 +167,7 @@ public:
     }
 
     /** Updates the given type solution to satisfy the represented type constraint */
-    void resolve(TypeSolution* currentSolution) const override;
+    void resolve(TypeSolution*) const override;
 
     /** Checks if the given type solution satisfies the represented type constraint */
     bool isSatisfied(const TypeSolution*) const override;
@@ -167,14 +176,16 @@ public:
     ImplicationConstraint* clone() const override;
 
     /** Output to a given output stream */
-    void print(std::ostream& out) const override;
+    void print(std::ostream& out) const override {
+        out << "(" << join(requirements) << ") -> (" << consequent << ")";
+    }
 
 protected:
     bool equal(const TypeConstraint& other) const override;
 
 private:
     std::vector<FixedConstraint> requirements{};
-    FixedConstraint result;
+    FixedConstraint consequent;
 };
 
 /** A container representng the current solution of a type analysis for each argument */
@@ -202,6 +213,11 @@ public:
     /** Checks if a type has been computed for the given argument */
     bool hasType(const AstArgument* arg) const {
         return typeMapping.find(arg) != typeMapping.end();
+    }
+
+    /** Resolves a given type constraint on the current solution environment */
+    void resolveConstraint(const TypeConstraint& cons) {
+        cons.resolve(this);
     }
 
     void print(std::ostream& out) const {

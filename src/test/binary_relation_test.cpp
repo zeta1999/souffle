@@ -382,7 +382,7 @@ TEST(EqRelTest, IterRange) {
     br.insert(8, 10);
 
     // this should return an iterator covering (3, 0), (3, 1), ..., (3, 6), it's a (3, *) iterator
-    auto rangeIt = br.getBoundaries<1>({3, 18293018});
+    auto rangeIt = br.getBoundaries<1>({{3, 18293018}});
 
     std::vector<size_t> posteriorsCovered;
     for (auto tup : rangeIt) {
@@ -391,7 +391,7 @@ TEST(EqRelTest, IterRange) {
     EXPECT_EQ(posteriorsCovered.size(), 7);
 
     // this should be of everything, so doesn't matter the args
-    rangeIt = br.getBoundaries<0>({332, 888});
+    rangeIt = br.getBoundaries<0>({{332, 888}});
     posteriorsCovered.clear();
     for (auto tup : rangeIt) {
         posteriorsCovered.push_back(tup[1]);
@@ -399,7 +399,7 @@ TEST(EqRelTest, IterRange) {
     EXPECT_EQ(posteriorsCovered.size(), (7 * 7) + (3 * 3));
 
     // and now iterate over two levels (exactly one pretty much)
-    rangeIt = br.getBoundaries<2>({2, 3});
+    rangeIt = br.getBoundaries<2>({{2, 3}});
     posteriorsCovered.clear();
     for (auto tup : rangeIt) {
         posteriorsCovered.push_back(tup[1]);
@@ -408,14 +408,14 @@ TEST(EqRelTest, IterRange) {
     EXPECT_EQ(posteriorsCovered.front(), 3);
 
     // and now the same, but for levels 1 and two, stuff that doesn't exist
-    rangeIt = br.getBoundaries<1>({99, 99});
+    rangeIt = br.getBoundaries<1>({{99, 99}});
     posteriorsCovered.clear();
     for (auto tup : rangeIt) {
         posteriorsCovered.push_back(tup[1]);
     }
     EXPECT_EQ(posteriorsCovered.size(), 0);
 
-    rangeIt = br.getBoundaries<2>({8, 1});
+    rangeIt = br.getBoundaries<2>({{8, 1}});
     posteriorsCovered.clear();
     for (auto tup : rangeIt) {
         posteriorsCovered.push_back(tup[1]);
@@ -426,7 +426,7 @@ TEST(EqRelTest, IterRange) {
     br.clear();
     // repeat the same, but notice that we expect the size to be 0 always
     {
-        auto rangeIt = br.getBoundaries<1>({3, 18293018});
+        auto rangeIt = br.getBoundaries<1>({{3, 18293018}});
 
         std::vector<size_t> posteriorsCovered;
         for (auto tup : rangeIt) {
@@ -435,7 +435,7 @@ TEST(EqRelTest, IterRange) {
         EXPECT_EQ(posteriorsCovered.size(), 0);
 
         // this should be of everything, so doesn't matter the args
-        rangeIt = br.getBoundaries<0>({332, 888});
+        rangeIt = br.getBoundaries<0>({{332, 888}});
         posteriorsCovered.clear();
         for (auto tup : rangeIt) {
             posteriorsCovered.push_back(tup[1]);
@@ -443,7 +443,7 @@ TEST(EqRelTest, IterRange) {
         EXPECT_EQ(posteriorsCovered.size(), 0);
 
         // and now iterate over two levels (exactly one pretty much)
-        rangeIt = br.getBoundaries<2>({2, 3});
+        rangeIt = br.getBoundaries<2>({{2, 3}});
         posteriorsCovered.clear();
         for (auto tup : rangeIt) {
             posteriorsCovered.push_back(tup[1]);
@@ -451,14 +451,14 @@ TEST(EqRelTest, IterRange) {
         EXPECT_EQ(posteriorsCovered.size(), 0);
 
         // and now the same, but for levels 1 and two, stuff that doesn't exist
-        rangeIt = br.getBoundaries<1>({99, 99});
+        rangeIt = br.getBoundaries<1>({{99, 99}});
         posteriorsCovered.clear();
         for (auto tup : rangeIt) {
             posteriorsCovered.push_back(tup[1]);
         }
         EXPECT_EQ(posteriorsCovered.size(), 0);
 
-        rangeIt = br.getBoundaries<2>({8, 1});
+        rangeIt = br.getBoundaries<2>({{8, 1}});
         posteriorsCovered.clear();
         for (auto tup : rangeIt) {
             posteriorsCovered.push_back(tup[1]);

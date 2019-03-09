@@ -73,7 +73,11 @@ public:
     }
 
 protected:
-    bool equal(const TypeConstraint& other) const override;
+    bool equal(const TypeConstraint& cons) const override {
+        assert(dynamic_cast<const FixedConstraint*>(&cons) != nullptr);
+        const auto& other = static_cast<const FixedConstraint&>(cons);
+        return argument == other.argument && *imposedType == *other.imposedType;
+    }
 
 private:
     const AstArgument* argument;
@@ -107,7 +111,11 @@ public:
     }
 
 protected:
-    bool equal(const TypeConstraint& other) const override;
+    bool equal(const TypeConstraint& cons) const override {
+        assert(dynamic_cast<const VariableConstraint*>(&cons) != nullptr);
+        const auto& other = static_cast<const VariableConstraint&>(cons);
+        return lhs == other.lhs && rhs == other.rhs;
+    }
 
 private:
     const AstArgument* lhs;
@@ -142,7 +150,11 @@ public:
     }
 
 protected:
-    bool equal(const TypeConstraint& other) const override;
+    bool equal(const TypeConstraint& cons) const override {
+        assert(dynamic_cast<const UnionConstraint*>(&cons) != nullptr);
+        const auto& other = static_cast<const UnionConstraint&>(cons);
+        return argument == other.argument && firstBound == other.firstBound && secondBound == other.secondBound;
+    }
 
 private:
     const AstArgument* argument;
@@ -181,7 +193,11 @@ public:
     }
 
 protected:
-    bool equal(const TypeConstraint& other) const override;
+    bool equal(const TypeConstraint& cons) const override {
+        assert(dynamic_cast<const ImplicationConstraint*>(&cons) != nullptr);
+        const auto& other = static_cast<const ImplicationConstraint&>(cons);
+        return requirements == other.requirements && consequent == other.consequent;
+    }
 
 private:
     std::vector<FixedConstraint> requirements{};

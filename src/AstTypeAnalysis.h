@@ -259,9 +259,9 @@ public:
         while (changed) {
             changed = false;
             for (const auto& cons : constraints) {
-                if (!cons.isSatisfied(this)) {
+                if (!cons->isSatisfied(this)) {
                     changed = true;
-                    cons.resolve(this);
+                    cons->resolve(this);
                 }
             }
         }

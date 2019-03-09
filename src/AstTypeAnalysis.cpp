@@ -93,7 +93,7 @@ void ImplicationConstraint::resolve(TypeSolution* currentSolution) const {
     }
 
     // not satisfied, so all must hold except the consequent - resolve it
-    currentSolution->resolveConstraint(consequent);
+    consequent.resolve(currentSolution);
     assert(isSatisfied(currentSolution) && "constraint resolution failed");
 }
 

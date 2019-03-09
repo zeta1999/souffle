@@ -204,10 +204,15 @@ private:
     FixedConstraint consequent;
 };
 
-/** A container representng the current solution of a type analysis for each argument */
+/**
+ * A container representing the solution of a type analysis for each argument,
+ * given a set of constraints.
+ **/
 class TypeSolution {
 public:
-    TypeSolution() : lattice(std::make_unique<TypeLattice>()) {}
+    TypeSolution(std::set<const AstArgument*> arguments, std::set<std::unique_ptr<TypeConstraint>> constraints) : lattice(std::make_unique<TypeLattice>()), constraints(std::move(constraints)), arguments(arguments) {
+        resolveAllConstraints();
+    }
 
     /** Get the type lattice associated with the type solution */
     TypeLattice* getLattice() const {
@@ -231,9 +236,31 @@ public:
         return typeMapping.find(arg) != typeMapping.end();
     }
 
-    /** Resolves a given type constraint on the current solution environment */
-    void resolveConstraint(const TypeConstraint& cons) {
-        cons.resolve(this);
+    /** Resolves all constraints until they are simultaneously satisfied */
+    void resolveAllConstraints() {
+        // restore everything to the top type
+        typeMapping.clear();
+        for (const auto* arg : arguments) {
+            typeMapping[arg] = lattice->getStoredType(TopAnalysisType());
+        }
+
+        // TODO: fixed constraints can be done outside the loop
+        // TODO: double check this is equivalent to the old one
+        // apply each constraint until all are satisfied (fixed point reached)
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (const auto& cons : constraints) {
+                if (!cons.isSatisfied(this)) {
+                    changed = true;
+                    cons.resolve(this);
+                }
+            }
+        }
+    }
+
+    std::set<TypeConstraint*> getConstraints() const {
+        return toPtrSet(constraints);
     }
 
     void print(std::ostream& out) const {
@@ -246,12 +273,14 @@ public:
 
 private:
     std::unique_ptr<TypeLattice> lattice;
+    std::set<std::unique_ptr<TypeConstraint>> constraints;
+    std::set<const AstArgument*> arguments;
     std::map<const AstArgument*, const AnalysisType*> typeMapping{};
 };
 
 class TypeAnalysis : public AstAnalysis {
 public:
-    TypeAnalysis() : typeSolution(std::make_unique<TypeSolution>()) {}
+    TypeAnalysis() = default;
 
     static constexpr const char* name = "type-analysis";
 

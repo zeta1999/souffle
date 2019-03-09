@@ -27,9 +27,9 @@ public:
     AnalysisType& operator=(const AnalysisType&) = default;
     AnalysisType& operator=(AnalysisType&&) = default;
 
-    virtual bool operator==(const AnalysisType& other) const {
+    bool operator==(const AnalysisType& other) const {
         return this == &other || (typeid(*this) == typeid(other) && equal(other));
-    };
+    }
 
     bool operator!=(const AnalysisType& other) const {
         return !(*this == other);
@@ -50,6 +50,7 @@ protected:
     virtual bool equal(const AnalysisType& other) const = 0;
 };
 
+// TODO: fix these comments
 // top element of the lattice
 class TopAnalysisType : public AnalysisType {
 public:

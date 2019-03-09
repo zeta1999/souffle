@@ -52,7 +52,8 @@ protected:
  */
 class FixedConstraint : public TypeConstraint {
 public:
-    FixedConstraint(const AstArgument* argument, const AnalysisType* imposedType) : argument(argument), imposedType(imposedType) {}
+    FixedConstraint(const AstArgument* argument, const AnalysisType* imposedType)
+            : argument(argument), imposedType(imposedType) {}
     FixedConstraint(const FixedConstraint& other) = default;
     FixedConstraint& operator=(const FixedConstraint& other) = default;
 
@@ -129,7 +130,9 @@ private:
 class UnionConstraint : public TypeConstraint {
 public:
     // TODO: change to a vector of bounds
-    UnionConstraint(const AstArgument* argument, const AstArgument* firstBound, const AstArgument* secondBound) : argument(argument), firstBound(firstBound), secondBound(secondBound) {}
+    UnionConstraint(
+            const AstArgument* argument, const AstArgument* firstBound, const AstArgument* secondBound)
+            : argument(argument), firstBound(firstBound), secondBound(secondBound) {}
     UnionConstraint(const UnionConstraint& other) = default;
     UnionConstraint& operator=(const UnionConstraint& other) = default;
 
@@ -153,7 +156,8 @@ protected:
     bool equal(const TypeConstraint& cons) const override {
         assert(dynamic_cast<const UnionConstraint*>(&cons) != nullptr);
         const auto& other = static_cast<const UnionConstraint&>(cons);
-        return argument == other.argument && firstBound == other.firstBound && secondBound == other.secondBound;
+        return argument == other.argument && firstBound == other.firstBound &&
+               secondBound == other.secondBound;
     }
 
 private:
@@ -169,7 +173,8 @@ private:
 class ImplicationConstraint : public TypeConstraint {
 public:
     // TODO: sort out the constructors
-    ImplicationConstraint(const AstArgument* variable, const AnalysisType* bound) : consequent(variable, bound) {}
+    ImplicationConstraint(const AstArgument* variable, const AnalysisType* bound)
+            : consequent(variable, bound) {}
     ImplicationConstraint(const ImplicationConstraint& other) = default;
     ImplicationConstraint& operator=(const ImplicationConstraint& other) = default;
 
@@ -210,7 +215,10 @@ private:
  **/
 class TypeSolution {
 public:
-    TypeSolution(std::set<const AstArgument*> arguments, std::set<std::unique_ptr<TypeConstraint>> constraints) : lattice(std::make_unique<TypeLattice>()), constraints(std::move(constraints)), arguments(arguments) {
+    TypeSolution(
+            std::set<const AstArgument*> arguments, std::set<std::unique_ptr<TypeConstraint>> constraints)
+            : lattice(std::make_unique<TypeLattice>()), constraints(std::move(constraints)),
+              arguments(arguments) {
         resolveAllConstraints();
     }
 
@@ -302,4 +310,4 @@ private:
     std::unique_ptr<TypeSolution> typeSolution;
 };
 
-} // end of namespace souffle
+}  // end of namespace souffle

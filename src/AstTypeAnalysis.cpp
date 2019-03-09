@@ -106,4 +106,4 @@ bool ImplicationConstraint::isSatisfied(const TypeSolution* currentSolution) con
     return consequent.isSatisfied(currentSolution);
 }
 
-} // end of namespace souffle
+}  // end of namespace souffle

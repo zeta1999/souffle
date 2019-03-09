@@ -2,8 +2,8 @@
 
 #include "AstType.h"
 #include "Util.h"
-#include <sstream>
 #include <cassert>
+#include <sstream>
 
 namespace souffle {
 
@@ -373,4 +373,4 @@ private:
     std::string representation;
 };
 
-} // end of namespace souffle
+}  // end of namespace souffle

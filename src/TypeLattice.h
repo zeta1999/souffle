@@ -27,4 +27,4 @@ private:
     std::set<std::unique_ptr<AnalysisType>> storedTypes;
 };
 
-} // end of namespace souffle
+}  // end of namespace souffle

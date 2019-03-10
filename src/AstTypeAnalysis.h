@@ -4,9 +4,9 @@
 #include "AstAnalysis.h"
 #include "AstArgument.h"
 #include "AstLiteral.h"
+#include "AstVisitor.h"
 #include "TypeLattice.h"
 #include "Util.h"
-#include "AstVisitor.h"
 #include <ostream>
 
 namespace souffle {
@@ -200,7 +200,8 @@ public:
 
     /** Output to a given output stream */
     void print(std::ostream& out) const override {
-        out << "(" << join(getRequirements(), ",", print_deref<FixedConstraint*>()) << ") -> (" << *consequent << ")";
+        out << "(" << join(getRequirements(), ",", print_deref<FixedConstraint*>()) << ") -> (" << *consequent
+            << ")";
     }
 
 protected:
@@ -226,7 +227,8 @@ public:
     // TODO: change this to take in a clause, then get cosntraints and resolve them all
     // TODO: fix constraint resolution etc.
     // TODO: lattice here because...?
-    TypeSolution(TypeLattice* lattice, AstClause* clause, AstProgram* program) : lattice(lattice), clause(clause), program(program) {
+    TypeSolution(TypeLattice* lattice, AstClause* clause, AstProgram* program)
+            : lattice(lattice), clause(clause), program(program) {
         generateConstraints();
         resolveConstraints();
     }

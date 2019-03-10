@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AnalysisType.h"
+#include "TypeSystem.h"
 
 namespace souffle {
 
@@ -29,6 +30,7 @@ public:
      */
     // TODO: try getting rid of this
     const AnalysisType* getAnalysisType(const AstTypeIdentifier& type);
+    const AnalysisType* getAnalysisType(const Type& type);
 
 private:
     // TODO: add a comparator here

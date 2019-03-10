@@ -6,6 +6,7 @@
 #include "AstLiteral.h"
 #include "AstVisitor.h"
 #include "TypeLattice.h"
+#include "TypeSystem.h"
 #include "Util.h"
 #include <ostream>
 
@@ -175,6 +176,7 @@ private:
 class ImplicationConstraint : public TypeConstraint {
 public:
     // TODO: sort out the constructors
+    // TODO: why not take in any constraint
     ImplicationConstraint(std::unique_ptr<FixedConstraint> consequent) : consequent(std::move(consequent)) {}
     ImplicationConstraint(const ImplicationConstraint& other) = default;
     ImplicationConstraint& operator=(const ImplicationConstraint& other) = default;
@@ -222,13 +224,15 @@ private:
  * A container representing the solution of a type analysis for each argument
  * in a given clause.
  **/
+// TODO: TypeSolver instead of TypeSolution?
 class TypeSolution {
 public:
     // TODO: change this to take in a clause, then get cosntraints and resolve them all
     // TODO: fix constraint resolution etc.
     // TODO: lattice here because...?
-    TypeSolution(TypeLattice* lattice, AstClause* clause, AstProgram* program)
-            : lattice(lattice), clause(clause), program(program) {
+    // TODO: get rid of things afterwrads
+    TypeSolution(TypeLattice* lattice, AstClause* clause, TypeEnvironment* typeEnvironment, AstProgram* program)
+            : lattice(lattice), clause(clause), typeEnvironment(typeEnvironment), program(program) {
         generateConstraints();
         resolveConstraints();
     }
@@ -236,6 +240,11 @@ public:
     /** Get the type lattice associated with the type solution */
     TypeLattice* getLattice() const {
         return lattice;
+    }
+
+    /** Adds a constraint that needs to be satisfied by the type solution. */
+    void addConstraint(std::unique_ptr<TypeConstraint> constraint) {
+        constraints.insert(std::move(constraint));
     }
 
     /**
@@ -308,6 +317,7 @@ private:
     // TODO: reorder - maybe get rid of some if possible etc.
     TypeLattice* lattice;
     AstClause* clause;
+    TypeEnvironment* typeEnvironment;
     AstProgram* program;
     std::set<std::unique_ptr<TypeConstraint>> constraints{};
     std::map<const AstArgument*, const AnalysisType*> typeMapping{};

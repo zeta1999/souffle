@@ -8,22 +8,32 @@ class TypeLattice {
 public:
     // TODO: note that the referenced analysis type will be in the lattice
 
-    // Find the highest common subtype (intersection)
+    /** Finds the highest common subtype (intersection) of two types */
     const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);
 
-    // Find the lowest common supertype (union)
+    /** Finds the lowest common supertype (union) of two types */
     const AnalysisType* join(const AnalysisType* first, const AnalysisType* second);
 
-    // Check if lhs is a subtype of rhs
-    bool isSubtype(const AnalysisType* first, const AnalysisType* second) const;
+    /** Checks if lhs is a subtype of rhs */
+    bool isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) const;
 
-    // Get the equivalent type stored in the lattice
-    // If the type does not yet exist in the lattice, it is created
+    /**
+     * Gets the equivalent type stored in the lattice.
+     * If the type does not yet exist in the lattice, it is created.
+     */
     const AnalysisType* getStoredType(const AnalysisType& type);
+
+    /**
+     * Gets the equivalent analysis type stored in the lattice.
+     * If the type does not yet exist in the lattice, it is created.
+     */
+    // TODO: try getting rid of this
+    const AnalysisType* getAnalysisType(const AstTypeIdentifier& type);
 
 private:
     // TODO: add a comparator here
     // TODO: const?
+    // TODO: const for all these unique pointers throughout?
     std::set<std::unique_ptr<AnalysisType>> storedTypes;
 };
 

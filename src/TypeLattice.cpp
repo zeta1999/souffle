@@ -7,10 +7,10 @@ namespace souffle {
 const AnalysisType* TypeLattice::meet(const AnalysisType* lhs, const AnalysisType* rhs) {
     // A ^ B = A if A <: B
     if (isSubtype(lhs, rhs)) {
-        return lhs;
+        return getStoredType(*lhs);
     }
     if (isSubtype(rhs, lhs)) {
-        return rhs;
+        return getStoredType(*rhs);
     }
 
     // neither are top or bottom, so they are inner types

@@ -6,6 +6,7 @@
 #include "AstLiteral.h"
 #include "TypeLattice.h"
 #include "Util.h"
+#include "AstVisitor.h"
 #include <ostream>
 
 namespace souffle {
@@ -52,8 +53,8 @@ protected:
  */
 class FixedConstraint : public TypeConstraint {
 public:
-    FixedConstraint(const AstArgument* argument, const AnalysisType* imposedType)
-            : argument(argument), imposedType(imposedType) {}
+    FixedConstraint(const AstArgument* argument, std::unique_ptr<AnalysisType> imposedType)
+            : argument(argument), imposedType(std::move(imposedType)) {}
     FixedConstraint(const FixedConstraint& other) = default;
     FixedConstraint& operator=(const FixedConstraint& other) = default;
 
@@ -65,7 +66,7 @@ public:
 
     /** Clone the type constraint */
     FixedConstraint* clone() const override {
-        return new FixedConstraint(argument, imposedType);
+        return new FixedConstraint(argument, std::unique_ptr<AnalysisType>(imposedType->clone()));
     }
 
     /** Output to a given output stream */
@@ -82,7 +83,8 @@ protected:
 
 private:
     const AstArgument* argument;
-    const AnalysisType* imposedType;
+    // TODO: should these be const?
+    std::unique_ptr<AnalysisType> imposedType;
 };
 
 /**
@@ -173,14 +175,18 @@ private:
 class ImplicationConstraint : public TypeConstraint {
 public:
     // TODO: sort out the constructors
-    ImplicationConstraint(const AstArgument* variable, const AnalysisType* bound)
-            : consequent(variable, bound) {}
+    ImplicationConstraint(std::unique_ptr<FixedConstraint> consequent) : consequent(std::move(consequent)) {}
     ImplicationConstraint(const ImplicationConstraint& other) = default;
     ImplicationConstraint& operator=(const ImplicationConstraint& other) = default;
 
     /** Adds a requirement to the lhs of the implication */
-    void addRequirement(FixedConstraint req) {
-        requirements.push_back(req);
+    void addRequirement(std::unique_ptr<FixedConstraint> req) {
+        requirements.push_back(std::move(req));
+    }
+
+    /** Gets requirements on the lhs of the implication */
+    std::vector<FixedConstraint*> getRequirements() const {
+        return toPtrVector(requirements);
     }
 
     /** Updates the given type solution to satisfy the represented type constraint */
@@ -194,7 +200,7 @@ public:
 
     /** Output to a given output stream */
     void print(std::ostream& out) const override {
-        out << "(" << join(requirements) << ") -> (" << consequent << ")";
+        out << "(" << join(getRequirements(), ",", print_deref<FixedConstraint*>()) << ") -> (" << *consequent << ")";
     }
 
 protected:
@@ -205,28 +211,41 @@ protected:
     }
 
 private:
-    std::vector<FixedConstraint> requirements{};
-    FixedConstraint consequent;
+    // TODO: set instead?
+    // TODO: and const?
+    std::vector<std::unique_ptr<FixedConstraint>> requirements{};
+    std::unique_ptr<FixedConstraint> consequent;
 };
 
 /**
- * A container representing the solution of a type analysis for each argument,
- * given a set of constraints.
+ * A container representing the solution of a type analysis for each argument
+ * in a given clause.
  **/
 class TypeSolution {
 public:
-    TypeSolution(
-            std::set<const AstArgument*> arguments, std::set<std::unique_ptr<TypeConstraint>> constraints)
-            : lattice(std::make_unique<TypeLattice>()), constraints(std::move(constraints)),
-              arguments(arguments) {
-        resolveAllConstraints();
+    // TODO: change this to take in a clause, then get cosntraints and resolve them all
+    // TODO: fix constraint resolution etc.
+    // TODO: lattice here because...?
+    TypeSolution(TypeLattice* lattice, AstClause* clause, AstProgram* program) : lattice(lattice), clause(clause), program(program) {
+        generateConstraints();
+        resolveConstraints();
     }
 
     /** Get the type lattice associated with the type solution */
     TypeLattice* getLattice() const {
-        return lattice.get();
+        return lattice;
     }
 
+    /**
+     * Gets the canonical representative of a given argument.
+     * - For variables, this is a variable pointer that represents all variables
+     * bound to the same name.
+     * - For non-variables, this is the argument pointer itself.
+     **/
+    // TODO: add an instance variable to support this map
+    const AstArgument* getRepresentative(const AstArgument* arg);
+
+    // TODO: note that this is a pointer because the type is in the lattice
     /** Get the computed type for the given argument */
     const AnalysisType* getType(const AstArgument* arg) const {
         auto pos = typeMapping.find(arg);
@@ -244,13 +263,17 @@ public:
         return typeMapping.find(arg) != typeMapping.end();
     }
 
-    /** Resolves all constraints until they are simultaneously satisfied */
-    void resolveAllConstraints() {
+    /** Generates the set of type constraints associated with the clause */
+    void generateConstraints();
+
+    /** Resolves all stored constraints until they are simultaneously satisfied */
+    void resolveConstraints() {
         // restore everything to the top type
         typeMapping.clear();
-        for (const auto* arg : arguments) {
-            typeMapping[arg] = lattice->getStoredType(TopAnalysisType());
-        }
+        visitDepthFirst(*clause, [&](const AstArgument& arg) {
+            // TODO: careful of getRepresentative!!!
+            typeMapping[&arg] = lattice->getStoredType(TopAnalysisType());
+        });
 
         // TODO: fixed constraints can be done outside the loop
         // TODO: double check this is equivalent to the old one
@@ -280,9 +303,11 @@ public:
     }
 
 private:
-    std::unique_ptr<TypeLattice> lattice;
-    std::set<std::unique_ptr<TypeConstraint>> constraints;
-    std::set<const AstArgument*> arguments;
+    // TODO: reorder - maybe get rid of some if possible etc.
+    TypeLattice* lattice;
+    AstClause* clause;
+    AstProgram* program;
+    std::set<std::unique_ptr<TypeConstraint>> constraints{};
     std::map<const AstArgument*, const AnalysisType*> typeMapping{};
 };
 
@@ -307,6 +332,8 @@ public:
     }
 
 private:
+    // TODO: why is this here
+    std::unique_ptr<TypeLattice> typeLattice;
     std::unique_ptr<TypeSolution> typeSolution;
 };
 

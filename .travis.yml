@@ -10,6 +10,7 @@ aliases:
     - flex
     - libffi-dev
     - libncurses5-dev
+    - libopenmpi-dev
     - libtool
     - lsb-release
     - mcpp
@@ -30,18 +31,16 @@ aliases:
   - &linuxclang
     stage: Testing
     os: linux
+    compiler: clang
+    language: cpp
     # enable sudo for libomp-dev in debian-sid repository
     # It clashes with the existing repo if we add it here.
     # sudo: required
     addons:
       apt:
-        sources:
-        - llvm-toolchain-trusty-6.0
-        - ubuntu-toolchain-r-test
         packages:
         - *linux_deps
-        - clang-6.0
-        - libstdc++-7-dev
+        - libomp-dev
     #install: ".travis/linux/clang_install.sh"
     before_script: ".travis/init_test.sh"
     script: ".travis/run_test.sh"
@@ -78,7 +77,7 @@ aliases:
     before_script: ".travis/init_make_package.sh"
     script: ".travis/osx/make_package.sh"
   - &gcc_environment CC=gcc-7 CXX=g++-7
-  - &clang_environment CC=clang-6.0 CXX=clang++-6.0
+  - &clang_environment CC=clang CXX=clang++
 
 jobs:
   include:
@@ -88,12 +87,8 @@ jobs:
     sudo: false
     addons:
       apt:
-        sources:
-        - llvm-toolchain-trusty-6.0
-        - ubuntu-toolchain-r-test
         packages:
         - clang-format-6.0
-        - libstdc++-7-dev
     script: ".travis/run_test_format.sh"
 
 # Testing stage (-j8,-c -j8)

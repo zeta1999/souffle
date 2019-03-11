@@ -24,6 +24,8 @@ WORKDIR /home/souffle/souffle
 
 USER root
 
+RUN echo "btl_base_warn_component_unused = 0" >> /etc/openmpi/openmpi-mca-params.conf
+
 RUN chown -R souffle .
 
 USER souffle

@@ -1,5 +1,5 @@
 language: generic
-dist: trusty
+dist: xenial
 
 aliases:
   -  &linux_deps
@@ -10,6 +10,7 @@ aliases:
     - flex
     - libffi-dev
     - libncurses5-dev
+    - libopenmpi-dev
     - libtool
     - lsb-release
     - mcpp
@@ -17,32 +18,25 @@ aliases:
     stage: Testing
     sudo: false
     os: linux
+    compiler: gcc
+    language: cpp
     addons:
       apt:
-        sources:
-        - ubuntu-toolchain-r-test
         packages:
         - *linux_deps
-        - g++-7
     before_script: ".travis/init_test.sh"
     script: ".travis/run_test.sh"
     after_failure: ".travis/after_failure.sh"
   - &linuxclang
     stage: Testing
     os: linux
-    # enable sudo for libomp-dev in debian-sid repository
-    # It clashes with the existing repo if we add it here.
-    # sudo: required
+    compiler: clang
+    language: cpp
     addons:
       apt:
-        sources:
-        - llvm-toolchain-trusty-6.0
-        - ubuntu-toolchain-r-test
         packages:
         - *linux_deps
-        - clang-6.0
-        - libstdc++-7-dev
-    #install: ".travis/linux/clang_install.sh"
+        - libomp-dev
     before_script: ".travis/init_test.sh"
     script: ".travis/run_test.sh"
     after_failure: ".travis/after_failure.sh"
@@ -77,8 +71,8 @@ aliases:
     stage: Packaging
     before_script: ".travis/init_make_package.sh"
     script: ".travis/osx/make_package.sh"
-  - &gcc_environment CC=gcc-7 CXX=g++-7
-  - &clang_environment CC=clang-6.0 CXX=clang++-6.0
+  - &gcc_environment CC=gcc CXX=g++
+  - &clang_environment CC=clang CXX=clang++
 
 jobs:
   include:
@@ -88,12 +82,10 @@ jobs:
     sudo: false
     addons:
       apt:
-        sources:
-        - llvm-toolchain-trusty-6.0
-        - ubuntu-toolchain-r-test
         packages:
+        # The formatting may change with different versions of clang-format.
+        # Check before modifying!
         - clang-format-6.0
-        - libstdc++-7-dev
     script: ".travis/run_test_format.sh"
 
 # Testing stage (-j8,-c -j8)
@@ -105,7 +97,6 @@ jobs:
   - <<: *osxgcc
     env:
     - "gcc-setup"
-    - *gcc_environment
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
 
 # Testing stage for clang without OpenMP (,-c)

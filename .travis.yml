@@ -87,6 +87,8 @@ jobs:
     addons:
       apt:
         packages:
+        # The formatting may change with different versions of clang-format.
+        # Check before modifying!
         - clang-format-6.0
     script: ".travis/run_test_format.sh"
 
@@ -99,7 +101,6 @@ jobs:
   - <<: *osxgcc
     env:
     - "gcc-setup"
-    - *gcc_environment
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
 
 # Testing stage for clang without OpenMP (,-c)

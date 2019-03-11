@@ -18,13 +18,12 @@ aliases:
     stage: Testing
     sudo: false
     os: linux
+    compiler: gcc
+    language: cpp
     addons:
       apt:
-        sources:
-        - ubuntu-toolchain-r-test
         packages:
         - *linux_deps
-        - g++-7
     before_script: ".travis/init_test.sh"
     script: ".travis/run_test.sh"
     after_failure: ".travis/after_failure.sh"
@@ -76,7 +75,7 @@ aliases:
     stage: Packaging
     before_script: ".travis/init_make_package.sh"
     script: ".travis/osx/make_package.sh"
-  - &gcc_environment CC=gcc-7 CXX=g++-7
+  - &gcc_environment CC=gcc CXX=g++
   - &clang_environment CC=clang CXX=clang++
 
 jobs:

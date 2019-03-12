@@ -11,20 +11,17 @@
 namespace souffle {
 
 class AstArgument;
-class TypeSolution;
 
 /**
- * A container representing the solution of a type analysis for each argument
- * in a given clause.
+ * A type solver that computes the type for each argument in a given clause.
  **/
-// TODO: TypeSolver instead of TypeSolution?
-class TypeSolution {
+class TypeSolver {
 public:
     // TODO: change this to take in a clause, then get cosntraints and resolve them all
     // TODO: fix constraint resolution etc.
     // TODO: lattice here because...?
     // TODO: get rid of things afterwrads
-    TypeSolution(TypeLattice* lattice, AstClause* clause, TypeEnvironment* typeEnvironment, AstProgram* program)
+    TypeSolver(TypeLattice* lattice, AstClause* clause, TypeEnvironment* typeEnvironment, AstProgram* program)
             : lattice(lattice), clause(clause), typeEnvironment(typeEnvironment), program(program) {
         generateConstraints();
         resolveConstraints();
@@ -129,18 +126,18 @@ public:
 
     /** Get the computed type for the given argument */
     const AnalysisType* getType(const AstArgument* arg) const {
-        return typeSolution->getType(arg);
+        return typeSolver->getType(arg);
     }
 
     /** Get the type lattice associated with the analysis */
     TypeLattice* getLattice() const {
-        return typeSolution->getLattice();
+        return typeSolver->getLattice();
     }
 
 private:
     // TODO: why is this here
     std::unique_ptr<TypeLattice> typeLattice;
-    std::unique_ptr<TypeSolution> typeSolution;
+    std::unique_ptr<TypeSolver> typeSolver;
 };
 
 }  // end of namespace souffle

@@ -3,7 +3,7 @@
 
 namespace souffle {
 
-void FixedConstraint::resolve(TypeSolution* currentSolution) const {
+void FixedConstraint::resolve(TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(argument) && "argument does not have an associated type");
 
     // construct the new type
@@ -16,14 +16,14 @@ void FixedConstraint::resolve(TypeSolution* currentSolution) const {
     assert(isSatisfied(currentSolution) && "constraint resolution failed");
 }
 
-bool FixedConstraint::isSatisfied(const TypeSolution* currentSolution) const {
+bool FixedConstraint::isSatisfied(const TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(argument) && "argument does not have an associated type");
     TypeLattice* lattice = currentSolution->getLattice();
     const AnalysisType* existingType = currentSolution->getType(argument);
     return lattice->isSubtype(existingType, imposedType.get());
 }
 
-void VariableConstraint::resolve(TypeSolution* currentSolution) const {
+void VariableConstraint::resolve(TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(lhs) && "lower bound does not have an associated type");
     assert(currentSolution->hasType(rhs) && "upper bound does not have an associated type");
 
@@ -38,7 +38,7 @@ void VariableConstraint::resolve(TypeSolution* currentSolution) const {
     assert(isSatisfied(currentSolution) && "constraint resolution failed");
 }
 
-bool VariableConstraint::isSatisfied(const TypeSolution* currentSolution) const {
+bool VariableConstraint::isSatisfied(const TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(lhs) && "lower bound does not have an associated type");
     assert(currentSolution->hasType(rhs) && "upper bound does not have an associated type");
     TypeLattice* lattice = currentSolution->getLattice();
@@ -47,7 +47,7 @@ bool VariableConstraint::isSatisfied(const TypeSolution* currentSolution) const 
     return lattice->isSubtype(lhsType, rhsType);
 }
 
-void UnionConstraint::resolve(TypeSolution* currentSolution) const {
+void UnionConstraint::resolve(TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(argument) && "argument does not have an associated type");
     const auto& bounds = getBounds();
     for (const auto& bound : bounds) {
@@ -80,7 +80,7 @@ void UnionConstraint::resolve(TypeSolution* currentSolution) const {
     assert(isSatisfied(currentSolution) && "constraint resolution failed");
 }
 
-bool UnionConstraint::isSatisfied(const TypeSolution* currentSolution) const {
+bool UnionConstraint::isSatisfied(const TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(argument) && "argument does not have an associated type");
     const auto& bounds = getBounds();
     for (const auto& bound : bounds) {
@@ -112,7 +112,7 @@ bool UnionConstraint::isSatisfied(const TypeSolution* currentSolution) const {
     return lattice->isSubtype(argType, newType);
 }
 
-void ImplicationConstraint::resolve(TypeSolution* currentSolution) const {
+void ImplicationConstraint::resolve(TypeSolver* currentSolution) const {
     // skip if already satisfied
     if (isSatisfied(currentSolution)) {
         return;
@@ -123,7 +123,7 @@ void ImplicationConstraint::resolve(TypeSolution* currentSolution) const {
     assert(isSatisfied(currentSolution) && "constraint resolution failed");
 }
 
-bool ImplicationConstraint::isSatisfied(const TypeSolution* currentSolution) const {
+bool ImplicationConstraint::isSatisfied(const TypeSolver* currentSolution) const {
     for (const FixedConstraint* req : getRequirements()) {
         if (!req->isSatisfied(currentSolution)) {
             return true;

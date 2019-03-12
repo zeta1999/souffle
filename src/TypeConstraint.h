@@ -8,16 +8,16 @@
 
 namespace souffle {
 
-class TypeSolution;
+class TypeSolver;
 
 /** A type constraint imposed on an argument in a program */
 class TypeConstraint {
 public:
     /** Updates the given type solution to satisfy the represented type constraint */
-    virtual void resolve(TypeSolution*) const = 0;
+    virtual void resolve(TypeSolver*) const = 0;
 
     /** Checks if the given type solution satisfies the represented type constraint */
-    virtual bool isSatisfied(const TypeSolution*) const = 0;
+    virtual bool isSatisfied(const TypeSolver*) const = 0;
 
     bool operator==(const TypeConstraint& other) const {
         return this == &other || (typeid(*this) == typeid(other) && equal(other));
@@ -55,10 +55,10 @@ public:
     FixedConstraint& operator=(const FixedConstraint& other) = default;
 
     /** Updates the given type solution to satisfy the represented type constraint */
-    void resolve(TypeSolution*) const override;
+    void resolve(TypeSolver*) const override;
 
     /** Checks if the given type solution satisfies the represented type constraint */
-    bool isSatisfied(const TypeSolution*) const override;
+    bool isSatisfied(const TypeSolver*) const override;
 
     /** Clone the type constraint */
     FixedConstraint* clone() const override {
@@ -94,10 +94,10 @@ public:
     VariableConstraint& operator=(const VariableConstraint& other) = default;
 
     /** Updates the given type solution to satisfy the represented type constraint */
-    void resolve(TypeSolution*) const override;
+    void resolve(TypeSolver*) const override;
 
     /** Checks if the given type solution satisfies the represented type constraint */
-    bool isSatisfied(const TypeSolution*) const override;
+    bool isSatisfied(const TypeSolver*) const override;
 
     /** Clone the type constraint */
     VariableConstraint* clone() const override {
@@ -132,10 +132,10 @@ public:
     UnionConstraint& operator=(const UnionConstraint& other) = default;
 
     /** Updates the given type solution to satisfy the represented type constraint */
-    void resolve(TypeSolution*) const override;
+    void resolve(TypeSolver*) const override;
 
     /** Checks if the given type solution satisfies the represented type constraint */
-    bool isSatisfied(const TypeSolution*) const override;
+    bool isSatisfied(const TypeSolver*) const override;
 
     /** Gets the bounds on the RHS of the constraint */
     const std::vector<const AstArgument*>& getBounds() const;
@@ -190,10 +190,10 @@ public:
     }
 
     /** Updates the given type solution to satisfy the represented type constraint */
-    void resolve(TypeSolution*) const override;
+    void resolve(TypeSolver*) const override;
 
     /** Checks if the given type solution satisfies the represented type constraint */
-    bool isSatisfied(const TypeSolution*) const override;
+    bool isSatisfied(const TypeSolver*) const override;
 
     /** Clone the type constraint */
     ImplicationConstraint* clone() const override;

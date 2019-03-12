@@ -4,13 +4,13 @@
 
 namespace souffle {
 
-void TypeSolution::generateConstraints() {
+void TypeSolver::generateConstraints() {
     // Helper class to find all constraints imposed by a clause
     class ConstraintFinder : public AstVisitor<void> {
     public:
         // TODO: fix up this constructor once done (some args can be removed - just added for ease in the
         // first run through)
-        ConstraintFinder(TypeLattice* lattice, TypeSolution* solver, TypeEnvironment* typeEnvironment,
+        ConstraintFinder(TypeLattice* lattice, TypeSolver* solver, TypeEnvironment* typeEnvironment,
                 AstProgram* program)
                 : lattice(lattice), solver(solver), typeEnvironment(typeEnvironment), program(program) {}
 
@@ -272,7 +272,7 @@ void TypeSolution::generateConstraints() {
     private:
         // TODO: reorder?
         TypeLattice* lattice;
-        TypeSolution* solver;
+        TypeSolver* solver;
         TypeEnvironment* typeEnvironment;
         AstProgram* program;  // TODO: reference if kept
     };

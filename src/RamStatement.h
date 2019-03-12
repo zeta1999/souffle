@@ -347,12 +347,10 @@ protected:
 class RamFact : public RamRelationStatement {
 protected:
     /** Arguments of fact */
-    // TODO (#541): Reoccuring type -> push to RamValue.h
-    using value_list = std::vector<std::unique_ptr<RamValue>>;
-    value_list values;
+    std::vector<std::unique_ptr<RamValue>> values;
 
 public:
-    RamFact(std::unique_ptr<RamRelationReference> rel, value_list&& v)
+    RamFact(std::unique_ptr<RamRelationReference> rel, std::vector<std::unique_ptr<RamValue>>&& v)
             : RamRelationStatement(RN_Fact, std::move(rel)), values(std::move(v)) {}
 
     /** Get arguments of fact */
@@ -404,9 +402,8 @@ protected:
 
 /**
  * A relational algebra query
- * TODO (#541): Rename RAM statement: it is used for projection and sub-routines.
  */
-class RamInsert : public RamStatement {
+class RamQuery : public RamStatement {
 protected:
     /** RAM operation */
     std::unique_ptr<RamOperation> operation;
@@ -415,8 +412,8 @@ protected:
     std::unique_ptr<RamCondition> condition;
 
 public:
-    RamInsert(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
-            : RamStatement(RN_Insert), operation(std::move(o)), condition(std::move(c)) {}
+    RamQuery(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
+            : RamStatement(RN_Query), operation(std::move(o)), condition(std::move(c)) {}
 
     /** Get RAM operation */
     const RamOperation& getOperation() const {
@@ -437,7 +434,7 @@ public:
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
-        os << "INSERT ";
+        os << "DO ";
         if (condition != nullptr) {
             os << "WHERE ";
             condition->print(os);
@@ -452,12 +449,12 @@ public:
     }
 
     /** Create clone */
-    RamInsert* clone() const override {
-        RamInsert* res;
+    RamQuery* clone() const override {
+        RamQuery* res;
         if (condition != nullptr) {
-            res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()));
+            res = new RamQuery(std::unique_ptr<RamOperation>(operation->clone()));
         } else {
-            res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()),
+            res = new RamQuery(std::unique_ptr<RamOperation>(operation->clone()),
                     std::unique_ptr<RamCondition>(condition->clone()));
         }
         return res;
@@ -474,8 +471,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamInsert*>(&node));
-        const auto& other = static_cast<const RamInsert&>(node);
+        assert(nullptr != dynamic_cast<const RamQuery*>(&node));
+        const auto& other = static_cast<const RamQuery&>(node);
         return getOperation() == other.getOperation() && getCondition() == other.getCondition();
     }
 };
@@ -516,12 +513,6 @@ public:
     /** Get RAM statements from ordered list */
     std::vector<RamStatement*> getStatements() const {
         return toPtrVector(statements);
-    }
-
-    /** TODO (#541): what's that for ?? */
-    template <typename T>
-    void moveSubprograms(std::vector<std::unique_ptr<T>>& destination) {
-        movePtrVector(statements, destination);
     }
 
     /** Pretty print */

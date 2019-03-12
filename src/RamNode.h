@@ -62,7 +62,7 @@ enum RamNodeType {
     RN_Fact,
     RN_Load,
     RN_Store,
-    RN_Insert,
+    RN_Query,
     RN_Clear,
     RN_Drop,
     RN_LogSize,

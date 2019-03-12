@@ -128,14 +128,11 @@ private:
 
 /**
  * Subclass of type constraint that represents a union constraint.
- * i.e. t <: t1 U t2, where t, t1, and t2 are type variables.
+ * i.e. t <: t1 U t2 U ... U tn, where t, t_i are type variables.
  */
 class UnionConstraint : public TypeConstraint {
 public:
-    // TODO: change to a vector of bounds
-    UnionConstraint(
-            const AstArgument* argument, const AstArgument* firstBound, const AstArgument* secondBound)
-            : argument(argument), firstBound(firstBound), secondBound(secondBound) {}
+    UnionConstraint(const AstArgument* argument, std::vector<const AstArgument*> bounds) : argument(argument), bounds(bounds) {}
     UnionConstraint(const UnionConstraint& other) = default;
     UnionConstraint& operator=(const UnionConstraint& other) = default;
 
@@ -145,28 +142,34 @@ public:
     /** Checks if the given type solution satisfies the represented type constraint */
     bool isSatisfied(const TypeSolution*) const override;
 
+    /** Gets the bounds on the RHS of the constraint */
+    const std::vector<const AstArgument*>& getBounds() const;
+
     /** Clone the type constraint */
     UnionConstraint* clone() const override {
-        return new UnionConstraint(argument, firstBound, secondBound);
+        return new UnionConstraint(argument, bounds);
     }
 
     /** Output to a given output stream */
     void print(std::ostream& out) const override {
-        out << "type(" << *argument << ") <: (type(" << *firstBound << ") ∪ type(" << *secondBound << "))";
+        out << "type(" << *argument << ") <: (";
+        out << "type(" << *bounds[0] << ")";
+        for (size_t i = 1; i < bounds.size(); i++) {
+            out << " ∪ type(" << *bounds[i] << ")";
+        }
+        out << ")";
     }
 
 protected:
     bool equal(const TypeConstraint& cons) const override {
         assert(dynamic_cast<const UnionConstraint*>(&cons) != nullptr);
         const auto& other = static_cast<const UnionConstraint&>(cons);
-        return argument == other.argument && firstBound == other.firstBound &&
-               secondBound == other.secondBound;
+        return argument == other.argument && bounds == other.bounds;
     }
 
 private:
     const AstArgument* argument;
-    const AstArgument* firstBound;
-    const AstArgument* secondBound;
+    const std::vector<const AstArgument*> bounds;
 };
 
 /**

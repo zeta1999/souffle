@@ -49,18 +49,31 @@ bool VariableConstraint::isSatisfied(const TypeSolution* currentSolution) const 
 
 void UnionConstraint::resolve(TypeSolution* currentSolution) const {
     assert(currentSolution->hasType(argument) && "argument does not have an associated type");
-    assert(currentSolution->hasType(firstBound) && "first bound does not have an associated type");
-    assert(currentSolution->hasType(secondBound) && "second bound does not have an associated type");
+    const auto& bounds = getBounds();
+    for (const auto& bound : bounds) {
+        assert(currentSolution->hasType(bound) &&
+                "bound in union constraint does not have an associated type");
+    }
 
     // get the current types
     const AnalysisType* argType = currentSolution->getType(argument);
-    const AnalysisType* firstBoundType = currentSolution->getType(argument);
-    const AnalysisType* secondBoundType = currentSolution->getType(argument);
+    std::vector<const AnalysisType*> boundTypes;
+    for (const auto& bound : bounds) {
+        boundTypes.push_back(currentSolution->getType(bound));
+    }
 
-    // create the new type
+    // -- create the new type --
     TypeLattice* lattice = currentSolution->getLattice();
-    const AnalysisType* newBound = lattice->join(firstBoundType, secondBoundType);
-    const AnalysisType* newType = lattice->meet(argType, newBound);
+
+    // take the union of the bound types
+    const auto bottomType = BottomAnalysisType();
+    const AnalysisType* upperBound = &bottomType;
+    for (const auto& boundType : boundTypes) {
+        upperBound = lattice->join(upperBound, boundType);
+    }
+
+    // intersect it with the existing type
+    const AnalysisType* newType = lattice->meet(argType, upperBound);
 
     // update the type
     currentSolution->setType(argument, newType);
@@ -69,18 +82,31 @@ void UnionConstraint::resolve(TypeSolution* currentSolution) const {
 
 bool UnionConstraint::isSatisfied(const TypeSolution* currentSolution) const {
     assert(currentSolution->hasType(argument) && "argument does not have an associated type");
-    assert(currentSolution->hasType(firstBound) && "first bound does not have an associated type");
-    assert(currentSolution->hasType(secondBound) && "second bound does not have an associated type");
+    const auto& bounds = getBounds();
+    for (const auto& bound : bounds) {
+        assert(currentSolution->hasType(bound) &&
+                "bound in union constraint does not have an associated type");
+    }
 
     // get the types
     const AnalysisType* argType = currentSolution->getType(argument);
-    const AnalysisType* firstBoundType = currentSolution->getType(argument);
-    const AnalysisType* secondBoundType = currentSolution->getType(argument);
+    std::vector<const AnalysisType*> boundTypes;
+    for (const auto& bound : bounds) {
+        boundTypes.push_back(currentSolution->getType(bound));
+    }
 
-    // create the expected type
+    // -- create the expected type --
     TypeLattice* lattice = currentSolution->getLattice();
-    const AnalysisType* newBound = lattice->join(firstBoundType, secondBoundType);
-    const AnalysisType* newType = lattice->meet(argType, newBound);
+
+    // take the union of the bound types
+    const auto bottomType = BottomAnalysisType();
+    const AnalysisType* upperBound = &bottomType;
+    for (const auto& boundType : boundTypes) {
+        upperBound = lattice->join(upperBound, boundType);
+    }
+
+    // intersect it with the existing type
+    const AnalysisType* newType = lattice->meet(argType, upperBound);
 
     // check it is satisfied
     return lattice->isSubtype(argType, newType);
@@ -257,7 +283,8 @@ void TypeSolution::generateConstraints() {
             //      - the record is therefore grounded via its arguments
             //      - the record must be bound to its expected type
             // the semantic checker
-            const auto* rawType = dynamic_cast<const RecordType*>(&typeEnvironment->getType(record.getType()));
+            const auto* rawType =
+                    dynamic_cast<const RecordType*>(&typeEnvironment->getType(record.getType()));
             assert(rawType != nullptr && "type of record must be a record type");
             assert(record.getArguments().size() == rawType->getFields().size() &&
                     "record constructor has incorrect number of arguments");

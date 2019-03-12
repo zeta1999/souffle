@@ -403,7 +403,7 @@ protected:
 /**
  * A relational algebra query
  */
-class RamConditionalOperation : public RamStatement {
+class RamQuery : public RamStatement {
 protected:
     /** RAM operation */
     std::unique_ptr<RamOperation> operation;
@@ -412,8 +412,8 @@ protected:
     std::unique_ptr<RamCondition> condition;
 
 public:
-    RamConditionalOperation(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
-            : RamStatement(RN_ConditionalOperation), operation(std::move(o)), condition(std::move(c)) {}
+    RamQuery(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
+            : RamStatement(RN_Query), operation(std::move(o)), condition(std::move(c)) {}
 
     /** Get RAM operation */
     const RamOperation& getOperation() const {
@@ -449,12 +449,12 @@ public:
     }
 
     /** Create clone */
-    RamConditionalOperation* clone() const override {
-        RamConditionalOperation* res;
+    RamQuery* clone() const override {
+        RamQuery* res;
         if (condition != nullptr) {
-            res = new RamConditionalOperation(std::unique_ptr<RamOperation>(operation->clone()));
+            res = new RamQuery(std::unique_ptr<RamOperation>(operation->clone()));
         } else {
-            res = new RamConditionalOperation(std::unique_ptr<RamOperation>(operation->clone()),
+            res = new RamQuery(std::unique_ptr<RamOperation>(operation->clone()),
                     std::unique_ptr<RamCondition>(condition->clone()));
         }
         return res;
@@ -471,8 +471,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamConditionalOperation*>(&node));
-        const auto& other = static_cast<const RamConditionalOperation&>(node);
+        assert(nullptr != dynamic_cast<const RamQuery*>(&node));
+        const auto& other = static_cast<const RamQuery&>(node);
         return getOperation() == other.getOperation() && getCondition() == other.getCondition();
     }
 };

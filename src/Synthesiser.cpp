@@ -282,7 +282,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitConditionalOperation(const RamConditionalOperation& insert, std::ostream& out) override {
+        void visitQuery(const RamQuery& insert, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // enclose operation with a check for an empty relation
             std::set<std::string> inputRelNames;

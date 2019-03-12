@@ -129,6 +129,15 @@ class UnionConstraint : public TypeConstraint {
 public:
     UnionConstraint(const AstArgument* argument, std::vector<const AstArgument*> bounds)
             : argument(argument), bounds(bounds) {}
+
+    template <typename... Args>
+    UnionConstraint(const AstArgument* argument, Args... args) {
+        const AstArgument* tmp[] = {args...};
+        for (const auto* cur : tmp) {
+            bounds.push_back(cur);
+        }
+    }
+
     UnionConstraint(const UnionConstraint& other) = default;
     UnionConstraint& operator=(const UnionConstraint& other) = default;
 
@@ -165,7 +174,7 @@ protected:
 
 private:
     const AstArgument* argument;
-    const std::vector<const AstArgument*> bounds;
+    std::vector<const AstArgument*> bounds;
 };
 
 /**

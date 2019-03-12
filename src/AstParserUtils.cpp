@@ -206,11 +206,11 @@ void RuleBody::insert(std::vector<clause>& cnf, clause&& cls) {
     std::vector<clause> res;
     for (auto& cur : cnf) {
         if (!isSubsetOf(cls, cur)) {
-            res.emplace_back(std::move(cur));
+            res.push_back(std::move(cur));
         }
     }
     res.swap(cnf);
-    cnf.emplace_back(std::move(cls));
+    cnf.push_back(std::move(cls));
 }
 
 }  // end of namespace souffle

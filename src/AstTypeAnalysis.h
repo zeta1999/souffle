@@ -323,6 +323,7 @@ private:
     std::map<const AstArgument*, const AnalysisType*> typeMapping{};
 };
 
+/** Type analysis entrypoint */
 class TypeAnalysis : public AstAnalysis {
 public:
     TypeAnalysis() = default;

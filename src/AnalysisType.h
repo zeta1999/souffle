@@ -9,6 +9,7 @@ namespace souffle {
 
 enum class Kind { SYMBOL, NUMBER, RECORD };
 
+/** Represents a node in the type lattice during type analysis */
 class AnalysisType {
 public:
     // -- constructors --
@@ -50,8 +51,7 @@ protected:
     virtual bool equal(const AnalysisType& other) const = 0;
 };
 
-// TODO: fix these comments
-// top element of the lattice
+/** The top element of the lattice */
 class TopAnalysisType : public AnalysisType {
 public:
     TopAnalysisType() = default;
@@ -78,7 +78,7 @@ protected:
     }
 };
 
-// bottom element of the lattice
+/** The bottom element of the lattice */
 class BottomAnalysisType : public AnalysisType {
 public:
     BottomAnalysisType() = default;
@@ -105,7 +105,7 @@ protected:
     }
 };
 
-// element of the lattice that is neither the top element nor the bottom element
+/** A lattice element that is neither the top nor the bottom element */
 class InnerAnalysisType : public AnalysisType {
 public:
     InnerAnalysisType() = default;
@@ -118,7 +118,7 @@ public:
     virtual InnerAnalysisType* clone() const = 0;
 };
 
-// top primitives in the lattice, just below the top element
+/** A top primitive in a lattice, just below the top element */
 class TopPrimitiveAnalysisType : public InnerAnalysisType {
 public:
     TopPrimitiveAnalysisType(Kind kind) : kind(kind) {}
@@ -162,7 +162,7 @@ private:
     Kind kind;
 };
 
-// constant types in the lattice, just above the bottom element
+/** A constant primitive in the lattice, just above the bottom element */
 class ConstantAnalysisType : public InnerAnalysisType {
 public:
     ConstantAnalysisType(Kind kind) : kind(kind) {}
@@ -206,7 +206,7 @@ private:
     Kind kind;
 };
 
-// bottom primitives in the lattice, just above their respective constant types
+/** A bottom primitive in the lattice, just above its respective constant primitive type */
 class BottomPrimitiveAnalysisType : public InnerAnalysisType {
 public:
     BottomPrimitiveAnalysisType(Kind kind) : kind(kind) {}
@@ -250,7 +250,7 @@ private:
     Kind kind;
 };
 
-// base types in the lattice, sitting just above bottom primitives
+/** A base type in the lattice, just above the bottom primitives */
 class BaseAnalysisType : public InnerAnalysisType {
 public:
     BaseAnalysisType(Kind kind, AstTypeIdentifier name) : kind(kind), name(name) {}
@@ -290,7 +290,7 @@ private:
     AstTypeIdentifier name;
 };
 
-// record base types, sitting just above the record bottom primitive
+/** A record base type, just above the record bottom primitive */
 class RecordAnalysisType : public BaseAnalysisType {
 public:
     RecordAnalysisType(AstTypeIdentifier name) : BaseAnalysisType(Kind::RECORD, name) {}
@@ -326,7 +326,7 @@ private:
     std::vector<std::unique_ptr<InnerAnalysisType>> fields{};
 };
 
-// union types, sitting between base types and the top primitive types
+/** A union type, siting between base types and the top primitive types */
 class UnionAnalysisType : public InnerAnalysisType {
 public:
     UnionAnalysisType(std::set<BaseAnalysisType> baseTypes);

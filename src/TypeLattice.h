@@ -22,6 +22,8 @@ public:
      * Gets the equivalent type stored in the lattice.
      * If the type does not yet exist in the lattice, it is created.
      */
+    // TODO: make sure this is used everywhere it should be used
+    // TODO: make a note on when it should be used? probs only in meet/join... also assert that the first and second are also in the lattice? change things up...
     const AnalysisType* getStoredType(const AnalysisType& type);
 
     /**

@@ -106,8 +106,6 @@ bool ImplicationConstraint::isSatisfied(const TypeSolution* currentSolution) con
     return consequent->isSatisfied(currentSolution);
 }
 
-// TODO: make sure "getStoredType" not needed here (dont think it is) - why do we need it? check it's used
-// correctly - put note on when to use it
 void TypeSolution::generateConstraints() {
     // Helper class to find all constraints imposed by a clause
     class ConstraintFinder : public AstVisitor<void> {
@@ -258,7 +256,6 @@ void TypeSolution::generateConstraints() {
             // (2) all arguments have been bound to their expected type
             //      - the record is therefore grounded via its arguments
             //      - the record must be bound to its expected type
-            // TODO: why not directly bind everything to their expected types, and check for groundedness in
             // the semantic checker
             const auto* rawType = dynamic_cast<const RecordType*>(&typeEnvironment->getType(record.getType()));
             assert(rawType != nullptr && "type of record must be a record type");

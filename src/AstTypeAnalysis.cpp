@@ -24,26 +24,26 @@ void TypeSolver::generateConstraints() {
 
         void visitCounter(const AstCounter& counter) {
             // counters must be numbers
-            solver->addConstraint(
-                    std::make_unique<FixedConstraint>(&counter, ConstantAnalysisType(Kind::NUMBER)));
+            solver->addConstraint(std::make_unique<FixedConstraint>(
+                    &counter, std::make_unique<ConstantAnalysisType>(Kind::NUMBER)));
         }
 
         void visitNumberConstant(const AstNumberConstant& constant) {
             // number constants must actually be numbers
-            solver->addConstraint(
-                    std::make_unique<FixedConstraint>(&constant, ConstantAnalysisType(Kind::NUMBER)));
+            solver->addConstraint(std::make_unique<FixedConstraint>(
+                    &constant, std::make_unique<ConstantAnalysisType>(Kind::NUMBER)));
         }
 
         void visitStringConstant(const AstStringConstant& constant) {
             // string constants must actually be strings
-            solver->addConstraint(
-                    std::make_unique<FixedConstraint>(&constant, ConstantAnalysisType(Kind::SYMBOL)));
+            solver->addConstraint(std::make_unique<FixedConstraint>(
+                    &constant, std::make_unique<ConstantAnalysisType>(Kind::SYMBOL)));
         }
 
         void visitNullConstant(const AstNullConstant& constant) {
             // nils must be record types
-            solver->addConstraint(
-                    std::make_unique<FixedConstraint>(&constant, ConstantAnalysisType(Kind::RECORD)));
+            solver->addConstraint(std::make_unique<FixedConstraint>(
+                    &constant, std::make_unique<ConstantAnalysisType>(Kind::RECORD)));
         }
 
         void visitTypeCast(const AstTypeCast& cast) {
@@ -80,8 +80,8 @@ void TypeSolver::generateConstraints() {
                 }
 
                 // restrict the output type of the functor
-                solver->addConstraint(
-                        std::make_unique<FixedConstraint>(&functor, TopPrimitiveAnalysisType(kind)));
+                solver->addConstraint(std::make_unique<FixedConstraint>(
+                        &functor, std::make_unique<TopPrimitiveAnalysisType>(kind)));
 
                 // functor applied to constants must give a constant
                 auto constantConstraint =
@@ -122,7 +122,7 @@ void TypeSolver::generateConstraints() {
 
             // restrict the output type of the functor
             solver->addConstraint(
-                    std::make_unique<FixedConstraint>(&functor, TopPrimitiveAnalysisType(kind)));
+                    std::make_unique<FixedConstraint>(&functor, std::make_unique<TopPrimitiveAnalysisType>(kind)));
 
             // functor applied to constants must give a constant
             auto constantConstraint =
@@ -279,6 +279,28 @@ void TypeSolver::generateConstraints() {
 
     // TODO: get rid of type env from here
     ConstraintFinder(lattice, this, lattice->getTypeEnvironment(), program).visit(*clause);
+}
+
+void TypeSolver::resolveConstraints() {
+    // restore everything to the top type
+    typeMapping.clear();
+    visitDepthFirst(*clause, [&](const AstArgument& arg) {
+        // TODO: careful of getRepresentative!!!
+        typeMapping[&arg] = lattice->getStoredType(TopAnalysisType());
+    });
+
+    // TODO: fixed constraints can be done outside the loop
+    // apply each constraint until all are satisfied (fixed point reached)
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (const auto& cons : constraints) {
+            if (!cons->isSatisfied(this)) {
+                changed = true;
+                cons->resolve(this);
+            }
+        }
+    }
 }
 
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {

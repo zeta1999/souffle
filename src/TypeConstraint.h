@@ -127,7 +127,8 @@ private:
  */
 class UnionConstraint : public TypeConstraint {
 public:
-    UnionConstraint(const AstArgument* argument, std::vector<const AstArgument*> bounds) : argument(argument), bounds(bounds) {}
+    UnionConstraint(const AstArgument* argument, std::vector<const AstArgument*> bounds)
+            : argument(argument), bounds(bounds) {}
     UnionConstraint(const UnionConstraint& other) = default;
     UnionConstraint& operator=(const UnionConstraint& other) = default;
 
@@ -173,19 +174,22 @@ private:
  */
 class ImplicationConstraint : public TypeConstraint {
 public:
-    // TODO: sort out the constructors
-    // TODO: why not take in any constraint
-    ImplicationConstraint(std::unique_ptr<FixedConstraint> consequent) : consequent(std::move(consequent)) {}
+    ImplicationConstraint(std::unique_ptr<TypeConstraint> consequent) : consequent(std::move(consequent)) {}
+
+    ImplicationConstraint(std::vector<std::unique_ptr<TypeConstraint>> requirements,
+            std::unique_ptr<TypeConstraint> consequent)
+            : requirements(std::move(requirements)), consequent(std::move(consequent)) {}
+
     ImplicationConstraint(const ImplicationConstraint& other) = default;
     ImplicationConstraint& operator=(const ImplicationConstraint& other) = default;
 
     /** Adds a requirement to the lhs of the implication */
-    void addRequirement(std::unique_ptr<FixedConstraint> req) {
+    void addRequirement(std::unique_ptr<TypeConstraint> req) {
         requirements.push_back(std::move(req));
     }
 
     /** Gets requirements on the lhs of the implication */
-    std::vector<FixedConstraint*> getRequirements() const {
+    std::vector<TypeConstraint*> getRequirements() const {
         return toPtrVector(requirements);
     }
 
@@ -200,7 +204,7 @@ public:
 
     /** Output to a given output stream */
     void print(std::ostream& out) const override {
-        out << "(" << join(getRequirements(), ",", print_deref<FixedConstraint*>()) << ") -> (" << *consequent
+        out << "(" << join(getRequirements(), ",", print_deref<TypeConstraint*>()) << ") -> (" << *consequent
             << ")";
     }
 
@@ -214,8 +218,8 @@ protected:
 private:
     // TODO: set instead?
     // TODO: and const?
-    std::vector<std::unique_ptr<FixedConstraint>> requirements{};
-    std::unique_ptr<FixedConstraint> consequent;
+    std::vector<std::unique_ptr<TypeConstraint>> requirements{};
+    std::unique_ptr<TypeConstraint> consequent;
 };
 
-} // end of namespace souffle
+}  // end of namespace souffle

@@ -83,7 +83,6 @@ void TypeSolver::generateConstraints() {
                         std::make_unique<FixedConstraint>(&functor, TopPrimitiveAnalysisType(kind)));
 
                 // functor applied to constants must give a constant
-                // TODO: change implication constraint structure?
                 auto constantConstraint =
                         std::make_unique<ImplicationConstraint>(std::make_unique<FixedConstraint>(
                                 &functor, std::make_unique<ConstantAnalysisType>(kind)));

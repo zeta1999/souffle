@@ -124,7 +124,7 @@ void ImplicationConstraint::resolve(TypeSolver* currentSolution) const {
 }
 
 bool ImplicationConstraint::isSatisfied(const TypeSolver* currentSolution) const {
-    for (const FixedConstraint* req : getRequirements()) {
+    for (const auto* req : getRequirements()) {
         if (!req->isSatisfied(currentSolution)) {
             return true;
         }
@@ -132,4 +132,4 @@ bool ImplicationConstraint::isSatisfied(const TypeSolver* currentSolution) const
     return consequent->isSatisfied(currentSolution);
 }
 
-} // end of namespace souffle
+}  // end of namespace souffle

@@ -143,6 +143,7 @@ souffle_sources = \
               StringPool.h                              \
               Synthesiser.cpp       Synthesiser.h       \
               SynthesiserRelation.cpp SynthesiserRelation.h \
+              TypeConstraint.cpp    TypeConstraint.h    \
               TypeLattice.cpp       TypeLattice.h       \
               TypeSystem.cpp        TypeSystem.h        \
               WriteStream.h                             \

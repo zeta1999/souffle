@@ -139,12 +139,12 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     };
 
     // Node-mapper that searches for and updates RAM inserts
-    class RamInsertCapturer : public RamNodeMapper {
+    class RamConditionalOperationCapturer : public RamNodeMapper {
         mutable bool modified = false;
         LevelConditionsTransformer* context;
 
     public:
-        RamInsertCapturer(LevelConditionsTransformer* l) : context(l) {}
+        RamConditionalOperationCapturer(LevelConditionsTransformer* l) : context(l) {}
 
         bool getModified() const {
             return modified;
@@ -152,7 +152,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
-            if (auto* insert = dynamic_cast<RamInsert*>(node.get())) {
+            if (auto* insert = dynamic_cast<RamConditionalOperation*>(node.get())) {
                 RamScanCapturer scanUpdate(context);
                 insert->apply(scanUpdate);
 
@@ -169,7 +169,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     };
 
     // level all RAM inserts
-    RamInsertCapturer insertUpdate(this);
+    RamConditionalOperationCapturer insertUpdate(this);
     program.getMain()->apply(insertUpdate);
 
     return insertUpdate.getModified();
@@ -278,12 +278,12 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
     };
 
     // Node-mapper that searches for and updates RAM inserts
-    class RamInsertCapturer : public RamNodeMapper {
+    class RamConditionalOperationCapturer : public RamNodeMapper {
         mutable bool modified;
         CreateIndicesTransformer* context;
 
     public:
-        RamInsertCapturer(CreateIndicesTransformer* c) : modified(false), context(c) {}
+        RamConditionalOperationCapturer(CreateIndicesTransformer* c) : modified(false), context(c) {}
 
         bool getModified() const {
             return modified;
@@ -291,7 +291,7 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
-            if (auto* insert = dynamic_cast<RamInsert*>(node.get())) {
+            if (auto* insert = dynamic_cast<RamConditionalOperation*>(node.get())) {
                 RamScanCapturer scanUpdate(context);
                 insert->apply(scanUpdate);
                 if (!modified && scanUpdate.getModified()) {
@@ -306,7 +306,7 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
     };
 
     // level all RAM inserts
-    RamInsertCapturer insertUpdate(this);
+    RamConditionalOperationCapturer insertUpdate(this);
     program.getMain()->apply(insertUpdate);
 
     return insertUpdate.getModified();
@@ -466,12 +466,12 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
     };
 
     // Node-mapper that searches for and updates RAM inserts
-    class RamInsertCapturer : public RamNodeMapper {
+    class RamConditionalOperationCapturer : public RamNodeMapper {
         mutable bool modified;
         ConvertExistenceChecksTransformer* context;
 
     public:
-        RamInsertCapturer(ConvertExistenceChecksTransformer* c) : modified(false), context(c) {}
+        RamConditionalOperationCapturer(ConvertExistenceChecksTransformer* c) : modified(false), context(c) {}
 
         bool getModified() const {
             return modified;
@@ -479,7 +479,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             // get all RAM inserts
-            if (auto* insert = dynamic_cast<RamInsert*>(node.get())) {
+            if (auto* insert = dynamic_cast<RamConditionalOperation*>(node.get())) {
                 RamScanCapturer scanUpdate(context);
                 insert->apply(scanUpdate);
 
@@ -495,7 +495,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
     };
 
     // level all RAM inserts
-    RamInsertCapturer insertUpdate(this);
+    RamConditionalOperationCapturer insertUpdate(this);
     program.getMain()->apply(insertUpdate);
 
     return insertUpdate.getModified();

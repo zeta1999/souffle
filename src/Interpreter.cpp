@@ -839,7 +839,7 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
             return true;
         }
 
-        bool visitInsert(const RamInsert& insert) override {
+        bool visitConditionalOperation(const RamConditionalOperation& insert) override {
             // run generic query executor
 
             const RamCondition* c = insert.getCondition();
@@ -926,7 +926,7 @@ void Interpreter::executeMain() {
 
         // Store count of rules
         size_t ruleCount = 0;
-        visitDepthFirst(main, [&](const RamInsert& rule) { ++ruleCount; });
+        visitDepthFirst(main, [&](const RamConditionalOperation& rule) { ++ruleCount; });
         ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
 
         evalStmt(main);
@@ -953,7 +953,7 @@ void Interpreter::executeSubroutine(const RamStatement& stmt, const std::vector<
     ctxt.setArguments(arguments);
 
     // run subroutine
-    const RamOperation& op = static_cast<const RamInsert&>(stmt).getOperation();
+    const RamOperation& op = static_cast<const RamConditionalOperation&>(stmt).getOperation();
     evalOp(op, ctxt);
 }
 

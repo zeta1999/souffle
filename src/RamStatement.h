@@ -402,9 +402,8 @@ protected:
 
 /**
  * A relational algebra query
- * TODO (#541): Rename RAM statement: it is used for projection and sub-routines.
  */
-class RamInsert : public RamStatement {
+class RamConditionalOperation : public RamStatement {
 protected:
     /** RAM operation */
     std::unique_ptr<RamOperation> operation;
@@ -413,8 +412,8 @@ protected:
     std::unique_ptr<RamCondition> condition;
 
 public:
-    RamInsert(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
-            : RamStatement(RN_Insert), operation(std::move(o)), condition(std::move(c)) {}
+    RamConditionalOperation(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
+            : RamStatement(RN_ConditionalOperation), operation(std::move(o)), condition(std::move(c)) {}
 
     /** Get RAM operation */
     const RamOperation& getOperation() const {
@@ -435,7 +434,7 @@ public:
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
-        os << "INSERT ";
+        os << "DO ";
         if (condition != nullptr) {
             os << "WHERE ";
             condition->print(os);
@@ -450,12 +449,12 @@ public:
     }
 
     /** Create clone */
-    RamInsert* clone() const override {
-        RamInsert* res;
+    RamConditionalOperation* clone() const override {
+        RamConditionalOperation* res;
         if (condition != nullptr) {
-            res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()));
+            res = new RamConditionalOperation(std::unique_ptr<RamOperation>(operation->clone()));
         } else {
-            res = new RamInsert(std::unique_ptr<RamOperation>(operation->clone()),
+            res = new RamConditionalOperation(std::unique_ptr<RamOperation>(operation->clone()),
                     std::unique_ptr<RamCondition>(condition->clone()));
         }
         return res;
@@ -472,8 +471,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamInsert*>(&node));
-        const auto& other = static_cast<const RamInsert&>(node);
+        assert(nullptr != dynamic_cast<const RamConditionalOperation*>(&node));
+        const auto& other = static_cast<const RamConditionalOperation&>(node);
         return getOperation() == other.getOperation() && getCondition() == other.getCondition();
     }
 };

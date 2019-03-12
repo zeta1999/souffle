@@ -347,12 +347,10 @@ protected:
 class RamFact : public RamRelationStatement {
 protected:
     /** Arguments of fact */
-    // TODO (#541): Reoccuring type -> push to RamValue.h
-    using value_list = std::vector<std::unique_ptr<RamValue>>;
-    value_list values;
+    std::vector<std::unique_ptr<RamValue>> values;
 
 public:
-    RamFact(std::unique_ptr<RamRelationReference> rel, value_list&& v)
+    RamFact(std::unique_ptr<RamRelationReference> rel, std::vector<std::unique_ptr<RamValue>>&& v)
             : RamRelationStatement(RN_Fact, std::move(rel)), values(std::move(v)) {}
 
     /** Get arguments of fact */

@@ -326,7 +326,7 @@ private:
     std::vector<std::unique_ptr<InnerAnalysisType>> fields{};
 };
 
-/** A union type, siting between base types and the top primitive types */
+/** A union type, sitting between base types and the top primitive types */
 class UnionAnalysisType : public InnerAnalysisType {
 public:
     UnionAnalysisType(std::set<BaseAnalysisType> baseTypes);

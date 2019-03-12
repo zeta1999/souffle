@@ -18,6 +18,11 @@ public:
     /** Checks if lhs is a subtype of rhs */
     bool isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) const;
 
+    /** Gets the type environment associated with the type lattice */
+    const TypeEnvironment* getTypeEnvironment() const {
+        return typeEnvironment;
+    }
+
     /**
      * Gets the equivalent type stored in the lattice.
      * If the type does not yet exist in the lattice, it is created.
@@ -40,6 +45,7 @@ private:
     // TODO: const?
     // TODO: const for all these unique pointers throughout?
     std::set<std::unique_ptr<AnalysisType>> storedTypes;
+    const TypeEnvironment* typeEnvironment;
 };
 
 }  // end of namespace souffle

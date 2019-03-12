@@ -1,4 +1,5 @@
 #include "AstTypeAnalysis.h"
+#include "AstTranslationUnit.h"
 #include "TypeConstraint.h"
 #include <ostream>
 
@@ -10,8 +11,8 @@ void TypeSolver::generateConstraints() {
     public:
         // TODO: fix up this constructor once done (some args can be removed - just added for ease in the
         // first run through)
-        ConstraintFinder(TypeLattice* lattice, TypeSolver* solver, TypeEnvironment* typeEnvironment,
-                AstProgram* program)
+        ConstraintFinder(TypeLattice* lattice, TypeSolver* solver, const TypeEnvironment* typeEnvironment,
+                const AstProgram* program)
                 : lattice(lattice), solver(solver), typeEnvironment(typeEnvironment), program(program) {}
 
         void visitNode(const AstNode& node) {
@@ -272,11 +273,28 @@ void TypeSolver::generateConstraints() {
         // TODO: reorder?
         TypeLattice* lattice;
         TypeSolver* solver;
-        TypeEnvironment* typeEnvironment;
-        AstProgram* program;  // TODO: reference if kept
+        const TypeEnvironment* typeEnvironment;
+        const AstProgram* program;  // TODO: reference if kept
     };
 
-    ConstraintFinder(lattice, this, typeEnvironment, program).visit(*clause);
+    // TODO: get rid of type env from here
+    ConstraintFinder(lattice, this, lattice->getTypeEnvironment(), program).visit(*clause);
+}
+
+void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
+    const AstProgram& program = *translationUnit.getProgram();
+    for (const AstRelation* rel : program.getRelations()) {
+        for (const AstClause* clause : rel->getClauses()) {
+            // perform the type analysis
+            TypeSolver solver(lattice.get(), clause, &program);
+
+            // store the result for each argument
+            visitDepthFirst(*clause, [&](const AstArgument& arg) {
+                assert(solver.hasType(&arg) && "clause argument does not have a type");
+                typeSolutions[&arg] = solver.getType(&arg);
+            });
+        }
+    }
 }
 
 }  // end of namespace souffle

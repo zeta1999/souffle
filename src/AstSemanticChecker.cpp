@@ -112,6 +112,10 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     checkIODirectives(report, program);
     checkWitnessProblem(report, program);
     checkInlining(report, program, precedenceGraph, ioTypes);
+    checkGroundedness(report, program);
+    // TODO: rename these possibly, small description
+    checkTypeUsage(report, typeEnv, program);
+    checkTypeCorrectness(report, typeAnalysis, program);
 
     // get the list of components to be checked
     std::vector<const AstClause*> nodes;
@@ -121,78 +125,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     }
 
-    // -- check grounded variables and records --
-    visitDepthFirst(nodes, [&](const AstClause& clause) {
-        // only interested in rules
-        if (clause.isFact()) {
-            return;
-        }
-
-        // compute all grounded terms
-        auto isGrounded = getGroundedTerms(clause);
-
-        // all terms in head need to be grounded
-        std::set<std::string> reportedVars;
-        for (const AstVariable* cur : getVariables(clause)) {
-            if (!isGrounded[cur] && reportedVars.insert(cur->getName()).second) {
-                report.addError("Ungrounded variable " + cur->getName(), cur->getSrcLoc());
-            }
-        }
-
-        // all records need to be grounded
-        for (const AstRecordInit* cur : getRecords(clause)) {
-            if (!isGrounded[cur]) {
-                report.addError("Ungrounded record", cur->getSrcLoc());
-            }
-        }
-    });
-
     // -- type checks --
-
-    // type casts name a valid type
-    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
-        if (!typeEnv.isType(cast.getType())) {
-            report.addError("Type cast is to undeclared type " + toString(cast.getType()), cast.getSrcLoc());
-        }
-    });
-
-    // record initializations declare valid record types and have correct size
-    visitDepthFirst(nodes, [&](const AstRecordInit& record) {
-        // TODO (#467) remove the next line to enable subprogram compilation for record types
-        Global::config().unset("engine");
-        if (typeEnv.isType(record.getType())) {
-            const Type& type = typeEnv.getType(record.getType());
-            if (!isRecordType(type)) {
-                report.addError("Type " + toString(type) + " is not a record type", record.getSrcLoc());
-            } else if (record.getArguments().size() !=
-                       dynamic_cast<const RecordType*>(&type)->getFields().size()) {
-                report.addError("Wrong number of arguments given to record", record.getSrcLoc());
-            }
-        } else {
-            report.addError(
-                    "Type " + toString(record.getType()) + " has not been declared", record.getSrcLoc());
-        }
-    });
-
-    // number constants are within allowed domain
-    visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
-        AstDomain idx = cnst.getIndex();
-        if (idx > MAX_AST_DOMAIN || idx < MIN_AST_DOMAIN) {
-            report.addError("Number constant not in range [" + std::to_string(MIN_AST_DOMAIN) + ", " +
-                                    std::to_string(MAX_AST_DOMAIN) + "]",
-                    cnst.getSrcLoc());
-        }
-    });
-
-    // check existence and arity of all user defined functors
-    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
-        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-        if (funDecl == nullptr) {
-            report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
-        } else if (funDecl->getArgCount() != fun.getArgCount()) {
-            report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
-        }
-    });
 
     const TypeLattice& lattice = typeAnalysis.getLattice();
 
@@ -1407,6 +1340,102 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
             }
         }
     });
+}
+
+// Perform the groundedness check
+void AstSemanticChecker::checkGroundedness(ErrorReport& report, const AstProgram& program) {
+    for (const auto& rel : program.getRelations()) {
+        for (const auto& clause : rel->getClauses()) {
+            // only interested in rules
+            if (clause->isFact()) {
+                continue;
+            }
+
+            // compute all grounded terms
+            auto isGrounded = getGroundedTerms(*clause);
+
+            // all variables must be grounded
+            std::set<std::string> reportedVars;  // only report a variable once
+            for (const AstVariable* cur : getVariables(clause)) {
+                if (!isGrounded[cur] && reportedVars.insert(cur->getName()).second) {
+                    report.addError("Ungrounded variable " + cur->getName(), cur->getSrcLoc());
+                }
+            }
+
+            // all records need to be grounded
+            for (const AstRecordInit* cur : getRecords(clause)) {
+                if (!isGrounded[cur]) {
+                    report.addError("Ungrounded record", cur->getSrcLoc());
+                }
+            }
+        }
+    }
+}
+
+// Check that types are used appropriately
+void AstSemanticChecker::checkTypeUsage(
+        ErrorReport& report, const TypeEnvironment& typeEnv, const AstProgram& program) {
+    // get list of nodes to check
+    std::vector<const AstClause*> nodes;
+    for (const auto& rel : program.getRelations()) {
+        for (const auto& cls : rel->getClauses()) {
+            nodes.push_back(cls);
+        }
+    }
+
+    // type casts name a valid type
+    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
+        if (!typeEnv.isType(cast.getType())) {
+            report.addError("Type cast is to undeclared type " + toString(cast.getType()), cast.getSrcLoc());
+        }
+    });
+
+    // record initialisations declare valid record types and have correct size
+    visitDepthFirst(nodes, [&](const AstRecordInit& record) {
+        // TODO (#467) remove the next line to enable subprogram compilation for record types
+        Global::config().unset("engine");
+
+        if (typeEnv.isType(record.getType())) {
+            const Type& type = typeEnv.getType(record.getType());
+            if (!isRecordType(type)) {
+                // type was declared, but isn't actually a record type
+                report.addError("Type " + toString(type) + " is not a record type", record.getSrcLoc());
+            } else if (record.getArguments().size() !=
+                       dynamic_cast<const RecordType*>(&type)->getFields().size()) {
+                // incorrect number of fields
+                report.addError("Wrong number of arguments given to record", record.getSrcLoc());
+            }
+        } else {
+            // record type is undeclared
+            report.addError(
+                    "Type " + toString(record.getType()) + " has not been declared", record.getSrcLoc());
+        }
+    });
+
+    // number constants are within the allowed domain
+    visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
+        AstDomain idx = cnst.getIndex();
+        if (idx > MAX_AST_DOMAIN || idx < MIN_AST_DOMAIN) {
+            report.addError("Number constant not in range [" + std::to_string(MIN_AST_DOMAIN) + ", " +
+                                    std::to_string(MAX_AST_DOMAIN) + "]",
+                    cnst.getSrcLoc());
+        });
+    });
+
+    // check the existence and arity of all user-defined functors
+    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
+        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+        if (funDecl == nullptr) {
+            report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
+        } else if (funDecl->getArgCount() != fun.getArgCount()) {
+            report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
+        }
+    });
+}
+
+void AstSemanticChecker::checkTypeCorrectness(
+        ErrorReport& report, const TypeAnalysis& typeAnalysis, const AstProgram& program) {
+    // TODO
 }
 
 // Check that type and relation names are disjoint sets.

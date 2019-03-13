@@ -129,106 +129,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     const TypeLattice& lattice = typeAnalysis.getLattice();
 
-    // get the list of components to be checked
-    if (lattice.isValid()) {
-        if (TypeAnalysis::hasInvalidClauses(program)) {
-            nodes = TypeAnalysis::getValidClauses(program);
-            report.addError("Not all clauses could be typechecked due to other errors present");
-        }
-    } else {
-        report.addError("No type checking could occur due to other errors present");
-        nodes = std::vector<const AstClause*>();
-    }
-
-    // check all arguments have been declared a valid type
-    for (const AstClause* clause : nodes) {
-        // compute all grounded terms
-        auto isGrounded = getGroundedTerms(*clause);
-
-        std::set<std::string> reportedVars;
-        visitDepthFirst(*clause, [&](const AstArgument& arg) {
-            if (!isGrounded[&arg]) {
-                // This argument has already caused an error, so skip it here
-                return;
-            }
-            if (dynamic_cast<const AstVariable*>(&arg) != nullptr) {
-                if (!reportedVars.insert(dynamic_cast<const AstVariable*>(&arg)->getName()).second) {
-                    // This variable's type has already been checked
-                    return;
-                }
-            }
-            const AnalysisType* type = typeAnalysis.getType(&arg);
-            if (!type->isValid()) {
-                if (dynamic_cast<const BotPrimAType*>(type) != nullptr) {
-                    report.addError("Unable to deduce valid type for expression, as base types are disjoint",
-                            arg.getSrcLoc());
-                } else if (dynamic_cast<const BotAType*>(type) != nullptr) {
-                    report.addError(
-                            "Unable to deduce valid type for expression, as primitive types are disjoint",
-                            arg.getSrcLoc());
-                } else if (dynamic_cast<const TopAType*>(type) != nullptr) {
-                    // this must be equal to a poorly typed but grounded record constructor, which will
-                    // produce an error so we don't have to
-                    // e.g. A(x) :- x = *R[y], B(y). when y has the wrong type for R, we don't want to also
-                    // raise an error for the type of x
-                } else {
-                    assert(false && "No other type should be invalid");
-                }
-            }
-        });
-    }
-
-    // check functor inputs
-    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
-        for (size_t i = 0; i < fun.getArity(); i++) {
-            const AnalysisType* argType = typeAnalysis.getType(fun.getArg(i));
-            if (argType->isValid()) {
-                if (fun.acceptsSymbols(i)) {
-                    if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        report.addError("Non-symbolic argument for functor, instead argument has type " +
-                                                toString(*argType),
-                                fun.getArg(i)->getSrcLoc());
-                    }
-                } else if (fun.acceptsNumbers(i)) {
-                    if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::NUMBER))) {
-                        report.addError("Non-numeric argument for functor, instead argument has type " +
-                                                toString(*argType),
-                                fun.getArg(i)->getSrcLoc());
-                    }
-                } else {
-                    assert(false && "Unsupported functor input type");
-                }
-            }
-        }
-    });
-
-    // - user-defined functors -
-    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
-        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-        assert(funDecl != nullptr && "Functor must have been declared");
-        assert(funDecl->getArgCount() == fun.getArgCount() && "Functor arity must match declaration");
-        for (size_t i = 0; i < funDecl->getArgCount(); i++) {
-            const AnalysisType* argType = typeAnalysis.getType(fun.getArg(i));
-            if (argType->isValid()) {
-                if (funDecl->acceptsSymbols(i)) {
-                    if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        report.addError("Non-symbolic argument for functor, instead argument has type " +
-                                                toString(*argType),
-                                fun.getArg(i)->getSrcLoc());
-                    }
-                } else if (funDecl->acceptsNumbers(i)) {
-                    if (!lattice.isSubtype(argType, lattice.getPrimitive(Kind::NUMBER))) {
-                        report.addError("Non-numeric argument for functor, instead argument has type " +
-                                                toString(*argType),
-                                fun.getArg(i)->getSrcLoc());
-                    }
-                } else {
-                    assert(false && "Unsupported functor input type");
-                }
-            }
-        }
-    });
-
     // check records have been assigned the correct type
     for (const AstClause* clause : nodes) {
         // compute all grounded terms
@@ -1419,7 +1319,7 @@ void AstSemanticChecker::checkTypeUsage(
             report.addError("Number constant not in range [" + std::to_string(MIN_AST_DOMAIN) + ", " +
                                     std::to_string(MAX_AST_DOMAIN) + "]",
                     cnst.getSrcLoc());
-        });
+        }
     });
 
     // check the existence and arity of all user-defined functors
@@ -1435,7 +1335,133 @@ void AstSemanticChecker::checkTypeUsage(
 
 void AstSemanticChecker::checkTypeCorrectness(
         ErrorReport& report, const TypeAnalysis& typeAnalysis, const AstProgram& program) {
-    // TODO
+    const TypeLattice* lattice = typeAnalysis.getLattice();
+
+    // get list of nodes to check
+    std::vector<const AstClause*> nodes;
+    for (const auto& rel : program.getRelations()) {
+        for (const auto& cls : rel->getClauses()) {
+            nodes.push_back(cls);
+        }
+    }
+
+    // TODO: set this up
+    // ----------------
+    // get the list of components to be checked
+    if (lattice->isValid()) {
+        if (TypeAnalysis::hasInvalidClauses(program)) {
+            nodes = TypeAnalysis::getValidClauses(program);
+            report.addError("Not all clauses could be typechecked due to other errors present");
+        }
+    } else {
+        report.addError("No type checking could occur due to other errors present");
+        nodes = std::vector<const AstClause*>();
+    }
+    // ----------------
+
+    // -- check that all arguments have been declared a valid type --
+    for (const AstClause* clause : nodes) {
+        // ungrounded terms should be ignored, as they have already been reported
+        auto isGrounded = getGroundedTerms(*clause);
+
+        std::set<std::string> seenVariables;
+        visitDepthFirst(*clause, [&](const AstArgument& arg) {
+            // ignore (already reported) ungrounded terms
+            if (!isGrounded[&arg]) {
+                return;
+            }
+
+            // only check each variable once
+            if (auto* var = dynamic_cast<const AstVariable*>(&arg)) {
+                if (!seenVariables.insert(var->getName()).second) {
+                    // this variable's type has already been checked
+                    return;
+                }
+            }
+
+            // check that the type of the argument is valid
+            const AnalysisType* type = typeAnalysis.getType(&arg);
+            if (!type->isValidType()) {
+                if (dynamic_cast<const BottomPrimitiveAnalysisType*>(type) != nullptr) {
+                    report.addError("Unable to deduce valid type for expression, as base types are disjoint",
+                            arg.getSrcLoc());
+                } else if (dynamic_cast<const BottomAnalysisType*>(type) != nullptr) {
+                    report.addError(
+                            "Unable to deduce valid type for expression, as primitive types are disjoint",
+                            arg.getSrcLoc());
+                } else if (dynamic_cast<const TopAnalysisType*>(type) != nullptr) {
+                    // TODO: check this comment
+                    // this must be equal to a poorly typed but grounded record constructor, which will
+                    // produce an error so we don't have to
+                    // e.g. A(x) :- x = *R[y], B(y). when y has the wrong type for R, we don't want to also
+                    // raise an error for the type of x
+                } else {
+                    assert(false && "no other type should be invalid");
+                }
+            }
+        });
+    }
+
+    // -- check intrinsic functor inputs --
+    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& functor) {
+        for (size_t i = 0; i < functor.getArity(); i++) {
+            const AnalysisType* argType = typeAnalysis.getType(functor.getArg(i));
+
+            // invalid types have already been reported
+            if (argType->isValidType()) {
+                if (functor.acceptsSymbols(i)) {
+                    // argument must be a symbol type
+                    if (!lattice->isSubtype(*argType, TopPrimitiveAnalysisType(Kind::SYMBOL))) {
+                        report.addError("Non-symbolic argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                functor.getArg(i)->getSrcLoc());
+                    }
+                } else if (functor.acceptsNumbers(i)) {
+                    // argument must be a number type
+                    if (!lattice->isSubtype(*argType, TopPrimitiveAnalysisType(Kind::NUMBER))) {
+                        report.addError("Non-numeric argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                functor.getArg(i)->getSrcLoc());
+                    }
+                } else {
+                    assert(false && "unsupported functor input type");
+                }
+            }
+        }
+    });
+
+    // -- check user-defined functor inputs --
+    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& functor) {
+        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(functor.getName());
+        // TODO: handled by getValidClauses...
+        assert(funDecl != nullptr && "user-defined functor not declared");
+        assert(funDecl != nullptr && "functor arity must match declaration");
+
+        for (size_t i = 0; i < funDecl->getArgCount(); i++) {
+            const AnalysisType* argType = typeAnalysis.getType(functor.getArg(i));
+
+            // invalid types have already been reported
+            if (argType->isValidType()) {
+                if (funDecl->acceptsSymbols(i)) {
+                    // argument must be a symbol type
+                    if (!lattice->isSubtype(*argType, TopPrimitiveAnalysisType(Kind::SYMBOL))) {
+                        report.addError("Non-symbolic argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                functor.getArg(i)->getSrcLoc());
+                    }
+                } else if (funDecl->acceptsNumbers(i)) {
+                    // argument must be a number type
+                    if (!lattice->isSubtype(*argType, TopPrimitiveAnalysisType(Kind::NUMBER))) {
+                        report.addError("Non-numeric argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                functor.getArg(i)->getSrcLoc());
+                    } else {
+                        assert(false && "unsupported functor input type");
+                    }
+                }
+            }
+        }
+    });
 }
 
 // Check that type and relation names are disjoint sets.

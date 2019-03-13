@@ -17,6 +17,7 @@ public:
 
     /** Checks if lhs is a subtype of rhs */
     bool isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) const;
+    bool isSubtype(const AnalysisType& lhs, const AnalysisType& rhs) const;
 
     /** Gets the type environment associated with the type lattice */
     const TypeEnvironment* getTypeEnvironment() const {

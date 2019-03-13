@@ -181,6 +181,7 @@ soufflepublicdir = $(includedir)/souffle
 
 soufflepublic_HEADERS = \
 						CompiledOptions.h       \
+						BinaryConstraintOps.h   \
                         Brie.h                  \
                         BTree.h                 \
                         CompiledIndexUtils.h    \

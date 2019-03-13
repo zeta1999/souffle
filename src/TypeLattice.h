@@ -38,8 +38,9 @@ public:
      * If the type does not yet exist in the lattice, it is created.
      */
     // TODO: try getting rid of this
-    const AnalysisType* getAnalysisType(const AstTypeIdentifier& type);
-    const AnalysisType* getAnalysisType(const Type& type);
+    // TODO: should be inner analysis type
+    const InnerAnalysisType* getAnalysisType(const AstTypeIdentifier& type);
+    const InnerAnalysisType* getAnalysisType(const Type& type);
 
 private:
     // TODO: add a comparator here

@@ -129,26 +129,6 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     const TypeLattice& lattice = typeAnalysis.getLattice();
 
-    // check type cast has correct type
-    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
-        const AnalysisType* inputType = typeAnalysis.getType(cast.getValue());
-        const PrimitiveAType* outputKind = lattice.getType(cast.getType())->getPrimitive();
-
-        if (!inputType->isValid()) {
-            return;
-        }
-        if (!lattice.isSubtype(inputType, outputKind)) {
-            const PrimitiveAType* inputKind = dynamic_cast<const InnerAType*>(inputType)->getPrimitive();
-            report.addWarning("Casts from " + toString(*inputKind) + " values to " + toString(*outputKind) +
-                                      " types may cause runtime errors",
-                    cast.getSrcLoc());
-        } else if (outputKind->getKind() == Kind::RECORD &&
-                   !lattice.isSubtype(inputType, lattice.getType(cast.getType()))) {
-            report.addWarning(
-                    "Casting a record to the wrong record type may cause runtime errors", cast.getSrcLoc());
-        }
-    });
-
     // check all atoms have correct input types (only negated and head atoms must be checked, but other atoms
     // hold trivially)
     visitDepthFirst(nodes, [&](const AstAtom& atom) {
@@ -233,6 +213,7 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
+    // TODO: move into another check
     // - stratification --
 
     // check for cyclic dependencies
@@ -1479,7 +1460,7 @@ void AstSemanticChecker::checkTypeCorrectness(
 
         // valid type, therefore is an inner type with a kind
         const auto* actualType = dynamic_cast<const InnerAnalysisType*>(typeAnalysis.getType(&cast));
-        assert(actualType->isValid() && "type should be valid");
+        assert(actualType->isValidType() && "type should be valid");
         assert(actualType != nullptr && "valid type should be an inner type with a kind");
 
         const AnalysisType* expectedType = lattice->getType(cast.getType());
@@ -1491,16 +1472,26 @@ void AstSemanticChecker::checkTypeCorrectness(
                     cast.getSrcLoc());
         }
 
-        // TODO: THIS NEEDS TO BE FIXED!!! just a quick hash of it
-        const AnalysisType* inputType = typeAnalysis.getType(cast.getValue());
-        const AnalysisType* outputType = lattice->getAnalysisType(cast.getType());
-
         // invalid types have already been reported
-        if (!inputType->isValidType()) {
-            // TODO: warnings....
-            if (lattice->isSubtype(*inputType, TopPrimitiveAnalysisType(outputType->getKind()))) {
-            }
-            // TODO: etc etc...
+        if (!typeAnalysis.getType(cast.getValue())->isValidType()) {
+            return;
+        }
+
+        // throw warnings if input kind doesn't match output kind
+        const auto* inputType = dynamic_cast<InnerAnalysisType*>(typeAnalysis.getType(cast.getValue()));
+        const InnerAnalysisType* outputType = lattice->getAnalysisType(cast.getType());
+
+        const auto outputPrimitive = TopPrimitiveAnalysisType(outputType->getKind());
+
+        if (!lattice->isSubtype(*inputType, outputPrimitive)) {
+            // TODO: do this more nicely
+            const TopPrimitiveAnalysisType inputPrimitive = TopPrimitiveAnalysisType(inputType->getKind());
+            report.addWarning("Casts from " + toString(inputPrimitive) + " values to " +
+                                      toString(outputPrimitive) + " types may cause runtime errors",
+                    cast.getSrcLoc());
+        } else if (outputType->getKind() == Kind::RECORD && !lattice->isSubtype(inputType, outputType)) {
+            report.addWarning(
+                    "Casting a record to the wrong record type may cause runtime errors", cast.getSrcLoc());
         }
     });
 }

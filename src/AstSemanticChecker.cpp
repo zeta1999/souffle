@@ -129,67 +129,11 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
 
     const TypeLattice& lattice = typeAnalysis.getLattice();
 
-    // check records have been assigned the correct type
-    for (const AstClause* clause : nodes) {
-        // compute all grounded terms
-        auto isGrounded = getGroundedTerms(*clause);
-
-        visitDepthFirst(*clause, [&](const AstRecordInit& record) {
-            if (!isGrounded[&record]) {
-                // Error has already been raised by grounded check
-                return;
-            }
-
-            auto* recordType = dynamic_cast<const RecordType*>(&typeEnv.getType(record.getType()));
-            assert(recordType != nullptr && "Type of record must be a record type");
-            assert(record.getArguments().size() == recordType->getFields().size() &&
-                    "Constructor has incorrect number of arguments");
-            if (dynamic_cast<const TopAType*>(typeAnalysis.getType(&record)) != nullptr) {
-                report.addError("Unable to deduce type " + toString(record.getType()) +
-                                        " as record is not grounded as a record elsewhere, and at least one "
-                                        "of its elements has the wrong type",
-                        record.getSrcLoc());
-            }
-            for (size_t i = 0; i < record.getArguments().size(); ++i) {
-                const AstArgument* member = record.getArguments()[i];
-                const AnalysisType* fieldType = lattice.getType(recordType->getFields()[i].type);
-                const AnalysisType* actualType = typeAnalysis.getType(member);
-                if (actualType->isValid() && !lattice.isSubtype(actualType, fieldType)) {
-                    report.addError("Record constructor expects element to have type " +
-                                            toString(*fieldType) + " but instead it has type " +
-                                            toString(*actualType),
-                            member->getSrcLoc());
-                }
-            }
-        });
-    }
-
-    // check aggregates involve numbers
-    visitDepthFirst(nodes, [&](const AstAggregator& aggr) {
-        if (aggr.getOperator() != AstAggregator::count) {
-            const AnalysisType* targetType = typeAnalysis.getType(aggr.getTargetExpression());
-            if (targetType->isValid() && !lattice.isSubtype(targetType, lattice.getPrimitive(Kind::NUMBER))) {
-                report.addError(
-                        "Aggregation variable is not a number, instead has type " + toString(*targetType),
-                        aggr.getTargetExpression()->getSrcLoc());
-            }
-        }
-    });
-
     // check type cast has correct type
     visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
-        if (!typeAnalysis.getType(&cast)->isValid()) {
-            return;
-        }
-        const auto* actualType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(&cast));
-        assert(actualType != nullptr && "Valid type should have a kind");
         const AnalysisType* inputType = typeAnalysis.getType(cast.getValue());
         const PrimitiveAType* outputKind = lattice.getType(cast.getType())->getPrimitive();
-        if (actualType->isValid() && actualType != lattice.getType(cast.getType())) {
-            report.addError("Typecast is to type " + toString(cast.getType()) +
-                                    " but is used where the type " + toString(*actualType) + " is expected",
-                    cast.getSrcLoc());
-        }
+
         if (!inputType->isValid()) {
             return;
         }
@@ -1460,6 +1404,103 @@ void AstSemanticChecker::checkTypeCorrectness(
                     }
                 }
             }
+        }
+    });
+
+    // -- check records have been assigned the correct type --
+    for (const AstClause* clause : nodes) {
+        // compute all grounded terms
+        auto isGrounded = getGroundedTerms(*clause);
+
+        // check each record
+        visitDepthFirst(*clause, [&](const AstRecordInit& record) {
+            if (!isGrounded[&record]) {
+                // ignore (already reported) ungrounded terms
+                return;
+            }
+
+            // TODO: check typeEnv.getType
+            auto* expectedType = dynamic_cast<const RecordType*>(typeEnv.getType(record.getType()));
+            assert(expectedType != nullptr && "type of record must be a record type");
+            assert(record.getArguments().size() == expectedType->getFields().size() &&
+                    "constructor has incorrect number of arguments");
+
+            // TODO: comment this as above - check this
+            if (dynamic_cast<const TopAnalysisType*>(typeAnalysis.getType(&record)) != nullptr) {
+                report.addError("Unable to deduce type " + toString(record.getType()) +
+                                        " as record is not grounded as a record elsewhere, and at least one "
+                                        "of its elements has the wrong type",
+                        record.getSrcLoc());
+            }
+
+            // check all arguments have a valid type
+            const auto& args = record.getArguments();
+            const auto& fieldDecls = recordType->getFields();
+            for (size_t i = 0; i < args.size(); i++) {
+                // TODO: can u abstract away the getAnalysisType stuff
+                const AnalysisType* actualType = typeAnalysis.getType(args[i]);
+                const AnalysisType* fieldType = lattice->getAnalysisType(fieldDecls[i].type);
+
+                // invalid types have already been reported
+                if (actualType->isValidType()) {
+                    if (!lattice->isSubtype(actualType, fieldType)) {
+                        report.addError("Record constructor expects element to have type " +
+                                                toString(*fieldType) + " but instead it has type " +
+                                                toString(*actualType),
+                                member->getSrcLoc());
+                    }
+                }
+            }
+        });
+    }
+
+    // -- check aggregates involving numbers --
+    visitDepthFirst(nodes, [&](const AstAggregator& aggr) {
+        if (aggr.getOperator() != AstAggregator::count) {
+            const AnalysisType* targetType = typeAnalysis.getType(aggr.getTargetExpression());
+
+            // invalid types have already been reported
+            if (targetType->isValidType()) {
+                if (!lattice->isSubtype(targetType, TopPrimitiveAnalysisType(Kind::NUMBER))) {
+                    report.addError(
+                            "Aggregation variable is not a number, instead has type " + toString(*targetType),
+                            aggr.getTargetExpression()->getSrcLoc());
+                }
+            }
+        }
+    });
+
+    // -- check type cast has correct type --
+    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
+        // invalid types have already been reported
+        if (!typeAnalysis.getType(&cast)->isValidType()) {
+            return;
+        }
+
+        // valid type, therefore is an inner type with a kind
+        const auto* actualType = dynamic_cast<const InnerAnalysisType*>(typeAnalysis.getType(&cast));
+        assert(actualType->isValid() && "type should be valid");
+        assert(actualType != nullptr && "valid type should be an inner type with a kind");
+
+        const AnalysisType* expectedType = lattice->getType(cast.getType());
+
+        // TODO: check into this - should be subtype maybe? or?
+        if (*actualType != *expectedType) {
+            report.addError("Typecast is to type " + toString(cast.getType()) +
+                                    " but is used where the type " + toString(*actualType) + " is expected",
+                    cast.getSrcLoc());
+        }
+
+        // TODO: THIS NEEDS TO BE FIXED!!! just a quick hash of it
+        const AnalysisType* inputType = typeAnalysis.getType(cast.getValue());
+        const AnalysisType* outputType = lattice->getAnalysisType(cast.getType());
+
+        // invalid types have already been reported
+        if (!inputType->isValidType()) {
+            // TODO: warnings....
+            if (lattice->isSubtype(*inputType, TopPrimitiveAnalysisType(outputType->getKind()))) {
+            }
+            // TODO: etc etc...
         }
     });
 }

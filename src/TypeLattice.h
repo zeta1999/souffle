@@ -7,6 +7,14 @@ namespace souffle {
 
 class TypeLattice {
 public:
+    TypeLattice(const TypeEnvironment* typeEnvironment) {
+        aliases["number"] = getStoredType(TopPrimitiveAnalysisType(Kind::NUMBER));
+        aliases["symbol"] = getStoredType(TopPrimitiveAnalysisType(Kind::SYMBOL));
+        for (const Type& type : typeEnvironment->getAllTypes()) {
+            addType(type);
+        }
+    }
+
     /** Checks whether the constructed type lattice is valid */
     const bool isValid() const {
         return valid;
@@ -25,6 +33,7 @@ public:
 
     /** Gets the type environment associated with the type lattice */
     const TypeEnvironment* getTypeEnvironment() const {
+        // TODO: do you need this???
         return typeEnvironment;
     }
 
@@ -35,14 +44,14 @@ public:
     // TODO: make sure this is used everywhere it should be used
     // TODO: make a note on when it should be used? probs only in meet/join... also assert that the first and
     // second are also in the lattice? change things up...
-    const AnalysisType* getStoredType(const AnalysisType& type);
+    // TODO: what if same name but diff type? e.g. with records
+    template <typename T>
+    const T* getStoredType(const T& type);
 
     /**
      * Gets the equivalent analysis type stored in the lattice.
      * If the type does not yet exist in the lattice, it is created.
      */
-    // TODO: try getting rid of this
-    // TODO: should be inner analysis type
     const InnerAnalysisType* getAnalysisType(const AstTypeIdentifier& type);
     const InnerAnalysisType* getAnalysisType(const Type& type);
 
@@ -50,9 +59,13 @@ private:
     // TODO: add a comparator here
     // TODO: const?
     // TODO: const for all these unique pointers throughout?
-    std::set<std::unique_ptr<AnalysisType>> storedTypes;
+    std::set<std::unique_ptr<AnalysisType>> storedTypes{};
     const TypeEnvironment* typeEnvironment;
     bool valid{true};
+    std::map<AstTypeIdentifier, const InnerAnalysisType*> aliases{};
+
+    /** Adds an analysis type to the lattice corresponding to the given type */
+    const InnerAnalysisType* addType(const Type& type);
 };
 
 }  // end of namespace souffle

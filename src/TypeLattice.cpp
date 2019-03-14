@@ -233,16 +233,149 @@ bool TypeLattice::isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) co
     return true;
 }
 
-const AnalysisType* TypeLattice::getStoredType(const AnalysisType& type) {
+template <typename T>
+const T* TypeLattice::getStoredType(const T& type) {
+    const AnalysisType& at = static_cast<const AnalysisType&>(type);
     for (const auto& other : storedTypes) {
-        if (*other == type) {
-            return other.get();
+        if (*other == at) {
+            assert(dynamic_cast<T*>(other.get()) && "equivalent types should have equal types");
+            return dynamic_cast<T*>(other.get());
         }
     }
 
-    auto newType = std::unique_ptr<AnalysisType>(type.clone());
-    storedTypes.insert(std::move(newType));
-    return newType.get();
+    T* newType = type.clone();
+    storedTypes.insert(std::unique_ptr<AnalysisType>(newType));
+    return newType;
+}
+
+const InnerAnalysisType* TypeLattice::getAnalysisType(const AstTypeIdentifier& type) {
+    auto pos = aliases.find(type);
+    assert(pos != aliases.end() && "type does not exist in the lattice");
+    return pos->second;
+}
+
+const InnerAnalysisType* TypeLattice::getAnalysisType(const Type& type) {
+    assert(typeEnvironment->isType(type) && "type does not exist in the type environment");
+    return getAnalysisType(type.getName());
+}
+
+// TODO: maybe get rid of a return value m8
+const InnerAnalysisType* TypeLattice::addType(const Type& type) {
+    assert(typeEnvironment->isType(type) && "type does not exist in the type environment");
+
+    const auto& typeName = type.getName();
+
+    if (aliases.find(typeName) != aliases.end()) {
+        // type has already been added
+        return aliases[type.getName()];
+    }
+
+    if (auto* baseType = dynamic_cast<const PrimitiveType*>(&type)) {
+        // -- base types --
+
+        // get the kind
+        Kind kind;
+        if (baseType->getBaseType().getName() == "symbol") {
+            kind = Kind::SYMBOL;
+        } else if (baseType->getBaseType().getName() == "number") {
+            kind = Kind::NUMBER;
+        } else {
+            assert(false && "unsupported primitive type");
+        }
+
+        // get the corresponding base analysis type
+        aliases[typeName] = getStoredType(BaseAnalysisType(kind, typeName));
+        return aliases[typeName];
+    } else if (auto* recordType = dynamic_cast<const RecordType*>(&type)) {
+        // -- record types --
+
+        // add the record now to avoid potential infinite recursion
+        const auto* recordAnalysisType = getStoredType(RecordAnalysisType(typeName));
+        aliases[typeName] = recordAnalysisType;
+
+        // now add fields recursively
+        for (const auto& field : recordType->getFields()) {
+            const auto* fieldAnalysisType = addType(field.type);
+            recordAnalysisType->addField(std::unique_ptr<InnerAnalysisType>(fieldAnalysisType->clone()));
+        }
+
+        return aliases[typeName];
+    } else if (auto* unionType = dynamic_cast<const UnionType*>(&type)) {
+        // -- union types --
+
+        const auto& elementTypes = unionType->getElementTypes();
+        if (elementTypes.empty()) {
+            // invalid: empty union types
+            this->valid = false;
+            return nullptr;
+        }
+        assert(!elementTypes.empty() && "union type cannot be empty");
+
+        // TODO: what if recursive union types?
+        // TODO: reducing union types?
+        // create the set of member types
+        bool isPrimitive = false;
+        Kind kind;
+        std::set<BaseAnalysisType> memberTypes;
+        for (const Type* memberType : elementTypes) {
+            const InnerAnalysisType* memberAnalysisType = addType(*memberType);
+            if (dynamic_cast<const TopPrimitiveAnalysisType*>(memberAnalysisType)) {
+                if (isPrimitive && kind != memberAnalysisType->getKind()) {
+                    // invalid: comprised of two differently kinded primitives
+                    this->valid = false;
+                    return nullptr;
+                }
+
+                // contains a primitive, so the entire union is that primitive
+                if (!isPrimitive) {
+                    isPrimitive = true;
+                    kind = memberAnalysisType->getKind();
+                    aliases[typeName] = getStoredType(TopPrimitiveAnalysisType(kind));
+                }
+            } else if (auto* uat = dynamic_cast<const UnionAnalysisType*>(memberAnalysisType)) {
+                for (const BaseAnalysisType memberBaseType : uat->getBaseTypes()) {
+                    memberTypes.insert(memberBaseType);
+                }
+            } else if (auto* bat = dynamic_cast<const BaseAnalysisType*>(memberAnalysisType)) {
+                memberTypes.insert(*bat);
+            } else {
+                assert(memberAnalysisType == nullptr && "unsupported member type");
+                assert(!this->isValid() && "lattice should be invalid");
+                return nullptr;
+            }
+        }
+
+        // check what the kind is
+        if (!isPrimitive) {
+            kind = (*memberTypes.begin()).getKind();
+        }
+
+        // make sure the rest are the same kind
+        for (const BaseAnalysisType& base : memberTypes) {
+            if (base.getKind() != kind) {
+                this->valid = false;
+                return nullptr;
+            }
+        }
+
+        // handle primitive case
+        if (isPrimitive) {
+            aliases[typeName] = getStoredType(TopPrimitiveAnalysisType(kind));
+            return aliases[typeName];
+        }
+
+        // handle trivial case
+        if (memberTypes.size() == 1) {
+            aliases[typeName] = getStoredType(*(memberTypes.begin()));
+            return aliases[typeName];
+        }
+
+        assert(memberTypes.size() > 1 && "unexpected member type size");
+        aliases[typeName] = getStoredType(UnionAnalysisType(memberTypes));
+        return aliases[typeName];
+    } else {
+        assert(false && "unsupported type");
+    }
 }
 
 }  // end of namespace souffle

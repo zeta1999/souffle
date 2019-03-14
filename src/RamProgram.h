@@ -38,16 +38,13 @@ public:
     /** Obtain child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> children;
-
-        // add relations
+        if (main != nullptr) { 
+            children = main->getChildNodes(); 
+        } 
         for (auto& r : relations) {
             children.push_back(r.second.get());
         }
-
-        // add main program
         children.push_back(main.get());
-
-        // add subroutines
         for (auto& s : subroutines) {
             children.push_back(s.second.get());
         }
@@ -56,19 +53,22 @@ public:
 
     /** Print */
     void print(std::ostream& out) const override {
-        out << "DECLARATION " << std::endl;
-        for (const auto& rel : relations) {
-            rel.second->print(out);
-        }
-        out << "END DECLARATION " << std::endl;
         out << "PROGRAM" << std::endl;
+        out << "DECLARATION" << std::endl;
+        for (const auto& rel : relations) {
+            out << "\t";
+            rel.second->print(out);
+            out << std::endl;
+        }
+        out << "END DECLARATION" << std::endl;
         out << *main;
-        out << "\nEND PROGRAM" << std::endl;
+        out << std::endl;
         for (const auto& subroutine : subroutines) {
             out << std::endl << "SUBROUTINE " << subroutine.first << std::endl;
-            out << *subroutine.second;
-            out << "\nEND SUBROUTINE" << std::endl;
+            out << *subroutine.second << std::endl;
+            out << "END SUBROUTINE" << std::endl;
         }
+        out << "END PROGRAM" << std::endl;
     }
 
     /** Set main program */
@@ -119,6 +119,9 @@ public:
     /** Create clone */
     RamProgram* clone() const override {
         RamProgram* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
+        for (auto& cur : relations) {
+            res->addRelation(std::unique_ptr<RamRelation>(cur.second->clone()));
+        }
         for (auto& cur : subroutines) {
             res->addSubroutine(cur.first, std::unique_ptr<RamStatement>(cur.second->clone()));
         }
@@ -128,6 +131,9 @@ public:
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         main = map(std::move(main));
+        for (auto& cur : relations) {
+            relations[cur.first] = map(std::move(cur.second));
+        }
         for (auto& cur : subroutines) {
             subroutines[cur.first] = map(std::move(cur.second));
         }
@@ -138,19 +144,21 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProgram*>(&node));
         const auto& other = static_cast<const RamProgram&>(node);
-        bool areSubroutinesEqual = true;
+        if (relations.size() != other.relations.size() || 
+            subroutines.size() != other.subroutines.size()) {
+            return false;
+        } 
         for (auto& cur : subroutines) {
-            if (other.subroutines.count(cur.first) == 0) {
-                areSubroutinesEqual = false;
-                break;
-            } else {
-                if (other.getSubroutine(cur.first) != getSubroutine(cur.first)) {
-                    areSubroutinesEqual = false;
-                    break;
-                }
+            if (other.getSubroutine(cur.first) != getSubroutine(cur.first)) {
+                return false;
             }
         }
-        return getMain() == other.getMain() && areSubroutinesEqual;
+        for (auto& cur : relations) {
+            if (other.getRelation(cur.first) != getRelation(cur.first)) {
+                return false;
+            }
+        }
+        return getMain() == other.getMain();
     }
 };
 

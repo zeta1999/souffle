@@ -125,10 +125,10 @@ public:
     /* Print */
     void print(std::ostream& out) const override {
         out << name << "(";
-        out << getArg(0);
+        out << getArg(0) << ":" << attributeTypeQualifiers[0];
         for (unsigned i = 1; i < arity; i++) {
             out << ",";
-            out << getArg(i);
+            out << getArg(i) << ":" << attributeTypeQualifiers[i];
         }
         out << ")";
 

@@ -125,17 +125,17 @@ public:
     /* Print */
     void print(std::ostream& out) const override {
         out << name;
-	if (arity > 0) { 
-       	    out << "(" << getArg(0) << ":" << attributeTypeQualifiers[0];
+        if (arity > 0) {
+            out << "(" << getArg(0) << ":" << attributeTypeQualifiers[0];
             for (unsigned i = 1; i < arity; i++) {
                 out << ",";
                 out << getArg(i) << ":" << attributeTypeQualifiers[i];
             }
             out << ")";
             out << " " << representation;
-	} else { 
-	    out << " nullary"; 
-	}
+        } else {
+            out << " nullary";
+        }
     }
 
     /** Obtain list of child nodes */

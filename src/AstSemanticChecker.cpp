@@ -117,104 +117,8 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     checkTypeUsage(report, typeEnv, program);
     checkTypeCorrectness(report, typeAnalysis, program);
 
-    // get the list of components to be checked
-    std::vector<const AstClause*> nodes;
-    for (const auto& rel : program.getRelations()) {
-        for (const auto& cls : rel->getClauses()) {
-            nodes.push_back(cls);
-        }
-    }
-
-    // -- type checks --
-
-    const TypeLattice& lattice = typeAnalysis.getLattice();
-
-    // check all atoms have correct input types (only negated and head atoms must be checked, but other atoms
-    // hold trivially)
-    visitDepthFirst(nodes, [&](const AstAtom& atom) {
-        AstRelation* relation = program.getRelation(atom.getName());
-        assert(relation != nullptr && "Relation must have been declared");
-        for (size_t i = 0; i < atom.argSize(); i++) {
-            const AnalysisType* argType = typeAnalysis.getType(atom.getArgument(i));
-            auto relationType = relation->getAttribute(i)->getTypeName();
-            if (argType->isValid() && !lattice.isSubtype(argType, lattice.getType(relationType))) {
-                report.addError("Relation expects value of type " + toString(relationType) +
-                                        " but got argument of type " + toString(*argType),
-                        atom.getArgument(i)->getSrcLoc());
-            }
-        }
-    });
-
-    // check inputs to binary constraint are correct
-    visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
-        auto lhs = constraint.getLHS();
-        auto rhs = constraint.getRHS();
-        auto op = constraint.getOperator();
-        if (op == BinaryConstraintOp::EQ) {
-            return;
-        } else if (op == BinaryConstraintOp::NE) {
-            if (typeAnalysis.getType(lhs)->isValid() && typeAnalysis.getType(rhs)->isValid()) {
-                const auto* lhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(lhs));
-                const auto* rhsType = dynamic_cast<const InnerAType*>(typeAnalysis.getType(rhs));
-                assert(lhsType != nullptr && rhsType != nullptr && "Both types must have a kind");
-                if (lhsType->getKind() != rhsType->getKind()) {
-                    report.addError("Cannot compare operands of different kinds, left operand is a " +
-                                            toString(*lhsType->getPrimitive()) + " and right operand is a " +
-                                            toString(*rhsType->getPrimitive()),
-                            constraint.getSrcLoc());
-                } else if (lhsType->getKind() == Kind::RECORD) {
-                    // TODO (#380): Remove this once record unions are allowed
-                    if (!(lattice.isSubtype(lhsType, rhsType) || lattice.isSubtype(rhsType, lhsType))) {
-                        report.addError("Cannot compare records of different types", constraint.getSrcLoc());
-                    }
-                }
-            }
-        } else {
-            const AnalysisType* lhsType = typeAnalysis.getType(lhs);
-            const AnalysisType* rhsType = typeAnalysis.getType(rhs);
-            if (lhsType->isValid()) {
-                if (constraint.isNumerical()) {
-                    if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::NUMBER))) {
-                        report.addError(
-                                "Non-numerical operand for comparison, instead left operand has type " +
-                                        toString(*lhsType),
-                                lhs->getSrcLoc());
-                    }
-                } else if (constraint.isSymbolic()) {
-                    if (!lattice.isSubtype(lhsType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        report.addError(
-                                "Non-symbolic operand for comparison, instead left operand has type " +
-                                        toString(*lhsType),
-                                lhs->getSrcLoc());
-                    }
-                } else {
-                    assert(false && "Unsupported constraint type");
-                }
-            }
-            if (rhsType->isValid()) {
-                if (constraint.isNumerical()) {
-                    if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::NUMBER))) {
-                        report.addError(
-                                "Non-numerical operand for comparison, instead right operand has type " +
-                                        toString(*rhsType),
-                                rhs->getSrcLoc());
-                    }
-                } else if (constraint.isSymbolic()) {
-                    if (!lattice.isSubtype(rhsType, lattice.getPrimitive(Kind::SYMBOL))) {
-                        report.addError(
-                                "Non-symbolic operand for comparison, instead right operand has type " +
-                                        toString(*rhsType),
-                                rhs->getSrcLoc());
-                    }
-                } else {
-                    assert(false && "Unsupported constraint type");
-                }
-            }
-        }
-    });
-
     // TODO: move into another check
-    // - stratification --
+    // -- stratification --
 
     // check for cyclic dependencies
     const Graph<const AstRelation*, AstNameComparison>& depGraph = precedenceGraph.graph();
@@ -1260,7 +1164,7 @@ void AstSemanticChecker::checkTypeUsage(
 
 void AstSemanticChecker::checkTypeCorrectness(
         ErrorReport& report, const TypeAnalysis& typeAnalysis, const AstProgram& program) {
-    const TypeLattice* lattice = typeAnalysis.getLattice();
+    TypeLattice* lattice = typeAnalysis.getLattice();
 
     // get list of nodes to check
     std::vector<const AstClause*> nodes;
@@ -1400,8 +1304,9 @@ void AstSemanticChecker::checkTypeCorrectness(
                 return;
             }
 
-            // TODO: check typeEnv.getType
-            auto* expectedType = dynamic_cast<const RecordType*>(typeEnv.getType(record.getType()));
+            // TODO: check typeEnv.getType - maybe get type?
+            auto* expectedType = dynamic_cast<const RecordType*>(
+                    &lattice->getTypeEnvironment()->getType(record.getType()));
             assert(expectedType != nullptr && "type of record must be a record type");
             assert(record.getArguments().size() == expectedType->getFields().size() &&
                     "constructor has incorrect number of arguments");
@@ -1416,7 +1321,7 @@ void AstSemanticChecker::checkTypeCorrectness(
 
             // check all arguments have a valid type
             const auto& args = record.getArguments();
-            const auto& fieldDecls = recordType->getFields();
+            const auto& fieldDecls = expectedType->getFields();
             for (size_t i = 0; i < args.size(); i++) {
                 // TODO: can u abstract away the getAnalysisType stuff
                 const AnalysisType* actualType = typeAnalysis.getType(args[i]);
@@ -1428,7 +1333,7 @@ void AstSemanticChecker::checkTypeCorrectness(
                         report.addError("Record constructor expects element to have type " +
                                                 toString(*fieldType) + " but instead it has type " +
                                                 toString(*actualType),
-                                member->getSrcLoc());
+                                args[i]->getSrcLoc());
                     }
                 }
             }
@@ -1442,7 +1347,7 @@ void AstSemanticChecker::checkTypeCorrectness(
 
             // invalid types have already been reported
             if (targetType->isValidType()) {
-                if (!lattice->isSubtype(targetType, TopPrimitiveAnalysisType(Kind::NUMBER))) {
+                if (!lattice->isSubtype(*targetType, TopPrimitiveAnalysisType(Kind::NUMBER))) {
                     report.addError(
                             "Aggregation variable is not a number, instead has type " + toString(*targetType),
                             aggr.getTargetExpression()->getSrcLoc());
@@ -1463,7 +1368,7 @@ void AstSemanticChecker::checkTypeCorrectness(
         assert(actualType->isValidType() && "type should be valid");
         assert(actualType != nullptr && "valid type should be an inner type with a kind");
 
-        const AnalysisType* expectedType = lattice->getType(cast.getType());
+        const AnalysisType* expectedType = lattice->getAnalysisType(cast.getType());
 
         // TODO: check into this - should be subtype maybe? or?
         if (*actualType != *expectedType) {
@@ -1478,7 +1383,7 @@ void AstSemanticChecker::checkTypeCorrectness(
         }
 
         // throw warnings if input kind doesn't match output kind
-        const auto* inputType = dynamic_cast<InnerAnalysisType*>(typeAnalysis.getType(cast.getValue()));
+        const auto* inputType = dynamic_cast<const InnerAnalysisType*>(typeAnalysis.getType(cast.getValue()));
         const InnerAnalysisType* outputType = lattice->getAnalysisType(cast.getType());
 
         const auto outputPrimitive = TopPrimitiveAnalysisType(outputType->getKind());
@@ -1492,6 +1397,103 @@ void AstSemanticChecker::checkTypeCorrectness(
         } else if (outputType->getKind() == Kind::RECORD && !lattice->isSubtype(inputType, outputType)) {
             report.addWarning(
                     "Casting a record to the wrong record type may cause runtime errors", cast.getSrcLoc());
+        }
+    });
+
+    // -- check all other atoms --
+    // negated and head atoms must be checked, but others hold trivially
+    visitDepthFirst(nodes, [&](const AstAtom& atom) {
+        AstRelation* rel = program.getRelation(atom.getName());
+        assert(rel != nullptr && "relation must have been declared");
+        const auto& args = atom.getArguments();
+        for (size_t i = 0; i < args.size(); i++) {
+            const AnalysisType* actualType = typeAnalysis.getType(args[i]);
+            if (!actualType->isValidType()) {
+                // invalid types have already been reported
+                continue;
+            }
+
+            auto attributeType = rel->getAttribute(i)->getTypeName();
+            const AnalysisType* expectedType = lattice->getAnalysisType(attributeType);
+            if (!lattice->isSubtype(actualType, expectedType)) {
+                report.addError("Relation expects value of type " + toString(attributeType) +
+                                        " but got argument of type " + toString(*actualType),
+                        args[i]->getSrcLoc());
+            }
+        }
+    });
+
+    // -- check binary constraint inputs --
+    visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
+        auto lhs = constraint.getLHS();
+        auto rhs = constraint.getRHS();
+        auto op = constraint.getOperator();
+
+        // equality constraint is trivial
+        if (op == BinaryConstraintOp::EQ) {
+            return;
+        }
+        // non-equality constraints must have the same kind
+        else if (op == BinaryConstraintOp::NE) {
+            // invalid types have already been reported
+            if (!typeAnalysis.getType(lhs)->isValidType() || !typeAnalysis.getType(rhs)->isValidType()) {
+                return;
+            }
+
+            const auto* lhsType = dynamic_cast<const InnerAnalysisType*>(typeAnalysis.getType(lhs));
+            const auto* rhsType = dynamic_cast<const InnerAnalysisType*>(typeAnalysis.getType(rhs));
+            assert(lhsType != nullptr && "lhs type must have a kind");
+            assert(rhsType != nullptr && "rhs type must have a kind");
+
+            if (lhsType->getKind() != rhsType->getKind()) {
+                // TODO: CHANGE HOW kinds are printed
+                report.addError("Cannot compare operands of different kinds, left operand is a " +
+                                        toString(TopPrimitiveAnalysisType(lhsType->getKind())) +
+                                        " and right operand is a " +
+                                        toString(TopPrimitiveAnalysisType(rhsType->getKind())),
+                        constraint.getSrcLoc());
+            } else if (lhsType->getKind() == Kind::RECORD) {
+                // TODO (#380): Remove this once record unions are allowed
+                // TODO: isn't this part already a constraint? we dont have record unions, remove?
+                if (!lattice->isSubtype(lhsType, rhsType) && !lattice->isSubtype(rhsType, lhsType)) {
+                    report.addError("Cannot compare records of different types", constraint.getSrcLoc());
+                }
+            }
+        }
+        // other constraints must satisfy expected types
+        else {
+            const AnalysisType* lhsType = typeAnalysis.getType(lhs);
+            const AnalysisType* rhsType = typeAnalysis.getType(rhs);
+
+            if (constraint.isNumerical()) {
+                const auto expectedTop = TopPrimitiveAnalysisType(Kind::NUMBER);
+                if (lhsType->isValidType() && !lattice->isSubtype(lhsType, &expectedTop)) {
+                    report.addError("Non-numerical operand for comparison, instead left operand has type " +
+                                            toString(*lhsType),
+                            lhs->getSrcLoc());
+                }
+
+                if (rhsType->isValidType() && !lattice->isSubtype(rhsType, &expectedTop)) {
+                    report.addError("Non-numerical operand for comparison, instead right operand has type " +
+                                            toString(*rhsType),
+                            rhs->getSrcLoc());
+                }
+            } else if (constraint.isSymbolic()) {
+                const auto expectedTop = TopPrimitiveAnalysisType(Kind::SYMBOL);
+                if (lhsType->isValidType() && !lattice->isSubtype(lhsType, &expectedTop)) {
+                    report.addError("Non-symbolic operand for comparison, instead left operand has type " +
+                                            toString(*lhsType),
+                            lhs->getSrcLoc());
+                }
+
+                if (rhsType->isValidType() && !lattice->isSubtype(rhsType, &expectedTop)) {
+                    report.addError("Non-symbolic operand for comparison, instead right operand has type " +
+                                            toString(*rhsType),
+                            rhs->getSrcLoc());
+                }
+            } else {
+                assert(false && "unsupported constraint type");
+            }
         }
     });
 }

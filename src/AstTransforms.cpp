@@ -216,7 +216,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
     bool changed = false;
 
     AstProgram& program = *translationUnit.getProgram();
-    TypeLattice& lattice = translationUnit.getAnalysis<TypeAnalysis>()->getLattice();
+    TypeLattice* lattice = translationUnit.getAnalysis<TypeAnalysis>()->getLattice();
 
     // if an aggregator has a body consisting of more than an atom => create new relation
     int counter = 0;
@@ -282,12 +282,18 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
 
             auto* rel = new AstRelation();
             rel->setName(relName);
+
             // add attributes
-            std::map<const AstArgument*, const AnalysisType*> argTypes =
-                    TypeAnalysis::analyseTypes(lattice, *aggClause, program);
+            TypeSolver typeSolver(lattice, aggClause, &program);
             for (const auto& cur : head->getArguments()) {
-                rel->addAttribute(std::make_unique<AstAttribute>(
-                        toString(*cur), (argTypes[cur]->isNumeric()) ? "number" : "symbol"));
+                // get the correct type for the attribute
+                assert(dynamic_cast<const InnerAnalysisType*>(typeSolver.getType(cur)) &&
+                        "argument has an invalid type");
+                const auto* argType = dynamic_cast<const InnerAnalysisType*>(typeSolver.getType(cur));
+                std::string type = (argType->getKind() == Kind::SYMBOL) ? "symbol" : "number";
+
+                // add the appropriate attribute
+                rel->addAttribute(std::make_unique<AstAttribute>(toString(*cur), type));
             }
 
             rel->addClause(std::unique_ptr<AstClause>(aggClause));

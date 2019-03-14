@@ -21,6 +21,7 @@ public:
     // TODO: fix constraint resolution etc.
     // TODO: lattice here because...?
     // TODO: get rid of things afterwrads
+    // TODO: program as ref?
     TypeSolver(TypeLattice* lattice, const AstClause* clause, const AstProgram* program)
             : lattice(lattice), clause(clause), program(program) {
         generateConstraints();

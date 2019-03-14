@@ -121,8 +121,8 @@ void TypeSolver::generateConstraints() {
             }
 
             // restrict the output type of the functor
-            solver->addConstraint(
-                    std::make_unique<FixedConstraint>(&functor, std::make_unique<TopPrimitiveAnalysisType>(kind)));
+            solver->addConstraint(std::make_unique<FixedConstraint>(
+                    &functor, std::make_unique<TopPrimitiveAnalysisType>(kind)));
 
             // functor applied to constants must give a constant
             auto constantConstraint =
@@ -304,11 +304,18 @@ void TypeSolver::resolveConstraints() {
 }
 
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
-    const AstProgram& program = *translationUnit.getProgram();
-    for (const AstRelation* rel : program.getRelations()) {
+    const AstProgram* program = translationUnit.getProgram();
+    for (const AstRelation* rel : program->getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {
+            // check if it can be typechecked
+            if (!TypeAnalysis::isInvalidClause(program, clause)) {
+                hasInvalidClauses = true;
+                continue;
+            }
+            typedClauses.push_back(clause);
+
             // perform the type analysis
-            TypeSolver solver(lattice.get(), clause, &program);
+            TypeSolver solver(lattice.get(), clause, program);
 
             // store the result for each argument
             visitDepthFirst(*clause, [&](const AstArgument& arg) {
@@ -317,6 +324,79 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
             });
         }
     }
+}
+
+bool TypeAnalysis::isInvalidClause(const AstProgram* program, const AstClause* clause) {
+    bool valid = true;
+
+    // -- check atoms --
+    visitDepthFirst(*clause, [&](const AstAtom& atom) {
+        auto* rel = program->getRelation(atom.getName());
+        if (rel == nullptr) {
+            // undefined relation
+            valid = false;
+        } else if (rel->getArity() != atom.getArity()) {
+            // non-matching arity
+            valid = false;
+        } else {
+            // all attributes should have defined types
+            for (const auto* attr : rel->getAttributes()) {
+                const auto& typeName = attr->getTypeName();
+                if (typeName == "symbol" || typeName == "number") {
+                    // primitive type - valid
+                    // TODO: can u get rid of this?
+                    continue;
+                }
+
+                if (program->getType(typeName) == nullptr) {
+                    // undefined type
+                    valid = false;
+                    break;
+                }
+            }
+        }
+    });
+
+    // -- check user-defined functors --
+    visitDepthFirst(*clause, [&](const AstUserDefinedFunctor& fun) {
+        AstFunctorDeclaration* funDecl = program->getFunctorDeclaration(fun.getName());
+        if (funDecl == nullptr) {
+            // undefined functor
+            valid = false;
+        } else if (funDecl->getArgCount() != fun.getArgCount()) {
+            // non-matching arity
+            valid = false;
+        }
+    });
+
+    // -- check records --
+    visitDepthFirst(*clause, [&](const AstRecordInit& record) {
+        const auto* recordType = dynamic_cast<const AstRecordType*>(program->getType(record.getType()));
+        if (recordType == nullptr) {
+            // record should have a record type
+            valid = false;
+        } else if (record.getArguments().size() != recordType->getFields().size()) {
+            // invalid record arity
+            valid = false;
+        }
+    });
+
+    // -- check typecasts --
+    visitDepthFirst(*clause, [&](const AstTypeCast& cast) {
+        const auto& typeName = cast.getType();
+        if (typeName == "symbol" || typeName == "number") {
+            // primitive type - valid
+            // TODO: getting rid of this?
+            return;
+        }
+
+        if (program->getType(typeName) == nullptr) {
+            // undefined type
+            valid = false;
+        }
+    });
+
+    return valid;
 }
 
 }  // end of namespace souffle

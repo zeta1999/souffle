@@ -116,10 +116,25 @@ public:
         return lattice.get();
     }
 
+    /** Gets the set of all clauses that have been assigned a type */
+    const std::vector<const AstClause*>& getTypedClauses() const {
+        return typedClauses;
+    }
+
+    /** Checks whether any clauses could not be typechecked */
+    bool foundInvalidClauses() const {
+        return hasInvalidClauses;
+    }
+
+    /** Checks whether a clause can be typechecked in a given program */
+    static bool isInvalidClause(const AstProgram* program, const AstClause* clause);
+
 private:
     // TODO: why is this here
     std::unique_ptr<TypeLattice> lattice;
     std::map<const AstArgument*, const AnalysisType*> typeSolutions;
+    std::vector<const AstClause*> typedClauses{};
+    bool hasInvalidClauses{false};
 };
 
 }  // end of namespace souffle

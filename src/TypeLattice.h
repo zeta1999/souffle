@@ -7,8 +7,12 @@ namespace souffle {
 
 class TypeLattice {
 public:
-    // TODO: note that the referenced analysis type will be in the lattice
+    /** Checks whether the constructed type lattice is valid */
+    const bool isValid() const {
+        return valid;
+    }
 
+    // TODO: note that the referenced analysis type will be in the lattice
     /** Finds the highest common subtype (intersection) of two types */
     const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);
 
@@ -48,6 +52,7 @@ private:
     // TODO: const for all these unique pointers throughout?
     std::set<std::unique_ptr<AnalysisType>> storedTypes;
     const TypeEnvironment* typeEnvironment;
+    bool valid{true};
 };
 
 }  // end of namespace souffle

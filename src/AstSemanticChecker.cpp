@@ -1165,28 +1165,16 @@ void AstSemanticChecker::checkTypeUsage(
 void AstSemanticChecker::checkTypeCorrectness(
         ErrorReport& report, const TypeAnalysis& typeAnalysis, const AstProgram& program) {
     TypeLattice* lattice = typeAnalysis.getLattice();
-
-    // get list of nodes to check
-    std::vector<const AstClause*> nodes;
-    for (const auto& rel : program.getRelations()) {
-        for (const auto& cls : rel->getClauses()) {
-            nodes.push_back(cls);
-        }
-    }
-
-    // TODO: set this up
-    // ----------------
-    // get the list of components to be checked
-    if (lattice->isValid()) {
-        if (TypeAnalysis::hasInvalidClauses(program)) {
-            nodes = TypeAnalysis::getValidClauses(program);
-            report.addError("Not all clauses could be typechecked due to other errors present");
-        }
-    } else {
+    if (!lattice->isValid()) {
         report.addError("No type checking could occur due to other errors present");
-        nodes = std::vector<const AstClause*>();
+        return;
     }
-    // ----------------
+
+    // get the list of nodes to check
+    std::vector<const AstClause*> nodes = typeAnalysis.getTypedClauses();
+    if (typeAnalysis.foundInvalidClauses()) {
+        report.addError("Not all clauses could be typechecked due to other errors present");
+    }
 
     // -- check that all arguments have been declared a valid type --
     for (const AstClause* clause : nodes) {

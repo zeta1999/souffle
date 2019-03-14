@@ -230,7 +230,7 @@ public:
     RamMerge(std::unique_ptr<RamRelationReference> t, std::unique_ptr<RamRelationReference> s)
             : RamStatement(RN_Merge), target(std::move(t)), source(std::move(s)) {
         assert(source->getArity() == target->getArity() && "mismatching relations");
-        for (int i = 0; i < source->getArity(); i++) {
+        for (size_t i = 0; i < source->getArity(); i++) {
             assert(source->getArgTypeQualifier(i) == target->getArgTypeQualifier(i) && "mismatching type");
         }
     }
@@ -294,8 +294,8 @@ public:
     RamSwap(std::unique_ptr<RamRelationReference> f, std::unique_ptr<RamRelationReference> s)
             : RamStatement(RN_Swap), first(std::move(f)), second(std::move(s)) {
         assert(first->getArity() == second->getArity() && "mismatching relations");
-        for (int i = 0; i < source->getArity(); i++) {
-            assert(source->getArgTypeQualifier(i) == target->getArgTypeQualifier(i) && "mismatching type");
+        for (size_t i = 0; i < first->getArity(); i++) {
+            assert(first->getArgTypeQualifier(i) == second->getArgTypeQualifier(i) && "mismatching type");
         }
     }
 

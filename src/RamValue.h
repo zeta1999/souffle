@@ -279,7 +279,9 @@ public:
 
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
-        relation = map(std::move(relation));
+        if (relation != nullptr) {
+            relation = map(std::move(relation));
+        }
     }
 
 protected:

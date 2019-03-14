@@ -28,7 +28,6 @@
 #include "InterpreterInterface.h"
 #include "ParserDriver.h"
 #include "RamProgram.h"
-#include "RamSemanticChecker.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
 #include "RamTranslationUnit.h"
@@ -485,7 +484,6 @@ int main(int argc, char** argv) {
     ramTransforms.push_back(std::make_unique<LevelConditionsTransformer>());
     ramTransforms.push_back(std::make_unique<CreateIndicesTransformer>());
     ramTransforms.push_back(std::make_unique<ConvertExistenceChecksTransformer>());
-    ramTransforms.push_back(std::make_unique<RamSemanticChecker>());
 
     for (const auto& transform : ramTransforms) {
         transform->apply(*ramTranslationUnit);

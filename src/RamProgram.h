@@ -38,9 +38,9 @@ public:
     /** Obtain child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> children;
-        if (main != nullptr) { 
-            children = main->getChildNodes(); 
-        } 
+        if (main != nullptr) {
+            children = main->getChildNodes();
+        }
         for (auto& r : relations) {
             children.push_back(r.second.get());
         }
@@ -144,10 +144,9 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProgram*>(&node));
         const auto& other = static_cast<const RamProgram&>(node);
-        if (relations.size() != other.relations.size() || 
-            subroutines.size() != other.subroutines.size()) {
+        if (relations.size() != other.relations.size() || subroutines.size() != other.subroutines.size()) {
             return false;
-        } 
+        }
         for (auto& cur : subroutines) {
             if (other.getSubroutine(cur.first) != getSubroutine(cur.first)) {
                 return false;

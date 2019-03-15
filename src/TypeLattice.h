@@ -46,7 +46,7 @@ public:
     // second are also in the lattice? change things up...
     // TODO: what if same name but diff type? e.g. with records
     template <typename T>
-    const T* getStoredType(const T& type);
+    T* getStoredType(const T& type);
 
     /**
      * Gets the equivalent analysis type stored in the lattice.

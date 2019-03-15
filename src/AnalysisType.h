@@ -310,6 +310,10 @@ public:
         return clone;
     }
 
+    std::vector<InnerAnalysisType*> getFields() const {
+        return toPtrVector(fields);
+    }
+
     void print(std::ostream& out) const override {
         out << name;
     }

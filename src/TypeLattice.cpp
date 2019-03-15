@@ -234,7 +234,7 @@ bool TypeLattice::isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) co
 }
 
 template <typename T>
-const T* TypeLattice::getStoredType(const T& type) {
+T* TypeLattice::getStoredType(const T& type) {
     const AnalysisType& at = static_cast<const AnalysisType&>(type);
     for (const auto& other : storedTypes) {
         if (*other == at) {
@@ -290,10 +290,11 @@ const InnerAnalysisType* TypeLattice::addType(const Type& type) {
         // -- record types --
 
         // add the record now to avoid potential infinite recursion
-        const auto* recordAnalysisType = getStoredType(RecordAnalysisType(typeName));
+        auto* recordAnalysisType = getStoredType(RecordAnalysisType(typeName));
         aliases[typeName] = recordAnalysisType;
 
-        // now add fields recursively
+        // first time we see this record, so can add fields recursively
+        assert(recordAnalysisType->getFields().size() == 0 && "record analysis type already has fields");
         for (const auto& field : recordType->getFields()) {
             const auto* fieldAnalysisType = addType(field.type);
             recordAnalysisType->addField(std::unique_ptr<InnerAnalysisType>(fieldAnalysisType->clone()));
@@ -370,6 +371,7 @@ const InnerAnalysisType* TypeLattice::addType(const Type& type) {
             return aliases[typeName];
         }
 
+        // otherwise, just a regular union type
         assert(memberTypes.size() > 1 && "unexpected member type size");
         aliases[typeName] = getStoredType(UnionAnalysisType(memberTypes));
         return aliases[typeName];

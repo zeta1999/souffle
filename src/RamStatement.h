@@ -97,7 +97,6 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        // TODO (#541): add type information for attributes
         os << std::string(tabpos, '\t');
         os << "CREATE " << getRelation().getName() << "(";
         os << getRelation().getArg(0);
@@ -230,9 +229,10 @@ protected:
 public:
     RamMerge(std::unique_ptr<RamRelationReference> t, std::unique_ptr<RamRelationReference> s)
             : RamStatement(RN_Merge), target(std::move(t)), source(std::move(s)) {
-        // TODO (#541): check not just for arity also for correct type!!
-        // Introduce an equivalence type-check for two ram relations
-        assert(source->getArity() == target->getArity());
+        assert(source->getArity() == target->getArity() && "mismatching relations");
+        for (size_t i = 0; i < source->getArity(); i++) {
+            assert(source->getArgTypeQualifier(i) == target->getArgTypeQualifier(i) && "mismatching type");
+        }
     }
 
     /** Get source relation */
@@ -293,8 +293,10 @@ protected:
 public:
     RamSwap(std::unique_ptr<RamRelationReference> f, std::unique_ptr<RamRelationReference> s)
             : RamStatement(RN_Swap), first(std::move(f)), second(std::move(s)) {
-        // TODO (#541): check not just for arity also for correct type!!
-        assert(first->getArity() == second->getArity());
+        assert(first->getArity() == second->getArity() && "mismatching relations");
+        for (size_t i = 0; i < first->getArity(); i++) {
+            assert(first->getArgTypeQualifier(i) == second->getArgTypeQualifier(i) && "mismatching type");
+        }
     }
 
     /** Pretty print */

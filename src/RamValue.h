@@ -50,7 +50,7 @@ public:
 class RamIntrinsicOperator : public RamValue {
 private:
     /** Operation symbol */
-    FunctorOp operation;
+    const FunctorOp operation;
 
     /** Arguments of the function */
     std::vector<std::unique_ptr<RamValue>> arguments;
@@ -231,10 +231,10 @@ protected:
 class RamElementAccess : public RamValue {
 private:
     /** Identifier for the tuple */
-    size_t identifier;
+    const size_t identifier;
 
     /** Element number */
-    size_t element;
+    const size_t element;
 
     /** Relation */
     std::unique_ptr<RamRelationReference> relation;
@@ -248,7 +248,7 @@ public:
         if (nullptr == relation) {
             os << "env(t" << identifier << ", i" << element << ")";
         } else {
-            os << "t" << identifier << "." << getName();
+            os << "t" << identifier << "." << relation->getArg(element);
         }
     }
 
@@ -262,15 +262,9 @@ public:
         return element;
     }
 
-    /** Get name */
-    // TODO (#541): Move to a RAM analysis
-    const std::string getName() const {
-        return relation->getArg(element);
-    }
-
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>();  // no child nodes
+        return std::vector<const RamNode*>({relation.get()});
     }
 
     /** Create clone */
@@ -284,7 +278,11 @@ public:
     }
 
     /** Apply mapper */
-    void apply(const RamNodeMapper& map) override {}
+    void apply(const RamNodeMapper& map) override {
+        if (relation != nullptr) {
+            relation = map(std::move(relation));
+        }
+    }
 
 protected:
     /** Check equality */
@@ -300,7 +298,7 @@ protected:
  */
 class RamNumber : public RamValue {
     /** Constant value */
-    RamDomain constant;
+    const RamDomain constant;
 
 public:
     RamNumber(RamDomain c) : RamValue(RN_Number), constant(c) {}
@@ -317,7 +315,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>();  // no child nodes
+        return std::vector<const RamNode*>();
     }
 
     /** Create clone */
@@ -355,7 +353,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>();  // no child nodes
+        return std::vector<const RamNode*>();
     }
 
     /** Create clone */
@@ -453,7 +451,7 @@ protected:
  */
 class RamArgument : public RamValue {
     /** Argument number */
-    size_t number;
+    const size_t number;
 
 public:
     RamArgument(size_t number) : RamValue(RN_Argument), number(number) {}

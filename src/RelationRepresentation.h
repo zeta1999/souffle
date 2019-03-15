@@ -43,6 +43,7 @@ inline std::ostream& operator<<(std::ostream& os, RelationRepresentation structu
         case RelationRepresentation::EQREL:
             os << "eqrel";
             break;
+        case RelationRepresentation::DEFAULT:
         default:
             break;
     }

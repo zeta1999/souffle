@@ -127,7 +127,6 @@ souffle_sources = \
               RamOperation.cpp      RamOperation.h      \
               RamProgram.h                              \
               RamRelation.h                             \
-              RamSemanticChecker.h                      \
               RamStatement.h                            \
               RamTransformer.cpp    RamTransformer.h    \
               RamTransforms.cpp     RamTransforms.h     \

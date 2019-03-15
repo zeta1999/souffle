@@ -22,7 +22,8 @@ public:
     // TODO: lattice here because...?
     // TODO: get rid of things afterwrads
     // TODO: program as ref?
-    TypeSolver(TypeLattice* lattice, const AstClause* clause, const AstProgram* program)
+    TypeSolver(TypeLattice* lattice, const AstClause* clause, const AstProgram* program,
+            std::stringstream* logStream = nullptr)
             : lattice(lattice), clause(clause), program(program) {
         generateConstraints();
         resolveConstraints();
@@ -69,6 +70,7 @@ private:
     TypeLattice* lattice;
     const AstClause* clause;
     const AstProgram* program;
+    std::stringstream* logStream;
     std::set<std::unique_ptr<TypeConstraint>> constraints{};
     std::map<const AstArgument*, const AnalysisType*> typeMapping{};
     std::map<const std::string, const AstVariable*> representatives{};
@@ -102,7 +104,13 @@ public:
 
     void run(const AstTranslationUnit& translationUnit) override;
 
-    void print(std::ostream& out) const override;
+    void print(std::ostream& out) const {
+        if (lattice->isValid()) {
+            out << logStream.str();
+        } else {
+            out << "Unable to run type analysis: valid type lattice could not be constructed";
+        }
+    }
 
     /** Get the computed type stored in the lattice for the given argument */
     const AnalysisType* getType(const AstArgument* arg) const {
@@ -135,6 +143,7 @@ private:
     std::map<const AstArgument*, const AnalysisType*> typeSolutions;
     std::vector<const AstClause*> typedClauses{};
     bool hasInvalidClauses{false};
+    std::stringstream logStream{};
 };
 
 }  // end of namespace souffle

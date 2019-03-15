@@ -1,5 +1,6 @@
 #include "AstTypeAnalysis.h"
 #include "AstTranslationUnit.h"
+#include "Global.h"
 #include "TypeConstraint.h"
 #include <ostream>
 
@@ -324,6 +325,14 @@ const AstArgument* TypeSolver::getRepresentative(const AstArgument* arg) {
 }
 
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
+    // set where debug information should be sent
+    // TODO: why sometimes ostream sometimes stringstream
+    std::stringstream* debugStream = nullptr;
+    if (!Global::config().get("debug-report").empty()) {
+        debugStream = &logStream;
+    }
+
+    // run a type analysis on each clause
     const AstProgram* program = translationUnit.getProgram();
     for (const AstRelation* rel : program->getRelations()) {
         for (const AstClause* clause : rel->getClauses()) {
@@ -335,7 +344,7 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
             typedClauses.push_back(clause);
 
             // perform the type analysis
-            TypeSolver solver(lattice.get(), clause, program);
+            TypeSolver solver(lattice.get(), clause, program, debugStream);
 
             // store the result for each argument
             visitDepthFirst(*clause, [&](const AstArgument& arg) {

@@ -148,7 +148,9 @@ public:
     bool isSatisfied(const TypeSolver*) const override;
 
     /** Gets the bounds on the RHS of the constraint */
-    const std::vector<const AstArgument*>& getBounds() const;
+    const std::vector<const AstArgument*>& getBounds() const {
+        return bounds;
+    }
 
     /** Clone the type constraint */
     UnionConstraint* clone() const override {
@@ -209,7 +211,13 @@ public:
     bool isSatisfied(const TypeSolver*) const override;
 
     /** Clone the type constraint */
-    ImplicationConstraint* clone() const override;
+    ImplicationConstraint* clone() const override {
+        auto* clone = new ImplicationConstraint(std::unique_ptr<TypeConstraint>(consequent->clone()));
+        for (const auto& req : requirements) {
+            clone->addRequirement(std::unique_ptr<TypeConstraint>(req->clone()));
+        }
+        return clone;
+    }
 
     /** Output to a given output stream */
     void print(std::ostream& out) const override {

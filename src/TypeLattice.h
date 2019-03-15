@@ -7,6 +7,8 @@ namespace souffle {
 
 class TypeLattice {
 public:
+    TypeLattice() = delete;
+
     TypeLattice(const TypeEnvironment* typeEnvironment) {
         aliases["number"] = getStoredType(TopPrimitiveAnalysisType(Kind::NUMBER));
         aliases["symbol"] = getStoredType(TopPrimitiveAnalysisType(Kind::SYMBOL));

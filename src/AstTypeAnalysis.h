@@ -71,6 +71,7 @@ private:
     const AstProgram* program;
     std::set<std::unique_ptr<TypeConstraint>> constraints{};
     std::map<const AstArgument*, const AnalysisType*> typeMapping{};
+    std::map<const std::string, const AstVariable*> representatives{};
 
     /** Adds a constraint that needs to be satisfied by the type solution. */
     void addConstraint(std::unique_ptr<TypeConstraint> constraint) {
@@ -89,7 +90,6 @@ private:
      * bound to the same name.
      * - For non-variables, this is the argument pointer itself.
      **/
-    // TODO: add an instance variable to support this map
     const AstArgument* getRepresentative(const AstArgument* arg);
 };
 

@@ -303,6 +303,26 @@ void TypeSolver::resolveConstraints() {
     }
 }
 
+const AstArgument* TypeSolver::getRepresentative(const AstArgument* arg) {
+    // non-variables are not affected
+    if (dynamic_cast<const AstVariable*>(arg) == nullptr) {
+        return arg;
+    }
+
+    const auto* var = dynamic_cast<const AstVariable*>(arg);
+    assert(var != nullptr && "expected variable type");
+
+    // check if already represented
+    const std::string name = var->getName();
+    if (representatives.find(name) != representatives.end()) {
+        return representatives[name];
+    }
+
+    // otherwise, set it as the representative
+    representatives[name] = var;
+    return var;
+}
+
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     const AstProgram* program = translationUnit.getProgram();
     for (const AstRelation* rel : program->getRelations()) {

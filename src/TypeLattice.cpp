@@ -233,6 +233,11 @@ bool TypeLattice::isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) co
     return true;
 }
 
+// TODO: removable?
+bool TypeLattice::isSubtype(const AnalysisType& lhs, const AnalysisType& rhs) const {
+    return isSubtype(&lhs, &rhs);
+}
+
 template <typename T>
 T* TypeLattice::getStoredType(const T& type) {
     const AnalysisType& at = static_cast<const AnalysisType&>(type);

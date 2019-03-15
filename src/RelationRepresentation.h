@@ -34,9 +34,6 @@ enum class RelationRepresentation {
 
 inline std::ostream& operator<<(std::ostream& os, RelationRepresentation structure) {
     switch (structure) {
-        case RelationRepresentation::DEFAULT:
-            os << "default";
-            break;
         case RelationRepresentation::BTREE:
             os << "btree";
             break;
@@ -46,6 +43,7 @@ inline std::ostream& operator<<(std::ostream& os, RelationRepresentation structu
         case RelationRepresentation::EQREL:
             os << "eqrel";
             break;
+        case RelationRepresentation::DEFAULT:
         default:
             break;
     }

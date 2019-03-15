@@ -132,10 +132,10 @@ public:
     void apply(const RamNodeMapper& map) override {
         main = map(std::move(main));
         for (auto& cur : relations) {
-            relations[cur.first] = map(std::move(cur.second));
+            cur.second = map(std::move(cur.second));
         }
         for (auto& cur : subroutines) {
-            subroutines[cur.first] = map(std::move(cur.second));
+            cur.second = map(std::move(cur.second));
         }
     }
 

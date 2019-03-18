@@ -143,7 +143,7 @@ public:
  * Creates a node mapper based on a corresponding lambda expression.
  */
 template <typename Lambda>
-detail::LambdaNodeMapper<Lambda> makeLambdaMapper(const Lambda& lambda) {
+detail::LambdaNodeMapper<Lambda> makeLambdaAstMapper(const Lambda& lambda) {
     return detail::LambdaNodeMapper<Lambda>(lambda);
 }
 

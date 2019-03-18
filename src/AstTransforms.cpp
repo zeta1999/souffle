@@ -257,7 +257,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                 int count = 0;
                 for (const auto& cur : aggClause->getBodyLiterals()) {
                     cur->apply(
-                            makeLambdaMapper([&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
+                            makeLambdaAstMapper([&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
                                 // check whether it is a unnamed variable
                                 auto* var = dynamic_cast<AstUnnamedVariable*>(node.get());
                                 if (!var) {

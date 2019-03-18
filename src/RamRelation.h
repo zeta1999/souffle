@@ -173,7 +173,14 @@ protected:
     const RamRelation* relation;
 
 public:
-    RamRelationReference(const RamRelation* relation) : RamNode(RN_RelationReference), relation(relation) {}
+    RamRelationReference(const RamRelation* relation) : RamNode(RN_RelationReference), relation(relation) {
+        assert(relation != nullptr && "null relation"); 
+    }
+
+    /** Get reference */ 
+    const RamRelation* get() const {
+        return relation;
+    } 
 
     /** Get name */
     const std::string& getName() const {

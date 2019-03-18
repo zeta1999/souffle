@@ -118,8 +118,7 @@ public:
 
     /** Create clone */
     RamProgram* clone() const override {
-        typedef std::map<const RamRelation*, const RamRelation*> RefMapType;
-        RefMapType refMap;
+        std::map<const RamRelation*, const RamRelation*> refMap;
         RamProgram* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
         for (auto& cur : relations) {
             RamRelation* newRel = cur.second->clone();
@@ -131,13 +130,13 @@ public:
         }
         res->apply(makeLambdaRamMapper([&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             // check whether it is a unnamed variable
-            auto* relRef = dynamic_cast<RamRelationReference*>(node.get());
-            if (!relRef) {
+            if (const RamRelationReference* relRef = dynamic_cast<RamRelationReference*>(node.get())) {
+                const RamRelation* rel = refMap[relRef->get()];
+                assert(rel != nullptr && "dangling RAM relation reference");
+                return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
+            } else {
                 return node;
             }
-            const RamRelation* rel = refMap[relRef->get()];
-            assert(rel != nullptr && "dangling RAM relation reference");
-            return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
         }));
         return res;
     }

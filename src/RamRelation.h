@@ -84,7 +84,7 @@ public:
         return "c" + std::to_string(i);
     }
 
-    /** Get Argument Type */
+    /** Get Argument Type Qualifier */
     const std::string getArgTypeQualifier(uint32_t i) const {
         return (i < attributeTypeQualifiers.size()) ? attributeTypeQualifiers[i] : "";
     }

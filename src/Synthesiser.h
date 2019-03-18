@@ -27,9 +27,9 @@
 namespace souffle {
 
 class RamOperation;
-class RamRelationReference;
 class RamTranslationUnit;
 class SynthesiserRelation;
+class RamRelation;
 
 /**
  * A RAM synthesiser: synthesises a C++ program from a RAM program.
@@ -59,13 +59,13 @@ protected:
     bool areIndexesDisabled();
 
     /** Get relation name */
-    const std::string getRelationName(const RamRelationReference& rel);
+    const std::string getRelationName(const RamRelation& rel);
 
     /** Get relation name */
     const std::string getRelationName(const std::string& relName);
 
     /** Get context name */
-    const std::string getOpContextName(const RamRelationReference& rel);
+    const std::string getOpContextName(const RamRelation& rel);
 
     /** Get relation struct definition */
     void generateRelationTypeStruct(std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType);
@@ -74,7 +74,7 @@ protected:
     std::string toIndex(SearchColumns key);
 
     /** Get referenced relations */
-    std::set<RamRelationReference> getReferencedRelations(const RamOperation& op);
+    std::set<const RamRelation *> getReferencedRelations(const RamOperation& op);
 
     /** Generate code */
     void emitCode(std::ostream& out, const RamStatement& stmt);

@@ -306,13 +306,13 @@ public:
     };
 
     /** Get first relation */
-    const RamRelationReference& getFirstRelation() const {
-        return *first;
+    const RamRelation& getFirstRelation() const {
+        return *first->get();
     }
 
     /** Get second relation */
-    const RamRelationReference& getSecondRelation() const {
-        return *second;
+    const RamRelation& getSecondRelation() const {
+        return *second->get();
     }
 
     /** Obtain list of child nodes */
@@ -762,9 +762,9 @@ protected:
 
 public:
     RamLogTimer(std::unique_ptr<RamStatement> stmt, std::string msg,
-            std::unique_ptr<RamRelationReference> relationRef)
+            std::unique_ptr<RamRelationReference> relRef)
             : RamStatement(RN_LogTimer), statement(std::move(stmt)), message(std::move(msg)),
-              relationRef(std::move(relationRef)) {
+              relationRef(std::move(relRef)) {
         assert(statement);
     }
 
@@ -780,8 +780,8 @@ public:
     }
 
     /** get logged relation */
-    const std::unique_ptr<RamRelationReference>& getRelation() const {
-        return relationRef;
+    const RamRelation *getRelation() const {
+        return relationRef->get();
     }
 
     /** Pretty print */

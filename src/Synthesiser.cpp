@@ -121,7 +121,7 @@ bool Synthesiser::areIndexesDisabled() {
 }
 
 /** Get relation name */
-const std::string Synthesiser::getRelationName(const RamRelationReference& rel) {
+const std::string Synthesiser::getRelationName(const RamRelation& rel) {
     return "rel_" + convertRamIdent(rel.getName());
 }
 
@@ -131,7 +131,7 @@ const std::string Synthesiser::getRelationName(const std::string& relName) {
 }
 
 /** Get context name */
-const std::string Synthesiser::getOpContextName(const RamRelationReference& rel) {
+const std::string Synthesiser::getOpContextName(const RamRelation& rel) {
     return getRelationName(rel) + "_op_ctxt";
 }
 
@@ -169,19 +169,19 @@ std::string Synthesiser::toIndex(SearchColumns key) {
 }
 
 /** Get referenced relations */
-std::set<RamRelationReference> Synthesiser::getReferencedRelations(const RamOperation& op) {
-    std::set<RamRelationReference> res;
+std::set<const RamRelation *> Synthesiser::getReferencedRelations(const RamOperation& op) {
+    std::set<const RamRelation *> res;
     visitDepthFirst(op, [&](const RamNode& node) {
         if (auto scan = dynamic_cast<const RamRelationSearch*>(&node)) {
-            res.insert(scan->getRelation());
+            res.insert(&scan->getRelation());
         } else if (auto agg = dynamic_cast<const RamAggregate*>(&node)) {
-            res.insert(agg->getRelation());
+            res.insert(&agg->getRelation());
         } else if (auto exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
-            res.insert(exists->getRelation());
+            res.insert(&exists->getRelation());
         } else if (auto provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
-            res.insert(provExists->getRelation());
+            res.insert(&provExists->getRelation());
         } else if (auto project = dynamic_cast<const RamProject*>(&node)) {
-            res.insert(project->getRelation());
+            res.insert(&project->getRelation());
         }
     });
     return res;
@@ -384,12 +384,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // create operation contexts for this operation
-            for (const RamRelationReference& rel :
+            for (const RamRelation *rel :
                     synthesiser.getReferencedRelations(insert.getOperation())) {
                 // TODO (#467): this causes bugs for subprogram compilation for record types if artificial
                 // dependencies are introduces in the precedence graph
-                out << "CREATE_OP_CONTEXT(" << synthesiser.getOpContextName(rel);
-                out << "," << synthesiser.getRelationName(rel);
+                out << "CREATE_OP_CONTEXT(" << synthesiser.getOpContextName(*rel);
+                out << "," << synthesiser.getRelationName(*rel);
                 out << "->createContext());\n";
             }
 
@@ -1525,7 +1525,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
         // get some table details
-        const RamRelationReference& rel = create.getRelation();
+        const RamRelation& rel = create.getRelation();
         const std::string& raw_name = rel.getName();
 
         bool isProvInfo = raw_name.find("@info") != std::string::npos;

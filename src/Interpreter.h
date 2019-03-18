@@ -115,11 +115,6 @@ protected:
         iteration = 0;
     }
 
-    /** Create relation */
-    void createRelation(const RamRelationReference& id) {
-         createRelation(*id.get());  
-    } 
-
     void createRelation(const RamRelation& id) {
         InterpreterRelation* res = nullptr;
         assert(environment.find(id.getName()) == environment.end());
@@ -140,10 +135,6 @@ protected:
     }
 
     /** Get relation */
-    inline InterpreterRelation& getRelation(const RamRelationReference& id) {
-        return getRelation(*id.get());
-    }
-
     inline InterpreterRelation& getRelation(const RamRelation& id) {
         return getRelation(id.getName());
     }
@@ -161,11 +152,11 @@ protected:
     }
 
     /** Swap relation */
-    void swapRelation(const RamRelationReference& ramRel1, const RamRelationReference& ramRel2) {
+    void swapRelation(const RamRelation& ramRel1, const RamRelation& ramRel2) {
         InterpreterRelation* rel1 = &getRelation(ramRel1);
         InterpreterRelation* rel2 = &getRelation(ramRel2);
-        environment[ramRel1.get()->getName()] = rel2;
-        environment[ramRel2.get()->getName()] = rel1;
+        environment[ramRel1.getName()] = rel2;
+        environment[ramRel2.getName()] = rel1;
     }
 
     /** Load dll */

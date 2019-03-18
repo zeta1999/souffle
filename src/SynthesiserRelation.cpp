@@ -18,7 +18,7 @@
 namespace souffle {
 
 std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation(
-        const RamRelationReference& ramRel, const IndexSet& indexSet, bool isProvenance) {
+        const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance) {
     SynthesiserRelation* rel;
 
     // Handle the qualifier in souffle code

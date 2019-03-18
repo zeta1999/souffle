@@ -118,11 +118,11 @@ public:
 
     /** Create clone */
     RamProgram* clone() const override {
-        typedef std::map<const RamRelation *, const RamRelation *> RefMapType;
-        RefMapType refMap; 
+        typedef std::map<const RamRelation*, const RamRelation*> RefMapType;
+        RefMapType refMap;
         RamProgram* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
         for (auto& cur : relations) {
-            RamRelation *newRel = cur.second->clone(); 
+            RamRelation* newRel = cur.second->clone();
             refMap[cur.second.get()] = newRel;
             res->addRelation(std::unique_ptr<RamRelation>(newRel));
         }
@@ -131,18 +131,20 @@ public:
         }
         // Rewrite relation references
         class RamRefRewriter : public RamNodeMapper {
-            RefMapType &refMap;
+            RefMapType& refMap;
+
         public:
-            RamRefRewriter(RefMapType &rm) : refMap(rm) { }
+            RamRefRewriter(RefMapType& rm) : refMap(rm) {}
             std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-               if (const RamRelationReference* relRef = dynamic_cast<RamRelationReference*>(node.get())) {
-                  const RamRelation *rel = refMap[relRef->get()]; 
-                  assert(rel != nullptr && "dangling RAM relation reference");
-                  return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
-               } else return node;
+                if (const RamRelationReference* relRef = dynamic_cast<RamRelationReference*>(node.get())) {
+                    const RamRelation* rel = refMap[relRef->get()];
+                    assert(rel != nullptr && "dangling RAM relation reference");
+                    return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
+                } else
+                    return node;
             }
         } refRewriter(refMap);
-        res->apply(refRewriter); 
+        res->apply(refRewriter);
         return res;
     }
 

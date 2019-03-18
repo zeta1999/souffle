@@ -74,7 +74,7 @@ protected:
     std::string toIndex(SearchColumns key);
 
     /** Get referenced relations */
-    std::set<const RamRelation *> getReferencedRelations(const RamOperation& op);
+    std::set<const RamRelation*> getReferencedRelations(const RamOperation& op);
 
     /** Generate code */
     void emitCode(std::ostream& out, const RamStatement& stmt);

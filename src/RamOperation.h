@@ -146,7 +146,8 @@ protected:
 public:
     RamRelationSearch(RamNodeType type, std::unique_ptr<RamRelationReference> relRef, size_t ident,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamSearch(type, ident, std::move(nested), std::move(profileText)), relationRef(std::move(relRef)) {}
+            : RamSearch(type, ident, std::move(nested), std::move(profileText)),
+              relationRef(std::move(relRef)) {}
 
     /** Get search relation */
     const RamRelation& getRelation() const {
@@ -221,7 +222,7 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        const RamRelation &rel = getRelation();
+        const RamRelation& rel = getRelation();
         os << times('\t', tabpos);
         os << "SEARCH " << rel.getName() << " AS t" << getIdentifier() << " ON INDEX ";
         bool first = true;

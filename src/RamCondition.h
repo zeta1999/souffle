@@ -284,7 +284,8 @@ protected:
  */
 class RamExistenceCheck : public RamAbstractExistenceCheck {
 public:
-    RamExistenceCheck(std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamValue>> vals)
+    RamExistenceCheck(
+            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamValue>> vals)
             : RamAbstractExistenceCheck(RN_ExistenceCheck, std::move(relRef), std::move(vals)) {}
 
     /** Print */

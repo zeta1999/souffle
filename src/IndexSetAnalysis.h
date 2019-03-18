@@ -162,11 +162,11 @@ public:
     }
 
 protected:
-    SearchSet searches;                    // set of search patterns on table
-    OrderCollection orders;                // collection of lexicographical orders
-    ChainOrderMap chainToOrder;            // maps order index to set of searches covered by chain
-    MaxMatching matching;                  // matching problem for finding minimal number of orders
-    const RamRelation& relation;           // relation
+    SearchSet searches;           // set of search patterns on table
+    OrderCollection orders;       // collection of lexicographical orders
+    ChainOrderMap chainToOrder;   // maps order index to set of searches covered by chain
+    MaxMatching matching;         // matching problem for finding minimal number of orders
+    const RamRelation& relation;  // relation
 
     /** count the number of bits in key */
     static size_t card(SearchColumns cols) {

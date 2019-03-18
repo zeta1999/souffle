@@ -169,8 +169,8 @@ std::string Synthesiser::toIndex(SearchColumns key) {
 }
 
 /** Get referenced relations */
-std::set<const RamRelation *> Synthesiser::getReferencedRelations(const RamOperation& op) {
-    std::set<const RamRelation *> res;
+std::set<const RamRelation*> Synthesiser::getReferencedRelations(const RamOperation& op) {
+    std::set<const RamRelation*> res;
     visitDepthFirst(op, [&](const RamNode& node) {
         if (auto scan = dynamic_cast<const RamRelationSearch*>(&node)) {
             res.insert(&scan->getRelation());
@@ -384,8 +384,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // create operation contexts for this operation
-            for (const RamRelation *rel :
-                    synthesiser.getReferencedRelations(insert.getOperation())) {
+            for (const RamRelation* rel : synthesiser.getReferencedRelations(insert.getOperation())) {
                 // TODO (#467): this causes bugs for subprogram compilation for record types if artificial
                 // dependencies are introduces in the precedence graph
                 out << "CREATE_OP_CONTEXT(" << synthesiser.getOpContextName(*rel);

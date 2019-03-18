@@ -238,8 +238,8 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
 
         if (indexable) {
             // replace scan by index scan
-            return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel),
-                    identifier, std::move(queryPattern),
+            return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
+                    std::move(queryPattern),
                     condition == nullptr
                             ? std::unique_ptr<RamOperation>(filter->getOperation().clone())
                             : std::make_unique<RamFilter>(std::move(condition),

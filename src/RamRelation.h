@@ -174,14 +174,14 @@ protected:
 
 public:
     RamRelationReference(const RamRelation* relation) : RamNode(RN_RelationReference), relation(relation) {
-        assert(relation != nullptr && "null relation"); 
+        assert(relation != nullptr && "null relation");
     }
 
-    /** Get reference */ 
+    /** Get reference */
     const RamRelation* get() const {
-        assert(relation != nullptr && "null relation"); 
+        assert(relation != nullptr && "null relation");
         return relation;
-    } 
+    }
 
     /* Print */
     void print(std::ostream& out) const override {

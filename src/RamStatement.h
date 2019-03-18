@@ -786,11 +786,11 @@ public:
 
     /** get logged relation */
     const RamRelation* getRelation() const {
-	if (relationRef != nullptr) {
-           return relationRef->get();
-	} else {
-           return nullptr;
-	}
+        if (relationRef != nullptr) {
+            return relationRef->get();
+        } else {
+            return nullptr;
+        }
     }
 
     /** Pretty print */

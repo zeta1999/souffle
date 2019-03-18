@@ -129,22 +129,16 @@ public:
         for (auto& cur : subroutines) {
             res->addSubroutine(cur.first, std::unique_ptr<RamStatement>(cur.second->clone()));
         }
-        // Rewrite relation references
-        class RamRefRewriter : public RamNodeMapper {
-            RefMapType& refMap;
-
-        public:
-            RamRefRewriter(RefMapType& rm) : refMap(rm) {}
-            std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-                if (const RamRelationReference* relRef = dynamic_cast<RamRelationReference*>(node.get())) {
-                    const RamRelation* rel = refMap[relRef->get()];
-                    assert(rel != nullptr && "dangling RAM relation reference");
-                    return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
-                } else
-                    return node;
+        res->apply(makeLambdaRamMapper([&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            // check whether it is a unnamed variable
+            auto* relRef = dynamic_cast<RamRelationReference*>(node.get());
+            if (!relRef) {
+                return node;
             }
-        } refRewriter(refMap);
-        res->apply(refRewriter);
+            const RamRelation* rel = refMap[relRef->get()];
+            assert(rel != nullptr && "dangling RAM relation reference");
+            return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
+        }));
         return res;
     }
 

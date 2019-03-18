@@ -299,7 +299,7 @@ public:
                               out << *value;
                           }
                       })
-           << ") ∈ " << relationRef->get()->getName();
+           << ") ∈ " << getRelation().getName();
     }
 
     /** Create clone */
@@ -345,7 +345,7 @@ public:
                               out << *value;
                           }
                       })
-           << ") prov∈ " << relationRef->get()->getName();
+           << ") prov∈ " << getRelation().getName();
     }
 
     /** Create clone */
@@ -389,7 +389,7 @@ public:
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << "(" << relationRef->get()->getName() << " = ∅)";
+        os << "(" << getRelation().getName() << " = ∅)";
     }
 
     /** Obtain list of child nodes */

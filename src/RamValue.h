@@ -237,18 +237,18 @@ private:
     const size_t element;
 
     /** Relation */
-    std::unique_ptr<RamRelationReference> relation;
+    std::unique_ptr<RamRelationReference> relationRef;
 
 public:
-    RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> rel = nullptr)
-            : RamValue(RN_ElementAccess), identifier(ident), element(elem), relation(std::move(rel)) {}
+    RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
+            : RamValue(RN_ElementAccess), identifier(ident), element(elem), relationRef(std::move(relRef)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
-        if (nullptr == relation) {
+        if (nullptr == relationRef) {
             os << "env(t" << identifier << ", i" << element << ")";
         } else {
-            os << "t" << identifier << "." << relation->getArg(element);
+            os << "t" << identifier << "." << relationRef->get()->getArg(element);
         }
     }
 
@@ -264,14 +264,14 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>({relation.get()});
+        return std::vector<const RamNode*>({relationRef.get()});
     }
 
     /** Create clone */
     RamElementAccess* clone() const override {
-        if (relation != nullptr) {
+        if (relationRef != nullptr) {
             return new RamElementAccess(
-                    identifier, element, std::unique_ptr<RamRelationReference>(relation->clone()));
+                    identifier, element, std::unique_ptr<RamRelationReference>(relationRef->clone()));
         } else {
             return new RamElementAccess(identifier, element);
         }
@@ -279,8 +279,8 @@ public:
 
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
-        if (relation != nullptr) {
-            relation = map(std::move(relation));
+        if (relationRef != nullptr) {
+            relationRef = map(std::move(relationRef));
         }
     }
 

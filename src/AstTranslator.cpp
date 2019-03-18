@@ -464,7 +464,7 @@ void AstTranslator::ClauseTranslator::indexValues(const AstNode* curNode,
 
         // check for variable references
         if (auto var = dynamic_cast<const AstVariable*>(arg)) {
-            if (pos < relation->getArity()) {
+            if (pos < relation->get()->getArity()) {
                 valueIndex.addVarReference(
                         *var, arg_level[cur], pos, std::unique_ptr<RamRelationReference>(relation->clone()));
             } else {
@@ -1033,8 +1033,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
                 // modify the processed rule to use relDelta and write to relNew
                 std::unique_ptr<AstClause> r1(cl->clone());
-                r1->getHead()->setName(relNew[rel]->getName());
-                r1->getAtoms()[j]->setName(relDelta[atomRelation]->getName());
+                r1->getHead()->setName(relNew[rel]->get()->getName());
+                r1->getAtoms()[j]->setName(relDelta[atomRelation]->get()->getName());
                 if (Global::config().has("provenance")) {
                     r1->addToBody(std::make_unique<AstProvenanceNegation>(
                             std::unique_ptr<AstAtom>(cl->getHead()->clone())));
@@ -1051,7 +1051,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 for (size_t k = j + 1; k < atoms.size(); k++) {
                     if (isInSameSCC(getAtomRelation(atoms[k], program))) {
                         AstAtom* cur = r1->getAtoms()[k]->clone();
-                        cur->setName(relDelta[getAtomRelation(atoms[k], program)]->getName());
+                        cur->setName(relDelta[getAtomRelation(atoms[k], program)]->get()->getName());
                         r1->addToBody(std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cur)));
                     }
                 }

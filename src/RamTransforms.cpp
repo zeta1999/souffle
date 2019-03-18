@@ -203,7 +203,7 @@ std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
 
 std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamScan* scan) {
     if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
-        const RamRelationReference& rel = scan->getRelation();
+        const RamRelation& rel = scan->getRelation();
         const size_t identifier = scan->getIdentifier();
 
         // Values of index per column of table (if indexable)
@@ -238,7 +238,7 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
 
         if (indexable) {
             // replace scan by index scan
-            return std::make_unique<RamIndexScan>(std::unique_ptr<RamRelationReference>(rel.clone()),
+            return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel),
                     identifier, std::move(queryPattern),
                     condition == nullptr
                             ? std::unique_ptr<RamOperation>(filter->getOperation().clone())
@@ -440,7 +440,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
 
                     if (nullptr != dynamic_cast<RamScan*>(scan)) {
                         constraint = std::make_unique<RamNegation>(std::make_unique<RamEmptinessCheck>(
-                                std::unique_ptr<RamRelationReference>(scan->getRelation().clone())));
+                                std::make_unique<RamRelationReference>(&scan->getRelation())));
                     } else if (auto* indexScan = dynamic_cast<RamIndexScan*>(scan)) {
                         std::vector<std::unique_ptr<RamValue>> values;
                         for (RamValue* value : indexScan->getRangePattern()) {
@@ -451,7 +451,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                             }
                         }
                         constraint = std::make_unique<RamExistenceCheck>(
-                                std::unique_ptr<RamRelationReference>(scan->getRelation().clone()),
+                                std::make_unique<RamRelationReference>(&scan->getRelation()),
                                 std::move(values));
                     }
 

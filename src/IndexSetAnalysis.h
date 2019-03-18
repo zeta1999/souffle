@@ -104,7 +104,7 @@ public:
     using ChainOrderMap = std::vector<Chain>;
     using SearchSet = std::set<SearchColumns>;
 
-    IndexSet(const RamRelationReference& rel) : relation(rel) {}
+    IndexSet(const RamRelation& rel) : relation(rel) {}
 
     /** Add new key to an Index Set */
     inline void addSearch(SearchColumns cols) {
@@ -113,7 +113,7 @@ public:
         }
     }
     /** Get relation */
-    const RamRelationReference& getRelation() const {
+    const RamRelation& getRelation() const {
         return relation;
     }
 
@@ -166,7 +166,7 @@ protected:
     OrderCollection orders;                // collection of lexicographical orders
     ChainOrderMap chainToOrder;            // maps order index to set of searches covered by chain
     MaxMatching matching;                  // matching problem for finding minimal number of orders
-    const RamRelationReference& relation;  // relation
+    const RamRelation& relation;           // relation
 
     /** count the number of bits in key */
     static size_t card(SearchColumns cols) {
@@ -250,7 +250,7 @@ public:
     void print(std::ostream& os) const override;
 
     /** get indexes */
-    IndexSet& getIndexes(const RamRelationReference& rel) {
+    IndexSet& getIndexes(const RamRelation& rel) {
         auto pos = data.find(rel.getName());
         if (pos != data.end()) {
             return pos->second;

@@ -53,6 +53,7 @@ protected:
     /** TODO (#541): legacy, i.e., duplicated information */
     const SymbolMask mask;
 
+    /** Data-structure representation */
     const RelationRepresentation representation;
 
 public:
@@ -83,6 +84,7 @@ public:
         return "c" + std::to_string(i);
     }
 
+    /** Get Argument Type */
     const std::string getArgTypeQualifier(uint32_t i) const {
         return (i < attributeTypeQualifiers.size()) ? attributeTypeQualifiers[i] : "";
     }
@@ -100,11 +102,6 @@ public:
     /** Relation representation type */
     const RelationRepresentation getRepresentation() const {
         return representation;
-    }
-
-    // Flag to check whether the data-structure
-    const bool isCoverable() const {
-        return true;
     }
 
     /** Is temporary relation (for semi-naive evaluation) */

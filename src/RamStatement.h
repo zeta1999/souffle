@@ -97,7 +97,7 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = *relationRef->get();
+        const RamRelation& rel = getRelation();
         os << std::string(tabpos, '\t');
         os << "CREATE " << rel.getName() << " " << rel.getRepresentation();
     };
@@ -123,7 +123,7 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = *relationRef->get();
+        const RamRelation& rel = getRelation();
         os << std::string(tabpos, '\t');
         os << "LOAD DATA FOR " << rel.getName() << " FROM {";
         os << join(ioDirectives, "], [",
@@ -155,7 +155,7 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = *relationRef->get();
+        const RamRelation& rel = getRelation();
         os << std::string(tabpos, '\t');
         os << "STORE DATA FOR " << rel.getName() << " TO {";
         os << join(ioDirectives, "], [",
@@ -184,7 +184,7 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = *relationRef->get();
+        const RamRelation& rel = getRelation();
         os << std::string(tabpos, '\t');
         os << "CLEAR ";
         os << rel.getName();
@@ -207,7 +207,7 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = *relationRef->get();
+        const RamRelation& rel = getRelation();
         os << std::string(tabpos, '\t');
         os << std::string(tabpos, '\t');
         os << "DROP " << rel.getName();
@@ -304,12 +304,6 @@ public:
         }
     }
 
-    /** Pretty print */
-    void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "SWAP (" << first->get()->getName() << ", " << second->get()->getName() << ")";
-    };
-
     /** Get first relation */
     const RamRelation& getFirstRelation() const {
         return *first->get();
@@ -319,6 +313,12 @@ public:
     const RamRelation& getSecondRelation() const {
         return *second->get();
     }
+
+    /** Pretty print */
+    void print(std::ostream& os, int tabpos) const override {
+        os << std::string(tabpos, '\t');
+        os << "SWAP (" << getFirstRelation().getName() << ", " << getSecondRelation().getName() << ")";
+    };
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
@@ -369,7 +369,7 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
         os << "INSERT (" << join(values, ",", print_deref<std::unique_ptr<RamValue>>()) << ") INTO "
-           << relationRef->get()->getName();
+           << getRelation().getName();
     };
 
     /** Obtain list of child nodes */
@@ -972,7 +972,7 @@ public:
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
-        os << "LOGSIZE " << relationRef->get()->getName();
+        os << "LOGSIZE " << getRelation().getName();
         os << " TEXT "
            << "\"" << stringify(message) << "\"";
     }

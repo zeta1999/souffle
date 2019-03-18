@@ -237,6 +237,7 @@ private:
     const size_t element;
 
     /** Relation */
+    /** TODO: 541 avoid null-pointers */
     std::unique_ptr<RamRelationReference> relationRef;
 
 public:

@@ -20,8 +20,7 @@ namespace souffle {
 
 class SynthesiserRelation {
 public:
-    SynthesiserRelation(
-            const RamRelationReference& rel, const IndexSet& indices, const bool isProvenance = false)
+    SynthesiserRelation(const RamRelation& rel, const IndexSet& indices, const bool isProvenance = false)
             : relation(rel), indices(indices), isProvenance(isProvenance) {}
 
     virtual ~SynthesiserRelation() = default;
@@ -52,7 +51,7 @@ public:
     }
 
     /** Get stored RamRelation */
-    const RamRelationReference& getRamRelation() const {
+    const RamRelation& getRamRelation() const {
         return relation;
     }
 
@@ -64,11 +63,11 @@ public:
 
     /** Factory method to generate a SynthesiserRelation */
     static std::unique_ptr<SynthesiserRelation> getSynthesiserRelation(
-            const RamRelationReference& ramRel, const IndexSet& indexSet, bool isProvenance);
+            const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance);
 
 protected:
     /** Ram relation referred to by this */
-    const RamRelationReference& relation;
+    const RamRelation& relation;
 
     /** Indices used for this relation */
     const IndexSet& indices;
@@ -88,8 +87,7 @@ protected:
 
 class SynthesiserNullaryRelation : public SynthesiserRelation {
 public:
-    SynthesiserNullaryRelation(
-            const RamRelationReference& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserNullaryRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;
@@ -99,7 +97,7 @@ public:
 
 class SynthesiserDirectRelation : public SynthesiserRelation {
 public:
-    SynthesiserDirectRelation(const RamRelationReference& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserDirectRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;
@@ -109,8 +107,7 @@ public:
 
 class SynthesiserIndirectRelation : public SynthesiserRelation {
 public:
-    SynthesiserIndirectRelation(
-            const RamRelationReference& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserIndirectRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;
@@ -120,7 +117,7 @@ public:
 
 class SynthesiserBrieRelation : public SynthesiserRelation {
 public:
-    SynthesiserBrieRelation(const RamRelationReference& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserBrieRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;
@@ -130,7 +127,7 @@ public:
 
 class SynthesiserEqrelRelation : public SynthesiserRelation {
 public:
-    SynthesiserEqrelRelation(const RamRelationReference& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserEqrelRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;

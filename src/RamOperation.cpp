@@ -227,7 +227,7 @@ void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
     // use condition to narrow scan if possible
     size_t element = 0;
     if (std::unique_ptr<RamValue> value = getIndexElement(newCondition.get(), element, getIdentifier())) {
-        if (element > 0 || relation->getName().find("__agg") == std::string::npos) {
+        if (element > 0 || relationRef->get()->getName().find("__agg") == std::string::npos) {
             keys |= (1 << element);
             if (pattern[element] == nullptr) {
                 pattern[element] = std::move(value);

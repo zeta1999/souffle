@@ -53,6 +53,7 @@ protected:
     /** TODO (#541): legacy, i.e., duplicated information */
     const SymbolMask mask;
 
+    /** Data-structure representation */
     const RelationRepresentation representation;
 
 public:
@@ -83,6 +84,7 @@ public:
         return "c" + std::to_string(i);
     }
 
+    /** Get Argument Type Qualifier */
     const std::string getArgTypeQualifier(uint32_t i) const {
         return (i < attributeTypeQualifiers.size()) ? attributeTypeQualifiers[i] : "";
     }
@@ -100,11 +102,6 @@ public:
     /** Relation representation type */
     const RelationRepresentation getRepresentation() const {
         return representation;
-    }
-
-    // Flag to check whether the data-structure
-    const bool isCoverable() const {
-        return true;
     }
 
     /** Is temporary relation (for semi-naive evaluation) */
@@ -173,61 +170,19 @@ protected:
     const RamRelation* relation;
 
 public:
-    RamRelationReference(const RamRelation* relation) : RamNode(RN_RelationReference), relation(relation) {}
-
-    /** Get name */
-    const std::string& getName() const {
-        return relation->getName();
+    RamRelationReference(const RamRelation* relation) : RamNode(RN_RelationReference), relation(relation) {
+        assert(relation != nullptr && "null relation");
     }
 
-    /** Get relation */
-    const RamRelation* getRelation() const {
+    /** Get reference */
+    const RamRelation* get() const {
+        assert(relation != nullptr && "null relation");
         return relation;
-    }
-
-    /** Get arity */
-    unsigned getArity() const {
-        return relation->getArity();
-    }
-
-    /** Is nullary relation */
-    const bool isNullary() const {
-        return relation->isNullary();
-    }
-
-    /** Relation representation type */
-    const RelationRepresentation getRepresentation() const {
-        return relation->getRepresentation();
-    }
-
-    /** Is temp relation */
-    const bool isTemp() const {
-        return relation->isTemp();
-    }
-
-    /** Get symbol mask */
-    const SymbolMask& getSymbolMask() const {
-        return relation->getSymbolMask();
-    }
-
-    /** Get argument */
-    const std::string getArg(uint32_t i) const {
-        return relation->getArg(i);
-    }
-
-    /** Get argument qualifier */
-    const std::string getArgTypeQualifier(uint32_t i) const {
-        return relation->getArgTypeQualifier(i);
-    }
-
-    /** Comparator */
-    bool operator<(const RamRelationReference& other) const {
-        return relation->operator<(*other.getRelation());
     }
 
     /* Print */
     void print(std::ostream& out) const override {
-        out << getName();
+        out << relation->getName();
     }
 
     /** Obtain list of child nodes */

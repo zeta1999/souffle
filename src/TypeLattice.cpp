@@ -133,7 +133,7 @@ const AnalysisType* TypeLattice::join(const AnalysisType* lhs, const AnalysisTyp
 
 bool TypeLattice::isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) const {
     // t <: t
-    if (lhs == rhs) {
+    if (*lhs == *rhs) {
         return true;
     }
 

@@ -170,6 +170,7 @@ TEST(AstUtils, SimpleTypes) {
     AstClause* u = program.getRelation("u")->getClause(0);
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
@@ -214,6 +215,7 @@ TEST(AstUtils, NumericTypes) {
     AstClause* u = program.getRelation("u")->getClause(0);
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
@@ -250,6 +252,7 @@ TEST(AstUtils, SubtypeChain) {
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
 
     // check proper type handling
     const TypeLattice& lattice = *typeAnalysis->getLattice();
@@ -305,6 +308,7 @@ TEST(AstUtils, FactTypes) {
     AstClause* u = program.getRelation("u")->getClause(0);
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
@@ -331,11 +335,13 @@ TEST(AstUtils, NestedFunctions) {
 
     // check types in clauses
     AstClause* a = program.getRelation("r")->getClause(0);
+    auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
     // check proper type deduction
-    EXPECT_EQ("symbol", toString(*tu->getAnalysis<TypeAnalysis>()->getType(getX(a))));
+    EXPECT_EQ("symbol", toString(*typeAnalysis->getType(getX(a))));
 }
 
 TEST(AstUtils, GroundTermPropagation) {

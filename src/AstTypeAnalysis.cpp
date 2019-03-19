@@ -305,7 +305,7 @@ void TypeSolver::resolveConstraints() {
     }
 
     if (logStream != nullptr) {
-        *logStream << "Clause:\n" << clause << std::endl << std::endl;
+        *logStream << "Clause:\n" << *clause << std::endl << std::endl;
         *logStream << "\tConstraints:" << std::endl;
         for (const auto& cons : constraints) {
             *logStream << "\t\t" << *cons << std::endl;

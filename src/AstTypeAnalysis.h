@@ -28,7 +28,7 @@ public:
     // TODO: add comments to htese
     TypeSolver(TypeLattice* lattice, const AstClause* clause, const AstProgram* program,
             std::stringstream* logStream = nullptr)
-            : lattice(lattice), clause(clause), program(program) {
+            : lattice(lattice), clause(clause), program(program), logStream(logStream) {
         generateConstraints();
         resolveConstraints();
     }

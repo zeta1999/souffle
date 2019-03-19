@@ -20,7 +20,7 @@
 
 namespace souffle {
 
-class RamValue;
+class RamExpression;
 class RamTranslationUnit;
 
 /*
@@ -35,7 +35,7 @@ public:
     void run(const RamTranslationUnit& translationUnit) override {}
 
     /** constant value */
-    bool isConstant(const RamValue* v) const;
+    bool isConstant(const RamExpression* v) const;
 };
 
 }  // end of namespace souffle

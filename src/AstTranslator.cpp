@@ -35,13 +35,13 @@
 #include "LogStatement.h"
 #include "PrecedenceGraph.h"
 #include "RamCondition.h"
+#include "RamExpression.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
-#include "RamValue.h"
 #include "SrcLocation.h"
 #include "SymbolMask.h"
 #include "TypeSystem.h"
@@ -254,12 +254,13 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateNewRelation(const 
     return translateRelation(rel, "@new_");
 }
 
-std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, const ValueIndex& index) {
+std::unique_ptr<RamExpression> AstTranslator::translateValue(
+        const AstArgument* arg, const ValueIndex& index) {
     if (arg == nullptr) {
-        return std::unique_ptr<RamValue>();
+        return std::unique_ptr<RamExpression>();
     }
 
-    class ValueTranslator : public AstVisitor<std::unique_ptr<RamValue>> {
+    class ValueTranslator : public AstVisitor<std::unique_ptr<RamExpression>> {
         AstTranslator& translator;
         const ValueIndex& index;
 
@@ -267,29 +268,29 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
         ValueTranslator(AstTranslator& translator, const ValueIndex& index)
                 : translator(translator), index(index) {}
 
-        std::unique_ptr<RamValue> visitVariable(const AstVariable& var) override {
+        std::unique_ptr<RamExpression> visitVariable(const AstVariable& var) override {
             assert(index.isDefined(var) && "variable not grounded");
             return makeRamElementAccess(index.getDefinitionPoint(var));
         }
 
-        std::unique_ptr<RamValue> visitUnnamedVariable(const AstUnnamedVariable& var) override {
+        std::unique_ptr<RamExpression> visitUnnamedVariable(const AstUnnamedVariable& var) override {
             return nullptr;  // utilised to identify _ values
         }
 
-        std::unique_ptr<RamValue> visitConstant(const AstConstant& c) override {
+        std::unique_ptr<RamExpression> visitConstant(const AstConstant& c) override {
             return std::make_unique<RamNumber>(c.getIndex());
         }
 
-        std::unique_ptr<RamValue> visitIntrinsicFunctor(const AstIntrinsicFunctor& inf) override {
-            std::vector<std::unique_ptr<RamValue>> values;
+        std::unique_ptr<RamExpression> visitIntrinsicFunctor(const AstIntrinsicFunctor& inf) override {
+            std::vector<std::unique_ptr<RamExpression>> values;
             for (const auto& cur : inf.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
             return std::make_unique<RamIntrinsicOperator>(inf.getFunction(), std::move(values));
         }
 
-        std::unique_ptr<RamValue> visitUserDefinedFunctor(const AstUserDefinedFunctor& udf) override {
-            std::vector<std::unique_ptr<RamValue>> values;
+        std::unique_ptr<RamExpression> visitUserDefinedFunctor(const AstUserDefinedFunctor& udf) override {
+            std::vector<std::unique_ptr<RamExpression>> values;
             for (const auto& cur : udf.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
@@ -298,24 +299,24 @@ std::unique_ptr<RamValue> AstTranslator::translateValue(const AstArgument* arg, 
             return std::make_unique<RamUserDefinedOperator>(udf.getName(), type, std::move(values));
         }
 
-        std::unique_ptr<RamValue> visitCounter(const AstCounter&) override {
+        std::unique_ptr<RamExpression> visitCounter(const AstCounter&) override {
             return std::make_unique<RamAutoIncrement>();
         }
 
-        std::unique_ptr<RamValue> visitRecordInit(const AstRecordInit& init) override {
-            std::vector<std::unique_ptr<RamValue>> values;
+        std::unique_ptr<RamExpression> visitRecordInit(const AstRecordInit& init) override {
+            std::vector<std::unique_ptr<RamExpression>> values;
             for (const auto& cur : init.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
-            return std::make_unique<RamPack>(std::move(values));
+            return std::make_unique<RamPackRecord>(std::move(values));
         }
 
-        std::unique_ptr<RamValue> visitAggregator(const AstAggregator& agg) override {
+        std::unique_ptr<RamExpression> visitAggregator(const AstAggregator& agg) override {
             // here we look up the location the aggregation result gets bound
             return translator.makeRamElementAccess(index.getAggregatorLocation(agg));
         }
 
-        std::unique_ptr<RamValue> visitSubroutineArgument(const AstSubroutineArgument& subArg) override {
+        std::unique_ptr<RamExpression> visitSubroutineArgument(const AstSubroutineArgument& subArg) override {
             return std::make_unique<RamArgument>(subArg.getNumber());
         }
     };
@@ -340,8 +341,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
 
         /** for binary relations */
         std::unique_ptr<RamCondition> visitBinaryConstraint(const AstBinaryConstraint& binRel) override {
-            std::unique_ptr<RamValue> valLHS = translator.translateValue(binRel.getLHS(), index);
-            std::unique_ptr<RamValue> valRHS = translator.translateValue(binRel.getRHS(), index);
+            std::unique_ptr<RamExpression> valLHS = translator.translateValue(binRel.getLHS(), index);
+            std::unique_ptr<RamExpression> valRHS = translator.translateValue(binRel.getRHS(), index);
             return std::make_unique<RamConstraint>(binRel.getOperator(),
                     translator.translateValue(binRel.getLHS(), index),
                     translator.translateValue(binRel.getRHS(), index));
@@ -358,7 +359,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                 arity -= 2;
             }
 
-            std::vector<std::unique_ptr<RamValue>> values;
+            std::vector<std::unique_ptr<RamExpression>> values;
 
             for (size_t i = 0; i < arity; i++) {
                 values.push_back(translator.translateValue(atom->getArgument(i), index));
@@ -386,7 +387,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                 arity -= 2;
             }
 
-            std::vector<std::unique_ptr<RamValue>> values;
+            std::vector<std::unique_ptr<RamExpression>> values;
 
             for (size_t i = 0; i < arity; i++) {
                 const auto& arg = atom->getArgument(i);
@@ -531,7 +532,7 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
 std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(const AstClause& clause) {
     const auto head = clause.getHead();
 
-    std::vector<std::unique_ptr<RamValue>> values;
+    std::vector<std::unique_ptr<RamExpression>> values;
     for (AstArgument* arg : head->getArguments()) {
         values.push_back(translator.translateValue(arg, valueIndex));
     }
@@ -546,7 +547,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
                     !Global::config().has("generate")))) {
         auto arity = head->getArity() - 2;
 
-        std::vector<std::unique_ptr<RamValue>> values;
+        std::vector<std::unique_ptr<RamExpression>> values;
 
         bool isVolatile = true;
         // add args for original tuple
@@ -576,7 +577,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
 
 std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createOperation(
         const AstClause& clause) {
-    std::vector<std::unique_ptr<RamValue>> values;
+    std::vector<std::unique_ptr<RamExpression>> values;
 
     // get all values in the body
     for (AstLiteral* lit : clause.getBodyLiterals()) {
@@ -635,7 +636,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
     // handle facts
     if (clause.isFact()) {
         // translate arguments
-        std::vector<std::unique_ptr<RamValue>> values;
+        std::vector<std::unique_ptr<RamExpression>> values;
         for (auto& arg : head->getArguments()) {
             values.push_back(translator.translateValue(arg, ValueIndex()));
         }
@@ -718,7 +719,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
 
         // translate target expression
-        std::unique_ptr<RamValue> value = translator.translateValue(cur->getTargetExpression(), valueIndex);
+        std::unique_ptr<RamExpression> value =
+                translator.translateValue(cur->getTargetExpression(), valueIndex);
 
         // translate body literal
         assert(cur->getBodyLiterals().size() == 1 && "Unsupported complex aggregation body encountered!");
@@ -809,7 +811,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
             // add an unpack level
             const Location& loc = valueIndex.getDefinitionPoint(*rec);
-            op = std::make_unique<RamLookup>(
+            op = std::make_unique<RamUnpackRecord>(
                     std::move(op), level, loc.identifier, loc.element, rec->getArguments().size());
         } else {
             std::cout << "Unsupported AST node type: " << typeid(*cur).name() << "\n";

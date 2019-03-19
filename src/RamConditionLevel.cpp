@@ -16,8 +16,8 @@
 
 #include "RamConditionLevel.h"
 #include "RamCondition.h"
+#include "RamExpressionLevel.h"
 #include "RamTranslationUnit.h"
-#include "RamValueLevel.h"
 #include "RamVisitor.h"
 #include <algorithm>
 #include <vector>
@@ -26,17 +26,17 @@ namespace souffle {
 
 /** run level analysis for a RAM translation unit */
 void RamConditionLevelAnalysis::run(const RamTranslationUnit& translationUnit) {
-    rvla = translationUnit.getAnalysis<RamValueLevelAnalysis>();
+    rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
 }
 
 /** Get level of condition (which for-loop of a query) */
 size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const {
     // visitor
     class ConditionLevelVisitor : public RamVisitor<size_t> {
-        RamValueLevelAnalysis* rvla;
+        RamExpressionLevelAnalysis* rvla;
 
     public:
-        ConditionLevelVisitor(RamValueLevelAnalysis* rvla) : rvla(rvla) {}
+        ConditionLevelVisitor(RamExpressionLevelAnalysis* rvla) : rvla(rvla) {}
 
         // conjunction
         size_t visitConjunction(const RamConjunction& conj) override {

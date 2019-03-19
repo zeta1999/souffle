@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamValue.h
+ * @file RamExpression.h
  *
  * Defines a class for evaluating values in the Relational Algebra Machine
  *
@@ -34,12 +34,12 @@ namespace souffle {
 /**
  * Abstract class for describing scalar values in RAM
  */
-class RamValue : public RamNode {
+class RamExpression : public RamNode {
 public:
-    RamValue(RamNodeType type) : RamNode(type) {}
+    RamExpression(RamNodeType type) : RamNode(type) {}
 
     /** Create clone */
-    RamValue* clone() const override = 0;
+    RamExpression* clone() const override = 0;
 };
 
 // TODO (azreika): create a common abstract base class for RAM operators
@@ -47,36 +47,37 @@ public:
 /**
  * Operator that represents an intrinsic (built-in) functor
  */
-class RamIntrinsicOperator : public RamValue {
+class RamIntrinsicOperator : public RamExpression {
 private:
     /** Operation symbol */
     const FunctorOp operation;
 
     /** Arguments of the function */
-    std::vector<std::unique_ptr<RamValue>> arguments;
+    std::vector<std::unique_ptr<RamExpression>> arguments;
 
 public:
     template <typename... Args>
-    RamIntrinsicOperator(FunctorOp op, Args... args) : RamValue(RN_IntrinsicOperator), operation(op) {
-        std::unique_ptr<RamValue> tmp[] = {std::move(args)...};
+    RamIntrinsicOperator(FunctorOp op, Args... args) : RamExpression(RN_IntrinsicOperator), operation(op) {
+        std::unique_ptr<RamExpression> tmp[] = {std::move(args)...};
         for (auto& cur : tmp) {
             arguments.push_back(std::move(cur));
         }
     }
 
-    RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamValue>> args)
-            : RamValue(RN_IntrinsicOperator), operation(op), arguments(std::move(args)) {}
+    RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamExpression>> args)
+            : RamExpression(RN_IntrinsicOperator), operation(op), arguments(std::move(args)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
         if (isInfixFunctorOp(operation)) {
             os << "(";
-            os << join(arguments, getSymbolForFunctorOp(operation), print_deref<std::unique_ptr<RamValue>>());
+            os << join(arguments, getSymbolForFunctorOp(operation),
+                    print_deref<std::unique_ptr<RamExpression>>());
             os << ")";
         } else {
             os << getSymbolForFunctorOp(operation);
             os << "(";
-            os << join(arguments, ",", print_deref<std::unique_ptr<RamValue>>());
+            os << join(arguments, ",", print_deref<std::unique_ptr<RamExpression>>());
             os << ")";
         }
     }
@@ -87,12 +88,12 @@ public:
     }
 
     /** Get argument values */
-    std::vector<RamValue*> getArguments() const {
+    std::vector<RamExpression*> getArguments() const {
         return toPtrVector(arguments);
     }
 
     /** Get i-th argument value */
-    const RamValue* getArgument(size_t i) const {
+    const RamExpression* getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return arguments[i].get();
     }
@@ -113,7 +114,7 @@ public:
 
     /* Clone */
     RamIntrinsicOperator* clone() const override {
-        std::vector<std::unique_ptr<RamValue>> argsCopy;
+        std::vector<std::unique_ptr<RamExpression>> argsCopy;
         for (auto& arg : arguments) {
             argsCopy.emplace_back(arg->clone());
         }
@@ -140,10 +141,10 @@ protected:
 /**
  * Operator that represents an extrinsic (user-defined) functor
  */
-class RamUserDefinedOperator : public RamValue {
+class RamUserDefinedOperator : public RamExpression {
 private:
     /** Arguments of user defined operator */
-    std::vector<std::unique_ptr<RamValue>> arguments;
+    std::vector<std::unique_ptr<RamExpression>> arguments;
 
     /** Name of user-defined operator */
     const std::string name;
@@ -152,25 +153,25 @@ private:
     const std::string type;
 
 public:
-    RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamValue>> args)
-            : RamValue(RN_UserDefinedOperator), arguments(std::move(args)), name(std::move(n)),
+    RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamExpression>> args)
+            : RamExpression(RN_UserDefinedOperator), arguments(std::move(args)), name(std::move(n)),
               type(std::move(t)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
         os << "@" << name << "_" << type << "(";
-        os << join(
-                arguments, ",", [](std::ostream& out, const std::unique_ptr<RamValue>& arg) { out << *arg; });
+        os << join(arguments, ",",
+                [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) { out << *arg; });
         os << ")";
     }
 
     /** Get argument values */
-    std::vector<RamValue*> getArguments() const {
+    std::vector<RamExpression*> getArguments() const {
         return toPtrVector(arguments);
     }
 
     /** Get i-th argument value */
-    const RamValue* getArgument(size_t i) const {
+    const RamExpression* getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return arguments[i].get();
     }
@@ -203,7 +204,7 @@ public:
     RamUserDefinedOperator* clone() const override {
         RamUserDefinedOperator* res = new RamUserDefinedOperator(name, type, {});
         for (auto& cur : arguments) {
-            RamValue* arg = cur->clone();
+            RamExpression* arg = cur->clone();
             res->arguments.emplace_back(arg);
         }
         return res;
@@ -228,7 +229,7 @@ protected:
 /**
  * Access element from the current tuple in a tuple environment
  */
-class RamElementAccess : public RamValue {
+class RamElementAccess : public RamExpression {
 private:
     /** Identifier for the tuple */
     const size_t identifier;
@@ -242,7 +243,8 @@ private:
 
 public:
     RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
-            : RamValue(RN_ElementAccess), identifier(ident), element(elem), relationRef(std::move(relRef)) {}
+            : RamExpression(RN_ElementAccess), identifier(ident), element(elem),
+              relationRef(std::move(relRef)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -297,12 +299,12 @@ protected:
 /**
  * Number Constant
  */
-class RamNumber : public RamValue {
+class RamNumber : public RamExpression {
     /** Constant value */
     const RamDomain constant;
 
 public:
-    RamNumber(RamDomain c) : RamValue(RN_Number), constant(c) {}
+    RamNumber(RamDomain c) : RamExpression(RN_Number), constant(c) {}
 
     /** Get constant */
     RamDomain getConstant() const {
@@ -343,9 +345,9 @@ protected:
  * Increment a counter and return its value. Note that
  * there exists a single counter only.
  */
-class RamAutoIncrement : public RamValue {
+class RamAutoIncrement : public RamExpression {
 public:
-    RamAutoIncrement() : RamValue(RN_AutoIncrement) {}
+    RamAutoIncrement() : RamExpression(RN_AutoIncrement) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -377,22 +379,23 @@ protected:
 /**
  * Record pack operation
  */
-class RamPack : public RamValue {
+class RamPackRecord : public RamExpression {
 private:
     /** Arguments */
-    std::vector<std::unique_ptr<RamValue>> arguments;
+    std::vector<std::unique_ptr<RamExpression>> arguments;
 
 public:
-    RamPack(std::vector<std::unique_ptr<RamValue>> args) : RamValue(RN_Pack), arguments(std::move(args)) {}
+    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args)
+            : RamExpression(RN_PackRecord), arguments(std::move(args)) {}
 
     /** Get arguments */
-    std::vector<RamValue*> getArguments() const {
+    std::vector<RamExpression*> getArguments() const {
         return toPtrVector(arguments);
     }
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << "[" << join(arguments, ",", [](std::ostream& out, const std::unique_ptr<RamValue>& arg) {
+        os << "[" << join(arguments, ",", [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) {
             if (arg) {
                 out << *arg;
             } else {
@@ -413,10 +416,10 @@ public:
     }
 
     /** Create clone */
-    RamPack* clone() const override {
-        RamPack* res = new RamPack({});
+    RamPackRecord* clone() const override {
+        RamPackRecord* res = new RamPackRecord({});
         for (auto& cur : arguments) {
-            RamValue* arg = nullptr;
+            RamExpression* arg = nullptr;
             if (cur != nullptr) {
                 arg = cur->clone();
             }
@@ -437,8 +440,8 @@ public:
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamPack*>(&node));
-        const auto& other = static_cast<const RamPack&>(node);
+        assert(nullptr != dynamic_cast<const RamPackRecord*>(&node));
+        const auto& other = static_cast<const RamPackRecord&>(node);
         return equal_targets(arguments, other.arguments);
     }
 };
@@ -450,12 +453,12 @@ protected:
  * where n is the number of arguments of the
  * subroutine.
  */
-class RamArgument : public RamValue {
+class RamArgument : public RamExpression {
     /** Argument number */
     const size_t number;
 
 public:
-    RamArgument(size_t number) : RamValue(RN_Argument), number(number) {}
+    RamArgument(size_t number) : RamExpression(RN_Argument), number(number) {}
 
     /** Get argument number */
     size_t getArgCount() const {

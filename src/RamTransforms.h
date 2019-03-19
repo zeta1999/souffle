@@ -18,9 +18,9 @@
 
 #include "RamConditionLevel.h"
 #include "RamConstValue.h"
+#include "RamExpressionLevel.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
-#include "RamValueLevel.h"
 #include <memory>
 #include <string>
 
@@ -55,12 +55,12 @@ public:
 
 class CreateIndicesTransformer : public RamTransformer {
     RamConstValueAnalysis* rcva{nullptr};
-    RamValueLevelAnalysis* rvla{nullptr};
+    RamExpressionLevelAnalysis* rvla{nullptr};
 
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
         rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
-        rvla = translationUnit.getAnalysis<RamValueLevelAnalysis>();
+        rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
         return createIndices(*translationUnit.getProgram());
     }
 
@@ -69,7 +69,7 @@ public:
         return "CreateIndicesTransformer";
     }
 
-    std::unique_ptr<RamValue> getIndexElement(RamCondition* c, size_t& element, size_t level);
+    std::unique_ptr<RamExpression> getIndexElement(RamCondition* c, size_t& element, size_t level);
 
     std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
 
@@ -83,13 +83,13 @@ public:
 class ConvertExistenceChecksTransformer : public RamTransformer {
     RamConstValueAnalysis* rcva{nullptr};
     RamConditionLevelAnalysis* rcla{nullptr};
-    RamValueLevelAnalysis* rvla{nullptr};
+    RamExpressionLevelAnalysis* rvla{nullptr};
 
 private:
     bool transform(RamTranslationUnit& translationUnit) override {
         rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
         rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
-        rvla = translationUnit.getAnalysis<RamValueLevelAnalysis>();
+        rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
         return convertExistenceChecks(*translationUnit.getProgram());
     }
 

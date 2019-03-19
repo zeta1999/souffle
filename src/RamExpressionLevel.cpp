@@ -8,20 +8,20 @@
 
 /************************************************************************
  *
- * @file RamValueLevel.cpp
+ * @file RamExpressionLevel.cpp
  *
- * Implementation of RAM Value Level Analysis
+ * Implementation of RAM Expression Level Analysis
  *
  ***********************************************************************/
 
-#include "RamValueLevel.h"
+#include "RamExpressionLevel.h"
 #include "RamVisitor.h"
 #include <algorithm>
 
 namespace souffle {
 
 /** Get level of value (which for-loop of a query) */
-size_t RamValueLevelAnalysis::getLevel(const RamValue* value) const {
+size_t RamExpressionLevelAnalysis::getLevel(const RamExpression* value) const {
     // visitor
     class ValueLevelVisitor : public RamVisitor<size_t> {
     public:
@@ -52,7 +52,7 @@ size_t RamValueLevelAnalysis::getLevel(const RamValue* value) const {
         }
 
         // pack operator
-        size_t visitPack(const RamPack& pack) override {
+        size_t visitPackRecord(const RamPackRecord& pack) override {
             size_t level = 0;
             for (const auto& arg : pack.getArguments()) {
                 if (arg) {

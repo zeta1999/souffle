@@ -22,6 +22,7 @@
 #include "IndexSetAnalysis.h"
 #include "RamCondition.h"
 #include "RamExistenceCheckAnalysis.h"
+#include "RamExpression.h"
 #include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
@@ -29,7 +30,6 @@
 #include "RamProvenanceExistenceCheckAnalysis.h"
 #include "RamRelation.h"
 #include "RamTranslationUnit.h"
-#include "RamValue.h"
 #include "RamVisitor.h"
 #include "RelationRepresentation.h"
 #include "SymbolMask.h"
@@ -714,7 +714,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitLookup(const RamLookup& lookup, std::ostream& out) override {
+        void visitUnpackRecord(const RamUnpackRecord& lookup, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             auto arity = lookup.getArity();
 
@@ -1053,7 +1053,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 << "equalRange";
             out << "_" << existCheckAnalysis->getKey(&exists);
             out << "(Tuple<RamDomain," << arity << ">({{";
-            out << join(exists.getValues(), ",", [&](std::ostream& out, RamValue* value) {
+            out << join(exists.getValues(), ",", [&](std::ostream& out, RamExpression* value) {
                 if (!value) {
                     out << "0";
                 } else {
@@ -1081,7 +1081,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "_" << provExistCheckAnalysis->getKey(&provExists);
             out << "(Tuple<RamDomain," << arity << ">({{";
             for (size_t i = 0; i < provExists.getValues().size() - 1; i++) {
-                RamValue* val = provExists.getValues()[i];
+                RamExpression* val = provExists.getValues()[i];
                 if (!val) {
                     out << "0";
                 } else {
@@ -1339,7 +1339,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- records --
 
-        void visitPack(const RamPack& pack, std::ostream& out) override {
+        void visitPackRecord(const RamPackRecord& pack, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "pack("
                 << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">({"

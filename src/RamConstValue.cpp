@@ -15,14 +15,14 @@
  ***********************************************************************/
 
 #include "RamConstValue.h"
-#include "RamValue.h"
+#include "RamExpression.h"
 #include "RamVisitor.h"
 #include <vector>
 
 namespace souffle {
 
 /** Determine whether a RAM value is a constant */
-bool RamConstValueAnalysis::isConstant(const RamValue* value) const {
+bool RamConstValueAnalysis::isConstant(const RamExpression* value) const {
     // visitor
     class ConstValueVisitor : public RamVisitor<bool> {
     public:
@@ -52,7 +52,7 @@ bool RamConstValueAnalysis::isConstant(const RamValue* value) const {
         }
 
         // pack operator
-        bool visitPack(const RamPack& pack) override {
+        bool visitPackRecord(const RamPackRecord& pack) override {
             return false;
         }
 

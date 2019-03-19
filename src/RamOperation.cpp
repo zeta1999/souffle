@@ -19,8 +19,8 @@
 #include "RamOperation.h"
 #include "BinaryConstraintOps.h"
 #include "RamCondition.h"
+#include "RamExpression.h"
 #include "RamRelation.h"
-#include "RamValue.h"
 #include "RamVisitor.h"
 #include <algorithm>
 #include <cstddef>
@@ -32,7 +32,7 @@ namespace souffle {
 
 /** Determine whether a RAM value is a constant */
 // TODO (#541): Remove or replace by RamConstValueAnalysis
-bool isConstant(const RamValue* value) {
+bool isConstant(const RamExpression* value) {
     // visitor
     class ConstValueVisitor : public RamVisitor<bool> {
     public:
@@ -62,7 +62,7 @@ bool isConstant(const RamValue* value) {
         }
 
         // pack operator
-        bool visitPack(const RamPack& pack) override {
+        bool visitPackRecord(const RamPackRecord& pack) override {
             return false;
         }
 
@@ -85,8 +85,8 @@ bool isConstant(const RamValue* value) {
 }
 
 /** Get level of value (which for-loop of a query) */
-// TODO (#541): Remove or replace by RamValueLevelAnalysis
-size_t getLevel(const RamValue* value) {
+// TODO (#541): Remove or replace by RamExpressionLevelAnalysis
+size_t getLevel(const RamExpression* value) {
     // visitor
     class ValueLevelVisitor : public RamVisitor<size_t> {
     public:
@@ -117,7 +117,7 @@ size_t getLevel(const RamValue* value) {
         }
 
         // pack operator
-        size_t visitPack(const RamPack& pack) override {
+        size_t visitPackRecord(const RamPackRecord& pack) override {
             size_t level = 0;
             for (const auto& arg : pack.getArguments()) {
                 if (arg != nullptr) {
@@ -198,26 +198,26 @@ size_t getLevel(const RamCondition* condition) {
 }
 
 /** get indexable element */
-std::unique_ptr<RamValue> RamAggregate::getIndexElement(RamCondition* c, size_t& element, size_t level) {
+std::unique_ptr<RamExpression> RamAggregate::getIndexElement(RamCondition* c, size_t& element, size_t level) {
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
-                RamValue* rhs = binRelOp->getRHS();
+                RamExpression* rhs = binRelOp->getRHS();
                 if (lhs->getIdentifier() == level && (isConstant(rhs) || getLevel(rhs) < level)) {
                     element = lhs->getElement();
-                    return std::unique_ptr<RamValue>(rhs->clone());
+                    return std::unique_ptr<RamExpression>(rhs->clone());
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
-                RamValue* lhs = binRelOp->getLHS();
+                RamExpression* lhs = binRelOp->getLHS();
                 if (rhs->getIdentifier() == level && (isConstant(lhs) || getLevel(lhs) < level)) {
                     element = rhs->getElement();
-                    return std::unique_ptr<RamValue>(lhs->clone());
+                    return std::unique_ptr<RamExpression>(lhs->clone());
                 }
             }
         }
     }
-    return std::unique_ptr<RamValue>(nullptr);
+    return std::unique_ptr<RamExpression>(nullptr);
 }
 
 /** add condition */
@@ -226,13 +226,14 @@ void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
 
     // use condition to narrow scan if possible
     size_t element = 0;
-    if (std::unique_ptr<RamValue> value = getIndexElement(newCondition.get(), element, getIdentifier())) {
+    if (std::unique_ptr<RamExpression> value =
+                    getIndexElement(newCondition.get(), element, getIdentifier())) {
         if (element > 0 || relationRef->get()->getName().find("__agg") == std::string::npos) {
             keys |= (1 << element);
             if (pattern[element] == nullptr) {
                 pattern[element] = std::move(value);
             } else {
-                std::unique_ptr<RamValue> field(new RamElementAccess(getIdentifier(), element));
+                std::unique_ptr<RamExpression> field(new RamElementAccess(getIdentifier(), element));
 
                 auto addCondition = [&](std::unique_ptr<RamCondition> c) {
                     assert(getLevel(c.get()) == getIdentifier());
@@ -247,7 +248,7 @@ void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
                         BinaryConstraintOp::EQ, std::move(field), std::move(value)));
             }
         } else {
-            std::unique_ptr<RamValue> field(new RamElementAccess(getIdentifier(), element));
+            std::unique_ptr<RamExpression> field(new RamElementAccess(getIdentifier(), element));
             std::unique_ptr<RamCondition> eq(
                     new RamConstraint(BinaryConstraintOp::EQ, std::move(field), std::move(value)));
             if (condition != nullptr) {

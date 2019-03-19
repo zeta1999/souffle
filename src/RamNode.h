@@ -32,13 +32,13 @@ enum RamNodeType {
     RN_Relation,
     RN_RelationReference,
 
-    // Values
+    // Expressions
     RN_ElementAccess,
     RN_Number,
     RN_IntrinsicOperator,
     RN_UserDefinedOperator,
     RN_AutoIncrement,
-    RN_Pack,
+    RN_PackRecord,
     RN_Argument,
 
     // Conditions
@@ -51,7 +51,7 @@ enum RamNodeType {
 
     // Operations
     RN_Project,
-    RN_Lookup,
+    RN_UnpackRecord,
     RN_Scan,
     RN_IndexScan,
     RN_Aggregate,

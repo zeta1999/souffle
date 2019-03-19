@@ -22,13 +22,13 @@ namespace souffle {
 
 class RamCondition;
 class RamTranslationUnit;
-class RamValueLevelAnalysis;
+class RamExpressionLevelAnalysis;
 
 /*
  * Class for a level analysis
  */
 class RamConditionLevelAnalysis : public RamAnalysis {
-    RamValueLevelAnalysis* rvla;
+    RamExpressionLevelAnalysis* rvla;
 
 public:
     /** name of analysis */

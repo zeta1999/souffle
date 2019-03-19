@@ -46,7 +46,7 @@ class RamOperation;
 class RamProgram;
 class RamStatement;
 class RamTranslationUnit;
-class RamValue;
+class RamExpression;
 class RecursiveClauses;
 class TypeEnvironment;
 
@@ -318,7 +318,7 @@ private:
     std::unique_ptr<RamRelationReference> translateNewRelation(const AstRelation* rel);
 
     /** translate an AST argument to a RAM value */
-    std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueIndex& index);
+    std::unique_ptr<RamExpression> translateValue(const AstArgument* arg, const ValueIndex& index);
 
     /** translate an AST constraint to a RAM condition */
     std::unique_ptr<RamCondition> translateConstraint(const AstLiteral* arg, const ValueIndex& index);

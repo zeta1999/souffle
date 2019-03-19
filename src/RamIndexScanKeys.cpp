@@ -22,7 +22,7 @@ namespace souffle {
 /** Get indexable columns of index scan */
 SearchColumns RamIndexScanKeysAnalysis::getRangeQueryColumns(const RamIndexScan* scan) const {
     SearchColumns keys = 0;
-    std::vector<RamValue*> rangePattern = scan->getRangePattern();
+    std::vector<RamExpression*> rangePattern = scan->getRangePattern();
     for (std::size_t i = 0; i < rangePattern.size(); i++) {
         if (rangePattern[i] != nullptr) {
             keys |= (1 << i);

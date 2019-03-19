@@ -17,10 +17,10 @@
 
 #pragma once
 
+#include "RamExpression.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamRelation.h"
-#include "RamValue.h"
 #include "Util.h"
 
 #include <algorithm>
@@ -354,21 +354,21 @@ protected:
 class RamFact : public RamRelationStatement {
 protected:
     /** Arguments of fact */
-    std::vector<std::unique_ptr<RamValue>> values;
+    std::vector<std::unique_ptr<RamExpression>> values;
 
 public:
-    RamFact(std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamValue>>&& v)
+    RamFact(std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>>&& v)
             : RamRelationStatement(RN_Fact, std::move(relRef)), values(std::move(v)) {}
 
     /** Get arguments of fact */
-    std::vector<RamValue*> getValues() const {
+    std::vector<RamExpression*> getValues() const {
         return toPtrVector(values);
     }
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
-        os << "INSERT (" << join(values, ",", print_deref<std::unique_ptr<RamValue>>()) << ") INTO "
+        os << "INSERT (" << join(values, ",", print_deref<std::unique_ptr<RamExpression>>()) << ") INTO "
            << getRelation().getName();
     };
 

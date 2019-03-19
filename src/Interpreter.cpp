@@ -27,13 +27,13 @@
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
 #include "RamExistenceCheckAnalysis.h"
+#include "RamExpression.h"
 #include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamOperationDepth.h"
 #include "RamProgram.h"
 #include "RamProvenanceExistenceCheckAnalysis.h"
-#include "RamValue.h"
 #include "RamVisitor.h"
 #include "ReadStream.h"
 #include "SignalHandler.h"
@@ -58,8 +58,8 @@
 
 namespace souffle {
 
-/** Evaluate RAM Value */
-RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& ctxt) {
+/** Evaluate RAM Expression */
+RamDomain Interpreter::evalVal(const RamExpression& value, const InterpreterContext& ctxt) {
     class ValueEvaluator : public RamVisitor<RamDomain> {
         Interpreter& interpreter;
         const InterpreterContext& ctxt;
@@ -246,7 +246,7 @@ RamDomain Interpreter::evalVal(const RamValue& value, const InterpreterContext& 
         }
 
         // -- records --
-        RamDomain visitPack(const RamPack& op) override {
+        RamDomain visitPackRecord(const RamPackRecord& op) override {
             auto values = op.getArguments();
             auto arity = values.size();
             RamDomain data[arity];
@@ -511,7 +511,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             }
         }
 
-        void visitLookup(const RamLookup& lookup) override {
+        void visitUnpackRecord(const RamUnpackRecord& lookup) override {
             // get reference
             RamDomain ref = ctxt[lookup.getReferenceLevel()][lookup.getReferencePosition()];
 

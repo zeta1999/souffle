@@ -12,8 +12,9 @@ void FixedConstraint::resolve(TypeSolver* currentSolution) const {
     const AnalysisType* newType = lattice->meet(currType, imposedType.get());
 
     // update the type
+    // TODO: has to be in the type lattice, check that
     currentSolution->setType(argument, newType);
-    assert(isSatisfied(currentSolution) && "constraint resolution failed");
+    assert(isSatisfied(currentSolution) && "fixed constraint resolution failed");
 }
 
 bool FixedConstraint::isSatisfied(const TypeSolver* currentSolution) const {
@@ -35,7 +36,7 @@ void VariableConstraint::resolve(TypeSolver* currentSolution) const {
 
     // update the type
     currentSolution->setType(lhs, newType);
-    assert(isSatisfied(currentSolution) && "constraint resolution failed");
+    assert(isSatisfied(currentSolution) && "variable constraint resolution failed");
 }
 
 bool VariableConstraint::isSatisfied(const TypeSolver* currentSolution) const {
@@ -77,7 +78,7 @@ void UnionConstraint::resolve(TypeSolver* currentSolution) const {
 
     // update the type
     currentSolution->setType(argument, newType);
-    assert(isSatisfied(currentSolution) && "constraint resolution failed");
+    assert(isSatisfied(currentSolution) && "union constraint resolution failed");
 }
 
 bool UnionConstraint::isSatisfied(const TypeSolver* currentSolution) const {
@@ -120,7 +121,7 @@ void ImplicationConstraint::resolve(TypeSolver* currentSolution) const {
 
     // not satisfied, so all must hold except the consequent - resolve it
     consequent->resolve(currentSolution);
-    assert(isSatisfied(currentSolution) && "constraint resolution failed");
+    assert(isSatisfied(currentSolution) && "implication constraint resolution failed");
 }
 
 bool ImplicationConstraint::isSatisfied(const TypeSolver* currentSolution) const {

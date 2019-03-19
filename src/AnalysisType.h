@@ -271,7 +271,10 @@ public:
 
     // TODO: HMM implement for others?
     bool operator<(const BaseAnalysisType& other) const {
-        return kind < other.kind && name < other.name;
+        if (kind == other.kind) {
+            return name < other.name;
+        }
+        return kind < other.kind;
     }
 
     void print(std::ostream& out) const override {
@@ -334,7 +337,7 @@ private:
 class UnionAnalysisType : public InnerAnalysisType {
 public:
     UnionAnalysisType(std::set<BaseAnalysisType> baseTypes);
-    UnionAnalysisType(std::set<BaseAnalysisType> baseTypes, AstTypeIdentifier& name);
+    UnionAnalysisType(std::set<BaseAnalysisType> baseTypes, AstTypeIdentifier name);
     UnionAnalysisType(const UnionAnalysisType&) = default;
     UnionAnalysisType(UnionAnalysisType&&) = default;
 
@@ -342,7 +345,7 @@ public:
         return baseTypes;
     }
 
-    void setName(AstTypeIdentifier& name);
+    void setName(AstTypeIdentifier name);
 
     void setName(std::string name);
 

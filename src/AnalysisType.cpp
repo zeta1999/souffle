@@ -18,12 +18,12 @@ UnionAnalysisType::UnionAnalysisType(std::set<BaseAnalysisType> baseTypes) : bas
     }
 }
 
-UnionAnalysisType::UnionAnalysisType(std::set<BaseAnalysisType> baseTypes, AstTypeIdentifier& name)
+UnionAnalysisType::UnionAnalysisType(std::set<BaseAnalysisType> baseTypes, AstTypeIdentifier name)
         : UnionAnalysisType(baseTypes) {
     setName(name);
 }
 
-void UnionAnalysisType::setName(AstTypeIdentifier& name) {
+void UnionAnalysisType::setName(AstTypeIdentifier name) {
     representation = toString(name);
 }
 

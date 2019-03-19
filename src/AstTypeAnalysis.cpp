@@ -233,7 +233,7 @@ void TypeSolver::generateConstraints() {
             AstRelation* rel = program->getRelation(atom.getName());
             assert(rel->getArity() == atom.getArity() && "atom has incorrect number of arguments");
             for (size_t i = 0; i < atom.getArity(); i++) {
-                // TODO: abstract away this representative business maybe? with the add constraint thing? YES DO THIS!
+                // TODO: abstract away this representative business maybe? with the add constraint thing? YES
                 const AstArgument* arg = solver->getRepresentative(atom.getArgument(i));
                 const AnalysisType* expectedType =
                         lattice->getAnalysisType(rel->getAttribute(i)->getTypeName());

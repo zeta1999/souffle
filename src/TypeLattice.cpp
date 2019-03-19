@@ -378,7 +378,7 @@ const InnerAnalysisType* TypeLattice::addType(const Type& type) {
 
         // otherwise, just a regular union type
         assert(memberTypes.size() > 1 && "unexpected member type size");
-        aliases[typeName] = getStoredType(UnionAnalysisType(memberTypes));
+        aliases[typeName] = getStoredType(UnionAnalysisType(memberTypes, typeName));
         return aliases[typeName];
     } else {
         assert(false && "unsupported type");

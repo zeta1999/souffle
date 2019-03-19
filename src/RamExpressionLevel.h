@@ -8,23 +8,23 @@
 
 /************************************************************************
  *
- * @file RamValueLevel.h
+ * @file RamExpressionLevel.h
  *
- * Get level of value (which for-loop of a query)
+ * Get level of an expression to determine the placement in the loop-nest
  *
  ***********************************************************************/
 
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamValue.h"
+#include "RamExpression.h"
 
 namespace souffle {
 
 /*
  * Class for a level analysis
  */
-class RamValueLevelAnalysis : public RamAnalysis {
+class RamExpressionLevelAnalysis : public RamAnalysis {
 public:
     /** name of analysis */
     static constexpr const char* name = "value-level-analysis";
@@ -33,7 +33,7 @@ public:
     void run(const RamTranslationUnit& translationUnit) override {}
 
     /** Get level */
-    size_t getLevel(const RamValue* value) const;
+    size_t getLevel(const RamExpression* value) const;
 };
 
 }  // end of namespace souffle

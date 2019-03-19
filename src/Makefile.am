@@ -121,7 +121,7 @@ souffle_sources = \
               RamIndexScanKeys.cpp  RamIndexScanKeys.h  \
               RamConditionLevel.cpp RamConditionLevel.h \
               RamOperationDepth.cpp RamOperationDepth.h \
-              RamValueLevel.cpp RamValueLevel.h         \
+              RamExpressionLevel.cpp RamExpressionLevel.h         \
               RamCondition.h                            \
               RamNode.h                                 \
               RamOperation.cpp      RamOperation.h      \
@@ -131,7 +131,7 @@ souffle_sources = \
               RamTransformer.cpp    RamTransformer.h    \
               RamTransforms.cpp     RamTransforms.h     \
               RamTranslationUnit.h                      \
-              RamValue.h                                \
+              RamExpression.h                           \
               RamVisitor.h                              \
               ReadStream.h                              \
               ReadStreamCSV.h                           \

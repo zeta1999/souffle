@@ -17,13 +17,13 @@
 #include "RamTransforms.h"
 #include "BinaryConstraintOps.h"
 #include "RamCondition.h"
+#include "RamExpression.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
-#include "RamValue.h"
 #include "RamVisitor.h"
 #include <utility>
 #include <vector>
@@ -176,24 +176,24 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 }
 
 /** Get indexable element */
-std::unique_ptr<RamValue> CreateIndicesTransformer::getIndexElement(
+std::unique_ptr<RamExpression> CreateIndicesTransformer::getIndexElement(
         RamCondition* c, size_t& element, size_t identifier) {
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
-                RamValue* rhs = binRelOp->getRHS();
+                RamExpression* rhs = binRelOp->getRHS();
                 if (rvla->getLevel(lhs) == identifier &&
                         (rcva->isConstant(rhs) || rvla->getLevel(rhs) < identifier)) {
                     element = lhs->getElement();
-                    return std::unique_ptr<RamValue>(rhs->clone());
+                    return std::unique_ptr<RamExpression>(rhs->clone());
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
-                RamValue* lhs = binRelOp->getLHS();
+                RamExpression* lhs = binRelOp->getLHS();
                 if (rvla->getLevel(rhs) == identifier &&
                         (rcva->isConstant(lhs) || rvla->getLevel(lhs) < identifier)) {
                     element = rhs->getElement();
-                    return std::unique_ptr<RamValue>(lhs->clone());
+                    return std::unique_ptr<RamExpression>(lhs->clone());
                 }
             }
         }
@@ -207,7 +207,7 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
         const size_t identifier = scan->getIdentifier();
 
         // Values of index per column of table (if indexable)
-        std::vector<std::unique_ptr<RamValue>> queryPattern(rel.getArity());
+        std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
 
         // Remaining conditions which weren't handled by an index
         std::unique_ptr<RamCondition> condition;
@@ -224,7 +224,7 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
 
         for (auto& cond : getConditions(&filter->getCondition())) {
             size_t element = 0;
-            if (std::unique_ptr<RamValue> value = getIndexElement(cond.get(), element, identifier)) {
+            if (std::unique_ptr<RamExpression> value = getIndexElement(cond.get(), element, identifier)) {
                 indexable = true;
                 if (queryPattern[element] == nullptr) {
                     queryPattern[element] = std::move(value);
@@ -327,21 +327,21 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
             return modified;
         }
 
-        bool dependsOn(const RamValue* value, const size_t identifier) const {
-            std::vector<const RamValue*> queue = {value};
+        bool dependsOn(const RamExpression* value, const size_t identifier) const {
+            std::vector<const RamExpression*> queue = {value};
             while (!queue.empty()) {
-                const RamValue* val = queue.back();
+                const RamExpression* val = queue.back();
                 queue.pop_back();
                 if (const auto* elemAccess = dynamic_cast<const RamElementAccess*>(val)) {
                     if (context->rvla->getLevel(elemAccess) == identifier) {
                         return true;
                     }
                 } else if (const auto* intrinsicOp = dynamic_cast<const RamIntrinsicOperator*>(val)) {
-                    for (const RamValue* arg : intrinsicOp->getArguments()) {
+                    for (const RamExpression* arg : intrinsicOp->getArguments()) {
                         queue.push_back(arg);
                     }
                 } else if (const auto* userDefinedOp = dynamic_cast<const RamUserDefinedOperator*>(val)) {
-                    for (const RamValue* arg : userDefinedOp->getArguments()) {
+                    for (const RamExpression* arg : userDefinedOp->getArguments()) {
                         queue.push_back(arg);
                     }
                 }
@@ -373,7 +373,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                 if (isExistCheck) {
                     visitDepthFirst(scan->getOperation(), [&](const RamIndexScan& indexScan) {
                         if (isExistCheck) {
-                            for (const RamValue* value : indexScan.getRangePattern()) {
+                            for (const RamExpression* value : indexScan.getRangePattern()) {
                                 if (value != nullptr && !context->rcva->isConstant(value) &&
                                         dependsOn(value, identifier)) {
                                     isExistCheck = false;
@@ -386,17 +386,17 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                 if (isExistCheck) {
                     visitDepthFirst(scan->getOperation(), [&](const RamProject& project) {
                         if (isExistCheck) {
-                            std::vector<const RamValue*> values;
+                            std::vector<const RamExpression*> values;
                             // TODO: function to extend vectors
-                            const std::vector<RamValue*> initialVals = project.getValues();
+                            const std::vector<RamExpression*> initialVals = project.getValues();
                             values.insert(values.end(), initialVals.begin(), initialVals.end());
 
                             while (!values.empty()) {
-                                const RamValue* value = values.back();
+                                const RamExpression* value = values.back();
                                 values.pop_back();
 
-                                if (const auto* pack = dynamic_cast<const RamPack*>(value)) {
-                                    const std::vector<RamValue*> args = pack->getArguments();
+                                if (const auto* pack = dynamic_cast<const RamPackRecord*>(value)) {
+                                    const std::vector<RamExpression*> args = pack->getArguments();
                                     values.insert(values.end(), args.begin(), args.end());
                                 } else if (const auto* intrinsicOp =
                                                    dynamic_cast<const RamIntrinsicOperator*>(value)) {
@@ -413,7 +413,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     });
                 }
                 if (isExistCheck) {
-                    visitDepthFirst(scan->getOperation(), [&](const RamLookup& lookup) {
+                    visitDepthFirst(scan->getOperation(), [&](const RamUnpackRecord& lookup) {
                         if (isExistCheck) {
                             if (lookup.getReferenceLevel() == identifier) {
                                 isExistCheck = false;
@@ -424,7 +424,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                 if (isExistCheck) {
                     visitDepthFirst(scan->getOperation(), [&](const RamExistenceCheck& exists) {
                         if (isExistCheck) {
-                            for (const RamValue* value : exists.getValues()) {
+                            for (const RamExpression* value : exists.getValues()) {
                                 if (value != nullptr && !context->rcva->isConstant(value) &&
                                         dependsOn(value, identifier)) {
                                     isExistCheck = false;
@@ -442,8 +442,8 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                         constraint = std::make_unique<RamNegation>(std::make_unique<RamEmptinessCheck>(
                                 std::make_unique<RamRelationReference>(&scan->getRelation())));
                     } else if (auto* indexScan = dynamic_cast<RamIndexScan*>(scan)) {
-                        std::vector<std::unique_ptr<RamValue>> values;
-                        for (RamValue* value : indexScan->getRangePattern()) {
+                        std::vector<std::unique_ptr<RamExpression>> values;
+                        for (RamExpression* value : indexScan->getRangePattern()) {
                             if (value != nullptr) {
                                 values.emplace_back(value->clone());
                             } else {

@@ -18,9 +18,9 @@
 #pragma once
 
 #include "BinaryConstraintOps.h"
+#include "RamExpression.h"
 #include "RamNode.h"
 #include "RamRelation.h"
-#include "RamValue.h"
 #include "SymbolTable.h"
 
 #include <algorithm>
@@ -164,13 +164,13 @@ private:
     BinaryConstraintOp op;
 
     /** Left-hand side of constraint*/
-    std::unique_ptr<RamValue> lhs;
+    std::unique_ptr<RamExpression> lhs;
 
     /** Right-hand side of constraint */
-    std::unique_ptr<RamValue> rhs;
+    std::unique_ptr<RamExpression> rhs;
 
 public:
-    RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
+    RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamExpression> l, std::unique_ptr<RamExpression> r)
             : RamCondition(RN_Constraint), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
 
     /** Print */
@@ -183,12 +183,12 @@ public:
     }
 
     /** Get left-hand side */
-    RamValue* getLHS() const {
+    RamExpression* getLHS() const {
         return lhs.get();
     }
 
     /** Get right-hand side */
-    RamValue* getRHS() const {
+    RamExpression* getRHS() const {
         return rhs.get();
     }
 
@@ -204,8 +204,8 @@ public:
 
     /** Create clone */
     RamConstraint* clone() const override {
-        RamConstraint* res = new RamConstraint(
-                op, std::unique_ptr<RamValue>(lhs->clone()), std::unique_ptr<RamValue>(rhs->clone()));
+        RamConstraint* res = new RamConstraint(op, std::unique_ptr<RamExpression>(lhs->clone()),
+                std::unique_ptr<RamExpression>(rhs->clone()));
         return res;
     }
 
@@ -234,11 +234,11 @@ protected:
     std::unique_ptr<RamRelationReference> relationRef;
 
     /** Pattern -- nullptr if undefined */
-    std::vector<std::unique_ptr<RamValue>> values;
+    std::vector<std::unique_ptr<RamExpression>> values;
 
 public:
     RamAbstractExistenceCheck(RamNodeType type, std::unique_ptr<RamRelationReference> relRef,
-            std::vector<std::unique_ptr<RamValue>> vals)
+            std::vector<std::unique_ptr<RamExpression>> vals)
             : RamCondition(type), relationRef(std::move(relRef)), values(std::move(vals)) {}
 
     /** Get relation */
@@ -247,7 +247,7 @@ public:
     }
 
     /** Get arguments */
-    std::vector<RamValue*> getValues() const {
+    std::vector<RamExpression*> getValues() const {
         return toPtrVector(values);
     }
 
@@ -285,14 +285,14 @@ protected:
 class RamExistenceCheck : public RamAbstractExistenceCheck {
 public:
     RamExistenceCheck(
-            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamValue>> vals)
+            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : RamAbstractExistenceCheck(RN_ExistenceCheck, std::move(relRef), std::move(vals)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
         os << "("
            << join(values, ",",
-                      [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
+                      [](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
                           if (!value) {
                               out << "_";
                           } else {
@@ -304,9 +304,9 @@ public:
 
     /** Create clone */
     RamExistenceCheck* clone() const override {
-        std::vector<std::unique_ptr<RamValue>> newValues;
+        std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : values) {
-            RamValue* val = nullptr;
+            RamExpression* val = nullptr;
             if (cur != nullptr) {
                 val = cur->clone();
             }
@@ -331,14 +331,14 @@ protected:
 class RamProvenanceExistenceCheck : public RamAbstractExistenceCheck {
 public:
     RamProvenanceExistenceCheck(
-            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamValue>> vals)
+            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : RamAbstractExistenceCheck(RN_ProvenanceExistenceCheck, std::move(relRef), std::move(vals)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
         os << "("
            << join(values, ",",
-                      [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
+                      [](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
                           if (!value) {
                               out << "_";
                           } else {
@@ -350,9 +350,9 @@ public:
 
     /** Create clone */
     RamProvenanceExistenceCheck* clone() const override {
-        std::vector<std::unique_ptr<RamValue>> newValues;
+        std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : values) {
-            RamValue* val = nullptr;
+            RamExpression* val = nullptr;
             if (cur != nullptr) {
                 val = cur->clone();
             }

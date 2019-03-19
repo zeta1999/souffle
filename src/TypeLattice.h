@@ -54,8 +54,8 @@ public:
      * Gets the equivalent analysis type stored in the lattice.
      * If the type does not yet exist in the lattice, it is created.
      */
-    const InnerAnalysisType* getAnalysisType(const AstTypeIdentifier& type);
-    const InnerAnalysisType* getAnalysisType(const Type& type);
+    const InnerAnalysisType* getAnalysisType(const AstTypeIdentifier& type) const;
+    const InnerAnalysisType* getAnalysisType(const Type& type) const;
 
 private:
     // TODO: add a comparator here

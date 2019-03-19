@@ -253,13 +253,13 @@ T* TypeLattice::getStoredType(const T& type) {
     return newType;
 }
 
-const InnerAnalysisType* TypeLattice::getAnalysisType(const AstTypeIdentifier& type) {
+const InnerAnalysisType* TypeLattice::getAnalysisType(const AstTypeIdentifier& type) const {
     auto pos = aliases.find(type);
     assert(pos != aliases.end() && "type does not exist in the lattice");
     return pos->second;
 }
 
-const InnerAnalysisType* TypeLattice::getAnalysisType(const Type& type) {
+const InnerAnalysisType* TypeLattice::getAnalysisType(const Type& type) const {
     assert(typeEnvironment->isType(type) && "type does not exist in the type environment");
     return getAnalysisType(type.getName());
 }

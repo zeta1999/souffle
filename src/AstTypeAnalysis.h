@@ -1,3 +1,5 @@
+// TODO: add license headers
+
 #pragma once
 
 #include "AnalysisType.h"
@@ -22,6 +24,8 @@ public:
     // TODO: lattice here because...?
     // TODO: get rid of things afterwrads
     // TODO: program as ref?
+    // TODO: debugstream = pointer to the stream where debugging information should be printed
+    // TODO: add comments to htese
     TypeSolver(TypeLattice* lattice, const AstClause* clause, const AstProgram* program,
             std::stringstream* logStream = nullptr)
             : lattice(lattice), clause(clause), program(program) {
@@ -98,6 +102,7 @@ private:
 /** Type analysis entrypoint */
 class TypeAnalysis : public AstAnalysis {
 public:
+    // TODO: set up constructor
     TypeAnalysis() = default;
 
     static constexpr const char* name = "type-analysis";
@@ -114,6 +119,7 @@ public:
 
     /** Get the computed type stored in the lattice for the given argument */
     const AnalysisType* getType(const AstArgument* arg) const {
+        assert(lattice->isValid() && "cannot determine type in invalid lattice");
         auto pos = typeSolutions.find(arg);
         assert(pos != typeSolutions.end() && "argument does not have a type");
         return pos->second;
@@ -140,7 +146,7 @@ public:
 private:
     // TODO: why is this here
     std::unique_ptr<TypeLattice> lattice;
-    std::map<const AstArgument*, const AnalysisType*> typeSolutions;
+    std::map<const AstArgument*, const AnalysisType*> typeSolutions{};
     std::vector<const AstClause*> typedClauses{};
     bool hasInvalidClauses{false};
     std::stringstream logStream{};

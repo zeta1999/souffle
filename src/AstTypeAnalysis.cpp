@@ -1,5 +1,6 @@
 #include "AstTypeAnalysis.h"
 #include "AstTranslationUnit.h"
+#include "AstTypeEnvironmentAnalysis.h"
 #include "Global.h"
 #include "TypeConstraint.h"
 #include <ostream>
@@ -302,6 +303,20 @@ void TypeSolver::resolveConstraints() {
             }
         }
     }
+
+    if (logStream != nullptr) {
+        *logStream << "Clause:\n" << clause << std::endl << std::endl;
+        *logStream << "\tConstraints:" << std::endl;
+        for (const auto& cons : constraints) {
+            *logStream << "\t\t" << *cons << std::endl;
+        }
+        *logStream << "\tTypes:\n" << std::endl;
+        for (const auto& pair : typeMapping) {
+            *logStream << "\t\t"
+                       << "type(" << *pair.first << ") = " << *pair.second << std::endl;
+        }
+        *logStream << std::endl;
+    }
 }
 
 const AstArgument* TypeSolver::getRepresentative(const AstArgument* arg) {
@@ -332,25 +347,37 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
         debugStream = &logStream;
     }
 
+    auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
+    lattice = std::make_unique<TypeLattice>(&typeEnvAnalysis->getTypeEnvironment());
+
     // run a type analysis on each clause
-    const AstProgram* program = translationUnit.getProgram();
-    for (const AstRelation* rel : program->getRelations()) {
-        for (const AstClause* clause : rel->getClauses()) {
-            // check if it can be typechecked
-            if (!TypeAnalysis::isInvalidClause(program, clause)) {
-                hasInvalidClauses = true;
-                continue;
+    if (lattice->isValid()) {
+        const AstProgram* program = translationUnit.getProgram();
+
+        for (const AstRelation* rel : program->getRelations()) {
+            for (const AstClause* clause : rel->getClauses()) {
+                // check if it can be typechecked
+                if (!TypeAnalysis::isInvalidClause(program, clause)) {
+                    hasInvalidClauses = true;
+                    continue;
+                }
+                typedClauses.push_back(clause);
+
+                // perform the type analysis
+                TypeSolver solver(lattice.get(), clause, program, debugStream);
+
+                // store the result for each argument
+                visitDepthFirst(*clause, [&](const AstArgument& arg) {
+                    assert(solver.hasType(&arg) && "clause argument does not have a type");
+                    typeSolutions[&arg] = solver.getType(&arg);
+                });
             }
-            typedClauses.push_back(clause);
+        }
 
-            // perform the type analysis
-            TypeSolver solver(lattice.get(), clause, program, debugStream);
-
-            // store the result for each argument
-            visitDepthFirst(*clause, [&](const AstArgument& arg) {
-                assert(solver.hasType(&arg) && "clause argument does not have a type");
-                typeSolutions[&arg] = solver.getType(&arg);
-            });
+        // TODO: check placement
+        if (debugStream != nullptr && hasInvalidClauses) {
+            *debugStream << std::endl
+                         << "Some clauses were skipped as they cannot be typechecked" << std::endl;
         }
     }
 }

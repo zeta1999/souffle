@@ -9,7 +9,7 @@ class TypeLattice {
 public:
     TypeLattice() = delete;
 
-    TypeLattice(const TypeEnvironment* typeEnvironment) {
+    TypeLattice(const TypeEnvironment* typeEnvironment) : typeEnvironment(typeEnvironment) {
         aliases["number"] = getStoredType(TopPrimitiveAnalysisType(Kind::NUMBER));
         aliases["symbol"] = getStoredType(TopPrimitiveAnalysisType(Kind::SYMBOL));
         for (const Type& type : typeEnvironment->getAllTypes()) {

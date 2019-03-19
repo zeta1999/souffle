@@ -252,22 +252,22 @@ TEST(AstUtils, SubtypeChain) {
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
     // check proper type handling
-    const TypeLattice& lattice = typeAnalysis->getLattice();
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("B"), lattice.getType("A"));
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("C"), lattice.getType("A"));
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("D"), lattice.getType("A"));
+    const TypeLattice& lattice = *typeAnalysis->getLattice();
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("B"), lattice.getAnalysisType("A"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("C"), lattice.getAnalysisType("A"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("D"), lattice.getAnalysisType("A"));
 
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("A"), lattice.getType("B"));
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("C"), lattice.getType("B"));
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("D"), lattice.getType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("A"), lattice.getAnalysisType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("C"), lattice.getAnalysisType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("D"), lattice.getAnalysisType("B"));
 
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("A"), lattice.getType("C"));
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("B"), lattice.getType("C"));
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("D"), lattice.getType("C"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("A"), lattice.getAnalysisType("C"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("B"), lattice.getAnalysisType("C"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("D"), lattice.getAnalysisType("C"));
 
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("A"), lattice.getType("D"));
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("B"), lattice.getType("D"));
-    EXPECT_PRED2(lattice.isSubtype, lattice.getType("C"), lattice.getType("D"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("A"), lattice.getAnalysisType("D"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("B"), lattice.getAnalysisType("D"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("C"), lattice.getAnalysisType("D"));
 
     // check proper type deduction
     EXPECT_EQ("D", toString(*typeAnalysis->getType(getX(a))));

@@ -233,7 +233,7 @@ void TypeSolver::generateConstraints() {
             AstRelation* rel = program->getRelation(atom.getName());
             assert(rel->getArity() == atom.getArity() && "atom has incorrect number of arguments");
             for (size_t i = 0; i < atom.getArity(); i++) {
-                // TODO: abstract away this representative business maybe? with the add constraint thing?
+                // TODO: abstract away this representative business maybe? with the add constraint thing? YES DO THIS!
                 const AstArgument* arg = solver->getRepresentative(atom.getArgument(i));
                 const AnalysisType* expectedType =
                         lattice->getAnalysisType(rel->getAttribute(i)->getTypeName());
@@ -319,7 +319,7 @@ void TypeSolver::resolveConstraints() {
     }
 }
 
-const AstArgument* TypeSolver::getRepresentative(const AstArgument* arg) {
+const AstArgument* TypeSolver::getRepresentative(const AstArgument* arg) const {
     // non-variables are not affected
     if (dynamic_cast<const AstVariable*>(arg) == nullptr) {
         return arg;
@@ -349,6 +349,8 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
 
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
     lattice = std::make_unique<TypeLattice>(&typeEnvAnalysis->getTypeEnvironment());
+
+    // TODO: is it fine on a re-run???
 
     // run a type analysis on each clause
     if (lattice->isValid()) {

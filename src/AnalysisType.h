@@ -282,15 +282,14 @@ public:
     }
 
 protected:
+    Kind kind;
+    AstTypeIdentifier name;
+
     bool equal(const AnalysisType& type) const override {
         assert(dynamic_cast<const BaseAnalysisType*>(&type) != nullptr);
         const auto& other = static_cast<const BaseAnalysisType&>(type);
         return kind == other.kind && name == other.name;
     }
-
-private:
-    Kind kind;
-    AstTypeIdentifier name;
 };
 
 /** A record base type, just above the record bottom primitive */
@@ -325,11 +324,10 @@ protected:
     bool equal(const AnalysisType& type) const override {
         assert(dynamic_cast<const RecordAnalysisType*>(&type) != nullptr);
         const auto& other = static_cast<const RecordAnalysisType&>(type);
-        return name == other.name && fields == other.fields;
+        return name == other.name && equal_targets(fields, other.fields);
     }
 
 private:
-    AstTypeIdentifier name;
     std::vector<std::unique_ptr<InnerAnalysisType>> fields{};
 };
 

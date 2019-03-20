@@ -1272,9 +1272,9 @@ void AstSemanticChecker::checkTypeCorrectness(
                         report.addError("Non-numeric argument for functor, instead argument has type " +
                                                 toString(*argType),
                                 functor.getArg(i)->getSrcLoc());
-                    } else {
-                        assert(false && "unsupported functor input type");
                     }
+                } else {
+                    assert(false && "unsupported functor input type");
                 }
             }
         }

@@ -130,8 +130,10 @@ public:
     UnionConstraint(const AstArgument* argument, std::vector<const AstArgument*> bounds)
             : argument(argument), bounds(bounds) {}
 
+    // TODO: make sure all constructors are fine
+    // TODO: run a mem leak test
     template <typename... Args>
-    UnionConstraint(const AstArgument* argument, Args... args) {
+    UnionConstraint(const AstArgument* argument, Args... args) : argument(argument) {
         const AstArgument* tmp[] = {args...};
         for (const auto* cur : tmp) {
             bounds.push_back(cur);
@@ -176,7 +178,7 @@ protected:
 
 private:
     const AstArgument* argument;
-    std::vector<const AstArgument*> bounds;
+    std::vector<const AstArgument*> bounds{};
 };
 
 /**

@@ -245,7 +245,7 @@ public:
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamRelationSearch::getChildNodes();
         for (auto& cur : queryPattern) {
-            if (cur) {
+            if (cur != nullptr) {
                 res.push_back(cur.get());
             }
         }
@@ -270,7 +270,7 @@ public:
     void apply(const RamNodeMapper& map) override {
         RamRelationSearch::apply(map);
         for (auto& cur : queryPattern) {
-            if (cur) {
+            if (cur != nullptr) {
                 cur = map(std::move(cur));
             }
         }
@@ -466,7 +466,7 @@ public:
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamSearch::getChildNodes();
-        if (condition) {
+        if (condition != nullptr) {
             res.push_back(condition.get());
         }
         return res;
@@ -497,7 +497,7 @@ public:
             expression = map(std::move(expression));
         }
         for (auto& cur : pattern) {
-            if (cur) {
+            if (cur != nullptr) {
                 cur = map(std::move(cur));
             }
         }

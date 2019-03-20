@@ -446,6 +446,15 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     });
                 }
                 if (isExistCheck) {
+                    visitDepthFirst(scan->getOperation(), [&](const RamExpression& expression) {
+                        if (isExistCheck) {
+                            if (dependsOn(&expression, identifier)) {
+                                isExistCheck = false;
+                            }
+                        }
+                    });
+                }
+                if (isExistCheck) {
                     // create constraint
                     std::unique_ptr<RamCondition> constraint;
 

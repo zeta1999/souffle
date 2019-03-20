@@ -66,7 +66,6 @@ void TypeSolver::generateConstraints() {
             visitNode(cast);
 
             // argument must be of the resultant type
-            // TODO: getting the kind of an AstTypeIdentifier is the limiting part?
             const AnalysisType* type = lattice->getAnalysisType(cast.getType());
             solver->addConstraint(
                     std::make_unique<FixedConstraint>(&cast, std::unique_ptr<AnalysisType>(type->clone())));

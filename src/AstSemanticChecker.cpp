@@ -1345,7 +1345,6 @@ void AstSemanticChecker::checkTypeCorrectness(
 
         const auto outputPrimitive = TopPrimitiveAnalysisType(outputType->getKind());
         if (!lattice->isSubtype(*inputType, outputPrimitive)) {
-            // TODO: do this more nicely
             report.addWarning("Casts from " + toString(inputType->getKind()) + " values to " +
                                       toString(outputType->getKind()) + " types may cause runtime errors",
                     cast.getSrcLoc());
@@ -1407,8 +1406,7 @@ void AstSemanticChecker::checkTypeCorrectness(
                         constraint.getSrcLoc());
             } else if (lhsType->getKind() == Kind::RECORD) {
                 // TODO (#380): Remove this once record unions are allowed
-                // TODO: isn't this part already a constraint? we dont have record unions, remove?
-                if (!lattice->isSubtype(lhsType, rhsType) && !lattice->isSubtype(rhsType, lhsType)) {
+                if (!(lattice->isSubtype(lhsType, rhsType) && lattice->isSubtype(rhsType, lhsType))) {
                     report.addError("Cannot compare records of different types", constraint.getSrcLoc());
                 }
             }

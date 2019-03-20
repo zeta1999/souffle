@@ -14,7 +14,6 @@
  *
  ***********************************************************************/
 
-// TODO: ASTTYPEENV vs TYPEENV
 #pragma once
 
 #include "AstAnalysis.h"

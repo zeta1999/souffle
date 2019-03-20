@@ -28,7 +28,6 @@ void FixedConstraint::resolve(TypeSolver* currentSolution) const {
     const AnalysisType* newType = lattice->meet(currType, imposedType.get());
 
     // update the type
-    // TODO: has to be in the type lattice, check that
     currentSolution->setType(argument, newType);
     assert(isSatisfied(currentSolution) && "fixed constraint resolution failed");
 }

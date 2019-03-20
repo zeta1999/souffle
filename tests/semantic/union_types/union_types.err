@@ -13,16 +13,7 @@ E(X) :- F(X), !A(X), !B(X). // error
 Error: Unable to deduce valid type for expression, as base types are disjoint in file union_types.dl at line 35
 E(X) :- F(X), A(X), B(X). // error
 --^--------------------------------
-Error: Unable to deduce valid type for expression, as base types are disjoint in file union_types.dl at line 35
-E(X) :- F(X), A(X), B(X). // error
-----------^------------------------
-Error: Unable to deduce valid type for expression, as base types are disjoint in file union_types.dl at line 35
-E(X) :- F(X), A(X), B(X). // error
-----------------^------------------
-Error: Unable to deduce valid type for expression, as base types are disjoint in file union_types.dl at line 35
-E(X) :- F(X), A(X), B(X). // error
-----------------------^------------
 Error: Relation expects value of type one but got argument of type three in file union_types.dl at line 38
 C(X) :- D(X), !A(X). // error
 -----------------^------------
-8 errors generated, evaluation aborted
+5 errors generated, evaluation aborted

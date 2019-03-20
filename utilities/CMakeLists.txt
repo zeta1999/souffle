@@ -106,7 +106,6 @@ ADD_EXECUTABLE(souffle
         ./src/MagicSet.h
         ./src/AstPragma.h
         ./src/RamNode.h
-        ./src/SymbolMask.h
         ./src/RamAnalysis.h
         ./src/AstSemanticChecker.h
         ./src/PrecedenceGraph.h

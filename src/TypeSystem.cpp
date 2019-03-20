@@ -20,8 +20,6 @@
 
 namespace souffle {
 
-// TODO: maybe can get rid of this whole thing?
-
 /**
  * A special, internal type for the predefined symbolic and numeric types.
  */

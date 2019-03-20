@@ -39,12 +39,4 @@ UnionAnalysisType::UnionAnalysisType(std::set<BaseAnalysisType> baseTypes, AstTy
     setName(name);
 }
 
-void UnionAnalysisType::setName(AstTypeIdentifier name) {
-    representation = toString(name);
-}
-
-void UnionAnalysisType::setName(std::string repr) {
-    representation = repr;
-}
-
 }  // end of namespace souffle

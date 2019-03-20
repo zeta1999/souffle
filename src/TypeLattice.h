@@ -84,8 +84,7 @@ public:
     const InnerAnalysisType* getAnalysisType(const Type& type) const;
 
 private:
-    // TODO: add a comparator here
-    // TODO: const for all these unique pointers throughout?
+    // TODO: add a comparator here maybe?
     std::set<std::unique_ptr<AnalysisType>> storedTypes{};
     const TypeEnvironment* typeEnvironment;
     bool valid{true};

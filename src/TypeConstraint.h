@@ -95,8 +95,7 @@ protected:
 
 private:
     const AstArgument* argument;
-    // TODO: should these be const?
-    std::unique_ptr<AnalysisType> imposedType;
+    const std::unique_ptr<AnalysisType> imposedType;
 };
 
 /**
@@ -146,8 +145,6 @@ public:
     UnionConstraint(const AstArgument* argument, std::vector<const AstArgument*> bounds)
             : argument(argument), bounds(bounds) {}
 
-    // TODO: make sure all constructors are fine
-    // TODO: run a mem leak test
     template <typename... Args>
     UnionConstraint(const AstArgument* argument, Args... args) : argument(argument) {
         const AstArgument* tmp[] = {args...};
@@ -251,8 +248,6 @@ protected:
     }
 
 private:
-    // TODO: set instead?
-    // TODO: and const?
     std::vector<std::unique_ptr<TypeConstraint>> requirements{};
     std::unique_ptr<TypeConstraint> consequent;
 };

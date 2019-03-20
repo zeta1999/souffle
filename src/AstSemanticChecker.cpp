@@ -1177,7 +1177,7 @@ void AstSemanticChecker::checkTypeCorrectness(
                             "Unable to deduce valid type for expression, as primitive types are disjoint",
                             arg.getSrcLoc());
                 } else if (dynamic_cast<const TopAnalysisType*>(type) != nullptr) {
-                    // TODO: check this comment
+                    // TODO: check this comment - is this true?
                     // this must be equal to a poorly typed but grounded record constructor, which will
                     // produce an error so we don't have to
                     // e.g. A(x) :- x = *R[y], B(y). when y has the wrong type for R, we don't want to also
@@ -1261,14 +1261,13 @@ void AstSemanticChecker::checkTypeCorrectness(
                 return;
             }
 
-            // TODO: check typeEnv.getType - maybe get type?
             auto* expectedType = dynamic_cast<const RecordType*>(
                     &lattice->getTypeEnvironment()->getType(record.getType()));
             assert(expectedType != nullptr && "type of record must be a record type");
             assert(record.getArguments().size() == expectedType->getFields().size() &&
                     "constructor has incorrect number of arguments");
 
-            // TODO: comment this as above - check this
+            // TODO: comment this properly - see above
             if (dynamic_cast<const TopAnalysisType*>(typeAnalysis.getType(&record)) != nullptr) {
                 report.addError("Unable to deduce type " + toString(record.getType()) +
                                         " as record is not grounded as a record elsewhere, and at least one "
@@ -1280,7 +1279,6 @@ void AstSemanticChecker::checkTypeCorrectness(
             const auto& args = record.getArguments();
             const auto& fieldDecls = expectedType->getFields();
             for (size_t i = 0; i < args.size(); i++) {
-                // TODO: can u abstract away the getAnalysisType stuff
                 const AnalysisType* actualType = typeAnalysis.getType(args[i]);
                 const AnalysisType* fieldType = lattice->getAnalysisType(fieldDecls[i].type);
 
@@ -1327,7 +1325,7 @@ void AstSemanticChecker::checkTypeCorrectness(
 
         const AnalysisType* expectedType = lattice->getAnalysisType(cast.getType());
 
-        // TODO: check into this - should be subtype maybe? or?
+        // TODO: look into this - should be subtype maybe? or?
         if (*actualType != *expectedType) {
             report.addError("Typecast is to type " + toString(cast.getType()) +
                                     " but is used where the type " + toString(*actualType) + " is expected",

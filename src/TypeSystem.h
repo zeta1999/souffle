@@ -29,8 +29,6 @@
 
 namespace souffle {
 
-// TODO: maybe can get rid of this whole thing??
-
 // forward declaration
 class TypeEnvironment;
 

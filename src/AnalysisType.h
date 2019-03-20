@@ -37,6 +37,7 @@ inline std::ostream& operator<<(std::ostream& os, Kind kind) {
             os << "record";
             break;
     }
+
     return os;
 }
 
@@ -373,9 +374,13 @@ public:
         return baseTypes;
     }
 
-    void setName(AstTypeIdentifier name);
+    void setName(AstTypeIdentifier name) {
+        representation = toString(name);
+    }
 
-    void setName(std::string name);
+    void setName(std::string name) {
+        reprsentation = repr;
+    }
 
     Kind getKind() const override {
         return kind;

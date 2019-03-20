@@ -48,7 +48,19 @@ public:
     // second are also in the lattice? change things up...
     // TODO: what if same name but diff type? e.g. with records
     template <typename T>
-    T* getStoredType(const T& type);
+    T* getStoredType(const T& type) {
+        const AnalysisType& at = static_cast<const AnalysisType&>(type);
+        for (const auto& other : storedTypes) {
+            if (*other == at) {
+                assert(dynamic_cast<T*>(other.get()) && "equivalent types should have equal types");
+                return dynamic_cast<T*>(other.get());
+            }
+        }
+
+        T* newType = type.clone();
+        storedTypes.insert(std::unique_ptr<AnalysisType>(newType));
+        return newType;
+    }
 
     /**
      * Gets the equivalent analysis type stored in the lattice.

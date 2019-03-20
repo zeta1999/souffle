@@ -238,21 +238,6 @@ bool TypeLattice::isSubtype(const AnalysisType& lhs, const AnalysisType& rhs) co
     return isSubtype(&lhs, &rhs);
 }
 
-template <typename T>
-T* TypeLattice::getStoredType(const T& type) {
-    const AnalysisType& at = static_cast<const AnalysisType&>(type);
-    for (const auto& other : storedTypes) {
-        if (*other == at) {
-            assert(dynamic_cast<T*>(other.get()) && "equivalent types should have equal types");
-            return dynamic_cast<T*>(other.get());
-        }
-    }
-
-    T* newType = type.clone();
-    storedTypes.insert(std::unique_ptr<AnalysisType>(newType));
-    return newType;
-}
-
 const InnerAnalysisType* TypeLattice::getAnalysisType(const AstTypeIdentifier& type) const {
     auto pos = aliases.find(type);
     assert(pos != aliases.end() && "type does not exist in the lattice");

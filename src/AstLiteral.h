@@ -105,12 +105,6 @@ public:
         return toPtrVector(arguments);
     }
 
-    /** Return the number of arguments */
-    // TODO: what!!! why is this method here!! delete!
-    size_t argSize() const {
-        return arguments.size();
-    }
-
     /** Output to a given stream */
     void print(std::ostream& os) const override {
         os << getName() << "(";

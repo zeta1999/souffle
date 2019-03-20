@@ -303,7 +303,7 @@ void AstSemanticChecker::checkFact(ErrorReport& report, const AstProgram& progra
     }
 
     // facts must only contain constants
-    for (size_t i = 0; i < head->argSize(); i++) {
+    for (size_t i = 0; i < head->getArity(); i++) {
         checkConstant(report, *head->getArgument(i));
     }
 }

@@ -680,7 +680,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         if (const auto* atom = dynamic_cast<const AstAtom*>(cur)) {
             // add constraints
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
+            for (size_t pos = 0; pos < atom->getArity(); ++pos) {
                 if (auto* agg = dynamic_cast<AstAggregator*>(atom->getArgument(pos))) {
                     auto loc = valueIndex.getAggregatorLocation(*agg);
                     op = std::make_unique<RamFilter>(
@@ -729,7 +729,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 std::move(op), fun, std::move(value), translator.translateRelation(atom), level);
 
         // add constant constraints
-        for (size_t pos = 0; pos < atom->argSize(); ++pos) {
+        for (size_t pos = 0; pos < atom->getArity(); ++pos) {
             if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
                 aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                         std::make_unique<RamElementAccess>(
@@ -762,7 +762,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         if (const auto* atom = dynamic_cast<const AstAtom*>(cur)) {
             // add constraints
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
+            for (size_t pos = 0; pos < atom->getArity(); ++pos) {
                 if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,

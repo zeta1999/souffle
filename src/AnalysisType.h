@@ -269,7 +269,6 @@ public:
         return true;
     }
 
-    // TODO: HMM implement for others?
     bool operator<(const BaseAnalysisType& other) const {
         if (kind == other.kind) {
             return name < other.name;

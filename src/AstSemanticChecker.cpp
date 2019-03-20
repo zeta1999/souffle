@@ -113,40 +113,9 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     checkWitnessProblem(report, program);
     checkInlining(report, program, precedenceGraph, ioTypes);
     checkGroundedness(report, program);
-    // TODO: rename these possibly, small description
     checkTypeUsage(report, typeEnv, program);
     checkTypeCorrectness(report, typeAnalysis, program);
-
-    // TODO: move into another check
-    // -- stratification --
-
-    // check for cyclic dependencies
-    const Graph<const AstRelation*, AstNameComparison>& depGraph = precedenceGraph.graph();
-    for (const AstRelation* cur : depGraph.vertices()) {
-        if (depGraph.reaches(cur, cur)) {
-            AstRelationSet clique = depGraph.clique(cur);
-            for (const AstRelation* cyclicRelation : clique) {
-                // Negations and aggregations need to be stratified
-                const AstLiteral* foundLiteral = nullptr;
-                bool hasNegation = hasClauseWithNegatedRelation(cyclicRelation, cur, &program, foundLiteral);
-                if (hasNegation ||
-                        hasClauseWithAggregatedRelation(cyclicRelation, cur, &program, foundLiteral)) {
-                    std::string relationsListStr = toString(join(clique, ",",
-                            [](std::ostream& out, const AstRelation* r) { out << r->getName(); }));
-                    std::vector<DiagnosticMessage> messages;
-                    messages.push_back(
-                            DiagnosticMessage("Relation " + toString(cur->getName()), cur->getSrcLoc()));
-                    std::string negOrAgg = hasNegation ? "negation" : "aggregation";
-                    messages.push_back(
-                            DiagnosticMessage("has cyclic " + negOrAgg, foundLiteral->getSrcLoc()));
-                    report.addDiagnostic(Diagnostic(Diagnostic::ERROR,
-                            DiagnosticMessage("Unable to stratify relation(s) {" + relationsListStr + "}"),
-                            messages));
-                    break;
-                }
-            }
-        }
-    }
+    checkStratification(report, program, precedenceGraph);
 }
 
 void AstSemanticChecker::checkAtom(ErrorReport& report, const AstProgram& program, const AstAtom& atom) {
@@ -1162,6 +1131,7 @@ void AstSemanticChecker::checkTypeUsage(
     });
 }
 
+// Perform the actual type-correctness check
 void AstSemanticChecker::checkTypeCorrectness(
         ErrorReport& report, const TypeAnalysis& typeAnalysis, const AstProgram& program) {
     TypeLattice* lattice = typeAnalysis.getLattice();
@@ -1484,6 +1454,36 @@ void AstSemanticChecker::checkTypeCorrectness(
             }
         }
     });
+}
+
+void AstSemanticChecker::checkStratification(ErrorReport& report, const AstProgram& program, const PrecedenceGraph& precedenceGraph) {
+    // check for cyclic dependencies
+    const Graph<const AstRelation*, AstNameComparison>& depGraph = precedenceGraph.graph();
+    for (const AstRelation* cur : depGraph.vertices()) {
+        if (depGraph.reaches(cur, cur)) {
+            AstRelationSet clique = depGraph.clique(cur);
+            for (const AstRelation* cyclicRelation : clique) {
+                // Negations and aggregations need to be stratified
+                const AstLiteral* foundLiteral = nullptr;
+                bool hasNegation = hasClauseWithNegatedRelation(cyclicRelation, cur, &program, foundLiteral);
+                if (hasNegation ||
+                        hasClauseWithAggregatedRelation(cyclicRelation, cur, &program, foundLiteral)) {
+                    std::string relationsListStr = toString(join(clique, ",",
+                            [](std::ostream& out, const AstRelation* r) { out << r->getName(); }));
+                    std::vector<DiagnosticMessage> messages;
+                    messages.push_back(
+                            DiagnosticMessage("Relation " + toString(cur->getName()), cur->getSrcLoc()));
+                    std::string negOrAgg = hasNegation ? "negation" : "aggregation";
+                    messages.push_back(
+                            DiagnosticMessage("has cyclic " + negOrAgg, foundLiteral->getSrcLoc()));
+                    report.addDiagnostic(Diagnostic(Diagnostic::ERROR,
+                            DiagnosticMessage("Unable to stratify relation(s) {" + relationsListStr + "}"),
+                            messages));
+                    break;
+                }
+            }
+        }
+    }
 }
 
 // Check that type and relation names are disjoint sets.

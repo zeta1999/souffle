@@ -85,6 +85,8 @@ private:
             ErrorReport& report, const TypeEnvironment& typeEnv, const AstProgram& program);
     static void checkTypeCorrectness(
             ErrorReport& report, const TypeAnalysis& typeAnalysis, const AstProgram& program);
+    static void checkStratification(
+            ErrorReport& report, const AstProgram& program, const PrecedenceGraph& precedenceGraph);
 };
 
 class AstExecutionPlanChecker : public AstTransformer {

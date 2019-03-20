@@ -17,7 +17,6 @@
 #include "IODirectives.h"
 #include "RamTypes.h"
 #include "ReadStream.h"
-#include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "Util.h"
 
@@ -37,7 +36,7 @@ namespace souffle {
 
 class ReadStreamCSV : public ReadStream {
 public:
-    ReadStreamCSV(std::istream& file, const SymbolMask& symbolMask, SymbolTable& symbolTable,
+    ReadStreamCSV(std::istream& file, const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const bool provenance = false)
             : ReadStream(symbolMask, symbolTable, provenance), delimiter(getDelimiter(ioDirectives)),
               file(file), lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
@@ -61,7 +60,7 @@ protected:
             return nullptr;
         }
         std::string line;
-        std::unique_ptr<RamDomain[]> tuple = std::make_unique<RamDomain[]>(symbolMask.getArity());
+        std::unique_ptr<RamDomain[]> tuple = std::make_unique<RamDomain[]>(symbolMask.size());
 
         if (!getline(file, line)) {
             return nullptr;
@@ -91,7 +90,7 @@ protected:
                 continue;
             }
             ++columnsFilled;
-            if (symbolMask.isSymbol(column)) {
+            if (symbolMask.at(column)) {
                 tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
             } else {
                 try {
@@ -153,8 +152,8 @@ protected:
 
 class ReadFileCSV : public ReadStreamCSV {
 public:
-    ReadFileCSV(const SymbolMask& symbolMask, SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const bool provenance = false)
+    ReadFileCSV(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
+            const IODirectives& ioDirectives, const bool provenance = false)
             : ReadStreamCSV(fileHandle, symbolMask, symbolTable, ioDirectives, provenance),
               baseName(souffle::baseName(getFileName(ioDirectives))),
               fileHandle(getFileName(ioDirectives), std::ios::in | std::ios::binary) {
@@ -205,7 +204,7 @@ protected:
 
 class ReadCinCSVFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const SymbolMask& symbolMask, SymbolTable& symbolTable,
+    std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const bool provenance) override {
         return std::make_unique<ReadStreamCSV>(std::cin, symbolMask, symbolTable, ioDirectives, provenance);
     }
@@ -218,7 +217,7 @@ public:
 
 class ReadFileCSVFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const SymbolMask& symbolMask, SymbolTable& symbolTable,
+    std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const bool provenance) override {
         return std::make_unique<ReadFileCSV>(symbolMask, symbolTable, ioDirectives, provenance);
     }

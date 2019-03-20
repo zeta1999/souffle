@@ -123,7 +123,6 @@ const AnalysisType* TypeLattice::join(const AnalysisType* lhs, const AnalysisTyp
         contents.insert(*bat);
     } else if (auto* uat = dynamic_cast<const UnionAnalysisType*>(lhs)) {
         for (const BaseAnalysisType base : uat->getBaseTypes()) {
-            // TODO: make sure this is a copy (and throughout)
             contents.insert(base);
         }
     } else {
@@ -249,7 +248,6 @@ bool TypeLattice::isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) co
     return true;
 }
 
-// TODO: removable?
 bool TypeLattice::isSubtype(const AnalysisType& lhs, const AnalysisType& rhs) const {
     return isSubtype(&lhs, &rhs);
 }
@@ -265,7 +263,6 @@ const InnerAnalysisType* TypeLattice::getAnalysisType(const Type& type) const {
     return getAnalysisType(type.getName());
 }
 
-// TODO: maybe get rid of a return value m8
 const InnerAnalysisType* TypeLattice::addType(const Type& type) {
     assert(typeEnvironment->isType(type) && "type does not exist in the type environment");
 
@@ -319,7 +316,6 @@ const InnerAnalysisType* TypeLattice::addType(const Type& type) {
         assert(!elementTypes.empty() && "union type cannot be empty");
 
         // TODO: what if recursive union types?
-        // TODO: reducing union types?
         // create the set of member types
         bool isPrimitive = false;
         Kind kind;

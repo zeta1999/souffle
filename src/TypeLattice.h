@@ -39,7 +39,6 @@ public:
         return valid;
     }
 
-    // TODO: note that the referenced analysis type will be in the lattice
     /** Finds the highest common subtype (intersection) of two types */
     const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);
 
@@ -52,7 +51,6 @@ public:
 
     /** Gets the type environment associated with the type lattice */
     const TypeEnvironment* getTypeEnvironment() const {
-        // TODO: do you need this???
         return typeEnvironment;
     }
 
@@ -61,9 +59,8 @@ public:
      * If the type does not yet exist in the lattice, it is created.
      */
     // TODO: make sure this is used everywhere it should be used
-    // TODO: make a note on when it should be used? probs only in meet/join... also assert that the first and
-    // second are also in the lattice? change things up...
     // TODO: what if same name but diff type? e.g. with records
+    // TODO: abstracting this away...
     template <typename T>
     T* getStoredType(const T& type) {
         const AnalysisType& at = static_cast<const AnalysisType&>(type);

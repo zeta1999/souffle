@@ -94,6 +94,7 @@ private:
 
     /** Adds a constraint that needs to be satisfied by the type solution. */
     void addConstraint(std::unique_ptr<TypeConstraint> constraint) {
+        // TODO: if abstracting away getRep then need to handle that here
         constraints.insert(std::move(constraint));
     }
 
@@ -157,8 +158,7 @@ public:
     static bool isInvalidClause(const AstProgram* program, const AstClause* clause);
 
 private:
-    // TODO: why is this here
-    std::unique_ptr<TypeLattice> lattice;
+    std::unique_ptr<TypeLattice> lattice{};
     std::map<const AstArgument*, const AnalysisType*> typeSolutions{};
     std::vector<const AstClause*> typedClauses{};
     bool hasInvalidClauses{false};

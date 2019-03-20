@@ -834,7 +834,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             } else if (aggregate.getFunction() == RamAggregate::SUM) {
                 out << "env" << identifier << " = cur;\n";
                 out << "res += ";
-                visit(*aggregate.getTargetExpression(), out);
+                visit(*aggregate.getExpression(), out);
                 out << ";\n";
             } else {
                 // pick function
@@ -854,7 +854,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
                 out << "env" << identifier << " = cur;\n";
                 out << "res = " << fun << "(res,";
-                visit(*aggregate.getTargetExpression(), out);
+                visit(*aggregate.getExpression(), out);
                 out << ");\n";
             }
 

@@ -182,11 +182,11 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times('\t', tabpos);
+        os << times("  ", tabpos);
         os << "for t" << getIdentifier() << " in " << getRelation().getName();
         os << " {\n";
         RamRelationSearch::print(os, tabpos + 1);
-        os << times('\t', tabpos) << "}\n";
+        os << times("  ", tabpos) << "}\n";
     }
 
     /** Create clone */
@@ -223,7 +223,7 @@ public:
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
-        os << times('\t', tabpos);
+        os << times("  ", tabpos);
         os << "SEARCH " << rel.getName() << " AS t" << getIdentifier() << " ON INDEX ";
         bool first = true;
         for (unsigned int i = 0; i < rel.getArity(); ++i) {
@@ -321,7 +321,7 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times('\t', tabpos) << "UNPACK env(t" << refLevel << ", i" << refPos << ") INTO t"
+        os << times("  ", tabpos) << "UNPACK env(t" << refLevel << ", i" << refPos << ") INTO t"
            << getIdentifier() << " FOR \n";
         RamSearch::print(os, tabpos + 1);
     }
@@ -421,7 +421,7 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times('\t', tabpos);
+        os << times("  ", tabpos);
 
         switch (function) {
             case MIN:
@@ -544,11 +544,11 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times('\t', tabpos) << "IF ";
+        os << times("  ", tabpos) << "IF ";
         getCondition().print(os);
         os << " {\n";
         RamNestedOperation::print(os, tabpos + 1);
-        os << times('\t', tabpos) << "}\n";
+        os << times("  ", tabpos) << "}\n";
     }
 
     /** Obtain list of child nodes */

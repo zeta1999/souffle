@@ -19,11 +19,14 @@ class AstArgument;
  **/
 class TypeSolver {
 public:
-    // TODO: lattice here because...?
-    // TODO: get rid of things afterwrads
-    // TODO: program as ref?
-    // TODO: debugstream = pointer to the stream where debugging information should be printed
-    // TODO: add comments to htese
+    /**
+     * TypeSolver constructor.
+     *
+     * @param program the program containing the clause
+     * @param lattice the associated type lattice constructed for the program
+     * @param clause the clause to be analysed
+     * @param logStream a pointer to the stream where debugging information should be printed
+     */
     TypeSolver(const AstProgram* program, TypeLattice* lattice, const AstClause* clause,
             std::stringstream* logStream = nullptr)
             : program(program), lattice(lattice), clause(clause), logStream(logStream) {

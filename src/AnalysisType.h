@@ -9,6 +9,21 @@ namespace souffle {
 
 enum class Kind { SYMBOL, NUMBER, RECORD };
 
+inline std::ostream& operator<<(std::ostream& os, Kind kind) {
+    switch (kind) {
+        case Kind::SYMBOL:
+            os << "symbol";
+            break;
+        case Kind::NUMBER:
+            os << "number";
+            break;
+        case Kind::RECORD:
+            os << "record";
+            break;
+    }
+    return os;
+}
+
 /** Represents a node in the type lattice during type analysis */
 class AnalysisType {
 public:

@@ -1345,12 +1345,10 @@ void AstSemanticChecker::checkTypeCorrectness(
         const InnerAnalysisType* outputType = lattice->getAnalysisType(cast.getType());
 
         const auto outputPrimitive = TopPrimitiveAnalysisType(outputType->getKind());
-
         if (!lattice->isSubtype(*inputType, outputPrimitive)) {
             // TODO: do this more nicely
-            const TopPrimitiveAnalysisType inputPrimitive = TopPrimitiveAnalysisType(inputType->getKind());
-            report.addWarning("Casts from " + toString(inputPrimitive) + " values to " +
-                                      toString(outputPrimitive) + " types may cause runtime errors",
+            report.addWarning("Casts from " + toString(inputType->getKind()) + " values to " +
+                                      toString(outputType->getKind()) + " types may cause runtime errors",
                     cast.getSrcLoc());
         } else if (outputType->getKind() == Kind::RECORD && !lattice->isSubtype(inputType, outputType)) {
             report.addWarning(
@@ -1404,11 +1402,9 @@ void AstSemanticChecker::checkTypeCorrectness(
             assert(rhsType != nullptr && "rhs type must have a kind");
 
             if (lhsType->getKind() != rhsType->getKind()) {
-                // TODO: CHANGE HOW kinds are printed
                 report.addError("Cannot compare operands of different kinds, left operand is a " +
-                                        toString(TopPrimitiveAnalysisType(lhsType->getKind())) +
-                                        " and right operand is a " +
-                                        toString(TopPrimitiveAnalysisType(rhsType->getKind())),
+                                        toString(lhsType->getKind()) + " and right operand is a " +
+                                        toString(rhsType->getKind()),
                         constraint.getSrcLoc());
             } else if (lhsType->getKind() == Kind::RECORD) {
                 // TODO (#380): Remove this once record unions are allowed
@@ -1456,7 +1452,8 @@ void AstSemanticChecker::checkTypeCorrectness(
     });
 }
 
-void AstSemanticChecker::checkStratification(ErrorReport& report, const AstProgram& program, const PrecedenceGraph& precedenceGraph) {
+void AstSemanticChecker::checkStratification(
+        ErrorReport& report, const AstProgram& program, const PrecedenceGraph& precedenceGraph) {
     // check for cyclic dependencies
     const Graph<const AstRelation*, AstNameComparison>& depGraph = precedenceGraph.graph();
     for (const AstRelation* cur : depGraph.vertices()) {

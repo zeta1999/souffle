@@ -16,7 +16,6 @@
 
 #include "RamTypes.h"
 #include "ReadStream.h"
-#include "SymbolMask.h"
 #include "SymbolTable.h"
 
 #include <fstream>
@@ -32,7 +31,7 @@ namespace souffle {
 class ReadStreamSQLite : public ReadStream {
 public:
     ReadStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const SymbolMask& symbolMask, SymbolTable& symbolTable, const bool provenance)
+            const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const bool provenance)
             : ReadStream(symbolMask, symbolTable, provenance), dbFilename(dbFilename),
               relationName(relationName) {
         openDB();
@@ -66,7 +65,7 @@ protected:
             if (element.empty()) {
                 element = "n/a";
             }
-            if (symbolMask.isSymbol(column)) {
+            if (symbolMask.at(column)) {
                 tuple[column] = symbolTable.unsafeLookup(element);
             } else {
                 try {
@@ -155,7 +154,7 @@ protected:
 
 class ReadSQLiteFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const SymbolMask& symbolMask, SymbolTable& symbolTable,
+    std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const bool provenance) override {
         std::string dbName = ioDirectives.get("dbname");
         std::string relationName = ioDirectives.getRelationName();

@@ -20,7 +20,6 @@
 #include "AstRelationIdentifier.h"
 #include "RamRelation.h"
 #include "RelationRepresentation.h"
-#include "SymbolMask.h"
 #include "Util.h"
 #include <cassert>
 #include <map>
@@ -278,9 +277,6 @@ private:
     /** append statement to a list of statements */
     void appendStmt(std::unique_ptr<RamStatement>& stmtList, std::unique_ptr<RamStatement> stmt);
 
-    /** get symbol mask of a relation describing type attributes */
-    SymbolMask getSymbolMask(const AstRelation& rel);
-
     /** converts the given relation identifier into a relation name */
     std::string getRelationName(const AstRelationIdentifier& id) {
         return toString(join(id.getNames(), "."));
@@ -298,8 +294,7 @@ private:
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity,
             const std::vector<std::string> attributeNames,
-            const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask,
-            const RelationRepresentation structure);
+            const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation structure);
 
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity);

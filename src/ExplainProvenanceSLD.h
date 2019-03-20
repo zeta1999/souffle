@@ -360,7 +360,7 @@ private:
     }
 
     void printRelationOutput(
-            const SymbolMask& symMask, const IODirectives& ioDir, const Relation& rel) override {
+            const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) override {
         WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), ioDir, true)->writeAll(rel);
     }
 };

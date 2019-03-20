@@ -30,7 +30,6 @@
 #include "souffle/RamTypes.h"
 #include "souffle/SignalHandler.h"
 #include "souffle/SouffleInterface.h"
-#include "souffle/SymbolMask.h"
 #include "souffle/SymbolTable.h"
 #include "souffle/Util.h"
 #include "souffle/WriteStream.h"

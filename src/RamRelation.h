@@ -20,7 +20,6 @@
 #include "RamNode.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
-#include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "Table.h"
 #include "Util.h"
@@ -50,20 +49,16 @@ protected:
     /** Type of attributes */
     const std::vector<std::string> attributeTypeQualifiers;
 
-    /** TODO (#541): legacy, i.e., duplicated information */
-    const SymbolMask mask;
-
     /** Data-structure representation */
     const RelationRepresentation representation;
 
 public:
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
-            const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask,
+            const std::vector<std::string> attributeTypeQualifiers,
             const RelationRepresentation representation)
             : RamNode(RN_Relation), name(std::move(name)), arity(arity),
               attributeNames(std::move(attributeNames)),
-              attributeTypeQualifiers(std::move(attributeTypeQualifiers)), mask(std::move(mask)),
-              representation(representation) {
+              attributeTypeQualifiers(std::move(attributeTypeQualifiers)), representation(representation) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
     }
@@ -89,9 +84,8 @@ public:
         return (i < attributeTypeQualifiers.size()) ? attributeTypeQualifiers[i] : "";
     }
 
-    /** Get symbol mask */
-    const SymbolMask& getSymbolMask() const {
-        return mask;
+    const std::vector<std::string>& getAttributeTypeQualifiers() const {
+        return attributeTypeQualifiers;
     }
 
     /** Is nullary relation */
@@ -143,7 +137,7 @@ public:
     /** Create clone */
     RamRelation* clone() const override {
         RamRelation* res =
-                new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, mask, representation);
+                new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, representation);
         return res;
     }
 
@@ -156,7 +150,7 @@ protected:
         assert(nullptr != dynamic_cast<const RamRelation*>(&node));
         const auto& other = static_cast<const RamRelation&>(node);
         return name == other.name && arity == other.arity && attributeNames == other.attributeNames &&
-               attributeTypeQualifiers == other.attributeTypeQualifiers && mask == other.mask &&
+               attributeTypeQualifiers == other.attributeTypeQualifiers &&
                representation == other.representation && isTemp() == other.isTemp();
     }
 };

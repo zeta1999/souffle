@@ -801,9 +801,13 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
             for (IODirectives ioDirectives : load.getIODirectives()) {
                 try {
                     InterpreterRelation& relation = interpreter.getRelation(load.getRelation());
+                    std::vector<bool> symbolMask;
+                    for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
+                        symbolMask.push_back(cur[0] == 's');
+                    }
                     IOSystem::getInstance()
-                            .getReader(load.getRelation().getSymbolMask(), interpreter.getSymbolTable(),
-                                    ioDirectives, Global::config().has("provenance"))
+                            .getReader(symbolMask, interpreter.getSymbolTable(), ioDirectives,
+                                    Global::config().has("provenance"))
                             ->readAll(relation);
                 } catch (std::exception& e) {
                     std::cerr << "Error loading data: " << e.what() << "\n";
@@ -814,9 +818,13 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
         bool visitStore(const RamStore& store) override {
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 try {
+                    std::vector<bool> symbolMask;
+                    for (auto& cur : store.getRelation().getAttributeTypeQualifiers()) {
+                        symbolMask.push_back(cur[0] == 's');
+                    }
                     IOSystem::getInstance()
-                            .getWriter(store.getRelation().getSymbolMask(), interpreter.getSymbolTable(),
-                                    ioDirectives, Global::config().has("provenance"))
+                            .getWriter(symbolMask, interpreter.getSymbolTable(), ioDirectives,
+                                    Global::config().has("provenance"))
                             ->writeAll(interpreter.getRelation(store.getRelation()));
                 } catch (std::exception& e) {
                     std::cerr << e.what();

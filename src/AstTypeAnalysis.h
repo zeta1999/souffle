@@ -52,7 +52,6 @@ public:
     }
 
     /** Set the type of a given argument */
-    // TODO: make private?
     void setType(const AstArgument* arg, const AnalysisType* type) {
         typeMapping[getRepresentative(arg)] = type;
     }
@@ -77,7 +76,6 @@ private:
     std::stringstream* logStream;
     std::set<std::unique_ptr<TypeConstraint>> constraints{};
     std::map<const AstArgument*, const AnalysisType*> typeMapping{};
-    // TODO: is this ok? when to use mutable?
     mutable std::map<const std::string, const AstVariable*> representatives{};
 
     /** Adds a constraint that needs to be satisfied by the type solution. */

@@ -5,6 +5,7 @@
 
 namespace souffle {
 
+// TODO: make this const everywhere
 class TypeLattice {
 public:
     TypeLattice() = delete;
@@ -71,7 +72,6 @@ public:
 
 private:
     // TODO: add a comparator here
-    // TODO: const?
     // TODO: const for all these unique pointers throughout?
     std::set<std::unique_ptr<AnalysisType>> storedTypes{};
     const TypeEnvironment* typeEnvironment;

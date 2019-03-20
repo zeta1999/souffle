@@ -1220,9 +1220,8 @@ void AstSemanticChecker::checkTypeCorrectness(
     // -- check user-defined functor inputs --
     visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& functor) {
         const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(functor.getName());
-        // TODO: handled by getValidClauses...
         assert(funDecl != nullptr && "user-defined functor not declared");
-        assert(funDecl != nullptr && "functor arity must match declaration");
+        assert(funDecl->getArgCount() == functor.getArgCount() && "functor arity must match declaration");
 
         for (size_t i = 0; i < funDecl->getArgCount(); i++) {
             const AnalysisType* argType = typeAnalysis.getType(functor.getArg(i));

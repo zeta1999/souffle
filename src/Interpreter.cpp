@@ -598,7 +598,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
                 // aggregation is a bit more difficult
 
                 // eval target expression
-                RamDomain cur = interpreter.evalVal(*aggregate.getTargetExpression(), ctxt);
+                RamDomain cur = interpreter.evalVal(*aggregate.getExpression(), ctxt);
 
                 switch (aggregate.getFunction()) {
                     case RamAggregate::MIN:

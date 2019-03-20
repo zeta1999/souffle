@@ -362,9 +362,8 @@ private:
     /** Aggregation function */
     Function function;
 
-    /** Aggregation value */
-    // TODO (#541): rename to target expression
-    std::unique_ptr<RamExpression> value;
+    /** Aggregation expression */
+    std::unique_ptr<RamExpression> expression;
 
     /** Aggregation relation */
     std::unique_ptr<RamRelationReference> relationRef;
@@ -376,10 +375,12 @@ private:
     SearchColumns keys = 0;
 
 public:
-    RamAggregate(std::unique_ptr<RamOperation> nested, Function fun, std::unique_ptr<RamExpression> value,
-            std::unique_ptr<RamRelationReference> relRef, size_t ident)
-            : RamSearch(RN_Aggregate, ident, std::move(nested)), function(fun), value(std::move(value)),
-              relationRef(std::move(relRef)), pattern(getRelation().getArity()) {}
+    RamAggregate(std::unique_ptr<RamOperation> nested, Function fun,
+            std::unique_ptr<RamExpression> expression, std::unique_ptr<RamRelationReference> relRef,
+            size_t ident)
+            : RamSearch(RN_Aggregate, ident, std::move(nested)), function(fun),
+              expression(std::move(expression)), relationRef(std::move(relRef)),
+              pattern(getRelation().getArity()) {}
 
     /** Get condition */
     RamCondition* getCondition() const {
@@ -392,10 +393,9 @@ public:
     }
 
     /** Get target expression */
-    // TODO (#541): rename to getExpression
-    const RamExpression* getTargetExpression() const {
-        assert(value);
-        return value.get();
+    const RamExpression* getExpression() const {
+        assert(expression);
+        return expression.get();
     }
 
     /** Get relation */
@@ -439,17 +439,20 @@ public:
         }
 
         if (function != COUNT) {
-            os << *value << " ";
+            os << *expression << " ";
         }
 
         os << "AS t" << getIdentifier() << ".0 IN t" << getIdentifier() << " ∈ " << getRelation().getName();
-        os << "(" << join(pattern, ",", [&](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
-            if (!value) {
-                out << "_";
-            } else {
-                out << *value;
-            }
-        }) << ")";
+        os << "("
+           << join(pattern, ",",
+                      [&](std::ostream& out, const std::unique_ptr<RamExpression>& expression) {
+                          if (expression == nullptr) {
+                              out << "_";
+                          } else {
+                              out << *expression;
+                          }
+                      })
+           << ")";
 
         if (auto condition = getCondition()) {
             os << " WHERE ";
@@ -472,7 +475,7 @@ public:
     /** Create clone */
     RamAggregate* clone() const override {
         RamAggregate* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
-                value == nullptr ? nullptr : std::unique_ptr<RamExpression>(value->clone()),
+                expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), getIdentifier());
         res->keys = keys;
         for (size_t i = 0; i < pattern.size(); ++i) {
@@ -490,8 +493,8 @@ public:
             condition = map(std::move(condition));
         }
         relationRef = map(std::move(relationRef));
-        if (value != nullptr) {
-            value = map(std::move(value));
+        if (expression != nullptr) {
+            expression = map(std::move(expression));
         }
         for (auto& cur : pattern) {
             if (cur) {
@@ -511,8 +514,7 @@ protected:
         }
         return RamSearch::equal(other) && getCondition() == other.getCondition() &&
                getFunction() == other.getFunction() && getRelation() == other.getRelation() &&
-               getTargetExpression() == other.getTargetExpression() &&
-               equal_targets(pattern, other.pattern) &&
+               getExpression() == other.getExpression() && equal_targets(pattern, other.pattern) &&
                getRangeQueryColumns() == other.getRangeQueryColumns();
     }
 };
@@ -582,28 +584,28 @@ protected:
     std::unique_ptr<RamRelationReference> relationRef;
 
     /* Values for projection */
-    std::vector<std::unique_ptr<RamExpression>> values;
+    std::vector<std::unique_ptr<RamExpression>> expressions;
 
 public:
-    RamProject(
-            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> values)
-            : RamOperation(RN_Project), relationRef(std::move(relRef)), values(std::move(values)) {}
+    RamProject(std::unique_ptr<RamRelationReference> relRef,
+            std::vector<std::unique_ptr<RamExpression>> expressions)
+            : RamOperation(RN_Project), relationRef(std::move(relRef)), expressions(std::move(expressions)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {
         return *relationRef->get();
     }
 
-    /** Get values */
+    /** Get expressions */
     std::vector<RamExpression*> getValues() const {
-        return toPtrVector(values);
+        return toPtrVector(expressions);
     }
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
         const std::string tabs(tabpos, '\t');
 
-        os << tabs << "PROJECT (" << join(values, ", ", print_deref<std::unique_ptr<RamExpression>>())
+        os << tabs << "PROJECT (" << join(expressions, ", ", print_deref<std::unique_ptr<RamExpression>>())
            << ") INTO " << getRelation().getName();
     }
 
@@ -611,7 +613,7 @@ public:
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         res.push_back(relationRef.get());
-        for (const auto& cur : values) {
+        for (const auto& cur : expressions) {
             res.push_back(cur.get());
         }
         return res;
@@ -620,7 +622,7 @@ public:
     /** Create clone */
     RamProject* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
-        for (auto& cur : values) {
+        for (auto& cur : expressions) {
             newValues.emplace_back(cur->clone());
         }
         RamProject* res = new RamProject(
@@ -631,7 +633,7 @@ public:
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
-        for (auto& cur : values) {
+        for (auto& cur : expressions) {
             cur = map(std::move(cur));
         }
     }
@@ -641,18 +643,18 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProject*>(&node));
         const auto& other = static_cast<const RamProject&>(node);
-        return getRelation() == other.getRelation() && equal_targets(values, other.values);
+        return getRelation() == other.getRelation() && equal_targets(expressions, other.expressions);
     }
 };
 
 /** A statement for returning from a ram subroutine */
 class RamReturn : public RamOperation {
 protected:
-    std::vector<std::unique_ptr<RamExpression>> values;
+    std::vector<std::unique_ptr<RamExpression>> expressions;
 
 public:
     RamReturn(std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamOperation(RN_Return), values(std::move(vals)) {}
+            : RamOperation(RN_Return), expressions(std::move(vals)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const std::string tabs(tabpos, '\t');
@@ -676,19 +678,19 @@ public:
     }
 
     std::vector<RamExpression*> getValues() const {
-        return toPtrVector(values);
+        return toPtrVector(expressions);
     }
 
-    /** Get value */
+    /** Get expression */
     RamExpression& getValue(size_t i) const {
-        assert(i < values.size() && "value index out of range");
-        return *values[i];
+        assert(i < expressions.size() && "expression index out of range");
+        return *expressions[i];
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
-        for (const auto& cur : values) {
+        for (const auto& cur : expressions) {
             res.push_back(cur.get());
         }
         return res;
@@ -697,7 +699,7 @@ public:
     /** Create clone */
     RamReturn* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
-        for (auto& cur : values) {
+        for (auto& cur : expressions) {
             newValues.emplace_back(cur->clone());
         }
         return new RamReturn(std::move(newValues));
@@ -705,7 +707,7 @@ public:
 
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
-        for (auto& cur : values) {
+        for (auto& cur : expressions) {
             cur = map(std::move(cur));
         }
     }
@@ -715,7 +717,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamReturn*>(&node));
         const auto& other = static_cast<const RamReturn&>(node);
-        return equal_targets(values, other.values);
+        return equal_targets(expressions, other.expressions);
     }
 };
 

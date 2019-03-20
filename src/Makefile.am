@@ -208,7 +208,6 @@ soufflepublic_HEADERS = \
                         ReadStreamCSV.h         \
                         SignalHandler.h         \
                         SouffleInterface.h      \
-                        SymbolMask.h            \
                         SymbolTable.h           \
                         Table.h                 \
                         UnionFind.h             \

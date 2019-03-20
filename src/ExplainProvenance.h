@@ -73,11 +73,11 @@ public:
         }
 
         // create symbol mask
-        SymbolMask symMask(rel->getArity());
+        std::vector<bool> symMask(rel->getArity());
 
         for (size_t i = 0; i < rel->getArity(); i++) {
             if (*(rel->getAttrType(i)) == 's') {
-                symMask.setSymbol(i);
+                symMask.at(i) = true;
             }
         }
 
@@ -149,7 +149,7 @@ protected:
     }
 
     virtual void printRelationOutput(
-            const SymbolMask& symMask, const IODirectives& ioDir, const Relation& rel) = 0;
+            const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) = 0;
 };
 
 }  // end of namespace souffle

@@ -366,7 +366,7 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
                 typedClauses.push_back(clause);
 
                 // perform the type analysis
-                TypeSolver solver(lattice.get(), clause, program, debugStream);
+                TypeSolver solver(program, lattice.get(), clause, debugStream);
 
                 // store the result for each argument
                 visitDepthFirst(*clause, [&](const AstArgument& arg) {

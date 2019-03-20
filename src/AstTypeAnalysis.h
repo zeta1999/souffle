@@ -19,16 +19,14 @@ class AstArgument;
  **/
 class TypeSolver {
 public:
-    // TODO: change this to take in a clause, then get cosntraints and resolve them all
-    // TODO: fix constraint resolution etc.
     // TODO: lattice here because...?
     // TODO: get rid of things afterwrads
     // TODO: program as ref?
     // TODO: debugstream = pointer to the stream where debugging information should be printed
     // TODO: add comments to htese
-    TypeSolver(TypeLattice* lattice, const AstClause* clause, const AstProgram* program,
+    TypeSolver(const AstProgram* program, TypeLattice* lattice, const AstClause* clause,
             std::stringstream* logStream = nullptr)
-            : lattice(lattice), clause(clause), program(program), logStream(logStream) {
+            : program(program), lattice(lattice), clause(clause), logStream(logStream) {
         generateConstraints();
         resolveConstraints();
     }
@@ -70,10 +68,9 @@ public:
     }
 
 private:
-    // TODO: reorder - maybe get rid of some if possible etc.
+    const AstProgram* program;
     TypeLattice* lattice;
     const AstClause* clause;
-    const AstProgram* program;
     std::stringstream* logStream;
     std::set<std::unique_ptr<TypeConstraint>> constraints{};
     std::map<const AstArgument*, const AnalysisType*> typeMapping{};

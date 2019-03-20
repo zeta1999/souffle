@@ -284,7 +284,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             rel->setName(relName);
 
             // add attributes
-            TypeSolver typeSolver(lattice, aggClause, &program);
+            TypeSolver typeSolver(&program, lattice, aggClause);
             for (const auto& cur : head->getArguments()) {
                 // get the correct type for the attribute
                 assert(dynamic_cast<const InnerAnalysisType*>(typeSolver.getType(cur)) &&

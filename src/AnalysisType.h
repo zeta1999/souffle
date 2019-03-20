@@ -379,7 +379,7 @@ public:
     }
 
     void setName(std::string name) {
-        reprsentation = repr;
+        representation = name;
     }
 
     Kind getKind() const override {

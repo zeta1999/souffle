@@ -55,10 +55,6 @@ public:
  * RAM Statements with a single relation
  */
 class RamRelationStatement : public RamStatement {
-protected:
-    /** Relation */
-    std::unique_ptr<RamRelationReference> relationRef;
-
 public:
     RamRelationStatement(RamNodeType type, std::unique_ptr<RamRelationReference> relRef)
             : RamStatement(type), relationRef(std::move(relRef)) {}
@@ -79,6 +75,9 @@ public:
     }
 
 protected:
+    /** Relation */
+    std::unique_ptr<RamRelationReference> relationRef;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRelationStatement*>(&node));
@@ -224,10 +223,6 @@ public:
  * Note that semantically uniqueness of tuples is not checked.
  */
 class RamMerge : public RamStatement {
-protected:
-    std::unique_ptr<RamRelationReference> targetRef;
-    std::unique_ptr<RamRelationReference> sourceRef;
-
 public:
     RamMerge(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
             : RamStatement(RN_Merge), targetRef(std::move(tRef)), sourceRef(std::move(sRef)) {
@@ -274,6 +269,9 @@ public:
     }
 
 protected:
+    std::unique_ptr<RamRelationReference> targetRef;
+    std::unique_ptr<RamRelationReference> sourceRef;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamMerge*>(&node));
@@ -287,13 +285,6 @@ protected:
  * Swap operation two relations
  */
 class RamSwap : public RamStatement {
-protected:
-    /** first argument of swap statement */
-    std::unique_ptr<RamRelationReference> first;
-
-    /** second argument of swap statement */
-    std::unique_ptr<RamRelationReference> second;
-
 public:
     RamSwap(std::unique_ptr<RamRelationReference> f, std::unique_ptr<RamRelationReference> s)
             : RamStatement(RN_Swap), first(std::move(f)), second(std::move(s)) {
@@ -339,6 +330,12 @@ public:
     }
 
 protected:
+    /** first argument of swap statement */
+    std::unique_ptr<RamRelationReference> first;
+
+    /** second argument of swap statement */
+    std::unique_ptr<RamRelationReference> second;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSwap*>(&node));
@@ -352,10 +349,6 @@ protected:
  * Insert a fact into a relation
  */
 class RamFact : public RamRelationStatement {
-protected:
-    /** Arguments of fact */
-    std::vector<std::unique_ptr<RamExpression>> values;
-
 public:
     RamFact(std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>>&& v)
             : RamRelationStatement(RN_Fact, std::move(relRef)), values(std::move(v)) {}
@@ -399,6 +392,9 @@ public:
     }
 
 protected:
+    /** Arguments of fact */
+    std::vector<std::unique_ptr<RamExpression>> values;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamFact*>(&node));
@@ -411,13 +407,6 @@ protected:
  * A relational algebra query
  */
 class RamQuery : public RamStatement {
-protected:
-    /** RAM operation */
-    std::unique_ptr<RamOperation> operation;
-
-    /** RAM condition */
-    std::unique_ptr<RamCondition> condition;
-
 public:
     RamQuery(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
             : RamStatement(RN_Query), operation(std::move(o)), condition(std::move(c)) {}
@@ -476,6 +465,12 @@ public:
     }
 
 protected:
+    /** RAM operation */
+    std::unique_ptr<RamOperation> operation;
+
+    /** RAM condition */
+    std::unique_ptr<RamCondition> condition;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamQuery*>(&node));
@@ -490,10 +485,6 @@ protected:
  * Execute statement one by one from an ordered list of statements.
  */
 class RamSequence : public RamStatement {
-protected:
-    /** ordered list of RAM statements */
-    std::vector<std::unique_ptr<RamStatement>> statements;
-
 public:
     RamSequence() : RamStatement(RN_Sequence) {}
 
@@ -555,6 +546,9 @@ public:
     }
 
 protected:
+    /** ordered list of RAM statements */
+    std::vector<std::unique_ptr<RamStatement>> statements;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSequence*>(&node));
@@ -572,10 +566,6 @@ protected:
  * parallel block.
  */
 class RamParallel : public RamStatement {
-protected:
-    /** list of statements executed in parallel */
-    std::vector<std::unique_ptr<RamStatement>> statements;
-
 public:
     RamParallel() : RamStatement(RN_Parallel) {}
 
@@ -628,6 +618,9 @@ public:
     }
 
 protected:
+    /** list of statements executed in parallel */
+    std::vector<std::unique_ptr<RamStatement>> statements;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamParallel*>(&node));
@@ -642,10 +635,6 @@ protected:
  * Execute the statement repeatedly until statement terminates loop via an exit statement
  */
 class RamLoop : public RamStatement {
-protected:
-    /** Body of loop */
-    std::unique_ptr<RamStatement> body;
-
 public:
     RamLoop(std::unique_ptr<RamStatement> b) : RamStatement(RN_Loop), body(std::move(b)) {}
 
@@ -686,6 +675,9 @@ public:
     }
 
 protected:
+    /** Body of loop */
+    std::unique_ptr<RamStatement> body;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLoop*>(&node));
@@ -700,10 +692,6 @@ protected:
  * Exits a loop if exit condition holds.
  */
 class RamExit : public RamStatement {
-protected:
-    /** exit condition */
-    std::unique_ptr<RamCondition> condition;
-
 public:
     RamExit(std::unique_ptr<RamCondition> c) : RamStatement(RN_Exit), condition(std::move(c)) {}
 
@@ -737,6 +725,9 @@ public:
     }
 
 protected:
+    /** exit condition */
+    std::unique_ptr<RamCondition> condition;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamExit*>(&node));
@@ -755,16 +746,6 @@ protected:
  * of the statement.
  */
 class RamLogTimer : public RamStatement {
-protected:
-    /** logging statement */
-    std::unique_ptr<RamStatement> statement;
-
-    /** logging message */
-    std::string message;
-
-    /** Relation */
-    std::unique_ptr<RamRelationReference> relationRef;
-
 public:
     RamLogTimer(
             std::unique_ptr<RamStatement> stmt, std::string msg, std::unique_ptr<RamRelationReference> relRef)
@@ -821,6 +802,15 @@ public:
     }
 
 protected:
+    /** logging statement */
+    std::unique_ptr<RamStatement> statement;
+
+    /** logging message */
+    std::string message;
+
+    /** Relation */
+    std::unique_ptr<RamRelationReference> relationRef;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogTimer*>(&node));
@@ -833,13 +823,6 @@ protected:
  * Debug statement
  */
 class RamDebugInfo : public RamStatement {
-protected:
-    /** debugging statement */
-    std::unique_ptr<RamStatement> statement;
-
-    /** debugging message */
-    std::string message;
-
 public:
     RamDebugInfo(std::unique_ptr<RamStatement> stmt, std::string msg)
             : RamStatement(RN_DebugInfo), statement(std::move(stmt)), message(std::move(msg)) {
@@ -884,6 +867,12 @@ public:
     }
 
 protected:
+    /** debugging statement */
+    std::unique_ptr<RamStatement> statement;
+
+    /** debugging message */
+    std::string message;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogTimer*>(&node));
@@ -898,11 +887,6 @@ protected:
  * Wrap strata of program
  */
 class RamStratum : public RamStatement {
-protected:
-    /** Body of stratum */
-    std::unique_ptr<RamStatement> body;
-    const int index;
-
 public:
     RamStratum(std::unique_ptr<RamStatement> b, const int i)
             : RamStatement(RN_Stratum), body(std::move(b)), index(i) {}
@@ -944,6 +928,10 @@ public:
     }
 
 protected:
+    /** Body of stratum */
+    std::unique_ptr<RamStatement> body;
+    const int index;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamStratum*>(&node));
@@ -956,10 +944,6 @@ protected:
  *  Log relation size and a logging message.
  */
 class RamLogSize : public RamRelationStatement {
-protected:
-    /** logging message */
-    std::string message;
-
 public:
     RamLogSize(std::unique_ptr<RamRelationReference> relRef, std::string message)
             : RamRelationStatement(RN_LogSize, std::move(relRef)), message(std::move(message)) {}
@@ -992,14 +976,15 @@ protected:
         RamRelationStatement::equal(other);
         return getMessage() == other.getMessage();
     }
+
+protected:
+    /** logging message */
+    std::string message;
 };
 
 #ifdef USE_MPI
 
 class RamRecv : public RamRelationStatement {
-private:
-    const int sourceStratum;
-
 public:
     RamRecv(std::unique_ptr<RamRelationReference> r, const int s)
             : RamRelationStatement(RN_Recv, std::move(r)), sourceStratum(s) {}
@@ -1029,12 +1014,12 @@ protected:
         RamRelationStatement::equal(other);
         return sourceStratum == other.sourceStratum;
     }
+
+private:
+    const int sourceStratum;
 };
 
 class RamSend : public RamRelationStatement {
-private:
-    const std::set<size_t> destinationStrata;
-
 public:
     RamSend(std::unique_ptr<RamRelationReference> r, const std::set<size_t> s)
             : RamRelationStatement(RN_Send, std::move(r)), destinationStrata(s) {}
@@ -1071,6 +1056,9 @@ protected:
         const auto& other = static_cast<const RamSend&>(node);
         return destinationStrata == other.destinationStrata;
     }
+
+private:
+    const std::set<size_t> destinationStrata;
 };
 
 class RamNotify : public RamStatement {
@@ -1104,9 +1092,6 @@ protected:
 };
 
 class RamWait : public RamStatement {
-private:
-    const size_t count;
-
 public:
     RamWait(const size_t c) : RamStatement(RN_Wait), count(c) {}
 
@@ -1141,6 +1126,9 @@ protected:
         const auto& other = static_cast<const RamWait&>(node);
         return other.count == count;
     }
+
+private:
+    const size_t count;
 };
 
 #endif

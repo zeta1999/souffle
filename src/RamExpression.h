@@ -48,13 +48,6 @@ public:
  * Operator that represents an intrinsic (built-in) functor
  */
 class RamIntrinsicOperator : public RamExpression {
-private:
-    /** Operation symbol */
-    const FunctorOp operation;
-
-    /** Arguments of the function */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
 public:
     template <typename... Args>
     RamIntrinsicOperator(FunctorOp op, Args... args) : RamExpression(RN_IntrinsicOperator), operation(op) {
@@ -136,22 +129,19 @@ protected:
         const auto& other = static_cast<const RamIntrinsicOperator&>(node);
         return getOperator() == other.getOperator() && equal_targets(arguments, other.arguments);
     }
+
+private:
+    /** Operation symbol */
+    const FunctorOp operation;
+
+    /** Arguments of the function */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
 };
 
 /**
  * Operator that represents an extrinsic (user-defined) functor
  */
 class RamUserDefinedOperator : public RamExpression {
-private:
-    /** Arguments of user defined operator */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
-    /** Name of user-defined operator */
-    const std::string name;
-
-    /** Argument types */
-    const std::string type;
-
 public:
     RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamExpression>> args)
             : RamExpression(RN_UserDefinedOperator), arguments(std::move(args)), name(std::move(n)),
@@ -224,24 +214,22 @@ protected:
         const auto& other = static_cast<const RamUserDefinedOperator&>(node);
         return name == other.name && type == other.type && equal_targets(arguments, other.arguments);
     }
+
+private:
+    /** Arguments of user defined operator */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
+
+    /** Name of user-defined operator */
+    const std::string name;
+
+    /** Argument types */
+    const std::string type;
 };
 
 /**
  * Access element from the current tuple in a tuple environment
  */
 class RamElementAccess : public RamExpression {
-private:
-    /** Identifier for the tuple */
-    const size_t identifier;
-
-    /** Element number */
-    const size_t element;
-
-    /** Relation for debugging purposes
-     *  Set to nullptr for non-existent relations
-     */
-    std::unique_ptr<RamRelationReference> relationRef;
-
 public:
     RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
             : RamExpression(RN_ElementAccess), identifier(ident), element(elem),
@@ -295,15 +283,24 @@ protected:
         const auto& other = static_cast<const RamElementAccess&>(node);
         return getIdentifier() == other.getIdentifier() && getElement() == other.getElement();
     }
+
+private:
+    /** Identifier for the tuple */
+    const size_t identifier;
+
+    /** Element number */
+    const size_t element;
+
+    /** Relation for debugging purposes
+     *  Set to nullptr for non-existent relations
+     */
+    std::unique_ptr<RamRelationReference> relationRef;
 };
 
 /**
  * Number Constant
  */
 class RamNumber : public RamExpression {
-    /** Constant value */
-    const RamDomain constant;
-
 public:
     RamNumber(RamDomain c) : RamExpression(RN_Number), constant(c) {}
 
@@ -338,6 +335,10 @@ protected:
         const auto& other = static_cast<const RamNumber&>(node);
         return getConstant() == other.getConstant();
     }
+
+private:
+    /** Constant value */
+    const RamDomain constant;
 };
 
 /**
@@ -381,10 +382,6 @@ protected:
  * Record pack operation
  */
 class RamPackRecord : public RamExpression {
-private:
-    /** Arguments */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
 public:
     RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args)
             : RamExpression(RN_PackRecord), arguments(std::move(args)) {}
@@ -441,6 +438,10 @@ protected:
         const auto& other = static_cast<const RamPackRecord&>(node);
         return equal_targets(arguments, other.arguments);
     }
+
+private:
+    /** Arguments */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
 };
 
 /**
@@ -451,9 +452,6 @@ protected:
  * subroutine.
  */
 class RamArgument : public RamExpression {
-    /** Argument number */
-    const size_t number;
-
 public:
     RamArgument(size_t number) : RamExpression(RN_Argument), number(number) {}
 
@@ -488,6 +486,10 @@ protected:
         const auto& other = static_cast<const RamArgument&>(node);
         return getArgument() == other.getArgument();
     }
+
+private:
+    /** Argument number */
+    const size_t number;
 };
 
 }  // end of namespace souffle

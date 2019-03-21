@@ -46,13 +46,6 @@ public:
  * Conjunction
  */
 class RamConjunction : public RamCondition {
-protected:
-    /** Left-hand side of conjunction */
-    std::unique_ptr<RamCondition> lhs;
-
-    /** Right-hand side of conjunction */
-    std::unique_ptr<RamCondition> rhs;
-
 public:
     RamConjunction(std::unique_ptr<RamCondition> l, std::unique_ptr<RamCondition> r)
             : RamCondition(RN_Conjunction), lhs(std::move(l)), rhs(std::move(r)) {}
@@ -97,6 +90,12 @@ public:
     }
 
 protected:
+    /** Left-hand side of conjunction */
+    std::unique_ptr<RamCondition> lhs;
+
+    /** Right-hand side of conjunction */
+    std::unique_ptr<RamCondition> rhs;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamConjunction*>(&node));
@@ -109,10 +108,6 @@ protected:
  * Negation
  */
 class RamNegation : public RamCondition {
-protected:
-    /** Operand */
-    std::unique_ptr<RamCondition> operand;
-
 public:
     RamNegation(std::unique_ptr<RamCondition> operand)
             : RamCondition(RN_Negation), operand(std::move(operand)) {}
@@ -147,6 +142,9 @@ public:
     }
 
 protected:
+    /** Operand */
+    std::unique_ptr<RamCondition> operand;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamNegation*>(&node));
@@ -159,16 +157,6 @@ protected:
  * Binary constraint
  */
 class RamConstraint : public RamCondition {
-private:
-    /** Operator */
-    BinaryConstraintOp op;
-
-    /** Left-hand side of constraint*/
-    std::unique_ptr<RamExpression> lhs;
-
-    /** Right-hand side of constraint */
-    std::unique_ptr<RamExpression> rhs;
-
 public:
     RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamExpression> l, std::unique_ptr<RamExpression> r)
             : RamCondition(RN_Constraint), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
@@ -223,19 +211,22 @@ protected:
         return getOperator() == other.getOperator() && getLHS() == other.getLHS() &&
                getRHS() == other.getRHS();
     }
+
+private:
+    /** Operator */
+    BinaryConstraintOp op;
+
+    /** Left-hand side of constraint*/
+    std::unique_ptr<RamExpression> lhs;
+
+    /** Right-hand side of constraint */
+    std::unique_ptr<RamExpression> rhs;
 };
 
 /**
  * Abstract existence check
  */
 class RamAbstractExistenceCheck : public RamCondition {
-protected:
-    /* Relation */
-    std::unique_ptr<RamRelationReference> relationRef;
-
-    /** Pattern -- nullptr if undefined */
-    std::vector<std::unique_ptr<RamExpression>> values;
-
 public:
     RamAbstractExistenceCheck(RamNodeType type, std::unique_ptr<RamRelationReference> relRef,
             std::vector<std::unique_ptr<RamExpression>> vals)
@@ -271,6 +262,12 @@ public:
     }
 
 protected:
+    /* Relation */
+    std::unique_ptr<RamRelationReference> relationRef;
+
+    /** Pattern -- nullptr if undefined */
+    std::vector<std::unique_ptr<RamExpression>> values;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAbstractExistenceCheck*>(&node));

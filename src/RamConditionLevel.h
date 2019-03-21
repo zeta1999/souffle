@@ -28,8 +28,6 @@ class RamExpressionLevelAnalysis;
  * Class for a level analysis
  */
 class RamConditionLevelAnalysis : public RamAnalysis {
-    RamExpressionLevelAnalysis* rvla;
-
 public:
     /** name of analysis */
     static constexpr const char* name = "condition-level-analysis";
@@ -39,6 +37,9 @@ public:
 
     /** Get level */
     size_t getLevel(const RamCondition* condition) const;
+
+private:
+    RamExpressionLevelAnalysis* rvla;
 };
 
 }  // end of namespace souffle

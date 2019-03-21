@@ -34,22 +34,6 @@ namespace souffle {
  * Class for RamTranslationUnit
  */
 class RamTranslationUnit {
-private:
-    /** cached analyses */
-    mutable std::map<std::string, std::unique_ptr<RamAnalysis>> analyses;
-
-    /* Program RAM */
-    std::unique_ptr<RamProgram> program;
-
-    /* The table of symbols encountered in the input program */
-    souffle::SymbolTable& symbolTable;
-
-    ErrorReport& errorReport;
-
-    DebugReport& debugReport;
-
-    mutable std::mutex analysisLock;
-
 public:
     RamTranslationUnit(std::unique_ptr<RamProgram> program, SymbolTable& sym, ErrorReport& e, DebugReport& d)
             : program(std::move(program)), symbolTable(sym), errorReport(e), debugReport(d) {}
@@ -109,6 +93,22 @@ public:
     const DebugReport& getDebugReport() const {
         return debugReport;
     }
+
+private:
+    /** cached analyses */
+    mutable std::map<std::string, std::unique_ptr<RamAnalysis>> analyses;
+
+    /* Program RAM */
+    std::unique_ptr<RamProgram> program;
+
+    /* The table of symbols encountered in the input program */
+    souffle::SymbolTable& symbolTable;
+
+    ErrorReport& errorReport;
+
+    DebugReport& debugReport;
+
+    mutable std::mutex analysisLock;
 };
 
 }  // end of namespace souffle

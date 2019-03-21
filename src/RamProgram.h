@@ -21,16 +21,6 @@
 namespace souffle {
 
 class RamProgram : public RamNode {
-private:
-    /** Relations of RAM program */
-    std::map<std::string, std::unique_ptr<RamRelation>> relations;
-
-    /** Main program */
-    std::unique_ptr<RamStatement> main;
-
-    /** Subroutines for querying computed relations */
-    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
-
 public:
     RamProgram() : RamNode(RN_Program) {}
     RamProgram(std::unique_ptr<RamStatement> main) : RamNode(RN_Program), main(std::move(main)) {}
@@ -172,6 +162,16 @@ protected:
         }
         return getMain() == other.getMain();
     }
+
+private:
+    /** Relations of RAM program */
+    std::map<std::string, std::unique_ptr<RamRelation>> relations;
+
+    /** Main program */
+    std::unique_ptr<RamStatement> main;
+
+    /** Subroutines for querying computed relations */
+    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
 };
 
 }  // end of namespace souffle

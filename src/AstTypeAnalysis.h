@@ -41,7 +41,7 @@ public:
      * @param clause the clause to be analysed
      * @param logStream a pointer to the stream where debugging information should be printed
      */
-    TypeSolver(const AstProgram* program, TypeLattice* lattice, const AstClause* clause,
+    TypeSolver(const AstProgram* program, const TypeLattice* lattice, const AstClause* clause,
             std::stringstream* logStream = nullptr)
             : program(program), lattice(lattice), clause(clause), logStream(logStream) {
         generateConstraints();
@@ -49,7 +49,7 @@ public:
     }
 
     /** Get the type lattice associated with the type solution */
-    TypeLattice* getLattice() const {
+    const TypeLattice* getLattice() const {
         return lattice;
     }
 
@@ -85,7 +85,7 @@ public:
 
 private:
     const AstProgram* program;
-    TypeLattice* lattice;
+    const TypeLattice* lattice;
     const AstClause* clause;
     std::stringstream* logStream;
     std::set<std::unique_ptr<TypeConstraint>> constraints{};
@@ -140,7 +140,7 @@ public:
     }
 
     /** Get the type lattice associated with the analysis */
-    TypeLattice* getLattice() const {
+    const TypeLattice* getLattice() const {
         return lattice.get();
     }
 

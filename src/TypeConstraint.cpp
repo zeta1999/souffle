@@ -23,7 +23,7 @@ void FixedConstraint::resolve(TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(argument) && "argument does not have an associated type");
 
     // construct the new type
-    TypeLattice* lattice = currentSolution->getLattice();
+    const TypeLattice* lattice = currentSolution->getLattice();
     const AnalysisType* currType = currentSolution->getType(argument);
     const AnalysisType* newType = lattice->meet(currType, imposedType.get());
 
@@ -34,7 +34,7 @@ void FixedConstraint::resolve(TypeSolver* currentSolution) const {
 
 bool FixedConstraint::isSatisfied(const TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(argument) && "argument does not have an associated type");
-    TypeLattice* lattice = currentSolution->getLattice();
+    const TypeLattice* lattice = currentSolution->getLattice();
     const AnalysisType* existingType = currentSolution->getType(argument);
     return lattice->isSubtype(existingType, imposedType.get());
 }
@@ -44,7 +44,7 @@ void VariableConstraint::resolve(TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(rhs) && "upper bound does not have an associated type");
 
     // construct the new type
-    TypeLattice* lattice = currentSolution->getLattice();
+    const TypeLattice* lattice = currentSolution->getLattice();
     const AnalysisType* lhsType = currentSolution->getType(lhs);
     const AnalysisType* rhsType = currentSolution->getType(rhs);
     const AnalysisType* newType = lattice->meet(lhsType, rhsType);
@@ -57,7 +57,7 @@ void VariableConstraint::resolve(TypeSolver* currentSolution) const {
 bool VariableConstraint::isSatisfied(const TypeSolver* currentSolution) const {
     assert(currentSolution->hasType(lhs) && "lower bound does not have an associated type");
     assert(currentSolution->hasType(rhs) && "upper bound does not have an associated type");
-    TypeLattice* lattice = currentSolution->getLattice();
+    const TypeLattice* lattice = currentSolution->getLattice();
     const AnalysisType* lhsType = currentSolution->getType(lhs);
     const AnalysisType* rhsType = currentSolution->getType(rhs);
     return lattice->isSubtype(lhsType, rhsType);
@@ -79,7 +79,7 @@ void UnionConstraint::resolve(TypeSolver* currentSolution) const {
     }
 
     // -- create the new type --
-    TypeLattice* lattice = currentSolution->getLattice();
+    const TypeLattice* lattice = currentSolution->getLattice();
 
     // take the union of the bound types
     const auto bottomType = BottomAnalysisType();
@@ -112,7 +112,7 @@ bool UnionConstraint::isSatisfied(const TypeSolver* currentSolution) const {
     }
 
     // -- create the expected type --
-    TypeLattice* lattice = currentSolution->getLattice();
+    const TypeLattice* lattice = currentSolution->getLattice();
 
     // take the union of the bound types
     const auto bottomType = BottomAnalysisType();

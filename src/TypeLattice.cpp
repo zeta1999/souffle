@@ -20,7 +20,7 @@
 
 namespace souffle {
 
-const AnalysisType* TypeLattice::meet(const AnalysisType* lhs, const AnalysisType* rhs) {
+const AnalysisType* TypeLattice::meet(const AnalysisType* lhs, const AnalysisType* rhs) const {
     // A ^ B = A if A <: B
     if (isSubtype(lhs, rhs)) {
         return getStoredType(*lhs);
@@ -86,7 +86,7 @@ const AnalysisType* TypeLattice::meet(const AnalysisType* lhs, const AnalysisTyp
     return getStoredType(UnionAnalysisType(intersection));
 }
 
-const AnalysisType* TypeLattice::join(const AnalysisType* lhs, const AnalysisType* rhs) {
+const AnalysisType* TypeLattice::join(const AnalysisType* lhs, const AnalysisType* rhs) const {
     // A v B = B if A <: B
     if (isSubtype(lhs, rhs)) {
         return rhs;

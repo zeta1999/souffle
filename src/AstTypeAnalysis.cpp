@@ -27,7 +27,7 @@ void TypeSolver::generateConstraints() {
     // Helper class to find all constraints imposed by a clause
     class ConstraintFinder : public AstVisitor<void> {
     public:
-        ConstraintFinder(const AstProgram* program, TypeLattice* lattice, TypeSolver* solver)
+        ConstraintFinder(const AstProgram* program, const TypeLattice* lattice, TypeSolver* solver)
                 : program(program), lattice(lattice), solver(solver) {}
 
         void visitNode(const AstNode& node) {
@@ -283,7 +283,7 @@ void TypeSolver::generateConstraints() {
 
     private:
         const AstProgram* program;
-        TypeLattice* lattice;
+        const TypeLattice* lattice;
         TypeSolver* solver;
     };
 

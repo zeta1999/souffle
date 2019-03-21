@@ -40,10 +40,10 @@ public:
     }
 
     /** Finds the highest common subtype (intersection) of two types */
-    const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second);
+    const AnalysisType* meet(const AnalysisType* first, const AnalysisType* second) const;
 
     /** Finds the lowest common supertype (union) of two types */
-    const AnalysisType* join(const AnalysisType* first, const AnalysisType* second);
+    const AnalysisType* join(const AnalysisType* first, const AnalysisType* second) const;
 
     /** Checks if lhs is a subtype of rhs */
     bool isSubtype(const AnalysisType* lhs, const AnalysisType* rhs) const;
@@ -62,7 +62,7 @@ public:
     // TODO: what if same name but diff type? e.g. with records
     // TODO: abstracting this away...
     template <typename T>
-    T* getStoredType(const T& type) {
+    T* getStoredType(const T& type) const {
         const AnalysisType& at = static_cast<const AnalysisType&>(type);
         for (const auto& other : storedTypes) {
             if (*other == at) {
@@ -85,7 +85,7 @@ public:
 
 private:
     // TODO: add a comparator here maybe?
-    std::set<std::unique_ptr<AnalysisType>> storedTypes{};
+    mutable std::set<std::unique_ptr<AnalysisType>> storedTypes{};
     const TypeEnvironment* typeEnvironment;
     bool valid{true};
     std::map<AstTypeIdentifier, const InnerAnalysisType*> aliases{};

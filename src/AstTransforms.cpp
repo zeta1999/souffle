@@ -216,7 +216,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
     bool changed = false;
 
     AstProgram& program = *translationUnit.getProgram();
-    TypeLattice* lattice = translationUnit.getAnalysis<TypeAnalysis>()->getLattice();
+    const TypeLattice* lattice = translationUnit.getAnalysis<TypeAnalysis>()->getLattice();
 
     // if an aggregator has a body consisting of more than an atom => create new relation
     int counter = 0;

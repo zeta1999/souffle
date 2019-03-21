@@ -18,6 +18,8 @@
 #include "Util.h"
 #include <cassert>
 
+// TODO: clear up things that are no longer used
+
 namespace souffle {
 
 /**

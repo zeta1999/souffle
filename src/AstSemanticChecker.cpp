@@ -1134,7 +1134,7 @@ void AstSemanticChecker::checkTypeUsage(
 // Perform the actual type-correctness check
 void AstSemanticChecker::checkTypeCorrectness(
         ErrorReport& report, const TypeAnalysis& typeAnalysis, const AstProgram& program) {
-    TypeLattice* lattice = typeAnalysis.getLattice();
+    const TypeLattice* lattice = typeAnalysis.getLattice();
     if (!lattice->isValid()) {
         report.addError("No type checking could occur due to other errors present");
         return;

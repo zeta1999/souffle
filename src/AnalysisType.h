@@ -34,7 +34,7 @@ inline std::ostream& operator<<(std::ostream& os, Kind kind) {
             os << "number";
             break;
         case Kind::RECORD:
-            os << "record";
+            os << "any record";
             break;
     }
 

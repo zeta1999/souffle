@@ -59,13 +59,13 @@
 namespace souffle {
 
 /** Evaluate RAM Expression */
-RamDomain Interpreter::evalVal(const RamExpression& value, const InterpreterContext& ctxt) {
-    class ValueEvaluator : public RamVisitor<RamDomain> {
+RamDomain Interpreter::evalExpr(const RamExpression& value, const InterpreterContext& ctxt) {
+    class ExpressionEvaluator : public RamVisitor<RamDomain> {
         Interpreter& interpreter;
         const InterpreterContext& ctxt;
 
     public:
-        ValueEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
+        ExpressionEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt) {}
 
         RamDomain visitNumber(const RamNumber& num) override {
@@ -271,7 +271,7 @@ RamDomain Interpreter::evalVal(const RamExpression& value, const InterpreterCont
     };
 
     // create and run evaluator
-    return ValueEvaluator(*this, ctxt)(value);
+    return ExpressionEvaluator(*this, ctxt)(value);
 }
 
 /** Evaluate RAM Condition */
@@ -319,7 +319,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             if (existCheckAnalysis->isTotal(&exists)) {
                 RamDomain tuple[arity];
                 for (size_t i = 0; i < arity; i++) {
-                    tuple[i] = (values[i]) ? interpreter.evalVal(*values[i], ctxt) : MIN_RAM_DOMAIN;
+                    tuple[i] = (values[i]) ? interpreter.evalExpr(*values[i], ctxt) : MIN_RAM_DOMAIN;
                 }
 
                 return rel.exists(tuple);
@@ -329,7 +329,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             RamDomain low[arity];
             RamDomain high[arity];
             for (size_t i = 0; i < arity; i++) {
-                low[i] = (values[i]) ? interpreter.evalVal(*values[i], ctxt) : MIN_RAM_DOMAIN;
+                low[i] = (values[i]) ? interpreter.evalExpr(*values[i], ctxt) : MIN_RAM_DOMAIN;
                 high[i] = (values[i]) ? low[i] : MAX_RAM_DOMAIN;
             }
 
@@ -350,7 +350,7 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
             RamDomain low[arity];
             RamDomain high[arity];
             for (size_t i = 0; i < arity - 2; i++) {
-                low[i] = (values[i]) ? interpreter.evalVal(*values[i], ctxt) : MIN_RAM_DOMAIN;
+                low[i] = (values[i]) ? interpreter.evalExpr(*values[i], ctxt) : MIN_RAM_DOMAIN;
                 high[i] = (values[i]) ? low[i] : MAX_RAM_DOMAIN;
             }
 
@@ -367,8 +367,8 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 
         // -- comparison operators --
         bool visitConstraint(const RamConstraint& relOp) override {
-            RamDomain lhs = interpreter.evalVal(*relOp.getLHS(), ctxt);
-            RamDomain rhs = interpreter.evalVal(*relOp.getRHS(), ctxt);
+            RamDomain lhs = interpreter.evalExpr(*relOp.getLHS(), ctxt);
+            RamDomain rhs = interpreter.evalExpr(*relOp.getRHS(), ctxt);
             switch (relOp.getOperator()) {
                 case BinaryConstraintOp::EQ:
                     return lhs == rhs;
@@ -383,8 +383,8 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                 case BinaryConstraintOp::GE:
                     return lhs >= rhs;
                 case BinaryConstraintOp::MATCH: {
-                    RamDomain l = interpreter.evalVal(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalVal(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     bool result = false;
@@ -397,8 +397,8 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                     return result;
                 }
                 case BinaryConstraintOp::NOT_MATCH: {
-                    RamDomain l = interpreter.evalVal(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalVal(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     bool result = false;
@@ -411,15 +411,15 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
                     return result;
                 }
                 case BinaryConstraintOp::CONTAINS: {
-                    RamDomain l = interpreter.evalVal(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalVal(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     return text.find(pattern) != std::string::npos;
                 }
                 case BinaryConstraintOp::NOT_CONTAINS: {
-                    RamDomain l = interpreter.evalVal(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalVal(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     return text.find(pattern) == std::string::npos;
@@ -489,7 +489,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             auto pattern = scan.getRangePattern();
             for (size_t i = 0; i < arity; i++) {
                 if (pattern[i] != nullptr) {
-                    low[i] = interpreter.evalVal(*pattern[i], ctxt);
+                    low[i] = interpreter.evalExpr(*pattern[i], ctxt);
                     hig[i] = low[i];
                 } else {
                     low[i] = MIN_RAM_DOMAIN;
@@ -562,7 +562,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
 
             for (size_t i = 0; i < arity; i++) {
                 if (pattern[i] != nullptr) {
-                    low[i] = interpreter.evalVal(*pattern[i], ctxt);
+                    low[i] = interpreter.evalExpr(*pattern[i], ctxt);
                     hig[i] = low[i];
                 } else {
                     low[i] = MIN_RAM_DOMAIN;
@@ -598,7 +598,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
                 // aggregation is a bit more difficult
 
                 // eval target expression
-                RamDomain cur = interpreter.evalVal(*aggregate.getExpression(), ctxt);
+                RamDomain cur = interpreter.evalExpr(*aggregate.getExpression(), ctxt);
 
                 switch (aggregate.getFunction()) {
                     case RamAggregate::MIN:
@@ -644,7 +644,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             RamDomain tuple[arity];
             for (size_t i = 0; i < arity; i++) {
                 assert(values[i]);
-                tuple[i] = interpreter.evalVal(*values[i], ctxt);
+                tuple[i] = interpreter.evalExpr(*values[i], ctxt);
             }
 
             // insert in target relation
@@ -658,7 +658,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
                 if (val == nullptr) {
                     ctxt.addReturnValue(0, true);
                 } else {
-                    ctxt.addReturnValue(interpreter.evalVal(*val, ctxt));
+                    ctxt.addReturnValue(interpreter.evalExpr(*val, ctxt));
                 }
             }
         }
@@ -840,7 +840,7 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
             auto values = fact.getValues();
 
             for (size_t i = 0; i < arity; ++i) {
-                tuple[i] = interpreter.evalVal(*values[i]);
+                tuple[i] = interpreter.evalExpr(*values[i]);
             }
 
             interpreter.getRelation(fact.getRelation()).insert(tuple);

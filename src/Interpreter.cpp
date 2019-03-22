@@ -60,21 +60,34 @@ namespace souffle {
 
 class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    std::vector<RamDomain> &code; 
+   SymbolTable &symbolTable; 
    std::vector<size_t> jumpAdresses; 
+   std::vector<std::string> relationTable;
 
-   // Visit RAM Expression Nodes
+   size_t relationLookup(std::string name) {
+      for(size_t i=0;i<relationTable.size();i++) {
+          if (relationTable[i] == name) {
+              return i;
+          } 
+      }
+      relationTable.push_back(name); 
+      return relationTable.size()-1;
+   }
+
+   // Visit RAM Expressions
    void visitNumber(const RamNumber& num, size_t exitAddress) override {
-      code.push_back(num.getNodeType()); 
+      code.push_back(RN_Number); 
+      code.push_back(num.getConstant());
    } 
 
    void visitElementAccess(const RamElementAccess& access, size_t exitAddress) override {
-      code.push_back(access.getNoteType()); 
+      code.push_back(RN_ElementAccess); 
       code.push_back(access.getIdentifier()); 
       code.push_back(access.getElement()); 
    }
 
    void visitAutoIncrement(const RamAutoIncrement& inc, size_t exitAddress) override {
-      code.push_back(inc.getNodeType()); 
+      code.push_back(RN_AutoIncrement); 
    }
 
    void visitIntrinsicOperator(const RamIntrinsicOperator& op, size_t exitAddress) override {
@@ -90,6 +103,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
          case FunctorOp::TOSTRING:
             visit(args[0], exit_address); 
             break;
+
          /** Binary Functor Operators */ 
          case FunctorOp::ADD:
          case FunctorOp::SUB:
@@ -108,18 +122,20 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
             visit(args[0], exit_address); 
             visit(args[1], exit_address); 
             break; 
+
          /** Ternary Functor Operators */
          case FunctorOp::SUBSTR: 
             visit(args[0], exit_address); 
             visit(args[1], exit_address); 
             visit(args[2], exit_address); 
             break;
+
          /** Undefined */
          default: 
             assert(false && "unsupported operator");
             return;
       }
-      code.push_back(num.getNodeType()); 
+      code.push_back(RN_IntrinsicOperator); 
       code.push_back(op.getOperator()); 
    }
 
@@ -127,10 +143,9 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       for (size_t i = 0; i < op.getArgCount(); i++) {
          visit(op.getArgument(i));
       } 
-      code.push_back(num.getNodeType());
-      code.push_back(op.getArgCount()); 
-      // TODO: convert type string and name to number from SymbolTable 
-      // push on the stack 
+      code.push_back(RN_UserDefinedOperator);
+      code.push_back(symbolTable.lookup(op.getName());
+      code.push_back(symbolTable.lookup(op.getType());
     } 
 
     void visitPackRecord(const RamPackRecord& pack, size_t exitAddress) override {
@@ -138,163 +153,265 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
        for (size_t i = 0; i < values.size() ++i) {
           visit(values[i]);
        }
-       code.push_back(pack.getNodeType());
+       code.push_back(RN_PackRecord);
        code.push_back(values.size()); 
     } 
 
     void visitArgument(const RamArgument& arg, size_t exitAddress) override {
-       code.push_back(arg.getNodeType());
+       code.push_back(RN_Argument);
        code.push_back(arg.getArgCount()); 
     }
 
-    // -- connectors operators --
-    // Visit RAM Expression Nodes
+    // Visit RAM Conditions
     void visitConjunction(const RamConjunction& conj, size_t exitAddress) override {
        visit(conj.getLHS());
        visit(conj.getRHS());
-       code.push_back(arg.getNodeType());
+       code.push_back(RN_Conjunction);
     }
 
     void visitNegation(const RamNegation& neg, size_t exitAddress) override {
        visit(neg.getOperand());
-       code.push_back(neg.getNodeType());
+       code.push_back(RN_Negation); 
     }
 
     void visitEmptinessCheck(const RamEmptinessCheck& emptiness, size_t exitAddress) override {
-       code.push_back(emptiness.getNodeType()); 
-       // TODO: encode relation in form of a number 
-       // emptiness.getRelation() ... 
+       code.push_back(RN_EmptinessCheck); 
+       code.push_back(lookupRelation(lookupRelation.getRelation().getName()));
     }
 
-    void visitExistenceCheck(const RamExistenceCheck& exists) override {
-       const InterpreterRelation& rel = interpreter.getRelation(exists.getRelation());
+    void visitExistenceCheck(const RamExistenceCheck& exists, size_t exitAddress) override {
+       auto values = pack.getArguments();
+       for (size_t i = 0; i < values.size() ++i) {
+          visit(values[i]);
+       }
+       code.push_back(RN_ExistenceCheck); 
+       code.push_back(lookupRelation(lookupRelation.getRelation().getName()));
+       const RamRelation &rel = rel.getRelation();
+       std::string type;
+       for(i=0;i<rel.getArity();i++) {
+          type+=(rel.getArgument(i) == nullptr)?"_":"V"); 
+       }
+       code.push_back(symbolTable.lookup(type));
+    }
 
-       // construct the pattern tuple
-       auto arity = rel.getArity();
-       uto values = exists.getValues();
+    void visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists, size_t exitAddress) override {
+       auto values = pack.getArguments();
+       for (size_t i = 0; i < values.size() ++i) {
+          visit(values[i]);
+       }
+       code.push_back(RN_ExistenceCheck); 
+       code.push_back(lookupRelation(lookupRelation.getRelation().getName()));
+       const RamRelation &rel = rel.getRelation();
+       std::string type;
+       for(i=0;i<rel.getArity();i++) {
+          type+=(rel.getArgument(i) == nullptr)?"_":"V"); 
+       }
+       code.push_back(symbolTable.lookup(type));
+    }
 
-            if (Global::config().has("profile") && !exists.getRelation().isTemp()) {
-                interpreter.reads[exists.getRelation().getName()]++;
+    void visitConstraint(const RamConstraint& relOp) override {
+       visit(conj.getLHS());
+       visit(conj.getRHS());
+       code.push_back(RN_Constraint); 
+       code.push_back(relOp.getOperator()); 
+    }
+
+
+    // Visit RAM Operations 
+    void visitScan(const RamScan& scan) override {
+            // get the targeted relation
+            const InterpreterRelation& rel = interpreter.getRelation(scan.getRelation());
+
+            // use simple iterator
+            for (const RamDomain* cur : rel) {
+                ctxt[scan.getIdentifier()] = cur;
+                visitSearch(scan);
             }
-            // for total we use the exists test
-            if (existCheckAnalysis->isTotal(&exists)) {
-                RamDomain tuple[arity];
-                for (size_t i = 0; i < arity; i++) {
-                    tuple[i] = (values[i]) ? interpreter.evalVal(*values[i], ctxt) : MIN_RAM_DOMAIN;
-                }
-
-                return rel.exists(tuple);
-            }
-
-            // for partial we search for lower and upper boundaries
-            RamDomain low[arity];
-            RamDomain high[arity];
-            for (size_t i = 0; i < arity; i++) {
-                low[i] = (values[i]) ? interpreter.evalVal(*values[i], ctxt) : MIN_RAM_DOMAIN;
-                high[i] = (values[i]) ? low[i] : MAX_RAM_DOMAIN;
-            }
-
-            // obtain index
-            auto idx = rel.getIndex(existCheckAnalysis->getKey(&exists));
-            auto range = idx->lowerUpperBound(low, high);
-            return range.first != range.second;  // if there is something => done
         }
 
-        bool visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
-            const InterpreterRelation& rel = interpreter.getRelation(provExists.getRelation());
+        void visitIndexScan(const RamIndexScan& scan) override {
+            // get the targeted relation
+            const InterpreterRelation& rel = interpreter.getRelation(scan.getRelation());
 
-            // construct the pattern tuple
+            // create pattern tuple for range query
             auto arity = rel.getArity();
-            auto values = provExists.getValues();
-
-            // for partial we search for lower and upper boundaries
             RamDomain low[arity];
-            RamDomain high[arity];
-            for (size_t i = 0; i < arity - 2; i++) {
-                low[i] = (values[i]) ? interpreter.evalVal(*values[i], ctxt) : MIN_RAM_DOMAIN;
-                high[i] = (values[i]) ? low[i] : MAX_RAM_DOMAIN;
+            RamDomain hig[arity];
+            auto pattern = scan.getRangePattern();
+            for (size_t i = 0; i < arity; i++) {
+                if (pattern[i] != nullptr) {
+                    low[i] = interpreter.evalVal(*pattern[i], ctxt);
+                    hig[i] = low[i];
+                } else {
+                    low[i] = MIN_RAM_DOMAIN;
+                    hig[i] = MAX_RAM_DOMAIN;
+                }
             }
-
-            low[arity - 2] = MIN_RAM_DOMAIN;
-            low[arity - 1] = MIN_RAM_DOMAIN;
-            high[arity - 2] = MAX_RAM_DOMAIN;
-            high[arity - 1] = MAX_RAM_DOMAIN;
 
             // obtain index
-            auto idx = rel.getIndex(provExistCheckAnalysis->getKey(&provExists));
-            auto range = idx->lowerUpperBound(low, high);
-            return range.first != range.second;  // if there is something => done
-        }
+            auto idx = rel.getIndex(keysAnalysis->getRangeQueryColumns(&scan), nullptr);
 
-        // -- comparison operators --
-        bool visitConstraint(const RamConstraint& relOp) override {
-            RamDomain lhs = interpreter.evalVal(*relOp.getLHS(), ctxt);
-            RamDomain rhs = interpreter.evalVal(*relOp.getRHS(), ctxt);
-            switch (relOp.getOperator()) {
-                case BinaryConstraintOp::EQ:
-                    return lhs == rhs;
-                case BinaryConstraintOp::NE:
-                    return lhs != rhs;
-                case BinaryConstraintOp::LT:
-                    return lhs < rhs;
-                case BinaryConstraintOp::LE:
-                    return lhs <= rhs;
-                case BinaryConstraintOp::GT:
-                    return lhs > rhs;
-                case BinaryConstraintOp::GE:
-                    return lhs >= rhs;
-                case BinaryConstraintOp::MATCH: {
-                    RamDomain l = interpreter.evalVal(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalVal(*relOp.getRHS(), ctxt);
-                    const std::string& pattern = interpreter.getSymbolTable().resolve(l);
-                    const std::string& text = interpreter.getSymbolTable().resolve(r);
-                    bool result = false;
-                    try {
-                        result = std::regex_match(text, std::regex(pattern));
-                    } catch (...) {
-                        std::cerr << "warning: wrong pattern provided for match(\"" << pattern << "\",\""
-                                  << text << "\").\n";
-                    }
-                    return result;
-                }
-                case BinaryConstraintOp::NOT_MATCH: {
-                    RamDomain l = interpreter.evalVal(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalVal(*relOp.getRHS(), ctxt);
-                    const std::string& pattern = interpreter.getSymbolTable().resolve(l);
-                    const std::string& text = interpreter.getSymbolTable().resolve(r);
-                    bool result = false;
-                    try {
-                        result = !std::regex_match(text, std::regex(pattern));
-                    } catch (...) {
-                        std::cerr << "warning: wrong pattern provided for !match(\"" << pattern << "\",\""
-                                  << text << "\").\n";
-                    }
-                    return result;
-                }
-                case BinaryConstraintOp::CONTAINS: {
-                    RamDomain l = interpreter.evalVal(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalVal(*relOp.getRHS(), ctxt);
-                    const std::string& pattern = interpreter.getSymbolTable().resolve(l);
-                    const std::string& text = interpreter.getSymbolTable().resolve(r);
-                    return text.find(pattern) != std::string::npos;
-                }
-                case BinaryConstraintOp::NOT_CONTAINS: {
-                    RamDomain l = interpreter.evalVal(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalVal(*relOp.getRHS(), ctxt);
-                    const std::string& pattern = interpreter.getSymbolTable().resolve(l);
-                    const std::string& text = interpreter.getSymbolTable().resolve(r);
-                    return text.find(pattern) == std::string::npos;
-                }
-                default:
-                    assert(false && "unsupported operator");
-                    return false;
+            // get iterator range
+            auto range = idx->lowerUpperBound(low, hig);
+
+            // conduct range query
+            for (auto ip = range.first; ip != range.second; ++ip) {
+                const RamDomain* data = *(ip);
+                ctxt[scan.getIdentifier()] = data;
+                visitSearch(scan);
             }
         }
 
-        bool visitNode(const RamNode& node) override {
-            std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
-            assert(false && "Unsupported Node Type!");
-            return false;
+        void visitUnpackRecord(const RamUnpackRecord& lookup) override {
+            // get reference
+            RamDomain ref = ctxt[lookup.getReferenceLevel()][lookup.getReferencePosition()];
+
+            // check for null
+            if (isNull(ref)) {
+                return;
+            }
+
+            // update environment variable
+            auto arity = lookup.getArity();
+            const RamDomain* tuple = unpack(ref, arity);
+
+            // save reference to temporary value
+            ctxt[lookup.getIdentifier()] = tuple;
+
+            // run nested part - using base class visitor
+            visitSearch(lookup);
+        }
+
+        void visitAggregate(const RamAggregate& aggregate) override {
+            // get the targeted relation
+            const InterpreterRelation& rel = interpreter.getRelation(aggregate.getRelation());
+
+            // initialize result
+            RamDomain res = 0;
+            switch (aggregate.getFunction()) {
+                case RamAggregate::MIN:
+                    res = MAX_RAM_DOMAIN;
+                    break;
+                case RamAggregate::MAX:
+                    res = MIN_RAM_DOMAIN;
+                    break;
+                case RamAggregate::COUNT:
+                    res = 0;
+                    break;
+                case RamAggregate::SUM:
+                    res = 0;
+                    break;
+            }
+
+            // init temporary tuple for this level
+            auto arity = rel.getArity();
+
+            // get lower and upper boundaries for iteration
+            const auto& pattern = aggregate.getPattern();
+            RamDomain low[arity];
+            RamDomain hig[arity];
+
+            for (size_t i = 0; i < arity; i++) {
+                if (pattern[i] != nullptr) {
+                    low[i] = interpreter.evalVal(*pattern[i], ctxt);
+                    hig[i] = low[i];
+                } else {
+                    low[i] = MIN_RAM_DOMAIN;
+                    hig[i] = MAX_RAM_DOMAIN;
+                }
+            }
+
+            // obtain index
+            auto idx = rel.getIndex(aggregate.getRangeQueryColumns());
+
+            // get iterator range
+            auto range = idx->lowerUpperBound(low, hig);
+
+            // check for emptiness
+            if (aggregate.getFunction() != RamAggregate::COUNT) {
+                if (range.first == range.second) {
+                    return;  // no elements => no min/max
+                }
+            }
+
+            // iterate through values
+            for (auto ip = range.first; ip != range.second; ++ip) {
+                // link tuple
+                const RamDomain* data = *(ip);
+                ctxt[aggregate.getIdentifier()] = data;
+
+                // count is easy
+                if (aggregate.getFunction() == RamAggregate::COUNT) {
+                    ++res;
+                    continue;
+                }
+
+                // aggregation is a bit more difficult
+
+                // eval target expression
+                RamDomain cur = interpreter.evalVal(*aggregate.getExpression(), ctxt);
+
+                switch (aggregate.getFunction()) {
+                    case RamAggregate::MIN:
+                        res = std::min(res, cur);
+                        break;
+                    case RamAggregate::MAX:
+                        res = std::max(res, cur);
+                        break;
+                    case RamAggregate::COUNT:
+                        res = 0;
+                        break;
+                    case RamAggregate::SUM:
+                        res += cur;
+                        break;
+                }
+            }
+
+            // write result to environment
+            RamDomain tuple[1];
+            tuple[0] = res;
+            ctxt[aggregate.getIdentifier()] = tuple;
+
+            // run nested part - using base class visitor
+            visitSearch(aggregate);
+        }
+
+        void visitFilter(const RamFilter& filter) override {
+            // check condition
+            if (interpreter.evalCond(filter.getCondition(), ctxt)) {
+                // process nested
+                visitNestedOperation(filter);
+            }
+
+            if (Global::config().has("profile") && !filter.getProfileText().empty()) {
+                interpreter.frequencies[filter.getProfileText()][interpreter.getIterationNumber()]++;
+            }
+        }
+
+        void visitProject(const RamProject& project) override {
+            // create a tuple of the proper arity (also supports arity 0)
+            auto arity = project.getRelation().getArity();
+            const auto& values = project.getValues();
+            RamDomain tuple[arity];
+            for (size_t i = 0; i < arity; i++) {
+                assert(values[i]);
+                tuple[i] = interpreter.evalVal(*values[i], ctxt);
+            }
+
+            // insert in target relation
+            InterpreterRelation& rel = interpreter.getRelation(project.getRelation());
+            rel.insert(tuple);
+        }
+
+        // -- return from subroutine --
+        void visitReturn(const RamReturn& ret) override {
+            for (auto val : ret.getValues()) {
+                if (val == nullptr) {
+                    ctxt.addReturnValue(0, true);
+                } else {
+                    ctxt.addReturnValue(interpreter.evalVal(*val, ctxt));
+                }
+            }
         }
 
     void visitNode(const RamNode& node) override {

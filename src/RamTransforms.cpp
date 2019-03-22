@@ -360,6 +360,17 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
             if (auto* scan = dynamic_cast<RamRelationSearch*>(node.get())) {
                 const size_t identifier = scan->getIdentifier();
                 bool isExistCheck = true;
+                visitDepthFirst(scan->getOperation(), [&](const RamAggregate& agg) {
+                    if (isExistCheck) {
+                        for (auto* value : agg.getPattern()) {
+                            if (value != nullptr && !context->rcva->isConstant(value) &&
+                                    dependsOn(value, identifier)) {
+                                isExistCheck = false;
+                                break;
+                            }
+                        }
+                    }
+                });
                 visitDepthFirst(scan->getOperation(), [&](const RamFilter& filter) {
                     if (isExistCheck) {
                         for (auto& c : getConditions(&filter.getCondition())) {
@@ -458,6 +469,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     node = std::make_unique<RamFilter>(std::move(constraint),
                             std::unique_ptr<RamOperation>(scan->getOperation().clone()),
                             scan->getProfileText());
+                    modified = true;
                 }
             }
             node->apply(*this);

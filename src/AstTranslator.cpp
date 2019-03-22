@@ -1489,11 +1489,6 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
             debugReport.addSection(DebugReporter::getCodeSection(
                     "ram-program", "RAM Program " + runtimeStr, ramProgStr.str()));
         }
-
-        if (!debugReport.empty()) {
-            std::ofstream debugReportStream(Global::config().get("debug-report"));
-            debugReportStream << debugReport;
-        }
     }
     return std::make_unique<RamTranslationUnit>(std::move(ramProg), symTab, errReport, debugReport);
 }

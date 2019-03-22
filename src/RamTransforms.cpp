@@ -458,6 +458,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     node = std::make_unique<RamFilter>(std::move(constraint),
                             std::unique_ptr<RamOperation>(scan->getOperation().clone()),
                             scan->getProfileText());
+                    modified = true;
                 }
             }
             node->apply(*this);

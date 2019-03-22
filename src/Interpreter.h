@@ -74,7 +74,7 @@ protected:
     using relation_map = std::map<std::string, InterpreterRelation*>;
 
     /** Evaluate value */
-    RamDomain evalVal(const RamExpression& value, const InterpreterContext& ctxt = InterpreterContext());
+    RamDomain evalExpr(const RamExpression& value, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate operation */
     void evalOp(const RamOperation& op, const InterpreterContext& args = InterpreterContext());

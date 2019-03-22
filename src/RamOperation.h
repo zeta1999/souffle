@@ -469,6 +469,11 @@ public:
         if (condition != nullptr) {
             res.push_back(condition.get());
         }
+        for (auto& cur : pattern) {
+            if (cur != nullptr) {
+                res.push_back(cur.get());
+            }
+        }
         return res;
     }
 

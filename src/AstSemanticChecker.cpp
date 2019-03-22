@@ -1177,11 +1177,10 @@ void AstSemanticChecker::checkTypeCorrectness(
                             "Unable to deduce valid type for expression, as primitive types are disjoint",
                             arg.getSrcLoc());
                 } else if (dynamic_cast<const TopAnalysisType*>(type) != nullptr) {
-                    // TODO: check this comment - is this true?
-                    // this must be equal to a poorly typed but grounded record constructor, which will
-                    // produce an error so we don't have to
-                    // e.g. A(x) :- x = *R[y], B(y). when y has the wrong type for R, we don't want to also
-                    // raise an error for the type of x
+                    /* This must be equal to a poorly typed but grounded record constructor,
+                     * which will produce an error later on
+                     * e.g. `A(x) :- x = R[y], B(y).` s.t. y has the wrong type for R
+                     *  - don't want to raise an error for the type of x and also R[y] */
                 } else {
                     assert(false && "no other type should be invalid");
                 }
@@ -1267,7 +1266,7 @@ void AstSemanticChecker::checkTypeCorrectness(
             assert(record.getArguments().size() == expectedType->getFields().size() &&
                     "constructor has incorrect number of arguments");
 
-            // TODO: comment this properly - see above
+            // poorly typed but grounded record constructor
             if (dynamic_cast<const TopAnalysisType*>(typeAnalysis.getType(&record)) != nullptr) {
                 report.addError("Unable to deduce type " + toString(record.getType()) +
                                         " as record is not grounded as a record elsewhere, and at least one "

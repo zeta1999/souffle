@@ -21,7 +21,6 @@
 
 namespace souffle {
 
-// TODO: make this const everywhere
 class TypeLattice {
 public:
     TypeLattice() = delete;
@@ -59,7 +58,6 @@ public:
      * If the type does not yet exist in the lattice, it is created.
      */
     // TODO: make sure this is used everywhere it should be used
-    // TODO: what if same name but diff type? e.g. with records
     // TODO: abstracting this away...
     template <typename T>
     T* getStoredType(const T& type) const {
@@ -84,7 +82,6 @@ public:
     const InnerAnalysisType* getAnalysisType(const Type& type) const;
 
 private:
-    // TODO: add a comparator here maybe?
     mutable std::set<std::unique_ptr<AnalysisType>> storedTypes{};
     const TypeEnvironment* typeEnvironment;
     bool valid{true};

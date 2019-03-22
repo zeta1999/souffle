@@ -94,7 +94,6 @@ private:
 
     /** Adds a constraint that needs to be satisfied by the type solution. */
     void addConstraint(std::unique_ptr<TypeConstraint> constraint) {
-        // TODO: if abstracting away getRep then need to handle that here
         constraints.insert(std::move(constraint));
     }
 
@@ -116,7 +115,6 @@ private:
 /** Type analysis entrypoint */
 class TypeAnalysis : public AstAnalysis {
 public:
-    // TODO: set up constructor
     TypeAnalysis() = default;
 
     static constexpr const char* name = "type-analysis";

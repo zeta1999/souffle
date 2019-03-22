@@ -50,6 +50,10 @@ public:
     AnalysisType(const AnalysisType&) = default;
     AnalysisType(AnalysisType&&) = default;
 
+    // -- destructors --
+
+    virtual ~AnalysisType() = default;
+
     // -- validity --
 
     // checks that the type is not any form of top or bottom type

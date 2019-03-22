@@ -345,7 +345,6 @@ const AstArgument* TypeSolver::getRepresentative(const AstArgument* arg) const {
 
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     // set where debug information should be sent
-    // TODO: why sometimes ostream sometimes stringstream
     std::stringstream* debugStream = nullptr;
     if (!Global::config().get("debug-report").empty()) {
         debugStream = &logStream;

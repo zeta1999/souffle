@@ -397,11 +397,7 @@ public:
     /** Print */
     void print(std::ostream& os) const override {
         os << "[" << join(arguments, ",", [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) {
-            if (arg) {
-                out << *arg;
-            } else {
-                out << "_";
-            }
+            out << *arg;
         }) << "]";
     }
 
@@ -461,8 +457,8 @@ class RamArgument : public RamExpression {
 public:
     RamArgument(size_t number) : RamExpression(RN_Argument), number(number) {}
 
-    /** Get argument number */
-    size_t getArgCount() const {
+    /** Get argument */
+    size_t getArgument() const {
         return number;
     }
 
@@ -478,7 +474,7 @@ public:
 
     /** Create clone */
     RamArgument* clone() const override {
-        auto* res = new RamArgument(getArgCount());
+        auto* res = new RamArgument(number);
         return res;
     }
 
@@ -490,7 +486,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamArgument*>(&node));
         const auto& other = static_cast<const RamArgument&>(node);
-        return getArgCount() == other.getArgCount();
+        return getArgument() == other.getArgument();
     }
 };
 

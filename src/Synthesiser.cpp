@@ -1358,7 +1358,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         // -- subroutine argument --
 
         void visitArgument(const RamArgument& arg, std::ostream& out) override {
-            out << "(args)[" << arg.getArgCount() << "]";
+            out << "(args)[" << arg.getArgument() << "]";
         }
 
         // -- subroutine return --

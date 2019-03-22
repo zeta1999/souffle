@@ -59,7 +59,7 @@
 namespace souffle {
 
 /** Evaluate RAM Expression */
-RamDomain Interpreter::evalExpr(const RamExpression& value, const InterpreterContext& ctxt) {
+RamDomain Interpreter::evalExpr(const RamExpression& expr, const InterpreterContext& ctxt) {
     class ExpressionEvaluator : public RamVisitor<RamDomain> {
         Interpreter& interpreter;
         const InterpreterContext& ctxt;
@@ -246,8 +246,8 @@ RamDomain Interpreter::evalExpr(const RamExpression& value, const InterpreterCon
         }
 
         // -- records --
-        RamDomain visitPackRecord(const RamPackRecord& op) override {
-            auto values = op.getArguments();
+        RamDomain visitPackRecord(const RamPackRecord& pr) override {
+            auto values = pr.getArguments();
             auto arity = values.size();
             RamDomain data[arity];
             for (size_t i = 0; i < arity; ++i) {
@@ -258,7 +258,7 @@ RamDomain Interpreter::evalExpr(const RamExpression& value, const InterpreterCon
 
         // -- subroutine argument
         RamDomain visitArgument(const RamArgument& arg) override {
-            return ctxt.getArgument(arg.getArgCount());
+            return ctxt.getArgument(arg.getArgument());
         }
 
         // -- safety net --
@@ -271,7 +271,7 @@ RamDomain Interpreter::evalExpr(const RamExpression& value, const InterpreterCon
     };
 
     // create and run evaluator
-    return ExpressionEvaluator(*this, ctxt)(value);
+    return ExpressionEvaluator(*this, ctxt)(expr);
 }
 
 /** Evaluate RAM Condition */

@@ -66,7 +66,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>() = {relationRef.get()};  // no child nodes
+        return {relationRef.get()};
     }
 
     /** Apply mapper */
@@ -252,7 +252,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>({sourceRef.get(), targetRef.get()});
+        return {sourceRef.get(), targetRef.get()};
     }
 
     /** Create clone */
@@ -313,7 +313,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>({first.get(), second.get()});  // no child nodes
+        return {first.get(), second.get()};
     }
 
     /** Create clone */
@@ -441,7 +441,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>({operation.get(), condition.get()});
+        return {operation.get(), condition.get()};
     }
 
     /** Create clone */
@@ -660,7 +660,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(body.get());
+        return {body.get()};
     }
 
     /** Create clone */
@@ -710,7 +710,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(condition.get());
+        return {condition.get()};
     }
 
     /** Create clone */
@@ -786,7 +786,7 @@ public:
 
     /** Obtains a list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(statement.get());
+        return {statement.get()};
     }
 
     /** Create clone */
@@ -852,7 +852,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(statement.get());
+        return {statement.get()};
     }
 
     /** Create clone */
@@ -913,7 +913,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return toVector<const RamNode*>(body.get());
+        return {body.get()};
     }
 
     /** Create clone */
@@ -1073,7 +1073,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>(0);
+        return {};
     }
 
     /** Create clone */
@@ -1108,7 +1108,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>(0);
+        return {};
     }
 
     /** Create clone */

@@ -360,69 +360,33 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
             if (auto* scan = dynamic_cast<RamRelationSearch*>(node.get())) {
                 const size_t identifier = scan->getIdentifier();
                 bool isExistCheck = true;
-                visitDepthFirst(scan->getOperation(), [&](const RamAggregate& agg) {
+                visitDepthFirst(scan->getOperation(), [&](const RamProject& project) {
                     if (isExistCheck) {
-                        for (auto* value : agg.getPattern()) {
-                            if (value != nullptr && !context->rcva->isConstant(value) &&
-                                    dependsOn(value, identifier)) {
+                        std::vector<const RamExpression*> values;
+                        // TODO: function to extend vectors
+                        const std::vector<RamExpression*> initialVals = project.getValues();
+                        values.insert(values.end(), initialVals.begin(), initialVals.end());
+
+                        while (!values.empty()) {
+                            const RamExpression* value = values.back();
+                            values.pop_back();
+
+                            if (const auto* pack = dynamic_cast<const RamPackRecord*>(value)) {
+                                const std::vector<RamExpression*> args = pack->getArguments();
+                                values.insert(values.end(), args.begin(), args.end());
+                            } else if (const auto* intrinsicOp =
+                                               dynamic_cast<const RamIntrinsicOperator*>(value)) {
+                                for (auto* arg : intrinsicOp->getArguments()) {
+                                    values.push_back(arg);
+                                }
+                            } else if (value != nullptr && !context->rcva->isConstant(value) &&
+                                       context->rvla->getLevel(value) == identifier) {
                                 isExistCheck = false;
                                 break;
                             }
                         }
                     }
                 });
-                visitDepthFirst(scan->getOperation(), [&](const RamFilter& filter) {
-                    if (isExistCheck) {
-                        for (auto& c : getConditions(&filter.getCondition())) {
-                            if (dependsOn(c.get(), identifier)) {
-                                isExistCheck = false;
-                                break;
-                            }
-                        }
-                    }
-                });
-                if (isExistCheck) {
-                    visitDepthFirst(scan->getOperation(), [&](const RamIndexScan& indexScan) {
-                        if (isExistCheck) {
-                            for (const RamExpression* value : indexScan.getRangePattern()) {
-                                if (value != nullptr && !context->rcva->isConstant(value) &&
-                                        dependsOn(value, identifier)) {
-                                    isExistCheck = false;
-                                    break;
-                                }
-                            }
-                        }
-                    });
-                }
-                if (isExistCheck) {
-                    visitDepthFirst(scan->getOperation(), [&](const RamProject& project) {
-                        if (isExistCheck) {
-                            std::vector<const RamExpression*> values;
-                            // TODO: function to extend vectors
-                            const std::vector<RamExpression*> initialVals = project.getValues();
-                            values.insert(values.end(), initialVals.begin(), initialVals.end());
-
-                            while (!values.empty()) {
-                                const RamExpression* value = values.back();
-                                values.pop_back();
-
-                                if (const auto* pack = dynamic_cast<const RamPackRecord*>(value)) {
-                                    const std::vector<RamExpression*> args = pack->getArguments();
-                                    values.insert(values.end(), args.begin(), args.end());
-                                } else if (const auto* intrinsicOp =
-                                                   dynamic_cast<const RamIntrinsicOperator*>(value)) {
-                                    for (auto* arg : intrinsicOp->getArguments()) {
-                                        values.push_back(arg);
-                                    }
-                                } else if (value != nullptr && !context->rcva->isConstant(value) &&
-                                           context->rvla->getLevel(value) == identifier) {
-                                    isExistCheck = false;
-                                    break;
-                                }
-                            }
-                        }
-                    });
-                }
                 if (isExistCheck) {
                     visitDepthFirst(scan->getOperation(), [&](const RamUnpackRecord& lookup) {
                         if (isExistCheck) {
@@ -433,14 +397,10 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
                     });
                 }
                 if (isExistCheck) {
-                    visitDepthFirst(scan->getOperation(), [&](const RamExistenceCheck& exists) {
+                    visitDepthFirst(scan->getOperation(), [&](const RamExpression& expression) {
                         if (isExistCheck) {
-                            for (const RamExpression* value : exists.getValues()) {
-                                if (value != nullptr && !context->rcva->isConstant(value) &&
-                                        dependsOn(value, identifier)) {
-                                    isExistCheck = false;
-                                    break;
-                                }
+                            if (dependsOn(&expression, identifier)) {
+                                isExistCheck = false;
                             }
                         }
                     });

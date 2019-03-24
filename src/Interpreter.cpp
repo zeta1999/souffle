@@ -342,6 +342,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     * Syntax: [RN_UnpackRecord, referenceLevel, referencePos, arity, identifier, operation]
     *
     * Semantic: Look up record at ctxt[level][pos]
+    *
+    * TODO
     */
    void visitUnpackRecord(const RamUnpackRecord& lookup, size_t exitAddress) override {
       code.push_back(RN_UnpackRecord);
@@ -353,8 +355,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    }
 
    /*
-    * Syntax: [RN_Aggregate, relation, function, 
-    * TODO: Do later
+    * Syntax: [RN_Aggregate
+    * TODO 
     */
    void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
    }
@@ -362,25 +364,53 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    /*
     * Syntax: [RN_filter, condtion, operation]
     *
-    * Semantic: 1. Pop a value N from stack then pop N values from stack
-    *           2. Filter out those that doesn't fit the condition.
-    *           3. Push reuslt back on the stack
-    *           4. Push the size of the result onto the stack
+    * Semantic: TODO
     */
    void visitFilter(const RamFilter& filter, size_t exitAddress) override {
       code.push_back(RN_Filter);
       visit(filter.getCondition(), exitAddress);
       visit(filter.getOperation(), exitAddress);
    }
-
+    
+   /*
+    * Syntax: [RN_Project, arity, relation] 
+    *
+    * Semantic: Pop [arity] value from stack, create new tuple, insert into relation
+    */
+   
    void visitProject(const RamProject& project) override {
+      size_t arity = project.getRelation.getArity();
+      std::string relationName = project.getRelation().getName();
+      code.push_back(RN_Project);
+      code.push_back(arity);
+      code.push_back(symbolTabel.lookup(relationName));
+   }
+    
+   /*
+    * Syntax: [RN_Return, size]
+    *
+    * Semantic: Pop [size] values from stack, add to ctxt.return
+    */
+   void visitReturn(const RamReturn& ret, size_t exitAddress) override {
+      for (auto expr : ret.getValues()) {
+         if (expr == nullptr) {
+            // push true, TODO confirm.
+            code.push_back(RN_Number);
+            code.push_back(1);
+         } else {
+            visit(expr, exitAddress); 
+         }
+      }
+
+      code.push(visitReturn);
+      code.push(ret.getValues().size());
    }
 
    /** Visit RAM stmt*/
    
    /* Syntax: [RN_Sequence, stmt, stmt ... ]
     *
-    * Semantic: Execute each [stmt] in sequence
+    * Semantic: A sequence of Statement
     */
    void visitSequence(const RamSequence& seq, size_t exitAddress) override {
       code.push_back(RN_Sequence);
@@ -543,12 +573,14 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     *          S2: ...]
     *
     * Semantic: If the top of the stack is false, jump to S2.
+    * TODO jmp
     */
    void visitQuery(const RamQuery& insert, size_t exitAddress) override {
-      //TODO: Involve JMP
       auto condition = insert.getCondition();
       if (condition == nullptr) {
          // Just push True on the stack value? 
+         code.push_back(RN_Number);
+         code.push_back(0);
       } else {
          visit(condition, exitAddress);   // Eval cond
       }

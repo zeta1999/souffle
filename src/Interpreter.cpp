@@ -44,52 +44,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-/*
- * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
- * Licensed under the Universal Permissive License v 1.0 as shown at:
- * - https://opensource.org/licenses/UPL
- * - <souffle root>/licenses/SOUFFLE-UPL.txt
- */
-
-/************************************************************************
- *
- * @file Interpreter.cpp
- *
- * Implementation of Souffle's interpreter.
- *
- ***********************************************************************/
-
-#include "Interpreter.h"
-#include "BTree.h"
-#include "BinaryConstraintOps.h"
-#include "FunctorOps.h"
-#include "Global.h"
-#include "IODirectives.h"
-#include "IOSystem.h"
-#include "InterpreterIndex.h"
-#include "InterpreterRecords.h"
-#include "Logger.h"
-#include "ParallelUtils.h"
-#include "ProfileEvent.h"
-#include "RamExistenceCheckAnalysis.h"
-#include "RamExpression.h"
-#include "RamIndexScanKeys.h"
-#include "RamNode.h"
-#include "RamOperation.h"
-#include "RamOperationDepth.h"
-#include "RamProgram.h"
-#include "RamProvenanceExistenceCheckAnalysis.h"
-#include "RamVisitor.h"
-#include "ReadStream.h"
-#include "SignalHandler.h"
-#include "SymbolTable.h"
-#include "Util.h"
-#include "WriteStream.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
 #include <exception>
 #include <fstream>
 #include <functional>

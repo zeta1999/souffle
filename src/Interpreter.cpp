@@ -173,7 +173,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    
    /* Syntax: [RN_UserDefinedOperator, OperationName, Types]
     *
-    * Semantic: Find and Performe the user-defined operator, return type is Types[0]
+    * Semantic: Find and Perform the user-defined operator, return type is Types[0]
     * Arguments' types are Types[1 - n], push result back to the stack
     */
    void visitUserDefinedOperator(const RamUserDefinedOperator& op, size_t exitAddress) override {
@@ -245,7 +245,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     /*
      * Syntax: [RN_ExistenceCheck, relation, pattern]
      *
-     * Semantic: Check if a [pattern] exists in a [relation]
+     * Semantic: Check if a [pattern] exists in a [relation], push bool onto the stack.
      *
      */
     void visitExistenceCheck(const RamExistenceCheck& exists, size_t exitAddress) override {

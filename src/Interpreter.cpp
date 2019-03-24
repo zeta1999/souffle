@@ -44,6 +44,52 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+/*
+ * Souffle - A Datalog Compiler
+ * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
+ * Licensed under the Universal Permissive License v 1.0 as shown at:
+ * - https://opensource.org/licenses/UPL
+ * - <souffle root>/licenses/SOUFFLE-UPL.txt
+ */
+
+/************************************************************************
+ *
+ * @file Interpreter.cpp
+ *
+ * Implementation of Souffle's interpreter.
+ *
+ ***********************************************************************/
+
+#include "Interpreter.h"
+#include "BTree.h"
+#include "BinaryConstraintOps.h"
+#include "FunctorOps.h"
+#include "Global.h"
+#include "IODirectives.h"
+#include "IOSystem.h"
+#include "InterpreterIndex.h"
+#include "InterpreterRecords.h"
+#include "Logger.h"
+#include "ParallelUtils.h"
+#include "ProfileEvent.h"
+#include "RamExistenceCheckAnalysis.h"
+#include "RamExpression.h"
+#include "RamIndexScanKeys.h"
+#include "RamNode.h"
+#include "RamOperation.h"
+#include "RamOperationDepth.h"
+#include "RamProgram.h"
+#include "RamProvenanceExistenceCheckAnalysis.h"
+#include "RamVisitor.h"
+#include "ReadStream.h"
+#include "SignalHandler.h"
+#include "SymbolTable.h"
+#include "Util.h"
+#include "WriteStream.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <exception>
 #include <fstream>
 #include <functional>
@@ -59,12 +105,21 @@
 namespace souffle {
 
 class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
-   std::vector<RamDomain> &code; 
-   SymbolTable &symbolTable; 
-   std::vector<size_t> jumpAdresses; 
-   std::vector<std::string> relationTable;
+   std::vector<RamDomain> &code;            /** Instructions stream */
+   SymbolTable &symbolTable;                /** Class for converting string to number and vice versa */ 
+   std::vector<size_t> jumpAdresses;        
+   std::vector<std::string> relationTable;  
+   
+   /** Store reference to IODirectives */
+   std::vector<const std::vector<IODirectives>&> IODirectivesPool;
+   size_t IODirectivesCounter = 0;
 
-   size_t relationLookup(std::string name) {
+   /** Store reference to relation, used by RN_Create */
+   std::vector<Relation&> relationPool;
+   size_t relationCounter = 0;
+
+   // TODO: use symbolTable.lookup(std::string relationName) instead?
+   size_t lookupRelation(std::string name) {
       for(size_t i=0;i<relationTable.size();i++) {
           if (relationTable[i] == name) {
               return i;
@@ -75,21 +130,44 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    }
 
    // Visit RAM Expressions
+  
+   /*
+    * Syntax: [RN_Number, value]
+    *
+    * Semantic: Push the [value] onto the stack
+    */
    void visitNumber(const RamNumber& num, size_t exitAddress) override {
       code.push_back(RN_Number); 
       code.push_back(num.getConstant());
    } 
 
+   /*
+    * Syntax: [RN_ElementAccess, identifier, element]
+    *
+    * Semantic: Push the ctxt[identifier][element] onto the stack
+    */
    void visitElementAccess(const RamElementAccess& access, size_t exitAddress) override {
       code.push_back(RN_ElementAccess); 
       code.push_back(access.getIdentifier()); 
       code.push_back(access.getElement()); 
    }
-
+   
+   /* 
+    * Syntax: [RN_AutoIncrement]
+    *
+    * Semantic: Increase counter by one.
+    */
    void visitAutoIncrement(const RamAutoIncrement& inc, size_t exitAddress) override {
       code.push_back(RN_AutoIncrement); 
    }
+   
 
+   /*
+    * Syntax: [RN_IntrinsicOperatr, Operator]
+    *
+    * Semantic: Pop n value from stack, do the operation,
+    * push the result onto the stack.
+    */
    void visitIntrinsicOperator(const RamIntrinsicOperator& op, size_t exitAddress) override {
       const auto& args = op.getArguments();
       switch (op.getOperator()) {
@@ -138,290 +216,423 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       code.push_back(RN_IntrinsicOperator); 
       code.push_back(op.getOperator()); 
    }
-
+   
+   /* Syntax: [RN_UserDefinedOperator, OperationName, Types]
+    *
+    * Semantic: Find and Performe the user-defined operator, return type is Types[0]
+    * Arguments' types are Types[1 - n], push result back to the stack
+    */
    void visitUserDefinedOperator(const RamUserDefinedOperator& op, size_t exitAddress) override {
       for (size_t i = 0; i < op.getArgCount(); i++) {
-         visit(op.getArgument(i));
+         visit(op.getArgument(i), exitAddress);
       } 
       code.push_back(RN_UserDefinedOperator);
       code.push_back(symbolTable.lookup(op.getName());
       code.push_back(symbolTable.lookup(op.getType());
     } 
 
+    /*
+     * Syntax: [RN_PackRecords, size]
+     *
+     * Semantic: pop [size] values from the stack, pack the record.
+     */
     void visitPackRecord(const RamPackRecord& pack, size_t exitAddress) override {
        auto values = pack.getArguments();
-       for (size_t i = 0; i < values.size() ++i) {
+       for (size_t i = 0; i < values.size(); ++i) {
           visit(values[i]);
        }
        code.push_back(RN_PackRecord);
        code.push_back(values.size()); 
     } 
-
+   
+    /*
+     * Syntax: [RN_Argument, size]
+     *
+     * Semantic: For subroutine
+     */
     void visitArgument(const RamArgument& arg, size_t exitAddress) override {
        code.push_back(RN_Argument);
        code.push_back(arg.getArgCount()); 
     }
 
-    // Visit RAM Conditions
+    /** Visit RAM Conditions */
+
+    /*
+     * Syntax: [RN_Conjunction]
+     *
+     * Semantic: Pop two values from stack, &
+     */
     void visitConjunction(const RamConjunction& conj, size_t exitAddress) override {
-       visit(conj.getLHS());
-       visit(conj.getRHS());
+       visit(conj.getLHS(), exitAddress);
+       visit(conj.getRHS(), exitAddress);
        code.push_back(RN_Conjunction);
     }
-
+   
+    /*
+     * Syntax: [Rn_Negation]
+     *
+     * Semantic: Pop one value from stack, neg
+     */
     void visitNegation(const RamNegation& neg, size_t exitAddress) override {
-       visit(neg.getOperand());
+       visit(neg.getOperand(), exitAddress);
        code.push_back(RN_Negation); 
     }
-
+   
+    /*
+     * Syntax: [RN_EmptinessCheck, relationName]
+     *
+     * Semantic: Check if [relation] is empty, push bool onto the stack.
+     */
     void visitEmptinessCheck(const RamEmptinessCheck& emptiness, size_t exitAddress) override {
        code.push_back(RN_EmptinessCheck); 
-       code.push_back(lookupRelation(lookupRelation.getRelation().getName()));
+       code.push_back(symbolTabel.lookup(emptiness.getRelation().getName()));
     }
 
+    /*
+     * Syntax: [RN_ExistenceCheck, relation, pattern]
+     *
+     * Semantic: Check if a [pattern] exists in a [relation]
+     *
+     */
     void visitExistenceCheck(const RamExistenceCheck& exists, size_t exitAddress) override {
-       auto values = pack.getArguments();
-       for (size_t i = 0; i < values.size() ++i) {
-          visit(values[i]);
+       auto values = exists.getValues();
+       std::string type;
+       for (size_t i = 0; i < values.size(); ++i) {
+          visit(values[i]);      /** why pattern is named 'value' ? */
+          types += (values[i] == nullptr ? "_" : "V");
        }
        code.push_back(RN_ExistenceCheck); 
-       code.push_back(lookupRelation(lookupRelation.getRelation().getName()));
-       const RamRelation &rel = rel.getRelation();
-       std::string type;
-       for(i=0;i<rel.getArity();i++) {
-          type+=(rel.getArgument(i) == nullptr)?"_":"V"); 
-       }
+       code.push_back(symbolTabel.lookup(exists.getRelation().getName())); 
        code.push_back(symbolTable.lookup(type));
     }
-
+   
+    /*
+     * Syntax: [RN_ExistenceCheck, relation, pattern]
+     *
+     * Semantic: umm. TODO
+     *
+     */
     void visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists, size_t exitAddress) override {
-       auto values = pack.getArguments();
-       for (size_t i = 0; i < values.size() ++i) {
-          visit(values[i]);
-       }
-       code.push_back(RN_ExistenceCheck); 
-       code.push_back(lookupRelation(lookupRelation.getRelation().getName()));
-       const RamRelation &rel = rel.getRelation();
+       auto values = provExists.getValues();
        std::string type;
-       for(i=0;i<rel.getArity();i++) {
-          type+=(rel.getArgument(i) == nullptr)?"_":"V"); 
+       for (size_t i = 0; i < values.size(); ++i) {
+          visit(values[i]);
+          types += (values[i] == nullptr ? "_" : "V");
        }
+       code.push_back(RN_ProvenanceExistenceCheck);
+       code.push_back(symbolTabel.lookup(exists.getRelation().getName())); 
        code.push_back(symbolTable.lookup(type));
     }
-
+   
+    /*
+     * Syntax: [RN_Constraint, operator]
+     *
+     * Semantic: pop two values, do operator, push result back
+     *
+     */
     void visitConstraint(const RamConstraint& relOp) override {
-       visit(conj.getLHS());
-       visit(conj.getRHS());
+       visit(relOp.getLHS());
+       visit(relOp.getRHS());
        code.push_back(RN_Constraint); 
        code.push_back(relOp.getOperator()); 
     }
 
 
-    // Visit RAM Operations 
-    void visitScan(const RamScan& scan) override {
-            // get the targeted relation
-            const InterpreterRelation& rel = interpreter.getRelation(scan.getRelation());
+    /** Visit RAM Operations */
+    //TODO: NestedOperation is confusing
 
-            // use simple iterator
-            for (const RamDomain* cur : rel) {
-                ctxt[scan.getIdentifier()] = cur;
-                visitSearch(scan);
-            }
-        }
 
-        void visitIndexScan(const RamIndexScan& scan) override {
-            // get the targeted relation
-            const InterpreterRelation& rel = interpreter.getRelation(scan.getRelation());
+   void visitNestedOperation(const RamNestedOperation& nested, size_t exitAddress) override {
+      /** Does nothing */
+   }
 
-            // create pattern tuple for range query
-            auto arity = rel.getArity();
-            RamDomain low[arity];
-            RamDomain hig[arity];
-            auto pattern = scan.getRangePattern();
-            for (size_t i = 0; i < arity; i++) {
-                if (pattern[i] != nullptr) {
-                    low[i] = interpreter.evalVal(*pattern[i], ctxt);
-                    hig[i] = low[i];
-                } else {
-                    low[i] = MIN_RAM_DOMAIN;
-                    hig[i] = MAX_RAM_DOMAIN;
-                }
-            }
+   void visitSearch(const RamSearch& search, size_t exitAddress) override {
+      /** Does nothing */
+   }
+   
+   /*
+    * Syntax: [RN_Scan, relation, identifier, operation]
+    *
+    * Semantic: Perform [operation] on each tuple in the [relation]
+    *
+    * TODO Confirm
+    */
+   void visitScan(const RamScan& scan, size_t exitAddress) override {
+      code.push_back(RN_Scan);
+      code.push_back(symbolTabel.lookup(scan.getRelation().getName()));
+      code.push_back(scan.getIdentifier());
+      visit(scan.getOperation(), exitAddress);
+   }
+   
+   /*
+    * Syntax: [RN_IndexScan, relation, identifier, pattern, operation]
+    *
+    * Semantuc: Perform [operation] on each tuple in the [relation] that match the [pattern]
+    */
+   void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
+      auto patterns = scan.getRangePattern();
+      std::string types;
+      auto arity = scan.getRelation().getArity();
+      for (size_t i = 0; i < arity; i ++) {
+         visit(patterns[i], exitAddress);
+         types += (patterns[i] == nullptr? "_" : "V");
+      }
+      code.push_back(RN_IndexScan);
+      code.push_back(symbolTabel.lookup(scan.getRelation().getName()));
+      code.push_back(scan.getIdentifier());
+      code.push_back(types);
+      visit(scan.getOperation(), exitAddress);
+   }
+   
+   /*
+    * Syntax: [RN_UnpackRecord, referenceLevel, referencePos, arity, identifier, operation]
+    *
+    * Semantic: Look up record at ctxt[level][pos]
+    */
+   void visitUnpackRecord(const RamUnpackRecord& lookup, size_t exitAddress) override {
+      code.push_back(RN_UnpackRecord);
+      code.push_back(lookup.getReferenceLevel());
+      code.push_back(lookup.getReferencePosition());
+      code.push_back(lookup.getArity()); 
+      code.push_back(lookup.getIdentifier());
+      visit(lookup.getOperation(), exitAddress);
+   }
 
-            // obtain index
-            auto idx = rel.getIndex(keysAnalysis->getRangeQueryColumns(&scan), nullptr);
+   /*
+    * Syntax: [RN_Aggregate, relation, function, 
+    * TODO: Do later
+    */
+   void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
+   }
+   
+   /*
+    * Syntax: [RN_filter, condtion, operation]
+    *
+    * Semantic: 1. Pop a value N from stack then pop N values from stack
+    *           2. Filter out those that doesn't fit the condition.
+    *           3. Push reuslt back on the stack
+    *           4. Push the size of the result onto the stack
+    */
+   void visitFilter(const RamFilter& filter, size_t exitAddress) override {
+      code.push_back(RN_Filter);
+      visit(filter.getCondition(), exitAddress);
+      visit(filter.getOperation(), exitAddress);
+   }
 
-            // get iterator range
-            auto range = idx->lowerUpperBound(low, hig);
+   void visitProject(const RamProject& project) override {
+   }
 
-            // conduct range query
-            for (auto ip = range.first; ip != range.second; ++ip) {
-                const RamDomain* data = *(ip);
-                ctxt[scan.getIdentifier()] = data;
-                visitSearch(scan);
-            }
-        }
+   /** Visit RAM stmt*/
+   
+   /* Syntax: [RN_Sequence, stmt, stmt ... ]
+    *
+    * Semantic: Execute each [stmt] in sequence
+    */
+   void visitSequence(const RamSequence& seq, size_t exitAddress) override {
+      code.push_back(RN_Sequence);
+      for (const auto& cur : seq.getStatements()) {
+         visit(cur, exitAddress); 
+      } 
+   }
+   
+   /* Syntax: [RN_Parallel, num_stmts, stmts...]
+    *
+    * Semantic: Execute the [stmts] in parallel, wait untill all stmts are done.
+    */
+   void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
+      code.push_back(RN_Parallel); 
+      code.push_back(parallel.getStatements().size());
+      //TODO: how to handle? save a reference to the parallel stmts and push a idx?
+      visit(parallel.getStatements(), exitAddress);
+   }
+   
+   /* Syntax: [RN_Loop,
+    *          ... body,
+    *          E: statements..]
+    * 
+    * Semantic: Infinitely execute the body. 
+    * Provide an exitAddress for possible RN_exits to jump to label E.
+    */
+   void visitLoop(const RamLoop& loop, size_t exitAddress) override {
+      code.push_back(RN_Loop);
+      visit(loop.getBody(), exitAddress);
+   }
+   
+   /* Syntax: [RN_Exit, address]
+    *
+    * Semantic: If the top of the stack is TRUE, jump to address.
+    */
+   void visitExit(const RamExit& exit, size_t exitAddress) override {
+      visit(exit.getCondition(), exitAddress);
+      code.push_back(RN_Exit);
+      code.push_back(/*TODO exit address*/);
+   }
+   
+   /* Syntax: [RN_LogTimer, relation?, body]
+    *
+    * Semantic:  relation can be null
+    */
+   void visitLogTimer(const RamLogTimer& timer, size_t exitAddress) override {
+      code.push_back(RN_LogTimer);
+      //TODO: How to handle possible nullptr
+   }
+   
+   /* Syntax: [RN_DebugInfo, body]
+    *
+    * Semantic: Start debug, continue to body
+    */
+   void visitDebugInfo(const RamDebugInfo& dbg, size_t exitAddress) override {
+      code.push_back(RN_DebugInfo);
+      visit(dbg.getStatement(), exitAddress);
+   }
 
-        void visitUnpackRecord(const RamUnpackRecord& lookup) override {
-            // get reference
-            RamDomain ref = ctxt[lookup.getReferenceLevel()][lookup.getReferencePosition()];
+   /* Syntax: [RN_Stratum, body]
+    *
+    * Semantic: Does nothing TODO??? Continue to body
+    */
+   void visitStratum(const RamStratum& stratum, size_t exitAddress) override {
+      code.push_back(RN_Stratum); 
+      visit(stratum.getBody(), exitAddress);
+   }
+   
+   /* Syntax: [RN_Create, relation_idx]
+    *
+    * Semantic: lookup the relation in relationPool[relation_idx], insert 
+    * into environment.
+    *
+    */
+   void visitCreate(const RamCreate& create, size_t exitAddress) override {
+      /** TODO: Better way to store a relation */
+      code.push_back(RN_Create);
+      relationPool.push_back(create.getRelation());
+      code.push_back(relationCounter++);
+   }
 
-            // check for null
-            if (isNull(ref)) {
-                return;
-            }
+   /* Syntax: [RN_Clear, relation]
+    *
+    * Semantic: Clean all the tuples in a relation.
+    */
+   void visitClear(const RamClear& clear, size_t exitAddress) override {
+      code.push_back(RN_Clear);
+      code.push_back(clear.getRelation().getName());
+   }
+   
+   /* Syntax: [RN_Drop, relation]
+    *
+    * Semantic: Delete relation from the environment
+    */
+   void visitDrop(const RamDrop& drop, size_t exitAddress) override {
+      code.push_back(RN_Drop); 
+      code.push_back(symbolTabel.lookup(drop.getRelation().getName()));
+   }
+   
+   /* Syntax: [RN_LogSize, relation]
+    *
+    * Semantic: ??
+    */
+   void visitLogSize(const RamLogSizr& size, size_t exitAddress) override {
+      code.push_back(RN_LogSize);
+      code.push_back(symbolTabel.lookup(size.getRelation().getName()));
+   }
 
-            // update environment variable
-            auto arity = lookup.getArity();
-            const RamDomain* tuple = unpack(ref, arity);
+   /* Syntax: [RN_Store, RelationName, SourceIOs_idx]
+    *
+    * Semantic: Load [Relation] from [SourceIOs]
+    *
+    * The SourceIOs_Idx indicate the index of IOs in the IODirectivesPool.
+    */
+   void visitLoad(const RamLoad& load, size_t exitAddress) override {
+      code.push_back(RN_Load); 
+      code.push_back(symTable.lookup(load.getRelation().getName()));
 
-            // save reference to temporary value
-            ctxt[lookup.getIdentifier()] = tuple;
+      /** TODO: Need a better way to store IOs.*/
+      IODirectivesPool.push_back(load.getIODirectives());
+      code.push_back(IODirectivesCounter++);
+   }
 
-            // run nested part - using base class visitor
-            visitSearch(lookup);
-        }
+   /*
+    * Syntax: [RN_Store, RelationName, DestinationIOs_Idx]
+    *
+    * Semantic: Store [Relation] into [DestinationIOs]
+    * 
+    * The DestinationIOs_Idx indicate the index of the IOs in the IODirectivesPool.
+    */
+   void visitStore(const RamStore& store, size_t exitAddress) override {
+      code.push_back(RN_Store);
+      code.push_back(symbolTabel.lookup(store.getRelation().getName()));
 
-        void visitAggregate(const RamAggregate& aggregate) override {
-            // get the targeted relation
-            const InterpreterRelation& rel = interpreter.getRelation(aggregate.getRelation());
+      /** TODO: Need a better way to store IOs.*/
+      IODirectivesPool.push_back(store.getIODirectives());
+      code.push_back(IODirectivesCounter++);
+   }
+   
+   /*
+    * Syntax: [RN_Fact, targetRelationName, arity]
+    *
+    * Semantic: Pop [arity] values from stack, insert into [targetRelationName]
+    */
+   void visitFact(const RamFact& fact, size_t exitAddress) override {
+      size_t arity = fact.getRelation().getArity();
+      auto values = fact.getValues();
+      for (size_t i = 0; i < arity; ++i) {
+         visit(values[i], exitAddress);       // Values cannot be null here
+      }
+      std::string targertRelation = fact.getRelation().getName();
+      code.push_back(RN_Fact);
+      code.push_back(symbolTable.lookup(targertRelation));
+      code.push_back(arity);
+   }
 
-            // initialize result
-            RamDomain res = 0;
-            switch (aggregate.getFunction()) {
-                case RamAggregate::MIN:
-                    res = MAX_RAM_DOMAIN;
-                    break;
-                case RamAggregate::MAX:
-                    res = MIN_RAM_DOMAIN;
-                    break;
-                case RamAggregate::COUNT:
-                    res = 0;
-                    break;
-                case RamAggregate::SUM:
-                    res = 0;
-                    break;
-            }
+   /*
+    * Syntax: [RN_Query, JMPEZ
+    *          S1: Operations...
+    *          S2: ...]
+    *
+    * Semantic: If the top of the stack is false, jump to S2.
+    */
+   void visitQuery(const RamQuery& insert, size_t exitAddress) override {
+      //TODO: Involve JMP
+      auto condition = insert.getCondition();
+      if (condition == nullptr) {
+         // Just push True on the stack value? 
+      } else {
+         visit(condition, exitAddress);   // Eval cond
+      }
+      code.push_back(RN_Query);
+      visit(insert.getOperation());    // Eval operation
+   }
 
-            // init temporary tuple for this level
-            auto arity = rel.getArity();
+   /*
+    * Syntax: [RN_Merge, sourceName, targetName]
+    *
+    * Semantic: Merge [source] with [target].
+    */
+   void visitMerge(const RamMerge& merge, size_t exitAddress) override {
+      std::string source = merge.getSourceRelation().getName();
+      std::string target = merge.getTargetRelation().getName();
+      code.push_back(RN_Merge);
+      code.push_back(symbolTabel.lookup(source));
+      code.push_back(symbolTabel.lookup(target));
+   }
 
-            // get lower and upper boundaries for iteration
-            const auto& pattern = aggregate.getPattern();
-            RamDomain low[arity];
-            RamDomain hig[arity];
+   /*
+    * Syntax: [RN_Swap, FirstRelation, SecondRelation]
+    *
+    * Semantic: Swap [first] with [second].
+    */
+   void visitSwap(const RamSwap& swap, size_t exitAddress) override {
+      std::string first = swap.getFirstRelation().getName(); 
+      std::string second = swap.getSecondRelation().getName(); 
+      code.push_back(RN_Swap);
+      code.push_back(symbolTabel.lookup(first));
+      code.push_back(symbolTabel.lookup(second));
+   }
 
-            for (size_t i = 0; i < arity; i++) {
-                if (pattern[i] != nullptr) {
-                    low[i] = interpreter.evalVal(*pattern[i], ctxt);
-                    hig[i] = low[i];
-                } else {
-                    low[i] = MIN_RAM_DOMAIN;
-                    hig[i] = MAX_RAM_DOMAIN;
-                }
-            }
+   void visitNode(const RamNode& node, size_t exitAddress) override {
+      /** Unknown Node */
+   }
 
-            // obtain index
-            auto idx = rel.getIndex(aggregate.getRangeQueryColumns());
-
-            // get iterator range
-            auto range = idx->lowerUpperBound(low, hig);
-
-            // check for emptiness
-            if (aggregate.getFunction() != RamAggregate::COUNT) {
-                if (range.first == range.second) {
-                    return;  // no elements => no min/max
-                }
-            }
-
-            // iterate through values
-            for (auto ip = range.first; ip != range.second; ++ip) {
-                // link tuple
-                const RamDomain* data = *(ip);
-                ctxt[aggregate.getIdentifier()] = data;
-
-                // count is easy
-                if (aggregate.getFunction() == RamAggregate::COUNT) {
-                    ++res;
-                    continue;
-                }
-
-                // aggregation is a bit more difficult
-
-                // eval target expression
-                RamDomain cur = interpreter.evalVal(*aggregate.getExpression(), ctxt);
-
-                switch (aggregate.getFunction()) {
-                    case RamAggregate::MIN:
-                        res = std::min(res, cur);
-                        break;
-                    case RamAggregate::MAX:
-                        res = std::max(res, cur);
-                        break;
-                    case RamAggregate::COUNT:
-                        res = 0;
-                        break;
-                    case RamAggregate::SUM:
-                        res += cur;
-                        break;
-                }
-            }
-
-            // write result to environment
-            RamDomain tuple[1];
-            tuple[0] = res;
-            ctxt[aggregate.getIdentifier()] = tuple;
-
-            // run nested part - using base class visitor
-            visitSearch(aggregate);
-        }
-
-        void visitFilter(const RamFilter& filter) override {
-            // check condition
-            if (interpreter.evalCond(filter.getCondition(), ctxt)) {
-                // process nested
-                visitNestedOperation(filter);
-            }
-
-            if (Global::config().has("profile") && !filter.getProfileText().empty()) {
-                interpreter.frequencies[filter.getProfileText()][interpreter.getIterationNumber()]++;
-            }
-        }
-
-        void visitProject(const RamProject& project) override {
-            // create a tuple of the proper arity (also supports arity 0)
-            auto arity = project.getRelation().getArity();
-            const auto& values = project.getValues();
-            RamDomain tuple[arity];
-            for (size_t i = 0; i < arity; i++) {
-                assert(values[i]);
-                tuple[i] = interpreter.evalVal(*values[i], ctxt);
-            }
-
-            // insert in target relation
-            InterpreterRelation& rel = interpreter.getRelation(project.getRelation());
-            rel.insert(tuple);
-        }
-
-        // -- return from subroutine --
-        void visitReturn(const RamReturn& ret) override {
-            for (auto val : ret.getValues()) {
-                if (val == nullptr) {
-                    ctxt.addReturnValue(0, true);
-                } else {
-                    ctxt.addReturnValue(interpreter.evalVal(*val, ctxt));
-                }
-            }
-        }
-
-    void visitNode(const RamNode& node) override {
-            std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
-            assert(false && "Unsupported Node Type!");
-            return 0;
-        }
-    };
 };
-
 
 /** Evaluate RAM Expression */
 RamDomain Interpreter::evalVal(const RamExpression& value, const InterpreterContext& ctxt) {

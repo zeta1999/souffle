@@ -93,6 +93,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       addressMap[addressLabel] = value;
    }
 
+   RamOperationDepthAnalysis depthAnalyzer;
+
 
    // Visit RAM Expressions
   
@@ -368,7 +370,6 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     *
     * Semantic: Perform [operation] on each tuple in the [relation]
     *
-    * TODO Confirm
     */
    void visitScan(const RamScan& scan, size_t exitAddress) override {
       code.push_back(LVM_Scan);
@@ -402,7 +403,6 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     *
     * Semantic: Look up record at ctxt[level][pos]
     *
-    * TODO
     */
    void visitUnpackRecord(const RamUnpackRecord& lookup, size_t exitAddress) override {
       code.push_back(LVM_UnpackRecord);
@@ -423,7 +423,6 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    /*
     * Syntax: [RN_filter, condtion, operation]
     *
-    * Semantic: TODO
     */
    void visitFilter(const RamFilter& filter, size_t exitAddress) override {
       code.push_back(LVM_Filter);
@@ -434,7 +433,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    /*
     * Syntax: [RN_Project, arity, relation] 
     *
-    * Semantic: Pop [arity] value from stack, create new tuple, insert into relation
+    * Semantic: Create new tuple, insert into relation
     */
    
    void visitProject(const RamProject& project) override {
@@ -453,7 +452,6 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    void visitReturn(const RamReturn& ret, size_t exitAddress) override {
       for (auto expr : ret.getValues()) {
          if (expr == nullptr) {
-            // push true, TODO confirm.
             code.push_back(RN_Number);
             code.push_back(1);
          } else {
@@ -498,7 +496,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     * Provide an exitAddress for possible RN_exits to jump to label E.
     */
    void visitLoop(const RamLoop& loop, size_t exitAddress) override {
-      size_t address_L0 = code.size(); // I think 0 is fine here
+      size_t address_L0 = code.size(); // TODO: 0 is ok?
       size_t L1 = getNewLabel();
       size_t address_L1 = lookupAddress(L1);
       visit(loop.getBody(), address_L1);
@@ -513,8 +511,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     */
    void visitExit(const RamExit& exit, size_t exitAddress) override {
       visit(exit.getCondition(), exitAddress);
-      code.push_back(LVM_Exit);
-      code.push_back(/*TODO exit address*/);
+      code.push_back(LVM_Jmpnz); // Jmp if condition is true
+      code.push_back(exitAddress);
    }
    
    /* Syntax: [RN_LogTimer, relation?, body]
@@ -537,7 +535,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
 
    /* Syntax: [RN_Stratum, body]
     *
-    * Semantic: Does nothing TODO??? Continue to body
+    * Semantic: Enter new stratum
     */
    void visitStratum(const RamStratum& stratum, size_t exitAddress) override {
       code.push_back(LVM_Stratum); 
@@ -551,8 +549,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     *
     */
    void visitCreate(const RamCreate& create, size_t exitAddress) override {
-      /** TODO: Better way to store a relation */
       code.push_back(LVM_Create);
+      /** TODO Better way to store a relation */
       relationPool.push_back(create.getRelation());
       code.push_back(relationCounter++);
    }
@@ -594,7 +592,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       code.push_back(LVM_Load); 
       code.push_back(symTable.lookup(load.getRelation().getName()));
 
-      /** TODO: Need a better way to store IOs.*/
+      /** TODO Need a better way to store IOs.*/
       IODirectivesPool.push_back(load.getIODirectives());
       code.push_back(IODirectivesCounter++);
    }
@@ -633,24 +631,15 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    }
 
    /*
-    * Syntax: [RN_Query, JMPEZ
-    *          S1: Operations...
-    *          S2: ...]
+    * Syntax: [RN_Query, depth]
     *
-    * Semantic: If the top of the stack is false, jump to S2.
-    * TODO jmp
+    * Semantic: Start loops
     */
    void visitQuery(const RamQuery& insert, size_t exitAddress) override {
-      auto condition = insert.getCondition();
-      if (condition == nullptr) {
-         // Just push True on the stack value? 
-         code.push_back(LVM_Number);
-         code.push_back(0);
-      } else {
-         visit(condition, exitAddress);   // Eval cond
-      }
+      size_t depth = depthAnalyzer.getDepth(insert.getOperation());
       code.push_back(RN_Query);
-      visit(insert.getOperation());    // Eval operation
+      code.push_back(depth);
+      visit(insert.getOperation());
    }
 
    /*

@@ -99,6 +99,7 @@ enum LVM_Type {
 
     // LVM
     LVM_Goto;
+    LVM_Jmpnz;
 };
 
 enum RamNodeType {

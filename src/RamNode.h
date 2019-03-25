@@ -27,6 +27,80 @@ namespace souffle {
 
 class RamNodeMapper;
 
+enum LVM_Type {
+    // Expressions
+    LVM_Number;
+    LVM_ElementAccess;
+    LVM_AutoIncrement;
+    /** Unary Functor Operations */
+    LVM_OP_ORD;
+    LVM_OP_STRLEN;
+    LVM_OP_NEG;
+    LVM_OP_BNOT;
+    LVM_OP_LNOT;
+    LVM_OP_TONUMBER;
+    LVM_OP_TOSTRING;
+    /** Binary Functor Operators */ 
+    LVM_OP_ADD;
+    LVM_OP_SUB;
+    LVM_OP_MUL;
+    LVM_OP_DIV;
+    LVM_OP_EXP;
+    LVM_OP_MOD;
+    LVM_OP_BAND;
+    LVM_OP_BOR;
+    LVM_OP_BXOR;
+    LVM_OP_LAND;
+    LVM_OP_LOR;
+    LVM_OP_MAX;
+    LVM_OP_MIN;
+    LVM_OP_CAT;
+    /** Ternary Functor Operators */
+    LVM_OP_SUBSTR;
+
+    LVM_UserDefinedOperator;
+    LVM_PackRecord;
+    LVM_Argument;
+
+    // LVM Conditions
+    LVM_Conjunction;
+    LVM_Negation;
+    LVM_EmptinessCheck;
+    LVM_ExistenceCheck;
+    LVM_ProvenanceExistenceCheck;
+    LVM_Constraint;
+
+    // LVM Operations;
+    LVM_Scan;
+    LVM_IndexScan;
+    LVM_UnpackRecord;
+    LVM_Filter;
+    LVM_Project;
+    LVM_Return;
+
+    // LVM Stmts
+    LVM_Sequence;
+    LVM_Parallel;
+    LVM_Loop;
+    LVM_Exit;
+    LVM_LogTimer;
+    LVM_DebugInfo;
+    LVM_Stratum;
+    LVM_Create;
+    LVM_Clear;
+    LVM_Drop;
+    LVM_LogSize;
+    LVM_Load;
+    LVM_Store;
+    LVM_Fact;
+    LVM_Number;
+    LVM_Merge;
+    LVM_Swap;
+
+    // LVM
+    LVM_Goto;
+};
+
 enum RamNodeType {
     // Relations
     RN_Relation,

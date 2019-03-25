@@ -167,7 +167,6 @@ private:
     std::vector<std::string> attrNames;
 
     /** Unique id for wrapper */
-    // TODO (#541): replace unique id by dynamic type checking for C++
     uint32_t id;
 };
 

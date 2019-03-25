@@ -285,7 +285,7 @@ void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
     const auto* provExistCheckAnalysis = translationUnit.getAnalysis<RamProvenanceExistenceCheckAnalysis>();
 
     // visit all nodes to collect searches of each relation
-    visitDepthFirst(translationUnit.getP(), [&](const RamNode& node) {
+    visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexScan = dynamic_cast<const RamIndexScan*>(&node)) {
             IndexSet& indexes = getIndexes(indexScan->getRelation());
             indexes.addSearch(indexScanKeysAnalysis->getRangeQueryColumns(indexScan));

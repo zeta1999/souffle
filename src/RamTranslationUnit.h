@@ -62,10 +62,6 @@ public:
         return program.get();
     }
 
-    const RamProgram& getP() const {
-        return *program.get();
-    }
-
     RamProgram* getProgram() {
         return program.get();
     }

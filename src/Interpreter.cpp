@@ -58,6 +58,82 @@
 
 namespace souffle {
 
+enum LVM_Type {
+    // Expressions
+    LVM_Number;
+    LVM_ElementAccess;
+    LVM_AutoIncrement;
+    /** Unary Functor Operations */
+    LVM_OP_ORD;
+    LVM_OP_STRLEN;
+    LVM_OP_NEG;
+    LVM_OP_BNOT;
+    LVM_OP_LNOT;
+    LVM_OP_TONUMBER;
+    LVM_OP_TOSTRING;
+    /** Binary Functor Operators */ 
+    LVM_OP_ADD;
+    LVM_OP_SUB;
+    LVM_OP_MUL;
+    LVM_OP_DIV;
+    LVM_OP_EXP;
+    LVM_OP_MOD;
+    LVM_OP_BAND;
+    LVM_OP_BOR;
+    LVM_OP_BXOR;
+    LVM_OP_LAND;
+    LVM_OP_LOR;
+    LVM_OP_MAX;
+    LVM_OP_MIN;
+    LVM_OP_CAT;
+    /** Ternary Functor Operators */
+    LVM_OP_SUBSTR;
+
+    LVM_UserDefinedOperator;
+    LVM_PackRecord;
+    LVM_Argument;
+
+    // LVM Conditions
+    LVM_Conjunction;
+    LVM_Negation;
+    LVM_EmptinessCheck;
+    LVM_ExistenceCheck;
+    LVM_ProvenanceExistenceCheck;
+    LVM_Constraint;
+
+    // LVM Operations;
+    LVM_Scan;
+    LVM_IndexScan;
+    LVM_UnpackRecord;
+    LVM_Filter;
+    LVM_Project;
+    LVM_Return;
+
+    // LVM Stmts
+    LVM_Sequence;
+    LVM_Parallel;
+    LVM_Stop_Parallel;
+    LVM_Loop;
+    LVM_Exit;
+    LVM_LogTimer;
+    LVM_DebugInfo;
+    LVM_Stratum;
+    LVM_Create;
+    LVM_Clear;
+    LVM_Drop;
+    LVM_LogSize;
+    LVM_Load;
+    LVM_Store;
+    LVM_Fact;
+    LVM_Number;
+    LVM_Merge;
+    LVM_Swap;
+
+    // LVM
+    LVM_Goto;
+    LVM_Jmpnz;
+};
+
 class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    std::vector<RamDomain> &code;            /** Instructions stream */
    SymbolTable &symbolTable;                /** Class for converting string to number and vice versa */ 
@@ -436,7 +512,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     * Semantic: Create new tuple, insert into relation
     */
    
-   void visitProject(const RamProject& project) override {
+   void visitProject(const RamProject& project, size_t exitAddress) override {
       size_t arity = project.getRelation.getArity();
       std::string relationName = project.getRelation().getName();
       code.push_back(LVM_Project);
@@ -481,10 +557,29 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     * Semantic: Execute the [stmts] in parallel, wait untill all stmts are done.
     */
    void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
+      size_t address_L0 = code.size();
+      size_t num_blocks=  parallel.getStatements().size();
       code.push_back(LVM_Parallel); 
-      code.push_back(parallel.getStatements().size());
-      //TODO: how to handle? save a reference to the parallel stmts and push a idx?
-      visit(parallel.getStatements(), exitAddress);
+      code.push_back(num_blocks);
+
+      std::vector<size_t> labels(num_blocks);
+      for (size_t i = 0; i < num_blocks; ++ i) {
+         labels[i] = getNewLabel();
+         code.push_back(lookupAddress(labels[i]));
+      }
+      
+      size_t L1 = getNewLabel();
+      code.push_back(LVM_Goto);
+      code.push_back(lookupAddress(L1));
+   
+      for (size_t i = 0; i < num_blocks; ++ i) {
+         setAddress(label[i], code.size());
+         visit(parallel.getStatements()[i]);
+         code.push_back(LVM_Stop_Parallel);
+         code.push_back(L0);
+      }
+
+      setAddress(L1, code.size());
    }
    
    /* Syntax: [L0: LVM_Loop

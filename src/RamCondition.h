@@ -372,9 +372,6 @@ protected:
  * Emptiness check for a relation
  */
 class RamEmptinessCheck : public RamCondition {
-    /** Relation */
-    std::unique_ptr<RamRelationReference> relationRef;
-
 public:
     RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef)
             : RamCondition(RN_EmptinessCheck), relationRef(std::move(relRef)) {}
@@ -407,6 +404,9 @@ public:
     }
 
 protected:
+    /** Relation */
+    std::unique_ptr<RamRelationReference> relationRef;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamEmptinessCheck*>(&node));

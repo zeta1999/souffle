@@ -27,10 +27,6 @@ class RamTranslationUnit;
  */
 
 class RamTransformer {
-private:
-    /** Transform RAM translation unit */
-    virtual bool transform(RamTranslationUnit& translationUnit) = 0;
-
 public:
     virtual ~RamTransformer() = default;
 
@@ -39,6 +35,10 @@ public:
 
     /** Get name of transformer */
     virtual std::string getName() const = 0;
+
+private:
+    /** Transform RAM translation unit */
+    virtual bool transform(RamTranslationUnit& translationUnit) = 0;
 };
 
 }  // end of namespace souffle

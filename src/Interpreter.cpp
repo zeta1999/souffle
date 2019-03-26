@@ -89,6 +89,20 @@ enum LVM_Type {
     /** Ternary Functor Operators */
     LVM_OP_SUBSTR;
 
+    // LVM Constraint Op
+    
+    LVM_OP_EQ;
+    LVM_OP_NE;
+    LVM_OP_LT;
+    LVM_OP_LE;
+    LVM_OP_GT;
+    LVM_OP_GE;
+    LVM_OP_MATCH;
+    LVM_OP_NOT_MATCH;
+    LVM_OP_CONTAINS;
+    LVM_OP_NOT_CONTAIN;
+
+
     LVM_UserDefinedOperator;
     LVM_PackRecord;
     LVM_Argument;
@@ -426,8 +440,41 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     void visitConstraint(const RamConstraint& relOp) override {
        visit(relOp.getLHS());
        visit(relOp.getRHS());
-       code.push_back(LVM_Constraint); 
-       code.push_back(relOp.getOperator()); 
+       switch (relOp.getOperator()) {
+         case BinaryConstraintOp::EQ:
+            code.push(LVM_OP_EQ);
+            break;
+         case BinaryConstraintOp::NE:
+            code.push(LVM_OP_NE);
+            break;
+         case BinaryConstraintOp::LT:
+            code.push(LVM_OP_LT);
+            break;
+         case BinaryConstraintOp::LE:
+            code.push(LVM_OP_LE);
+            break;
+         case BinaryConstraintOp::GT:
+            code.push(LVM_OP_GT);
+            break;
+         case BinaryConstraintOp::GE:
+            code.push(LVM_OP_GE);
+            break;
+         case BinaryConstraintOp::MATCH: 
+            code.push(LVM_OP_MATCH);
+            break;
+         case BinaryConstraintOp::NOT_MATCH:
+            code.push(LVM_OP_NOT_MATCH);
+            break;
+         case BinaryConstraintOp::CONTAINS:
+            code.push(LVM_OP_CONTAINS);
+            break;
+         case BinaryConstraintOp::NOT_CONTAINS: 
+            code.push(LVM_OP_NOT_CONTAIN):
+            break;
+         default:
+            assert(false && "unsupported operator");
+           
+      }
     }
 
 

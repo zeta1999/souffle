@@ -903,7 +903,7 @@ void Interpreter::executeMain() {
     if (Global::config().has("verbose")) {
         SignalHandler::instance()->enableLogging();
     }
-    const RamStatement& main = *translationUnit.getP().getMain();
+    const RamStatement& main = *translationUnit.getProgram()->getMain();
 
     if (!Global::config().has("profile")) {
         evalStmt(main);

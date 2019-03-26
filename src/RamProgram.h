@@ -21,16 +21,6 @@
 namespace souffle {
 
 class RamProgram : public RamNode {
-private:
-    /** Relations of RAM program */
-    std::map<std::string, std::unique_ptr<RamRelation>> relations;
-
-    /** Main program */
-    std::unique_ptr<RamStatement> main;
-
-    /** Subroutines for querying computed relations */
-    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
-
 public:
     RamProgram() : RamNode(RN_Program) {}
     RamProgram(std::unique_ptr<RamStatement> main) : RamNode(RN_Program), main(std::move(main)) {}
@@ -153,6 +143,15 @@ public:
     }
 
 protected:
+    /** Relations of RAM program */
+    std::map<std::string, std::unique_ptr<RamRelation>> relations;
+
+    /** Main program */
+    std::unique_ptr<RamStatement> main;
+
+    /** Subroutines for querying computed relations */
+    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProgram*>(&node));

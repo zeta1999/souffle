@@ -19,9 +19,10 @@
 #include "RamOperation.h"
 #include "BinaryConstraintOps.h"
 #include "RamCondition.h"
+#include "RamConditionLevel.h"
+#include "RamConstValue.h"
 #include "RamExpression.h"
-#include "RamRelation.h"
-#include "RamVisitor.h"
+#include "RamExpressionLevel.h"
 #include <algorithm>
 #include <cstddef>
 #include <iostream>
@@ -30,187 +31,25 @@
 
 namespace souffle {
 
-/** Determine whether a RAM value is a constant */
-// TODO (#541): Remove or replace by RamConstValueAnalysis
-bool isConstant(const RamExpression* value) {
-    // visitor
-    class ConstValueVisitor : public RamVisitor<bool> {
-    public:
-        // number
-        bool visitNumber(const RamNumber& num) override {
-            return true;
-        }
-
-        // tuple element access
-        bool visitElementAccess(const RamElementAccess& elem) override {
-            return false;
-        }
-
-        // auto increment
-        bool visitAutoIncrement(const RamAutoIncrement& increment) override {
-            return false;
-        }
-
-        // intrinsic functors
-        bool visitIntrinsicOperator(const RamIntrinsicOperator& op) override {
-            const auto& args = op.getArguments();
-            bool isConst = true;
-            for (const auto arg : args) {
-                isConst = isConst && visit(arg);
-            }
-            return isConst;
-        }
-
-        // pack operator
-        bool visitPackRecord(const RamPackRecord& pack) override {
-            return false;
-        }
-
-        // argument
-        bool visitArgument(const RamArgument& arg) override {
-            return false;
-        }
-
-        // user defined operator
-        bool visitUserDefinedOperator(const RamUserDefinedOperator& op) override {
-            const auto& args = op.getArguments();
-            bool isConst = true;
-            for (const auto arg : args) {
-                isConst = isConst && visit(arg);
-            }
-            return isConst;
-        }
-    };
-    return ConstValueVisitor().visit(value);
-}
-
-/** Get level of value (which for-loop of a query) */
-// TODO (#541): Remove or replace by RamExpressionLevelAnalysis
-size_t getLevel(const RamExpression* value) {
-    // visitor
-    class ValueLevelVisitor : public RamVisitor<size_t> {
-    public:
-        // number
-        size_t visitNumber(const RamNumber& num) override {
-            return 0;
-        }
-
-        // tuple element access
-        size_t visitElementAccess(const RamElementAccess& elem) override {
-            return elem.getIdentifier();
-        }
-
-        // auto increment
-        size_t visitAutoIncrement(const RamAutoIncrement& increment) override {
-            return 0;
-        }
-
-        // intrinsic functors
-        size_t visitIntrinsicOperator(const RamIntrinsicOperator& op) override {
-            size_t level = 0;
-            for (const auto& arg : op.getArguments()) {
-                if (arg != nullptr) {
-                    level = std::max(level, visit(arg));
-                }
-            }
-            return level;
-        }
-
-        // pack operator
-        size_t visitPackRecord(const RamPackRecord& pack) override {
-            size_t level = 0;
-            for (const auto& arg : pack.getArguments()) {
-                if (arg != nullptr) {
-                    level = std::max(level, visit(arg));
-                }
-            }
-            return level;
-        }
-
-        // argument
-        size_t visitArgument(const RamArgument& arg) override {
-            return 0;
-        }
-
-        // user defined operator
-        size_t visitUserDefinedOperator(const RamUserDefinedOperator& op) override {
-            size_t level = 0;
-            for (const auto& arg : op.getArguments()) {
-                if (arg != nullptr) {
-                    level = std::max(level, visit(arg));
-                }
-            }
-            return level;
-        }
-    };
-    return ValueLevelVisitor().visit(value);
-}
-
-/** Get level of condition (which for-loop of a query) */
-// TODO (#541): Remove or replace by RamConditionLevelAnalysis
-size_t getLevel(const RamCondition* condition) {
-    // visitor
-    class ConditionLevelVisitor : public RamVisitor<size_t> {
-    public:
-        // conjunction
-        size_t visitConjunction(const RamConjunction& conj) override {
-            return std::max(visit(conj.getLHS()), visit(conj.getRHS()));
-        }
-
-        // negation
-        size_t visitNegation(const RamNegation& neg) override {
-            return visit(neg.getOperand());
-        }
-
-        // binary constraint
-        size_t visitConstraint(const RamConstraint& binRel) override {
-            return std::max(getLevel(binRel.getLHS()), getLevel(binRel.getRHS()));
-        }
-
-        // not exists check
-        size_t visitExistenceCheck(const RamExistenceCheck& exists) override {
-            size_t level = 0;
-            for (const auto& cur : exists.getValues()) {
-                if (cur != nullptr) {
-                    level = std::max(level, getLevel(cur));
-                }
-            }
-            return level;
-        }
-
-        // not exists check for a provenance existence check
-        size_t visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
-            size_t level = 0;
-            for (const auto& cur : provExists.getValues()) {
-                if (cur != nullptr) {
-                    level = std::max(level, getLevel(cur));
-                }
-            }
-            return level;
-        }
-
-        // emptiness check
-        size_t visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
-            return 0;  // can be in the top level
-        }
-    };
-    return ConditionLevelVisitor().visit(condition);
-}
-
 /** get indexable element */
-std::unique_ptr<RamExpression> RamAggregate::getIndexElement(RamCondition* c, size_t& element, size_t level) {
-    if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
+std::unique_ptr<RamExpression> RamAggregate::getIndexElement(
+        RamCondition* condition, size_t& element, size_t level) {
+    if (auto* binRelOp = dynamic_cast<RamConstraint*>(condition)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamExpression* rhs = binRelOp->getRHS();
-                if (lhs->getIdentifier() == level && (isConstant(rhs) || getLevel(rhs) < level)) {
+                if (lhs->getIdentifier() == level &&
+                        (RamConstValueAnalysis().isConstant(rhs) ||
+                                RamExpressionLevelAnalysis().getLevel(rhs) < level)) {
                     element = lhs->getElement();
                     return std::unique_ptr<RamExpression>(rhs->clone());
                 }
             }
             if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamExpression* lhs = binRelOp->getLHS();
-                if (rhs->getIdentifier() == level && (isConstant(lhs) || getLevel(lhs) < level)) {
+                if (rhs->getIdentifier() == level &&
+                        (RamConstValueAnalysis().isConstant(lhs) ||
+                                RamExpressionLevelAnalysis().getLevel(lhs) < level)) {
                     element = rhs->getElement();
                     return std::unique_ptr<RamExpression>(lhs->clone());
                 }
@@ -222,7 +61,7 @@ std::unique_ptr<RamExpression> RamAggregate::getIndexElement(RamCondition* c, si
 
 /** add condition */
 void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
-    assert(getLevel(newCondition.get()) == getIdentifier());
+    assert(RamConditionLevelAnalysis().getLevel(newCondition.get()) == getIdentifier());
 
     // use condition to narrow scan if possible
     size_t element = 0;
@@ -236,7 +75,7 @@ void RamAggregate::addCondition(std::unique_ptr<RamCondition> newCondition) {
                 std::unique_ptr<RamExpression> field(new RamElementAccess(getIdentifier(), element));
 
                 auto addCondition = [&](std::unique_ptr<RamCondition> c) {
-                    assert(getLevel(c.get()) == getIdentifier());
+                    assert(RamConditionLevelAnalysis().getLevel(c.get()) == getIdentifier());
                     if (condition != nullptr) {
                         condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
                     } else {

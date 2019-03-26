@@ -44,7 +44,7 @@ public:
      */
     bool levelConditions(RamProgram& program);
 
-private:
+protected:
     RamConditionLevelAnalysis* rcla{nullptr};
 
     bool transform(RamTranslationUnit& translationUnit) override {
@@ -69,7 +69,7 @@ public:
      */
     bool createIndices(RamProgram& program);
 
-private:
+protected:
     RamConstValueAnalysis* rcva{nullptr};
     RamExpressionLevelAnalysis* rvla{nullptr};
 
@@ -92,7 +92,7 @@ public:
      */
     bool convertExistenceChecks(RamProgram& program);
 
-private:
+protected:
     RamConstValueAnalysis* rcva{nullptr};
     RamConditionLevelAnalysis* rcla{nullptr};
     RamExpressionLevelAnalysis* rvla{nullptr};

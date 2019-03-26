@@ -123,19 +123,18 @@ public:
     }
 
 protected:
+    /** Operation symbol */
+    const FunctorOp operation;
+
+    /** Arguments of the function */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIntrinsicOperator*>(&node));
         const auto& other = static_cast<const RamIntrinsicOperator&>(node);
         return getOperator() == other.getOperator() && equal_targets(arguments, other.arguments);
     }
-
-private:
-    /** Operation symbol */
-    const FunctorOp operation;
-
-    /** Arguments of the function */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
 };
 
 /**
@@ -208,14 +207,6 @@ public:
     }
 
 protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
-        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
-        return name == other.name && type == other.type && equal_targets(arguments, other.arguments);
-    }
-
-private:
     /** Arguments of user defined operator */
     std::vector<std::unique_ptr<RamExpression>> arguments;
 
@@ -224,6 +215,13 @@ private:
 
     /** Argument types */
     const std::string type;
+
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
+        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
+        return name == other.name && type == other.type && equal_targets(arguments, other.arguments);
+    }
 };
 
 /**
@@ -277,14 +275,6 @@ public:
     }
 
 protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamElementAccess*>(&node));
-        const auto& other = static_cast<const RamElementAccess&>(node);
-        return getIdentifier() == other.getIdentifier() && getElement() == other.getElement();
-    }
-
-private:
     /** Identifier for the tuple */
     const size_t identifier;
 
@@ -295,6 +285,13 @@ private:
      *  Set to nullptr for non-existent relations
      */
     std::unique_ptr<RamRelationReference> relationRef;
+
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamElementAccess*>(&node));
+        const auto& other = static_cast<const RamElementAccess&>(node);
+        return getIdentifier() == other.getIdentifier() && getElement() == other.getElement();
+    }
 };
 
 /**
@@ -329,16 +326,15 @@ public:
     void apply(const RamNodeMapper& map) override {}
 
 protected:
+    /** Constant value */
+    const RamDomain constant;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamNumber*>(&node));
         const auto& other = static_cast<const RamNumber&>(node);
         return getConstant() == other.getConstant();
     }
-
-private:
-    /** Constant value */
-    const RamDomain constant;
 };
 
 /**
@@ -432,16 +428,15 @@ public:
     }
 
 protected:
+    /** Arguments */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamPackRecord*>(&node));
         const auto& other = static_cast<const RamPackRecord&>(node);
         return equal_targets(arguments, other.arguments);
     }
-
-private:
-    /** Arguments */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
 };
 
 /**
@@ -480,16 +475,15 @@ public:
     void apply(const RamNodeMapper& map) override {}
 
 protected:
+    /** Argument number */
+    const size_t number;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamArgument*>(&node));
         const auto& other = static_cast<const RamArgument&>(node);
         return getArgument() == other.getArgument();
     }
-
-private:
-    /** Argument number */
-    const size_t number;
 };
 
 }  // end of namespace souffle

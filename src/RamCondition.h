@@ -204,15 +204,6 @@ public:
     }
 
 protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamConstraint*>(&node));
-        const auto& other = static_cast<const RamConstraint&>(node);
-        return getOperator() == other.getOperator() && getLHS() == other.getLHS() &&
-               getRHS() == other.getRHS();
-    }
-
-private:
     /** Operator */
     BinaryConstraintOp op;
 
@@ -221,6 +212,14 @@ private:
 
     /** Right-hand side of constraint */
     std::unique_ptr<RamExpression> rhs;
+
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamConstraint*>(&node));
+        const auto& other = static_cast<const RamConstraint&>(node);
+        return getOperator() == other.getOperator() && getLHS() == other.getLHS() &&
+               getRHS() == other.getRHS();
+    }
 };
 
 /**

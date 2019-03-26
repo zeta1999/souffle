@@ -36,7 +36,7 @@ public:
     /** Get name of transformer */
     virtual std::string getName() const = 0;
 
-private:
+protected:
     /** Transform RAM translation unit */
     virtual bool transform(RamTranslationUnit& translationUnit) = 0;
 };

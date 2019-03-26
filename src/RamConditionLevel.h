@@ -38,7 +38,7 @@ public:
     /** Get level */
     size_t getLevel(const RamCondition* condition) const;
 
-private:
+protected:
     RamExpressionLevelAnalysis* rvla;
 };
 

@@ -143,6 +143,15 @@ public:
     }
 
 protected:
+    /** Relations of RAM program */
+    std::map<std::string, std::unique_ptr<RamRelation>> relations;
+
+    /** Main program */
+    std::unique_ptr<RamStatement> main;
+
+    /** Subroutines for querying computed relations */
+    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProgram*>(&node));
@@ -162,16 +171,6 @@ protected:
         }
         return getMain() == other.getMain();
     }
-
-private:
-    /** Relations of RAM program */
-    std::map<std::string, std::unique_ptr<RamRelation>> relations;
-
-    /** Main program */
-    std::unique_ptr<RamStatement> main;
-
-    /** Subroutines for querying computed relations */
-    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
 };
 
 }  // end of namespace souffle

@@ -90,7 +90,7 @@ public:
         return debugReport;
     }
 
-private:
+protected:
     /** cached analyses */
     mutable std::map<std::string, std::unique_ptr<RamAnalysis>> analyses;
 

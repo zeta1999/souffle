@@ -136,7 +136,7 @@ public:
         return res;
     }
 
-private:
+protected:
     const std::vector<IODirectives> ioDirectives;
 };
 
@@ -169,7 +169,7 @@ public:
         return res;
     }
 
-private:
+protected:
     const std::vector<IODirectives> ioDirectives;
 };
 
@@ -1007,6 +1007,8 @@ public:
     }
 
 protected:
+    const int sourceStratum;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRecv*>(&node));
@@ -1014,9 +1016,6 @@ protected:
         RamRelationStatement::equal(other);
         return sourceStratum == other.sourceStratum;
     }
-
-private:
-    const int sourceStratum;
 };
 
 class RamSend : public RamRelationStatement {
@@ -1050,15 +1049,14 @@ public:
     }
 
 protected:
+    const std::set<size_t> destinationStrata;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSend*>(&node));
         const auto& other = static_cast<const RamSend&>(node);
         return destinationStrata == other.destinationStrata;
     }
-
-private:
-    const std::set<size_t> destinationStrata;
 };
 
 class RamNotify : public RamStatement {
@@ -1120,15 +1118,14 @@ public:
     void apply(const RamNodeMapper& map) override {}
 
 protected:
+    const size_t count;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamWait*>(&node));
         const auto& other = static_cast<const RamWait&>(node);
         return other.count == count;
     }
-
-private:
-    const size_t count;
 };
 
 #endif

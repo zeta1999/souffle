@@ -58,7 +58,6 @@ public:
      * If the type does not yet exist in the lattice, it is created.
      */
     // TODO: make sure this is used everywhere it should be used
-    // TODO: abstracting this away...
     template <typename T>
     T* getStoredType(const T& type) const {
         const AnalysisType& at = static_cast<const AnalysisType&>(type);

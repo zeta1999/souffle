@@ -89,10 +89,10 @@ const AnalysisType* TypeLattice::meet(const AnalysisType* lhs, const AnalysisTyp
 const AnalysisType* TypeLattice::join(const AnalysisType* lhs, const AnalysisType* rhs) const {
     // A v B = B if A <: B
     if (isSubtype(lhs, rhs)) {
-        return rhs;
+        return getStoredType(*rhs);
     }
     if (isSubtype(rhs, lhs)) {
-        return lhs;
+        return getStoredType(*lhs);
     }
 
     // neither are top or bottom, so they are inner types
@@ -273,7 +273,7 @@ const InnerAnalysisType* TypeLattice::addType(const Type& type) {
         return aliases[type.getName()];
     }
 
-    if (auto* baseType = dynamic_cast<const PrimitiveType*>(&type)) {
+    if (const auto* baseType = dynamic_cast<const PrimitiveType*>(&type)) {
         // -- base types --
 
         // get the kind
@@ -289,7 +289,7 @@ const InnerAnalysisType* TypeLattice::addType(const Type& type) {
         // get the corresponding base analysis type
         aliases[typeName] = getStoredType(BaseAnalysisType(kind, typeName));
         return aliases[typeName];
-    } else if (auto* recordType = dynamic_cast<const RecordType*>(&type)) {
+    } else if (const auto* recordType = dynamic_cast<const RecordType*>(&type)) {
         // -- record types --
 
         // add the record now to avoid potential infinite recursion
@@ -304,7 +304,7 @@ const InnerAnalysisType* TypeLattice::addType(const Type& type) {
         }
 
         return aliases[typeName];
-    } else if (auto* unionType = dynamic_cast<const UnionType*>(&type)) {
+    } else if (const auto* unionType = dynamic_cast<const UnionType*>(&type)) {
         // -- union types --
 
         const auto& elementTypes = unionType->getElementTypes();
@@ -315,7 +315,6 @@ const InnerAnalysisType* TypeLattice::addType(const Type& type) {
         }
         assert(!elementTypes.empty() && "union type cannot be empty");
 
-        // TODO: what if recursive union types?
         // create the set of member types
         bool isPrimitive = false;
         Kind kind;

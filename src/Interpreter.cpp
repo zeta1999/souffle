@@ -63,6 +63,7 @@ enum LVM_Type {
     LVM_Number;
     LVM_ElementAccess;
     LVM_AutoIncrement;
+
     /** Unary Functor Operations */
     LVM_OP_ORD;
     LVM_OP_STRLEN;
@@ -162,9 +163,13 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    size_t relationCounter = 0;
 
    /** Address Table */
-   size_t  currentAddress;
-   size_t getNewLabel() { return currentLabel++; }
+   size_t currentAddressLabel;
+   size_t getNewAddressLabel() { return currentAddressLabel++; }
    std::vector<size_t> addressMap;
+
+   /** Loop Iter */
+   size_t currentCounterLabel = 0;
+   size_t getNewCounterLabel() {return currentCounterLabel++; }
 
    /* Return the value of the addressLabel. 
     * Return 0 if label doesn't exits. ??
@@ -489,22 +494,74 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    }
    
    /*
-    * Syntax: [RN_Scan, relation, identifier, operation]
     *
-    * Semantic: Perform [operation] on each tuple in the [relation]
+    *                for (i = 0; i < realtion.size(); ++i){
+    *                    t.i = relation[i];
+    * Imperative         do netsed operation
+    *                }
+    *
+    *
+    * L0: LVM_Loop_Counter    <i>
+    *     LVM_NUMBER  <relation.size()>
+    *     LVM_LT
+    *     LVM_JMPEZ  <L1>
+    *     LVM_SELECT  <relation.name()>   <i>    <identifier>
+    *     visit (scan.getOperation, exitAddress)
+    *     LVM_Loop_Inc        <i>
+    *     JMP L0
+    * L1:
     *
     */
    void visitScan(const RamScan& scan, size_t exitAddress) override {
-      code.push_back(LVM_Scan);
-      code.push_back(symbolTabel.lookup(scan.getRelation().getName()));
-      code.push_back(scan.getIdentifier());
-      visit(scan.getOperation(), exitAddress);
+      size_t address_L0 = code.size();
+      size_t counterLabel = getNewCounterLabel();
+      code.push(LVM_ITER_Counter);
+      code.push(counterLabel);
+
+      code.push(LVM_Number);
+      code.push(symbolTabel.lookup(scan.getRelation.getName()));
+
+      code.push(LVM_ITER_LT);
+      code.push(LVM_Jmpez);
+      size_t L1 = getNewAddressLabel();
+      code.push(lookupAddress(L1));
+
+      code.push(LVM_Select);
+      code.push(symbolTabel.lookup(scan.getRelation.getName()));
+      code.push(counterLabel);
+      code.push(scan.getIdentifier());
+
+      visit(scan.getNestedOperation(), L1);
+      code.push(LVM_Inc, counterLabel);
+      code.push(LVM_Jmp, address_L0);
+
+      setAddress(L1, code.size());
    }
    
    /*
-    * Syntax: [RN_IndexScan, relation, identifier, pattern, operation]
     *
-    * Semantuc: Perform [operation] on each tuple in the [relation] that match the [pattern]
+    *  for (i = 0; i < realtion.size(); ++i){
+    *    if (match_pattern(relation[i])){
+    *       t.i = realtion[i]
+    *       do nested operation.
+    *    } else {
+    *       continue;
+    *    }
+    *  }
+    *
+    *
+    * L0: LVM_Loop_Counter    <i>
+    *     LVM_NUMBER  <relation.size()>
+    *     LVM_LT
+    *     LVM_JMPEZ  <L2>
+    *     LVM_MATCH  <relation.name()>   <i>    <Pattern>
+    *     LVM_JMPEZ  <L1>
+    *     LVM_SELECT <relation.name()>   <i>    <identifier>
+    *     visit (scan.getOperation, exitAddress)
+    * L1: LVM_Inc    <i>
+    *     JMP L0
+    * L2:
+    *
     */
    void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
       auto patterns = scan.getRangePattern();
@@ -514,11 +571,37 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
          visit(patterns[i], exitAddress);
          types += (patterns[i] == nullptr? "_" : "V");
       }
-      code.push_back(LVM_IndexScan);
-      code.push_back(symbolTabel.lookup(scan.getRelation().getName()));
+
+      size_t counterLabel = getNewCounterLabel();
+      size_t address_L0 = code.size();
+      size_t L1 = getNewAddressLabel();
+      size_t L2 = getNewAddressLabel();
+
+      code.push_back(LVM_Loop_Counter);
+      code.push_back(counterLabel);
+      code.push_back(LVM_Number);
+      code.push_back(scan.getRelation().size());
+
+      code.push_back(LVM_LT);
+      code.push_back(LVM_Jmpez);
+      code.push_back(L2);
+      code.push_back(LVM_Match);
+      code.push_back(symbolTabel.lookup(scan.getRelation().getName()));   
+      code.push_back(counterLabel);
+      code.push_back(pattern);
+      code.push_back(LVM_Jmpez);
+      code.push_back(L1);
+      
+      code.push_back(LVM_Select);
+      code.push_back(counterLabel);
       code.push_back(scan.getIdentifier());
-      code.push_back(types);
-      visit(scan.getOperation(), exitAddress);
+      visit(scan.getOperation, exitAddress);
+      setAddress(L1, code.size());
+      
+      code.push_back(LVM_Jmp);
+      code.push_back(L0);
+
+      setAddress(L2, code.size());
    }
    
    /*
@@ -544,24 +627,40 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    }
    
    /*
-    * Syntax: [RN_filter, condtion, operation]
+    * If (condition) {
+    *    do nested operation
+    * }
     *
+    *    <condition Expressions>
+    *    LVM_Jmpez L0
+    *    visit(nestedOperation)
+    * L0:
     */
    void visitFilter(const RamFilter& filter, size_t exitAddress) override {
-      code.push_back(LVM_Filter);
+      size_t L0 = getNewAddressLabel();
       visit(filter.getCondition(), exitAddress);
+      code.push_back(LVM_Jmpez);
+      code.push_back(L0);
       visit(filter.getOperation(), exitAddress);
+      setAddress(L0, code.size());
    }
     
    /*
-    * Syntax: [RN_Project, arity, relation] 
     *
-    * Semantic: Create new tuple, insert into relation
+    *    Values
+    *    LVM_Project
+    *    <arity>
+    *    <realtionName>
     */
    
    void visitProject(const RamProject& project, size_t exitAddress) override {
       size_t arity = project.getRelation.getArity();
       std::string relationName = project.getRelation().getName();
+      auto values = project.getValues();
+      for (size_t i = 0; i < values.size(); ++i) {
+         visit(values[i], exitAddress);
+      }
+      visit(project.getValues());
       code.push_back(LVM_Project);
       code.push_back(arity);
       code.push_back(symbolTabel.lookup(relationName));
@@ -599,9 +698,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       } 
    }
    
-   /* Syntax: [RN_Parallel, num_stmts, stmts...]
+   /* 
     *
-    * Semantic: Execute the [stmts] in parallel, wait untill all stmts are done.
     */
    void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
       size_t address_L0 = code.size();
@@ -611,17 +709,17 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
 
       std::vector<size_t> labels(num_blocks);
       for (size_t i = 0; i < num_blocks; ++ i) {
-         labels[i] = getNewLabel();
+         labels[i] = getNewAddressLabel();
          code.push_back(lookupAddress(labels[i]));
       }
       
-      size_t L1 = getNewLabel();
+      size_t L1 = getNewAddressLabel();
       code.push_back(LVM_Goto);
       code.push_back(lookupAddress(L1));
    
       for (size_t i = 0; i < num_blocks; ++ i) {
          setAddress(label[i], code.size());
-         visit(parallel.getStatements()[i]);
+         visit(parallel.getStatements()[i], exitAddress);
          code.push_back(LVM_Stop_Parallel);
          code.push_back(L0);
       }
@@ -639,7 +737,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     */
    void visitLoop(const RamLoop& loop, size_t exitAddress) override {
       size_t address_L0 = code.size(); // TODO: 0 is ok?
-      size_t L1 = getNewLabel();
+      size_t L1 = getNewAddressLabel();
       size_t address_L1 = lookupAddress(L1);
       visit(loop.getBody(), address_L1);
       code.push(LVM_Goto);

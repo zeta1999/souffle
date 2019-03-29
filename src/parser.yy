@@ -93,7 +93,6 @@
 %token DOT                       "."
 %token EQUALS                    "="
 %token STAR                      "*"
-%token AT                        "@"
 %token SLASH                     "/"
 %token CARET                     "^"
 %token PERCENT                   "%"

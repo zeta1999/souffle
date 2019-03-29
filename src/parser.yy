@@ -138,8 +138,13 @@ program
 unit
     : unit type
     | unit functor_decl
+    | unit relation_decl
+    | unit load_head
+    | unit store_head
+    | unit fact
     | unit rule
     | unit component
+    | unit comp_init
     | unit pragma
     | %empty
     ;
@@ -183,12 +188,57 @@ union_type_list
     ;
 
 /**
+ * Relations
+ */
+
+/* Relation declaration */
+relation_decl
+    : DECL relation_list LPAREN attributes RPAREN qualifiers
+    ;
+
+/* List of relation names to declare */
+relation_list
+    : IDENT
+    | relation_list COMMA IDENT
+    ;
+
+/* Attribute definition of a relation */
+attributes
+    : non_empty_attributes
+    | %empty
+    ;
+non_empty_attributes
+    : IDENT COLON identifier
+    | non_empty_attributes COMMA IDENT COLON identifier
+    ;
+
+/* Relation qualifiers */
+qualifiers
+    : qualifiers OUTPUT_QUALIFIER
+    | qualifiers INPUT_QUALIFIER
+    | qualifiers PRINTSIZE_QUALIFIER
+    | qualifiers OVERRIDABLE_QUALIFIER
+    | qualifiers INLINE_QUALIFIER
+    | qualifiers BRIE_QUALIFIER
+    | qualifiers BTREE_QUALIFIER
+    | qualifiers EQREL_QUALIFIER
+    | %empty
+    ;
+
+/**
  * Datalog Rule Structure
  */
+
+/* Fact */
+fact
+    : atom DOT
+    ;
 
 /* Rule */
 rule
     : rule_def
+    | rule STRICT
+    | rule exec_plan
     ;
 
 /* Rule definition */
@@ -217,6 +267,27 @@ disjunction
 conjunction
     : term
     | conjunction COMMA term
+    ;
+
+/* Rule execution plan */
+exec_plan
+    : PLAN exec_plan_list
+    ;
+
+/* Rule execution plan list */
+exec_plan_list
+    : NUMBER COLON LPAREN exec_order_list RPAREN
+    | exec_plan_list COMMA NUMBER COLON LPAREN exec_order_list RPAREN
+    ;
+
+/* Rule execution order */
+exec_order_list
+    : non_empty_exec_order_list
+    | %empty
+    ;
+non_empty_exec_order_list
+    : NUMBER
+    | non_empty_exec_order_list COMMA NUMBER
     ;
 
 /**
@@ -343,6 +414,8 @@ component
 /* Component head */
 component_head
     : COMPONENT comp_type
+    | component_head COLON comp_type
+    | component_head COMMA comp_type
     ;
 
 /* Component type */
@@ -364,8 +437,26 @@ type_param_list
 
 /* Component body */
 component_body
-    : component_body component
+    : component_body type
+    | component_body relation_decl
+    | component_body load_head
+    | component_body store_head
+    | component_body fact
+    | component_body rule
+    | component_body comp_override
+    | component_body comp_init
+    | component_body component
     | %empty
+    ;
+
+/* Component initialisation */
+comp_init
+    : INSTANTIATE IDENT EQUALS comp_type
+    ;
+
+/* Component overriding rules of a relation */
+comp_override
+    : OVERRIDE IDENT
     ;
 
 /**
@@ -393,13 +484,46 @@ functor_type
     ;
 
 /**
- * Pragmas
+ * Other Directives
  */
 
 /* Pragma directives */
 pragma
     : PRAGMA STRING STRING
     | PRAGMA STRING
+    ;
+
+/* Load directives */
+load_head
+    : INPUT_DECL io_directive_list
+    ;
+
+/* Store directives */
+store_head
+    : OUTPUT_DECL io_directive_list
+    | PRINTSIZE_DECL io_directive_list
+    ;
+
+/* IO directive list */
+io_directive_list
+    : relation_list
+    | relation_list LPAREN key_value_pairs RPAREN
+    ;
+
+/* Key-value pairs */
+key_value_pairs
+    : non_empty_key_value_pairs
+    | %empty
+    ;
+non_empty_key_value_pairs
+    : kvp
+    | non_empty_key_value_pairs COMMA kvp
+    ;
+kvp
+    : IDENT EQUALS STRING
+    | IDENT EQUALS IDENT
+    | IDENT EQUALS TRUE
+    | IDENT EQUALS FALSE
     ;
 
 %%

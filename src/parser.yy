@@ -88,6 +88,7 @@
 %token RPAREN                    ")"
 %token COMMA                     ","
 %token COLON                     ":"
+%token DOUBLECOLON               "::"
 %token SEMICOLON                 ";"
 %token DOT                       "."
 %token EQUALS                    "="
@@ -109,19 +110,21 @@
 %token L_NOT                     "lnot"
 
 /* Operator precedence */
+/* TODO: ORDERING??? */
 /* %left SEMICOLON */
 /* %left COMMA */
 /* %left EXCLAMATION */
-/* %left L_OR */
-/* %left L_AND */
-/* %left BW_OR */
-/* %left BW_XOR */
-/* %left BW_AND */
+%left L_OR
+%left L_AND
+%left BW_OR
+%left BW_XOR
+%left BW_AND
 %left PLUS MINUS
 %left STAR SLASH PERCENT
 %right CARET
-/* %precedence BW_NOT L_NOT */
-/* %precedence NEG --- WHERE'S THIS? re: caret */
+%precedence BW_NOT L_NOT
+%precedence NEG
+%precedence AS
 
 %%
 %start program;
@@ -133,7 +136,11 @@ program
 
 /* Top-level statement */
 unit
-    : unit rule
+    : unit type
+    | unit functor_decl
+    | unit rule
+    | unit component
+    | unit pragma
     | %empty
     ;
 
@@ -143,7 +150,36 @@ unit
 
 identifier
     : IDENT
-    | identifier COLON COLON IDENT
+    | identifier DOUBLECOLON IDENT
+    ;
+
+/**
+ * Types
+ */
+
+/* Type declarations */
+type
+    : NUMBER_TYPE IDENT
+    | SYMBOL_TYPE IDENT
+    | TYPE IDENT
+    | TYPE IDENT EQUALS union_type_list
+    | TYPE IDENT EQUALS LBRACKET record_type_list RBRACKET
+    ;
+
+/* Record type argument declarations */
+record_type_list
+    : non_empty_record_type_list
+    | %empty
+    ;
+non_empty_record_type_list
+    : IDENT COLON identifier
+    | non_empty_record_type_list COMMA IDENT COLON identifier
+    ;
+
+/* Union type argument declarations */
+union_type_list
+    : IDENT
+    | union_type_list PIPE IDENT
     ;
 
 /**
@@ -163,6 +199,7 @@ rule_def
 /* Rule head */
 head
     : atom
+    | head COMMA atom
     ;
 
 /* Rule body */
@@ -189,6 +226,7 @@ conjunction
 /* Rule body term */
 term
     : literal
+    | EXCLAMATION term
     ;
 
 /* Rule body literal */
@@ -235,14 +273,24 @@ arg
     | NUMBER
     | UNDERSCORE
     | DOLLAR
-    | identifier
+    | IDENT
+    | LPAREN arg RPAREN
+
+    /* type-cast */
+    | arg AS IDENT
+
+    /* record constructor */
+    | NIL
     | identifier LBRACKET arg_list RBRACKET
 
-    /* -- user-defined functor -- */
+    /* user-defined functor */
     | identifier LPAREN arg_list RPAREN
 
     /* -- intrinsic functor -- */
     /* unary functors */
+    | MINUS arg %prec NEG
+    | BW_NOT arg
+    | L_NOT arg
     | ORD LPAREN arg RPAREN
     | STRLEN LPAREN arg RPAREN
     | TONUMBER LPAREN arg RPAREN
@@ -255,6 +303,11 @@ arg
     | arg SLASH arg
     | arg PERCENT arg
     | arg CARET arg
+    | arg BW_OR arg
+    | arg BW_XOR arg
+    | arg BW_AND arg
+    | arg L_OR arg
+    | arg L_AND arg
 
     /* binary prefix functors */
     | MIN LPAREN arg COMMA arg RPAREN
@@ -263,6 +316,90 @@ arg
 
     /* ternary functors */
     | SUBSTR LPAREN arg COMMA arg COMMA arg RPAREN
+
+    /* -- aggregators -- */
+    | COUNT COLON atom
+    | COUNT COLON LBRACE body RBRACE
+
+    | SUM arg COLON RESERVED
+    | SUM arg COLON LBRACE body RBRACE
+
+    | MIN arg COLON atom
+    | MIN arg COLON LBRACE body RBRACE
+
+    | MAX arg COLON atom
+    | MAX arg COLON LBRACE body RBRACE
+    ;
+
+/**
+ * Components
+ */
+
+/* Component */
+component
+    : component_head LBRACE component_body RBRACE
+    ;
+
+/* Component head */
+component_head
+    : COMPONENT comp_type
+    ;
+
+/* Component type */
+comp_type
+    : IDENT type_params
+    ;
+
+/* Component type parameters */
+type_params
+    : LT type_param_list GT
+    | %empty
+    ;
+
+/* Component type parameter list */
+type_param_list
+    : IDENT
+    | type_param_list COMMA IDENT
+    ;
+
+/* Component body */
+component_body
+    : component_body component
+    | %empty
+    ;
+
+/**
+ * User-Defined Functors
+ */
+
+/* Functor declaration */
+functor_decl
+    : FUNCTOR IDENT LPAREN functor_arg_type_list RPAREN COLON functor_type
+    ;
+
+/* Functor argument list types */
+functor_arg_type_list
+    : non_empty_functor_arg_type_list
+    | %empty
+    ;
+non_empty_functor_arg_type_list
+    : functor_type
+    | non_empty_functor_arg_type_list COMMA functor_type
+    ;
+
+/* Functor type */
+functor_type
+    : IDENT
+    ;
+
+/**
+ * Pragmas
+ */
+
+/* Pragma directives */
+pragma
+    : PRAGMA STRING STRING
+    | PRAGMA STRING
     ;
 
 %%

@@ -60,96 +60,101 @@ namespace souffle {
 
 enum LVM_Type {
     // Expressions
-    LVM_Number;
-    LVM_ElementAccess;
-    LVM_AutoIncrement;
+    LVM_Number,
+    LVM_ElementAccess,
+    LVM_AutoIncrement,
 
     /** Unary Functor Operations */
-    LVM_OP_ORD;
-    LVM_OP_STRLEN;
-    LVM_OP_NEG;
-    LVM_OP_BNOT;
-    LVM_OP_LNOT;
-    LVM_OP_TONUMBER;
-    LVM_OP_TOSTRING;
+    LVM_OP_ORD,
+    LVM_OP_STRLEN,
+    LVM_OP_NEG,
+    LVM_OP_BNOT,
+    LVM_OP_LNOT,
+    LVM_OP_TONUMBER,
+    LVM_OP_TOSTRING,
     /** Binary Functor Operators */ 
-    LVM_OP_ADD;
-    LVM_OP_SUB;
-    LVM_OP_MUL;
-    LVM_OP_DIV;
-    LVM_OP_EXP;
-    LVM_OP_MOD;
-    LVM_OP_BAND;
-    LVM_OP_BOR;
-    LVM_OP_BXOR;
-    LVM_OP_LAND;
-    LVM_OP_LOR;
-    LVM_OP_MAX;
-    LVM_OP_MIN;
-    LVM_OP_CAT;
+    LVM_OP_ADD,
+    LVM_OP_SUB,
+    LVM_OP_MUL,
+    LVM_OP_DIV,
+    LVM_OP_EXP,
+    LVM_OP_MOD,
+    LVM_OP_BAND,
+    LVM_OP_BOR,
+    LVM_OP_BXOR,
+    LVM_OP_LAND,
+    LVM_OP_LOR,
+    LVM_OP_MAX,
+    LVM_OP_MIN,
+    LVM_OP_CAT,
     /** Ternary Functor Operators */
-    LVM_OP_SUBSTR;
+    LVM_OP_SUBSTR,
 
     // LVM Constraint Op
     
-    LVM_OP_EQ;
-    LVM_OP_NE;
-    LVM_OP_LT;
-    LVM_OP_LE;
-    LVM_OP_GT;
-    LVM_OP_GE;
-    LVM_OP_MATCH;
-    LVM_OP_NOT_MATCH;
-    LVM_OP_CONTAINS;
-    LVM_OP_NOT_CONTAIN;
+    LVM_OP_EQ,
+    LVM_OP_NE,
+    LVM_OP_LT,
+    LVM_OP_LE,
+    LVM_OP_GT,
+    LVM_OP_GE,
+    LVM_OP_MATCH,
+    LVM_OP_NOT_MATCH,
+    LVM_OP_CONTAINS,
+    LVM_OP_NOT_CONTAIN,
 
 
-    LVM_UserDefinedOperator;
-    LVM_PackRecord;
-    LVM_Argument;
+    LVM_UserDefinedOperator,
+    LVM_PackRecord,
+    LVM_Argument,
 
     // LVM Conditions
-    LVM_Conjunction;
-    LVM_Negation;
-    LVM_EmptinessCheck;
-    LVM_ExistenceCheck;
-    LVM_ProvenanceExistenceCheck;
-    LVM_Constraint;
+    LVM_Conjunction,
+    LVM_Negation,
+    LVM_EmptinessCheck,
+    LVM_ExistenceCheck,
+    LVM_ProvenanceExistenceCheck,
+    LVM_Constraint,
 
     // LVM Operations;
-    LVM_Scan;
-    LVM_IndexScan;
-    LVM_UnpackRecord;
-    LVM_Filter;
-    LVM_Project;
-    LVM_Return;
+    LVM_Scan,
+    LVM_IndexScan,
+    LVM_UnpackRecord,
+    LVM_Filter,
+    LVM_Project,
+    LVM_Return,
 
     // LVM Stmts
-    LVM_Sequence;
-    LVM_Parallel;
-    LVM_Stop_Parallel;
-    LVM_Loop;
-    LVM_Exit;
-    LVM_LogTimer;
-    LVM_DebugInfo;
-    LVM_Stratum;
-    LVM_Create;
-    LVM_Clear;
-    LVM_Drop;
-    LVM_LogSize;
-    LVM_Load;
-    LVM_Store;
-    LVM_Fact;
-    LVM_Number;
-    LVM_Merge;
-    LVM_Swap;
+    LVM_Sequence,
+    LVM_Parallel,
+    LVM_Stop_Parallel,
+    LVM_Loop,
+    LVM_Exit,
+    LVM_LogTimer,
+    LVM_DebugInfo,
+    LVM_Stratum,
+    LVM_Create,
+    LVM_Clear,
+    LVM_Drop,
+    LVM_LogSize,
+    LVM_Load,
+    LVM_Store,
+    LVM_Fact,
+    LVM_Merge,
+    LVM_Swap,
 
     // LVM
-    LVM_Goto;
-    LVM_Jmpnz;
+    LVM_Goto,
+    LVM_Jmpnz,
+    LVM_Jmpez,
+    LVM_ITER_LT,
+    LVM_ITER_Counter,
+    LVM_Select,
+    LVM_Match,
+    LVM_LT,
 };
 
-class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
+class LVMGenerator : public RamVisitor<void, size_t> {
    std::vector<RamDomain> &code;            /** Instructions stream */
    SymbolTable &symbolTable;                /** Class for converting string to number and vice versa */ 
    std::vector<size_t> jumpAdresses;        
@@ -159,7 +164,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    size_t IODirectivesCounter = 0;
 
    /** Store reference to relation, used by RN_Create */
-   std::vector<Relation&> relationPool;
+   std::vector<const RamRelation&> relationPool;
    size_t relationCounter = 0;
 
    /** Address Table */
@@ -234,13 +239,13 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       const auto& args = op.getArguments();
       switch (op.getOperator()) {
          /** Unary Functor Operators */
-         case FunctorOp::ORD:       visit(args[0], exit_address); code.push_back(LVM_OP_ORD);       break;
-         case FunctorOp::STRLEN:    visit(args[0], exit_address); code.push_back(LVM_OP_STRLEN);    break;
-         case FunctorOp::NEG:       visit(args[0], exit_address); code.push_back(LVM_OP_NEG);       break;
-         case FunctorOp::BNOT:      visit(args[0], exit_address); code.push_back(LVM_OP_BNOT);      break;
-         case FunctorOp::LNOT:      visit(args[0], exit_address); code.push_back(LVM_OP_LNOT);      break;
-         case FunctorOp::TONUMBER:  visit(args[0], exit_address); code.push_back(LVM_OP_TONUMBER);  break;
-         case FunctorOp::TOSTRING:  visit(args[0], exit_address); code.push_back(LVM_OP_TOSTRING);  break;
+         case FunctorOp::ORD:       visit(args[0], exitAddress); code.push_back(LVM_OP_ORD);       break;
+         case FunctorOp::STRLEN:    visit(args[0], exitAddress); code.push_back(LVM_OP_STRLEN);    break;
+         case FunctorOp::NEG:       visit(args[0], exitAddress); code.push_back(LVM_OP_NEG);       break;
+         case FunctorOp::BNOT:      visit(args[0], exitAddress); code.push_back(LVM_OP_BNOT);      break;
+         case FunctorOp::LNOT:      visit(args[0], exitAddress); code.push_back(LVM_OP_LNOT);      break;
+         case FunctorOp::TONUMBER:  visit(args[0], exitAddress); code.push_back(LVM_OP_TONUMBER);  break;
+         case FunctorOp::TOSTRING:  visit(args[0], exitAddress); code.push_back(LVM_OP_TOSTRING);  break;
 
          /** Binary Functor Operators */ 
          case FunctorOp::ADD:
@@ -316,9 +321,9 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
 
          /** Ternary Functor Operators */
          case FunctorOp::SUBSTR: 
-            visit(args[0], exit_address); 
-            visit(args[1], exit_address); 
-            visit(args[2], exit_address); 
+            visit(args[0], exitAddress); 
+            visit(args[1], exitAddress); 
+            visit(args[2], exitAddress); 
             code.push_back(LVM_OP_SUBSTR);
             break;
 
@@ -397,7 +402,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
      */
     void visitEmptinessCheck(const RamEmptinessCheck& emptiness, size_t exitAddress) override {
        code.push_back(LVM_EmptinessCheck); 
-       code.push_back(symbolTabel.lookup(emptiness.getRelation().getName()));
+       code.push_back(symbolTable.lookup(emptiness.getRelation().getName()));
     }
 
     /*
@@ -414,7 +419,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
           types += (values[i] == nullptr ? "_" : "V");
        }
        code.push_back(LVM_ExistenceCheck); 
-       code.push_back(symbolTabel.lookup(exists.getRelation().getName())); 
+       code.push_back(symbolTable.lookup(exists.getRelation().getName())); 
        code.push_back(symbolTable.lookup(type));
     }
    
@@ -432,7 +437,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
           types += (values[i] == nullptr ? "_" : "V");
        }
        code.push_back(LVM_ProvenanceExistenceCheck);
-       code.push_back(symbolTabel.lookup(exists.getRelation().getName())); 
+       code.push_back(symbolTable.lookup(provExists.getRelation().getName())); 
        code.push_back(symbolTable.lookup(type));
     }
    
@@ -442,39 +447,39 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
      * Semantic: pop two values, do operator, push result back
      *
      */
-    void visitConstraint(const RamConstraint& relOp) override {
-       visit(relOp.getLHS());
-       visit(relOp.getRHS());
+    void visitConstraint(const RamConstraint& relOp, size_t exitAddress) override {
+       visit(relOp.getLHS(), exitAddress);
+       visit(relOp.getRHS(), exitAddress);
        switch (relOp.getOperator()) {
          case BinaryConstraintOp::EQ:
-            code.push(LVM_OP_EQ);
+            code.push_back(LVM_OP_EQ);
             break;
          case BinaryConstraintOp::NE:
-            code.push(LVM_OP_NE);
+            code.push_back(LVM_OP_NE);
             break;
          case BinaryConstraintOp::LT:
-            code.push(LVM_OP_LT);
+            code.push_back(LVM_OP_LT);
             break;
          case BinaryConstraintOp::LE:
-            code.push(LVM_OP_LE);
+            code.push_back(LVM_OP_LE);
             break;
          case BinaryConstraintOp::GT:
-            code.push(LVM_OP_GT);
+            code.push_back(LVM_OP_GT);
             break;
          case BinaryConstraintOp::GE:
-            code.push(LVM_OP_GE);
+            code.push_back(LVM_OP_GE);
             break;
          case BinaryConstraintOp::MATCH: 
-            code.push(LVM_OP_MATCH);
+            code.push_back(LVM_OP_MATCH);
             break;
          case BinaryConstraintOp::NOT_MATCH:
-            code.push(LVM_OP_NOT_MATCH);
+            code.push_back(LVM_OP_NOT_MATCH);
             break;
          case BinaryConstraintOp::CONTAINS:
-            code.push(LVM_OP_CONTAINS);
+            code.push_back(LVM_OP_CONTAINS);
             break;
          case BinaryConstraintOp::NOT_CONTAINS: 
-            code.push(LVM_OP_NOT_CONTAIN):
+            code.push_back(LVM_OP_NOT_CONTAIN):
             break;
          default:
             assert(false && "unsupported operator");
@@ -515,25 +520,25 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
    void visitScan(const RamScan& scan, size_t exitAddress) override {
       size_t address_L0 = code.size();
       size_t counterLabel = getNewCounterLabel();
-      code.push(LVM_ITER_Counter);
-      code.push(counterLabel);
+      code.push_back(LVM_ITER_Counter);
+      code.push_back(counterLabel);
 
-      code.push(LVM_Number);
-      code.push(symbolTabel.lookup(scan.getRelation.getName()));
+      code.push_back(LVM_Number);
+      code.push_back(symbolTable.lookup(scan.getRelation.getName()));
 
-      code.push(LVM_ITER_LT);
-      code.push(LVM_Jmpez);
+      code.push_back(LVM_ITER_LT);
+      code.push_back(LVM_Jmpez);
       size_t L1 = getNewAddressLabel();
-      code.push(lookupAddress(L1));
+      code.push_back(lookupAddress(L1));
 
-      code.push(LVM_Select);
-      code.push(symbolTabel.lookup(scan.getRelation.getName()));
-      code.push(counterLabel);
-      code.push(scan.getIdentifier());
+      code.push_back(LVM_Select);
+      code.push_back(symbolTable.lookup(scan.getRelation.getName()));
+      code.push_back(counterLabel);
+      code.push_back(scan.getIdentifier());
 
       visit(scan.getNestedOperation(), L1);
-      code.push(LVM_Inc, counterLabel);
-      code.push(LVM_Jmp, address_L0);
+      code.push_back(LVM_Inc, counterLabel);
+      code.push_back(LVM_Goto, address_L0);
 
       setAddress(L1, code.size());
    }
@@ -577,20 +582,21 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       size_t L1 = getNewAddressLabel();
       size_t L2 = getNewAddressLabel();
 
-      code.push_back(LVM_Loop_Counter);
+      code.push_back(LVM_ITER_Counter);
       code.push_back(counterLabel);
       code.push_back(LVM_Number);
-      code.push_back(scan.getRelation().size());
+      code.push_back(scan.getRelation()); //TODO can't get relation size.
+                                          //TODO concurrent insert?
 
       code.push_back(LVM_LT);
       code.push_back(LVM_Jmpez);
-      code.push_back(L2);
+      code.push_back(lookupAddress(L2));
       code.push_back(LVM_Match);
-      code.push_back(symbolTabel.lookup(scan.getRelation().getName()));   
+      code.push_back(symbolTable.lookup(scan.getRelation().getName()));   
       code.push_back(counterLabel);
-      code.push_back(pattern);
+      //code.push_back(patterns); TODO Implement patterns here
       code.push_back(LVM_Jmpez);
-      code.push_back(L1);
+      code.push_back(lookupAddress(L1));
       
       code.push_back(LVM_Select);
       code.push_back(counterLabel);
@@ -598,8 +604,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       visit(scan.getOperation, exitAddress);
       setAddress(L1, code.size());
       
-      code.push_back(LVM_Jmp);
-      code.push_back(L0);
+      code.push_back(LVM_Goto);
+      code.push_back(address_L0);
 
       setAddress(L2, code.size());
    }
@@ -663,7 +669,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       visit(project.getValues());
       code.push_back(LVM_Project);
       code.push_back(arity);
-      code.push_back(symbolTabel.lookup(relationName));
+      code.push_back(symbolTable.lookup(relationName));
    }
     
    /*
@@ -681,8 +687,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
          }
       }
 
-      code.push(LVM_Return);
-      code.push(ret.getValues().size());
+      code.push_back(LVM_Return);
+      code.push_back(ret.getValues().size());
    }
 
    /** Visit RAM stmt*/
@@ -718,10 +724,10 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       code.push_back(lookupAddress(L1));
    
       for (size_t i = 0; i < num_blocks; ++ i) {
-         setAddress(label[i], code.size());
+         setAddress(labels[i], code.size());
          visit(parallel.getStatements()[i], exitAddress);
          code.push_back(LVM_Stop_Parallel);
-         code.push_back(L0);
+         code.push_back(address_L0);
       }
 
       setAddress(L1, code.size());
@@ -736,12 +742,12 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     * Provide an exitAddress for possible RN_exits to jump to label E.
     */
    void visitLoop(const RamLoop& loop, size_t exitAddress) override {
-      size_t address_L0 = code.size(); // TODO: 0 is ok?
+      size_t address_L0 = code.size(); 
       size_t L1 = getNewAddressLabel();
       size_t address_L1 = lookupAddress(L1);
       visit(loop.getBody(), address_L1);
-      code.push(LVM_Goto);
-      code.push(address_L0);
+      code.push_back(LVM_Goto);
+      code.push_back(address_L0);
       setAddress(L1, code.size() - 1);
    }
    
@@ -801,7 +807,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     */
    void visitClear(const RamClear& clear, size_t exitAddress) override {
       code.push_back(LVM_Clear);
-      code.push_back(clear.getRelation().getName());
+      code.push_back(symbolTable.lookup(clear.getRelation().getName()));
    }
    
    /* Syntax: [RN_Drop, relation]
@@ -810,16 +816,16 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     */
    void visitDrop(const RamDrop& drop, size_t exitAddress) override {
       code.push_back(LVM_Drop); 
-      code.push_back(symbolTabel.lookup(drop.getRelation().getName()));
+      code.push_back(symbolTable.lookup(drop.getRelation().getName()));
    }
    
    /* Syntax: [RN_LogSize, relation]
     *
     * Semantic: ??
     */
-   void visitLogSize(const RamLogSizr& size, size_t exitAddress) override {
+   void visitLogSize(const RamLogSize& size, size_t exitAddress) override {
       code.push_back(LVM_LogSize);
-      code.push_back(symbolTabel.lookup(size.getRelation().getName()));
+      code.push_back(symbolTable.lookup(size.getRelation().getName()));
    }
 
    /* Syntax: [RN_Store, RelationName, SourceIOs_idx]
@@ -830,7 +836,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     */
    void visitLoad(const RamLoad& load, size_t exitAddress) override {
       code.push_back(LVM_Load); 
-      code.push_back(symTable.lookup(load.getRelation().getName()));
+      code.push_back(symbolTable.lookup(load.getRelation().getName()));
 
       /** TODO Need a better way to store IOs.*/
       IODirectivesPool.push_back(load.getIODirectives());
@@ -846,7 +852,7 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     */
    void visitStore(const RamStore& store, size_t exitAddress) override {
       code.push_back(LVM_Store);
-      code.push_back(symbolTabel.lookup(store.getRelation().getName()));
+      code.push_back(symbolTable.lookup(store.getRelation().getName()));
 
       /** TODO: Need a better way to store IOs.*/
       IODirectivesPool.push_back(store.getIODirectives());
@@ -876,10 +882,10 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
     * Semantic: Start loops
     */
    void visitQuery(const RamQuery& insert, size_t exitAddress) override {
-      size_t depth = depthAnalyzer.getDepth(insert.getOperation());
+      //size_t depth = depthAnalyzer.getDepth(insert.getOperation());
       code.push_back(RN_Query);
-      code.push_back(depth);
-      visit(insert.getOperation());
+      //code.push_back(depth);
+      //visit(insert.getOperation());
    }
 
    /*
@@ -891,8 +897,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       std::string source = merge.getSourceRelation().getName();
       std::string target = merge.getTargetRelation().getName();
       code.push_back(LVM_Merge);
-      code.push_back(symbolTabel.lookup(source));
-      code.push_back(symbolTabel.lookup(target));
+      code.push_back(symbolTable.lookup(source));
+      code.push_back(symbolTable.lookup(target));
    }
 
    /*
@@ -904,8 +910,8 @@ class LVMGenerator : public RamVisitor<void, size_t exitAddress> {
       std::string first = swap.getFirstRelation().getName(); 
       std::string second = swap.getSecondRelation().getName(); 
       code.push_back(LVM_Swap);
-      code.push_back(symbolTabel.lookup(first));
-      code.push_back(symbolTabel.lookup(second));
+      code.push_back(symbolTable.lookup(first));
+      code.push_back(symbolTable.lookup(second));
    }
 
    void visitNode(const RamNode& node, size_t exitAddress) override {

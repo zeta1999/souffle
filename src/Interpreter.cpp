@@ -58,113 +58,28 @@
 
 namespace souffle {
 
-enum LVM_Type {
-    // Expressions
-    LVM_Number,
-    LVM_ElementAccess,
-    LVM_AutoIncrement,
-
-    /** Unary Functor Operations */
-    LVM_OP_ORD,
-    LVM_OP_STRLEN,
-    LVM_OP_NEG,
-    LVM_OP_BNOT,
-    LVM_OP_LNOT,
-    LVM_OP_TONUMBER,
-    LVM_OP_TOSTRING,
-    /** Binary Functor Operators */ 
-    LVM_OP_ADD,
-    LVM_OP_SUB,
-    LVM_OP_MUL,
-    LVM_OP_DIV,
-    LVM_OP_EXP,
-    LVM_OP_MOD,
-    LVM_OP_BAND,
-    LVM_OP_BOR,
-    LVM_OP_BXOR,
-    LVM_OP_LAND,
-    LVM_OP_LOR,
-    LVM_OP_MAX,
-    LVM_OP_MIN,
-    LVM_OP_CAT,
-    /** Ternary Functor Operators */
-    LVM_OP_SUBSTR,
-
-    // LVM Constraint Op
-    
-    LVM_OP_EQ,
-    LVM_OP_NE,
-    LVM_OP_LT,
-    LVM_OP_LE,
-    LVM_OP_GT,
-    LVM_OP_GE,
-    LVM_OP_MATCH,
-    LVM_OP_NOT_MATCH,
-    LVM_OP_CONTAINS,
-    LVM_OP_NOT_CONTAIN,
-
-
-    LVM_UserDefinedOperator,
-    LVM_PackRecord,
-    LVM_Argument,
-
-    // LVM Conditions
-    LVM_Conjunction,
-    LVM_Negation,
-    LVM_EmptinessCheck,
-    LVM_ExistenceCheck,
-    LVM_ProvenanceExistenceCheck,
-    LVM_Constraint,
-
-    // LVM Operations;
-    LVM_Scan,
-    LVM_IndexScan,
-    LVM_UnpackRecord,
-    LVM_Filter,
-    LVM_Project,
-    LVM_Return,
-
-    // LVM Stmts
-    LVM_Sequence,
-    LVM_Parallel,
-    LVM_Stop_Parallel,
-    LVM_Loop,
-    LVM_Exit,
-    LVM_LogTimer,
-    LVM_DebugInfo,
-    LVM_Stratum,
-    LVM_Create,
-    LVM_Clear,
-    LVM_Drop,
-    LVM_LogSize,
-    LVM_Load,
-    LVM_Store,
-    LVM_Fact,
-    LVM_Merge,
-    LVM_Swap,
-
-    // LVM
-    LVM_Goto,
-    LVM_Jmpnz,
-    LVM_Jmpez,
-    LVM_ITER_LT,
-    LVM_ITER_Counter,
-    LVM_Select,
-    LVM_Match,
-    LVM_LT,
-};
 
 class LVMGenerator : public RamVisitor<void, size_t> {
-   std::vector<RamDomain> &code;            /** Instructions stream */
-   SymbolTable &symbolTable;                /** Class for converting string to number and vice versa */ 
-   std::vector<size_t> jumpAdresses;        
+public:
+   LVMGenerator() {}
+
+   void cleanUp() {
+      code.clear();
+      IODirectivesPool.clear();  
+      relationPool.clear();
+      currentAddressLabel = 0;
+      currentCounterLabel = 0;
+   }
+
+   std::vector<RamDomain> code;            /** Instructions stream */
+   SymbolTable symbolTable;                /** Class for converting string to number and vice versa */ 
    
    /** Store reference to IODirectives */
-   std::vector<const std::vector<IODirectives>&> IODirectivesPool;
+   std::vector<std::vector<IODirectives>> IODirectivesPool;
    size_t IODirectivesCounter = 0;
 
    /** Store reference to relation, used by RN_Create */
-   std::vector<const RamRelation&> relationPool;
+   std::vector<RamRelation> relationPool;
    size_t relationCounter = 0;
 
    /** Address Table */
@@ -344,8 +259,8 @@ class LVMGenerator : public RamVisitor<void, size_t> {
          visit(op.getArgument(i), exitAddress);
       } 
       code.push_back(LVM_UserDefinedOperator);
-      code.push_back(symbolTable.lookup(op.getName());
-      code.push_back(symbolTable.lookup(op.getType());
+      code.push_back(symbolTable.lookup(op.getName()));
+      code.push_back(symbolTable.lookup(op.getType()));
     } 
 
     /*
@@ -356,7 +271,7 @@ class LVMGenerator : public RamVisitor<void, size_t> {
     void visitPackRecord(const RamPackRecord& pack, size_t exitAddress) override {
        auto values = pack.getArguments();
        for (size_t i = 0; i < values.size(); ++i) {
-          visit(values[i]);
+          visit(values[i], exitAddress);
        }
        code.push_back(LVM_PackRecord);
        code.push_back(values.size()); 
@@ -413,14 +328,14 @@ class LVMGenerator : public RamVisitor<void, size_t> {
      */
     void visitExistenceCheck(const RamExistenceCheck& exists, size_t exitAddress) override {
        auto values = exists.getValues();
-       std::string type;
+       std::string types;
        for (size_t i = 0; i < values.size(); ++i) {
-          visit(values[i]);      /** why pattern is named 'value' ? */
+          visit(values[i], exitAddress); 
           types += (values[i] == nullptr ? "_" : "V");
        }
        code.push_back(LVM_ExistenceCheck); 
        code.push_back(symbolTable.lookup(exists.getRelation().getName())); 
-       code.push_back(symbolTable.lookup(type));
+       code.push_back(symbolTable.lookup(types));
     }
    
     /*
@@ -431,14 +346,14 @@ class LVMGenerator : public RamVisitor<void, size_t> {
      */
     void visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists, size_t exitAddress) override {
        auto values = provExists.getValues();
-       std::string type;
+       std::string types;
        for (size_t i = 0; i < values.size(); ++i) {
-          visit(values[i]);
+          visit(values[i], exitAddress);
           types += (values[i] == nullptr ? "_" : "V");
        }
        code.push_back(LVM_ProvenanceExistenceCheck);
        code.push_back(symbolTable.lookup(provExists.getRelation().getName())); 
-       code.push_back(symbolTable.lookup(type));
+       code.push_back(symbolTable.lookup(types));
     }
    
     /*
@@ -479,7 +394,7 @@ class LVMGenerator : public RamVisitor<void, size_t> {
             code.push_back(LVM_OP_CONTAINS);
             break;
          case BinaryConstraintOp::NOT_CONTAINS: 
-            code.push_back(LVM_OP_NOT_CONTAIN):
+            code.push_back(LVM_OP_NOT_CONTAIN);
             break;
          default:
             assert(false && "unsupported operator");
@@ -524,21 +439,23 @@ class LVMGenerator : public RamVisitor<void, size_t> {
       code.push_back(counterLabel);
 
       code.push_back(LVM_Number);
-      code.push_back(symbolTable.lookup(scan.getRelation.getName()));
+      code.push_back(symbolTable.lookup(scan.getRelation().getName()));
 
       code.push_back(LVM_ITER_LT);
       code.push_back(LVM_Jmpez);
       size_t L1 = getNewAddressLabel();
       code.push_back(lookupAddress(L1));
 
-      code.push_back(LVM_Select);
-      code.push_back(symbolTable.lookup(scan.getRelation.getName()));
+      code.push_back(LVM_ITER_Select);
+      code.push_back(symbolTable.lookup(scan.getRelation().getName()));
       code.push_back(counterLabel);
       code.push_back(scan.getIdentifier());
 
-      visit(scan.getNestedOperation(), L1);
-      code.push_back(LVM_Inc, counterLabel);
-      code.push_back(LVM_Goto, address_L0);
+      visit(scan.getOperation(), L1);
+      code.push_back(LVM_ITER_Inc);
+      code.push_back(counterLabel);
+      code.push_back(LVM_Goto);
+      code.push_back(address_L0);
 
       setAddress(L1, code.size());
    }
@@ -585,10 +502,8 @@ class LVMGenerator : public RamVisitor<void, size_t> {
       code.push_back(LVM_ITER_Counter);
       code.push_back(counterLabel);
       code.push_back(LVM_Number);
-      code.push_back(scan.getRelation()); //TODO can't get relation size.
+      code.push_back(symbolTable.lookup(scan.getRelation().getName())); //TODO can't get relation size.
                                           //TODO concurrent insert?
-
-      code.push_back(LVM_LT);
       code.push_back(LVM_Jmpez);
       code.push_back(lookupAddress(L2));
       code.push_back(LVM_Match);
@@ -598,10 +513,10 @@ class LVMGenerator : public RamVisitor<void, size_t> {
       code.push_back(LVM_Jmpez);
       code.push_back(lookupAddress(L1));
       
-      code.push_back(LVM_Select);
+      code.push_back(LVM_ITER_Select);
       code.push_back(counterLabel);
       code.push_back(scan.getIdentifier());
-      visit(scan.getOperation, exitAddress);
+      visit(scan.getOperation(), exitAddress);
       setAddress(L1, code.size());
       
       code.push_back(LVM_Goto);
@@ -660,13 +575,12 @@ class LVMGenerator : public RamVisitor<void, size_t> {
     */
    
    void visitProject(const RamProject& project, size_t exitAddress) override {
-      size_t arity = project.getRelation.getArity();
+      size_t arity = project.getRelation().getArity();
       std::string relationName = project.getRelation().getName();
       auto values = project.getValues();
       for (size_t i = 0; i < values.size(); ++i) {
          visit(values[i], exitAddress);
       }
-      visit(project.getValues());
       code.push_back(LVM_Project);
       code.push_back(arity);
       code.push_back(symbolTable.lookup(relationName));

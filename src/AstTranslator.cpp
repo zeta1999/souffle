@@ -138,21 +138,29 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> outputDirectives;
 
-    for (const auto& current : rel->getStores()) {
-        IODirectives ioDirectives;
-        for (const auto& currentPair : current->getIODirectiveMap()) {
-            ioDirectives.set(currentPair.first, currentPair.second);
-        }
-        outputDirectives.push_back(ioDirectives);
-    }
-
     // If stdout is requested then remove all directives from the datalog file.
     if (Global::config().get("output-dir") == "-") {
-        outputDirectives.clear();
-        IODirectives ioDirectives;
-        ioDirectives.setIOType("stdout");
-        ioDirectives.set("headers", "true");
-        outputDirectives.push_back(ioDirectives);
+        bool hasOutput = false;
+        for (const auto* current : rel->getStores()) {
+            IODirectives ioDirectives;
+            if (dynamic_cast<const AstPrintSize*>(current) != nullptr) {
+                ioDirectives.setIOType("stdoutprintsize");
+                outputDirectives.push_back(ioDirectives);
+            } else if (!hasOutput) {
+                hasOutput = true;
+                ioDirectives.setIOType("stdout");
+                ioDirectives.set("headers", "true");
+                outputDirectives.push_back(ioDirectives);
+            }
+        }
+    } else {
+        for (const auto* current : rel->getStores()) {
+            IODirectives ioDirectives;
+            for (const auto& currentPair : current->getIODirectiveMap()) {
+                ioDirectives.set(currentPair.first, currentPair.second);
+            }
+            outputDirectives.push_back(ioDirectives);
+        }
     }
 
     if (outputDirectives.empty()) {

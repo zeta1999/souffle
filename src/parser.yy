@@ -110,9 +110,6 @@
 
 /* Operator precedence */
 /* TODO: ORDERING??? */
-/* %left SEMICOLON */
-/* %left COMMA */
-/* %left EXCLAMATION */
 %left L_OR
 %left L_AND
 %left BW_OR
@@ -124,6 +121,8 @@
 %precedence BW_NOT L_NOT
 %precedence NEG
 %precedence AS
+
+/* TODO: CHANGE AS (TYPECAST) SYNTAX?? */
 
 %%
 %start program;

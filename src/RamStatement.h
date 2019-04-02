@@ -97,8 +97,8 @@ public:
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
-        os << std::string(tabpos, '\t');
-        os << "CREATE " << rel.getName() << " " << rel.getRepresentation();
+        os << times(" ", tabpos);
+        os << "CREATE " << rel.getName() << " " << rel.getRepresentation() << std::endl;
     };
 
     /** Create clone */
@@ -123,11 +123,12 @@ public:
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
-        os << std::string(tabpos, '\t');
+        os << times(" ", tabpos);
         os << "LOAD DATA FOR " << rel.getName() << " FROM {";
         os << join(ioDirectives, "], [",
                 [](std::ostream& out, const IODirectives& directives) { out << directives; });
         os << ioDirectives << "}";
+        os << std::endl;
     };
 
     /** Create clone */
@@ -155,11 +156,12 @@ public:
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
-        os << std::string(tabpos, '\t');
+        os << times(" ", tabpos);
         os << "STORE DATA FOR " << rel.getName() << " TO {";
         os << join(ioDirectives, "], [",
                 [](std::ostream& out, const IODirectives& directives) { out << directives; });
         os << "}";
+        os << std::endl;
     };
 
     /** Create clone */
@@ -184,9 +186,10 @@ public:
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
-        os << std::string(tabpos, '\t');
+        os << times(" ", tabpos);
         os << "CLEAR ";
         os << rel.getName();
+        os << std::endl;
     }
 
     /** Create clone */
@@ -207,9 +210,9 @@ public:
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
-        os << std::string(tabpos, '\t');
-        os << std::string(tabpos, '\t');
+        os << times(" ", tabpos);
         os << "DROP " << rel.getName();
+        os << std::endl;
     }
     /** Create clone */
     RamDrop* clone() const override {
@@ -246,8 +249,9 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
+        os << times(" ", tabpos);
         os << "MERGE " << getTargetRelation().getName() << " WITH " << getSourceRelation().getName();
+        os << std::endl;
     }
 
     /** Obtain list of child nodes */
@@ -307,8 +311,9 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
+        os << times(" ", tabpos);
         os << "SWAP (" << getFirstRelation().getName() << ", " << getSecondRelation().getName() << ")";
+        os << std::endl;
     };
 
     /** Obtain list of child nodes */
@@ -360,9 +365,10 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
+        os << times(" ", tabpos);
         os << "INSERT (" << join(values, ",", print_deref<std::unique_ptr<RamExpression>>()) << ") INTO "
            << getRelation().getName();
+        os << std::endl;
     };
 
     /** Obtain list of child nodes */
@@ -429,13 +435,13 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "DO ";
+        os << times(" ", tabpos);
+        os << "QUERY ";
         if (condition != nullptr) {
             os << "WHERE ";
             condition->print(os);
         }
-        os << "\n";
+        os << std::endl;
         operation->print(os, tabpos + 1);
     }
 
@@ -515,9 +521,9 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << join(statements, ";\n", [&](std::ostream& os, const std::unique_ptr<RamStatement>& stmt) {
+        for (const auto& stmt : statements) {
             stmt->print(os, tabpos);
-        });
+        }
     }
 
     /** Obtain list of child nodes */
@@ -583,13 +589,11 @@ public:
 
     /* Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "PARALLEL\n";
-        os << join(statements, ";\n", [&](std::ostream& os, const std::unique_ptr<RamStatement>& stmt) {
+        os << times(" ", tabpos) << "PARALLEL" << std::endl;
+        for (auto const& stmt : statements) {
             stmt->print(os, tabpos + 1);
-        });
-        os << std::string(tabpos, '\t');
-        os << "END PARALLEL";
+        }
+        os << times(" ", tabpos) << "END PARALLEL" << std::endl;
     }
 
     /** Obtains a list of child nodes */
@@ -650,12 +654,9 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "LOOP\n";
+        os << times(" ", tabpos) << "LOOP" << std::endl;
         body->print(os, tabpos + 1);
-        os << "\n";
-        os << std::string(tabpos, '\t');
-        os << "END LOOP";
+        os << times(" ", tabpos) << "END LOOP" << std::endl;
     }
 
     /** Obtain list of child nodes */
@@ -703,9 +704,7 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "EXIT ";
-        condition->print(os);
+        os << times(" ", tabpos) << "EXIT " << getCondition() << std::endl;
     }
 
     /** Obtain list of child nodes */
@@ -776,12 +775,9 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "START_TIMER \"" << stringify(message) << "\"\n";
+        os << times(" ", tabpos) << "START_TIMER \"" << stringify(message) << "\"" << std::endl;
         statement->print(os, tabpos + 1);
-        os << "\n";
-        os << std::string(tabpos, '\t');
-        os << "END_TIMER";
+        os << times(" ", tabpos) << "END_TIMER" << std::endl;
     }
 
     /** Obtains a list of child nodes */
@@ -842,12 +838,9 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "BEGIN_DEBUG \"" << stringify(message) << "\"\n";
+        os << times(" ", tabpos) << "BEGIN_DEBUG \"" << stringify(message) << "\"" << std::endl;
         statement->print(os, tabpos + 1);
-        os << "\n";
-        os << std::string(tabpos, '\t');
-        os << "END_DEBUG";
+        os << times(" ", tabpos) << "END_DEBUG" << std::endl;
     }
 
     /** Obtain list of child nodes */
@@ -903,12 +896,11 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "BEGIN_STRATUM_" << index << "\n";
+        os << times(" ", tabpos);
+        os << "BEGIN_STRATUM " << index << std::endl;
         body->print(os, tabpos + 1);
-        os << "\n";
-        os << std::string(tabpos, '\t');
-        os << "END_STRATUM_" << index;
+        os << times(" ", tabpos);
+        os << "END_STRATUM " << index << std::endl;
     }
 
     /** Obtain list of child nodes */
@@ -955,10 +947,10 @@ public:
 
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << std::string(tabpos, '\t');
-        os << "LOGSIZE " << getRelation().getName();
+        os << times(" ", tabpos) << "LOGSIZE " << getRelation().getName();
         os << " TEXT "
            << "\"" << stringify(message) << "\"";
+        os << std::endl;
     }
 
     /** Create clone */

@@ -129,32 +129,32 @@
 
 /* Program */
 program
-    : unit
-    ;
+  : unit
+  ;
 
 /* Top-level statement */
 unit
-    : unit type
-    | unit functor_decl
-    | unit relation_decl
-    | unit load_head
-    | unit store_head
-    | unit fact
-    | unit rule
-    | unit component
-    | unit comp_init
-    | unit pragma
-    | %empty
-    ;
+  : unit type
+  | unit functor_decl
+  | unit relation_decl
+  | unit load_head
+  | unit store_head
+  | unit fact
+  | unit rule
+  | unit component
+  | unit comp_init
+  | unit pragma
+  | %empty
+  ;
 
 /**
  * Identifiers
  */
 
 identifier
-    : IDENT
-    | identifier DOUBLECOLON IDENT
-    ;
+  : IDENT
+  | identifier DOUBLECOLON IDENT
+  ;
 
 /**
  * Types
@@ -162,28 +162,28 @@ identifier
 
 /* Type declarations */
 type
-    : NUMBER_TYPE IDENT
-    | SYMBOL_TYPE IDENT
-    | TYPE IDENT
-    | TYPE IDENT EQUALS union_type_list
-    | TYPE IDENT EQUALS LBRACKET record_type_list RBRACKET
-    ;
+  : NUMBER_TYPE IDENT
+  | SYMBOL_TYPE IDENT
+  | TYPE IDENT
+  | TYPE IDENT EQUALS union_type_list
+  | TYPE IDENT EQUALS LBRACKET record_type_list RBRACKET
+  ;
 
 /* Record type argument declarations */
 record_type_list
-    : non_empty_record_type_list
-    | %empty
-    ;
+  : non_empty_record_type_list
+  | %empty
+  ;
 non_empty_record_type_list
-    : IDENT COLON identifier
-    | non_empty_record_type_list COMMA IDENT COLON identifier
-    ;
+  : IDENT COLON identifier
+  | non_empty_record_type_list COMMA IDENT COLON identifier
+  ;
 
 /* Union type argument declarations */
 union_type_list
-    : IDENT
-    | union_type_list PIPE IDENT
-    ;
+  : IDENT
+  | union_type_list PIPE IDENT
+  ;
 
 /**
  * Relations
@@ -191,37 +191,37 @@ union_type_list
 
 /* Relation declaration */
 relation_decl
-    : DECL relation_list LPAREN attributes RPAREN qualifiers
-    ;
+  : DECL relation_list LPAREN attributes RPAREN qualifiers
+  ;
 
 /* List of relation names to declare */
 relation_list
-    : IDENT
-    | relation_list COMMA IDENT
-    ;
+  : IDENT
+  | relation_list COMMA IDENT
+  ;
 
 /* Attribute definition of a relation */
 attributes
-    : non_empty_attributes
-    | %empty
-    ;
+  : non_empty_attributes
+  | %empty
+  ;
 non_empty_attributes
-    : IDENT COLON identifier
-    | non_empty_attributes COMMA IDENT COLON identifier
-    ;
+  : IDENT COLON identifier
+  | non_empty_attributes COMMA IDENT COLON identifier
+  ;
 
 /* Relation qualifiers */
 qualifiers
-    : qualifiers OUTPUT_QUALIFIER
-    | qualifiers INPUT_QUALIFIER
-    | qualifiers PRINTSIZE_QUALIFIER
-    | qualifiers OVERRIDABLE_QUALIFIER
-    | qualifiers INLINE_QUALIFIER
-    | qualifiers BRIE_QUALIFIER
-    | qualifiers BTREE_QUALIFIER
-    | qualifiers EQREL_QUALIFIER
-    | %empty
-    ;
+  : qualifiers OUTPUT_QUALIFIER
+  | qualifiers INPUT_QUALIFIER
+  | qualifiers PRINTSIZE_QUALIFIER
+  | qualifiers OVERRIDABLE_QUALIFIER
+  | qualifiers INLINE_QUALIFIER
+  | qualifiers BRIE_QUALIFIER
+  | qualifiers BTREE_QUALIFIER
+  | qualifiers EQREL_QUALIFIER
+  | %empty
+  ;
 
 /**
  * Datalog Rule Structure
@@ -229,64 +229,64 @@ qualifiers
 
 /* Fact */
 fact
-    : atom DOT
-    ;
+  : atom DOT
+  ;
 
 /* Rule */
 rule
-    : rule_def
-    | rule STRICT
-    | rule exec_plan
-    ;
+  : rule_def
+  | rule STRICT
+  | rule exec_plan
+  ;
 
 /* Rule definition */
 rule_def
-    : head IF body DOT
-    ;
+  : head IF body DOT
+  ;
 
 /* Rule head */
 head
-    : atom
-    | head COMMA atom
-    ;
+  : atom
+  | head COMMA atom
+  ;
 
 /* Rule body */
 body
-    : disjunction
-    ;
+  : disjunction
+  ;
 
 /* Rule body disjunction */
 disjunction
-    : conjunction
-    | disjunction SEMICOLON conjunction
-    ;
+  : conjunction
+  | disjunction SEMICOLON conjunction
+  ;
 
 /* Rule body conjunction */
 conjunction
-    : term
-    | conjunction COMMA term
-    ;
+  : term
+  | conjunction COMMA term
+  ;
 
 /* Rule execution plan */
 exec_plan
-    : PLAN exec_plan_list
-    ;
+  : PLAN exec_plan_list
+  ;
 
 /* Rule execution plan list */
 exec_plan_list
-    : NUMBER COLON LPAREN exec_order_list RPAREN
-    | exec_plan_list COMMA NUMBER COLON LPAREN exec_order_list RPAREN
-    ;
+  : NUMBER COLON LPAREN exec_order_list RPAREN
+  | exec_plan_list COMMA NUMBER COLON LPAREN exec_order_list RPAREN
+  ;
 
 /* Rule execution order */
 exec_order_list
-    : non_empty_exec_order_list
-    | %empty
-    ;
+  : non_empty_exec_order_list
+  | %empty
+  ;
 non_empty_exec_order_list
-    : NUMBER
-    | non_empty_exec_order_list COMMA NUMBER
-    ;
+  : NUMBER
+  | non_empty_exec_order_list COMMA NUMBER
+  ;
 
 /**
  * Terms in Rule Bodies
@@ -294,111 +294,111 @@ non_empty_exec_order_list
 
 /* Rule body term */
 term
-    : literal
-    | EXCLAMATION term
-    ;
+  : literal
+  | EXCLAMATION term
+  ;
 
 /* Rule body literal */
 literal
-    : atom
-    | constraint
-    ;
+  : atom
+  | constraint
+  ;
 
 /* Rule body atom */
 atom
-    : identifier LPAREN arg_list RPAREN
-    ;
+  : identifier LPAREN arg_list RPAREN
+  ;
 
 /* Rule literal constraints */
 constraint
     /* binary infix constraints */
-    : arg RELOP arg
-    | arg LT arg
-    | arg GT arg
-    | arg EQUALS arg
+  : arg RELOP arg
+  | arg LT arg
+  | arg GT arg
+  | arg EQUALS arg
 
     /* binary prefix constraints */
-    | TMATCH LPAREN arg COMMA arg RPAREN
-    | TCONTAINS LPAREN arg COMMA arg RPAREN
+  | TMATCH LPAREN arg COMMA arg RPAREN
+  | TCONTAINS LPAREN arg COMMA arg RPAREN
 
     /* zero-arity constraints */
-    | TRUE
-    | FALSE
-    ;
+  | TRUE
+  | FALSE
+  ;
 
 /* Argument list */
 arg_list
-    : non_empty_arg_list
-    | %empty
-    ;
+  : non_empty_arg_list
+  | %empty
+  ;
 non_empty_arg_list
-    : arg
-    | arg_list COMMA arg
-    ;
+  : arg
+  | arg_list COMMA arg
+  ;
 
 /* Atom argument */
 arg
-    : STRING
-    | NUMBER
-    | UNDERSCORE
-    | DOLLAR
-    | IDENT
-    | LPAREN arg RPAREN
+  : STRING
+  | NUMBER
+  | UNDERSCORE
+  | DOLLAR
+  | IDENT
+  | LPAREN arg RPAREN
 
     /* type-cast */
-    | arg AS IDENT
+  | arg AS IDENT
 
     /* record constructor */
-    | NIL
-    | identifier LBRACKET arg_list RBRACKET
+  | NIL
+  | identifier LBRACKET arg_list RBRACKET
 
     /* user-defined functor */
-    | identifier LPAREN arg_list RPAREN
+  | identifier LPAREN arg_list RPAREN
 
     /* -- intrinsic functor -- */
     /* unary functors */
-    | MINUS arg %prec NEG
-    | BW_NOT arg
-    | L_NOT arg
-    | ORD LPAREN arg RPAREN
-    | STRLEN LPAREN arg RPAREN
-    | TONUMBER LPAREN arg RPAREN
-    | TOSTRING LPAREN arg RPAREN
+  | MINUS arg %prec NEG
+  | BW_NOT arg
+  | L_NOT arg
+  | ORD LPAREN arg RPAREN
+  | STRLEN LPAREN arg RPAREN
+  | TONUMBER LPAREN arg RPAREN
+  | TOSTRING LPAREN arg RPAREN
 
     /* binary infix functors */
-    | arg PLUS arg
-    | arg MINUS arg
-    | arg STAR arg
-    | arg SLASH arg
-    | arg PERCENT arg
-    | arg CARET arg
-    | arg BW_OR arg
-    | arg BW_XOR arg
-    | arg BW_AND arg
-    | arg L_OR arg
-    | arg L_AND arg
+  | arg PLUS arg
+  | arg MINUS arg
+  | arg STAR arg
+  | arg SLASH arg
+  | arg PERCENT arg
+  | arg CARET arg
+  | arg BW_OR arg
+  | arg BW_XOR arg
+  | arg BW_AND arg
+  | arg L_OR arg
+  | arg L_AND arg
 
     /* binary prefix functors */
-    | MIN LPAREN arg COMMA arg RPAREN
-    | MAX LPAREN arg COMMA arg RPAREN
-    | CAT LPAREN arg COMMA arg RPAREN
+  | MIN LPAREN arg COMMA arg RPAREN
+  | MAX LPAREN arg COMMA arg RPAREN
+  | CAT LPAREN arg COMMA arg RPAREN
 
     /* ternary functors */
-    | SUBSTR LPAREN arg COMMA arg COMMA arg RPAREN
+  | SUBSTR LPAREN arg COMMA arg COMMA arg RPAREN
 
     /* -- aggregators -- */
-    | COUNT COLON atom
-    | COUNT COLON LBRACE body RBRACE
+  | COUNT COLON atom
+  | COUNT COLON LBRACE body RBRACE
 
-    | SUM arg COLON RESERVED
-    | SUM arg COLON LBRACE body RBRACE
+  | SUM arg COLON RESERVED
+  | SUM arg COLON LBRACE body RBRACE
 
-    | MIN arg COLON atom
-    | MIN arg COLON LBRACE body RBRACE
+  | MIN arg COLON atom
+  | MIN arg COLON LBRACE body RBRACE
 
-    | MAX arg COLON atom
-    | MAX arg COLON LBRACE body RBRACE
-    ;
+  | MAX arg COLON atom
+  | MAX arg COLON LBRACE body RBRACE
+  ;
 
 /**
  * Components
@@ -406,56 +406,56 @@ arg
 
 /* Component */
 component
-    : component_head LBRACE component_body RBRACE
-    ;
+  : component_head LBRACE component_body RBRACE
+  ;
 
 /* Component head */
 component_head
-    : COMPONENT comp_type
-    | component_head COLON comp_type
-    | component_head COMMA comp_type
-    ;
+  : COMPONENT comp_type
+  | component_head COLON comp_type
+  | component_head COMMA comp_type
+  ;
 
 /* Component type */
 comp_type
-    : IDENT type_params
-    ;
+  : IDENT type_params
+  ;
 
 /* Component type parameters */
 type_params
-    : LT type_param_list GT
-    | %empty
-    ;
+  : LT type_param_list GT
+  | %empty
+  ;
 
 /* Component type parameter list */
 type_param_list
-    : IDENT
-    | type_param_list COMMA IDENT
-    ;
+  : IDENT
+  | type_param_list COMMA IDENT
+  ;
 
 /* Component body */
 component_body
-    : component_body type
-    | component_body relation_decl
-    | component_body load_head
-    | component_body store_head
-    | component_body fact
-    | component_body rule
-    | component_body comp_override
-    | component_body comp_init
-    | component_body component
-    | %empty
-    ;
+  : component_body type
+  | component_body relation_decl
+  | component_body load_head
+  | component_body store_head
+  | component_body fact
+  | component_body rule
+  | component_body comp_override
+  | component_body comp_init
+  | component_body component
+  | %empty
+  ;
 
 /* Component initialisation */
 comp_init
-    : INSTANTIATE IDENT EQUALS comp_type
-    ;
+  : INSTANTIATE IDENT EQUALS comp_type
+  ;
 
 /* Component overriding rules of a relation */
 comp_override
-    : OVERRIDE IDENT
-    ;
+  : OVERRIDE IDENT
+  ;
 
 /**
  * User-Defined Functors
@@ -463,23 +463,23 @@ comp_override
 
 /* Functor declaration */
 functor_decl
-    : FUNCTOR IDENT LPAREN functor_arg_type_list RPAREN COLON functor_type
-    ;
+  : FUNCTOR IDENT LPAREN functor_arg_type_list RPAREN COLON functor_type
+  ;
 
 /* Functor argument list types */
 functor_arg_type_list
-    : non_empty_functor_arg_type_list
-    | %empty
-    ;
+  : non_empty_functor_arg_type_list
+  | %empty
+  ;
 non_empty_functor_arg_type_list
-    : functor_type
-    | non_empty_functor_arg_type_list COMMA functor_type
-    ;
+  : functor_type
+  | non_empty_functor_arg_type_list COMMA functor_type
+  ;
 
 /* Functor type */
 functor_type
-    : IDENT
-    ;
+  : IDENT
+  ;
 
 /**
  * Other Directives
@@ -487,41 +487,41 @@ functor_type
 
 /* Pragma directives */
 pragma
-    : PRAGMA STRING STRING
-    | PRAGMA STRING
-    ;
+  : PRAGMA STRING STRING
+  | PRAGMA STRING
+  ;
 
 /* Load directives */
 load_head
-    : INPUT_DECL io_directive_list
-    ;
+  : INPUT_DECL io_directive_list
+  ;
 
 /* Store directives */
 store_head
-    : OUTPUT_DECL io_directive_list
-    | PRINTSIZE_DECL io_directive_list
-    ;
+  : OUTPUT_DECL io_directive_list
+  | PRINTSIZE_DECL io_directive_list
+  ;
 
 /* IO directive list */
 io_directive_list
-    : relation_list
-    | relation_list LPAREN key_value_pairs RPAREN
-    ;
+  : relation_list
+  | relation_list LPAREN key_value_pairs RPAREN
+  ;
 
 /* Key-value pairs */
 key_value_pairs
-    : non_empty_key_value_pairs
-    | %empty
-    ;
+  : non_empty_key_value_pairs
+  | %empty
+  ;
 non_empty_key_value_pairs
-    : kvp
-    | non_empty_key_value_pairs COMMA kvp
-    ;
+  : kvp
+  | non_empty_key_value_pairs COMMA kvp
+  ;
 kvp
-    : IDENT EQUALS STRING
-    | IDENT EQUALS IDENT
-    | IDENT EQUALS TRUE
-    | IDENT EQUALS FALSE
-    ;
+  : IDENT EQUALS STRING
+  | IDENT EQUALS IDENT
+  | IDENT EQUALS TRUE
+  | IDENT EQUALS FALSE
+  ;
 
 %%

@@ -414,7 +414,7 @@ protected:
  */
 class RamQuery : public RamStatement {
 public:
-    RamQuery(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
+    RamQuery(std::unique_ptr<RamOperation> o)
             : RamStatement(RN_Query), operation(std::move(o)) {}
 
     /** Get RAM operation */

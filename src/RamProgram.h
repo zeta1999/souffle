@@ -44,19 +44,21 @@ public:
     /** Print */
     void print(std::ostream& out) const override {
         out << "PROGRAM" << std::endl;
-        out << "DECLARATION" << std::endl;
+        out << " DECLARATION" << std::endl;
         for (const auto& rel : relations) {
-            out << " ";
+            out << "  ";
             rel.second->print(out);
             out << std::endl;
         }
-        out << "END DECLARATION" << std::endl;
-        out << *main;
+        out << " END DECLARATION" << std::endl;
         for (const auto& subroutine : subroutines) {
-            out << std::endl << "SUBROUTINE " << subroutine.first << std::endl;
-            out << *subroutine.second << std::endl;
-            out << "END SUBROUTINE" << std::endl;
+            out << " SUBROUTINE " << subroutine.first << std::endl;
+            subroutine.second->print(out, 2);
+            out << " END SUBROUTINE" << std::endl;
         }
+        out << " BEGIN MAIN" << std::endl;
+        main->print(out, 2);
+        out << " END MAIN" << std::endl;
         out << "END PROGRAM" << std::endl;
     }
 

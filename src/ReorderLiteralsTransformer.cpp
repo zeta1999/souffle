@@ -331,7 +331,7 @@ std::vector<unsigned int> applySips(sips_t sipsFunction, std::vector<AstAtom*> a
 
 bool reorderClauseWithSips(sips_t sipsFunction, AstClause* clause) {
     // ignore clauses with fixed execution plans
-    if (clause->hasFixedExecutionPlan()) {
+    if (clause->getExecutionPlan() != nullptr) {
         return false;
     }
 

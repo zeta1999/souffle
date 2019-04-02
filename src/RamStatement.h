@@ -430,7 +430,7 @@ public:
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
-        os << "DO ";
+        os << "QUERY ";
         if (condition != nullptr) {
             os << "WHERE ";
             condition->print(os);

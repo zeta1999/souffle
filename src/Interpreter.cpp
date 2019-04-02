@@ -54,785 +54,379 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include <ffi.h>
+#include "ffi/ffi.h"
 
 namespace souffle {
 
 
-class LVMGenerator : public RamVisitor<void, size_t> {
-public:
-   LVMGenerator() {}
+void LowLevelMachine::generatingInstructionStream() {
+   const RamStatement& main = *translationUnit.getP().getMain();
+   generator(main, 0);
+   generator.cleanUp(); 
+   generator(main, 0);
+   generator.code.push_back(LVM_STOP);
+}
 
-   void cleanUp() {
-      code.clear();
-      IODirectivesPool.clear();  
-      relationPool.clear();
-      currentAddressLabel = 0;
-      currentCounterLabel = 0;
-   }
-
-   std::vector<RamDomain> code;            /** Instructions stream */
-   SymbolTable symbolTable;                /** Class for converting string to number and vice versa */ 
-   
-   /** Store reference to IODirectives */
-   std::vector<std::vector<IODirectives>> IODirectivesPool;
-   size_t IODirectivesCounter = 0;
-
-   /** Store reference to relation, used by RN_Create */
-   std::vector<RamRelation> relationPool;
-   size_t relationCounter = 0;
-
-   /** Address Table */
-   size_t currentAddressLabel;
-   size_t getNewAddressLabel() { return currentAddressLabel++; }
-   std::vector<size_t> addressMap;
-
-   /** Loop Iter */
-   size_t currentCounterLabel = 0;
-   size_t getNewCounterLabel() {return currentCounterLabel++; }
-
-   /* Return the value of the addressLabel. 
-    * Return 0 if label doesn't exits. ??
-    */
-   size_t lookupAddress(size_t addressLabel) {
-      if (addressLabel < addressMap.size()) {
-         return addressMap[addressLabel];
-      }
-      return 0;
-   }
-
-   size_t setAddress(size_t addressLabel, size_t value) {
-      if (addressLabel > addressMap.size()) {
-         addressMap.resize(addressLabel + 1); 
-      } 
-      addressMap[addressLabel] = value;
-   }
-
-   RamOperationDepthAnalysis depthAnalyzer;
-
-
-   // Visit RAM Expressions
-  
-   /*
-    * Syntax: [RN_Number, value]
-    *
-    * Semantic: Push the [value] onto the stack
-    */
-   void visitNumber(const RamNumber& num, size_t exitAddress) override {
-      code.push_back(LVM_Number); 
-      code.push_back(num.getConstant());
-   } 
-
-   /*
-    * Syntax: [RN_ElementAccess, identifier, element]
-    *
-    * Semantic: Push the ctxt[identifier][element] onto the stack
-    */
-   void visitElementAccess(const RamElementAccess& access, size_t exitAddress) override {
-      code.push_back(LVM_ElementAccess); 
-      code.push_back(access.getIdentifier()); 
-      code.push_back(access.getElement()); 
-   }
-   
-   /* 
-    * Syntax: [RN_AutoIncrement]
-    *
-    * Semantic: Increase counter by one.
-    */
-   void visitAutoIncrement(const RamAutoIncrement& inc, size_t exitAddress) override {
-      code.push_back(LVM_AutoIncrement); 
-   }
-   
-
-   /*
-    * Syntax: [RN_IntrinsicOperatr, Operator]
-    *
-    * Semantic: Pop n value from stack, do the operation,
-    * push the result onto the stack.
-    */
-   void visitIntrinsicOperator(const RamIntrinsicOperator& op, size_t exitAddress) override {
-      const auto& args = op.getArguments();
-      switch (op.getOperator()) {
-         /** Unary Functor Operators */
-         case FunctorOp::ORD:       visit(args[0], exitAddress); code.push_back(LVM_OP_ORD);       break;
-         case FunctorOp::STRLEN:    visit(args[0], exitAddress); code.push_back(LVM_OP_STRLEN);    break;
-         case FunctorOp::NEG:       visit(args[0], exitAddress); code.push_back(LVM_OP_NEG);       break;
-         case FunctorOp::BNOT:      visit(args[0], exitAddress); code.push_back(LVM_OP_BNOT);      break;
-         case FunctorOp::LNOT:      visit(args[0], exitAddress); code.push_back(LVM_OP_LNOT);      break;
-         case FunctorOp::TONUMBER:  visit(args[0], exitAddress); code.push_back(LVM_OP_TONUMBER);  break;
-         case FunctorOp::TOSTRING:  visit(args[0], exitAddress); code.push_back(LVM_OP_TOSTRING);  break;
-
-         /** Binary Functor Operators */ 
-         case FunctorOp::ADD:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_ADD);
+void LowLevelMachine::eval() {
+   size_t ip = 0;
+   auto& code = generator.code;
+   auto& symbolTable = generator.symbolTable;
+   while (true) {
+      switch (this->generator.code[ip]) {
+         case LVM_Number:
+            printf("%ld\tLVM_Number\t%d\n", ip, code[ip+1]);
+            ip += 2;
             break;
-         case FunctorOp::SUB:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_SUB);
+         case LVM_ElementAccess:
+            printf("%ld\tLVM_ElementAccess\t%d\t%d\n",
+                  ip, code[ip+1], code[ip+2]);
+            ip += 3;
             break;
-         case FunctorOp::MUL: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_MUL);
+         case LVM_AutoIncrement:
+            printf("%ld\tLVM_AutoIncrement\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::DIV: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_DIV);
+         case LVM_OP_ORD:
+            printf("%ld\tLVM_OP_PRD\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::EXP: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_EXP);
+         case LVM_OP_STRLEN:
+            printf("%ld\tLVM_OP_STRLEN\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::MOD: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_MOD);
+         case LVM_OP_NEG:
+            printf("%ld\tLVM_OP_NEG\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::BAND: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_BAND);
+         case LVM_OP_BNOT:
+            printf("%ld\tLVM_OP_BNOT\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::BOR: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_BOR);
+         case LVM_OP_LNOT:
+            printf("%ld\tLVM_OP_LNOT\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::BXOR: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_BXOR);
+         case LVM_OP_TONUMBER:
+            printf("%ld\tLVM_OP_TONUMBER\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::LAND: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_LAND);
+         case LVM_OP_TOSTRING:
+            printf("%ld\tLVM_OP_TOSTRING\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::LOR: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_LOR);
+         case LVM_OP_ADD:
+            printf("%ld\tLVM_OP_ADD\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::MAX: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_MAX);
+         case LVM_OP_SUB:
+            printf("%ld\tLVM_OP_SUB\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::MIN: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_MIN);
+         case LVM_OP_MUL:
+            printf("%ld\tLVM_OP_MUL\t\n", ip);
+            ip += 1;
             break;
-         case FunctorOp::CAT: 
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code.push_back(LVM_OP_CAT);
+         case LVM_OP_DIV:
+            printf("%ld\tLVM_OP_DIV\t\n", ip);
+            ip += 1;
             break;
-
-         /** Ternary Functor Operators */
-         case FunctorOp::SUBSTR: 
-            visit(args[0], exitAddress); 
-            visit(args[1], exitAddress); 
-            visit(args[2], exitAddress); 
-            code.push_back(LVM_OP_SUBSTR);
+         case LVM_OP_EXP:
+            printf("%ld\tLVM_OP_EXP\t\n", ip);
+            ip += 1;
             break;
-
-         /** Undefined */
-         default: 
-            assert(false && "unsupported operator");
+         case LVM_OP_MOD:
+            break;
+            printf("%ld\tLVM_OP_MOD\t\n", ip);
+            ip += 1;
+         case LVM_OP_BAND:
+            printf("%ld\tLVM_OP_BAND\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_BOR:
+            printf("%ld\tLVM_OP_BOR\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_BXOR:
+            printf("%ld\tLVM_OP_BXOR\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_LAND:
+            printf("%ld\tLVM_OP_LAND\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_LOR:
+            printf("%ld\tLVM_OP_LOR\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_MAX:
+            printf("%ld\tLVM_OP_MAX\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_MIN:
+            printf("%ld\tLVM_OP_MIN\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_CAT:
+            printf("%ld\tLVM_OP_CAT\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_SUBSTR:
+            printf("%ld\tLVM_OP_SUBSTR\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_EQ:
+            printf("%ld\tLVM_OP_EQ\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_NE:
+            printf("%ld\tLVM_OP_NE\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_LT:
+            printf("%ld\tLVM_OP_LT\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_LE:
+            printf("%ld\tLVM_OP_LE\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_GT:
+            printf("%ld\tLVM_OP_GT\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_GE:
+            printf("%ld\tLVM_OP_GE\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_MATCH:
+            printf("%ld\tLVM_OP_MATCH\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_NOT_MATCH:
+            printf("%ld\tLVM_OP_NOT_MATCH\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_CONTAINS:
+            printf("%ld\tLVM_OP_CONTAINS\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_OP_NOT_CONTAINS:
+            printf("%ld\tLVM_OP_CONTAINS\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_UserDefinedOperator:
+            printf("%ld\tLVM_UserDefinedOperator\n", ip);
+            printf("\t%s\t%s\t\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  symbolTable.resolve(code[ip+2]).c_str());
+            ip += 3;
+            break;
+         case LVM_PackRecord:
+            printf("%ld\tLVM_PackRecord\t%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_Argument:
+            printf("%ld\tLVM_Argument\t%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_Conjunction:
+            printf("%ld\tLVM_Conjunction\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_Negation:
+            printf("%ld\tLVM_Negation\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_EmptinessCheck:
+            printf("%ld\tLVM_EmptinessCheck\t\n", ip);
+            printf("\t%s\n",
+                  symbolTable.resolve(code[ip+1]).c_str());
+            ip += 2;
+            break;
+         case LVM_ExistenceCheck:
+            printf("%ld\tLVM_ExistenceCheck\t\n", ip);
+            printf("\t%s\t%s\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  symbolTable.resolve(code[ip+2]).c_str());
+            ip += 3;
+            break;
+         case LVM_ProvenanceExistenceCheck:
+            printf("%ld\tLVM_ProvenanceExitenceChekck\t\n", ip);
+            printf("\t%s\t%s\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  symbolTable.resolve(code[ip+2]).c_str());
+            ip += 3;
+            break;
+         case LVM_Constraint:
+            break;
+         case LVM_Scan:
+            break;
+         case LVM_IndexScan:
+            break;
+         case LVM_UnpackRecord:
+            printf("%ld\tLVM_UnpackRecord\t%d %d %d %d\t\n",
+                  ip, code[ip+1], code[ip+2], code[ip+3], code[ip+4]);
+            ip += 5;
+            break;
+         case LVM_Filter:
+            break;
+         case LVM_Project:
+            printf("%ld\tLVM_Project\t%d\t\n", ip, code[ip+1]);
+            printf("\t%s\t\n",
+                  symbolTable.resolve(code[ip+2]).c_str());
+            ip += 3;
+            break;
+         case LVM_Return:
+            printf("%ld\tLVM_Return\t%d\t\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_Sequence:
+            printf("%ld\tLVM_Sequence\n", ip);
+            ip += 1;
+            break;
+         case LVM_Parallel:
+            printf("%ld\tLVM_Parallel\t%d\t\n", ip, code[ip+1]);
+            for (int i = 0; i < code[ip+2]; ++i) {
+               printf("%d\t", code[ip+i]);
+            }
+            putchar('\n');
+            ip += (2 + code[ip+2] + 1);
+            break;
+         case LVM_Stop_Parallel:
+            printf("%ld\tLVM_Stop_Parallel\t%d\t\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_Loop:
+            break;
+         case LVM_Exit:
+            printf("%ld\tLVM_Exit\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_LogTimer:
+            printf("%ld\tLVM_LogTimer\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_DebugInfo:
+            printf("%ld\tLVM_DebugInfo\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_Stratum:
+            printf("%ld\tLVM_Stratum\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_Create:
+            printf("%ld\tLVM_Create\t RelationIdx:%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_Clear:
+            printf("%ld\tLVM_Clear\t\n", ip);
+            printf("\t%s\t\n",
+                  symbolTable.resolve(code[ip+1]).c_str());
+            ip += 2;
+            break;
+         case LVM_Drop:
+            printf("%ld\tLVM_Drop\t\n", ip);
+            printf("\t%s\t\n",
+                  symbolTable.resolve(code[ip+1]).c_str());
+            ip += 2;
+            break;
+         case LVM_LogSize:
+            printf("%ld\tLVM_LogSize\t\n", ip);
+            printf("\t%s\t\n",
+                  symbolTable.resolve(code[ip+1]).c_str());
+            ip += 2;
+            break;
+         case LVM_Load:
+            printf("%ld\tLVM_Load\t\n", ip);
+            printf("\t%s\tIOidx:%d\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  code[ip+2]);
+            ip += 3;
+            break;
+         case LVM_Store:
+            printf("%ld\tLVM_Store\t\n", ip);
+            printf("\t%s\tIOidx:%d\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  code[ip+2]);
+            ip += 3;
+            break;
+         case LVM_Fact:
+            printf("%ld\tLVM_Fact\t\n", ip);
+            printf("\t%s\t%d\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  code[ip+2]);
+            ip += 3;
+            break;
+         case LVM_Merge:
+            printf("%ld\tLVM_Merge\t\n", ip);
+            printf("\t%s\t%s\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  symbolTable.resolve(code[ip+2]).c_str());
+            ip += 3;
+            break;
+         case LVM_Swap:
+            printf("%ld\tLVM_Swap\t\n", ip);
+            printf("\t%s\t%s\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  symbolTable.resolve(code[ip+2]).c_str());
+            ip += 3;
+            break;
+         case LVM_Query:
+            printf("%ld\tLVM_Swap\t\n", ip);
+            ip += 1;
+         case LVM_Goto:
+            printf("%ld\tLVM_GOTO\t%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_Jmpnz:
+            printf("%ld\tLVM_Jmpnz\t%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_Jmpez:
+            printf("%ld\tLVM_Jmpez\t%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_ITER_LT:
+            printf("%ld\tLVM_ITER_LT\t\n", ip);
+            ip += 1;
+            break;
+         case LVM_ITER_Counter:
+            printf("%ld\tLVM_ITER_Counter\tIter:%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_ITER_Select:
+            printf("%ld\tLVM_ITER_Select\t\n", ip);
+            printf("\t%s\t%d\t%d\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  code[ip+2],
+                  code[ip+3]);
+            ip += 4;
+            break;
+         case LVM_ITER_Inc:
+            printf("%ld\tLVM_ITER_Inc\tIter:%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         case LVM_Match:
+            printf("%ld\tLVM_Match\t\n", ip);
+            printf("\t%s\t%d\t%s\n",
+                  symbolTable.resolve(code[ip+1]).c_str(),
+                  code[ip+2],
+                  symbolTable.resolve(code[ip+3]).c_str());
+            ip += 4;
+            break;
+         case LVM_LT:
+            printf("%ld\tLVM_LT\n", ip);
+            ip += 1;
+            break;
+         case LVM_STOP:
+            printf("%ld\tLVM_STOP\n", ip);
             return;
-      }
-   }
-   
-   /* Syntax: [RN_UserDefinedOperator, OperationName, Types]
-    *
-    * Semantic: Find and Perform the user-defined operator, return type is Types[0]
-    * Arguments' types are Types[1 - n], push result back to the stack
-    */
-   void visitUserDefinedOperator(const RamUserDefinedOperator& op, size_t exitAddress) override {
-      for (size_t i = 0; i < op.getArgCount(); i++) {
-         visit(op.getArgument(i), exitAddress);
-      } 
-      code.push_back(LVM_UserDefinedOperator);
-      code.push_back(symbolTable.lookup(op.getName()));
-      code.push_back(symbolTable.lookup(op.getType()));
-    } 
-
-    /*
-     * Syntax: [RN_PackRecords, size]
-     *
-     * Semantic: pop [size] values from the stack, pack the record.
-     */
-    void visitPackRecord(const RamPackRecord& pack, size_t exitAddress) override {
-       auto values = pack.getArguments();
-       for (size_t i = 0; i < values.size(); ++i) {
-          visit(values[i], exitAddress);
-       }
-       code.push_back(LVM_PackRecord);
-       code.push_back(values.size()); 
-    } 
-   
-    /*
-     * Syntax: [RN_Argument, size]
-     *
-     * Semantic: For subroutine
-     */
-    void visitArgument(const RamArgument& arg, size_t exitAddress) override {
-       code.push_back(LVM_Argument);
-       code.push_back(arg.getArgCount()); 
-    }
-
-    /** Visit RAM Conditions */
-
-    /*
-     * Syntax: [RN_Conjunction]
-     *
-     * Semantic: Pop two values from stack, &
-     */
-    void visitConjunction(const RamConjunction& conj, size_t exitAddress) override {
-       visit(conj.getLHS(), exitAddress);
-       visit(conj.getRHS(), exitAddress);
-       code.push_back(LVM_Conjunction);
-    }
-   
-    /*
-     * Syntax: [Rn_Negation]
-     *
-     * Semantic: Pop one value from stack, neg
-     */
-    void visitNegation(const RamNegation& neg, size_t exitAddress) override {
-       visit(neg.getOperand(), exitAddress);
-       code.push_back(LVM_Negation); 
-    }
-   
-    /*
-     * Syntax: [RN_EmptinessCheck, relationName]
-     *
-     * Semantic: Check if [relation] is empty, push bool onto the stack.
-     */
-    void visitEmptinessCheck(const RamEmptinessCheck& emptiness, size_t exitAddress) override {
-       code.push_back(LVM_EmptinessCheck); 
-       code.push_back(symbolTable.lookup(emptiness.getRelation().getName()));
-    }
-
-    /*
-     * Syntax: [RN_ExistenceCheck, relation, pattern]
-     *
-     * Semantic: Check if a [pattern] exists in a [relation], push bool onto the stack.
-     *
-     */
-    void visitExistenceCheck(const RamExistenceCheck& exists, size_t exitAddress) override {
-       auto values = exists.getValues();
-       std::string types;
-       for (size_t i = 0; i < values.size(); ++i) {
-          visit(values[i], exitAddress); 
-          types += (values[i] == nullptr ? "_" : "V");
-       }
-       code.push_back(LVM_ExistenceCheck); 
-       code.push_back(symbolTable.lookup(exists.getRelation().getName())); 
-       code.push_back(symbolTable.lookup(types));
-    }
-   
-    /*
-     * Syntax: [RN_ExistenceCheck, relation, pattern]
-     *
-     * Semantic: umm. TODO
-     *
-     */
-    void visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists, size_t exitAddress) override {
-       auto values = provExists.getValues();
-       std::string types;
-       for (size_t i = 0; i < values.size(); ++i) {
-          visit(values[i], exitAddress);
-          types += (values[i] == nullptr ? "_" : "V");
-       }
-       code.push_back(LVM_ProvenanceExistenceCheck);
-       code.push_back(symbolTable.lookup(provExists.getRelation().getName())); 
-       code.push_back(symbolTable.lookup(types));
-    }
-   
-    /*
-     * Syntax: [RN_Constraint, operator]
-     *
-     * Semantic: pop two values, do operator, push result back
-     *
-     */
-    void visitConstraint(const RamConstraint& relOp, size_t exitAddress) override {
-       visit(relOp.getLHS(), exitAddress);
-       visit(relOp.getRHS(), exitAddress);
-       switch (relOp.getOperator()) {
-         case BinaryConstraintOp::EQ:
-            code.push_back(LVM_OP_EQ);
-            break;
-         case BinaryConstraintOp::NE:
-            code.push_back(LVM_OP_NE);
-            break;
-         case BinaryConstraintOp::LT:
-            code.push_back(LVM_OP_LT);
-            break;
-         case BinaryConstraintOp::LE:
-            code.push_back(LVM_OP_LE);
-            break;
-         case BinaryConstraintOp::GT:
-            code.push_back(LVM_OP_GT);
-            break;
-         case BinaryConstraintOp::GE:
-            code.push_back(LVM_OP_GE);
-            break;
-         case BinaryConstraintOp::MATCH: 
-            code.push_back(LVM_OP_MATCH);
-            break;
-         case BinaryConstraintOp::NOT_MATCH:
-            code.push_back(LVM_OP_NOT_MATCH);
-            break;
-         case BinaryConstraintOp::CONTAINS:
-            code.push_back(LVM_OP_CONTAINS);
-            break;
-         case BinaryConstraintOp::NOT_CONTAINS: 
-            code.push_back(LVM_OP_NOT_CONTAIN);
-            break;
          default:
-            assert(false && "unsupported operator");
-           
+            break;
       }
-    }
-
-
-    /** Visit RAM Operations */
-
-   void visitNestedOperation(const RamNestedOperation& nested, size_t exitAddress) override {
-      /** Does nothing */
    }
+}
 
-   void visitSearch(const RamSearch& search, size_t exitAddress) override {
-      /** Does nothing */
-   }
-   
-   /*
-    *
-    *                for (i = 0; i < realtion.size(); ++i){
-    *                    t.i = relation[i];
-    * Imperative         do netsed operation
-    *                }
-    *
-    *
-    * L0: LVM_Loop_Counter    <i>
-    *     LVM_NUMBER  <relation.size()>
-    *     LVM_LT
-    *     LVM_JMPEZ  <L1>
-    *     LVM_SELECT  <relation.name()>   <i>    <identifier>
-    *     visit (scan.getOperation, exitAddress)
-    *     LVM_Loop_Inc        <i>
-    *     JMP L0
-    * L1:
-    *
-    */
-   void visitScan(const RamScan& scan, size_t exitAddress) override {
-      size_t address_L0 = code.size();
-      size_t counterLabel = getNewCounterLabel();
-      code.push_back(LVM_ITER_Counter);
-      code.push_back(counterLabel);
-
-      code.push_back(LVM_Number);
-      code.push_back(symbolTable.lookup(scan.getRelation().getName()));
-
-      code.push_back(LVM_ITER_LT);
-      code.push_back(LVM_Jmpez);
-      size_t L1 = getNewAddressLabel();
-      code.push_back(lookupAddress(L1));
-
-      code.push_back(LVM_ITER_Select);
-      code.push_back(symbolTable.lookup(scan.getRelation().getName()));
-      code.push_back(counterLabel);
-      code.push_back(scan.getIdentifier());
-
-      visit(scan.getOperation(), L1);
-      code.push_back(LVM_ITER_Inc);
-      code.push_back(counterLabel);
-      code.push_back(LVM_Goto);
-      code.push_back(address_L0);
-
-      setAddress(L1, code.size());
-   }
-   
-   /*
-    *
-    *  for (i = 0; i < realtion.size(); ++i){
-    *    if (match_pattern(relation[i])){
-    *       t.i = realtion[i]
-    *       do nested operation.
-    *    } else {
-    *       continue;
-    *    }
-    *  }
-    *
-    *
-    * L0: LVM_Loop_Counter    <i>
-    *     LVM_NUMBER  <relation.size()>
-    *     LVM_LT
-    *     LVM_JMPEZ  <L2>
-    *     LVM_MATCH  <relation.name()>   <i>    <Pattern>
-    *     LVM_JMPEZ  <L1>
-    *     LVM_SELECT <relation.name()>   <i>    <identifier>
-    *     visit (scan.getOperation, exitAddress)
-    * L1: LVM_Inc    <i>
-    *     JMP L0
-    * L2:
-    *
-    */
-   void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
-      auto patterns = scan.getRangePattern();
-      std::string types;
-      auto arity = scan.getRelation().getArity();
-      for (size_t i = 0; i < arity; i ++) {
-         visit(patterns[i], exitAddress);
-         types += (patterns[i] == nullptr? "_" : "V");
-      }
-
-      size_t counterLabel = getNewCounterLabel();
-      size_t address_L0 = code.size();
-      size_t L1 = getNewAddressLabel();
-      size_t L2 = getNewAddressLabel();
-
-      code.push_back(LVM_ITER_Counter);
-      code.push_back(counterLabel);
-      code.push_back(LVM_Number);
-      code.push_back(symbolTable.lookup(scan.getRelation().getName())); //TODO can't get relation size.
-                                          //TODO concurrent insert?
-      code.push_back(LVM_Jmpez);
-      code.push_back(lookupAddress(L2));
-      code.push_back(LVM_Match);
-      code.push_back(symbolTable.lookup(scan.getRelation().getName()));   
-      code.push_back(counterLabel);
-      //code.push_back(patterns); TODO Implement patterns here
-      code.push_back(LVM_Jmpez);
-      code.push_back(lookupAddress(L1));
-      
-      code.push_back(LVM_ITER_Select);
-      code.push_back(counterLabel);
-      code.push_back(scan.getIdentifier());
-      visit(scan.getOperation(), exitAddress);
-      setAddress(L1, code.size());
-      
-      code.push_back(LVM_Goto);
-      code.push_back(address_L0);
-
-      setAddress(L2, code.size());
-   }
-   
-   /*
-    * Syntax: [RN_UnpackRecord, referenceLevel, referencePos, arity, identifier, operation]
-    *
-    * Semantic: Look up record at ctxt[level][pos]
-    *
-    */
-   void visitUnpackRecord(const RamUnpackRecord& lookup, size_t exitAddress) override {
-      code.push_back(LVM_UnpackRecord);
-      code.push_back(lookup.getReferenceLevel());
-      code.push_back(lookup.getReferencePosition());
-      code.push_back(lookup.getArity()); 
-      code.push_back(lookup.getIdentifier());
-      visit(lookup.getOperation(), exitAddress);
-   }
-
-   /*
-    * Syntax: [RN_Aggregate
-    * TODO 
-    */
-   void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
-   }
-   
-   /*
-    * If (condition) {
-    *    do nested operation
-    * }
-    *
-    *    <condition Expressions>
-    *    LVM_Jmpez L0
-    *    visit(nestedOperation)
-    * L0:
-    */
-   void visitFilter(const RamFilter& filter, size_t exitAddress) override {
-      size_t L0 = getNewAddressLabel();
-      visit(filter.getCondition(), exitAddress);
-      code.push_back(LVM_Jmpez);
-      code.push_back(L0);
-      visit(filter.getOperation(), exitAddress);
-      setAddress(L0, code.size());
-   }
-    
-   /*
-    *
-    *    Values
-    *    LVM_Project
-    *    <arity>
-    *    <realtionName>
-    */
-   
-   void visitProject(const RamProject& project, size_t exitAddress) override {
-      size_t arity = project.getRelation().getArity();
-      std::string relationName = project.getRelation().getName();
-      auto values = project.getValues();
-      for (size_t i = 0; i < values.size(); ++i) {
-         visit(values[i], exitAddress);
-      }
-      code.push_back(LVM_Project);
-      code.push_back(arity);
-      code.push_back(symbolTable.lookup(relationName));
-   }
-    
-   /*
-    * Syntax: [RN_Return, size]
-    *
-    * Semantic: Pop [size] values from stack, add to ctxt.return
-    */
-   void visitReturn(const RamReturn& ret, size_t exitAddress) override {
-      for (auto expr : ret.getValues()) {
-         if (expr == nullptr) {
-            code.push_back(RN_Number);
-            code.push_back(1);
-         } else {
-            visit(expr, exitAddress); 
-         }
-      }
-
-      code.push_back(LVM_Return);
-      code.push_back(ret.getValues().size());
-   }
-
-   /** Visit RAM stmt*/
-   
-   /* Syntax: [RN_Sequence, stmt, stmt ... ]
-    *
-    * Semantic: A sequence of Statement
-    */
-   void visitSequence(const RamSequence& seq, size_t exitAddress) override {
-      code.push_back(LVM_Sequence);
-      for (const auto& cur : seq.getStatements()) {
-         visit(cur, exitAddress); 
-      } 
-   }
-   
-   /* 
-    *
-    */
-   void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
-      size_t address_L0 = code.size();
-      size_t num_blocks=  parallel.getStatements().size();
-      code.push_back(LVM_Parallel); 
-      code.push_back(num_blocks);
-
-      std::vector<size_t> labels(num_blocks);
-      for (size_t i = 0; i < num_blocks; ++ i) {
-         labels[i] = getNewAddressLabel();
-         code.push_back(lookupAddress(labels[i]));
-      }
-      
-      size_t L1 = getNewAddressLabel();
-      code.push_back(LVM_Goto);
-      code.push_back(lookupAddress(L1));
-   
-      for (size_t i = 0; i < num_blocks; ++ i) {
-         setAddress(labels[i], code.size());
-         visit(parallel.getStatements()[i], exitAddress);
-         code.push_back(LVM_Stop_Parallel);
-         code.push_back(address_L0);
-      }
-
-      setAddress(L1, code.size());
-   }
-   
-   /* Syntax: [L0: LVM_Loop
-    *              body
-    *              LVM_GOTO L0 
-    *          L1: ... ]
-    * 
-    * Semantic: Infinitely execute the body. 
-    * Provide an exitAddress for possible RN_exits to jump to label E.
-    */
-   void visitLoop(const RamLoop& loop, size_t exitAddress) override {
-      size_t address_L0 = code.size(); 
-      size_t L1 = getNewAddressLabel();
-      size_t address_L1 = lookupAddress(L1);
-      visit(loop.getBody(), address_L1);
-      code.push_back(LVM_Goto);
-      code.push_back(address_L0);
-      setAddress(L1, code.size() - 1);
-   }
-   
-   /* Syntax: [RN_Exit, address]
-    *
-    * Semantic: If the top of the stack is TRUE, jump to address.
-    */
-   void visitExit(const RamExit& exit, size_t exitAddress) override {
-      visit(exit.getCondition(), exitAddress);
-      code.push_back(LVM_Jmpnz); // Jmp if condition is true
-      code.push_back(exitAddress);
-   }
-   
-   /* Syntax: [RN_LogTimer, relation?, body]
-    *
-    * Semantic:  relation can be null
-    */
-   void visitLogTimer(const RamLogTimer& timer, size_t exitAddress) override {
-      code.push_back(LVM_LogTimer);
-      //TODO: How to handle possible nullptr
-   }
-   
-   /* Syntax: [RN_DebugInfo, body]
-    *
-    * Semantic: Start debug, continue to body
-    */
-   void visitDebugInfo(const RamDebugInfo& dbg, size_t exitAddress) override {
-      code.push_back(LVM_DebugInfo);
-      visit(dbg.getStatement(), exitAddress);
-   }
-
-   /* Syntax: [RN_Stratum, body]
-    *
-    * Semantic: Enter new stratum
-    */
-   void visitStratum(const RamStratum& stratum, size_t exitAddress) override {
-      code.push_back(LVM_Stratum); 
-      visit(stratum.getBody(), exitAddress);
-   }
-   
-   /* Syntax: [RN_Create, relation_idx]
-    *
-    * Semantic: lookup the relation in relationPool[relation_idx], insert 
-    * into environment.
-    *
-    */
-   void visitCreate(const RamCreate& create, size_t exitAddress) override {
-      code.push_back(LVM_Create);
-      /** TODO Better way to store a relation */
-      relationPool.push_back(create.getRelation());
-      code.push_back(relationCounter++);
-   }
-
-   /* Syntax: [RN_Clear, relation]
-    *
-    * Semantic: Clean all the tuples in a relation.
-    */
-   void visitClear(const RamClear& clear, size_t exitAddress) override {
-      code.push_back(LVM_Clear);
-      code.push_back(symbolTable.lookup(clear.getRelation().getName()));
-   }
-   
-   /* Syntax: [RN_Drop, relation]
-    *
-    * Semantic: Delete relation from the environment
-    */
-   void visitDrop(const RamDrop& drop, size_t exitAddress) override {
-      code.push_back(LVM_Drop); 
-      code.push_back(symbolTable.lookup(drop.getRelation().getName()));
-   }
-   
-   /* Syntax: [RN_LogSize, relation]
-    *
-    * Semantic: ??
-    */
-   void visitLogSize(const RamLogSize& size, size_t exitAddress) override {
-      code.push_back(LVM_LogSize);
-      code.push_back(symbolTable.lookup(size.getRelation().getName()));
-   }
-
-   /* Syntax: [RN_Store, RelationName, SourceIOs_idx]
-    *
-    * Semantic: Load [Relation] from [SourceIOs]
-    *
-    * The SourceIOs_Idx indicate the index of IOs in the IODirectivesPool.
-    */
-   void visitLoad(const RamLoad& load, size_t exitAddress) override {
-      code.push_back(LVM_Load); 
-      code.push_back(symbolTable.lookup(load.getRelation().getName()));
-
-      /** TODO Need a better way to store IOs.*/
-      IODirectivesPool.push_back(load.getIODirectives());
-      code.push_back(IODirectivesCounter++);
-   }
-
-   /*
-    * Syntax: [RN_Store, RelationName, DestinationIOs_Idx]
-    *
-    * Semantic: Store [Relation] into [DestinationIOs]
-    * 
-    * The DestinationIOs_Idx indicate the index of the IOs in the IODirectivesPool.
-    */
-   void visitStore(const RamStore& store, size_t exitAddress) override {
-      code.push_back(LVM_Store);
-      code.push_back(symbolTable.lookup(store.getRelation().getName()));
-
-      /** TODO: Need a better way to store IOs.*/
-      IODirectivesPool.push_back(store.getIODirectives());
-      code.push_back(IODirectivesCounter++);
-   }
-   
-   /*
-    * Syntax: [RN_Fact, targetRelationName, arity]
-    *
-    * Semantic: Pop [arity] values from stack, insert into [targetRelationName]
-    */
-   void visitFact(const RamFact& fact, size_t exitAddress) override {
-      size_t arity = fact.getRelation().getArity();
-      auto values = fact.getValues();
-      for (size_t i = 0; i < arity; ++i) {
-         visit(values[i], exitAddress);       // Values cannot be null here
-      }
-      std::string targertRelation = fact.getRelation().getName();
-      code.push_back(LVM_Fact);
-      code.push_back(symbolTable.lookup(targertRelation));
-      code.push_back(arity);
-   }
-
-   /*
-    * Syntax: [RN_Query, depth]
-    *
-    * Semantic: Start loops
-    */
-   void visitQuery(const RamQuery& insert, size_t exitAddress) override {
-      //size_t depth = depthAnalyzer.getDepth(insert.getOperation());
-      code.push_back(RN_Query);
-      //code.push_back(depth);
-      //visit(insert.getOperation());
-   }
-
-   /*
-    * Syntax: [RN_Merge, sourceName, targetName]
-    *
-    * Semantic: Merge [source] with [target].
-    */
-   void visitMerge(const RamMerge& merge, size_t exitAddress) override {
-      std::string source = merge.getSourceRelation().getName();
-      std::string target = merge.getTargetRelation().getName();
-      code.push_back(LVM_Merge);
-      code.push_back(symbolTable.lookup(source));
-      code.push_back(symbolTable.lookup(target));
-   }
-
-   /*
-    * Syntax: [RN_Swap, FirstRelation, SecondRelation]
-    *
-    * Semantic: Swap [first] with [second].
-    */
-   void visitSwap(const RamSwap& swap, size_t exitAddress) override {
-      std::string first = swap.getFirstRelation().getName(); 
-      std::string second = swap.getSecondRelation().getName(); 
-      code.push_back(LVM_Swap);
-      code.push_back(symbolTable.lookup(first));
-      code.push_back(symbolTable.lookup(second));
-   }
-
-   void visitNode(const RamNode& node, size_t exitAddress) override {
-      /** Unknown Node */
-   }
-
-};
 
 /** Evaluate RAM Expression */
 RamDomain Interpreter::evalVal(const RamExpression& value, const InterpreterContext& ctxt) {

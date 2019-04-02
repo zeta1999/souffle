@@ -83,7 +83,7 @@ enum LVM_Type {
     LVM_OP_MATCH,
     LVM_OP_NOT_MATCH,
     LVM_OP_CONTAINS,
-    LVM_OP_NOT_CONTAIN,
+    LVM_OP_NOT_CONTAINS,
 
     LVM_UserDefinedOperator,
     LVM_PackRecord,
@@ -123,6 +123,7 @@ enum LVM_Type {
     LVM_Fact,
     LVM_Merge,
     LVM_Swap,
+    LVM_Query,
 
     // LVM internal operation
     LVM_Goto,               // LVM_Goto  <address>  
@@ -136,6 +137,7 @@ enum LVM_Type {
     LVM_ITER_Inc,
     LVM_Match,              
     LVM_LT,
+    LVM_STOP,
 };
 
 class InterpreterProgInterface;
@@ -173,7 +175,7 @@ class LowLevelMachine {
        size_t relationCounter = 0;
 
        /** Address Table */
-       size_t currentAddressLabel;
+       size_t currentAddressLabel = 0;
        size_t getNewAddressLabel() { return currentAddressLabel++; }
        std::vector<size_t> addressMap;
 
@@ -191,10 +193,12 @@ class LowLevelMachine {
           return 0;
        }
 
-       size_t setAddress(size_t addressLabel, size_t value) {
-          if (addressLabel > addressMap.size()) {
-             addressMap.resize(addressLabel + 1); 
+       void setAddress(size_t addressLabel, size_t value) {
+          printf("1. AddressLabel:%ld, MapCap:%ld\n", addressLabel, addressMap.size());
+          if (addressLabel >= addressMap.size()) {
+             addressMap.resize((addressMap.size()+1) * 2); 
           } 
+          printf("2. AddressLabel:%ld, MapCap:%ld\n", addressLabel, addressMap.size());
           addressMap[addressLabel] = value;
        }
 
@@ -420,7 +424,9 @@ class LowLevelMachine {
            auto values = exists.getValues();
            std::string types;
            for (size_t i = 0; i < values.size(); ++i) {
-              visit(values[i], exitAddress); 
+              if (values[i]) {
+                 visit(values[i], exitAddress); 
+              }
               types += (values[i] == nullptr ? "_" : "V");
            }
            code.push_back(LVM_ExistenceCheck); 
@@ -438,7 +444,9 @@ class LowLevelMachine {
            auto values = provExists.getValues();
            std::string types;
            for (size_t i = 0; i < values.size(); ++i) {
-              visit(values[i], exitAddress);
+              if(values[i]) {
+                 visit(values[i], exitAddress);
+              } 
               types += (values[i] == nullptr ? "_" : "V");
            }
            code.push_back(LVM_ProvenanceExistenceCheck);
@@ -484,7 +492,7 @@ class LowLevelMachine {
                 code.push_back(LVM_OP_CONTAINS);
                 break;
              case BinaryConstraintOp::NOT_CONTAINS: 
-                code.push_back(LVM_OP_NOT_CONTAIN);
+                code.push_back(LVM_OP_NOT_CONTAINS);
                 break;
              default:
                 assert(false && "unsupported operator");
@@ -523,6 +531,7 @@ class LowLevelMachine {
         *
         */
        void visitScan(const RamScan& scan, size_t exitAddress) override {
+          printf("Scan\n");
           size_t address_L0 = code.size();
           size_t counterLabel = getNewCounterLabel();
           code.push_back(LVM_ITER_Counter);
@@ -540,14 +549,18 @@ class LowLevelMachine {
           code.push_back(symbolTable.lookup(scan.getRelation().getName()));
           code.push_back(counterLabel);
           code.push_back(scan.getIdentifier());
-
+          
+          printf("Star nested op\n");
+          printf("%d\n", scan.getOperation().getNodeType());
           visit(scan.getOperation(), L1);
+          printf("Finsih nested op\n");
           code.push_back(LVM_ITER_Inc);
           code.push_back(counterLabel);
           code.push_back(LVM_Goto);
           code.push_back(address_L0);
 
           setAddress(L1, code.size());
+          printf("Scan Done\n");
        }
        
        /*
@@ -576,13 +589,18 @@ class LowLevelMachine {
         *
         */
        void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
+          printf("Start Index Scan\n");
           auto patterns = scan.getRangePattern();
           std::string types;
           auto arity = scan.getRelation().getArity();
+          printf("Pattern.size():%ld arity:%d\n", patterns.size(), arity);
           for (size_t i = 0; i < arity; i ++) {
-             visit(patterns[i], exitAddress);
+             if (patterns[i]) {
+                visit(patterns[i], exitAddress);
+             }
              types += (patterns[i] == nullptr? "_" : "V");
           }
+          printf("Finish Pattern visiting\n");
 
           size_t counterLabel = getNewCounterLabel();
           size_t address_L0 = code.size();
@@ -606,13 +624,16 @@ class LowLevelMachine {
           code.push_back(LVM_ITER_Select);
           code.push_back(counterLabel);
           code.push_back(scan.getIdentifier());
+          printf("Start Index Nested\n");
           visit(scan.getOperation(), exitAddress);
+          printf("Finish Index Nested\n");
           setAddress(L1, code.size());
           
           code.push_back(LVM_Goto);
           code.push_back(address_L0);
 
           setAddress(L2, code.size());
+          printf("Finish Index Scan\n");
        }
        
        /*
@@ -648,12 +669,18 @@ class LowLevelMachine {
         * L0:
         */
        void visitFilter(const RamFilter& filter, size_t exitAddress) override {
+          printf("Filter\n");
           size_t L0 = getNewAddressLabel();
+          printf("Start filter cond\n");
           visit(filter.getCondition(), exitAddress);
+          printf("Finish filter cond\n");
           code.push_back(LVM_Jmpez);
           code.push_back(L0);
+          printf("Start filter nested\n");
           visit(filter.getOperation(), exitAddress);
+          printf("Finish filter nested\n");
           setAddress(L0, code.size());
+          printf("Filter Done\n");
        }
         
        /*
@@ -665,6 +692,7 @@ class LowLevelMachine {
         */
        
        void visitProject(const RamProject& project, size_t exitAddress) override {
+          printf("Project\n");
           size_t arity = project.getRelation().getArity();
           std::string relationName = project.getRelation().getName();
           auto values = project.getValues();
@@ -674,6 +702,7 @@ class LowLevelMachine {
           code.push_back(LVM_Project);
           code.push_back(arity);
           code.push_back(symbolTable.lookup(relationName));
+          printf("Project Done\n");
        }
         
        /*
@@ -682,6 +711,7 @@ class LowLevelMachine {
         * Semantic: Pop [size] values from stack, add to ctxt.return
         */
        void visitReturn(const RamReturn& ret, size_t exitAddress) override {
+          printf("return\n");
           for (auto expr : ret.getValues()) {
              if (expr == nullptr) {
                 code.push_back(RN_Number);
@@ -693,6 +723,7 @@ class LowLevelMachine {
 
           code.push_back(LVM_Return);
           code.push_back(ret.getValues().size());
+          printf("return Done\n");
        }
 
        /** Visit RAM stmt*/
@@ -888,6 +919,7 @@ class LowLevelMachine {
        void visitQuery(const RamQuery& insert, size_t exitAddress) override {
           //size_t depth = depthAnalyzer.getDepth(insert.getOperation());
           code.push_back(RN_Query);
+          visit(insert.getOperation(), exitAddress);
           //code.push_back(depth);
           //visit(insert.getOperation());
        }
@@ -927,12 +959,10 @@ public:
    LowLevelMachine(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
 
    /** Get LVM instruction stream */
-   void generatingInstructionStream() {
-      const RamStatement& main = *translationUnit.getP().getMain();
-      generator(main, 0);
-      generator.code.clear(); 
-      generator(main, 0);
-   }
+   void generatingInstructionStream();
+    
+   /** Start eval instruction stream */
+   void eval();
 
 private:
 

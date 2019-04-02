@@ -182,10 +182,9 @@ public:
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
-        os << "for t" << getIdentifier() << " in " << getRelation().getName();
-        os << " {\n";
+        os << "FOR t" << getIdentifier();
+        os << " in " << getRelation().getName() << std::endl;
         RamRelationSearch::print(os, tabpos + 1);
-        os << times(" ", tabpos) << "}\n";
     }
 
     /** Create clone */
@@ -232,7 +231,7 @@ public:
                 queryPattern[i]->print(os);
             }
         }
-        os << '\n';
+        os << std::endl;
         RamRelationSearch::print(os, tabpos + 1);
     }
 
@@ -311,7 +310,7 @@ public:
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "UNPACK env(t" << refLevel << ", i" << refPos << ") INTO t"
-           << getIdentifier() << " FOR \n";
+           << getIdentifier() << std::endl;
         RamSearch::print(os, tabpos + 1);
     }
 
@@ -396,7 +395,6 @@ public:
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
-
         switch (function) {
             case MIN:
                 os << "MIN ";
@@ -411,11 +409,9 @@ public:
                 os << "SUM ";
                 break;
         }
-
         if (function != COUNT) {
             os << *expression << " ";
         }
-
         os << "AS t" << getIdentifier() << ".0 IN t" << getIdentifier() << " ∈ " << getRelation().getName();
         os << "("
            << join(pattern, ",",
@@ -427,13 +423,10 @@ public:
                           }
                       })
            << ")";
-
-        if (auto condition = getCondition()) {
-            os << " WHERE ";
-            condition->print(os);
+        if (condition != nullptr) {
+            os << " WHERE " << getCondition();
         }
-
-        os << " FOR \n";
+        os << std::endl;
         RamSearch::print(os, tabpos + 1);
     }
 
@@ -537,11 +530,9 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos) << "IF ";
-        getCondition().print(os);
-        os << " {\n";
+        os << times(" ", tabpos);
+        os << "IF " << getCondition() << std::endl;
         RamNestedOperation::print(os, tabpos + 1);
-        os << times(" ", tabpos) << "}\n";
     }
 
     /** Obtain list of child nodes */
@@ -598,7 +589,7 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "PROJECT (" << join(expressions, ", ", print_deref<std::unique_ptr<RamExpression>>())
-           << ") INTO " << getRelation().getName();
+           << ") INTO " << getRelation().getName() << std::endl;
     }
 
     /** Obtain list of child nodes */
@@ -652,11 +643,8 @@ public:
             : RamOperation(RN_Return), expressions(std::move(vals)) {}
 
     void print(std::ostream& os, int tabpos) const override {
-        const std::string tabs(tabpos, '\t');
-
-        // return
-        os << tabs << "RETURN (";
-
+        os << times(" ", tabpos);
+        os << "RETURN (";
         for (auto val : getValues()) {
             if (val == nullptr) {
                 os << "_";
@@ -668,8 +656,7 @@ public:
                 os << ", ";
             }
         }
-
-        os << ")";
+        os << ")" << std::endl;
     }
 
     std::vector<RamExpression*> getValues() const {

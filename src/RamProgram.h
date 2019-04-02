@@ -46,13 +46,12 @@ public:
         out << "PROGRAM" << std::endl;
         out << "DECLARATION" << std::endl;
         for (const auto& rel : relations) {
-            out << "\t";
+            out << " ";
             rel.second->print(out);
             out << std::endl;
         }
         out << "END DECLARATION" << std::endl;
         out << *main;
-        out << std::endl;
         for (const auto& subroutine : subroutines) {
             out << std::endl << "SUBROUTINE " << subroutine.first << std::endl;
             out << *subroutine.second << std::endl;

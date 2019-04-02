@@ -36,6 +36,7 @@
 #include <utility>
 #include <vector>
 #include <dlfcn.h>
+#include <stack>
 
 #define SOUFFLE_DLL "libfunctors.so"
 
@@ -138,6 +139,12 @@ enum LVM_Type {
     LVM_Match,              
     LVM_LT,
     LVM_STOP,
+
+    //TODO Better way to represent struct
+    LVM_BTREE,
+    LVM_BRIE,
+    LVM_EQREL,
+    LVM_DEFAULT,
 };
 
 class InterpreterProgInterface;
@@ -502,20 +509,12 @@ class LowLevelMachine {
 
 
         /** Visit RAM Operations */
-
-       void visitNestedOperation(const RamNestedOperation& nested, size_t exitAddress) override {
-          /** Does nothing */
-       }
-
-       void visitSearch(const RamSearch& search, size_t exitAddress) override {
-          /** Does nothing */
-       }
        
        /*
         *
         *                for (i = 0; i < realtion.size(); ++i){
         *                    t.i = relation[i];
-        * Imperative         do netsed operation
+        *                    do netsed operation
         *                }
         *
         *
@@ -531,6 +530,7 @@ class LowLevelMachine {
         *
         */
        void visitScan(const RamScan& scan, size_t exitAddress) override {
+          code.push_back(LVM_Scan); 
           printf("Scan\n");
           size_t address_L0 = code.size();
           size_t counterLabel = getNewCounterLabel();
@@ -589,6 +589,7 @@ class LowLevelMachine {
         *
         */
        void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
+          code.push_back(LVM_IndexScan);
           printf("Start Index Scan\n");
           auto patterns = scan.getRangePattern();
           std::string types;
@@ -612,11 +613,13 @@ class LowLevelMachine {
           code.push_back(LVM_Number);
           code.push_back(symbolTable.lookup(scan.getRelation().getName())); //TODO can't get relation size.
                                               //TODO concurrent insert?
+          code.push_back(LVM_ITER_LT);
           code.push_back(LVM_Jmpez);
           code.push_back(lookupAddress(L2));
           code.push_back(LVM_Match);
           code.push_back(symbolTable.lookup(scan.getRelation().getName()));   
           code.push_back(counterLabel);
+          code.push_back(symbolTable.lookup(types));
           //code.push_back(patterns); TODO Implement patterns here
           code.push_back(LVM_Jmpez);
           code.push_back(lookupAddress(L1));
@@ -669,13 +672,14 @@ class LowLevelMachine {
         * L0:
         */
        void visitFilter(const RamFilter& filter, size_t exitAddress) override {
+          code.push_back(LVM_Filter);
           printf("Filter\n");
           size_t L0 = getNewAddressLabel();
           printf("Start filter cond\n");
           visit(filter.getCondition(), exitAddress);
           printf("Finish filter cond\n");
           code.push_back(LVM_Jmpez);
-          code.push_back(L0);
+          code.push_back(lookupAddress(L0));
           printf("Start filter nested\n");
           visit(filter.getOperation(), exitAddress);
           printf("Finish filter nested\n");
@@ -823,7 +827,7 @@ class LowLevelMachine {
           visit(stratum.getBody(), exitAddress);
        }
        
-       /* Syntax: [RN_Create, relation_idx]
+       /* Syntax: [RN_Create, Name,  arity]
         *
         * Semantic: lookup the relation in relationPool[relation_idx], insert 
         * into environment.
@@ -831,9 +835,23 @@ class LowLevelMachine {
         */
        void visitCreate(const RamCreate& create, size_t exitAddress) override {
           code.push_back(LVM_Create);
-          /** TODO Better way to store a relation */
-          relationPool.push_back(create.getRelation());
-          code.push_back(relationCounter++);
+          code.push_back(symbolTable.lookup(create.getRelation().getName()));
+          code.push_back(create.getRelation().getArity());
+          switch (create.getRelation().getRepresentation()) {
+                case RelationRepresentation::BTREE:
+                    code.push_back(LVM_BTREE);
+                    break;
+                case RelationRepresentation::BRIE:
+                    code.push_back(LVM_BRIE);
+                    break;
+                case RelationRepresentation::EQREL:
+                    code.push_back(LVM_EQREL);
+                    break;
+                case RelationRepresentation::DEFAULT:
+                    code.push_back(LVM_DEFAULT);
+                default:
+                    break;
+          }
        }
 
        /* Syntax: [RN_Clear, relation]
@@ -964,6 +982,26 @@ public:
    /** Start eval instruction stream */
    void eval();
 
+   /** Get relation */
+   InterpreterRelation& getRelation(const std::string& name) {
+      // look up relation
+      auto pos = environment.find(name);
+      assert(pos != environment.end());
+      return *pos->second;
+   }
+
+    /** Swap relation */
+   //TODO Modified version, pay attention
+    void swapRelation(const std::string& ramRel1, const std::string& ramRel2) {
+        InterpreterRelation* rel1 = &getRelation(ramRel1);
+        InterpreterRelation* rel2 = &getRelation(ramRel2);
+        environment[ramRel1] = rel2;
+        environment[ramRel2] = rel1;
+    }
+
+
+    //InterpreterContext ctxt(translationUnit.getAnalysis<RamOperationDepthAnalysis>()->getDepth(&op));
+    InterpreterContext ctxt = InterpreterContext(100);   //TODO 
 private:
 
    using relation_map = std::map<std::string, InterpreterRelation*>; 
@@ -975,10 +1013,16 @@ private:
    relation_map environment;
    
    /** Value stack */
-   std::vector<RamDomain> stack;
+   std::stack<RamDomain> stack;
 
    /** LVMGenerator */
    LVMGenerator generator;
+
+   /** counter for $ operator */
+   int counter;
+
+   void incCounter() {counter ++;}
+
 };
 
 

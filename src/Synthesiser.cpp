@@ -296,32 +296,30 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             std::string projectRelName;
             int projectRelArity = -1;
 
-	    // check whether the outer-most filter operation
-	    // can be pushed out of the parallel context  
-            const RamOperation *next = &query.getOperation(); 
-            const RamCondition *cond = nullptr;
-            if( const RamFilter *filter = dynamic_cast<const RamFilter *>(&query.getOperation())){
-	       // cannot pull filter out of parallel loop if it requires a context for
-	       // existence checks of tuples
-               cond = &filter->getCondition();
-	       bool needContext = false;
-               visitDepthFirst(*cond, [&](const RamExistenceCheck& exists) {
-                    needContext = true;
-               });
-	       if (!needContext) {
-		  // discharge condition of filter in
-		  // the outer scope
-                  next = &filter->getOperation(); 
-                  out << "if(";
-                  visit(*cond, out);
-                  out << ") {\n";
-	       } else {
-                  // undo filter / contains context operations
-		  cond = nullptr;
-	       }
-            }  
+            // check whether the outer-most filter operation
+            // can be pushed out of the parallel context
+            const RamOperation* next = &query.getOperation();
+            const RamCondition* cond = nullptr;
+            if (const RamFilter* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
+                // cannot pull filter out of parallel loop if it requires a context for
+                // existence checks of tuples
+                cond = &filter->getCondition();
+                bool needContext = false;
+                visitDepthFirst(*cond, [&](const RamExistenceCheck& exists) { needContext = true; });
+                if (!needContext) {
+                    // discharge condition of filter in
+                    // the outer scope
+                    next = &filter->getOperation();
+                    out << "if(";
+                    visit(*cond, out);
+                    out << ") {\n";
+                } else {
+                    // undo filter / contains context operations
+                    cond = nullptr;
+                }
+            }
 
-	    // get name of projection relation and arity
+            // get name of projection relation and arity
             visitDepthFirst(query, [&](const RamProject& project) {
                 projectRelArity = project.getRelation().getArity();
                 projectRelName = project.getRelation().getName();

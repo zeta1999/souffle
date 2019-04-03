@@ -818,10 +818,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
     /* generate the final RAM Insert statement */
     std::unique_ptr<RamCondition> cond = createCondition(originalClause);
     if (cond != nullptr) {
-         return std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(cond), std::move(op)));
+        return std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(cond), std::move(op)));
     } else {
-         return std::make_unique<RamQuery>(std::move(op));
-    } 
+        return std::make_unique<RamQuery>(std::move(op));
+    }
 }
 
 /* utility for appending statements */

@@ -171,8 +171,13 @@ unit
  */
 
 identifier
-  : IDENT
-  | identifier DOUBLECOLON IDENT
+  : IDENT {
+        $$.push_back($IDENT);
+    }
+  | identifier[curr_identifier] DOUBLECOLON IDENT {
+        $$ = $curr_identifier;
+        $$.push_back($IDENT);
+    }
   ;
 
 /**
@@ -382,7 +387,11 @@ atom
 /* Rule literal constraints */
 constraint
     /* binary infix constraints */
-  : arg[left] RELOP arg[right]
+  : arg[left] RELOP arg[right] {
+        $$ = new AstBinaryConstraint($RELOP,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
   | arg[left] LT arg[right] {
         $$ = new AstBinaryConstraint(BinaryConstraintOp::LT,
                 std::unique_ptr<AstArgument>($left),
@@ -607,25 +616,79 @@ arg
         $$ = new AstAggregator(AstAggregator::count);
         $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
     }
-  | COUNT COLON LBRACE body RBRACE
+  | COUNT COLON LBRACE body RBRACE {
+        $$ = new AstAggregator(AstAggregator::count);
 
-  | SUM arg COLON atom {
+        auto bodies = $body->toClauseBodies();
+        if (bodies.size() != 1) {
+            std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
+            exit(1);
+        }
+
+        for (auto& cur : bodies[0]->getBodyLiterals()) {
+            $$->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+        }
+    }
+
+  | SUM arg[target_expr] COLON atom {
         $$ = new AstAggregator(AstAggregator::sum);
+        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
     }
-  | SUM arg COLON LBRACE body RBRACE
+  | SUM arg[target_expr] COLON LBRACE body RBRACE {
+        $$ = new AstAggregator(AstAggregator::sum);
+        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
-  | MIN arg COLON atom {
+        auto bodies = $body->toClauseBodies();
+        if (bodies.size() != 1) {
+            std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
+            exit(1);
+        }
+
+        for (auto& cur : bodies[0]->getBodyLiterals()) {
+            $$->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+        }
+    }
+
+  | MIN arg[target_expr] COLON atom {
         $$ = new AstAggregator(AstAggregator::min);
+        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
     }
-  | MIN arg COLON LBRACE body RBRACE
+  | MIN arg[target_expr] COLON LBRACE body RBRACE {
+        $$ = new AstAggregator(AstAggregator::min);
+        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
-  | MAX arg COLON atom {
+        auto bodies = $body->toClauseBodies();
+        if (bodies.size() != 1) {
+            std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
+            exit(1);
+        }
+
+        for (auto& cur : bodies[0]->getBodyLiterals()) {
+            $$->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+        }
+    }
+
+  | MAX arg[target_expr] COLON atom {
         $$ = new AstAggregator(AstAggregator::max);
+        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
     }
-  | MAX arg COLON LBRACE body RBRACE
+  | MAX arg[target_expr] COLON LBRACE body RBRACE {
+        $$ = new AstAggregator(AstAggregator::max);
+        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+
+        auto bodies = $body->toClauseBodies();
+        if (bodies.size() != 1) {
+            std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
+            exit(1);
+        }
+
+        for (auto& cur : bodies[0]->getBodyLiterals()) {
+            $$->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+        }
+    }
   ;
 
 /**

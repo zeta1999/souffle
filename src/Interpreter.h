@@ -138,6 +138,7 @@ enum LVM_Type {
     LVM_ITER_Inc,
     LVM_Match,              
     LVM_LT,
+    LVM_RelationSize,
     LVM_STOP,
 
     //TODO Better way to represent struct
@@ -191,7 +192,7 @@ class LowLevelMachine {
        size_t getNewCounterLabel() {return currentCounterLabel++; }
 
        /* Return the value of the addressLabel. 
-        * Return 0 if label doesn't exits. ??
+        * Return 0 if label doesn't exits. 
         */
        size_t lookupAddress(size_t addressLabel) {
           if (addressLabel < addressMap.size()) {
@@ -201,11 +202,9 @@ class LowLevelMachine {
        }
 
        void setAddress(size_t addressLabel, size_t value) {
-          printf("1. AddressLabel:%ld, MapCap:%ld\n", addressLabel, addressMap.size());
           if (addressLabel >= addressMap.size()) {
              addressMap.resize((addressMap.size()+1) * 2); 
           } 
-          printf("2. AddressLabel:%ld, MapCap:%ld\n", addressLabel, addressMap.size());
           addressMap[addressLabel] = value;
        }
 
@@ -537,7 +536,7 @@ class LowLevelMachine {
           code.push_back(LVM_ITER_Counter);
           code.push_back(counterLabel);
 
-          code.push_back(LVM_Number);
+          code.push_back(LVM_RelationSize);
           code.push_back(symbolTable.lookup(scan.getRelation().getName()));
 
           code.push_back(LVM_ITER_LT);
@@ -589,6 +588,7 @@ class LowLevelMachine {
         *
         */
        void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
+          //TODO For now just eval pattern every times
           code.push_back(LVM_IndexScan);
           printf("Start Index Scan\n");
           auto patterns = scan.getRangePattern();
@@ -610,8 +610,8 @@ class LowLevelMachine {
 
           code.push_back(LVM_ITER_Counter);
           code.push_back(counterLabel);
-          code.push_back(LVM_Number);
-          code.push_back(symbolTable.lookup(scan.getRelation().getName())); //TODO can't get relation size.
+          code.push_back(LVM_RelationSize);
+          code.push_back(symbolTable.lookup(scan.getRelation().getName())); 
                                               //TODO concurrent insert?
           code.push_back(LVM_ITER_LT);
           code.push_back(LVM_Jmpez);
@@ -675,16 +675,20 @@ class LowLevelMachine {
           code.push_back(LVM_Filter);
           printf("Filter\n");
           size_t L0 = getNewAddressLabel();
+
           printf("Start filter cond\n");
           visit(filter.getCondition(), exitAddress);
           printf("Finish filter cond\n");
+
           code.push_back(LVM_Jmpez);
           code.push_back(lookupAddress(L0));
+
           printf("Start filter nested\n");
           visit(filter.getOperation(), exitAddress);
           printf("Finish filter nested\n");
+
           setAddress(L0, code.size());
-          printf("Filter Done\n");
+          printf("Filter Done, set L0:%ld\n", lookupAddress(L0));
        }
         
        /*
@@ -718,7 +722,7 @@ class LowLevelMachine {
           printf("return\n");
           for (auto expr : ret.getValues()) {
              if (expr == nullptr) {
-                code.push_back(RN_Number);
+                code.push_back(LVM_Number);
                 code.push_back(0);
              } else {
                 visit(expr, exitAddress); 
@@ -785,6 +789,7 @@ class LowLevelMachine {
           size_t L1 = getNewAddressLabel();
           size_t address_L1 = lookupAddress(L1);
           visit(loop.getBody(), address_L1);
+          code.push_back(LVM_Loop);
           code.push_back(LVM_Goto);
           code.push_back(address_L0);
           setAddress(L1, code.size() - 1);
@@ -898,7 +903,7 @@ class LowLevelMachine {
 
           /** TODO Need a better way to store IOs.*/
           IODirectivesPool.push_back(load.getIODirectives());
-          code.push_back(IODirectivesCounter++);
+          code.push_back(IODirectivesPool.size() - 1);
        }
 
        /*
@@ -941,7 +946,7 @@ class LowLevelMachine {
         */
        void visitQuery(const RamQuery& insert, size_t exitAddress) override {
           //size_t depth = depthAnalyzer.getDepth(insert.getOperation());
-          code.push_back(RN_Query);
+          code.push_back(LVM_Query);
           visit(insert.getOperation(), exitAddress);
           //code.push_back(depth);
           //visit(insert.getOperation());
@@ -1017,6 +1022,17 @@ public:
 
     //InterpreterContext ctxt(translationUnit.getAnalysis<RamOperationDepthAnalysis>()->getDepth(&op));
     InterpreterContext ctxt = InterpreterContext(100);   //TODO 
+    
+    std::vector<size_t> iterCounters;
+    size_t getCounter(int idx) {
+       if (idx >= iterCounters.size()) {
+          iterCounters.resize((idx+1) * 2);
+          return 0;
+       } 
+       return iterCounters[idx];
+    }
+
+    int level = 0;
 private:
 
    using relation_map = std::map<std::string, InterpreterRelation*>; 

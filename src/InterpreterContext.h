@@ -37,6 +37,9 @@ public:
     virtual ~InterpreterContext() = default;
 
     const RamDomain*& operator[](size_t index) {
+        if (index >= data.size()) { //TODO Hack, no good
+            data.resize((index+1) * 2);
+        }
         return data[index];
     }
 

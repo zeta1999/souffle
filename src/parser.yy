@@ -111,10 +111,12 @@
 /* -- Non-Terminal Types -- */
 %type <std::vector<std::string>>    identifier
 %type <AstType *>                   type
+%type <AstFunctorDeclaration *>     functor_decl
 %type <AstArgument *>               arg
 %type <std::vector<AstArgument *>>  arg_list non_empty_arg_list
 %type <AstAtom *>                   atom
 %type <std::vector<AstAtom *>>      head
+%type <std::string>                 functor_arg_type_list non_empty_functor_arg_type_list functor_type
 %type <AstConstraint *>             constraint
 %type <RuleBody *>                  body conjunction disjunction term
 %type <std::vector<AstClause *>>    rule rule_def
@@ -156,7 +158,9 @@ unit
   : unit type {
         driver.addType(std::unique_ptr<AstType>($type));
     }
-  | unit functor_decl
+  | unit functor_decl {
+        driver.addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration>($functor_decl));
+    }
   | unit relation_decl
   | unit load_head
   | unit store_head
@@ -820,22 +824,41 @@ comp_override
 
 /* Functor declaration */
 functor_decl
-  : FUNCTOR IDENT LPAREN functor_arg_type_list RPAREN COLON functor_type
+  : FUNCTOR IDENT LPAREN functor_arg_type_list RPAREN COLON functor_type {
+        auto typesig = $functor_arg_type_list + $functor_type
+        $$ = new AstFunctorDeclaration($IDENT, typesig);
+    }
   ;
 
 /* Functor argument list types */
 functor_arg_type_list
-  : non_empty_functor_arg_type_list
-  | %empty
+  : non_empty_functor_arg_type_list {
+        $$ = $non_empty_functor_arg_type_list;
+    }
+  | %empty {
+        $$ = "";
+    }
   ;
 non_empty_functor_arg_type_list
-  : functor_type
-  | non_empty_functor_arg_type_list COMMA functor_type
+  : functor_type {
+        $$ = $functor_type;
+    }
+  | non_empty_functor_arg_type_list[curr_list] COMMA functor_type {
+        $$ = $curr_list + $functor_type;
+    }
   ;
 
 /* Functor type */
 functor_type
-  : IDENT
+  : IDENT {
+        if ($IDENT == "number") {
+            $$ = "N";
+        } else if ($IDENT == "symbol") {
+            $$ = "S";
+        } else {
+            driver.error(@IDENT, "number or symbol identifier expected");
+        }
+    }
   ;
 
 /**

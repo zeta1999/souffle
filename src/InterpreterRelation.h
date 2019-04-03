@@ -38,6 +38,14 @@ public:
 
     virtual ~InterpreterRelation() = default;
 
+    //TODO Owen: getter and setter for attributes type
+    void addAttributes(const std::vector<std::string> attributeTypes) {
+        attributeTypeQualifiers = attributeTypes; 
+    }
+    std::vector<std::string>& getAttributeTypeQualifiers() {
+        return attributeTypeQualifiers; 
+    }
+
     /** Get arity of relation */
     size_t getArity() const {
         return arity;
@@ -296,6 +304,11 @@ private:
 
     /** Lock for parallel execution */
     mutable Lock lock;
+
+
+    //TODO Owen: Add attributes type
+    /** Type of attributes */
+    std::vector<std::string> attributeTypeQualifiers;
 };
 
 /**

@@ -160,7 +160,7 @@ class LVMGenerator;
 class LowLevelMachine {
     class LVMGenerator : public RamVisitor<void, size_t> {
     public:
-       LVMGenerator() {}
+       LVMGenerator(SymbolTable& symbolTable) : symbolTable(symbolTable) {}
 
        void cleanUp() {
           code.clear();
@@ -171,7 +171,7 @@ class LowLevelMachine {
        }
 
        std::vector<RamDomain> code;            /** Instructions stream */
-       SymbolTable symbolTable;                /** Class for converting string to number and vice versa */ 
+       SymbolTable& symbolTable;                /** Class for converting string to number and vice versa */ 
        
        /** Store reference to IODirectives */
        std::vector<std::vector<IODirectives>> IODirectivesPool;
@@ -719,7 +719,7 @@ class LowLevelMachine {
           for (auto expr : ret.getValues()) {
              if (expr == nullptr) {
                 code.push_back(RN_Number);
-                code.push_back(1);
+                code.push_back(0);
              } else {
                 visit(expr, exitAddress); 
              }
@@ -827,7 +827,7 @@ class LowLevelMachine {
           visit(stratum.getBody(), exitAddress);
        }
        
-       /* Syntax: [RN_Create, Name,  arity]
+       /* Syntax: [RN_Create, Name, arity, Struct, types]
         *
         * Semantic: lookup the relation in relationPool[relation_idx], insert 
         * into environment.
@@ -851,6 +851,11 @@ class LowLevelMachine {
                     code.push_back(LVM_DEFAULT);
                 default:
                     break;
+          }
+
+          auto attributeTypes = create.getRelation().getAttributeTypeQualifiers();
+          for (auto type : attributeTypes) {
+            code.push_back(symbolTable.lookup(type));
           }
        }
 
@@ -909,7 +914,7 @@ class LowLevelMachine {
 
           /** TODO: Need a better way to store IOs.*/
           IODirectivesPool.push_back(store.getIODirectives());
-          code.push_back(IODirectivesCounter++);
+          code.push_back(IODirectivesPool.size() - 1);
        }
        
        /*
@@ -974,13 +979,16 @@ class LowLevelMachine {
 
     };
 public:
-   LowLevelMachine(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
+   LowLevelMachine(RamTranslationUnit& tUnit) : translationUnit(tUnit), generator(tUnit.getSymbolTable()){}
 
    /** Get LVM instruction stream */
    void generatingInstructionStream();
     
    /** Start eval instruction stream */
    void eval();
+   
+   /** Print out the Is */
+   void print();
 
    /** Get relation */
    InterpreterRelation& getRelation(const std::string& name) {
@@ -999,6 +1007,13 @@ public:
         environment[ramRel2] = rel1;
     }
 
+    /** Drop relation */
+    //TODO Modified version, pay attention
+    void dropRelation(const std::string& relName) {
+        InterpreterRelation& rel = getRelation(relName);
+        environment.erase(relName);
+        delete &rel;
+    }
 
     //InterpreterContext ctxt(translationUnit.getAnalysis<RamOperationDepthAnalysis>()->getDepth(&op));
     InterpreterContext ctxt = InterpreterContext(100);   //TODO 

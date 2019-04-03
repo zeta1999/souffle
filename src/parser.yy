@@ -21,7 +21,7 @@
 %define api.token.constructor
 %define api.value.type variant
 %define parse.assert
-%define api.location.type {SrcLocation}
+/* %define api.location.type {SrcLocation} */
 
 %code requires {}
 
@@ -108,6 +108,15 @@
 %token L_OR                      "lor"
 %token L_NOT                     "lnot"
 
+/* -- Non-Terminal Types -- */
+%type <AstType *>                   type
+%type <std::vector<std::string>>    identifier
+%type <AstArgument *>               arg
+%type <AstAtom *>                   arg_list non_empty_arg_list atom
+%type <AstClause *>                 fact
+%type <AstRecordType *>             record_type_list non_empty_record_type_list
+%type <AstUnionType *>              union_type_list
+
 /* Operator precedence */
 /* TODO: ORDERING??? */
 %left L_OR
@@ -125,6 +134,7 @@
 /* TODO: CHANGE AS (TYPECAST) SYNTAX?? */
 
 %%
+
 %start program;
 
 /* Program */
@@ -134,12 +144,16 @@ program
 
 /* Top-level statement */
 unit
-  : unit type
+  : unit type {
+        driver.addType(std::unique_ptr<AstType>($type));
+    }
   | unit functor_decl
   | unit relation_decl
   | unit load_head
   | unit store_head
-  | unit fact
+  | unit fact {
+        driver.addClause(std::unique_ptr<AstClause>($fact));
+    }
   | unit rule
   | unit component
   | unit comp_init
@@ -162,27 +176,55 @@ identifier
 
 /* Type declarations */
 type
-  : NUMBER_TYPE IDENT
-  | SYMBOL_TYPE IDENT
-  | TYPE IDENT
-  | TYPE IDENT EQUALS union_type_list
-  | TYPE IDENT EQUALS LBRACKET record_type_list RBRACKET
+  : NUMBER_TYPE IDENT {
+        $$ = new AstPrimitiveType($IDENT, true);
+    }
+  | SYMBOL_TYPE IDENT {
+        $$ = new AstPrimitiveType($IDENT, false);
+    }
+  | TYPE IDENT {
+        $$ = new AstPrimitiveType($IDENT);
+    }
+  | TYPE IDENT EQUALS union_type_list {
+        $$ = $union_type_list;
+        $$->setName($IDENT);
+    }
+  | TYPE IDENT EQUALS LBRACKET record_type_list RBRACKET {
+        $$ = $record_type_list;
+        $$->setName($IDENT);
+    }
   ;
 
 /* Record type argument declarations */
 record_type_list
-  : non_empty_record_type_list
-  | %empty
+  : non_empty_record_type_list {
+        $$ = $non_empty_record_type_list;
+    }
+  | %empty {
+        $$ = new AstRecordType();
+    }
   ;
 non_empty_record_type_list
-  : IDENT COLON identifier
-  | non_empty_record_type_list COMMA IDENT COLON identifier
+  : IDENT COLON identifier {
+        $$ = new AstRecordType();
+        $$->add($IDENT, *$identifier);
+    }
+  | non_empty_record_type_list[curr_record] COMMA IDENT COLON identifier {
+        $$ = $curr_record;
+        $$->add($IDENT, *$identifier);
+    }
   ;
 
 /* Union type argument declarations */
 union_type_list
-  : IDENT
-  | union_type_list PIPE IDENT
+  : IDENT {
+        $$ = new AstUnionType();
+        $$->add($IDENT);
+    }
+  | union_type_list[curr_union] PIPE IDENT {
+        $$ = $curr_union;
+        $$->add($IDENT);
+    }
   ;
 
 /**
@@ -229,7 +271,10 @@ qualifiers
 
 /* Fact */
 fact
-  : atom DOT
+  : atom DOT {
+        $$ = new AstClause();
+        $$->setHead(std::unique_ptr<AstAtom>($atom));
+    }
   ;
 
 /* Rule */
@@ -306,7 +351,10 @@ literal
 
 /* Rule body atom */
 atom
-  : identifier LPAREN arg_list RPAREN
+  : identifier LPAREN arg_list RPAREN {
+        $$ = $arg_list;
+        $$->setName(*$identifier);
+    }
   ;
 
 /* Rule literal constraints */
@@ -328,28 +376,54 @@ constraint
 
 /* Argument list */
 arg_list
-  : non_empty_arg_list
-  | %empty
+  : non_empty_arg_list {
+        $$ = $non_empty_arg_list;
+    }
+  | %empty {
+        $$ = new AstAtom();
+    }
   ;
 non_empty_arg_list
-  : arg
-  | arg_list COMMA arg
+  : arg {
+        $$ = new AstAtom();
+        $$->addArgument(std::unique_ptr<AstArgument>($arg));
+    }
+  | non_empty_arg_list[curr_arg_list] COMMA arg {
+        $$ = $curr_arg_list;
+        $$->addArgument(std::unique_ptr<AstArgument>($arg));
+    }
   ;
 
 /* Atom argument */
 arg
-  : STRING
-  | NUMBER
-  | UNDERSCORE
-  | DOLLAR
-  | IDENT
-  | LPAREN arg RPAREN
+  : STRING {
+        $$ = new AstStringConstant(driver.getSymbolTable(), $STRING);
+    }
+  | NUMBER {
+        $$ = new AstNumberConstant($NUMBER);
+    }
+  | UNDERSCORE {
+        $$ = new AstUnnamedVariable();
+    }
+  | DOLLAR {
+        $$ = new AstCounter();
+    }
+  | IDENT {
+        $$ = new AstVariable($IDENT);
+    }
+  | LPAREN arg[nested_arg] RPAREN {
+        $$ = $nested_arg;
+    }
 
     /* type-cast */
-  | arg AS IDENT
+  | arg[nested_arg] AS IDENT {
+        $$ = new AstTypeCast(std::unique_ptr<AstArgument>($nested_arg), $IDENT);
+    }
 
     /* record constructor */
-  | NIL
+  | NIL {
+        $$ = new AstNullConstant();
+    }
   | identifier LBRACKET arg_list RBRACKET
 
     /* user-defined functor */

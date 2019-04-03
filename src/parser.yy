@@ -109,6 +109,7 @@
 %token L_NOT                     "lnot"
 
 /* -- Non-Terminal Types -- */
+%type <uint32_t>                    qualifiers
 %type <std::vector<std::string>>    identifier
 %type <AstType *>                   type
 %type <AstFunctorDeclaration *>     functor_decl
@@ -119,6 +120,8 @@
 %type <std::string>                 functor_arg_type_list non_empty_functor_arg_type_list functor_type
 %type <AstConstraint *>             constraint
 %type <RuleBody *>                  body conjunction disjunction term
+%type <std::vector<AstAttribute *>> attributes non_empty_attributes
+%type <std::vector<AstRelation *>>  relation_decl relation_list
 %type <std::vector<AstClause *>>    rule rule_def
 %type <AstExecutionPlan *>          exec_plan exec_plan_list
 %type <AstExecutionOrder *>         exec_order_list non_empty_exec_order_list
@@ -161,7 +164,11 @@ unit
   | unit functor_decl {
         driver.addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration>($functor_decl));
     }
-  | unit relation_decl
+  | unit relation_decl {
+        for (auto* cur : $relation_decl) {
+            driver.addRelation(std::unique_ptr<AstRelation>(cur));
+        }
+    }
   | unit load_head
   | unit store_head
   | unit fact {
@@ -255,36 +262,102 @@ union_type_list
 
 /* Relation declaration */
 relation_decl
-  : DECL relation_list LPAREN attributes RPAREN qualifiers
+  : DECL relation_list LPAREN attributes RPAREN qualifiers {
+        for (auto* rel : $relation_list) {
+            for (auto* attr : attributes) {
+                rel->addAttribute(attr->clone());
+            }
+        }
+
+        for (auto* attr : attributes) {
+            delete attr;
+        }
+
+        $$ = $relation_list;
+    }
   ;
 
 /* List of relation names to declare */
 relation_list
-  : IDENT
-  | relation_list COMMA IDENT
+  : IDENT {
+        auto* rel = new AstRelation();
+        rel->setName($IDENT);
+
+        $$.push_back(rel);
+    }
+  | relation_list[curr_list] COMMA IDENT {
+        auto* rel = new AstRelation();
+        rel->setName($IDENT);
+
+        $$ = $curr_list;
+        $$.push_back(rel);
+    }
   ;
 
 /* Attribute definition of a relation */
 attributes
-  : non_empty_attributes
-  | %empty
+  : non_empty_attributes {
+        $$ = $non_empty_attributes;
+    }
+  | %empty {
+        $$ = std::vector<AstAttribute*>();
+    }
   ;
 non_empty_attributes
-  : IDENT COLON identifier
-  | non_empty_attributes COMMA IDENT COLON identifier
+  : IDENT COLON identifier {
+        $$.push_back(new AstAttribute($IDENT, $identifier));
+    }
+  | non_empty_attributes[curr_list] COMMA IDENT COLON identifier {
+        $$ = $curr_list;
+        $$.push_back(new AstAttribute($IDENT, $identifier));
+    }
   ;
 
 /* Relation qualifiers */
 qualifiers
-  : qualifiers OUTPUT_QUALIFIER
-  | qualifiers INPUT_QUALIFIER
-  | qualifiers PRINTSIZE_QUALIFIER
-  | qualifiers OVERRIDABLE_QUALIFIER
-  | qualifiers INLINE_QUALIFIER
-  | qualifiers BRIE_QUALIFIER
-  | qualifiers BTREE_QUALIFIER
-  | qualifiers EQREL_QUALIFIER
-  | %empty
+  : qualifiers OUTPUT_QUALIFIER {
+        if($1 & OUTPUT_RELATION)
+            driver.error(@2, "output qualifier already set");
+        $$ = $1 | OUTPUT_RELATION;
+    }
+  | qualifiers INPUT_QUALIFIER {
+        if($1 & INPUT_RELATION)
+            driver.error(@2, "input qualifier already set");
+        $$ = $1 | INPUT_RELATION;
+    }
+  | qualifiers PRINTSIZE_QUALIFIER {
+        if($1 & PRINTSIZE_RELATION)
+            driver.error(@2, "printsize qualifier already set");
+        $$ = $1 | PRINTSIZE_RELATION;
+    }
+  | qualifiers OVERRIDABLE_QUALIFIER {
+        if($1 & OVERRIDABLE_RELATION)
+            driver.error(@2, "overridable qualifier already set");
+        $$ = $1 | OVERRIDABLE_RELATION;
+    }
+  | qualifiers INLINE_QUALIFIER {
+        if($1 & INLINE_RELATION)
+            driver.error(@2, "inline qualifier already set");
+        $$ = $1 | INLINE_RELATION;
+    }
+  | qualifiers BRIE_QUALIFIER {
+        if($1 & (BRIE_RELATION|BTREE_RELATION|EQREL_RELATION))
+            driver.error(@2, "btree/brie/eqrel qualifier already set");
+        $$ = $1 | BRIE_RELATION;
+    }
+  | qualifiers BTREE_QUALIFIER {
+        if($1 & (BRIE_RELATION|BTREE_RELATION|EQREL_RELATION))
+            driver.error(@2, "btree/brie/eqrel qualifier already set");
+        $$ = $1 | BTREE_RELATION;
+    }
+  | qualifiers EQREL_QUALIFIER {
+        if($1 & (BRIE_RELATION|BTREE_RELATION|EQREL_RELATION))
+            driver.error(@2, "btree/brie/eqrel qualifier already set");
+        $$ = $1 | EQREL_RELATION;
+    }
+  | %empty {
+        $$ = 0;
+    }
   ;
 
 /**

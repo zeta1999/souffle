@@ -300,7 +300,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const RamCondition *cond = nullptr;
             if( const RamFilter *filter = dynamic_cast<const RamFilter *>(&query.getOperation())){
                cond = &filter->getCondition();
-               next = &query.getOperation(); 
+               next = &filter->getOperation(); 
             }  
 
             if (cond != nullptr) {
@@ -399,7 +399,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // create operation contexts for this operation
-            for (const RamRelation* rel : synthesiser.getReferencedRelations(*next)) {
+            for (const RamRelation* rel : synthesiser.getReferencedRelations(query.getOperation())) {
                 // TODO (#467): this causes bugs for subprogram compilation for record types if artificial
                 // dependencies are introduces in the precedence graph
                 out << "CREATE_OP_CONTEXT(" << synthesiser.getOpContextName(*rel);

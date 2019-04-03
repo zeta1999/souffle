@@ -112,7 +112,8 @@
 %type <AstType *>                   type
 %type <std::vector<std::string>>    identifier
 %type <AstArgument *>               arg
-%type <AstAtom *>                   arg_list non_empty_arg_list atom
+%type <std::vector<AstArgument *>>  arg_list non_empty_arg_list
+%type <AstAtom *>                   atom
 %type <AstClause *>                 fact
 %type <AstRecordType *>             record_type_list non_empty_record_type_list
 %type <AstUnionType *>              union_type_list
@@ -424,53 +425,161 @@ arg
   | NIL {
         $$ = new AstNullConstant();
     }
-  | identifier LBRACKET arg_list RBRACKET
+  | identifier LBRACKET arg_list RBRACKET {
+        $$ = new AstRecordInit();
+        for (const auto* arg : $arg_list) {
+            $$->add(std::unique_ptr<AstArgument>(arg));
+        }
+    }
 
     /* user-defined functor */
-  | identifier LPAREN arg_list RPAREN
+  | identifier LPAREN arg_list RPAREN {
+        $$ = new AstUserDefinedFunctor();
+        for (const auto* arg : $arg_list) {
+            $$->add(std::unique_ptr<AstArgument>(arg));
+        }
+    }
 
     /* -- intrinsic functor -- */
     /* unary functors */
-  | MINUS arg %prec NEG
-  | BW_NOT arg
-  | L_NOT arg
-  | ORD LPAREN arg RPAREN
-  | STRLEN LPAREN arg RPAREN
-  | TONUMBER LPAREN arg RPAREN
-  | TOSTRING LPAREN arg RPAREN
+  | MINUS arg[nested_arg] %prec NEG {
+        if (const AstNumberConstant* original = dynamic_cast<const AstNumberConstant*>($nested_arg)) {
+            $$ = new AstNumberConstant(-1 * original->getIndex());
+        } else {
+            $$ = new AstIntrinsicFunctor(FunctorOp::NEG,
+                std::unique_ptr<AstArgument>($nested_arg));
+        }
+    }
+  | BW_NOT arg[nested_arg] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BNOT,
+                std::unique_ptr<AstArgument>($nested_arg));
+    }
+  | L_NOT arg [nested_arg] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::LNOT,
+                std::unique_ptr<AstArgument>($nested_arg));
+    }
+  | ORD LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::ORD,
+                std::unique_ptr<AstArgument>($nested_arg));
+    }
+  | STRLEN LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::STRLEN,
+                std::unique_ptr<AstArgument>($nested_arg));
+    }
+  | TONUMBER LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::TONUMBER,
+                std::unique_ptr<AstArgument>($nested_arg));
+    }
+  | TOSTRING LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::TOSTIRNG,
+                std::unique_ptr<AstArgument>($nested_arg));
+    }
 
     /* binary infix functors */
-  | arg PLUS arg
-  | arg MINUS arg
-  | arg STAR arg
-  | arg SLASH arg
-  | arg PERCENT arg
-  | arg CARET arg
-  | arg BW_OR arg
-  | arg BW_XOR arg
-  | arg BW_AND arg
-  | arg L_OR arg
-  | arg L_AND arg
+  | arg[left] PLUS arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::PLUS,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] MINUS arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::MINUS,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] STAR arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::STAR,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] SLASH arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::SLASH,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] PERCENT arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::PERCENT,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] CARET arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::CARET,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] BW_OR arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BW_OR,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] BW_XOR arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BW_XOR,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] BW_AND arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BW_AND,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] L_OR arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::L_OR,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] L_AND arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::L_AND,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
 
     /* binary prefix functors */
-  | MIN LPAREN arg COMMA arg RPAREN
-  | MAX LPAREN arg COMMA arg RPAREN
-  | CAT LPAREN arg COMMA arg RPAREN
+  | MIN LPAREN arg[left] COMMA arg[right] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::MIN,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | MAX LPAREN arg[left] COMMA arg[right] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::MAX,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | CAT LPAREN arg[left] COMMA arg[right] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::CAT,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
 
     /* ternary functors */
-  | SUBSTR LPAREN arg COMMA arg COMMA arg RPAREN
+  | SUBSTR LPAREN arg[first] COMMA arg[second] COMMA arg[third] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::SUBSTR,
+                std::unique_ptr<AstArgument>($first),
+                std::unique_ptr<AstArgument>($second),
+                std::unique_ptr<AstArgument>($third));
+    }
 
     /* -- aggregators -- */
-  | COUNT COLON atom
+  | COUNT COLON atom {
+        $$ = new AstAggregator(AstAggregator::count);
+        $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+    }
   | COUNT COLON LBRACE body RBRACE
 
-  | SUM arg COLON RESERVED
+  | SUM arg COLON atom {
+        $$ = new AstAggregator(AstAggregator::sum);
+        $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+    }
   | SUM arg COLON LBRACE body RBRACE
 
-  | MIN arg COLON atom
+  | MIN arg COLON atom {
+        $$ = new AstAggregator(AstAggregator::min);
+        $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+    }
   | MIN arg COLON LBRACE body RBRACE
 
-  | MAX arg COLON atom
+  | MAX arg COLON atom {
+        $$ = new AstAggregator(AstAggregator::max);
+        $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+    }
   | MAX arg COLON LBRACE body RBRACE
   ;
 

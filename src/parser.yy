@@ -109,14 +109,18 @@
 %token L_NOT                     "lnot"
 
 /* -- Non-Terminal Types -- */
-%type <AstType *>                   type
 %type <std::vector<std::string>>    identifier
+%type <AstType *>                   type
 %type <AstArgument *>               arg
 %type <std::vector<AstArgument *>>  arg_list non_empty_arg_list
 %type <AstAtom *>                   atom
-%type <AstClause *>                 fact
+%type <AstConstraint *>             constraint
+%type <RuleBody *>                  body conjunction disjunction term
 %type <AstRecordType *>             record_type_list non_empty_record_type_list
 %type <AstUnionType *>              union_type_list
+
+/* TODO: think about these ones */
+%type <AstClause *>                 fact
 
 /* Operator precedence */
 /* TODO: ORDERING??? */
@@ -298,19 +302,31 @@ head
 
 /* Rule body */
 body
-  : disjunction
+  : disjunction {
+        $$ = $disjunction;
+    }
   ;
 
 /* Rule body disjunction */
 disjunction
-  : conjunction
-  | disjunction SEMICOLON conjunction
+  : conjunction {
+        $$ = $conjunction;
+    }
+  | disjunction[curr_disjunction] SEMICOLON conjunction {
+        $$ = $curr_disjunction;
+        $$->disjunct($conjunction);
+    }
   ;
 
 /* Rule body conjunction */
 conjunction
-  : term
-  | conjunction COMMA term
+  : term {
+        $$ = $term;
+    }
+  | conjunction[curr_conjunction] COMMA term {
+        $$ = $curr_conjunction;
+        $$->conjunct($term);
+    }
   ;
 
 /* Rule execution plan */
@@ -340,14 +356,19 @@ non_empty_exec_order_list
 
 /* Rule body term */
 term
-  : literal
-  | EXCLAMATION term
-  ;
-
-/* Rule body literal */
-literal
-  : atom
-  | constraint
+  : atom {
+        $$ = new RuleBody(RuleBody::atom($atom));
+    }
+  | constraint {
+        $$ = new RuleBody(RuleBody::constraint($constraint));
+    }
+  | EXCLAMATION term[nested_term] {
+        $$ = $nested_term;
+        $$->negate();
+    }
+  | LPAREN disjunction RPAREN {
+        $$ = $disjunction;
+    }
   ;
 
 /* Rule body atom */
@@ -361,18 +382,42 @@ atom
 /* Rule literal constraints */
 constraint
     /* binary infix constraints */
-  : arg RELOP arg
-  | arg LT arg
-  | arg GT arg
-  | arg EQUALS arg
+  : arg[left] RELOP arg[right]
+  | arg[left] LT arg[right] {
+        $$ = new AstBinaryConstraint(BinaryConstraintOp::LT,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] GT arg[right] {
+        $$ = new AstBinaryConstraint(BinaryConstraintOp::GT,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | arg[left] EQUALS arg[right] {
+        $$ = new AstBinaryConstraint(BinaryConstraintOp::EQ,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
 
     /* binary prefix constraints */
-  | TMATCH LPAREN arg COMMA arg RPAREN
-  | TCONTAINS LPAREN arg COMMA arg RPAREN
+  | TMATCH LPAREN arg[left] COMMA arg[right] RPAREN {
+        $$ = new AstBinaryConstraint(BinaryConstraintOp::MATCH,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
+  | TCONTAINS LPAREN arg[left] COMMA arg[right] RPAREN {
+        $$ = new AstBinaryConstraint(BinaryConstraintOp::CONTAINS,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+    }
 
     /* zero-arity constraints */
-  | TRUE
-  | FALSE
+  | TRUE {
+        $$ = new AstBooleanConstraint(true);
+    }
+  | FALSE {
+        $$ = new AstBooleanConstraint(false);
+    }
   ;
 
 /* Argument list */
@@ -433,7 +478,7 @@ arg
     }
 
     /* user-defined functor */
-  | identifier LPAREN arg_list RPAREN {
+  | IDENT LPAREN arg_list RPAREN {
         $$ = new AstUserDefinedFunctor();
         for (const auto* arg : $arg_list) {
             $$->add(std::unique_ptr<AstArgument>(arg));

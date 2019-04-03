@@ -114,8 +114,12 @@
 %type <AstArgument *>               arg
 %type <std::vector<AstArgument *>>  arg_list non_empty_arg_list
 %type <AstAtom *>                   atom
+%type <std::vector<AstAtom *>>      head
 %type <AstConstraint *>             constraint
 %type <RuleBody *>                  body conjunction disjunction term
+%type <std::vector<AstClause *>>    rule rule_def
+%type <AstExecutionPlan *>          exec_plan exec_plan_list
+%type <AstExecutionOrder *>         exec_order_list non_empty_exec_order_list
 %type <AstRecordType *>             record_type_list non_empty_record_type_list
 %type <AstUnionType *>              union_type_list
 
@@ -159,7 +163,11 @@ unit
   | unit fact {
         driver.addClause(std::unique_ptr<AstClause>($fact));
     }
-  | unit rule
+  | unit rule {
+        for (auto* cur : $rule) {
+            driver.addClause(std::unique_ptr<AstClause>(cur));
+        }
+    }
   | unit component
   | unit comp_init
   | unit pragma
@@ -289,20 +297,60 @@ fact
 
 /* Rule */
 rule
-  : rule_def
-  | rule STRICT
-  | rule exec_plan
+  : rule_def {
+        $$ = $rule_def;
+    }
+  | rule[nested_rule] STRICT {
+        $$ = $nested_rule;
+        for (auto* rule : $$) {
+            rule->setFixedExecutionPlan();
+        }
+    }
+  | rule[nested_rule] exec_plan {
+        $$ = $nested_rule;
+        for (auto* rule : $$) {
+            rule->setExecutionPlan(std::unique_ptr<AstExecutionPlan>($exec_plan)->clone());
+        }
+        delete $exec_plan;
+    }
   ;
 
 /* Rule definition */
 rule_def
-  : head IF body DOT
+  : head IF body DOT {
+        auto heads = $head;
+        auto bodies = $body->toClauseBodies();
+
+        bool generated = heads.size() != 1 || bodies.size() != 1;
+
+        for (const auto* head : heads) {
+            for (const auto* body : bodies) {
+                AstClause* cur = body->clone();
+                cur->setHead(std::unique_ptr<AstAtom>(head->clone()));
+                cur->setGenerated(generated);
+                $$.push_back(cur);
+            }
+        }
+
+        for (auto* head : heads) {
+            delete head;
+        }
+
+        for (auto* body : bodies) {
+            delete body;
+        }
+    }
   ;
 
 /* Rule head */
 head
-  : atom
-  | head COMMA atom
+  : atom {
+        $$.push_back($atom);
+    }
+  | head[curr_head] COMMA atom {
+        $$ = $curr_head;
+        $$.push_back($atom);
+    }
   ;
 
 /* Rule body */
@@ -336,23 +384,41 @@ conjunction
 
 /* Rule execution plan */
 exec_plan
-  : PLAN exec_plan_list
+  : PLAN exec_plan_list {
+        $$ = $exec_plan_list;
+    }
   ;
 
 /* Rule execution plan list */
 exec_plan_list
-  : NUMBER COLON LPAREN exec_order_list RPAREN
-  | exec_plan_list COMMA NUMBER COLON LPAREN exec_order_list RPAREN
+  : NUMBER COLON LPAREN exec_order_list RPAREN {
+        $$ = new AstExecutionPlan();
+        $$->setOrderFor($NUMBER, std::unique_ptr<AstExecutionOrder>($exec_order_list));
+    }
+  | exec_plan_list[curr_list] COMMA NUMBER COLON LPAREN exec_order_list RPAREN {
+        $$ = $curr_list;
+        $$->setOrderFor($NUMBER, std::unique_ptr<AstExecutionOrder>($exec_order_list));
+    }
   ;
 
 /* Rule execution order */
 exec_order_list
-  : non_empty_exec_order_list
-  | %empty
+  : non_empty_exec_order_list {
+        $$ = $non_empty_exec_order_list;
+    }
+  | %empty {
+        $$ = new AstExecutionOrder();
+    }
   ;
 non_empty_exec_order_list
-  : NUMBER
-  | non_empty_exec_order_list COMMA NUMBER
+  : NUMBER {
+        $$ = new AstExecutionOrder();
+        $$->appendAtomIndex($NUMBER);
+    }
+  | non_empty_exec_order_list[curr_list] COMMA NUMBER {
+        $$ = $curr_list;
+        $$->appendAtomIndex($NUMBER);
+    }
   ;
 
 /**

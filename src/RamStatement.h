@@ -414,8 +414,7 @@ protected:
  */
 class RamQuery : public RamStatement {
 public:
-    RamQuery(std::unique_ptr<RamOperation> o, std::unique_ptr<RamCondition> c = nullptr)
-            : RamStatement(RN_Query), operation(std::move(o)), condition(std::move(c)) {}
+    RamQuery(std::unique_ptr<RamOperation> o) : RamStatement(RN_Query), operation(std::move(o)) {}
 
     /** Get RAM operation */
     const RamOperation& getOperation() const {
@@ -423,65 +422,38 @@ public:
         return *operation;
     }
 
-    /** Sets the nested operation */
-    void setOperation(std::unique_ptr<RamOperation> nested) {
-        operation = std::move(nested);
-    }
-
-    /** Get RAM condition */
-    const RamCondition* getCondition() const {
-        return condition.get();
-    }
-
     /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "QUERY ";
-        if (condition != nullptr) {
-            os << "WHERE ";
-            condition->print(os);
-        }
-        os << std::endl;
+        os << times(" ", tabpos) << "QUERY" << std::endl;
         operation->print(os, tabpos + 1);
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return {operation.get(), condition.get()};
+        return {operation.get()};
     }
 
     /** Create clone */
     RamQuery* clone() const override {
         RamQuery* res;
-        if (condition != nullptr) {
-            res = new RamQuery(std::unique_ptr<RamOperation>(operation->clone()));
-        } else {
-            res = new RamQuery(std::unique_ptr<RamOperation>(operation->clone()),
-                    std::unique_ptr<RamCondition>(condition->clone()));
-        }
+        res = new RamQuery(std::unique_ptr<RamOperation>(operation->clone()));
         return res;
     }
 
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         operation = map(std::move(operation));
-        if (condition != nullptr) {
-            condition = map(std::move(condition));
-        }
     }
 
 protected:
     /** RAM operation */
     std::unique_ptr<RamOperation> operation;
 
-    /** RAM condition */
-    std::unique_ptr<RamCondition> condition;
-
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamQuery*>(&node));
         const auto& other = static_cast<const RamQuery&>(node);
-        return getOperation() == other.getOperation() && getCondition() == other.getCondition();
+        return getOperation() == other.getOperation();
     }
 };
 

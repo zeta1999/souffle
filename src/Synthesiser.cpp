@@ -289,28 +289,47 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitQuery(const RamQuery& insert, std::ostream& out) override {
+        void visitQuery(const RamQuery& query, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // enclose operation with a check for an empty relation
             std::set<std::string> inputRelNames;
             std::string projectRelName;
             int projectRelArity = -1;
 
-            if (insert.getCondition() != nullptr) {
-                out << "if(";
-                visit(*insert.getCondition(), out);
-                out << ") {\n";
+            // check whether the outer-most filter operation
+            // can be pushed out of the parallel context
+            const RamOperation* next = &query.getOperation();
+            const RamCondition* cond = nullptr;
+            if (const RamFilter* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
+                // cannot pull filter out of parallel loop if it requires a context for
+                // existence checks of tuples
+                cond = &filter->getCondition();
+                bool needContext = false;
+                visitDepthFirst(*cond, [&](const RamExistenceCheck& exists) { needContext = true; });
+                if (!needContext) {
+                    // discharge condition of filter in
+                    // the outer scope
+                    next = &filter->getOperation();
+                    out << "if(";
+                    visit(*cond, out);
+                    out << ") {\n";
+                } else {
+                    // undo filter / contains context operations
+                    cond = nullptr;
+                }
             }
 
-            visitDepthFirst(insert, [&](const RamProject& project) {
+            // get name of projection relation and arity
+            visitDepthFirst(query, [&](const RamProject& project) {
                 projectRelArity = project.getRelation().getArity();
                 projectRelName = project.getRelation().getName();
             });
 
-            visitDepthFirst(insert, [&](const RamRelationSearch& scan) {
+            // TODO(#941): the check for empty relations of a query needs
+            // to be expressed in RAM / not in the synthesis via C++.
+            visitDepthFirst(query, [&](const RamRelationSearch& scan) {
                 inputRelNames.insert(scan.getRelation().getName());
             });
-
             if (!inputRelNames.empty() || projectRelArity == 0) {
                 out << "if (";
                 if (!inputRelNames.empty()) {
@@ -340,7 +359,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // check whether loop nest can be parallelized
             bool parallel = false;
-            if (const auto* scan = dynamic_cast<const RamScan*>(&insert.getOperation())) {
+            if (const auto* scan = dynamic_cast<const RamScan*>(next)) {
                 parallel = scan->getIdentifier() == 0 && !scan->getRelation().isNullary();
                 if (parallel) {
                     const auto& rel = scan->getRelation();
@@ -351,7 +370,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     // build a parallel block around this loop nest
                     out << "PARALLEL_START;\n";
                 }
-            } else if (const auto* scan = dynamic_cast<const RamIndexScan*>(&insert.getOperation())) {
+            } else if (const auto* scan = dynamic_cast<const RamIndexScan*>(next)) {
                 parallel = scan->getIdentifier() == 0;
                 if (parallel) {
                     const auto& rel = scan->getRelation();
@@ -391,19 +410,17 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // create operation contexts for this operation
-            for (const RamRelation* rel : synthesiser.getReferencedRelations(insert.getOperation())) {
+            for (const RamRelation* rel : synthesiser.getReferencedRelations(query.getOperation())) {
                 // TODO (#467): this causes bugs for subprogram compilation for record types if artificial
                 // dependencies are introduces in the precedence graph
                 out << "CREATE_OP_CONTEXT(" << synthesiser.getOpContextName(*rel);
                 out << "," << synthesiser.getRelationName(*rel);
                 out << "->createContext());\n";
             }
-
-            visit(insert.getOperation(), out);
+            visit(*next, out);
 
             if (parallel) {
                 out << "PARALLEL_END;\n";  // end parallel
-
                 // aggregate proof counters
             }
 
@@ -415,7 +432,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 #else
             out << "();";  // call lambda
 #endif
-            if (insert.getCondition() != nullptr) {
+            if (cond != nullptr) {
                 out << "}\n";
             }
 

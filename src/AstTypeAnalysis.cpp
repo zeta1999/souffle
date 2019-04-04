@@ -437,7 +437,8 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             }
 
             // add a constraint for each argument of the functor
-            for (size_t i = 0; i < fun.getArity(); i++) {
+            if(fun.getFunction() != FunctorOp::ORD) {
+             for (size_t i = 0; i < fun.getArity(); i++) {
                 auto arg = getVar(fun.getArg(i));
                 if (fun.acceptsNumbers(i)) {
                     addConstraint(isSubtypeOf(arg, env.getNumberType()));
@@ -445,7 +446,8 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 if (fun.acceptsSymbols(i)) {
                     addConstraint(isSubtypeOf(arg, env.getSymbolType()));
                 }
-            }
+             }
+            } 
         }
 
         // user-defined functors

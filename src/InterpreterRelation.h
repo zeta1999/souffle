@@ -259,7 +259,8 @@ public:
         }
 
     private:
-        const InterpreterRelation* const relation = nullptr;
+        //TODO Unsafe! remove const-qualified so that I can copy a iter...
+        const InterpreterRelation* relation = nullptr;
         size_t index = 0;
         RamDomain* tuple = nullptr;
     };

@@ -130,15 +130,12 @@ enum LVM_Type {
     LVM_Goto,               // LVM_Goto  <address>  
     LVM_Jmpnz,              // LVM_Jmpnz <address>
     LVM_Jmpez,              // LVM_Jmpez <address>
-    LVM_ITER_LT,            // LVM_ITER_LT <iter Counter> <LVM_Number>. 
-                            // Needed because iter counter is a not LVM_Number, need special handle
-    LVM_ITER_Counter,       // LVM_ITER_Counter <i>
-                            // Load iter counter at index i
-    LVM_ITER_Select,        // TODO: Replacable by LVM_ElementAccess
-    LVM_ITER_Inc,
+    LVM_ITER_Select,        // <Select> <IterType> <Idx> TODO
+    LVM_ITER_Inc,           // <Inc> <IterType> <Idx> TODO
+    LVM_ITER_AtEnd,         // <AtEnd> <IterType> <Idx> TODO
+
     LVM_Match,              
     LVM_LT,
-    LVM_RelationSize,
     LVM_STOP,
 
     //TODO Better way to represent struct
@@ -146,6 +143,9 @@ enum LVM_Type {
     LVM_BRIE,
     LVM_EQREL,
     LVM_DEFAULT,
+
+    LVM_ITER_TypeScan,
+    LVM_ITER_TypeIndexScan,
 };
 
 class InterpreterProgInterface;
@@ -168,7 +168,8 @@ class LowLevelMachine {
           IODirectivesPool.clear();  
           relationPool.clear();
           currentAddressLabel = 0;
-          currentCounterLabel = 0;
+          scanIteratorIndex = 0;
+          indexScanIteratorIndex = 0;
        }
 
        std::vector<RamDomain> code;            /** Instructions stream */
@@ -187,9 +188,11 @@ class LowLevelMachine {
        size_t getNewAddressLabel() { return currentAddressLabel++; }
        std::vector<size_t> addressMap;
 
-       /** Loop Iter */
-       size_t currentCounterLabel = 0;
-       size_t getNewCounterLabel() {return currentCounterLabel++; }
+       /** Iter */
+       size_t scanIteratorIndex = 0;
+       size_t indexScanIteratorIndex = 0;
+       size_t getNewScanIterator() {return scanIteratorIndex++; }
+       size_t getNewIndexScanIterator() {return indexScanIteratorIndex++; }
 
        /* Return the value of the addressLabel. 
         * Return 0 if label doesn't exits. 
@@ -517,36 +520,26 @@ class LowLevelMachine {
         *                }
         *
         *
-        * L0: LVM_Loop_Counter    <i>
-        *     LVM_NUMBER  <relation.size()>
-        *     LVM_LT
-        *     LVM_JMPEZ  <L1>
-        *     LVM_SELECT  <relation.name()>   <i>    <identifier>
-        *     visit (scan.getOperation, exitAddress)
-        *     LVM_Loop_Inc        <i>
-        *     JMP L0
-        * L1:
-        *
         */
        void visitScan(const RamScan& scan, size_t exitAddress) override {
           code.push_back(LVM_Scan); 
           printf("Scan\n");
-          size_t address_L0 = code.size();
-          size_t counterLabel = getNewCounterLabel();
-          code.push_back(LVM_ITER_Counter);
+          size_t counterLabel = getNewScanIterator();
+          code.push_back(LVM_ITER_TypeScan);
           code.push_back(counterLabel);
-
-          code.push_back(LVM_RelationSize);
           code.push_back(symbolTable.lookup(scan.getRelation().getName()));
+          size_t address_L0 = code.size();
 
-          code.push_back(LVM_ITER_LT);
+          code.push_back(LVM_ITER_AtEnd);
+          code.push_back(counterLabel);
+          code.push_back(LVM_ITER_TypeScan);
           code.push_back(LVM_Jmpez);
           size_t L1 = getNewAddressLabel();
           code.push_back(lookupAddress(L1));
 
           code.push_back(LVM_ITER_Select);
-          code.push_back(symbolTable.lookup(scan.getRelation().getName()));
           code.push_back(counterLabel);
+          code.push_back(LVM_ITER_TypeScan);
           code.push_back(scan.getIdentifier());
           
           printf("Star nested op\n");
@@ -555,6 +548,7 @@ class LowLevelMachine {
           printf("Finsih nested op\n");
           code.push_back(LVM_ITER_Inc);
           code.push_back(counterLabel);
+          code.push_back(LVM_ITER_TypeScan);
           code.push_back(LVM_Goto);
           code.push_back(address_L0);
 
@@ -591,42 +585,40 @@ class LowLevelMachine {
           //TODO For now just eval pattern every times
           code.push_back(LVM_IndexScan);
           printf("Start Index Scan\n");
+          size_t counterLabel = getNewIndexScanIterator();
+          size_t address_L0 = code.size();
+          size_t L1 = getNewAddressLabel();
+          size_t L2 = getNewAddressLabel();
+
+          //code.push_back(LVM_ITER_Counter);
+          code.push_back(counterLabel);
+          //code.push_back(LVM_RelationSize);
+          code.push_back(symbolTable.lookup(scan.getRelation().getName())); 
+                                              //TODO concurrent insert?
+          //code.push_back(LVM_ITER_LT);
+          code.push_back(LVM_Jmpez);
+          code.push_back(lookupAddress(L2));
           auto patterns = scan.getRangePattern();
           std::string types;
           auto arity = scan.getRelation().getArity();
-          printf("Pattern.size():%ld arity:%d\n", patterns.size(), arity);
           for (size_t i = 0; i < arity; i ++) {
              if (patterns[i]) {
                 visit(patterns[i], exitAddress);
              }
              types += (patterns[i] == nullptr? "_" : "V");
           }
-          printf("Finish Pattern visiting\n");
-
-          size_t counterLabel = getNewCounterLabel();
-          size_t address_L0 = code.size();
-          size_t L1 = getNewAddressLabel();
-          size_t L2 = getNewAddressLabel();
-
-          code.push_back(LVM_ITER_Counter);
-          code.push_back(counterLabel);
-          code.push_back(LVM_RelationSize);
-          code.push_back(symbolTable.lookup(scan.getRelation().getName())); 
-                                              //TODO concurrent insert?
-          code.push_back(LVM_ITER_LT);
-          code.push_back(LVM_Jmpez);
-          code.push_back(lookupAddress(L2));
           code.push_back(LVM_Match);
           code.push_back(symbolTable.lookup(scan.getRelation().getName()));   
           code.push_back(counterLabel);
+          code.push_back(scan.getIdentifier());
           code.push_back(symbolTable.lookup(types));
           //code.push_back(patterns); TODO Implement patterns here
           code.push_back(LVM_Jmpez);
           code.push_back(lookupAddress(L1));
           
-          code.push_back(LVM_ITER_Select);
-          code.push_back(counterLabel);
-          code.push_back(scan.getIdentifier());
+         // code.push_back(LVM_ITER_Select);
+         // code.push_back(counterLabel);
+         // code.push_back(scan.getIdentifier());
           printf("Start Index Nested\n");
           visit(scan.getOperation(), exitAddress);
           printf("Finish Index Nested\n");
@@ -1023,13 +1015,27 @@ public:
     //InterpreterContext ctxt(translationUnit.getAnalysis<RamOperationDepthAnalysis>()->getDepth(&op));
     InterpreterContext ctxt = InterpreterContext(100);   //TODO 
     
-    std::vector<size_t> iterCounters;
-    size_t getCounter(int idx) {
-       if (idx >= iterCounters.size()) {
-          iterCounters.resize((idx+1) * 2);
-          return 0;
-       } 
-       return iterCounters[idx];
+    // A new Iter
+    using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator, std::allocator<const RamDomain*>, 512>;
+
+    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
+
+    std::pair<index_set::iterator, index_set::iterator> lookUpIndexScanIterator(size_t idx) {
+      if (idx >= indexScanIteratorPool.size()) {
+         indexScanIteratorPool.resize((idx+1) * 2);
+      }
+      return indexScanIteratorPool[idx];
+    }
+    
+
+    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;
+
+    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
+      if (idx >= scanIteratorPool.size()) {
+         scanIteratorPool.resize((idx+1) * 2);
+      }
+
+      return scanIteratorPool[idx];
     }
 
     int level = 0;

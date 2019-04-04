@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include <ffi.h>
+#include "ffi/ffi.h"
 
 namespace souffle {
 
@@ -740,51 +740,133 @@ void LowLevelMachine::eval() {
             printf("Jmpez, next = %ld, val is %d\n", ip, val);
             break;
          }
-         case LVM_ITER_LT: { 
-            RamDomain cap = stack.top();
-            stack.pop();
-            RamDomain counter = stack.top();
-            stack.pop();
+         case LVM_ITER_TypeScan: {
+            printf("ITER_TypeScan\n");
+            RamDomain idx = code[ip+1];
 
-            stack.push(counter < cap);
-            ip += 1;
-            break;
+            // first == second means the iterators haven't been created yet
+            auto iter = lookUpScanIterator(idx);
+            if (iter.first == iter.second) {
+               printf("Create new iter\n");
+               std::string relName = symbolTable.resolve(code[ip+2]);
+               InterpreterRelation& rel = getRelation(relName);
+               scanIteratorPool[idx] = std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>(rel.begin(), rel.end());
+            } 
+
+            printf("ITER_TypeScan Done\n");
+            ip += 3;
+            break;                         
          }
-         case LVM_ITER_Counter: {
-            RamDomain counterIdx = code[ip+1];
-            stack.push(getCounter(counterIdx));
-            ip += 2;
+         case LVM_ITER_AtEnd: {  //TODO Change name to notAtEnd
+            printf("ITER_AtEnd\n");
+            RamDomain idx = code[ip+1];
+            switch(code[ip+2]) {
+               case LVM_ITER_TypeScan: {
+                  auto iter = scanIteratorPool[idx];
+                  stack.push(iter.first != iter.second);        
+                  break;
+               } 
+               case LVM_ITER_TypeIndexScan: {
+                  auto iter = indexScanIteratorPool[idx];
+                  stack.push(iter.first != iter.second);        
+                  break;
+               }
+               default:
+                  break;
+            }   
+            printf("ITER_AtEnd Done\n");
+            ip += 3;
             break;
          }
          case LVM_ITER_Select: { //TODO improve
             printf("Select\n");
-            std::string relName = symbolTable.resolve(code[ip+1]);
-            RamDomain counterIdx = code[ip+2];
+            RamDomain idx = code[ip+1];
             RamDomain id = code[ip+3];
-
-            InterpreterRelation& rel = getRelation(relName);
-            size_t idx = getCounter(counterIdx);
-            printf("Select idx:%ld from %s\n", idx, relName.c_str());
-            ctxt[id] = rel.getTupleByIdx(idx);
+            switch(code[ip+2]) {
+               case LVM_ITER_TypeScan: {
+                  auto iter = scanIteratorPool[idx];
+                  ctxt[id] = *iter.first;
+                  break;
+               } 
+               case LVM_ITER_TypeIndexScan: {
+                  auto iter = indexScanIteratorPool[idx];
+                  ctxt[id] = *iter.first;
+                  break;
+               }
+               default:
+                  break;
+            }   
             ip += 4;
             printf("Select Done\n");
             break;
          }
          case LVM_ITER_Inc: {
-            RamDomain counterIdx = code[ip+1];
-            iterCounters[counterIdx] += 1; //TODO Unsafe
-            ip += 2;
+            printf("Increase Iter\n");
+            RamDomain idx = code[ip+1];
+            switch(code[ip+2]) {
+               case LVM_ITER_TypeScan: {
+                  printf("Difference: %s\n", 
+                        symbolTable.resolve((*scanIteratorPool[idx].first)[0]).c_str());
+
+                  ++scanIteratorPool[idx].first;
+                  break;
+               } 
+               case LVM_ITER_TypeIndexScan: {
+                  ++indexScanIteratorPool[idx].first;
+                  break;
+               }
+               default:
+                  printf("Unknown iter\n");
+                  break;
+            }   
+            ip += 3;
             break;
          }
          case LVM_Match:{  //TODO Later
+            std::string relName = symbolTable.resolve(code[ip+1]);
+            RamDomain counterIdx = code[ip+2];
+            RamDomain id = code[ip+3];
+            std::string pattern = symbolTable.resolve(code[ip+4]);
+
+            // get the targeted relation
+            const InterpreterRelation& rel = getRelation(relName);
+
+            // create pattern tuple for range query
+            auto arity = rel.getArity();
+            RamDomain low[arity];
+            RamDomain hig[arity];
+            for (size_t i = 0; i < arity; i++) {
+                if (pattern[arity-i-1] == 'v'){
+                    low[arity-i-1] = stack.top();
+                    stack.pop();
+                    hig[arity-i-1] = low[arity-i-1];
+                } else {
+                    low[arity-i-1] = MIN_RAM_DOMAIN;
+                    hig[arity-i-1] = MAX_RAM_DOMAIN;
+                }
+            }
+
+            // obtain index
+            // TODO Do as function
+            SearchColumns keys = 0;
+            for (size_t i = 0; i < arity; i++) {
+               if (pattern[arity-i-1] == 'v') {
+                  keys |= (1 << i);
+               }
+            }
+            auto idx = rel.getIndex(keys);
+
+            // get iterator range
+            auto range = idx->lowerUpperBound(low, hig);
+            
+            // conduct range query
+            for (auto ip = range.first; ip != range.second; ++ip) {
+      //          const RamDomain* data = *(ip);
+      //          ctxt[scan.getIdentifier()] = data;
+      //          visitSearch(scan);
+            }
             ip += 4;
             break;
-         }
-         case LVM_RelationSize: {
-            std::string relName = symbolTable.resolve(code[ip+1]);
-            InterpreterRelation& rel = getRelation(relName);
-            stack.push(rel.size());
-            ip += 1;
          }
          case LVM_LT: //TODO Don't Need
             ip += 1;
@@ -1216,6 +1298,8 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
                 ctxt[scan.getIdentifier()] = cur;
                 visitSearch(scan);
             }
+
+           
         }
 
         void visitIndexScan(const RamIndexScan& scan) override {
@@ -2095,25 +2179,29 @@ void LowLevelMachine::print() {
             printf("%ld\tLVM_Jmpez\t%d\n", ip, code[ip+1]);
             ip += 2;
             break;
-         case LVM_ITER_LT: 
-            printf("%ld\tLVM_ITER_LT\t\n", ip);
-            ip += 1;
+         case LVM_ITER_TypeIndexScan:
+            ip += 3;
             break;
-         case LVM_ITER_Counter: 
-            printf("%ld\tLVM_ITER_Counter\tIter:%d\n", ip, code[ip+1]);
-            ip += 2;
+         case LVM_ITER_TypeScan: {
+            printf("%ld\tLVM_ITER_TypeScan\t%d\n", ip, code[ip+1]);
+            ip += 3;
+            break;                         
+         }
+         case LVM_ITER_AtEnd:
+            printf("%ld\tLVM_AtEnd\t%d\tType:%d\n", ip, code[ip+1], code[ip+2]);
+            ip += 3;
             break;
          case LVM_ITER_Select:   
             printf("%ld\tLVM_ITER_Select\t\n", ip);
-            printf("\t%s\t%d\t%d\n",
-                  symbolTable.resolve(code[ip+1]).c_str(),
+            printf("\t%d\t%d\t%d\n",
+                  code[ip+1],
                   code[ip+2],
                   code[ip+3]);
             ip += 4;
             break;
          case LVM_ITER_Inc:   
-            printf("%ld\tLVM_ITER_Inc\tIter:%d\n", ip, code[ip+1]);
-            ip += 2;
+            printf("%ld\tLVM_ITER_Inc\tIter:%d\tType:%d\n", ip, code[ip+1], code[ip+2]);
+            ip += 3;
             break;
          case LVM_Match:   
             printf("%ld\tLVM_Match\t\n", ip);
@@ -2127,15 +2215,12 @@ void LowLevelMachine::print() {
             printf("%ld\tLVM_LT\n", ip);
             ip += 1;
             break;
-         case LVM_RelationSize:
-            printf("%ld\tLVM_RelationSize\t%s\n", ip, symbolTable.resolve(code[ip+1]).c_str());
-            ip += 2;
-            break;
          case LVM_STOP: 
             printf("%ld\tLVM_STOP\n", ip);
             level = 0;
             return;
          default:
+            printf("Unkown\n");
             break;
       }
    }

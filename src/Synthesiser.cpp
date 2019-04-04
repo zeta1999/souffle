@@ -325,8 +325,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 projectRelName = project.getRelation().getName();
             });
 
-            // TODO: the check for empty relations of a query needs
-            //       to be expressed in RAM / not in the synthesis.
+            // TODO(#941): the check for empty relations of a query needs
+            // to be expressed in RAM / not in the synthesis via C++.
             visitDepthFirst(query, [&](const RamRelationSearch& scan) {
                 inputRelNames.insert(scan.getRelation().getName());
             });

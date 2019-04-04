@@ -31,7 +31,6 @@
 %define parse.error verbose
 
 /* -- Tokens -- */
-%token <std::string> RESERVED    "reserved keyword"
 %token END 0                     "end of file"
 %token <std::string> STRING      "symbol"
 %token <std::string> IDENT       "identifier"
@@ -75,6 +74,7 @@
 %token TONUMBER                  "convert string to number"
 %token TOSTRING                  "convert number to string"
 %token AS                        "type cast"
+%token AT                        "@"
 %token NIL                       "nil reference"
 %token PIPE                      "|"
 %token LBRACKET                  "["
@@ -656,7 +656,7 @@ arg
     }
 
     /* user-defined functor */
-  | IDENT LPAREN arg_list RPAREN {
+  | AT IDENT LPAREN arg_list RPAREN {
         $$ = new AstUserDefinedFunctor();
         for (const auto* arg : $arg_list) {
             $$->add(std::unique_ptr<AstArgument>(arg));

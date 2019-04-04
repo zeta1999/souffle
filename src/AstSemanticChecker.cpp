@@ -216,17 +216,17 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
 
         // check types of arguments
-        if(fun.getFunction() != FunctorOp::ORD) { 
-        for (size_t i = 0; i < fun.getArity(); i++) {
-            auto arg = fun.getArg(i);
-            if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-            }
-            if (fun.acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+        if (fun.getFunction() != FunctorOp::ORD) {
+            for (size_t i = 0; i < fun.getArity(); i++) {
+                auto arg = fun.getArg(i);
+                if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
+                    report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+                }
+                if (fun.acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
+                    report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+                }
             }
         }
-        } 
     });
 
     // - user-defined functors -

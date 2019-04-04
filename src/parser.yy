@@ -117,6 +117,10 @@
 %type <std::vector<AstArgument *>>  arg_list non_empty_arg_list
 %type <AstAtom *>                   atom
 %type <std::vector<AstAtom *>>      head
+%type <AstComponent *>              component component_body component_head
+%type <AstComponentType *>          comp_type
+%type <AstComponentInit *>          comp_init
+%type <std::vector<AstTypeIdentifier>>  type_params type_param_list
 %type <std::string>                 functor_arg_type_list non_empty_functor_arg_type_list functor_type
 %type <AstConstraint *>             constraint
 %type <RuleBody *>                  body conjunction disjunction term
@@ -125,8 +129,15 @@
 %type <std::vector<AstClause *>>    rule rule_def
 %type <AstExecutionPlan *>          exec_plan exec_plan_list
 %type <AstExecutionOrder *>         exec_order_list non_empty_exec_order_list
+%type <AstPragma *>                 pragma
+%type <std::vector<AstLoad *>>      load_head
+%type <std::vector<AstStore *>>     store_head
+%type <std::vector<AstIO *>>        io_directive_list
 %type <AstRecordType *>             record_type_list non_empty_record_type_list
 %type <AstUnionType *>              union_type_list
+%type <std::string>                 kvp_value
+%type <AstIO *>                     key_value_pairs non_empty_key_value_pairs
+%type <std::vector<std::vector<std::string>>> io_relation_list
 
 /* TODO: think about these ones */
 %type <AstClause *>                 fact
@@ -169,8 +180,16 @@ unit
             driver.addRelation(std::unique_ptr<AstRelation>(cur));
         }
     }
-  | unit load_head
-  | unit store_head
+  | unit load_head {
+        for (auto* cur : $load_head) {
+            driver.addLoad(std::unique_ptr<AstLoad>(cur));
+        }
+    }
+  | unit store_head {
+        for (auto* cur : $store_head) {
+            driver.addStore(std::unique_ptr<AstStore>(cur));
+        }
+    }
   | unit fact {
         driver.addClause(std::unique_ptr<AstClause>($fact));
     }
@@ -179,10 +198,17 @@ unit
             driver.addClause(std::unique_ptr<AstClause>(cur));
         }
     }
-  | unit component
-  | unit comp_init
-  | unit pragma
-  | %empty
+  | unit component {
+        driver.addComponent(std::unique_ptr<AstComponent>($component));
+    }
+  | unit comp_init {
+        driver.addInstantiation(std::unique_ptr<AstComponentInit>($comp_init));
+    }
+  | unit pragma {
+        driver.addPragma(std::unique_ptr<AstPragma>($pragma));
+    }
+  | %empty {
+    }
   ;
 
 /**
@@ -840,55 +866,117 @@ arg
 
 /* Component */
 component
-  : component_head LBRACE component_body RBRACE
+  : component_head LBRACE component_body RBRACE {
+        $$ = $component_body;
+        auto* type = $component_head->getComponentType()->clone();
+        $$->setComponentType(std::unique_ptr<AstComponentType>(type));
+        $$->copyBaseComponents($component_head);
+        delete $component_head;
+    }
   ;
 
 /* Component head */
 component_head
-  : COMPONENT comp_type
-  | component_head COLON comp_type
-  | component_head COMMA comp_type
+  : COMPONENT comp_type {
+        $$ = new AstComponent();
+        $$->setComponentType(std::unique_ptr<AstComponentType>($comp_type));
+    }
+  | component_head[comp] COLON comp_type {
+        $$ = $comp;
+        $$->addBaseComponent(std::unique_ptr<AstComponentType>($comp_type));
+    }
+  | component_head[comp] COMMA comp_type {
+        $$ = $comp;
+        $$->addBaseComponent(std::unique_ptr<AstComponentType>($comp_type));
+    }
   ;
 
 /* Component type */
 comp_type
-  : IDENT type_params
+  : IDENT type_params {
+        $$ = new AstComponentType($IDENT, $type_params);
+    }
   ;
 
 /* Component type parameters */
 type_params
-  : LT type_param_list GT
-  | %empty
+  : LT type_param_list GT {
+        $$ = $type_param_list;
+    }
+  | %empty {
+        $$ = std::vector<AstTypeIdentifier>>;
+    }
   ;
 
 /* Component type parameter list */
 type_param_list
-  : IDENT
-  | type_param_list COMMA IDENT
+  : IDENT {
+        $$.push_back($IDENT);
+    }
+  | type_param_list[curr_list] COMMA IDENT {
+        $$ = $curr_list;
+        $$.push_back($IDENT);
+    }
   ;
 
 /* Component body */
 component_body
-  : component_body type
-  | component_body relation_decl
-  | component_body load_head
-  | component_body store_head
-  | component_body fact
-  | component_body rule
-  | component_body comp_override
-  | component_body comp_init
-  | component_body component
-  | %empty
+  : component_body[comp] type {
+        $$ = $comp;
+        comp->addType(std::unique_ptr<AstType>($type));
+    }
+  | component_body[comp] relation_decl {
+        $$ = $comp;
+        for (auto* rel : $relation_decl) {
+            $$->addRelation(std::unique_ptr<AstRelation>(rel));
+        }
+    }
+  | component_body[comp] load_head {
+        $$ = $comp;
+        for (auto* io : $load_head) {
+            $$->addLoad(std::unique_ptr<AstLoad>(io));
+        }
+    }
+  | component_body[comp] store_head {
+        $$ = $comp;
+        for (auto* io : $store_head) {
+            $$->addStore(std::unique_ptr<AstStore>(io));
+        }
+    }
+  | component_body[comp] fact {
+        $$ = $comp;
+        $$->addClause(std::unique_ptr<AstClause>($fact));
+    }
+  | component_body[comp] rule {
+        $$ = $comp;
+        for (auto* rule : $rule) {
+            $$->addClause(std::unique_ptr<AstClause>(rule));
+        }
+    }
+  | component_body[comp] OVERRIDE IDENT {
+        $$ = $comp;
+        $$->addOverride($IDENT);
+    }
+  | component_body[comp] comp_init {
+        $$ = $comp;
+        $$->addInstantiation(std::unique_ptr<AstComponentInit>($comp_init);
+    }
+  | component_body[comp] component {
+        $$ = $comp;
+        $$->addComponent(std::unique_ptr<AstComponent>($component));
+    }
+  | %empty {
+        $$ = new AstComponent();
+    }
   ;
 
 /* Component initialisation */
 comp_init
-  : INSTANTIATE IDENT EQUALS comp_type
-  ;
-
-/* Component overriding rules of a relation */
-comp_override
-  : OVERRIDE IDENT
+  : INSTANTIATE IDENT EQUALS comp_type {
+        $$ = new AstComponentInit();
+        $$->setInstanceName($IDENT);
+        $$->setComponentType(std::unique_ptr<AstComponentType>($comp_type));
+    }
   ;
 
 /**
@@ -940,41 +1028,102 @@ functor_type
 
 /* Pragma directives */
 pragma
-  : PRAGMA STRING STRING
-  | PRAGMA STRING
+  : PRAGMA STRING[key] STRING[value] {
+        $$ = new AstPragma($key, $value);
+    }
+  | PRAGMA STRING[option] {
+        $$ = new AstPragma($option, "");
+    }
   ;
 
 /* Load directives */
 load_head
-  : INPUT_DECL io_directive_list
+  : INPUT_DECL io_directive_list {
+        for (const auto* io : $io_directive_list) {
+            $$.push_back(new AstLoad(*io));
+            delete io;
+        }
+    }
   ;
 
 /* Store directives */
 store_head
-  : OUTPUT_DECL io_directive_list
-  | PRINTSIZE_DECL io_directive_list
+  : OUTPUT_DECL io_directive_list {
+        for (const auto* io : $io_directive_list) {
+            $$.push_back(new AstStore(*io));
+            delete io;
+        }
+    }
+  | PRINTSIZE_DECL io_directive_list {
+        for (const auto* io : $io_directive_list) {
+            $$.push_back(new AstPrintSize(*io));
+            delete io;
+        }
+    }
   ;
 
 /* IO directive list */
 io_directive_list
-  : relation_list
-  | relation_list LPAREN key_value_pairs RPAREN
+  : io_relation_list {
+        for (const auto& rel : $io_relation_list) {
+            auto* io = new AstIO();
+            io->setName(rel);
+            $$.push_back(io);
+        }
+    }
+  | io_relation_list LPAREN key_value_pairs RPAREN {
+        for (const auto& rel : $io_relation_list) {
+            auto* io = $key_value_pairs->clone();
+            io->setName(rel);
+        }
+
+        delete $key_value_pairs;
+    }
+  ;
+
+/* IO relation list */
+io_relation_list
+  : identifier {
+        $$.push_back($identifier);
+    }
+  | io_relation_list[curr_list] COMMA identifier {
+        $$ = $curr_list;
+        $$.push_back($identifier);
+    }
   ;
 
 /* Key-value pairs */
 key_value_pairs
-  : non_empty_key_value_pairs
-  | %empty
+  : non_empty_key_value_pairs {
+        $$ = $non_empty_key_value_pairs;
+    }
+  | %empty {
+        $$ = new AstIO();
+    }
   ;
 non_empty_key_value_pairs
-  : kvp
-  | non_empty_key_value_pairs COMMA kvp
+  : IDENT EQUALS kvp_value {
+        $$ = new AstIO();
+        $$->addKVP($IDENT, $kvp_value);
+    }
+  | non_empty_key_value_pairs[curr_io] COMMA IDENT EQUALS kvp_value {
+        $$ = $curr_io;
+        $$->addKVP($IDENT, $kvp_value);
+    }
   ;
-kvp
-  : IDENT EQUALS STRING
-  | IDENT EQUALS IDENT
-  | IDENT EQUALS TRUE
-  | IDENT EQUALS FALSE
+kvp_value
+  : STRING {
+        $$ = $STRING;
+    }
+  | IDENT {
+        $$ = $IDENT;
+    }
+  | TRUE {
+        $$ = "true";
+    }
+  | FALSE {
+        $$ = "false";
+    }
   ;
 
 %%

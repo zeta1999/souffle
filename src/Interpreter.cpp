@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include "ffi/ffi.h"
+#include <ffi.h>
 
 namespace souffle {
 
@@ -479,7 +479,7 @@ void LowLevelMachine::eval() {
                RamDomain high[arity]; 
                
                for (size_t i = 0; i < arity; i++) {
-                  if (patterns[i] == 'v') {
+                  if (patterns[arity-i-1] == 'V') {
                      low[arity-i-1] = stack.top();
                      stack.pop(); 
                      high[arity-i-1] = low[arity-i-1];
@@ -527,7 +527,6 @@ void LowLevelMachine::eval() {
             ip += 1;
             break;
          case LVM_Project: {
-            printf("Project\n");
             RamDomain arity = code[ip+1];
             std::string relName = symbolTable.resolve(code[ip+2]);
             RamDomain tuple[arity];
@@ -536,9 +535,9 @@ void LowLevelMachine::eval() {
                stack.pop();
             }
             InterpreterRelation& rel = getRelation(relName);
+            printf("Project into %s\n", relName.c_str());
             rel.insert(tuple);
             ip += 3;
-            printf("Project Done\n");
             break;
          }
          case LVM_Return: {
@@ -560,7 +559,7 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_Parallel: { //TODO Later
-            ip += (2 + code[ip+2] + 1);
+            ip += (1 + code[ip+1] + 1);
             break;
          }
          case LVM_Stop_Parallel: { //TODO later
@@ -736,28 +735,64 @@ void LowLevelMachine::eval() {
          case LVM_Jmpez: {
             RamDomain val = stack.top();
             stack.pop();
+            size_t t = ip;
             ip = (val == 0 ? code[ip+1] : ip + 2);
-            printf("Jmpez, next = %ld, val is %d\n", ip, val);
+            printf("%ld:Jmpez, next = %ld, val is %d\n",t, ip, val);
             break;
          }
          case LVM_ITER_TypeScan: {
             printf("ITER_TypeScan\n");
             RamDomain idx = code[ip+1];
-
-            // first == second means the iterators haven't been created yet
-            auto iter = lookUpScanIterator(idx);
-            if (iter.first == iter.second) {
-               printf("Create new iter\n");
-               std::string relName = symbolTable.resolve(code[ip+2]);
-               InterpreterRelation& rel = getRelation(relName);
-               scanIteratorPool[idx] = std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>(rel.begin(), rel.end());
-            } 
+            
+            lookUpScanIterator(idx);
+            std::string relName = symbolTable.resolve(code[ip+2]);
+            InterpreterRelation& rel = getRelation(relName);
+            scanIteratorPool[idx] = std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>(rel.begin(), rel.end());
 
             printf("ITER_TypeScan Done\n");
             ip += 3;
             break;                         
          }
-         case LVM_ITER_AtEnd: {  //TODO Change name to notAtEnd
+         case LVM_ITER_TypeIndexScan: {
+            printf("ITER_TypeIndexScan\n");
+            RamDomain idx = code[ip+1];
+            std::string relName = symbolTable.resolve(code[ip+2]);
+            InterpreterRelation& rel = getRelation(relName);
+            std::string pattern = symbolTable.resolve(code[ip+3]);
+
+            // create pattern tuple for range query
+            auto arity = rel.size();
+            RamDomain low[arity];
+            RamDomain hig[arity];
+            for (size_t i = 0; i < arity; i++) {
+                if (pattern[arity-i-1] == 'V'){
+                    low[arity-i-1] = stack.top();
+                    stack.pop();
+                    hig[arity-i-1] = low[arity-i-1];
+                } else {
+                    low[arity-i-1] = MIN_RAM_DOMAIN;
+                    hig[arity-i-1] = MAX_RAM_DOMAIN;
+                }
+            }
+
+            // obtain index
+            // TODO Do as function
+            SearchColumns keys = 0;
+            for (size_t i = 0; i < arity; i++) {
+               if (pattern[i] == 'V') {
+                  keys |= (1 << i);
+               }
+            }
+            auto index = rel.getIndex(keys);
+
+            // get iterator range
+            lookUpIndexScanIterator(idx); //TODO Imrpove
+            indexScanIteratorPool[idx] = index->lowerUpperBound(low, hig);
+            ip += 4;
+            printf("ITER_TypeIndexScan Done\n");
+            break;
+         }
+         case LVM_ITER_NotAtEnd: {  //TODO Change name to notAtEnd
             printf("ITER_AtEnd\n");
             RamDomain idx = code[ip+1];
             switch(code[ip+2]) {
@@ -805,9 +840,6 @@ void LowLevelMachine::eval() {
             RamDomain idx = code[ip+1];
             switch(code[ip+2]) {
                case LVM_ITER_TypeScan: {
-                  printf("Difference: %s\n", 
-                        symbolTable.resolve((*scanIteratorPool[idx].first)[0]).c_str());
-
                   ++scanIteratorPool[idx].first;
                   break;
                } 
@@ -822,49 +854,12 @@ void LowLevelMachine::eval() {
             ip += 3;
             break;
          }
-         case LVM_Match:{  //TODO Later
-            std::string relName = symbolTable.resolve(code[ip+1]);
-            RamDomain counterIdx = code[ip+2];
+         case LVM_Match:{  
+            RamDomain idx = code[ip+1];
             RamDomain id = code[ip+3];
             std::string pattern = symbolTable.resolve(code[ip+4]);
 
-            // get the targeted relation
-            const InterpreterRelation& rel = getRelation(relName);
 
-            // create pattern tuple for range query
-            auto arity = rel.getArity();
-            RamDomain low[arity];
-            RamDomain hig[arity];
-            for (size_t i = 0; i < arity; i++) {
-                if (pattern[arity-i-1] == 'v'){
-                    low[arity-i-1] = stack.top();
-                    stack.pop();
-                    hig[arity-i-1] = low[arity-i-1];
-                } else {
-                    low[arity-i-1] = MIN_RAM_DOMAIN;
-                    hig[arity-i-1] = MAX_RAM_DOMAIN;
-                }
-            }
-
-            // obtain index
-            // TODO Do as function
-            SearchColumns keys = 0;
-            for (size_t i = 0; i < arity; i++) {
-               if (pattern[arity-i-1] == 'v') {
-                  keys |= (1 << i);
-               }
-            }
-            auto idx = rel.getIndex(keys);
-
-            // get iterator range
-            auto range = idx->lowerUpperBound(low, hig);
-            
-            // conduct range query
-            for (auto ip = range.first; ip != range.second; ++ip) {
-      //          const RamDomain* data = *(ip);
-      //          ctxt[scan.getIdentifier()] = data;
-      //          visitSearch(scan);
-            }
             ip += 4;
             break;
          }
@@ -2056,11 +2051,11 @@ void LowLevelMachine::print() {
          }
          case LVM_Parallel: { 
             printf("%ld\tLVM_Parallel\t%d\t\n", ip, code[ip+1]);
-            for (int i = 0; i < code[ip+2]; ++i) {
+            for (int i = 0; i < code[ip+1]; ++i) {
                printf("%d\t", code[ip+i]);
             }
             putchar('\n');
-            ip += (2 + code[ip+2] + 1);
+            ip += (1 + code[ip+1] + 1);
             break;
          }
          case LVM_Stop_Parallel: { 
@@ -2180,14 +2175,15 @@ void LowLevelMachine::print() {
             ip += 2;
             break;
          case LVM_ITER_TypeIndexScan:
-            ip += 3;
+            printf("%ld\tLVM_ITER_TypeIndexScan\t%s\n", ip, symbolTable.resolve(code[ip+2]).c_str());
+            ip += 4;
             break;
          case LVM_ITER_TypeScan: {
-            printf("%ld\tLVM_ITER_TypeScan\t%d\n", ip, code[ip+1]);
+            printf("%ld\tLVM_ITER_TypeScan\t%s\n", ip, symbolTable.resolve(code[ip+2]).c_str());
             ip += 3;
             break;                         
          }
-         case LVM_ITER_AtEnd:
+         case LVM_ITER_NotAtEnd:
             printf("%ld\tLVM_AtEnd\t%d\tType:%d\n", ip, code[ip+1], code[ip+2]);
             ip += 3;
             break;

@@ -132,7 +132,7 @@ enum LVM_Type {
     LVM_Jmpez,              // LVM_Jmpez <address>
     LVM_ITER_Select,        // <Select> <IterType> <Idx> TODO
     LVM_ITER_Inc,           // <Inc> <IterType> <Idx> TODO
-    LVM_ITER_AtEnd,         // <AtEnd> <IterType> <Idx> TODO
+    LVM_ITER_NotAtEnd,         // <AtEnd> <IterType> <Idx> TODO
 
     LVM_Match,              
     LVM_LT,
@@ -530,7 +530,7 @@ class LowLevelMachine {
           code.push_back(symbolTable.lookup(scan.getRelation().getName()));
           size_t address_L0 = code.size();
 
-          code.push_back(LVM_ITER_AtEnd);
+          code.push_back(LVM_ITER_NotAtEnd);
           code.push_back(counterLabel);
           code.push_back(LVM_ITER_TypeScan);
           code.push_back(LVM_Jmpez);
@@ -544,7 +544,7 @@ class LowLevelMachine {
           
           printf("Star nested op\n");
           printf("%d\n", scan.getOperation().getNodeType());
-          visit(scan.getOperation(), L1);
+          visit(scan.getOperation(), exitAddress);
           printf("Finsih nested op\n");
           code.push_back(LVM_ITER_Inc);
           code.push_back(counterLabel);
@@ -586,18 +586,8 @@ class LowLevelMachine {
           code.push_back(LVM_IndexScan);
           printf("Start Index Scan\n");
           size_t counterLabel = getNewIndexScanIterator();
-          size_t address_L0 = code.size();
           size_t L1 = getNewAddressLabel();
-          size_t L2 = getNewAddressLabel();
 
-          //code.push_back(LVM_ITER_Counter);
-          code.push_back(counterLabel);
-          //code.push_back(LVM_RelationSize);
-          code.push_back(symbolTable.lookup(scan.getRelation().getName())); 
-                                              //TODO concurrent insert?
-          //code.push_back(LVM_ITER_LT);
-          code.push_back(LVM_Jmpez);
-          code.push_back(lookupAddress(L2));
           auto patterns = scan.getRangePattern();
           std::string types;
           auto arity = scan.getRelation().getArity();
@@ -607,27 +597,33 @@ class LowLevelMachine {
              }
              types += (patterns[i] == nullptr? "_" : "V");
           }
-          code.push_back(LVM_Match);
-          code.push_back(symbolTable.lookup(scan.getRelation().getName()));   
+
+          code.push_back(LVM_ITER_TypeIndexScan);
           code.push_back(counterLabel);
-          code.push_back(scan.getIdentifier());
+          code.push_back(symbolTable.lookup(scan.getRelation().getName())); 
           code.push_back(symbolTable.lookup(types));
-          //code.push_back(patterns); TODO Implement patterns here
+
+          size_t address_L0 = code.size();
+
+          code.push_back(LVM_ITER_NotAtEnd);
+          code.push_back(counterLabel);
+          code.push_back(LVM_ITER_TypeIndexScan);
           code.push_back(LVM_Jmpez);
           code.push_back(lookupAddress(L1));
-          
-         // code.push_back(LVM_ITER_Select);
-         // code.push_back(counterLabel);
-         // code.push_back(scan.getIdentifier());
-          printf("Start Index Nested\n");
+
+          code.push_back(LVM_ITER_Select);
+          code.push_back(counterLabel);
+          code.push_back(LVM_ITER_TypeIndexScan);
+          code.push_back(scan.getIdentifier());
+
           visit(scan.getOperation(), exitAddress);
-          printf("Finish Index Nested\n");
-          setAddress(L1, code.size());
-          
+
+          code.push_back(LVM_ITER_Inc);
+          code.push_back(counterLabel);
+          code.push_back(LVM_ITER_TypeIndexScan);
           code.push_back(LVM_Goto);
           code.push_back(address_L0);
-
-          setAddress(L2, code.size());
+          setAddress(L1, code.size());
           printf("Finish Index Scan\n");
        }
        
@@ -680,7 +676,8 @@ class LowLevelMachine {
           printf("Finish filter nested\n");
 
           setAddress(L0, code.size());
-          printf("Filter Done, set L0:%ld\n", lookupAddress(L0));
+          printf("Filter Done, set L0:%ld, the label address is %ld\n", lookupAddress(L0), 
+                L0);
        }
         
        /*

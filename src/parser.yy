@@ -734,57 +734,57 @@ arg
 
     /* binary infix functors */
   | arg[left] PLUS arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::PLUS,
+        $$ = new AstIntrinsicFunctor(FunctorOp::ADD,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] MINUS arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::MINUS,
+        $$ = new AstIntrinsicFunctor(FunctorOp::SUB,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] STAR arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::STAR,
+        $$ = new AstIntrinsicFunctor(FunctorOp::MUL,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] SLASH arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::SLASH,
+        $$ = new AstIntrinsicFunctor(FunctorOp::DIV,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] PERCENT arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::PERCENT,
+        $$ = new AstIntrinsicFunctor(FunctorOp::MOD,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] CARET arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::CARET,
+        $$ = new AstIntrinsicFunctor(FunctorOp::EXP,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] BW_OR arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::BW_OR,
+        $$ = new AstIntrinsicFunctor(FunctorOp::BOR,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] BW_XOR arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::BW_XOR,
+        $$ = new AstIntrinsicFunctor(FunctorOp::BXOR,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] BW_AND arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::BW_AND,
+        $$ = new AstIntrinsicFunctor(FunctorOp::BAND,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] L_OR arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::L_OR,
+        $$ = new AstIntrinsicFunctor(FunctorOp::LOR,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
   | arg[left] L_AND arg[right] {
-        $$ = new AstIntrinsicFunctor(FunctorOp::L_AND,
+        $$ = new AstIntrinsicFunctor(FunctorOp::LAND,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
     }
@@ -938,7 +938,7 @@ type_params
         $$ = $type_param_list;
     }
   | %empty {
-        $$ = std::vector<AstTypeIdentifier>>;
+        $$ = std::vector<AstTypeIdentifier>>();
     }
   ;
 
@@ -957,7 +957,7 @@ type_param_list
 component_body
   : component_body[comp] type {
         $$ = $comp;
-        comp->addType(std::unique_ptr<AstType>($type));
+        $$->addType(std::unique_ptr<AstType>($type));
     }
   | component_body[comp] relation_decl {
         $$ = $comp;

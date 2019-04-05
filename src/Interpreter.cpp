@@ -447,9 +447,11 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_EmptinessCheck: {
+            printf("EmptinessCheck\n");
             std::string relName = symbolTable.resolve(code[ip+1]);
             stack.push(getRelation(relName).empty());
             ip += 2;
+            printf("EmptinessCheck Done\n");
             break;
          }
          case LVM_ExistenceCheck: {
@@ -729,7 +731,9 @@ void LowLevelMachine::eval() {
          case LVM_Jmpnz: {
             RamDomain val = stack.top();
             stack.pop();
+            size_t t = ip;
             ip = (val != 0 ? code[ip+1] : ip + 2);
+            printf("%ld:Jmpnz, next = %ld, val is %d\n",t, ip, val);
             break;
          }
          case LVM_Jmpez: {

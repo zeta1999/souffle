@@ -206,7 +206,7 @@ class LowLevelMachine {
 
        void setAddress(size_t addressLabel, size_t value) {
           if (addressLabel >= addressMap.size()) {
-             addressMap.resize((addressMap.size()+1) * 2); 
+             addressMap.resize((addressLabel + 1) * 2); 
           } 
           addressMap[addressLabel] = value;
        }
@@ -670,14 +670,15 @@ class LowLevelMachine {
 
           code.push_back(LVM_Jmpez);
           code.push_back(lookupAddress(L0));
+          printf("\tLook up L0 gives: %ld, the label address is %ld\n", lookupAddress(L0), 
+                L0);
 
           printf("Start filter nested\n");
           visit(filter.getOperation(), exitAddress);
           printf("Finish filter nested\n");
 
           setAddress(L0, code.size());
-          printf("Filter Done, set L0:%ld, the label address is %ld\n", lookupAddress(L0), 
-                L0);
+          printf("\tset L0 = %ld, Check addressMap: %ld.  label address%ld\n", code.size(), lookupAddress(L0), L0);
        }
         
        /*
@@ -740,29 +741,32 @@ class LowLevelMachine {
         *
         */
        void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
-          size_t address_L0 = code.size();
           size_t num_blocks=  parallel.getStatements().size();
-          code.push_back(LVM_Parallel); 
-          code.push_back(num_blocks);
+          if (num_blocks == 1) {
+             visit(parallel.getStatements()[0], exitAddress);
+          } else {
+             std::vector<size_t> labels(num_blocks);
+             size_t address_L0 = code.size();
+             code.push_back(LVM_Parallel); 
+             code.push_back(num_blocks);
 
-          std::vector<size_t> labels(num_blocks);
-          for (size_t i = 0; i < num_blocks; ++ i) {
-             labels[i] = getNewAddressLabel();
-             code.push_back(lookupAddress(labels[i]));
-          }
+             for (size_t i = 0; i < num_blocks; ++ i) {
+                labels[i] = getNewAddressLabel();
+                code.push_back(lookupAddress(labels[i]));
+             }
+             size_t L1 = getNewAddressLabel();
+             code.push_back(LVM_Goto);
+             code.push_back(lookupAddress(L1));
           
-          size_t L1 = getNewAddressLabel();
-          code.push_back(LVM_Goto);
-          code.push_back(lookupAddress(L1));
-       
-          for (size_t i = 0; i < num_blocks; ++ i) {
-             setAddress(labels[i], code.size());
-             visit(parallel.getStatements()[i], exitAddress);
-             code.push_back(LVM_Stop_Parallel);
-             code.push_back(address_L0);
-          }
+             for (size_t i = 0; i < num_blocks; ++ i) {
+                setAddress(labels[i], code.size());
+                visit(parallel.getStatements()[i], exitAddress);
+                code.push_back(LVM_Stop_Parallel);
+                code.push_back(address_L0);
+             }
 
-          setAddress(L1, code.size());
+             setAddress(L1, code.size());
+             }
        }
        
        /* Syntax: [L0: LVM_Loop
@@ -781,7 +785,7 @@ class LowLevelMachine {
           code.push_back(LVM_Loop);
           code.push_back(LVM_Goto);
           code.push_back(address_L0);
-          setAddress(L1, code.size() - 1);
+          setAddress(L1, code.size());
        }
        
        /* Syntax: [RN_Exit, address]

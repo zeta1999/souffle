@@ -38,14 +38,6 @@ public:
 
     virtual ~InterpreterRelation() = default;
    
-    //TODO Owen: hack, not safe
-    RamDomain* getTupleByIdx(size_t index) {
-       int blockIndex = index / (BLOCK_SIZE / this->arity);
-       int tupleIndex = (index % (BLOCK_SIZE / this->arity)) * this->arity;
-
-       return &this->blockList[blockIndex][tupleIndex];
-    }
-
     //TODO Owen: getter and setter for attributes type
     void addAttributes(const std::vector<std::string> attributeTypes) {
         attributeTypeQualifiers = attributeTypes; 

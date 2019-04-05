@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include <ffi.h>
+#include "ffi/ffi.h"
 
 namespace souffle {
 
@@ -79,7 +79,6 @@ void LowLevelMachine::eval() {
             break;
          case LVM_ElementAccess:
             stack.push(ctxt[code[ip+1]][code[ip+2]]);
-            printf("Element Get %s\n", symbolTable.resolve((ctxt[code[ip+1]][code[ip+2]])).c_str());
             ip += 3;
             break;
          case LVM_AutoIncrement:
@@ -290,14 +289,12 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_OP_EQ: {
-            printf("EQ\n");
             RamDomain rhs = stack.top();
             stack.pop();
             RamDomain lhs = stack.top();
             stack.pop();
             stack.push(lhs == rhs);
             ip += 1;
-            printf("EQ DONE\n");
             break;
          }
          case LVM_OP_NE: {
@@ -442,22 +439,19 @@ void LowLevelMachine::eval() {
          case LVM_Negation: { //TODO Confirm, diff with OP_Neg?
             RamDomain val = stack.top();
             stack.pop();
-            stack.push(-val);
+            stack.push(!val);
             ip += 1;
             break;
          }
          case LVM_EmptinessCheck: {
-            printf("EmptinessCheck\n");
             std::string relName = symbolTable.resolve(code[ip+1]);
             stack.push(getRelation(relName).empty());
             ip += 2;
-            printf("EmptinessCheck Done\n");
             break;
          }
          case LVM_ExistenceCheck: {
             std::string relName = symbolTable.resolve(code[ip+1]);
             std::string patterns = symbolTable.resolve(code[ip+2]);
-            printf("Existence Check %s in %s\n", patterns.c_str(), relName.c_str());
             const InterpreterRelation& rel = getRelation(relName);
             size_t arity = rel.getArity();
             
@@ -467,12 +461,10 @@ void LowLevelMachine::eval() {
             if (patterns.find("_") == std::string::npos) {
                RamDomain tuple[arity];
                for (size_t i = 0; i < arity; i++) {
-                  tuple[arity-i-1] =  stack.top();
+                  tuple[arity-i-1] = stack.top();
                   stack.pop();   //TODO Confirm, value can never be null. 
                                  //Check visitExistenceCheck
-                  printf("%s\t", symbolTable.resolve(tuple[arity-i-1]).c_str());
                }
-               putchar('\n');
                stack.push(rel.exists(tuple));
                ip += 3;
                break;
@@ -515,7 +507,6 @@ void LowLevelMachine::eval() {
          case LVM_Constraint: //TODO no need
             break;
          case LVM_Scan: //TODO No need
-            printf("Scan\n");
             ip += 1;
             break;
          case LVM_IndexScan:  //TODO Later
@@ -525,19 +516,17 @@ void LowLevelMachine::eval() {
             ip += 5;
             break;
          case LVM_Filter: //TODO NO need
-            printf("Filter\n");
             ip += 1;
             break;
          case LVM_Project: {
             RamDomain arity = code[ip+1];
             std::string relName = symbolTable.resolve(code[ip+2]);
             RamDomain tuple[arity];
-            for (size_t i = 0; i < arity; ++i) {
+            for (size_t i = 0; i < arity; ++i) { 
                tuple[arity-i-1] = stack.top(); 
                stack.pop();
             }
             InterpreterRelation& rel = getRelation(relName);
-            printf("Project into %s\n", relName.c_str());
             rel.insert(tuple);
             ip += 3;
             break;
@@ -569,7 +558,7 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_Loop: {  //TODO Does nothing, for debugging
-            ip += 2;            
+            ip += 1;            
             break;
          }
          case LVM_Exit: {
@@ -579,7 +568,6 @@ void LowLevelMachine::eval() {
                ip = code[ip+1];
                break;
             } 
-
             ip += 2;
             break;
          }
@@ -600,7 +588,6 @@ void LowLevelMachine::eval() {
             //TODO RelationRepresentation is not used here ?? 
             InterpreterRelation* res = nullptr;
             std::string relName = symbolTable.resolve(code[ip+1]);
-            printf("%s\n", relName.c_str());
             auto arity = code[ip+2];
             assert(environment.find(relName) == environment.end());
             if (code[ip+3] == LVM_EQREL) {
@@ -608,10 +595,11 @@ void LowLevelMachine::eval() {
             } else {
                res = new InterpreterRelation(arity);
             }
-            std::vector<std::string> attributeTypes(arity);
+            std::vector<std::string> attributeTypes;
             for (int i = 0; i < code[ip+2]; ++i) {
                attributeTypes.push_back(symbolTable.resolve(code[ip+4+i]));
             }
+            attributeTypes.reserve(attributeTypes.size());
             res->addAttributes(attributeTypes);
             environment[relName] = res;
             ip += 3 + code[ip+2] + 1;
@@ -656,7 +644,7 @@ void LowLevelMachine::eval() {
             ip += 3;
             break;
          }
-         case LVM_Store: {    //TODO minor bug, the index of the tuple is also printed
+         case LVM_Store: {    
             std::string relName = symbolTable.resolve(code[ip+1]);
 
             InterpreterRelation& r = getRelation(relName);
@@ -664,8 +652,10 @@ void LowLevelMachine::eval() {
                for (size_t i = 0; i < r.getArity(); ++i) {
                   printf("\t%s", symbolTable.resolve(c[i]).c_str());
                }
+               putchar('\n');
             }
             putchar('\n');
+
 
             auto IOs = generator.IODirectivesPool[code[ip+2]];
 
@@ -680,7 +670,7 @@ void LowLevelMachine::eval() {
                                      Global::config().has("provenance")) //TODO
                             ->writeAll(relation);
                 } catch (std::exception& e) {
-                    std::cerr << "Error loading data: " << e.what() << "\n";
+                    std::cerr << "Error Storing data: " << e.what() << "\n";
                 }
             }
             ip += 3;
@@ -691,7 +681,7 @@ void LowLevelMachine::eval() {
             auto arity = code[ip+2];
             RamDomain tuple[arity];
             for (size_t i = 0; i < arity; ++i) {
-               tuple[i] = stack.top();
+               tuple[arity-i-1] = stack.top();
                stack.pop();
             }
             getRelation(relName).insert(tuple);
@@ -745,7 +735,6 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_ITER_TypeScan: {
-            printf("ITER_TypeScan\n");
             RamDomain idx = code[ip+1];
             
             lookUpScanIterator(idx);
@@ -753,12 +742,10 @@ void LowLevelMachine::eval() {
             InterpreterRelation& rel = getRelation(relName);
             scanIteratorPool[idx] = std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>(rel.begin(), rel.end());
 
-            printf("ITER_TypeScan Done\n");
             ip += 3;
             break;                         
          }
          case LVM_ITER_TypeIndexScan: {
-            printf("ITER_TypeIndexScan\n");
             RamDomain idx = code[ip+1];
             std::string relName = symbolTable.resolve(code[ip+2]);
             InterpreterRelation& rel = getRelation(relName);
@@ -793,11 +780,9 @@ void LowLevelMachine::eval() {
             lookUpIndexScanIterator(idx); //TODO Imrpove
             indexScanIteratorPool[idx] = index->lowerUpperBound(low, hig);
             ip += 4;
-            printf("ITER_TypeIndexScan Done\n");
             break;
          }
          case LVM_ITER_NotAtEnd: {  //TODO Change name to notAtEnd
-            printf("ITER_AtEnd\n");
             RamDomain idx = code[ip+1];
             switch(code[ip+2]) {
                case LVM_ITER_TypeScan: {
@@ -813,12 +798,10 @@ void LowLevelMachine::eval() {
                default:
                   break;
             }   
-            printf("ITER_AtEnd Done\n");
             ip += 3;
             break;
          }
          case LVM_ITER_Select: { //TODO improve
-            printf("Select\n");
             RamDomain idx = code[ip+1];
             RamDomain id = code[ip+3];
             switch(code[ip+2]) {
@@ -836,11 +819,9 @@ void LowLevelMachine::eval() {
                   break;
             }   
             ip += 4;
-            printf("Select Done\n");
             break;
          }
          case LVM_ITER_Inc: {
-            printf("Increase Iter\n");
             RamDomain idx = code[ip+1];
             switch(code[ip+2]) {
                case LVM_ITER_TypeScan: {
@@ -873,6 +854,7 @@ void LowLevelMachine::eval() {
          case LVM_STOP: //TODO
             return;
          default:
+            printf("Unknown. eval()\n");
             break;
       }
    }

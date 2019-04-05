@@ -323,7 +323,7 @@ relation_decl
   : DECL relation_list LPAREN attributes RPAREN qualifiers {
         for (auto* rel : $relation_list) {
             for (auto* attr : $attributes) {
-                rel->addAttribute(attr->clone());
+                rel->addAttribute(std::unique_ptr<AstAttribute>(attr->clone()));
             }
         }
 
@@ -444,7 +444,7 @@ rule
   | rule[nested_rule] exec_plan {
         $$ = $nested_rule;
         for (auto* rule : $$) {
-            rule->setExecutionPlan(std::unique_ptr<AstExecutionPlan>($exec_plan)->clone());
+            rule->setExecutionPlan(std::unique_ptr<AstExecutionPlan>($exec_plan->clone()));
         }
         delete $exec_plan;
     }
@@ -502,7 +502,7 @@ disjunction
     }
   | disjunction[curr_disjunction] SEMICOLON conjunction {
         $$ = $curr_disjunction;
-        $$->disjunct($conjunction);
+        $$->disjunct(std::move(*$conjunction));
     }
   ;
 
@@ -513,7 +513,7 @@ conjunction
     }
   | conjunction[curr_conjunction] COMMA term {
         $$ = $curr_conjunction;
-        $$->conjunct($term);
+        $$->conjunct(std::move(*$term));
     }
   ;
 
@@ -580,7 +580,10 @@ term
 /* Rule body atom */
 atom
   : identifier LPAREN arg_list RPAREN {
-        $$ = $arg_list;
+        $$ = new AstAtom();
+        for (auto* arg : $arg_list) {
+            $$->addArgument(std::unique_ptr<AstArgument>(arg));
+        }
         $$->setName($identifier);
     }
   ;
@@ -636,17 +639,16 @@ arg_list
         $$ = $non_empty_arg_list;
     }
   | %empty {
-        $$ = new AstAtom();
+        $$ = std::vector<AstArgument*>();
     }
   ;
 non_empty_arg_list
   : arg {
-        $$ = new AstAtom();
-        $$->addArgument(std::unique_ptr<AstArgument>($arg));
+        $$.push_back($arg);
     }
   | non_empty_arg_list[curr_arg_list] COMMA arg {
         $$ = $curr_arg_list;
-        $$->addArgument(std::unique_ptr<AstArgument>($arg));
+        $$.push_back($arg);
     }
   ;
 
@@ -682,7 +684,7 @@ arg
     }
   | identifier LBRACKET arg_list RBRACKET {
         $$ = new AstRecordInit();
-        for (const auto* arg : $arg_list) {
+        for (auto* arg : $arg_list) {
             $$->add(std::unique_ptr<AstArgument>(arg));
         }
     }
@@ -726,7 +728,7 @@ arg
                 std::unique_ptr<AstArgument>($nested_arg));
     }
   | TOSTRING LPAREN arg[nested_arg] RPAREN {
-        $$ = new AstIntrinsicFunctor(FunctorOp::TOSTIRNG,
+        $$ = new AstIntrinsicFunctor(FunctorOp::TOSTRING,
                 std::unique_ptr<AstArgument>($nested_arg));
     }
 

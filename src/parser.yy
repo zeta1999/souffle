@@ -23,12 +23,44 @@
 %define parse.assert
 /* %define api.location.type {SrcLocation} */
 
-%code requires {}
-
 %locations
 
 %define parse.trace
 %define parse.error verbose
+
+
+/* -- Dependencies -- */
+%code requires {
+    #include "AstArgument.h"
+    #include "AstClause.h"
+    #include "AstComponent.h"
+    #include "AstFunctorDeclaration.h"
+    #include "AstIO.h"
+    #include "AstNode.h"
+    #include "AstPragma.h"
+    #include "AstProgram.h"
+    #include "AstTypes.h"
+    #include "BinaryConstraintOps.h"
+    #include "FunctorOps.h"
+    #include "AstParserUtils.h"
+
+    using namespace souffle;
+
+    namespace souffle {
+        class ParserDriver;
+    }
+
+    using yyscan_t = void*;
+
+    #define YY_NULLPTR nullptr
+}
+
+%code {
+    #include "ParserDriver.h"
+}
+
+%param { ParserDriver &driver }
+%param { yyscan_t yyscanner }
 
 /* -- Tokens -- */
 %token END 0                     "end of file"
@@ -262,11 +294,11 @@ record_type_list
 non_empty_record_type_list
   : IDENT COLON identifier {
         $$ = new AstRecordType();
-        $$->add($IDENT, *$identifier);
+        $$->add($IDENT, $identifier);
     }
   | non_empty_record_type_list[curr_record] COMMA IDENT COLON identifier {
         $$ = $curr_record;
-        $$->add($IDENT, *$identifier);
+        $$->add($IDENT, $identifier);
     }
   ;
 
@@ -290,12 +322,12 @@ union_type_list
 relation_decl
   : DECL relation_list LPAREN attributes RPAREN qualifiers {
         for (auto* rel : $relation_list) {
-            for (auto* attr : attributes) {
+            for (auto* attr : $attributes) {
                 rel->addAttribute(attr->clone());
             }
         }
 
-        for (auto* attr : attributes) {
+        for (auto* attr : $attributes) {
             delete attr;
         }
 
@@ -549,7 +581,7 @@ term
 atom
   : identifier LPAREN arg_list RPAREN {
         $$ = $arg_list;
-        $$->setName(*$identifier);
+        $$->setName($identifier);
     }
   ;
 

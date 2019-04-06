@@ -219,7 +219,7 @@ inline bool isSymbolicFunctorOp(const FunctorOp op) {
  */
 inline bool functorOpAcceptsNumbers(size_t arg, const FunctorOp op) {
     size_t expectedArity = getFunctorOpArity(op);
-    assert(arg >= 0 && arg < expectedArity && "argument out of range");
+    // TODO: check correct for CAT, MIN, and MAX
 
     switch (op) {
         /** Unary Functor Operators */

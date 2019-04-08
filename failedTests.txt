@@ -1,0 +1,225 @@
+CHECK -- to check later
+FIXED -- fixed, confirm by re-run
+IGNORE -- ignore for now, implement later
+
+
+Failed tests:
+souffle 1.0.0-3321-g012e715a test suite: Souffle test groups:
+
+ NUM: FILE-NAME:LINE     TEST-GROUP-NAME
+      KEYWORDS
+
+   1: syntactic.at:7     binary -j8
+   4: syntactic.at:8     comment -j8
+   7: syntactic.at:9     comment2 -j8
+  10: syntactic.at:10    comment_rule -j8
+  13: syntactic.at:11    cpp_keywords -j8
+  16: syntactic.at:12    duplicates -j8
+  19: syntactic.at:13    empty -j8
+  28: syntactic.at:16    input_directive3 -j8
+  31: syntactic.at:17    input_directive4 -j8
+  34: syntactic.at:18    input_directive_quotes2 -j8
+  37: syntactic.at:19    input_directive_quotes4 -j8
+  40: syntactic.at:20    input_directive_quotes5 -j8
+  43: syntactic.at:21    input_directive_quotes -j8
+  46: syntactic.at:22    liberal_identifiers -j8
+  49: syntactic.at:23    multiple_heads -j8
+  52: syntactic.at:24    name_clash -j8
+  58: syntactic.at:26    output_directive1 -j8
+  61: syntactic.at:27    output_directive_quotes2 -j8
+  64: syntactic.at:28    output_directive_quotes3 -j8
+
+
+CHECK casued by debugging info              82: syntactic.at:34    qualifiers3 -j8
+CHECK casued by debugging info              85: syntactic.at:35    relation -j8
+CHECK casued by debugging info              127: syntactic.at:49    type -j8
+IGNORE aggreate later                   136: semantic.at:90     aggregate1 -j8
+IGNORE aggreate later                   139: semantic.at:91     aggregate2 -j8
+FIXED                                   142: semantic.at:92     alias -j8
+FIXED                                   148: semantic.at:94     bin1 -j8
+FIXED                                   151: semantic.at:95     bin -j8
+FIXED                                   154: semantic.at:96     binhex -j8
+FIXED 157: semantic.at:97     bitwise -j8
+IGNORE aggreate later                   160: semantic.at:98     bool -j8
+IGNORE comp                             172: semantic.at:102    comp_inner_types -j8
+IGNORE comp                             193: semantic.at:109    comp_opt -j8
+FIX                                     199: semantic.at:111    counter -j8
+FIX                                     205: semantic.at:114    duplicates -j8
+CHECK sometimes pass soemtimes segement 208: semantic.at:115    eqrel_tests -j8
+FIXED                                   211: semantic.at:116    eqrel_tests2 -j8
+CHECK                                   214: semantic.at:117    eqrel_tests3 -j8
+ 217: semantic.at:118    equivalent -j8
+ 247: semantic.at:128    hex1 -j8
+ 250: semantic.at:129    hex -j8
+ 256: semantic.at:131    inline_cycle2 -j8
+ 265: semantic.at:134    ipv4 -j8
+ 268: semantic.at:135    ipv4_1 -j8
+ 271: semantic.at:136    load2 -j8
+ 274: semantic.at:137    load3 -j8
+ 277: semantic.at:138    load4 -j8
+ 280: semantic.at:139    load6 -j8
+ 283: semantic.at:140    load7 -j8
+ 286: semantic.at:141    logical -j8
+ 289: semantic.at:142    lrg_attr_id -j8
+ 292: semantic.at:143    lrg_rel_id1 -j8
+ 295: semantic.at:144    lrg_rel_id2 -j8
+ 298: semantic.at:145    negative_numbers -j8
+ 301: semantic.at:146    not_copy1 -j8
+ 304: semantic.at:147    not_copy2 -j8
+ 307: semantic.at:148    not_copy -j8
+ 319: semantic.at:152    progmin1 -j8
+ 325: semantic.at:154    records1 -j8
+ 328: semantic.at:155    records2 -j8
+ 331: semantic.at:156    records3 -j8
+ 334: semantic.at:157    records4 -j8
+ 337: semantic.at:158    records5 -j8
+ 340: semantic.at:159    records6 -j8
+ 343: semantic.at:160    records -j8
+ 346: semantic.at:161    rel_copy_cycles -j8
+ 352: semantic.at:163    rel_list -j8
+ 355: semantic.at:164    rel_nullary -j8
+ 370: semantic.at:169    rqualifiers -j8
+ 388: semantic.at:175    store -j8
+ 391: semantic.at:176    store2 -j8
+ 394: semantic.at:177    store3 -j8
+ 395: semantic.at:177    store3   -c -j8
+ 396: semantic.at:177    store3   -c -j8 -efile                    
+ 397: semantic.at:178    store4 -j8
+ 400: semantic.at:179    store5 -j8
+ 403: semantic.at:180    strconv -j8
+ 406: semantic.at:181    string_len -j8
+ 409: semantic.at:182    string_substr1 -j8
+ 412: semantic.at:183    string_substr -j8
+ 415: semantic.at:184    suppress_warnings -j8
+ 433: semantic.at:190    underscore2 -j8
+
+ 448: evaluation.at:9    access1 -j8
+ 451: evaluation.at:10   access2 -j8
+ 454: evaluation.at:11   access3 -j8
+ 457: evaluation.at:12   aggregates2 -j8
+ 460: evaluation.at:13   aggregates -j8
+ 463: evaluation.at:14   aliases -j8
+ 466: evaluation.at:15   arithm -j8
+ 469: evaluation.at:16   average -j8
+ 472: evaluation.at:17   binop -j8
+ 475: evaluation.at:18   cat -j8
+ 478: evaluation.at:19   comp-override1 -j8
+ 481: evaluation.at:20   comp-override2 -j8
+ 484: evaluation.at:21   comp-override3 -j8
+ 487: evaluation.at:22   components1 -j8
+ 490: evaluation.at:23   components2 -j8
+ 493: evaluation.at:24   components3 -j8
+ 496: evaluation.at:25   components -j8
+ 499: evaluation.at:26   components_generic -j8
+ 502: evaluation.at:27   contains -j8
+ 505: evaluation.at:28   count -j8
+ 508: evaluation.at:29   count_sccs1 -j8
+ 511: evaluation.at:30   counter -j8
+ 514: evaluation.at:31   cprog1 -j8
+ 517: evaluation.at:32   cprog2 -j8
+ 520: evaluation.at:33   cprog3 -j8
+ 523: evaluation.at:34   cprog4 -j8
+ 526: evaluation.at:35   cprog5 -j8
+ 529: evaluation.at:36   cproject -j8
+ 532: evaluation.at:37   empty_relations -j8
+ 535: evaluation.at:38   existential -j8
+ 538: evaluation.at:39   facts -j8
+ 541: evaluation.at:40   grammar -j8
+ 544: evaluation.at:41   hex -j8
+ 547: evaluation.at:42   independent_body1 -j8
+ 550: evaluation.at:43   independent_body2 -j8
+ 553: evaluation.at:44   index -j8
+ 556: evaluation.at:45   indirect_negation -j8
+ 559: evaluation.at:46   inline_functors -j8
+ 562: evaluation.at:47   inline_negation1 -j8
+ 565: evaluation.at:48   inline_negation2 -j8
+ 568: evaluation.at:49   inline_nqueens -j8
+ 571: evaluation.at:50   inline_records -j8
+ 574: evaluation.at:51   inline_underscore -j8
+ 577: evaluation.at:52   inline_unification -j8
+ 580: evaluation.at:53   list -j8
+ 583: evaluation.at:54   magic_2sat -j8
+ 586: evaluation.at:55   magic_aggregates -j8
+ 589: evaluation.at:56   magic_centroids -j8
+ 592: evaluation.at:57   magic_circuit_sat -j8
+ 595: evaluation.at:58   magic_components -j8
+ 598: evaluation.at:59   magic_cprog1 -j8
+ 601: evaluation.at:60   magic_dfa -j8
+ 604: evaluation.at:61   magic_dominance -j8
+ 607: evaluation.at:62   magic_factoring -j8
+ 610: evaluation.at:63   magic_goal -j8
+ 613: evaluation.at:64   magic_lrg_attr_id -j8
+ 616: evaluation.at:65   magic_movies -j8
+ 619: evaluation.at:66   magic_names1 -j8
+ 622: evaluation.at:67   magic_nqueens -j8
+ 625: evaluation.at:68   magic_perfect_numbers -j8
+ 628: evaluation.at:69   magic_records4 -j8
+ 631: evaluation.at:70   magic_samegen -j8
+ 634: evaluation.at:71   magic_strategies -j8
+ 637: evaluation.at:72   magic_string_substr -j8
+ 640: evaluation.at:73   magic_turing1 -j8
+ 643: evaluation.at:74   match2 -j8
+ 646: evaluation.at:75   match3 -j8
+ 649: evaluation.at:76   match -j8
+ 652: evaluation.at:78   max -j8
+ 655: evaluation.at:79   minmax -j8
+ 658: evaluation.at:80   minmaxnum -j8
+ 661: evaluation.at:81   mrtc -j8
+ 664: evaluation.at:82   mul -j8
+ 667: evaluation.at:83   multiple_heads -j8
+ 670: evaluation.at:84   mutrecursion -j8
+ 673: evaluation.at:85   neg1 -j8
+ 676: evaluation.at:86   neg2 -j8
+ 679: evaluation.at:87   neg3 -j8
+ 682: evaluation.at:88   neg4 -j8
+ 685: evaluation.at:89   neg5 -j8
+ 688: evaluation.at:90   neg6 -j8
+ 691: evaluation.at:91   number_constants -j8
+ 694: evaluation.at:92   ordinals -j8
+ 697: evaluation.at:93   plus -j8
+ 700: evaluation.at:94   range -j8
+ 703: evaluation.at:95   rec_lists2 -j8
+ 706: evaluation.at:96   rec_lists -j8
+ 709: evaluation.at:97   recursion -j8
+ 712: evaluation.at:98   relop -j8
+ 715: evaluation.at:99   rmut2 -j8
+ 718: evaluation.at:100  rmut -j8
+ 721: evaluation.at:101  set_ops -j8
+ 724: evaluation.at:102  set_ops_output -j8
+ 727: evaluation.at:103  simple -j8
+ 730: evaluation.at:104  singleton -j8
+ 733: evaluation.at:105  subsumption -j8
+ 736: evaluation.at:106  subtype2 -j8
+ 739: evaluation.at:107  subtype -j8
+ 742: evaluation.at:108  sum-aggregate -j8
+ 745: evaluation.at:109  sum-aggregate2 -j8
+ 748: evaluation.at:110  term -j8
+ 751: evaluation.at:111  turing1 -j8
+ 754: evaluation.at:112  unpacking -j8
+ 757: evaluation.at:113  unused_constraints -j8
+ 760: evaluation.at:114  x9 -j8
+ 769: profile.at:74      lrg_attr_id -j8 souffle-profile -c "rel"
+ 770: profile.at:74      lrg_attr_id -j8 souffle-profile -c "rel R2"
+ 771: profile.at:74      lrg_attr_id -j8 souffle-profile -c "rul"
+ 772: profile.at:74      lrg_attr_id -j8 souffle-profile -c "rul C2.1"
+ 773: profile.at:74      lrg_attr_id -j8 souffle-profile -c "rul id N2.1"
+ 774: profile.at:74      lrg_attr_id -j8 souffle-profile -c "graph R2 copy_t"
+ 775: profile.at:74      lrg_attr_id -j8 souffle-profile -c "graph C2.1 tot_t"
+ 776: profile.at:74      lrg_attr_id -j8 souffle-profile -c "graph ver C2.1 tuples"
+ 777: profile.at:74      lrg_attr_id -j8 souffle-profile -c "top"
+ 778: profile.at:74      lrg_attr_id -j8 souffle-profile -c "help"
+ 799: profile.at:75      recursive -j8 souffle-profile -c "rel"
+ 800: profile.at:75      recursive -j8 souffle-profile -c "rel R2"
+ 801: profile.at:75      recursive -j8 souffle-profile -c "rul"
+ 802: profile.at:75      recursive -j8 souffle-profile -c "rul C2.1"
+ 803: profile.at:75      recursive -j8 souffle-profile -c "rul id N2.1"
+ 804: profile.at:75      recursive -j8 souffle-profile -c "graph R2 copy_t"
+ 805: profile.at:75      recursive -j8 souffle-profile -c "graph C2.1 tot_t"
+ 806: profile.at:75      recursive -j8 souffle-profile -c "graph ver C2.1 tuples"
+ 807: profile.at:75      recursive -j8 souffle-profile -c "top"
+ 808: profile.at:75      recursive -j8 souffle-profile -c "help"
+ 829: provenance.at:35   components 
+ 832: provenance.at:36   cprog1 
+ 835: provenance.at:37   high_arity 
+ 838: provenance.at:38   negation 
+ 841: provenance.at:39   path 

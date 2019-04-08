@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include "ffi/ffi.h"
+#include <ffi.h>
 
 namespace souffle {
 
@@ -81,7 +81,8 @@ void LowLevelMachine::eval() {
             stack.push(ctxt[code[ip+1]][code[ip+2]]);
             ip += 3;
             break;
-         case LVM_AutoIncrement:
+         case LVM_AutoIncrement: // Push the old counter then increment
+            stack.push(this->counter);
             incCounter();
             ip += 1;
             break;
@@ -436,7 +437,7 @@ void LowLevelMachine::eval() {
             ip += 1;
             break;
          }
-         case LVM_Negation: { //TODO Confirm, diff with OP_Neg?
+         case LVM_Negation: { 
             RamDomain val = stack.top();
             stack.pop();
             stack.push(!val);
@@ -580,7 +581,7 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_Stratum: {
-            printf("Level:%d\n", level++);
+            //printf("Level:%d\n", level++);
             ip += 1;
             break;
          }
@@ -646,7 +647,8 @@ void LowLevelMachine::eval() {
          }
          case LVM_Store: {    
             std::string relName = symbolTable.resolve(code[ip+1]);
-
+         
+            /* TODO testing need to be deleted
             InterpreterRelation& r = getRelation(relName);
             for (const RamDomain* c : r) {
                for (size_t i = 0; i < r.getArity(); ++i) {
@@ -655,6 +657,7 @@ void LowLevelMachine::eval() {
                putchar('\n');
             }
             putchar('\n');
+            */
 
 
             auto IOs = generator.IODirectivesPool[code[ip+2]];
@@ -709,6 +712,9 @@ void LowLevelMachine::eval() {
             std::string firstRel = symbolTable.resolve(code[ip+1]);
             std::string secondRel = symbolTable.resolve(code[ip+2]);
             swapRelation(firstRel, secondRel);
+            if (firstRel == "@delta_isEqrel") {
+               printf("%s\n ", (getRelation(firstRel).empty() ? "True" : "False"));
+            }
             ip += 3;
             break;
          }
@@ -716,6 +722,7 @@ void LowLevelMachine::eval() {
             ip += 1;
             break;
          case LVM_Goto: 
+            printf("%ld:GOTO, next = %d\n",ip, code[ip+1]);
             ip = code[ip+1];
             break;
          case LVM_Jmpnz: {
@@ -741,6 +748,7 @@ void LowLevelMachine::eval() {
             std::string relName = symbolTable.resolve(code[ip+2]);
             InterpreterRelation& rel = getRelation(relName);
             scanIteratorPool[idx] = std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>(rel.begin(), rel.end());
+            assert(rel.begin() != rel.end() || rel.empty());
 
             ip += 3;
             break;                         
@@ -796,6 +804,7 @@ void LowLevelMachine::eval() {
                   break;
                }
                default:
+                  printf("Unknown iter type at LVM_ITER_NotAtEnd\n");
                   break;
             }   
             ip += 3;
@@ -816,6 +825,7 @@ void LowLevelMachine::eval() {
                   break;
                }
                default:
+                  printf("Unknown iter type at LVM_ITER_Select\n");
                   break;
             }   
             ip += 4;
@@ -839,7 +849,7 @@ void LowLevelMachine::eval() {
             ip += 3;
             break;
          }
-         case LVM_Match:{  
+         case LVM_Match:{   //TODO not need
             RamDomain idx = code[ip+1];
             RamDomain id = code[ip+3];
             std::string pattern = symbolTable.resolve(code[ip+4]);
@@ -851,7 +861,8 @@ void LowLevelMachine::eval() {
          case LVM_LT: //TODO Don't Need
             ip += 1;
             break;
-         case LVM_STOP: //TODO
+         case LVM_STOP: 
+            assert(stack.size() == 0);
             return;
          default:
             printf("Unknown. eval()\n");
@@ -2170,7 +2181,7 @@ void LowLevelMachine::print() {
             break;                         
          }
          case LVM_ITER_NotAtEnd:
-            printf("%ld\tLVM_AtEnd\t%d\tType:%d\n", ip, code[ip+1], code[ip+2]);
+            printf("%ld\tLVM_NotAtEnd\t%d\tType:%d\n", ip, code[ip+1], code[ip+2]);
             ip += 3;
             break;
          case LVM_ITER_Select:   

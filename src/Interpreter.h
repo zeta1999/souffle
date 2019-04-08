@@ -523,7 +523,6 @@ class LowLevelMachine {
         */
        void visitScan(const RamScan& scan, size_t exitAddress) override {
           code.push_back(LVM_Scan); 
-          printf("Scan\n");
           size_t counterLabel = getNewScanIterator();
           code.push_back(LVM_ITER_TypeScan);
           code.push_back(counterLabel);
@@ -542,10 +541,7 @@ class LowLevelMachine {
           code.push_back(LVM_ITER_TypeScan);
           code.push_back(scan.getIdentifier());
           
-          printf("Star nested op\n");
-          printf("%d\n", scan.getOperation().getNodeType());
           visit(scan.getOperation(), exitAddress);
-          printf("Finsih nested op\n");
           code.push_back(LVM_ITER_Inc);
           code.push_back(counterLabel);
           code.push_back(LVM_ITER_TypeScan);
@@ -553,7 +549,6 @@ class LowLevelMachine {
           code.push_back(address_L0);
 
           setAddress(L1, code.size());
-          printf("Scan Done\n");
        }
        
        /*
@@ -584,7 +579,6 @@ class LowLevelMachine {
        void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
           //TODO For now just eval pattern every times
           code.push_back(LVM_IndexScan);
-          printf("Start Index Scan\n");
           size_t counterLabel = getNewIndexScanIterator();
           size_t L1 = getNewAddressLabel();
 
@@ -624,7 +618,6 @@ class LowLevelMachine {
           code.push_back(LVM_Goto);
           code.push_back(address_L0);
           setAddress(L1, code.size());
-          printf("Finish Index Scan\n");
        }
        
        /*
@@ -661,24 +654,16 @@ class LowLevelMachine {
         */
        void visitFilter(const RamFilter& filter, size_t exitAddress) override {
           code.push_back(LVM_Filter);
-          printf("Filter\n");
           size_t L0 = getNewAddressLabel();
 
-          printf("Start filter cond\n");
           visit(filter.getCondition(), exitAddress);
-          printf("Finish filter cond\n");
 
           code.push_back(LVM_Jmpez);
           code.push_back(lookupAddress(L0));
-          printf("\tLook up L0 gives: %ld, the label address is %ld\n", lookupAddress(L0), 
-                L0);
 
-          printf("Start filter nested\n");
           visit(filter.getOperation(), exitAddress);
-          printf("Finish filter nested\n");
 
           setAddress(L0, code.size());
-          printf("\tset L0 = %ld, Check addressMap: %ld.  label address%ld\n", code.size(), lookupAddress(L0), L0);
        }
         
        /*
@@ -690,7 +675,6 @@ class LowLevelMachine {
         */
        
        void visitProject(const RamProject& project, size_t exitAddress) override {
-          printf("Project\n");
           size_t arity = project.getRelation().getArity();
           std::string relationName = project.getRelation().getName();
           auto values = project.getValues();
@@ -700,7 +684,6 @@ class LowLevelMachine {
           code.push_back(LVM_Project);
           code.push_back(arity);
           code.push_back(symbolTable.lookup(relationName));
-          printf("Project Done\n");
        }
         
        /*
@@ -709,7 +692,6 @@ class LowLevelMachine {
         * Semantic: Pop [size] values from stack, add to ctxt.return
         */
        void visitReturn(const RamReturn& ret, size_t exitAddress) override {
-          printf("return\n");
           for (auto expr : ret.getValues()) {
              if (expr == nullptr) {
                 code.push_back(LVM_Number);
@@ -721,7 +703,6 @@ class LowLevelMachine {
 
           code.push_back(LVM_Return);
           code.push_back(ret.getValues().size());
-          printf("return Done\n");
        }
 
        /** Visit RAM stmt*/
@@ -742,9 +723,10 @@ class LowLevelMachine {
         */
        void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
           size_t num_blocks=  parallel.getStatements().size();
-          if (num_blocks == 1) {
+          if (num_blocks == 1 || true) { //TODO Later
              visit(parallel.getStatements()[0], exitAddress);
-          } else {
+          } /*
+          else {
              std::vector<size_t> labels(num_blocks);
              size_t address_L0 = code.size();
              code.push_back(LVM_Parallel); 
@@ -766,7 +748,7 @@ class LowLevelMachine {
              }
 
              setAddress(L1, code.size());
-             }
+             } */
        }
        
        /* Syntax: [L0: LVM_Loop

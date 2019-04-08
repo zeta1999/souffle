@@ -62,6 +62,8 @@
 
 namespace souffle {
 
+bool mDebug = false;    //TODO Owen
+
 /**
  * Executes a binary file.
  */
@@ -194,7 +196,8 @@ int main(int argc, char** argv) {
                         "execution engine."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\2', "", "", false, "Version."},
-                {"help", 'h', "", "", false, "Display this help message."}};
+                {"help", 'h', "", "", false, "Display this help message."},
+                {"mDebug", 'z', "", "", false, "Mdebug."}}; // TODO Owen 
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
         // ------ command line arguments -------------
@@ -212,6 +215,11 @@ int main(int argc, char** argv) {
         if (!Global::config().has("") || Global::config().has("help")) {
             std::cout << Global::config().help();
             return 0;
+        }
+
+        if (Global::config().has("mDebug")) {   //TODO Owe
+            printf("Here\n");
+            mDebug = true;
         }
 
         /* check that datalog program exists */
@@ -237,7 +245,7 @@ int main(int argc, char** argv) {
 #else
             // Check that -j option has not been changed from the default
             if (Global::config().get("jobs") != "1") {
-                std::cerr << "\nWarning: OpenMP is not enabled\n";
+                //std::cerr << "\nWarning: OpenMP is not enabled\n";
             }
 #endif
         } else {
@@ -509,6 +517,18 @@ int main(int argc, char** argv) {
             !Global::config().has("generate")) {
         // ------- interpreter -------------
 
+        //TODO Owen: inject lvm here
+        LowLevelMachine lvm(*ramTranslationUnit);
+        lvm.generatingInstructionStream();
+        
+        if (mDebug) {
+            printf("Finish generating\n");
+            lvm.print();
+            printf("==========\n");
+        }
+        lvm.eval();
+
+        /* TODO Comment out
         // configure interpreter
         std::unique_ptr<Interpreter> interpreter = std::make_unique<Interpreter>(*ramTranslationUnit);
 
@@ -524,8 +544,10 @@ int main(int argc, char** argv) {
         if (profiler.joinable()) {
             profiler.join();
         }
+        */
 
 #ifdef USE_PROVENANCE
+        /* TODO comment out
         // only run explain interface if interpreted
         if (Global::config().has("provenance")) {
             // construct SouffleProgram from env
@@ -536,6 +558,7 @@ int main(int argc, char** argv) {
                 explain(interface, true, true);
             }
         }
+        */
 #endif
 
     } else {

@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include <ffi.h>
+#include "ffi/ffi.h"
 
 namespace souffle {
 
@@ -712,9 +712,6 @@ void LowLevelMachine::eval() {
             std::string firstRel = symbolTable.resolve(code[ip+1]);
             std::string secondRel = symbolTable.resolve(code[ip+2]);
             swapRelation(firstRel, secondRel);
-            if (firstRel == "@delta_isEqrel") {
-               printf("%s\n ", (getRelation(firstRel).empty() ? "True" : "False"));
-            }
             ip += 3;
             break;
          }
@@ -722,7 +719,7 @@ void LowLevelMachine::eval() {
             ip += 1;
             break;
          case LVM_Goto: 
-            printf("%ld:GOTO, next = %d\n",ip, code[ip+1]);
+            //printf("%ld:GOTO, next = %d\n",ip, code[ip+1]);
             ip = code[ip+1];
             break;
          case LVM_Jmpnz: {
@@ -730,7 +727,7 @@ void LowLevelMachine::eval() {
             stack.pop();
             size_t t = ip;
             ip = (val != 0 ? code[ip+1] : ip + 2);
-            printf("%ld:Jmpnz, next = %ld, val is %d\n",t, ip, val);
+            //printf("%ld:Jmpnz, next = %ld, val is %d\n",t, ip, val);
             break;
          }
          case LVM_Jmpez: {
@@ -738,9 +735,13 @@ void LowLevelMachine::eval() {
             stack.pop();
             size_t t = ip;
             ip = (val == 0 ? code[ip+1] : ip + 2);
-            printf("%ld:Jmpez, next = %ld, val is %d\n",t, ip, val);
+            //printf("%ld:Jmpez, next = %ld, val is %d\n",t, ip, val);
             break;
          }
+         case LVM_Aggregate: {
+            ip += 1;                  
+            break;
+         };
          case LVM_ITER_TypeScan: {
             RamDomain idx = code[ip+1];
             
@@ -760,7 +761,7 @@ void LowLevelMachine::eval() {
             std::string pattern = symbolTable.resolve(code[ip+3]);
 
             // create pattern tuple for range query
-            auto arity = rel.size();
+            auto arity = rel.getArity();
             RamDomain low[arity];
             RamDomain hig[arity];
             for (size_t i = 0; i < arity; i++) {
@@ -787,6 +788,10 @@ void LowLevelMachine::eval() {
             // get iterator range
             lookUpIndexScanIterator(idx); //TODO Imrpove
             indexScanIteratorPool[idx] = index->lowerUpperBound(low, hig);
+            //if (relName == "C") {
+            //   assert(indexScanIteratorPool[idx].first != indexScanIteratorPool[idx].second);
+            //}
+            //printf("%ld passed IndexScan\n", ip);
             ip += 4;
             break;
          }
@@ -850,12 +855,6 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_Match:{   //TODO not need
-            RamDomain idx = code[ip+1];
-            RamDomain id = code[ip+3];
-            std::string pattern = symbolTable.resolve(code[ip+4]);
-
-
-            ip += 4;
             break;
          }
          case LVM_LT: //TODO Don't Need
@@ -2170,6 +2169,10 @@ void LowLevelMachine::print() {
          case LVM_Jmpez: 
             printf("%ld\tLVM_Jmpez\t%d\n", ip, code[ip+1]);
             ip += 2;
+            break;
+         case LVM_Aggregate:
+            printf("%ld\tLVM_Aggregate\t%d\n", ip, code[ip+1]);
+            ip += 1;                  
             break;
          case LVM_ITER_TypeIndexScan:
             printf("%ld\tLVM_ITER_TypeIndexScan\t%s\n", ip, symbolTable.resolve(code[ip+2]).c_str());

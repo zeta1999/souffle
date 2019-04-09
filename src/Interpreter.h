@@ -102,6 +102,7 @@ enum LVM_Type {
     LVM_Scan,
     LVM_IndexScan,
     LVM_UnpackRecord,
+    LVM_Aggregate,
     LVM_Filter,
     LVM_Project,
     LVM_Return,
@@ -640,6 +641,7 @@ class LowLevelMachine {
         * TODO 
         */
        void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
+          code.push_back(LVM_Aggregate);
        }
        
        /*
@@ -695,7 +697,7 @@ class LowLevelMachine {
           for (auto expr : ret.getValues()) {
              if (expr == nullptr) {
                 code.push_back(LVM_Number);
-                code.push_back(0);
+                code.push_back(true);  //TODO pay attention
              } else {
                 visit(expr, exitAddress); 
              }
@@ -722,10 +724,13 @@ class LowLevelMachine {
         *
         */
        void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
-          size_t num_blocks=  parallel.getStatements().size();
-          if (num_blocks == 1 || true) { //TODO Later
+          //size_t num_blocks=  parallel.getStatements().size();
+          for (const auto& cur : parallel.getStatements()) {
+             visit(cur, exitAddress); 
+          } 
+      /*  if (num_blocks == 1 || true) { TODO later
              visit(parallel.getStatements()[0], exitAddress);
-          } /*
+          } 
           else {
              std::vector<size_t> labels(num_blocks);
              size_t address_L0 = code.size();
@@ -920,11 +925,18 @@ class LowLevelMachine {
         * Semantic: Start loops
         */
        void visitQuery(const RamQuery& insert, size_t exitAddress) override {
-          //size_t depth = depthAnalyzer.getDepth(insert.getOperation());
           code.push_back(LVM_Query);
+          if (insert.getCondition() == nullptr) {
+             code.push_back(LVM_Number);
+             code.push_back(true);  // Push true
+          } else {
+             visit(insert.getCondition(), exitAddress);
+          }
+          size_t L0 = getNewAddressLabel();
+          code.push_back(LVM_Jmpez);
+          code.push_back(lookupAddress(L0));
           visit(insert.getOperation(), exitAddress);
-          //code.push_back(depth);
-          //visit(insert.getOperation());
+          setAddress(L0, code.size());
        }
 
        /*
@@ -1003,7 +1015,7 @@ public:
 
     std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
 
-    std::pair<index_set::iterator, index_set::iterator> lookUpIndexScanIterator(size_t idx) {
+    std::pair<index_set::iterator, index_set::iterator>& lookUpIndexScanIterator(size_t idx) {
       if (idx >= indexScanIteratorPool.size()) {
          indexScanIteratorPool.resize((idx+1) * 2);
       }

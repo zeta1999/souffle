@@ -123,6 +123,11 @@ public:
         return identifier;
     }
 
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        return RamNestedOperation::getChildNodes();
+    }
+
 protected:
     /** Identifier for the tuple */
     const size_t identifier;
@@ -154,6 +159,13 @@ public:
     void apply(const RamNodeMapper& map) override {
         RamSearch::apply(map);
         relationRef = map(std::move(relationRef));
+    }
+
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        auto res = RamSearch::getChildNodes();
+        res.push_back(relationRef.get());
+        return res;
     }
 
 protected:
@@ -191,6 +203,11 @@ public:
     RamScan* clone() const override {
         return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getIdentifier(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        return RamRelationSearch::getChildNodes();
     }
 };
 
@@ -433,6 +450,7 @@ public:
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamSearch::getChildNodes();
+        res.push_back(relationRef.get());
         if (condition != nullptr) {
             res.push_back(condition.get());
         }
@@ -537,7 +555,9 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return {condition.get(), &getOperation()};
+        auto res = RamNestedOperation::getChildNodes();
+        res.push_back(condition.get());
+        return res;
     }
 
     /** Create clone */

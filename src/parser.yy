@@ -21,13 +21,12 @@
 %define api.token.constructor
 %define api.value.type variant
 %define parse.assert
-/* %define api.location.type {SrcLocation} */
+%define api.location.type {SrcLocation}
 
 %locations
 
 %define parse.trace
 %define parse.error verbose
-
 
 /* -- Dependencies -- */
 %code requires {
@@ -53,6 +52,20 @@
     using yyscan_t = void*;
 
     #define YY_NULLPTR nullptr
+
+    /* Macro to update locations as parsing proceeds */
+    #define YYLLOC_DEFAULT(Cur, Rhs, N)                         \
+    do {                                                        \
+        if (N) {                                                \
+            (Cur).start         = YYRHSLOC(Rhs, 1).start;       \
+            (Cur).end           = YYRHSLOC(Rhs, N).end;         \
+            (Cur).filename      = YYRHSLOC(Rhs, N).filename;    \
+        } else {                                                \
+            (Cur).start         = YYRHSLOC(Rhs, 0).end;         \
+            (Cur).end           = YYRHSLOC(Rhs, 0).end;         \
+            (Cur).filename      = YYRHSLOC(Rhs, 0).filename;    \
+        }                                                       \
+    } while (0)
 }
 
 %code {
@@ -683,18 +696,20 @@ arg
         $$ = new AstNullConstant();
     }
   | identifier LBRACKET arg_list RBRACKET {
-        $$ = new AstRecordInit();
+        auto record = new AstRecordInit();
         for (auto* arg : $arg_list) {
-            $$->add(std::unique_ptr<AstArgument>(arg));
+            record->add(std::unique_ptr<AstArgument>(arg));
         }
+        $$ = record;
     }
 
     /* user-defined functor */
   | AT IDENT LPAREN arg_list RPAREN {
-        $$ = new AstUserDefinedFunctor();
-        for (const auto* arg : $arg_list) {
-            $$->add(std::unique_ptr<AstArgument>(arg));
+        auto functor = new AstUserDefinedFunctor();
+        for (auto* arg : $arg_list) {
+            functor->add(std::unique_ptr<AstArgument>(arg));
         }
+        $$ = functor;
     }
 
     /* -- intrinsic functor -- */
@@ -816,11 +831,12 @@ arg
 
     /* -- aggregators -- */
   | COUNT COLON atom {
-        $$ = new AstAggregator(AstAggregator::count);
-        $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        auto aggr = new AstAggregator(AstAggregator::count);
+        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        $$ = aggr;
     }
   | COUNT COLON LBRACE body RBRACE {
-        $$ = new AstAggregator(AstAggregator::count);
+        auto aggr = new AstAggregator(AstAggregator::count);
 
         auto bodies = $body->toClauseBodies();
         if (bodies.size() != 1) {
@@ -829,18 +845,21 @@ arg
         }
 
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            $$->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
         }
+
+        $$ = aggr;
     }
 
   | SUM arg[target_expr] COLON atom {
-        $$ = new AstAggregator(AstAggregator::sum);
-        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
-        $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        auto aggr = new AstAggregator(AstAggregator::sum);
+        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        $$ = aggr;
     }
   | SUM arg[target_expr] COLON LBRACE body RBRACE {
-        $$ = new AstAggregator(AstAggregator::sum);
-        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AstAggregator::sum);
+        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
         if (bodies.size() != 1) {
@@ -849,18 +868,21 @@ arg
         }
 
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            $$->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
         }
+
+        $$ = aggr;
     }
 
   | MIN arg[target_expr] COLON atom {
-        $$ = new AstAggregator(AstAggregator::min);
-        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
-        $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        auto aggr = new AstAggregator(AstAggregator::min);
+        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        $$ = aggr;
     }
   | MIN arg[target_expr] COLON LBRACE body RBRACE {
-        $$ = new AstAggregator(AstAggregator::min);
-        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AstAggregator::min);
+        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
         if (bodies.size() != 1) {
@@ -869,18 +891,21 @@ arg
         }
 
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            $$->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
         }
+
+        $$ = aggr;
     }
 
   | MAX arg[target_expr] COLON atom {
-        $$ = new AstAggregator(AstAggregator::max);
-        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
-        $$->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        auto aggr = new AstAggregator(AstAggregator::max);
+        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        $$ = aggr;
     }
   | MAX arg[target_expr] COLON LBRACE body RBRACE {
-        $$ = new AstAggregator(AstAggregator::max);
-        $$->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AstAggregator::max);
+        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
         if (bodies.size() != 1) {
@@ -889,8 +914,10 @@ arg
         }
 
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            $$->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
         }
+
+        $$ = aggr;
     }
   ;
 
@@ -938,7 +965,7 @@ type_params
         $$ = $type_param_list;
     }
   | %empty {
-        $$ = std::vector<AstTypeIdentifier>>();
+        $$ = std::vector<AstTypeIdentifier>();
     }
   ;
 
@@ -993,7 +1020,7 @@ component_body
     }
   | component_body[comp] comp_init {
         $$ = $comp;
-        $$->addInstantiation(std::unique_ptr<AstComponentInit>($comp_init);
+        $$->addInstantiation(std::unique_ptr<AstComponentInit>($comp_init));
     }
   | component_body[comp] component {
         $$ = $comp;
@@ -1020,7 +1047,7 @@ comp_init
 /* Functor declaration */
 functor_decl
   : FUNCTOR IDENT LPAREN functor_arg_type_list RPAREN COLON functor_type {
-        auto typesig = $functor_arg_type_list + $functor_type
+        auto typesig = $functor_arg_type_list + $functor_type;
         $$ = new AstFunctorDeclaration($IDENT, typesig);
     }
   ;
@@ -1161,3 +1188,7 @@ kvp_value
   ;
 
 %%
+
+void yy::parser::error(const location_type &l, const std::string &m) {
+    driver.error(l, m);
+}

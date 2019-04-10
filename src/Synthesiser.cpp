@@ -1295,7 +1295,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 case FunctorOp::MIN: {
                     for (size_t i = 0; i < op.getArgCount() - 1; i++) {
-                        out << "std::max(";
+                        out << "std::min(";
                         visit(op.getArgument(i), out);
                         out << ",";
                     }

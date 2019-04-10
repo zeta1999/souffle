@@ -147,6 +147,13 @@ enum LVM_Type {
 
     LVM_ITER_TypeScan,
     LVM_ITER_TypeIndexScan,
+
+    LVM_Aggregate_MIN,
+    LVM_Aggregate_MAX,
+    LVM_Aggregate_COUNT,
+    LVM_Aggregate_SUM,
+    LVM_Aggregate_Return,
+    LVM_POP
 };
 
 class InterpreterProgInterface;
@@ -642,6 +649,97 @@ class LowLevelMachine {
         */
        void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
           code.push_back(LVM_Aggregate);
+          auto patterns = aggregate.getPattern();
+          std::string types;
+          auto arity = aggregate.getRelation().getArity();
+          for (size_t i = 0; i < arity; i ++) {
+             if (patterns[i]) {
+                visit(patterns[i], exitAddress);
+             }
+             types += (patterns[i] == nullptr? "_" : "V");
+          }
+          size_t counterLabel = getNewIndexScanIterator();
+          size_t L1 = getNewAddressLabel();
+          size_t L2 = getNewAddressLabel();
+          code.push_back(LVM_ITER_TypeIndexScan);
+          code.push_back(counterLabel);
+          code.push_back(symbolTable.lookup(aggregate.getRelation().getName())); 
+          code.push_back(symbolTable.lookup(types));
+
+          if (aggregate.getFunction() == RamAggregate::COUNT) {   // To count, there is no need to iterate
+            code.push_back(LVM_Aggregate_COUNT);
+            code.push_back(counterLabel);
+            code.push_back(LVM_Goto);
+            code.push_back(lookupAddress(L1));
+          } else {
+             code.push_back(LVM_ITER_NotAtEnd);    // First check, if the range is empty, does nothing 
+             code.push_back(counterLabel);
+             code.push_back(LVM_ITER_TypeIndexScan);
+             code.push_back(LVM_Jmpez);
+             code.push_back(lookupAddress(L2));
+
+             switch (aggregate.getFunction()) { // Init value
+                case RamAggregate::MIN:
+                     code.push_back(LVM_Number);
+                     code.push_back(MAX_RAM_DOMAIN);
+                     break;
+                case RamAggregate::MAX:
+                     code.push_back(LVM_Number);
+                     code.push_back(MIN_RAM_DOMAIN);
+                     break;
+                case RamAggregate::COUNT:
+                     break;
+                case RamAggregate::SUM:
+                     code.push_back(LVM_Number);
+                     code.push_back(0);
+                     break;
+             }
+
+             size_t address_L0 = code.size();
+
+             code.push_back(LVM_ITER_NotAtEnd);    // Start the formal for loop if the relation is non-empty
+             code.push_back(counterLabel);
+             code.push_back(LVM_ITER_TypeIndexScan);
+             code.push_back(LVM_Jmpez);
+             code.push_back(lookupAddress(L1));
+
+             code.push_back(LVM_ITER_Select);
+             code.push_back(counterLabel);
+             code.push_back(LVM_ITER_TypeIndexScan);
+             code.push_back(aggregate.getIdentifier());
+
+             visit(aggregate.getExpression(), exitAddress);
+
+             switch (aggregate.getFunction()) {
+                case RamAggregate::MIN:
+                     code.push_back(LVM_Aggregate_MIN);  //TODO replace with LVM_OP
+                     break;
+                case RamAggregate::MAX:
+                     code.push_back(LVM_Aggregate_MAX);  //TODO replace with LVM_OP
+                     break;
+                case RamAggregate::COUNT:
+                     assert (false);
+                     break;
+                case RamAggregate::SUM:
+                     code.push_back(LVM_Aggregate_SUM);  //TODO replace with LVM_OP
+                     break;
+             }
+             
+             code.push_back(LVM_ITER_Inc);
+             code.push_back(counterLabel);
+             code.push_back(LVM_ITER_TypeIndexScan);
+             code.push_back(LVM_Goto);
+             code.push_back(address_L0);
+          }
+
+          setAddress(L1, code.size());
+          
+          code.push_back(LVM_Aggregate_Return);  // TODO Well.. Improve?
+          code.push_back(aggregate.getIdentifier());
+
+          visit(aggregate.getOperation(), exitAddress);
+          setAddress(L2, code.size());
+          //code.push_back(LVM_POP);  // TODO remove a value from stack.
        }
        
        /*

@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include "ffi/ffi.h"
+#include <ffi.h>
 
 namespace souffle {
 
@@ -740,6 +740,57 @@ void LowLevelMachine::eval() {
          }
          case LVM_Aggregate: {
             ip += 1;                  
+            break;
+         };
+         case LVM_Aggregate_COUNT: {
+            RamDomain idx = code[ip+1];                        
+            auto iters = indexScanIteratorPool[idx];
+            RamDomain res = 0;
+            for (auto i = iters.first; i != iters.second; ++i) res++;
+            stack.push(res);
+            ip += 2;
+            break;
+         };
+         case LVM_Aggregate_MIN: {  //TODO don't need
+            RamDomain v1 = stack.top();
+            stack.pop();
+            RamDomain v2 = stack.top();
+            stack.pop();
+            stack.push(std::min(v1, v2));
+            ip += 1;
+            break;
+         };
+         case LVM_Aggregate_MAX: {  //TODO don't need
+            RamDomain v1 = stack.top();
+            stack.pop();
+            RamDomain v2 = stack.top();
+            stack.pop();
+            stack.push(std::max(v1, v2));
+            ip += 1;
+            break;
+         };
+         case LVM_Aggregate_SUM: {  //TODO don't need
+            RamDomain v1 = stack.top();
+            stack.pop();
+            RamDomain v2 = stack.top();
+            stack.pop();
+            stack.push(v1 + v2);
+            ip += 1;
+            break;
+         };
+         case LVM_Aggregate_Return: {
+            RamDomain id = code[ip+1];                          
+            RamDomain res = stack.top();
+            stack.pop();
+            RamDomain* tuple = new RamDomain[1];
+            tuple[0] = res;
+            ctxt[id] = tuple;
+            ip += 2;
+            break;
+         };
+         case LVM_POP: {
+            //stack.pop();
+            ip += 1;
             break;
          };
          case LVM_ITER_TypeScan: {
@@ -1432,7 +1483,8 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             }
 
             // write result to environment
-            RamDomain tuple[1];
+            RamDomain tuple[1];  //TODO This works because stack doesn't get freeed until program exit , thanks to AST recursion
+                                 // report issue, add insert function into ctxt
             tuple[0] = res;
             ctxt[aggregate.getIdentifier()] = tuple;
 
@@ -2174,6 +2226,36 @@ void LowLevelMachine::print() {
             printf("%ld\tLVM_Aggregate\t%d\n", ip, code[ip+1]);
             ip += 1;                  
             break;
+         case LVM_Aggregate_COUNT: {
+            printf("%ld\tLVM_Aggregate_COUNT\t%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         };
+         case LVM_Aggregate_MIN: {  //TODO don't need
+            printf("%ld\tLVM_Aggregate_MIN\t\n", ip);
+            ip += 1;
+            break;
+         };
+         case LVM_Aggregate_MAX: {  //TODO don't need
+            printf("%ld\tLVM_Aggregate_MAX\t\n", ip);
+            ip += 1;
+            break;
+         };
+         case LVM_Aggregate_SUM: {  //TODO don't need
+            printf("%ld\tLVM_Aggregate_SUM\t\n", ip);
+            ip += 1;
+            break;
+         };
+         case LVM_Aggregate_Return: {
+            printf("%ld\tLVM_Aggregate_Return\t%d\n", ip, code[ip+1]);
+            ip += 2;
+            break;
+         };
+         case LVM_POP: {
+            printf("%ld\tLVM_POP\t\n", ip);
+            ip += 1;
+            break;
+         };
          case LVM_ITER_TypeIndexScan:
             printf("%ld\tLVM_ITER_TypeIndexScan\t%s\n", ip, symbolTable.resolve(code[ip+2]).c_str());
             ip += 4;

@@ -641,7 +641,7 @@ void LowLevelMachine::eval() {
             std::string relName = symbolTable.resolve(code[ip+1]);
             auto IOs = generator.IODirectivesPool[code[ip+2]];
 
-            for (auto io : IOs) {
+            for (auto& io : IOs) {
                 try {
                     InterpreterRelation& relation = getRelation(relName);
                     std::vector<bool> symbolMask;
@@ -661,18 +661,6 @@ void LowLevelMachine::eval() {
          }
          case LVM_Store: {    
             std::string relName = symbolTable.resolve(code[ip+1]);
-         
-            /* TODO testing need to be deleted
-            InterpreterRelation& r = getRelation(relName);
-            for (const RamDomain* c : r) {
-               for (size_t i = 0; i < r.getArity(); ++i) {
-                  printf("\t%s", symbolTable.resolve(c[i]).c_str());
-               }
-               putchar('\n');
-            }
-            putchar('\n');
-            */
-
 
             auto IOs = generator.IODirectivesPool[code[ip+2]];
 

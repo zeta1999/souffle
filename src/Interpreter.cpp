@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include "ffi/ffi.h"
+#include <ffi.h>
 
 namespace souffle {
 
@@ -355,7 +355,7 @@ void LowLevelMachine::eval() {
             bool result = false;
 
             try {
-               result = !std::regex_match(text, std::regex(pattern));
+               result = std::regex_match(text, std::regex(pattern));
             } catch (...) {
                std::cerr << "warning: wrong pattern provided for match(\"" << pattern << "\",\""
                << text << "\").\n";
@@ -375,7 +375,7 @@ void LowLevelMachine::eval() {
             bool result = false;
 
             try {
-               result = std::regex_match(text, std::regex(pattern));
+               result = !std::regex_match(text, std::regex(pattern));
             } catch (...) {
                std::cerr << "warning: wrong pattern provided for match(\"" << pattern << "\",\""
                << text << "\").\n";
@@ -590,7 +590,7 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_DebugInfo: {
-            printf("Debuginfo At %ld\n", ip);
+            //printf("Debuginfo At %ld\n", ip);
             ip += 1;
             break;
          }
@@ -733,7 +733,7 @@ void LowLevelMachine::eval() {
             ip += 1;
             break;
          case LVM_Goto: 
-            printf("%ld:GOTO, next = %d\n",ip, code[ip+1]);
+            //printf("%ld:GOTO, next = %d\n",ip, code[ip+1]);
             ip = code[ip+1];
             break;
          case LVM_Jmpnz: {
@@ -741,7 +741,7 @@ void LowLevelMachine::eval() {
             stack.pop();
             size_t t = ip;
             ip = (val != 0 ? code[ip+1] : ip + 2);
-            printf("%ld:Jmpnz, next = %ld, val is %d\n",t, ip, val);
+            //printf("%ld:Jmpnz, next = %ld, val is %d\n",t, ip, val);
             break;
          }
          case LVM_Jmpez: {
@@ -749,7 +749,7 @@ void LowLevelMachine::eval() {
             stack.pop();
             size_t t = ip;
             ip = (val == 0 ? code[ip+1] : ip + 2);
-            printf("%ld:Jmpez, next = %ld, val is %d\n",t, ip, val);
+            //printf("%ld:Jmpez, next = %ld, val is %d\n",t, ip, val);
             break;
          }
          case LVM_Aggregate: {

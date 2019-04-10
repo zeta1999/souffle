@@ -638,30 +638,30 @@ arg
         $$->setSrcLoc(@$);
     }
   | MAX LPAREN arg COMMA non_empty_arg_list RPAREN {
-        auto args = std::vector<std::unique_ptr<AstArgument>>();
-        args.push_back(std::unique_ptr<AstArgument>($3));
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($3);
         for (auto* arg : $5->getArguments()) {
-            args.push_back(std::unique_ptr<AstArgument>(arg->clone()));
+            args.emplace_back(arg->clone());
         }
         delete $5;
         $$ = new AstIntrinsicFunctor(FunctorOp::MAX, std::move(args));
         $$->setSrcLoc(@$);
     }
   | MIN LPAREN arg COMMA non_empty_arg_list RPAREN {
-        auto args = std::vector<std::unique_ptr<AstArgument>>();
-        args.push_back(std::unique_ptr<AstArgument>($3));
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($3);
         for (auto* arg : $5->getArguments()) {
-            args.push_back(std::unique_ptr<AstArgument>(arg->clone()));
+            args.emplace_back(arg->clone());
         }
         delete $5;
         $$ = new AstIntrinsicFunctor(FunctorOp::MIN, std::move(args));
         $$->setSrcLoc(@$);
     }
   | CAT LPAREN arg COMMA non_empty_arg_list RPAREN {
-        auto args = std::vector<std::unique_ptr<AstArgument>>();
-        args.push_back(std::unique_ptr<AstArgument>($3));
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($3);
         for (auto* arg : $5->getArguments()) {
-            args.push_back(std::unique_ptr<AstArgument>(arg->clone()));
+            args.emplace_back(arg->clone());
         }
         delete $5;
         $$ = new AstIntrinsicFunctor(FunctorOp::CAT, std::move(args));

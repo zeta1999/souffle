@@ -1282,27 +1282,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 }
                 case FunctorOp::MAX: {
-                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
-                        out << "std::max(";
-                        visit(op.getArgument(i), out);
-                        out << ",";
+                    out << "std::max({";
+                    for (auto& cur : op.getArguments()) {
+                        visit(cur, out);
+                        out << ", ";
                     }
-                    visit(op.getArgument(op.getArgCount() - 1), out);
-                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
-                        out << ")";
-                    }
+                    out << "})";
                     break;
                 }
                 case FunctorOp::MIN: {
-                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
-                        out << "std::min(";
-                        visit(op.getArgument(i), out);
-                        out << ",";
+                    out << "std::min({";
+                    for (auto& cur : op.getArguments()) {
+                        visit(cur, out);
+                        out << ", ";
                     }
-                    visit(op.getArgument(op.getArgCount() - 1), out);
-                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
-                        out << ")";
-                    }
+                    out << "})";
                     break;
                 }
 

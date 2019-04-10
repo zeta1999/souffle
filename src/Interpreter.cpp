@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include <ffi.h>
+#include "ffi/ffi.h"
 
 namespace souffle {
 
@@ -411,14 +411,12 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_PackRecord: { //TODO confirm
-            RamDomain arity = stack.top();
-            stack.pop();
+            RamDomain arity = code[ip+1];
             RamDomain data[arity];
             for (size_t i = 0; i < arity; ++i) {
                data[arity-i-1] =  stack.top();
                stack.pop();
             }
-            
             stack.push(pack(data, arity));
             ip += 2;
             break;
@@ -505,17 +503,32 @@ void LowLevelMachine::eval() {
             ip += 3;
             break;
          }
-         case LVM_Constraint: //TODO no need
+         case LVM_Constraint: //TODO no needed
             break;
-         case LVM_Scan: //TODO No need
+         case LVM_Scan: //TODO Remove Later
             ip += 1;
             break;
-         case LVM_IndexScan:  //TODO Later
+         case LVM_IndexScan:  //TODO Remove Later
             ip += 1;
             break;
-         case LVM_UnpackRecord: //TODO Later
+         case LVM_UnpackRecord: {
+                                
+            RamDomain referenceLevel = code[ip+1];
+            RamDomain position = code[ip+2];
+            RamDomain arity = code[ip+3];
+            RamDomain id = code[ip+4];
+
+            RamDomain ref = ctxt[referenceLevel][position];
+            if (isNull(ref)) {
+               ip += 5;
+               break;
+            }
+
+            RamDomain* tuple = unpack(ref, arity);
+            ctxt[id] = tuple;
             ip += 5;
             break;
+         }
          case LVM_Filter: //TODO NO need
             ip += 1;
             break;
@@ -577,6 +590,7 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_DebugInfo: {
+            printf("Debuginfo At %ld\n", ip);
             ip += 1;
             break;
          }
@@ -719,7 +733,7 @@ void LowLevelMachine::eval() {
             ip += 1;
             break;
          case LVM_Goto: 
-            //printf("%ld:GOTO, next = %d\n",ip, code[ip+1]);
+            printf("%ld:GOTO, next = %d\n",ip, code[ip+1]);
             ip = code[ip+1];
             break;
          case LVM_Jmpnz: {
@@ -727,7 +741,7 @@ void LowLevelMachine::eval() {
             stack.pop();
             size_t t = ip;
             ip = (val != 0 ? code[ip+1] : ip + 2);
-            //printf("%ld:Jmpnz, next = %ld, val is %d\n",t, ip, val);
+            printf("%ld:Jmpnz, next = %ld, val is %d\n",t, ip, val);
             break;
          }
          case LVM_Jmpez: {
@@ -735,7 +749,7 @@ void LowLevelMachine::eval() {
             stack.pop();
             size_t t = ip;
             ip = (val == 0 ? code[ip+1] : ip + 2);
-            //printf("%ld:Jmpez, next = %ld, val is %d\n",t, ip, val);
+            printf("%ld:Jmpez, next = %ld, val is %d\n",t, ip, val);
             break;
          }
          case LVM_Aggregate: {

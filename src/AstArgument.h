@@ -279,7 +279,7 @@ public:
             args.push_back(std::move(cur));
         }
 
-        // TODO: ADD SEMANTIC CHECKS FOR ARITY
+        assert(isValidFunctorOpArity(function, args.size()) && "invalid number of arguments for functor");
     }
 
     AstIntrinsicFunctor(FunctorOp function, std::vector<std::unique_ptr<AstArgument>> operands)

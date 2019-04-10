@@ -1287,7 +1287,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         visit(op.getArgument(i), out);
                         out << ",";
                     }
-                    visit(op.getArgument(op.getArgCount()-1), out);
+                    visit(op.getArgument(op.getArgCount() - 1), out);
                     for (size_t i = 0; i < op.getArgCount() - 1; i++) {
                         out << ")";
                     }
@@ -1299,7 +1299,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         visit(op.getArgument(i), out);
                         out << ",";
                     }
-                    visit(op.getArgument(op.getArgCount()-1), out);
+                    visit(op.getArgument(op.getArgCount() - 1), out);
                     for (size_t i = 0; i < op.getArgCount() - 1; i++) {
                         out << ")";
                     }
@@ -1315,7 +1315,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         out << ") + ";
                     }
                     out << "symTable.resolve(";
-                    visit(op.getArgument(op.getArgCount()-1), out);
+                    visit(op.getArgument(op.getArgCount() - 1), out);
                     out << "))";
                     break;
                 }

@@ -1282,29 +1282,40 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 }
                 case FunctorOp::MAX: {
-                    out << "std::max(";
-                    visit(op.getArgument(0), out);
-                    out << ",";
-                    visit(op.getArgument(1), out);
-                    out << ")";
+                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
+                        out << "std::max(";
+                        visit(op.getArgument(i), out);
+                        out << ",";
+                    }
+                    visit(op.getArgument(op.getArgCount()-1), out);
+                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
+                        out << ")";
+                    }
                     break;
                 }
                 case FunctorOp::MIN: {
-                    out << "std::min(";
-                    visit(op.getArgument(0), out);
-                    out << ",";
-                    visit(op.getArgument(1), out);
-                    out << ")";
+                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
+                        out << "std::max(";
+                        visit(op.getArgument(i), out);
+                        out << ",";
+                    }
+                    visit(op.getArgument(op.getArgCount()-1), out);
+                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
+                        out << ")";
+                    }
                     break;
                 }
 
                 // strings
                 case FunctorOp::CAT: {
                     out << "symTable.lookup(";
+                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
+                        out << "symTable.resolve(";
+                        visit(op.getArgument(i), out);
+                        out << ") + ";
+                    }
                     out << "symTable.resolve(";
-                    visit(op.getArgument(0), out);
-                    out << ") + symTable.resolve(";
-                    visit(op.getArgument(1), out);
+                    visit(op.getArgument(op.getArgCount()-1), out);
                     out << "))";
                     break;
                 }

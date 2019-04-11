@@ -278,20 +278,25 @@ identifier
 type
   : NUMBER_TYPE IDENT {
         $$ = new AstPrimitiveType($IDENT, true);
+        $$->setSrcLoc(@$);
     }
   | SYMBOL_TYPE IDENT {
         $$ = new AstPrimitiveType($IDENT, false);
+        $$->setSrcLoc(@$);
     }
   | TYPE IDENT {
         $$ = new AstPrimitiveType($IDENT);
+        $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS union_type_list {
         $$ = $union_type_list;
         $$->setName($IDENT);
+        $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS LBRACKET record_type_list RBRACKET {
         $$ = $record_type_list;
         $$->setName($IDENT);
+        $$->setSrcLoc(@$);
     }
   ;
 
@@ -308,6 +313,7 @@ non_empty_record_type_list
   : IDENT COLON identifier {
         $$ = new AstRecordType();
         $$->add($IDENT, $identifier);
+        $$->setSrcLoc(@$);
     }
   | non_empty_record_type_list[curr_record] COMMA IDENT COLON identifier {
         $$ = $curr_record;
@@ -353,12 +359,14 @@ relation_list
   : IDENT {
         auto* rel = new AstRelation();
         rel->setName($IDENT);
+        rel->setSrcLoc(@$);
 
         $$.push_back(rel);
     }
   | relation_list[curr_list] COMMA IDENT {
         auto* rel = new AstRelation();
         rel->setName($IDENT);
+        rel->setSrcLoc(@$);
 
         $$ = $curr_list;
         $$.push_back(rel);
@@ -376,11 +384,17 @@ attributes
   ;
 non_empty_attributes
   : IDENT COLON identifier {
-        $$.push_back(new AstAttribute($IDENT, $identifier));
+        auto attr = new AstAttribute($IDENT, $identifier);
+        attr->setSrcLoc(@identifier);
+
+        $$.push_back(attr);
     }
   | non_empty_attributes[curr_list] COMMA IDENT COLON identifier {
+        auto attr = new AstAttribute($IDENT, $identifier);
+        attr->setSrcLoc(@identifier);
+
         $$ = $curr_list;
-        $$.push_back(new AstAttribute($IDENT, $identifier));
+        $$.push_back(attr);
     }
   ;
 
@@ -440,6 +454,7 @@ fact
   : atom DOT {
         $$ = new AstClause();
         $$->setHead(std::unique_ptr<AstAtom>($atom));
+        $$->setSrcLoc(@$);
     }
   ;
 
@@ -475,6 +490,7 @@ rule_def
             for (const auto* body : bodies) {
                 AstClause* cur = body->clone();
                 cur->setHead(std::unique_ptr<AstAtom>(head->clone()));
+                cur->setSrcLoc(@$);
                 cur->setGenerated(generated);
                 $$.push_back(cur);
             }
@@ -598,6 +614,7 @@ atom
             $$->addArgument(std::unique_ptr<AstArgument>(arg));
         }
         $$->setName($identifier);
+        $$->setSrcLoc(@$);
     }
   ;
 
@@ -608,21 +625,25 @@ constraint
         $$ = new AstBinaryConstraint($RELOP,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] LT arg[right] {
         $$ = new AstBinaryConstraint(BinaryConstraintOp::LT,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] GT arg[right] {
         $$ = new AstBinaryConstraint(BinaryConstraintOp::GT,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] EQUALS arg[right] {
         $$ = new AstBinaryConstraint(BinaryConstraintOp::EQ,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
 
     /* binary prefix constraints */
@@ -630,19 +651,23 @@ constraint
         $$ = new AstBinaryConstraint(BinaryConstraintOp::MATCH,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | TCONTAINS LPAREN arg[left] COMMA arg[right] RPAREN {
         $$ = new AstBinaryConstraint(BinaryConstraintOp::CONTAINS,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
 
     /* zero-arity constraints */
   | TRUE {
         $$ = new AstBooleanConstraint(true);
+        $$->setSrcLoc(@$);
     }
   | FALSE {
         $$ = new AstBooleanConstraint(false);
+        $$->setSrcLoc(@$);
     }
   ;
 
@@ -669,18 +694,23 @@ non_empty_arg_list
 arg
   : STRING {
         $$ = new AstStringConstant(driver.getSymbolTable(), $STRING);
+        $$->setSrcLoc(@$);
     }
   | NUMBER {
         $$ = new AstNumberConstant($NUMBER);
+        $$->setSrcLoc(@$);
     }
   | UNDERSCORE {
         $$ = new AstUnnamedVariable();
+        $$->setSrcLoc(@$);
     }
   | DOLLAR {
         $$ = new AstCounter();
+        $$->setSrcLoc(@$);
     }
   | IDENT {
         $$ = new AstVariable($IDENT);
+        $$->setSrcLoc(@$);
     }
   | LPAREN arg[nested_arg] RPAREN {
         $$ = $nested_arg;
@@ -689,11 +719,13 @@ arg
     /* type-cast */
   | arg[nested_arg] AS IDENT {
         $$ = new AstTypeCast(std::unique_ptr<AstArgument>($nested_arg), $IDENT);
+        $$->setSrcLoc(@$);
     }
 
     /* record constructor */
   | NIL {
         $$ = new AstNullConstant();
+        $$->setSrcLoc(@$);
     }
   | identifier LBRACKET arg_list RBRACKET {
         auto record = new AstRecordInit();
@@ -701,6 +733,7 @@ arg
             record->add(std::unique_ptr<AstArgument>(arg));
         }
         $$ = record;
+        $$->setSrcLoc(@$);
     }
 
     /* user-defined functor */
@@ -710,6 +743,7 @@ arg
             functor->add(std::unique_ptr<AstArgument>(arg));
         }
         $$ = functor;
+        $$->setSrcLoc(@$);
     }
 
     /* -- intrinsic functor -- */
@@ -717,34 +751,42 @@ arg
   | MINUS arg[nested_arg] %prec NEG {
         if (const AstNumberConstant* original = dynamic_cast<const AstNumberConstant*>($nested_arg)) {
             $$ = new AstNumberConstant(-1 * original->getIndex());
+            $$->setSrcLoc(@nested_arg);
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,
                 std::unique_ptr<AstArgument>($nested_arg));
+            $$->setSrcLoc(@$);
         }
     }
   | BW_NOT arg[nested_arg] {
         $$ = new AstIntrinsicFunctor(FunctorOp::BNOT,
                 std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
     }
   | L_NOT arg [nested_arg] {
         $$ = new AstIntrinsicFunctor(FunctorOp::LNOT,
                 std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
     }
   | ORD LPAREN arg[nested_arg] RPAREN {
         $$ = new AstIntrinsicFunctor(FunctorOp::ORD,
                 std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
     }
   | STRLEN LPAREN arg[nested_arg] RPAREN {
         $$ = new AstIntrinsicFunctor(FunctorOp::STRLEN,
                 std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
     }
   | TONUMBER LPAREN arg[nested_arg] RPAREN {
         $$ = new AstIntrinsicFunctor(FunctorOp::TONUMBER,
                 std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
     }
   | TOSTRING LPAREN arg[nested_arg] RPAREN {
         $$ = new AstIntrinsicFunctor(FunctorOp::TOSTRING,
                 std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
     }
 
     /* binary infix functors */
@@ -752,56 +794,67 @@ arg
         $$ = new AstIntrinsicFunctor(FunctorOp::ADD,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] MINUS arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::SUB,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] STAR arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::MUL,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] SLASH arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::DIV,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] PERCENT arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::MOD,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] CARET arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::EXP,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] BW_OR arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::BOR,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] BW_XOR arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::BXOR,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] BW_AND arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::BAND,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] L_OR arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::LOR,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | arg[left] L_AND arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::LAND,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
 
     /* binary prefix functors */
@@ -809,16 +862,19 @@ arg
         $$ = new AstIntrinsicFunctor(FunctorOp::MIN,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | MAX LPAREN arg[left] COMMA arg[right] RPAREN {
         $$ = new AstIntrinsicFunctor(FunctorOp::MAX,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
   | CAT LPAREN arg[left] COMMA arg[right] RPAREN {
         $$ = new AstIntrinsicFunctor(FunctorOp::CAT,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
     }
 
     /* ternary functors */
@@ -827,6 +883,7 @@ arg
                 std::unique_ptr<AstArgument>($first),
                 std::unique_ptr<AstArgument>($second),
                 std::unique_ptr<AstArgument>($third));
+        $$->setSrcLoc(@$);
     }
 
     /* -- aggregators -- */
@@ -834,6 +891,7 @@ arg
         auto aggr = new AstAggregator(AstAggregator::count);
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
         $$ = aggr;
+        $$->setSrcLoc(@$);
     }
   | COUNT COLON LBRACE body RBRACE {
         auto aggr = new AstAggregator(AstAggregator::count);
@@ -849,6 +907,7 @@ arg
         }
 
         $$ = aggr;
+        $$->setSrcLoc(@$);
     }
 
   | SUM arg[target_expr] COLON atom {
@@ -856,6 +915,7 @@ arg
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
         $$ = aggr;
+        $$->setSrcLoc(@$);
     }
   | SUM arg[target_expr] COLON LBRACE body RBRACE {
         auto aggr = new AstAggregator(AstAggregator::sum);
@@ -872,6 +932,7 @@ arg
         }
 
         $$ = aggr;
+        $$->setSrcLoc(@$);
     }
 
   | MIN arg[target_expr] COLON atom {
@@ -879,6 +940,7 @@ arg
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
         $$ = aggr;
+        $$->setSrcLoc(@$);
     }
   | MIN arg[target_expr] COLON LBRACE body RBRACE {
         auto aggr = new AstAggregator(AstAggregator::min);
@@ -895,6 +957,7 @@ arg
         }
 
         $$ = aggr;
+        $$->setSrcLoc(@$);
     }
 
   | MAX arg[target_expr] COLON atom {
@@ -902,6 +965,7 @@ arg
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
         $$ = aggr;
+        $$->setSrcLoc(@$);
     }
   | MAX arg[target_expr] COLON LBRACE body RBRACE {
         auto aggr = new AstAggregator(AstAggregator::max);
@@ -918,6 +982,7 @@ arg
         }
 
         $$ = aggr;
+        $$->setSrcLoc(@$);
     }
   ;
 
@@ -932,6 +997,7 @@ component
         auto* type = $component_head->getComponentType()->clone();
         $$->setComponentType(std::unique_ptr<AstComponentType>(type));
         $$->copyBaseComponents($component_head);
+        $$->setSrcLoc(@$);
         delete $component_head;
     }
   ;
@@ -1037,6 +1103,7 @@ comp_init
         $$ = new AstComponentInit();
         $$->setInstanceName($IDENT);
         $$->setComponentType(std::unique_ptr<AstComponentType>($comp_type));
+        $$->setSrcLoc(@$);
     }
   ;
 
@@ -1049,6 +1116,7 @@ functor_decl
   : FUNCTOR IDENT LPAREN functor_arg_type_list RPAREN COLON functor_type {
         auto typesig = $functor_arg_type_list + $functor_type;
         $$ = new AstFunctorDeclaration($IDENT, typesig);
+        $$->setSrcLoc(@$);
     }
   ;
 
@@ -1091,9 +1159,11 @@ functor_type
 pragma
   : PRAGMA STRING[key] STRING[value] {
         $$ = new AstPragma($key, $value);
+        $$->setSrcLoc(@$);
     }
   | PRAGMA STRING[option] {
         $$ = new AstPragma($option, "");
+        $$->setSrcLoc(@$);
     }
   ;
 
@@ -1129,6 +1199,7 @@ io_directive_list
         for (const auto& rel : $io_relation_list) {
             auto* io = new AstIO();
             io->setName(rel);
+            io->setSrcLoc(@$);
             $$.push_back(io);
         }
     }
@@ -1136,6 +1207,7 @@ io_directive_list
         for (const auto& rel : $io_relation_list) {
             auto* io = $key_value_pairs->clone();
             io->setName(rel);
+            io->setSrcLoc(@$);
         }
 
         delete $key_value_pairs;
@@ -1160,11 +1232,13 @@ key_value_pairs
     }
   | %empty {
         $$ = new AstIO();
+        $$->setSrcLoc(@$);
     }
   ;
 non_empty_key_value_pairs
   : IDENT EQUALS kvp_value {
         $$ = new AstIO();
+        $$->setSrcLoc(@$);
         $$->addKVP($IDENT, $kvp_value);
     }
   | non_empty_key_value_pairs[curr_io] COMMA IDENT EQUALS kvp_value {

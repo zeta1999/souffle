@@ -264,7 +264,8 @@ identifier
   : IDENT {
         $$.push_back($IDENT);
     }
-  | identifier[curr_identifier] DOUBLECOLON IDENT {
+    /* TODO (azreika): with new typesystem: DOT -> DOUBLECOLON */
+  | identifier[curr_identifier] DOT IDENT {
         $$ = $curr_identifier;
         $$.push_back($IDENT);
     }
@@ -728,7 +729,8 @@ arg
         $$ = new AstNullConstant();
         $$->setSrcLoc(@$);
     }
-  | identifier LBRACKET arg_list RBRACKET {
+  /* TODO (azreika): identifiers should be placed in for new typesystem */
+  | LBRACKET arg_list RBRACKET {
         auto record = new AstRecordInit();
         for (auto* arg : $arg_list) {
             record->add(std::unique_ptr<AstArgument>(arg));

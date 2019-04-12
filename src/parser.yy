@@ -341,6 +341,7 @@ union_type_list
 relation_decl
   : DECL relation_list LPAREN attributes RPAREN qualifiers {
         for (auto* rel : $relation_list) {
+            rel->setQualifier($qualifiers);
             for (auto* attr : $attributes) {
                 rel->addAttribute(std::unique_ptr<AstAttribute>(attr->clone()));
             }
@@ -1208,6 +1209,7 @@ io_directive_list
             auto* io = $key_value_pairs->clone();
             io->setName(rel);
             io->setSrcLoc(@$);
+            $$.push_back(io);
         }
 
         delete $key_value_pairs;

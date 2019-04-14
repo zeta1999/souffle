@@ -21,28 +21,28 @@
 namespace souffle {
 
 /** Get level of value (which for-loop of a query) */
-size_t RamExpressionLevelAnalysis::getLevel(const RamExpression* value) const {
+int RamExpressionLevelAnalysis::getLevel(const RamExpression* value) const {
     // visitor
-    class ValueLevelVisitor : public RamVisitor<size_t> {
+    class ValueLevelVisitor : public RamVisitor<int> {
     public:
         // number
-        size_t visitNumber(const RamNumber& num) override {
-            return 0;
+        int visitNumber(const RamNumber& num) override {
+            return -1;
         }
 
         // tuple element access
-        size_t visitElementAccess(const RamElementAccess& elem) override {
+        int visitElementAccess(const RamElementAccess& elem) override {
             return elem.getIdentifier();
         }
 
         // auto increment
-        size_t visitAutoIncrement(const RamAutoIncrement& increment) override {
-            return 0;
+        int visitAutoIncrement(const RamAutoIncrement& increment) override {
+            return -1;
         }
 
         // intrinsic functors
-        size_t visitIntrinsicOperator(const RamIntrinsicOperator& op) override {
-            size_t level = 0;
+        int visitIntrinsicOperator(const RamIntrinsicOperator& op) override {
+            int level = -1;
             for (const auto& arg : op.getArguments()) {
                 if (arg != nullptr) {
                     level = std::max(level, visit(arg));
@@ -52,10 +52,10 @@ size_t RamExpressionLevelAnalysis::getLevel(const RamExpression* value) const {
         }
 
         // pack operator
-        size_t visitPackRecord(const RamPackRecord& pack) override {
-            size_t level = 0;
+        int visitPackRecord(const RamPackRecord& pack) override {
+            int level = -1;
             for (const auto& arg : pack.getArguments()) {
-                if (arg) {
+                if (arg != nullptr) {
                     level = std::max(level, visit(arg));
                 }
             }
@@ -63,13 +63,13 @@ size_t RamExpressionLevelAnalysis::getLevel(const RamExpression* value) const {
         }
 
         // argument
-        size_t visitArgument(const RamArgument& arg) override {
-            return 0;
+        int visitArgument(const RamArgument& arg) override {
+            return -1;
         }
 
         // user defined operator
-        size_t visitUserDefinedOperator(const RamUserDefinedOperator& op) override {
-            size_t level = 0;
+        int visitUserDefinedOperator(const RamUserDefinedOperator& op) override {
+            int level = -1;
             for (const auto& arg : op.getArguments()) {
                 if (arg != nullptr) {
                     level = std::max(level, visit(arg));

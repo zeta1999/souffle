@@ -49,130 +49,48 @@ std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* con
 }  // namespace
 
 bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
-    // Node-mapper that collects nested conditions which apply to a given scan level
-    // TODO: Change these to LambdaRamNodeMapper lambdas
-    class RamFilterCapturer : public RamNodeMapper {
-        LevelConditionsTransformer* context;
-
-        /** identifier for the tuple */
-        const size_t identifier;
-
-        mutable std::unique_ptr<RamCondition> condition;
-
-    public:
-        RamFilterCapturer(LevelConditionsTransformer* l, const size_t ident)
-                : context(l), identifier(ident) {}
-
-        std::unique_ptr<RamCondition> getCondition() const {
-            return std::move(condition);
-        }
-
-        void addCondition(std::unique_ptr<RamCondition> c) const {
-            if (condition != nullptr) {
-                condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
-            } else {
-                condition = std::move(c);
-            }
-        }
-
-        std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
+    bool changed = false;
+    visitDepthFirst(program, [&](const RamScan& scan) {
+        std::unique_ptr<RamCondition> levelledCondition;
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            // find filters that can be levelled
             if (auto* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition& condition = filter->getCondition();
-
-                if (context->rcla->getLevel(&condition) == identifier) {
-                    addCondition(std::unique_ptr<RamCondition>(condition.clone()));
-
-                    // skip this filter
-                    node->apply(*this);
+                if (rcla->getLevel(&condition) == scan.getIdentifier()) {
+                    //std::cout << "Filter: " << *filter << std::endl;
+                    //std::cout << "Scan: " << scan << std::endl;
+                    std::unique_ptr<RamCondition> clonedCondition(condition.clone());
+                    if (levelledCondition == nullptr) {
+                        levelledCondition = std::move(clonedCondition);
+                    } else {
+                        levelledCondition = std::make_unique<RamConjunction>(
+                                std::move(levelledCondition), std::move(clonedCondition));
+                    }
+                    node->apply(makeLambdaRamMapper(filterRewriter));
                     return std::unique_ptr<RamOperation>(filter->getOperation().clone());
                 }
             }
-
-            node->apply(*this);
+            node->apply(makeLambdaRamMapper(filterRewriter));
             return node;
+        };
+        scan.getOperation().apply(makeLambdaRamMapper(filterRewriter));
+
+        // If a condition applies to this scan level, filter the scan based on the condition
+        if (levelledCondition != nullptr) {
+            scan.getOperation().apply(makeLambdaRamMapper(
+               [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+                    if (nullptr != dynamic_cast<RamOperation*>(node.get())) {
+                         return std::make_unique<RamFilter>(std::move(levelledCondition),
+                             std::unique_ptr<RamOperation>(dynamic_cast<RamOperation*>(node.release())));
+                    }
+                    return node;
+               } 
+            )); 
+            changed = true;
         }
-    };
-
-    class RamFilterInsert : public RamNodeMapper {
-        std::unique_ptr<RamCondition> condition;
-
-    public:
-        RamFilterInsert(std::unique_ptr<RamCondition> c) : condition(std::move(c)) {}
-
-        std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            if (nullptr != dynamic_cast<RamOperation*>(node.get())) {
-                return std::make_unique<RamFilter>(std::unique_ptr<RamCondition>(condition->clone()),
-                        std::unique_ptr<RamOperation>(dynamic_cast<RamOperation*>(node.release())));
-            }
-            return node;
-        }
-    };
-
-    // Node-mapper that searches for and updates RAM scans nested in RAM inserts
-    class RamScanCapturer : public RamNodeMapper {
-        mutable bool modified = false;
-        LevelConditionsTransformer* context;
-
-    public:
-        RamScanCapturer(LevelConditionsTransformer* l) : context(l) {}
-
-        bool getModified() const {
-            return modified;
-        }
-
-        std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            if (auto* scan = dynamic_cast<RamScan*>(node.get())) {
-                RamFilterCapturer filterUpdate(context, scan->getIdentifier());
-                node->apply(filterUpdate);
-
-                // If a condition applies to this scan level, filter the scan based on the condition
-                if (std::unique_ptr<RamCondition> condition = filterUpdate.getCondition()) {
-                    RamFilterInsert filterInsert(std::move(condition));
-                    node->apply(filterInsert);
-                    modified = true;
-                }
-            }
-
-            node->apply(*this);
-            return node;
-        }
-    };
-
-    // Node-mapper that searches for and updates RAM inserts
-    class RamQueryCapturer : public RamNodeMapper {
-        mutable bool modified = false;
-        LevelConditionsTransformer* context;
-
-    public:
-        RamQueryCapturer(LevelConditionsTransformer* l) : context(l) {}
-
-        bool getModified() const {
-            return modified;
-        }
-
-        std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            // get all RAM inserts
-            if (auto* insert = dynamic_cast<RamQuery*>(node.get())) {
-                RamScanCapturer scanUpdate(context);
-                insert->apply(scanUpdate);
-
-                if (scanUpdate.getModified()) {
-                    modified = true;
-                }
-            } else {
-                // no need to search for nested RAM inserts
-                node->apply(*this);
-            }
-
-            return node;
-        }
-    };
-
-    // level all RAM inserts
-    RamQueryCapturer insertUpdate(this);
-    program.getMain()->apply(insertUpdate);
-
-    return insertUpdate.getModified();
+    });
+    return changed;
 }
 
 /** Get indexable element */

@@ -54,25 +54,17 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include "ffi/ffi.h"
+#include <ffi.h>
 
 namespace souffle {
 
 
-void LowLevelMachine::generatingInstructionStream() {
-   const RamStatement& main = *translationUnit.getP().getMain();
-   generator(main, 0);
-   generator.cleanUp(); 
-   generator(main, 0);
-   generator.code.push_back(LVM_STOP);
-}
-
-void LowLevelMachine::executeMain() {
+void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
    size_t ip = 0;
    auto& code = generator.code;
    auto& symbolTable = generator.symbolTable;
    while (true) {
-      switch (this->generator.code[ip]) {
+      switch (generator.code[ip]) {
          case LVM_Number:
             stack.push(code[ip+1]);
             ip += 2;
@@ -410,7 +402,7 @@ void LowLevelMachine::executeMain() {
             ip += 3;
             break;
          }
-         case LVM_PackRecord: { //TODO confirm
+         case LVM_PackRecord: {
             RamDomain arity = code[ip+1];
             RamDomain data[arity];
             for (size_t i = 0; i < arity; ++i) {
@@ -421,12 +413,12 @@ void LowLevelMachine::executeMain() {
             ip += 2;
             break;
          }
-         case LVM_Argument: { //TODO Later: ctxt.getArgument return type
-            ctxt.getArgument(code[ip+1]);
+         case LVM_Argument: { 
+            stack.push(ctxt.getArgument(code[ip+1]));
             ip += 2;
             break;
          }
-         case LVM_Conjunction: { //TODO Confirm, diff with OP_LAND?
+         case LVM_Conjunction: {
             RamDomain rhs = stack.top();
             stack.pop();
             RamDomain lhs = stack.top();
@@ -547,16 +539,16 @@ void LowLevelMachine::executeMain() {
          }
          case LVM_Return: {
             RamDomain size = code[ip+1];
-            RamDomain vals[size];
-            for (size_t i = 0; i < size; ++i) {
-               vals[size-i-1] = stack.top();
-               stack.pop(); 
+            std::string types = symbolTable.resolve(code[ip+2]);
+            for (size_t i = 0; i < size; ++i){
+               if (types[i] == '_') {
+                  ctxt.addReturnValue(0, true);
+               } else {
+                  ctxt.addReturnValue(stack.top(), false);
+                  stack.pop();
+               }
             }
-            for (size_t i = 0; i < size; ++i) {
-               (vals[i] == 0 ? ctxt.addReturnValue(0, true)
-                              :ctxt.addReturnValue(vals[i]));
-            }
-            ip += 2;
+            ip += 3;
             break;
          }
          case LVM_Sequence: {
@@ -913,7 +905,11 @@ void LowLevelMachine::executeMain() {
             ip += 1;
             break;
          case LVM_STOP: 
-            assert(stack.size() == 0);
+            if (stack.size() != 0) {
+               printf("Size of stack after program stop: %ld", stack.size());
+               exit(1);
+            }
+            //assert(stack.size() == 0);
             return;
          default:
             printf("Unknown. eval()\n");
@@ -924,13 +920,13 @@ void LowLevelMachine::executeMain() {
 
 
 /** Evaluate RAM Expression */
-RamDomain Interpreter::evalVal(const RamExpression& value, const InterpreterContext& ctxt) {
+RamDomain Interpreter_::evalVal(const RamExpression& value, const InterpreterContext& ctxt) {
     class ValueEvaluator : public RamVisitor<RamDomain> {
-        Interpreter& interpreter;
+        Interpreter_& interpreter;
         const InterpreterContext& ctxt;
 
     public:
-        ValueEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
+        ValueEvaluator(Interpreter_& interp, const InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt) {}
 
         RamDomain visitNumber(const RamNumber& num) override {
@@ -1140,15 +1136,15 @@ RamDomain Interpreter::evalVal(const RamExpression& value, const InterpreterCont
 }
 
 /** Evaluate RAM Condition */
-bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
+bool Interpreter_::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
     class ConditionEvaluator : public RamVisitor<bool> {
-        Interpreter& interpreter;
+        Interpreter_& interpreter;
         const InterpreterContext& ctxt;
         RamExistenceCheckAnalysis* existCheckAnalysis;
         RamProvenanceExistenceCheckAnalysis* provExistCheckAnalysis;
 
     public:
-        ConditionEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
+        ConditionEvaluator(Interpreter_& interp, const InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt),
                   existCheckAnalysis(interp.getTranslationUnit().getAnalysis<RamExistenceCheckAnalysis>()),
                   provExistCheckAnalysis(
@@ -1307,14 +1303,14 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 }
 
 /** Evaluate RAM operation */
-void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args) {
+void Interpreter_::evalOp(const RamOperation& op, const InterpreterContext& args) {
     class OperationEvaluator : public RamVisitor<void> {
-        Interpreter& interpreter;
+        Interpreter_& interpreter;
         InterpreterContext& ctxt;
         RamIndexScanKeysAnalysis* keysAnalysis;
 
     public:
-        OperationEvaluator(Interpreter& interp, InterpreterContext& ctxt)
+        OperationEvaluator(Interpreter_& interp, InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt),
                   keysAnalysis(interp.getTranslationUnit().getAnalysis<RamIndexScanKeysAnalysis>()) {}
 
@@ -1547,12 +1543,12 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
 }
 
 /** Evaluate RAM statement */
-void Interpreter::evalStmt(const RamStatement& stmt) {
+void Interpreter_::evalStmt(const RamStatement& stmt) {
     class StatementEvaluator : public RamVisitor<bool> {
-        Interpreter& interpreter;
+        Interpreter_& interpreter;
 
     public:
-        StatementEvaluator(Interpreter& interp) : interpreter(interp) {}
+        StatementEvaluator(Interpreter_& interp) : interpreter(interp) {}
 
         // -- Statements -----------------------------
 
@@ -1766,7 +1762,7 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
 }
 
 /** Execute main program of a translation unit */
-void Interpreter::executeMain() {
+void Interpreter_::executeMain() {
     SignalHandler::instance()->set();
     if (Global::config().has("verbose")) {
         SignalHandler::instance()->enableLogging();
@@ -1821,7 +1817,7 @@ void Interpreter::executeMain() {
 }
 
 /** Execute subroutine */
-void Interpreter::executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
+void Interpreter_::executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
         std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) {
     InterpreterContext ctxt;
     ctxt.setReturnValues(returnValues);
@@ -1833,12 +1829,12 @@ void Interpreter::executeSubroutine(const RamStatement& stmt, const std::vector<
     evalOp(op, ctxt);
 }
 
-void LowLevelMachine::print() {
+void Interpreter::print(LVMGenerator& generator) {
    size_t ip = 0;
    auto& code = generator.code;
    auto& symbolTable = generator.symbolTable;
    while (true) {
-      switch (this->generator.code[ip]) {
+      switch (generator.code[ip]) {
          case LVM_Number:
             printf("%ld\tLVM_Number\t%d\n", ip, code[ip+1]);
             ip += 2;
@@ -2090,7 +2086,7 @@ void LowLevelMachine::print() {
             break;
          case LVM_Return: {
             printf("%ld\tLVM_Return\t%d\t\n", ip, code[ip+1]);
-            ip += 2;
+            ip += 3;
             break;
          }
          case LVM_Sequence: {

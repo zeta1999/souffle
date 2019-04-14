@@ -166,10 +166,15 @@ class LVMGenerator;
  * Interpreter executing a RAM translation unit
  */
 
-class LowLevelMachine {
+class Interpreter {
     class LVMGenerator : public RamVisitor<void, size_t> {
     public:
-       LVMGenerator(SymbolTable& symbolTable) : symbolTable(symbolTable) {}
+       LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry) : symbolTable(symbolTable) {
+           (*this)(entry, 0);
+           (*this).cleanUp(); 
+           (*this)(entry, 0);
+           code.push_back(LVM_STOP);
+       }
 
        void cleanUp() {
           code.clear();
@@ -654,17 +659,21 @@ class LowLevelMachine {
           code.push_back(symbolTable.lookup(relationName));
        }
        void visitReturn(const RamReturn& ret, size_t exitAddress) override {
-          for (auto expr : ret.getValues()) {
-             if (expr == nullptr) {
-                code.push_back(LVM_Number);
-                code.push_back(true);  //TODO pay attention
+          //TODO The value must be pushed in correct order (0 - size)
+          std::string types;
+          auto expressions = ret.getValues();
+          size_t size = expressions.size();
+          for (int i = size - 1; i >= 0; --i) {
+             if (expressions[i] == nullptr) {
+                 types += '_';
              } else {
-                visit(expr, exitAddress); 
+                 types += 'V';
+                 visit(expressions[i], exitAddress);
              }
           }
-
           code.push_back(LVM_Return);
           code.push_back(ret.getValues().size());
+          code.push_back(symbolTable.lookup(types));
        }
 
        /** Visit RAM stmt*/
@@ -924,9 +933,9 @@ class LowLevelMachine {
 
     };
 public:
-   LowLevelMachine(RamTranslationUnit& tUnit) : translationUnit(tUnit), generator(tUnit.getSymbolTable()){}
+   Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
 
-   virtual ~LowLevelMachine() {
+   virtual ~Interpreter() {
       for (auto& x : environment) {
          delete x.second;
       }
@@ -937,20 +946,42 @@ public:
       return translationUnit;
    }
 
-   /** Get LVM instruction stream */
-   void generatingInstructionStream();
-    
-   /** Execute the main program */
-   void executeMain();
+   /** Entry for executing the main program */
+   void executeMain() {
+      LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getP().getMain());
+      InterpreterContext ctxt;
+      execute(generator, ctxt);
+   }
+
+   /** Execute main program */
+   void execute(LVMGenerator& generator, InterpreterContext& ctxt);
 
    /** Execute the subroutine */
    void executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
-           std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors);
+           std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) {
+
+      InterpreterContext ctxt;
+      LVMGenerator generator(translationUnit.getSymbolTable(), stmt);
+      ctxt.setReturnValues(returnValues);
+      ctxt.setReturnErrors(returnErrors);
+      ctxt.setArguments(arguments);
+      print(generator);
+      execute(generator, ctxt);
+   }
    
    /** Print out the instruction stream */
-   void print();
+   // TODO Cache the program code
+   void printMain() {
+      LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getP().getMain());
+      print(generator);
+   }
+
+   /** Print out the instruction stream */
+   void print(LVMGenerator& g);
 
 protected:
+   /** Main Program Instruction Stream */
+
    /** relation environment type */
    using relation_map = std::map<std::string, InterpreterRelation*>; 
    
@@ -960,6 +991,11 @@ protected:
    /** Get symbol table */
    SymbolTable& getSymbolTable() {
       return translationUnit.getSymbolTable();
+   }
+
+   /** Get relation map */
+   relation_map& getRelationMap() const {
+      return const_cast<relation_map&>(environment);
    }
 
    /** Get Counter */
@@ -1043,7 +1079,6 @@ protected:
    }
 
     //InterpreterContext ctxt(translationUnit.getAnalysis<RamOperationDepthAnalysis>()->getDepth(&op));
-   InterpreterContext ctxt = InterpreterContext(100);   //TODO 
     
 
    // Lookup for IndexScan iter, resize the vector if idx > size */
@@ -1069,6 +1104,9 @@ private:
    /** RAM translation Unit */
    RamTranslationUnit& translationUnit;
 
+   /** Cached subroutine */
+   std::map<std::string, LVMGenerator&> subroutines;
+
    /** Relation Environment */
    relation_map environment;
    
@@ -1080,9 +1118,6 @@ private:
 
    /** counters for non-existence check */
    std::map<std::string, std::atomic<size_t>> reads;
-
-   /** LVMGenerator */
-   LVMGenerator generator;
 
    /** counter for $ operator */
    int counter;
@@ -1105,10 +1140,10 @@ private:
 };
 
 
-class Interpreter {
+class Interpreter_ {
 public:
-    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0), iteration(0), dll(nullptr) {}
-    virtual ~Interpreter() {
+    Interpreter_(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0), iteration(0), dll(nullptr) {}
+    virtual ~Interpreter_() {
         for (auto& x : environment) {
             delete x.second;
         }

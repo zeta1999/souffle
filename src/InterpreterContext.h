@@ -43,7 +43,7 @@ public:
         return data[index];
     }
 
-    const RamDomain* const& operator[](size_t index) const {
+    const RamDomain* const& operator[](size_t index) const { // TODO May casue program crash
         return data[index];
     }
 

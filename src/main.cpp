@@ -518,17 +518,15 @@ int main(int argc, char** argv) {
         // ------- interpreter -------------
 
         //TODO Owen: inject lvm here
-        LowLevelMachine lvm(*ramTranslationUnit);
-        lvm.generatingInstructionStream();
-        
+       // lvm.executeMain();
+       // 
         if (mDebug) {
+            Interpreter lvm(*ramTranslationUnit);
             printf("Finish generating\n");
-            lvm.print();
+            lvm.printMain();
             printf("==========\n");
         }
-        lvm.executeMain();
 
-        /* TODO Comment out
         // configure interpreter
         std::unique_ptr<Interpreter> interpreter = std::make_unique<Interpreter>(*ramTranslationUnit);
 
@@ -544,10 +542,8 @@ int main(int argc, char** argv) {
         if (profiler.joinable()) {
             profiler.join();
         }
-        */
 
 #ifdef USE_PROVENANCE
-        /* TODO comment out
         // only run explain interface if interpreted
         if (Global::config().has("provenance")) {
             // construct SouffleProgram from env
@@ -558,7 +554,6 @@ int main(int argc, char** argv) {
                 explain(interface, true, true);
             }
         }
-        */
 #endif
 
     } else {

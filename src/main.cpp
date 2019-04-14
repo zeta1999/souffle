@@ -526,7 +526,7 @@ int main(int argc, char** argv) {
             lvm.print();
             printf("==========\n");
         }
-        lvm.eval();
+        lvm.executeMain();
 
         /* TODO Comment out
         // configure interpreter

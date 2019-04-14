@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include <ffi.h>
+#include "ffi/ffi.h"
 
 namespace souffle {
 
@@ -67,7 +67,7 @@ void LowLevelMachine::generatingInstructionStream() {
    generator.code.push_back(LVM_STOP);
 }
 
-void LowLevelMachine::eval() {
+void LowLevelMachine::executeMain() {
    size_t ip = 0;
    auto& code = generator.code;
    auto& symbolTable = generator.symbolTable;
@@ -600,7 +600,6 @@ void LowLevelMachine::eval() {
             break;
          }
          case LVM_Create: {
-            //TODO RelationRepresentation is not used here ?? 
             InterpreterRelation* res = nullptr;
             std::string relName = symbolTable.resolve(code[ip+1]);
             auto arity = code[ip+2];

@@ -224,43 +224,22 @@ class LowLevelMachine {
 
        // Visit RAM Expressions
       
-       /*
-        * Syntax: [RN_Number, value]
-        *
-        * Semantic: Push the [value] onto the stack
-        */
        void visitNumber(const RamNumber& num, size_t exitAddress) override {
           code.push_back(LVM_Number); 
           code.push_back(num.getConstant());
        } 
 
-       /*
-        * Syntax: [RN_ElementAccess, identifier, element]
-        *
-        * Semantic: Push the ctxt[identifier][element] onto the stack
-        */
        void visitElementAccess(const RamElementAccess& access, size_t exitAddress) override {
           code.push_back(LVM_ElementAccess); 
           code.push_back(access.getIdentifier()); 
           code.push_back(access.getElement()); 
        }
        
-       /* 
-        * Syntax: [RN_AutoIncrement]
-        *
-        * Semantic: Increase counter by one.
-        */
        void visitAutoIncrement(const RamAutoIncrement& inc, size_t exitAddress) override {
           code.push_back(LVM_AutoIncrement); 
        }
        
 
-       /*
-        * Syntax: [RN_IntrinsicOperatr, Operator]
-        *
-        * Semantic: Pop n value from stack, do the operation,
-        * push the result onto the stack.
-        */
        void visitIntrinsicOperator(const RamIntrinsicOperator& op, size_t exitAddress) override {
           const auto& args = op.getArguments();
           switch (op.getOperator()) {
@@ -360,11 +339,6 @@ class LowLevelMachine {
           }
        }
        
-       /* Syntax: [RN_UserDefinedOperator, OperationName, Types]
-        *
-        * Semantic: Find and Perform the user-defined operator, return type is Types[0]
-        * Arguments' types are Types[1 - n], push result back to the stack
-        */
        void visitUserDefinedOperator(const RamUserDefinedOperator& op, size_t exitAddress) override {
           for (size_t i = 0; i < op.getArgCount(); i++) {
              visit(op.getArgument(i), exitAddress);
@@ -374,11 +348,6 @@ class LowLevelMachine {
           code.push_back(symbolTable.lookup(op.getType()));
         } 
 
-        /*
-         * Syntax: [RN_PackRecords, size]
-         *
-         * Semantic: pop [size] values from the stack, pack the record.
-         */
         void visitPackRecord(const RamPackRecord& pack, size_t exitAddress) override {
            auto values = pack.getArguments();
            for (size_t i = 0; i < values.size(); ++i) {
@@ -388,11 +357,6 @@ class LowLevelMachine {
            code.push_back(values.size()); 
         } 
        
-        /*
-         * Syntax: [RN_Argument, size]
-         *
-         * Semantic: For subroutine
-         */
         void visitArgument(const RamArgument& arg, size_t exitAddress) override {
            code.push_back(LVM_Argument);
            code.push_back(arg.getArgCount()); 
@@ -400,43 +364,22 @@ class LowLevelMachine {
 
         /** Visit RAM Conditions */
 
-        /*
-         * Syntax: [RN_Conjunction]
-         *
-         * Semantic: Pop two values from stack, &
-         */
         void visitConjunction(const RamConjunction& conj, size_t exitAddress) override {
            visit(conj.getLHS(), exitAddress);
            visit(conj.getRHS(), exitAddress);
            code.push_back(LVM_Conjunction);
         }
        
-        /*
-         * Syntax: [Rn_Negation]
-         *
-         * Semantic: Pop one value from stack, neg
-         */
         void visitNegation(const RamNegation& neg, size_t exitAddress) override {
            visit(neg.getOperand(), exitAddress);
            code.push_back(LVM_Negation); 
         }
        
-        /*
-         * Syntax: [RN_EmptinessCheck, relationName]
-         *
-         * Semantic: Check if [relation] is empty, push bool onto the stack.
-         */
         void visitEmptinessCheck(const RamEmptinessCheck& emptiness, size_t exitAddress) override {
            code.push_back(LVM_EmptinessCheck); 
            code.push_back(symbolTable.lookup(emptiness.getRelation().getName()));
         }
 
-        /*
-         * Syntax: [RN_ExistenceCheck, relation, pattern]
-         *
-         * Semantic: Check if a [pattern] exists in a [relation], push bool onto the stack.
-         *
-         */
         void visitExistenceCheck(const RamExistenceCheck& exists, size_t exitAddress) override {
            auto values = exists.getValues();
            std::string types;
@@ -451,12 +394,6 @@ class LowLevelMachine {
            code.push_back(symbolTable.lookup(types));
         }
        
-        /*
-         * Syntax: [RN_ExistenceCheck, relation, pattern]
-         *
-         * Semantic: umm. TODO
-         *
-         */
         void visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists, size_t exitAddress) override {
            auto values = provExists.getValues();
            std::string types;
@@ -471,12 +408,6 @@ class LowLevelMachine {
            code.push_back(symbolTable.lookup(types));
         }
        
-        /*
-         * Syntax: [RN_Constraint, operator]
-         *
-         * Semantic: pop two values, do operator, push result back
-         *
-         */
         void visitConstraint(const RamConstraint& relOp, size_t exitAddress) override {
            visit(relOp.getLHS(), exitAddress);
            visit(relOp.getRHS(), exitAddress);
@@ -520,15 +451,6 @@ class LowLevelMachine {
 
         /** Visit RAM Operations */
        
-       /*
-        *
-        *                for (i = 0; i < realtion.size(); ++i){
-        *                    t.i = relation[i];
-        *                    do netsed operation
-        *                }
-        *
-        *
-        */
        void visitScan(const RamScan& scan, size_t exitAddress) override {
           code.push_back(LVM_Scan); 
           size_t counterLabel = getNewScanIterator();
@@ -559,31 +481,6 @@ class LowLevelMachine {
           setAddress(L1, code.size());
        }
        
-       /*
-        *
-        *  for (i = 0; i < realtion.size(); ++i){
-        *    if (match_pattern(relation[i])){
-        *       t.i = realtion[i]
-        *       do nested operation.
-        *    } else {
-        *       continue;
-        *    }
-        *  }
-        *
-        *
-        * L0: LVM_Loop_Counter    <i>
-        *     LVM_NUMBER  <relation.size()>
-        *     LVM_LT
-        *     LVM_JMPEZ  <L2>
-        *     LVM_MATCH  <relation.name()>   <i>    <Pattern>
-        *     LVM_JMPEZ  <L1>
-        *     LVM_SELECT <relation.name()>   <i>    <identifier>
-        *     visit (scan.getOperation, exitAddress)
-        * L1: LVM_Inc    <i>
-        *     JMP L0
-        * L2:
-        *
-        */
        void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
           //TODO For now just eval pattern every times
           code.push_back(LVM_IndexScan);
@@ -628,12 +525,6 @@ class LowLevelMachine {
           setAddress(L1, code.size());
        }
        
-       /*
-        * Syntax: [RN_UnpackRecord, referenceLevel, referencePos, arity, identifier, operation]
-        *
-        * Semantic: Look up record at ctxt[level][pos]
-        *
-        */
        void visitUnpackRecord(const RamUnpackRecord& lookup, size_t exitAddress) override {
           code.push_back(LVM_UnpackRecord);
           code.push_back(lookup.getReferenceLevel());
@@ -643,10 +534,6 @@ class LowLevelMachine {
           visit(lookup.getOperation(), exitAddress);
        }
 
-       /*
-        * Syntax: [RN_Aggregate
-        * TODO 
-        */
        void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
           code.push_back(LVM_Aggregate);
           auto patterns = aggregate.getPattern();
@@ -739,19 +626,8 @@ class LowLevelMachine {
 
           visit(aggregate.getOperation(), exitAddress);
           setAddress(L2, code.size());
-          //code.push_back(LVM_POP);  // TODO remove a value from stack.
        }
        
-       /*
-        * If (condition) {
-        *    do nested operation
-        * }
-        *
-        *    <condition Expressions>
-        *    LVM_Jmpez L0
-        *    visit(nestedOperation)
-        * L0:
-        */
        void visitFilter(const RamFilter& filter, size_t exitAddress) override {
           code.push_back(LVM_Filter);
           size_t L0 = getNewAddressLabel();
@@ -766,14 +642,6 @@ class LowLevelMachine {
           setAddress(L0, code.size());
        }
         
-       /*
-        *
-        *    Values
-        *    LVM_Project
-        *    <arity>
-        *    <realtionName>
-        */
-       
        void visitProject(const RamProject& project, size_t exitAddress) override {
           size_t arity = project.getRelation().getArity();
           std::string relationName = project.getRelation().getName();
@@ -785,12 +653,6 @@ class LowLevelMachine {
           code.push_back(arity);
           code.push_back(symbolTable.lookup(relationName));
        }
-        
-       /*
-        * Syntax: [RN_Return, size]
-        *
-        * Semantic: Pop [size] values from stack, add to ctxt.return
-        */
        void visitReturn(const RamReturn& ret, size_t exitAddress) override {
           for (auto expr : ret.getValues()) {
              if (expr == nullptr) {
@@ -807,10 +669,6 @@ class LowLevelMachine {
 
        /** Visit RAM stmt*/
        
-       /* Syntax: [RN_Sequence, stmt, stmt ... ]
-        *
-        * Semantic: A sequence of Statement
-        */
        void visitSequence(const RamSequence& seq, size_t exitAddress) override {
           code.push_back(LVM_Sequence);
           for (const auto& cur : seq.getStatements()) {
@@ -818,9 +676,6 @@ class LowLevelMachine {
           } 
        }
        
-       /* 
-        *
-        */
        void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
           //size_t num_blocks=  parallel.getStatements().size();
           for (const auto& cur : parallel.getStatements()) {
@@ -1071,14 +926,64 @@ class LowLevelMachine {
 public:
    LowLevelMachine(RamTranslationUnit& tUnit) : translationUnit(tUnit), generator(tUnit.getSymbolTable()){}
 
+   virtual ~LowLevelMachine() {
+      for (auto& x : environment) {
+         delete x.second;
+      }
+   }
+
+   /** Get translation unit */
+   RamTranslationUnit& getTranslationUnit() {
+      return translationUnit;
+   }
+
    /** Get LVM instruction stream */
    void generatingInstructionStream();
     
-   /** Start eval instruction stream */
-   void eval();
+   /** Execute the main program */
+   void executeMain();
+
+   /** Execute the subroutine */
+   void executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
+           std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors);
    
-   /** Print out the Is */
+   /** Print out the instruction stream */
    void print();
+
+protected:
+   /** relation environment type */
+   using relation_map = std::map<std::string, InterpreterRelation*>; 
+   
+   /** index_set for iter */
+   using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator, std::allocator<const RamDomain*>, 512>;
+
+   /** Get symbol table */
+   SymbolTable& getSymbolTable() {
+      return translationUnit.getSymbolTable();
+   }
+
+   /** Get Counter */
+   int getCounter() {
+      return counter;
+   }
+
+   /** Increment counter */
+   int incCounter() {
+      return counter ++;
+   }
+
+   /** Increment iteration number */
+   void incIterationNumber() {
+      iteration++;  
+   }
+
+   /** Reset iteration number */
+   void resetIterationNumber() {
+      iteration = 0;
+   }
+   
+   /** TODO not implemented yet */
+   void createRelation(const RamRelation& id) { }
 
    /** Get relation */
    InterpreterRelation& getRelation(const std::string& name) {
@@ -1088,55 +993,80 @@ public:
       return *pos->second;
    }
 
-    /** Swap relation */
-   //TODO Modified version, pay attention
-    void swapRelation(const std::string& ramRel1, const std::string& ramRel2) {
-        InterpreterRelation* rel1 = &getRelation(ramRel1);
-        InterpreterRelation* rel2 = &getRelation(ramRel2);
-        environment[ramRel1] = rel2;
-        environment[ramRel2] = rel1;
-    }
+   /** Get relation */
+   inline InterpreterRelation& getRelation(const RamRelation& id) {
+      return getRelation(id.getName());
+   }
+   
+   /** Drop relation */  // TODO old interface
+   void dropRelation(const RamRelation& id) {
+      InterpreterRelation& rel = getRelation(id);
+      environment.erase(id.getName());
+      delete &rel;
+   }
 
-    /** Drop relation */
-    //TODO Modified version, pay attention
-    void dropRelation(const std::string& relName) {
-        InterpreterRelation& rel = getRelation(relName);
-        environment.erase(relName);
-        delete &rel;
-    }
+   /** Drop relation */
+   void dropRelation(const std::string& relName) {
+      InterpreterRelation& rel = getRelation(relName);
+      environment.erase(relName);
+      delete &rel;
+   }
+
+    /** Swap relation */   //TODO old interface
+   void swapRelation(const RamRelation& ramRel1, const RamRelation& ramRel2) {
+      InterpreterRelation* rel1 = &getRelation(ramRel1);
+      InterpreterRelation* rel2 = &getRelation(ramRel2);
+      environment[ramRel1.getName()] = rel2;
+      environment[ramRel2.getName()] = rel1;
+   }
+
+   /** Swap relation */ 
+   void swapRelation(const std::string& ramRel1, const std::string& ramRel2) {
+      InterpreterRelation* rel1 = &getRelation(ramRel1);
+      InterpreterRelation* rel2 = &getRelation(ramRel2);
+      environment[ramRel1] = rel2;
+      environment[ramRel2] = rel1;
+   }
+   
+   /** load dll */
+   void* loadDLL() {
+      if (dll == nullptr) {
+         // check environment variable
+         std::string fname = SOUFFLE_DLL;
+         dll = dlopen(SOUFFLE_DLL, RTLD_LAZY);
+         if (dll == nullptr) {
+            std::cerr << "Cannot find Souffle's DLL" << std::endl;
+            exit(1);
+         }
+      }
+      return dll;
+   }
 
     //InterpreterContext ctxt(translationUnit.getAnalysis<RamOperationDepthAnalysis>()->getDepth(&op));
-    InterpreterContext ctxt = InterpreterContext(100);   //TODO 
+   InterpreterContext ctxt = InterpreterContext(100);   //TODO 
     
-    // A new Iter
-    using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator, std::allocator<const RamDomain*>, 512>;
 
-    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
-
-    std::pair<index_set::iterator, index_set::iterator>& lookUpIndexScanIterator(size_t idx) {
+   // Lookup for IndexScan iter, resize the vector if idx > size */
+   std::pair<index_set::iterator, index_set::iterator>& lookUpIndexScanIterator(size_t idx) {
       if (idx >= indexScanIteratorPool.size()) {
          indexScanIteratorPool.resize((idx+1) * 2);
       }
       return indexScanIteratorPool[idx];
-    }
+   }
     
 
-    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;
-
-    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
+   /** Lookup for Scan iter, resize the vector if idx > size */
+   std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
       if (idx >= scanIteratorPool.size()) {
          scanIteratorPool.resize((idx+1) * 2);
       }
-
       return scanIteratorPool[idx];
-    }
+   }
 
-    int level = 0;
 private:
+   friend InterpreterProgInterface;
 
-   using relation_map = std::map<std::string, InterpreterRelation*>; 
-
-   /** RAM */
+   /** RAM translation Unit */
    RamTranslationUnit& translationUnit;
 
    /** Relation Environment */
@@ -1145,13 +1075,32 @@ private:
    /** Value stack */
    std::stack<RamDomain> stack;
 
+   /** counters for atom profiling */
+   std::map<std::string, std::map<size_t, size_t>> frequencies;
+
+   /** counters for non-existence check */
+   std::map<std::string, std::atomic<size_t>> reads;
+
    /** LVMGenerator */
    LVMGenerator generator;
 
    /** counter for $ operator */
    int counter;
 
-   void incCounter() {counter ++;}
+   /** iteration number (in a fix-point calculation) */
+   size_t iteration;
+
+   /** Dynamic library for user-defined functors */
+   void* dll;
+   
+   /** Iters for the indexScan operation */
+   std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
+   
+   /** Iters for the Scan operation */
+   std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;
+
+   /** for stratum */ 
+   int level = 0;
 
 };
 

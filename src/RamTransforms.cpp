@@ -131,7 +131,7 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 
 /** Get indexable element */
 std::unique_ptr<RamExpression> CreateIndicesTransformer::getIndexElement(
-        RamCondition* c, size_t& element, size_t identifier) {
+        RamCondition* c, size_t& element, int identifier) {
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
@@ -158,7 +158,7 @@ std::unique_ptr<RamExpression> CreateIndicesTransformer::getIndexElement(
 std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamScan* scan) {
     if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
         const RamRelation& rel = scan->getRelation();
-        const size_t identifier = scan->getIdentifier();
+        const int identifier = scan->getIdentifier();
 
         // Values of index per column of table (if indexable)
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
@@ -281,7 +281,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
             return modified;
         }
 
-        bool dependsOn(const RamExpression* value, const size_t identifier) const {
+        bool dependsOn(const RamExpression* value, const int identifier) const {
             std::vector<const RamExpression*> queue = {value};
             while (!queue.empty()) {
                 const RamExpression* val = queue.back();
@@ -303,7 +303,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
             return false;
         }
 
-        bool dependsOn(const RamCondition* condition, const size_t identifier) const {
+        bool dependsOn(const RamCondition* condition, const int identifier) const {
             if (const auto* binRel = dynamic_cast<const RamConstraint*>(condition)) {
                 return dependsOn(binRel->getLHS(), identifier) || dependsOn(binRel->getRHS(), identifier);
             }
@@ -312,7 +312,7 @@ bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& progr
 
         std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
             if (auto* scan = dynamic_cast<RamRelationSearch*>(node.get())) {
-                const size_t identifier = scan->getIdentifier();
+                const int identifier = scan->getIdentifier();
                 bool isExistCheck = true;
                 visitDepthFirst(scan->getOperation(), [&](const RamProject& project) {
                     if (isExistCheck) {

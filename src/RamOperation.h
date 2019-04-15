@@ -304,13 +304,13 @@ protected:
  */
 class RamUnpackRecord : public RamSearch {
 public:
-    RamUnpackRecord(std::unique_ptr<RamOperation> nested, int ident, size_t ref_level, size_t ref_pos,
+    RamUnpackRecord(std::unique_ptr<RamOperation> nested, int ident, int ref_level, size_t ref_pos,
             size_t arity)
             : RamSearch(RN_UnpackRecord, ident, std::move(nested)), refLevel(ref_level), refPos(ref_pos),
               arity(arity) {}
 
     /** Get reference level */
-    std::size_t getReferenceLevel() const {
+    int getReferenceLevel() const {
         return refLevel;
     }
 
@@ -340,7 +340,7 @@ public:
 
 protected:
     /** Level of the tuple containing record reference */
-    const size_t refLevel;
+    const int refLevel;
 
     /** Position of the tuple containing record reference */
     const size_t refPos;

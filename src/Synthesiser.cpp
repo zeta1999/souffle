@@ -583,10 +583,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             visitNestedOperation(search, out);
             PRINT_END_COMMENT(out);
         }
-
-        void visitScan(const RamScan& scan, std::ostream& out) override {
+        
+	void visitScan(const RamScan& scan, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             auto identifier = scan.getIdentifier();
+
+            const bool parallel = identifier == 0 && !scan.getRelation().isNullary();
 
             // get relation name
             const auto& rel = scan.getRelation();
@@ -610,6 +612,23 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     << "empty()) {\n";
                 visitSearch(scan, out);
                 out << "}\n";
+            } else if (parallel) {
+                // make this loop parallel
+                // partition outermost relation
+                out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
+                if (nullaryCond.length() > 0) {
+                    out << "if(" << nullaryCond << ") {\n";
+                }
+                out << "try{";
+                out << "for(const auto& env0 : *it) {\n";
+                out << nullaryStopStmt;
+                visitSearch(scan, out);
+                out << "}\n";
+                out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+                if (nullaryCond.length() > 0) {
+                    out << "}\n";
+                }
+                out << "}\n";
             } else {
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
@@ -625,6 +644,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const auto& rel = scan.getRelation();
             auto relName = synthesiser.getRelationName(rel);
             auto identifier = scan.getIdentifier();
+
+            const bool parallel = identifier == 0;
 
             // check list of keys
             auto arity = rel.getArity();
@@ -661,6 +682,27 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     nullaryCond = projectRelName + "->empty()";
                 }
             });
+
+            // if this is the parallel level
+            if (parallel) {
+                // make this loop parallel
+                out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
+                if (nullaryCond.length() > 0) {
+                    out << "if(" << nullaryCond << ") {\n";
+                }
+                out << "try{";
+                out << "for(const auto& env0 : *it) {\n";
+                out << nullaryStopStmt;
+                visitSearch(scan, out);
+                out << "}\n";
+                out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+                if (nullaryCond.length() > 0) {
+                    out << "}\n";
+                }
+                out << "}\n";
+                PRINT_END_COMMENT(out);
+                return;
+            }
 
             // if it is a equality-range query
             out << "const Tuple<RamDomain," << arity << "> key({{";

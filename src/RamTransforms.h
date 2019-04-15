@@ -59,7 +59,7 @@ public:
         return "CreateIndicesTransformer";
     }
 
-    std::unique_ptr<RamExpression> getIndexElement(RamCondition* c, size_t& element, size_t level);
+    std::unique_ptr<RamExpression> getIndexElement(RamCondition* c, size_t& element, int level);
 
     std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
 

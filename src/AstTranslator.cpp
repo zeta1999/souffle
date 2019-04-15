@@ -533,8 +533,15 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
         values.push_back(translator.translateValue(arg, valueIndex));
     }
 
-    std::unique_ptr<RamProject> project =
+    std::unique_ptr<RamOperation> project =
             std::make_unique<RamProject>(translator.translateRelation(head), std::move(values));
+
+    if (head->getArity() == 0) {
+	    project = std::make_unique<RamFilter>(
+			    std::make_unique<RamEmptinessCheck>(
+				    translator.translateRelation(head)),
+			    std::move(project));
+    }
 
     // check existence for original tuple if we have provenance
     // only if we don't compile
@@ -568,7 +575,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     }
 
     // build up insertion call
-    return std::move(project);  // start with innermost
+    return project;  // start with innermost
 }
 
 std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createOperation(
@@ -769,6 +776,13 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                             std::move(op));
                 }
             }
+
+	    // add check for emptiness for an atom
+            op = std::make_unique<RamFilter>(
+			    std::make_unique<RamNegation>(
+				    std::make_unique<RamEmptinessCheck>(
+					    translator.translateRelation(atom))),
+			    std::move(op));
 
             // add a scan level
             if (Global::config().has("profile")) {

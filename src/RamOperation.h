@@ -114,12 +114,12 @@ protected:
  */
 class RamSearch : public RamNestedOperation {
 public:
-    RamSearch(RamNodeType type, size_t ident, std::unique_ptr<RamOperation> nested,
+    RamSearch(RamNodeType type, int ident, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
             : RamNestedOperation(type, std::move(nested), std::move(profileText)), identifier(ident) {}
 
     /** Get identifier */
-    std::size_t getIdentifier() const {
+    int getIdentifier() const {
         return identifier;
     }
 
@@ -130,7 +130,7 @@ public:
 
 protected:
     /** Identifier for the tuple */
-    const size_t identifier;
+    const int identifier;
 
     /** Check equality */
     bool equal(const RamNode& node) const override {
@@ -145,7 +145,7 @@ protected:
  */
 class RamRelationSearch : public RamSearch {
 public:
-    RamRelationSearch(RamNodeType type, std::unique_ptr<RamRelationReference> relRef, size_t ident,
+    RamRelationSearch(RamNodeType type, std::unique_ptr<RamRelationReference> relRef, int ident,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamSearch(type, ident, std::move(nested), std::move(profileText)),
               relationRef(std::move(relRef)) {}
@@ -187,7 +187,7 @@ protected:
  */
 class RamScan : public RamRelationSearch {
 public:
-    RamScan(std::unique_ptr<RamRelationReference> rel, size_t ident, std::unique_ptr<RamOperation> nested,
+    RamScan(std::unique_ptr<RamRelationReference> rel, int ident, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
             : RamRelationSearch(RN_Scan, std::move(rel), ident, std::move(nested), std::move(profileText)) {}
 
@@ -218,7 +218,7 @@ public:
  */
 class RamIndexScan : public RamRelationSearch {
 public:
-    RamIndexScan(std::unique_ptr<RamRelationReference> r, size_t ident,
+    RamIndexScan(std::unique_ptr<RamRelationReference> r, int ident,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
             : RamRelationSearch(RN_IndexScan, std::move(r), ident, std::move(nested), std::move(profileText)),
@@ -304,7 +304,7 @@ protected:
  */
 class RamUnpackRecord : public RamSearch {
 public:
-    RamUnpackRecord(std::unique_ptr<RamOperation> nested, size_t ident, size_t ref_level, size_t ref_pos,
+    RamUnpackRecord(std::unique_ptr<RamOperation> nested, int ident, size_t ref_level, size_t ref_pos,
             size_t arity)
             : RamSearch(RN_UnpackRecord, ident, std::move(nested)), refLevel(ref_level), refPos(ref_pos),
               arity(arity) {}
@@ -367,7 +367,7 @@ public:
 
     RamAggregate(std::unique_ptr<RamOperation> nested, Function fun,
             std::unique_ptr<RamExpression> expression, std::unique_ptr<RamRelationReference> relRef,
-            size_t ident)
+            int ident)
             : RamSearch(RN_Aggregate, ident, std::move(nested)), function(fun),
               expression(std::move(expression)), relationRef(std::move(relRef)),
               pattern(getRelation().getArity()) {}

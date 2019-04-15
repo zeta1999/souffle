@@ -537,10 +537,8 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
             std::make_unique<RamProject>(translator.translateRelation(head), std::move(values));
 
     if (head->getArity() == 0) {
-	    project = std::make_unique<RamFilter>(
-			    std::make_unique<RamEmptinessCheck>(
-				    translator.translateRelation(head)),
-			    std::move(project));
+        project = std::make_unique<RamFilter>(
+                std::make_unique<RamEmptinessCheck>(translator.translateRelation(head)), std::move(project));
     }
 
     // check existence for original tuple if we have provenance
@@ -777,12 +775,11 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 }
             }
 
-	    // add check for emptiness for an atom
+            // add check for emptiness for an atom
             op = std::make_unique<RamFilter>(
-			    std::make_unique<RamNegation>(
-				    std::make_unique<RamEmptinessCheck>(
-					    translator.translateRelation(atom))),
-			    std::move(op));
+                    std::make_unique<RamNegation>(
+                            std::make_unique<RamEmptinessCheck>(translator.translateRelation(atom))),
+                    std::move(op));
 
             // add a scan level
             if (Global::config().has("profile")) {

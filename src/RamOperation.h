@@ -114,8 +114,7 @@ protected:
  */
 class RamSearch : public RamNestedOperation {
 public:
-    RamSearch(RamNodeType type, int ident, std::unique_ptr<RamOperation> nested,
-            std::string profileText = "")
+    RamSearch(RamNodeType type, int ident, std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamNestedOperation(type, std::move(nested), std::move(profileText)), identifier(ident) {}
 
     /** Get identifier */
@@ -304,8 +303,8 @@ protected:
  */
 class RamUnpackRecord : public RamSearch {
 public:
-    RamUnpackRecord(std::unique_ptr<RamOperation> nested, int ident, int ref_level, size_t ref_pos,
-            size_t arity)
+    RamUnpackRecord(
+            std::unique_ptr<RamOperation> nested, int ident, int ref_level, size_t ref_pos, size_t arity)
             : RamSearch(RN_UnpackRecord, ident, std::move(nested)), refLevel(ref_level), refPos(ref_pos),
               arity(arity) {}
 

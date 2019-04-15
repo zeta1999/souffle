@@ -50,16 +50,15 @@ std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* con
 
 bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     bool changed = false;
-    visitDepthFirst(program, [&](const RamScan& scan) {
+    visitDepthFirstPostOrder(program, [&](const RamScan& scan) {
         std::unique_ptr<RamCondition> levelledCondition;
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             // find filters that can be levelled
+	    node->apply(makeLambdaRamMapper(filterRewriter));
             if (auto* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition& condition = filter->getCondition();
                 if (rcla->getLevel(&condition) == scan.getIdentifier()) {
-                    //std::cout << "Filter: " << *filter << std::endl;
-                    //std::cout << "Scan: " << scan << std::endl;
                     std::unique_ptr<RamCondition> clonedCondition(condition.clone());
                     if (levelledCondition == nullptr) {
                         levelledCondition = std::move(clonedCondition);
@@ -67,11 +66,9 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
                         levelledCondition = std::make_unique<RamConjunction>(
                                 std::move(levelledCondition), std::move(clonedCondition));
                     }
-                    node->apply(makeLambdaRamMapper(filterRewriter));
                     return std::unique_ptr<RamOperation>(filter->getOperation().clone());
                 }
             }
-            node->apply(makeLambdaRamMapper(filterRewriter));
             return node;
         };
         scan.getOperation().apply(makeLambdaRamMapper(filterRewriter));

@@ -106,6 +106,7 @@ enum LVM_Type {
     LVM_Filter,
     LVM_Project,
     LVM_Return,
+    LVM_Search,
 
     // LVM Stmts
     LVM_Sequence,
@@ -387,8 +388,9 @@ class Interpreter {
 
         void visitExistenceCheck(const RamExistenceCheck& exists, size_t exitAddress) override {
            auto values = exists.getValues();
+           auto arity = exists.getRelation().getArity();
            std::string types;
-           for (size_t i = 0; i < values.size(); ++i) {
+           for (size_t i = 0; i < arity; ++i) {
               if (values[i]) {
                  visit(values[i], exitAddress); 
               }
@@ -401,8 +403,9 @@ class Interpreter {
        
         void visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists, size_t exitAddress) override {
            auto values = provExists.getValues();
+           auto arity = provExists.getRelation().getArity();
            std::string types;
-           for (size_t i = 0; i < values.size(); ++i) {
+           for (size_t i = 0; i < arity - 2; ++i) {
               if(values[i]) {
                  visit(values[i], exitAddress);
               } 
@@ -455,6 +458,13 @@ class Interpreter {
 
 
         /** Visit RAM Operations */
+
+       void visitSearch(const RamSearch& search, size_t exitAddress) override {
+          code.push_back(LVM_Search);
+          code.push_back(symbolTable.lookup(search.getProfileText()));
+
+          visit(search.getOperation(), exitAddress);
+       }
        
        void visitScan(const RamScan& scan, size_t exitAddress) override {
           code.push_back(LVM_Scan); 
@@ -635,6 +645,10 @@ class Interpreter {
        
        void visitFilter(const RamFilter& filter, size_t exitAddress) override {
           code.push_back(LVM_Filter);
+            
+          // Profile Action
+          code.push_back(symbolTable.lookup(filter.getProfileText()));
+
           size_t L0 = getNewAddressLabel();
 
           visit(filter.getCondition(), exitAddress);
@@ -753,7 +767,14 @@ class Interpreter {
         */
        void visitLogTimer(const RamLogTimer& timer, size_t exitAddress) override {
           code.push_back(LVM_LogTimer);
-          //TODO: How to handle possible nullptr
+          code.push_back(symbolTable.lookup(timer.getMessage()));
+          if (timer.getRelation() == nullptr) {
+             code.push_back(0);
+          } else {
+             code.push_back(1);
+             code.push_back(symbolTable.lookup(timer.getRelation()->getName())); //TODO getRelation return type not consitent
+          }
+          visit(timer.getStatement(), exitAddress);
        }
        
        /* Syntax: [RN_DebugInfo, body]
@@ -762,6 +783,7 @@ class Interpreter {
         */
        void visitDebugInfo(const RamDebugInfo& dbg, size_t exitAddress) override {
           code.push_back(LVM_DebugInfo);
+          code.push_back(symbolTable.lookup(dbg.getMessage()));
           visit(dbg.getStatement(), exitAddress);
        }
 
@@ -831,6 +853,7 @@ class Interpreter {
        void visitLogSize(const RamLogSize& size, size_t exitAddress) override {
           code.push_back(LVM_LogSize);
           code.push_back(symbolTable.lookup(size.getRelation().getName()));
+          code.push_back(symbolTable.lookup(size.getMessage()));
        }
 
        /* Syntax: [RN_Store, RelationName, SourceIOs_idx]
@@ -947,11 +970,7 @@ public:
    }
 
    /** Entry for executing the main program */
-   void executeMain() {
-      LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getP().getMain());
-      InterpreterContext ctxt;
-      execute(generator, ctxt);
-   }
+   void executeMain();
 
    /** Execute main program */
    void execute(LVMGenerator& generator, InterpreterContext& ctxt);
@@ -965,7 +984,7 @@ public:
       ctxt.setReturnValues(returnValues);
       ctxt.setReturnErrors(returnErrors);
       ctxt.setArguments(arguments);
-      print(generator);
+      //print(generator);
       execute(generator, ctxt);
    }
    
@@ -1013,6 +1032,10 @@ protected:
       iteration++;  
    }
 
+   /** Get Iteration Number */
+   size_t getIterationNumber() const {
+      return iteration;
+   }
    /** Reset iteration number */
    void resetIterationNumber() {
       iteration = 0;

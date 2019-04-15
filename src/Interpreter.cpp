@@ -54,10 +54,53 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include <ffi.h>
+#include "ffi/ffi.h"
 
 namespace souffle {
 
+void Interpreter::executeMain() {
+   LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getP().getMain());
+   InterpreterContext ctxt;
+   SignalHandler::instance()->set();
+   if (Global::config().has("verbose")) {
+      SignalHandler::instance()->enableLogging();
+   }
+   const RamStatement& main = *translationUnit.getP().getMain();
+
+   if (!Global::config().has("profile")) {
+      execute(generator, ctxt);
+   } else {
+       ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
+       // Prepare the frequency table for threaded use
+       visitDepthFirst(main, [&](const RamSearch& node) {
+           if (!node.getProfileText().empty()) {
+               frequencies.emplace(node.getProfileText(), std::map<size_t, size_t>());
+           }
+       });
+       // Enable profiling for execution of main
+       ProfileEventSingleton::instance().startTimer();
+       ProfileEventSingleton::instance().makeTimeEvent("@time;starttime");
+       // Store configuration
+       for (const auto& cur : Global::config().data()) {
+           ProfileEventSingleton::instance().makeConfigRecord(cur.first, cur.second);
+       }
+       // Store count of relations
+       size_t relationCount = 0;
+       visitDepthFirst(main, [&](const RamCreate& create) {
+           if (create.getRelation().getName()[0] != '@') {
+               ++relationCount;
+               reads[create.getRelation().getName()] = 0;
+           }
+       });
+       ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string(relationCount));
+
+       // Store count of rules
+      size_t ruleCount = 0;
+      visitDepthFirst(main, [&](const RamQuery& rule) { ++ruleCount; });
+      ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
+      execute(generator, ctxt);
+   }
+}
 
 void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
    size_t ip = 0;
@@ -446,7 +489,9 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             const InterpreterRelation& rel = getRelation(relName);
             size_t arity = rel.getArity();
             
-            //TODO a profile action here
+            if (Global::config().has("profile") && !(relName[0] == '@')){
+                this->reads[relName]++;
+            }
             
             // for total we use the exists test
             if (patterns.find("_") == std::string::npos) {
@@ -491,7 +536,43 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
 
             break;
          }
-         case LVM_ProvenanceExistenceCheck: { //TODO Later
+         case LVM_ProvenanceExistenceCheck: { 
+            std::string relName = symbolTable.resolve(code[ip+1]);
+            std::string patterns = symbolTable.resolve(code[ip+2]);
+            const InterpreterRelation& rel = getRelation(relName);
+            auto arity = rel.getArity();
+            
+            RamDomain low[arity];
+            RamDomain high[arity];
+            // Arity - 2
+            for (size_t i = 2; i < arity; i++) {
+               if (patterns[arity-i-1] == 'V') {
+                  low[arity-i-1] = stack.top();
+                  stack.pop();
+                  high[arity-i-1] = low[arity-i-1];
+               } else {
+                  low[arity-i-1] = MIN_RAM_DOMAIN;
+                  low[arity-i-1] = MAX_RAM_DOMAIN;
+               }
+            }
+
+            low[arity - 2] = MIN_RAM_DOMAIN;
+            low[arity - 1] = MIN_RAM_DOMAIN;
+            high[arity - 2] = MAX_RAM_DOMAIN;
+            high[arity - 1] = MAX_RAM_DOMAIN;
+
+            // obtain index
+            SearchColumns res = 0;
+            // values.size() - 1 because we discard the height annotation
+            for (std::size_t i = 0; i < arity - 1; i++) {
+               if (patterns[i] == 'V'){
+                  res |= (1 << i);
+               }
+            }
+
+            auto idx = rel.getIndex(res);
+            auto range = idx->lowerUpperBound(low, high);
+            stack.push(range.first != range.second);  // if there is something => done
             ip += 3;
             break;
          }
@@ -503,6 +584,16 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
          case LVM_IndexScan:  //TODO Remove Later
             ip += 1;
             break;
+         case LVM_Search: {
+            if (Global::config().has("profile")) {
+               std::string msg = symbolTable.resolve(code[ip+1]);
+               if (!msg.empty()) {
+                  this->frequencies[msg][this->getIterationNumber()] ++;
+               }
+            }
+            ip += 2;
+            break;                 
+         }
          case LVM_UnpackRecord: {
                                 
             RamDomain referenceLevel = code[ip+1];
@@ -521,8 +612,14 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             ip += 5;
             break;
          }
-         case LVM_Filter: //TODO NO need
-            ip += 1;
+         case LVM_Filter:
+            if (Global::config().has("profile")) {
+               std::string msg = symbolTable.resolve(code[ip+1]);
+               if (!msg.empty()) {
+                  this->frequencies[msg][this->getIterationNumber()] ++;
+               }
+            }
+            ip += 2;
             break;
          case LVM_Project: {
             RamDomain arity = code[ip+1];
@@ -578,16 +675,36 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             break;
          }
          case LVM_LogTimer: {
-            ip += 1;
+            std::string msg = symbolTable.resolve(code[ip+1]);
+            if (code[ip+2] == 0) {
+               Logger logger(msg.c_str(), this->getIterationNumber());
+               ip += 3;
+            } else {
+               std::string relName = symbolTable.resolve(code[ip+3]);
+               const InterpreterRelation& rel = getRelation(relName);
+               Logger logger(msg.c_str(), this->getIterationNumber(),
+                           std::bind(&InterpreterRelation::size, &rel));
+               ip += 4;
+            }
             break;
          }
          case LVM_DebugInfo: {
-            //printf("Debuginfo At %ld\n", ip);
-            ip += 1;
+            std::string msg = symbolTable.resolve(code[ip+1]);
+            SignalHandler::instance()->setMsg(msg.c_str());
+            ip += 2;
             break;
          }
          case LVM_Stratum: {
-            //printf("Level:%d\n", level++);
+            this->level ++;
+            if (Global::config().has("profile") && this->level != 0) {
+               for (const auto& rel : environment) {
+                  if (rel.first[0] == '@' && rel.second->getLevel() == this->level - 1) continue;
+
+                  ProfileEventSingleton::instance().makeStratumRecord( 
+                        rel.second->getLevel(), "relation", rel.first, "arity", std::to_string(rel.second->getArity()));
+                  
+               }
+            }
             ip += 1;
             break;
          }
@@ -607,6 +724,7 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             }
             attributeTypes.reserve(attributeTypes.size());
             res->addAttributes(attributeTypes);
+            res->setLevel(level);
             environment[relName] = res;
             ip += 3 + code[ip+2] + 1;
             break;
@@ -625,7 +743,12 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             break;
          }
          case LVM_LogSize: {
-            ip += 2;
+            std::string relName = symbolTable.resolve(code[ip+1]);
+            const InterpreterRelation& rel = getRelation(relName);
+            std::string msg = symbolTable.resolve(code[ip+2]);
+            ProfileEventSingleton::instance().makeQuantityEvent(
+                    msg, rel.size(), this->getIterationNumber());
+            ip += 3;
             break;
          }
          case LVM_Load: {
@@ -905,11 +1028,7 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             ip += 1;
             break;
          case LVM_STOP: 
-            if (stack.size() != 0) {
-               printf("Size of stack after program stop: %ld", stack.size());
-               exit(1);
-            }
-            //assert(stack.size() == 0);
+            assert(stack.size() == 0);
             return;
          default:
             printf("Unknown. eval()\n");
@@ -2069,6 +2188,11 @@ void Interpreter::print(LVMGenerator& generator) {
             printf("%ld\tLVM_IndexScan\t\n", ip);
             ip += 1;
             break;
+         case LVM_Search: {
+            printf("%ld\tLVM_Search\t\n", ip);
+            ip += 2;
+            break;                 
+         }
          case LVM_UnpackRecord:
             printf("%ld\tLVM_UnpackRecord\t%d %d %d %d\t\n",
                   ip, code[ip+1], code[ip+2], code[ip+3], code[ip+4]);
@@ -2076,7 +2200,7 @@ void Interpreter::print(LVMGenerator& generator) {
             break;
          case LVM_Filter:
             printf("%ld\tLVM_Filter\t\n", ip);
-            ip += 1;
+            ip += 2;
             break;
          case LVM_Project:
             printf("%ld\tLVM_Project\t%d\t\n", ip, code[ip+1]);
@@ -2120,12 +2244,12 @@ void Interpreter::print(LVMGenerator& generator) {
          }
          case LVM_LogTimer: {
             printf("%ld\tLVM_LogTimer\t\n", ip);
-            ip += 1;
+            ip += 3 + code[ip+1]; 
             break;
          }
          case LVM_DebugInfo: {
             printf("%ld\tLVM_DebugInfo\t\n", ip);
-            ip += 1;
+            ip += 2;
             break;
          }
          case LVM_Stratum: 
@@ -2161,7 +2285,7 @@ void Interpreter::print(LVMGenerator& generator) {
             printf("%ld\tLVM_LogSize\t\n", ip);
             printf("\t%s\t\n",
                   symbolTable.resolve(code[ip+1]).c_str());
-            ip += 2;
+            ip += 3;
             break;
          }
          case LVM_Load: {

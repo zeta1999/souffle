@@ -206,6 +206,14 @@ public:
         return totalIndex->exists(tuple);
     }
 
+    void setLevel(size_t level) {
+        this->level = level;
+    }
+
+    size_t getLevel() {
+        return this->level;
+    }
+
     // --- iterator ---
 
     /** Iterator for relation */
@@ -255,6 +263,7 @@ public:
         const InterpreterRelation* relation = nullptr;
         size_t index = 0;
         RamDomain* tuple = nullptr;
+
     };
 
     /** get iterator begin of relation */
@@ -310,6 +319,9 @@ private:
     //TODO Owen: Add attributes type
     /** Type of attributes */
     std::vector<std::string> attributeTypeQualifiers;
+
+    //TODO add stratum location
+    int level;
 };
 
 /**

@@ -160,7 +160,7 @@ public:
 /** Nullary relations */
 class t_nullaries {
 private:
-	std::atomic<bool> data{false};
+    std::atomic<bool> data{false};
 
 public:
     t_nullaries() = default;

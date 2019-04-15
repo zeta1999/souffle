@@ -683,17 +683,13 @@ public:
         return toPtrVector(expressions);
     }
 
-    /** Get expression */
-    RamExpression& getValue(size_t i) const {
-        assert(i < expressions.size() && "expression index out of range");
-        return *expressions[i];
-    }
-
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         for (const auto& cur : expressions) {
-            res.push_back(cur.get());
+            if (cur != nullptr) {
+                res.push_back(cur.get());
+            }
         }
         return res;
     }
@@ -702,7 +698,11 @@ public:
     RamReturn* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : expressions) {
-            newValues.emplace_back(cur->clone());
+            if (cur != nullptr) {
+                newValues.emplace_back(cur->clone());
+            } else {
+                newValues.push_back(nullptr);
+            }
         }
         return new RamReturn(std::move(newValues));
     }
@@ -710,7 +710,9 @@ public:
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         for (auto& cur : expressions) {
-            cur = map(std::move(cur));
+            if (cur != nullptr) {
+                cur = map(std::move(cur));
+            }
         }
     }
 

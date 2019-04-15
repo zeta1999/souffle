@@ -269,7 +269,7 @@ template <typename R, typename... Ps, typename... Args>
 void visitDepthFirstPostOrder(const RamNode& root, RamVisitor<R, Ps...>& visitor, Args&... args) {
     for (const RamNode* cur : root.getChildNodes()) {
         if (cur) {
-            visitDepthFirstPreOrder(*cur, visitor, args...);
+            visitDepthFirstPostOrder(*cur, visitor, args...);
         }
     }
     visitor(root, args...);
@@ -353,11 +353,42 @@ void visitDepthFirst(const RamNode& root, const std::function<R(const N&)>& fun)
  * @param fun the function to be applied
  * @param args a list of extra parameters to be forwarded to the visitor
  */
+template <typename R, typename N>
+void visitDepthFirstPostOrder(const RamNode& root, const std::function<R(const N&)>& fun) {
+    auto visitor = detail::makeLambdaRamVisitor(fun);
+    visitDepthFirstPostOrder<void>(root, visitor);
+}
+
+/**
+ * A utility function visiting all nodes within the RAM fragment rooted by the given node
+ * recursively in a depth-first pre-order fashion applying the given function to each
+ * encountered node.
+ *
+ * @param root the root of the RAM fragment to be visited
+ * @param fun the function to be applied
+ * @param args a list of extra parameters to be forwarded to the visitor
+ */
 template <typename Lambda, typename R = typename lambda_traits<Lambda>::result_type,
         typename N = typename lambda_traits<Lambda>::arg0_type>
 typename std::enable_if<!detail::is_ram_visitor<Lambda>::value, void>::type visitDepthFirst(
         const RamNode& root, const Lambda& fun) {
     visitDepthFirst(root, std::function<R(const N&)>(fun));
+}
+
+/**
+ * A utility function visiting all nodes within the ast rooted by the given node
+ * recursively in a depth-first post-order fashion applying the given function to each
+ * encountered node.
+ *
+ * @param root the root of the AST to be visited
+ * @param fun the function to be applied
+ * @param args a list of extra parameters to be forwarded to the visitor
+ */
+template <typename Lambda, typename R = typename lambda_traits<Lambda>::result_type,
+        typename N = typename lambda_traits<Lambda>::arg0_type>
+typename std::enable_if<!detail::is_ram_visitor<Lambda>::value, void>::type visitDepthFirstPostOrder(
+        const RamNode& root, const Lambda& fun) {
+    visitDepthFirstPostOrder(root, std::function<R(const N&)>(fun));
 }
 
 }  // end of namespace souffle

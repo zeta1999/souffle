@@ -291,10 +291,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitQuery(const RamQuery& query, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            // enclose operation with a check for an empty relation
-            std::set<std::string> inputRelNames;
-            std::string projectRelName;
-            int projectRelArity = -1;
 
             // check whether the outer-most filter operation
             // can be pushed out of the parallel context
@@ -319,12 +315,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
             }
 
-            // get name of projection relation and arity
-            visitDepthFirst(query, [&](const RamProject& project) {
-                projectRelArity = project.getRelation().getArity();
-                projectRelName = project.getRelation().getName();
-            });
-
             // outline each search operation to improve compilation time
 #ifdef __clang__
 #if __clang_major > 3
@@ -338,10 +328,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // check whether loop nest can be parallelized
             bool parallel = false;
-            if (const auto* scan = dynamic_cast<const RamScan*>(next)) {
-                parallel = scan->getIdentifier() == 0 && !scan->getRelation().isNullary();
+
+            visitDepthFirst(*next, [&](const RamScan& scan) {
+                parallel = scan.getIdentifier() == 0 && !scan.getRelation().isNullary();
                 if (parallel) {
-                    const auto& rel = scan->getRelation();
+                    const auto& rel = scan.getRelation();
                     const auto& relName = synthesiser.getRelationName(rel);
                     // partition outermost relation
                     out << "auto part = " << relName << "->partition();\n";
@@ -349,15 +340,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     // build a parallel block around this loop nest
                     out << "PARALLEL_START;\n";
                 }
-            } else if (const auto* scan = dynamic_cast<const RamIndexScan*>(next)) {
-                parallel = scan->getIdentifier() == 0;
+            });
+
+	    if(!parallel) 
+		    visitDepthFirst(*next, [&](const RamIndexScan& scan) {
+                parallel = scan.getIdentifier() == 0;
                 if (parallel) {
-                    const auto& rel = scan->getRelation();
+                    const auto& rel = scan.getRelation();
                     const auto& relName = synthesiser.getRelationName(rel);
 
                     // check list of keys
                     auto arity = rel.getArity();
-                    const auto& rangePattern = scan->getRangePattern();
+                    const auto& rangePattern = scan.getRangePattern();
 
                     // a lambda for printing boundary key values
                     auto printKeyTuple = [&]() {
@@ -374,7 +368,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     };
 
                     // get index to be queried
-                    auto keys = keysAnalysis->getRangeQueryColumns(scan);
+                    auto keys = keysAnalysis->getRangeQueryColumns(&scan);
 
                     out << "const Tuple<RamDomain," << arity << "> key({{";
                     printKeyTuple();
@@ -386,7 +380,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     // build a parallel block around this loop nest
                     out << "PARALLEL_START;\n";
                 }
-            }
+            });
 
             // create operation contexts for this operation
             for (const RamRelation* rel : synthesiser.getReferencedRelations(query.getOperation())) {

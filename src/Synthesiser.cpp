@@ -330,57 +330,61 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             bool parallel = false;
 
             visitDepthFirst(*next, [&](const RamScan& scan) {
-                parallel = scan.getIdentifier() == 0 && !scan.getRelation().isNullary();
-                if (parallel) {
-                    const auto& rel = scan.getRelation();
-                    const auto& relName = synthesiser.getRelationName(rel);
-                    // partition outermost relation
-                    out << "auto part = " << relName << "->partition();\n";
+                if (!parallel) {
+                    parallel = scan.getIdentifier() == 0 && !scan.getRelation().isNullary();
+                    if (parallel) {
+                        const auto& rel = scan.getRelation();
+                        const auto& relName = synthesiser.getRelationName(rel);
+                        // partition outermost relation
+                        out << "auto part = " << relName << "->partition();\n";
 
-                    // build a parallel block around this loop nest
-                    out << "PARALLEL_START;\n";
+                        // build a parallel block around this loop nest
+                        out << "PARALLEL_START;\n";
+                    }
                 }
             });
 
-	    if(!parallel) 
-		    visitDepthFirst(*next, [&](const RamIndexScan& scan) {
-                parallel = scan.getIdentifier() == 0;
-                if (parallel) {
-                    const auto& rel = scan.getRelation();
-                    const auto& relName = synthesiser.getRelationName(rel);
+            if (!parallel)
+                visitDepthFirst(*next, [&](const RamIndexScan& scan) {
+                    if (!parallel) {
+                        parallel = scan.getIdentifier() == 0;
+                        if (parallel) {
+                            const auto& rel = scan.getRelation();
+                            const auto& relName = synthesiser.getRelationName(rel);
 
-                    // check list of keys
-                    auto arity = rel.getArity();
-                    const auto& rangePattern = scan.getRangePattern();
+                            // check list of keys
+                            auto arity = rel.getArity();
+                            const auto& rangePattern = scan.getRangePattern();
 
-                    // a lambda for printing boundary key values
-                    auto printKeyTuple = [&]() {
-                        for (size_t i = 0; i < arity; i++) {
-                            if (rangePattern[i] != nullptr) {
-                                visit(rangePattern[i], out);
-                            } else {
-                                out << "0";
-                            }
-                            if (i + 1 < arity) {
-                                out << ",";
-                            }
+                            // a lambda for printing boundary key values
+                            auto printKeyTuple = [&]() {
+                                for (size_t i = 0; i < arity; i++) {
+                                    if (rangePattern[i] != nullptr) {
+                                        visit(rangePattern[i], out);
+                                    } else {
+                                        out << "0";
+                                    }
+                                    if (i + 1 < arity) {
+                                        out << ",";
+                                    }
+                                }
+                            };
+
+                            // get index to be queried
+                            auto keys = keysAnalysis->getRangeQueryColumns(&scan);
+
+                            out << "const Tuple<RamDomain," << arity << "> key({{";
+                            printKeyTuple();
+                            out << "}});\n";
+                            out << "auto range = " << relName << "->"
+                                << "equalRange_" << keys << "(key);\n";
+                            out << "auto part = range.partition();\n";
+
+                            // build a parallel block around this loop nest
+                            out << "PARALLEL_START;\n";
                         }
-                    };
-
-                    // get index to be queried
-                    auto keys = keysAnalysis->getRangeQueryColumns(&scan);
-
-                    out << "const Tuple<RamDomain," << arity << "> key({{";
-                    printKeyTuple();
-                    out << "}});\n";
-                    out << "auto range = " << relName << "->"
-                        << "equalRange_" << keys << "(key);\n";
-                    out << "auto part = range.partition();\n";
-
-                    // build a parallel block around this loop nest
-                    out << "PARALLEL_START;\n";
-                }
-            });
+                    }
+                });
 
             // create operation contexts for this operation
             for (const RamRelation* rel : synthesiser.getReferencedRelations(query.getOperation())) {
@@ -577,8 +581,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             visitNestedOperation(search, out);
             PRINT_END_COMMENT(out);
         }
-        
-	void visitScan(const RamScan& scan, std::ostream& out) override {
+
+        void visitScan(const RamScan& scan, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             auto identifier = scan.getIdentifier();
 

@@ -51,8 +51,7 @@ std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* con
 bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     bool changed = false;
 
-
-    // hoist conditions for each scan operation 
+    // hoist conditions for each scan operation
     visitDepthFirst(program, [&](const RamScan& scan) {
         std::unique_ptr<RamCondition> levelledCondition;
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =

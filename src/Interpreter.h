@@ -113,6 +113,8 @@ enum LVM_Type {
     LVM_Parallel,
     LVM_Stop_Parallel,
     LVM_Loop,
+    LVM_IncIterationNumber,
+    LVM_ResetIterationNumber,
     LVM_Exit,
     LVM_LogTimer,
     LVM_DebugInfo,
@@ -458,12 +460,20 @@ class Interpreter {
 
 
         /** Visit RAM Operations */
+       
+       void visitNestedOperation(const RamNestedOperation& nested, size_t exitAddress) override {
+          visit(nested.getOperation(), exitAddress);
+       }
 
        void visitSearch(const RamSearch& search, size_t exitAddress) override {
           code.push_back(LVM_Search);
+          if (search.getProfileText().empty()) {
+             code.push_back(0);
+          } else {
+             code.push_back(1);
+          }
           code.push_back(symbolTable.lookup(search.getProfileText()));
-
-          visit(search.getOperation(), exitAddress);
+          visitNestedOperation(search, exitAddress);
        }
        
        void visitScan(const RamScan& scan, size_t exitAddress) override {
@@ -486,7 +496,7 @@ class Interpreter {
           code.push_back(LVM_ITER_TypeScan);
           code.push_back(scan.getIdentifier());
           
-          visit(scan.getOperation(), exitAddress);
+          visitSearch(scan, exitAddress);
           code.push_back(LVM_ITER_Inc);
           code.push_back(counterLabel);
           code.push_back(LVM_ITER_TypeScan);
@@ -530,7 +540,7 @@ class Interpreter {
           code.push_back(LVM_ITER_TypeIndexScan);
           code.push_back(scan.getIdentifier());
 
-          visit(scan.getOperation(), exitAddress);
+          visitSearch(scan, exitAddress);
 
           code.push_back(LVM_ITER_Inc);
           code.push_back(counterLabel);
@@ -742,12 +752,15 @@ class Interpreter {
         */
        void visitLoop(const RamLoop& loop, size_t exitAddress) override {
           size_t address_L0 = code.size(); 
+          code.push_back(LVM_Loop);
+
           size_t L1 = getNewAddressLabel();
           size_t address_L1 = lookupAddress(L1);
           visit(loop.getBody(), address_L1);
-          code.push_back(LVM_Loop);
+          code.push_back(LVM_IncIterationNumber);
           code.push_back(LVM_Goto);
           code.push_back(address_L0);
+          code.push_back(LVM_ResetIterationNumber);
           setAddress(L1, code.size());
        }
        

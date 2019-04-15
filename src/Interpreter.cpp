@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include "ffi/ffi.h"
+#include <ffi.h>
 
 namespace souffle {
 
@@ -98,8 +98,20 @@ void Interpreter::executeMain() {
       size_t ruleCount = 0;
       visitDepthFirst(main, [&](const RamQuery& rule) { ++ruleCount; });
       ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
+
       execute(generator, ctxt);
-   }
+      ProfileEventSingleton::instance().stopTimer();
+      for (auto const& cur : frequencies) {
+         for (auto const& iter : cur.second) {
+            ProfileEventSingleton::instance().makeQuantityEvent(cur.first, iter.second, iter.first);
+            }
+        }
+      for (auto const& cur : reads) {
+         ProfileEventSingleton::instance().makeQuantityEvent(
+               "@relation-reads;" + cur.first, cur.second, 0);
+        }
+    }
+    SignalHandler::instance()->reset();
 }
 
 void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
@@ -585,14 +597,12 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             ip += 1;
             break;
          case LVM_Search: {
-            if (Global::config().has("profile")) {
-               std::string msg = symbolTable.resolve(code[ip+1]);
-               if (!msg.empty()) {
-                  this->frequencies[msg][this->getIterationNumber()] ++;
-               }
+            if (Global::config().has("profile") && code[ip+1] != 0) {
+               std::string msg = symbolTable.resolve(code[ip+2]);
+               this->frequencies[msg][this->getIterationNumber()] ++;
             }
-            ip += 2;
-            break;                 
+            ip += 3;
+            break;
          }
          case LVM_UnpackRecord: {
                                 
@@ -664,6 +674,16 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             ip += 1;            
             break;
          }
+         case LVM_IncIterationNumber: {
+            incIterationNumber();
+            ip += 1;
+            break;                             
+         };
+         case LVM_ResetIterationNumber: {
+            resetIterationNumber();
+            ip += 1;
+            break;                             
+         };
          case LVM_Exit: {
             RamDomain val = stack.top(); 
             stack.pop();
@@ -696,9 +716,9 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
          }
          case LVM_Stratum: {
             this->level ++;
-            if (Global::config().has("profile") && this->level != 0) {
+            if (Global::config().has("profile") || this->level != 0) {
                for (const auto& rel : environment) {
-                  if (rel.first[0] == '@' && rel.second->getLevel() == this->level - 1) continue;
+                  if (rel.first[0] == '@' || rel.second->getLevel() == this->level - 1) continue;
 
                   ProfileEventSingleton::instance().makeStratumRecord( 
                         rel.second->getLevel(), "relation", rel.first, "arity", std::to_string(rel.second->getArity()));
@@ -2190,7 +2210,7 @@ void Interpreter::print(LVMGenerator& generator) {
             break;
          case LVM_Search: {
             printf("%ld\tLVM_Search\t\n", ip);
-            ip += 2;
+            ip += 3;
             break;                 
          }
          case LVM_UnpackRecord:
@@ -2237,6 +2257,16 @@ void Interpreter::print(LVMGenerator& generator) {
             ip += 1;
             break;
          }
+         case LVM_IncIterationNumber: {
+            printf("%ld\tLVM_IncIterationNumber\n",ip);
+            ip += 1;
+            break;                             
+         };
+         case LVM_ResetIterationNumber: {
+            printf("%ld\tLVM_ResetIterationNumber\n",ip);
+            ip += 1;
+            break;                             
+         };
          case LVM_Exit: {
             printf("%ld\tLVM_Exit\t%d\n", ip, code[ip+1]);
             ip += 2;
@@ -2244,7 +2274,7 @@ void Interpreter::print(LVMGenerator& generator) {
          }
          case LVM_LogTimer: {
             printf("%ld\tLVM_LogTimer\t\n", ip);
-            ip += 3 + code[ip+1]; 
+            ip += 3 + code[ip+2]; 
             break;
          }
          case LVM_DebugInfo: {
@@ -2420,7 +2450,7 @@ void Interpreter::print(LVMGenerator& generator) {
             return;
          default:
             printf("Unkown\n");
-            break;
+            return;
       }
    }
 }

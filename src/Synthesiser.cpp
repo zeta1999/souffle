@@ -325,27 +325,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 projectRelName = project.getRelation().getName();
             });
 
-            // TODO(#941): the check for empty relations of a query needs
-            // to be expressed in RAM / not in the synthesis via C++.
-            visitDepthFirst(query, [&](const RamRelationSearch& scan) {
-                inputRelNames.insert(scan.getRelation().getName());
-            });
-            if (!inputRelNames.empty() || projectRelArity == 0) {
-                out << "if (";
-                if (!inputRelNames.empty()) {
-                    out << join(inputRelNames, "&&", [&](std::ostream& os, const std::string relName) {
-                        os << "!" << synthesiser.getRelationName(relName) << "->empty()";
-                    });
-                }
-                if (projectRelArity == 0) {
-                    if (!inputRelNames.empty()) {
-                        out << "&&";
-                    }
-                    out << synthesiser.getRelationName(projectRelName) << "->empty()";
-                }
-                out << ") ";
-            }
-
             // outline each search operation to improve compilation time
 #ifdef __clang__
 #if __clang_major > 3

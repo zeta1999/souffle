@@ -37,10 +37,17 @@ public:
     virtual ~InterpreterContext() = default;
 
     const RamDomain*& operator[](size_t index) {
-        if (index >= data.size()) { //TODO Hack, no good
-            data.resize((index+1) * 2);
+        if (index >= data.size()) { //TODO modified by xiaowen
+            data.resize((index+1) * 2, nullptr); // Extra space is init to nullptr
         }
         return data[index];
+    }
+    
+    // A safe lookUp
+    // TODO added by xiaowen
+    bool isNull(size_t index) const {
+        if (index < data.size()) return true;
+        return data[index] == nullptr;
     }
 
     const RamDomain* const& operator[](size_t index) const { // TODO May casue program crash

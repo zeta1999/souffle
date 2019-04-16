@@ -89,6 +89,8 @@ enum LVM_Type {
     LVM_UserDefinedOperator,
     LVM_PackRecord,
     LVM_Argument,
+    LVM_Aggregate_COUNT,
+    LVM_Aggregate_Return,
 
     // LVM Conditions
     LVM_Conjunction,
@@ -131,18 +133,15 @@ enum LVM_Type {
     LVM_Query,
 
     // LVM internal operation
-    LVM_Goto,               // LVM_Goto  <address>  
-    LVM_Jmpnz,              // LVM_Jmpnz <address>
-    LVM_Jmpez,              // LVM_Jmpez <address>
-    LVM_ITER_Select,        // <Select> <IterType> <Idx> TODO
-    LVM_ITER_Inc,           // <Inc> <IterType> <Idx> TODO
-    LVM_ITER_NotAtEnd,         // <AtEnd> <IterType> <Idx> TODO
-
-    LVM_Match,              
-    LVM_LT,
+    LVM_Goto,               
+    LVM_Jmpnz,             
+    LVM_Jmpez,            
+    LVM_ITER_Select,        
+    LVM_ITER_Inc,          
+    LVM_ITER_NotAtEnd,    
     LVM_STOP,
 
-    //TODO Better way to represent struct
+    // LVM Relation Struct Representation
     LVM_BTREE,
     LVM_BRIE,
     LVM_EQREL,
@@ -150,13 +149,6 @@ enum LVM_Type {
 
     LVM_ITER_TypeScan,
     LVM_ITER_TypeIndexScan,
-
-    LVM_Aggregate_MIN,
-    LVM_Aggregate_MAX,
-    LVM_Aggregate_COUNT,
-    LVM_Aggregate_SUM,
-    LVM_Aggregate_Return,
-    LVM_POP
 };
 
 class InterpreterProgInterface;
@@ -182,7 +174,6 @@ class Interpreter {
        void cleanUp() {
           code.clear();
           IODirectivesPool.clear();  
-          relationPool.clear();
           currentAddressLabel = 0;
           scanIteratorIndex = 0;
           indexScanIteratorIndex = 0;
@@ -194,10 +185,6 @@ class Interpreter {
        /** Store reference to IODirectives */
        std::vector<std::vector<IODirectives>> IODirectivesPool;
        size_t IODirectivesCounter = 0;
-
-       /** Store reference to relation, used by RN_Create */
-       std::vector<RamRelation> relationPool;
-       size_t relationCounter = 0;
 
        /** Address Table */
        size_t currentAddressLabel = 0;
@@ -219,7 +206,8 @@ class Interpreter {
           }
           return 0;
        }
-
+        
+       /** Set the value of address label */
        void setAddress(size_t addressLabel, size_t value) {
           if (addressLabel >= addressMap.size()) {
              addressMap.resize((addressLabel + 1) * 2); 
@@ -227,11 +215,7 @@ class Interpreter {
           addressMap[addressLabel] = value;
        }
 
-       RamOperationDepthAnalysis depthAnalyzer;
-
-
        // Visit RAM Expressions
-      
        void visitNumber(const RamNumber& num, size_t exitAddress) override {
           code.push_back(LVM_Number); 
           code.push_back(num.getConstant());
@@ -252,13 +236,34 @@ class Interpreter {
           const auto& args = op.getArguments();
           switch (op.getOperator()) {
              /** Unary Functor Operators */
-             case FunctorOp::ORD:       visit(args[0], exitAddress); code.push_back(LVM_OP_ORD);       break;
-             case FunctorOp::STRLEN:    visit(args[0], exitAddress); code.push_back(LVM_OP_STRLEN);    break;
-             case FunctorOp::NEG:       visit(args[0], exitAddress); code.push_back(LVM_OP_NEG);       break;
-             case FunctorOp::BNOT:      visit(args[0], exitAddress); code.push_back(LVM_OP_BNOT);      break;
-             case FunctorOp::LNOT:      visit(args[0], exitAddress); code.push_back(LVM_OP_LNOT);      break;
-             case FunctorOp::TONUMBER:  visit(args[0], exitAddress); code.push_back(LVM_OP_TONUMBER);  break;
-             case FunctorOp::TOSTRING:  visit(args[0], exitAddress); code.push_back(LVM_OP_TOSTRING);  break;
+             case FunctorOp::ORD:       
+                visit(args[0], exitAddress); 
+                code.push_back(LVM_OP_ORD);       
+                break;
+             case FunctorOp::STRLEN:    
+                visit(args[0], exitAddress); 
+                code.push_back(LVM_OP_STRLEN);    
+                break;
+             case FunctorOp::NEG:       
+                visit(args[0], exitAddress); 
+                code.push_back(LVM_OP_NEG);       
+                break;
+             case FunctorOp::BNOT:      
+                visit(args[0], exitAddress); 
+                code.push_back(LVM_OP_BNOT);
+                break;
+             case FunctorOp::LNOT:      
+                visit(args[0], exitAddress);
+                code.push_back(LVM_OP_LNOT);
+                break;
+             case FunctorOp::TONUMBER:  
+                visit(args[0], exitAddress);
+                code.push_back(LVM_OP_TONUMBER);
+                break;
+             case FunctorOp::TOSTRING:  
+                visit(args[0], exitAddress);
+                code.push_back(LVM_OP_TOSTRING);
+                break;
 
              /** Binary Functor Operators */ 
              case FunctorOp::ADD:
@@ -419,6 +424,7 @@ class Interpreter {
         }
        
         void visitConstraint(const RamConstraint& relOp, size_t exitAddress) override {
+           code.push_back(LVM_Constraint);
            visit(relOp.getLHS(), exitAddress);
            visit(relOp.getRHS(), exitAddress);
            switch (relOp.getOperator()) {
@@ -556,7 +562,7 @@ class Interpreter {
           code.push_back(lookup.getReferencePosition());
           code.push_back(lookup.getArity()); 
           code.push_back(lookup.getIdentifier());
-          visit(lookup.getOperation(), exitAddress);
+          visitSearch(lookup, exitAddress);
        }
 
        void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
@@ -624,16 +630,16 @@ class Interpreter {
 
              switch (aggregate.getFunction()) {
                 case RamAggregate::MIN:
-                     code.push_back(LVM_Aggregate_MIN);  //TODO replace with LVM_OP
+                     code.push_back(LVM_OP_MIN);  //TODO replace with LVM_OP
                      break;
                 case RamAggregate::MAX:
-                     code.push_back(LVM_Aggregate_MAX);  //TODO replace with LVM_OP
+                     code.push_back(LVM_OP_MAX);  //TODO replace with LVM_OP
                      break;
                 case RamAggregate::COUNT:
                      assert (false);
                      break;
                 case RamAggregate::SUM:
-                     code.push_back(LVM_Aggregate_SUM);  //TODO replace with LVM_OP
+                     code.push_back(LVM_OP_ADD);  //TODO replace with LVM_OP
                      break;
              }
              
@@ -649,7 +655,7 @@ class Interpreter {
           code.push_back(LVM_Aggregate_Return);  // TODO Well.. Improve?
           code.push_back(aggregate.getIdentifier());
 
-          visit(aggregate.getOperation(), exitAddress);
+          visitSearch(aggregate, exitAddress);
           setAddress(L2, code.size());
        }
        
@@ -666,7 +672,7 @@ class Interpreter {
           code.push_back(LVM_Jmpez);
           code.push_back(lookupAddress(L0));
 
-          visit(filter.getOperation(), exitAddress);
+          visitNestedOperation(filter, exitAddress);
 
           setAddress(L0, code.size());
        }
@@ -676,6 +682,7 @@ class Interpreter {
           std::string relationName = project.getRelation().getName();
           auto values = project.getValues();
           for (size_t i = 0; i < values.size(); ++i) {
+             assert(values[i]);
              visit(values[i], exitAddress);
           }
           code.push_back(LVM_Project);
@@ -683,7 +690,7 @@ class Interpreter {
           code.push_back(symbolTable.lookup(relationName));
        }
        void visitReturn(const RamReturn& ret, size_t exitAddress) override {
-          //TODO The value must be pushed in correct order (0 - size)
+          //The value must be pushed in correct order
           std::string types;
           auto expressions = ret.getValues();
           size_t size = expressions.size();
@@ -714,42 +721,10 @@ class Interpreter {
           for (const auto& cur : parallel.getStatements()) {
              visit(cur, exitAddress); 
           } 
-      /*  if (num_blocks == 1 || true) { TODO later
-             visit(parallel.getStatements()[0], exitAddress);
-          } 
-          else {
-             std::vector<size_t> labels(num_blocks);
-             size_t address_L0 = code.size();
-             code.push_back(LVM_Parallel); 
-             code.push_back(num_blocks);
 
-             for (size_t i = 0; i < num_blocks; ++ i) {
-                labels[i] = getNewAddressLabel();
-                code.push_back(lookupAddress(labels[i]));
-             }
-             size_t L1 = getNewAddressLabel();
-             code.push_back(LVM_Goto);
-             code.push_back(lookupAddress(L1));
-          
-             for (size_t i = 0; i < num_blocks; ++ i) {
-                setAddress(labels[i], code.size());
-                visit(parallel.getStatements()[i], exitAddress);
-                code.push_back(LVM_Stop_Parallel);
-                code.push_back(address_L0);
-             }
-
-             setAddress(L1, code.size());
-             } */
+          //TODO Implement real parallel
        }
        
-       /* Syntax: [L0: LVM_Loop
-        *              body
-        *              LVM_GOTO L0 
-        *          L1: ... ]
-        * 
-        * Semantic: Infinitely execute the body. 
-        * Provide an exitAddress for possible RN_exits to jump to label E.
-        */
        void visitLoop(const RamLoop& loop, size_t exitAddress) override {
           size_t address_L0 = code.size(); 
           code.push_back(LVM_Loop);
@@ -764,20 +739,12 @@ class Interpreter {
           setAddress(L1, code.size());
        }
        
-       /* Syntax: [RN_Exit, address]
-        *
-        * Semantic: If the top of the stack is TRUE, jump to address.
-        */
        void visitExit(const RamExit& exit, size_t exitAddress) override {
           visit(exit.getCondition(), exitAddress);
           code.push_back(LVM_Jmpnz); // Jmp if condition is true
           code.push_back(exitAddress);
        }
        
-       /* Syntax: [RN_LogTimer, relation?, body]
-        *
-        * Semantic:  relation can be null
-        */
        void visitLogTimer(const RamLogTimer& timer, size_t exitAddress) override {
           code.push_back(LVM_LogTimer);
           code.push_back(symbolTable.lookup(timer.getMessage()));
@@ -790,31 +757,17 @@ class Interpreter {
           visit(timer.getStatement(), exitAddress);
        }
        
-       /* Syntax: [RN_DebugInfo, body]
-        *
-        * Semantic: Start debug, continue to body
-        */
        void visitDebugInfo(const RamDebugInfo& dbg, size_t exitAddress) override {
           code.push_back(LVM_DebugInfo);
           code.push_back(symbolTable.lookup(dbg.getMessage()));
           visit(dbg.getStatement(), exitAddress);
        }
 
-       /* Syntax: [RN_Stratum, body]
-        *
-        * Semantic: Enter new stratum
-        */
        void visitStratum(const RamStratum& stratum, size_t exitAddress) override {
           code.push_back(LVM_Stratum); 
           visit(stratum.getBody(), exitAddress);
        }
        
-       /* Syntax: [RN_Create, Name, arity, Struct, types]
-        *
-        * Semantic: lookup the relation in relationPool[relation_idx], insert 
-        * into environment.
-        *
-        */
        void visitCreate(const RamCreate& create, size_t exitAddress) override {
           code.push_back(LVM_Create);
           code.push_back(symbolTable.lookup(create.getRelation().getName()));
@@ -841,40 +794,22 @@ class Interpreter {
           }
        }
 
-       /* Syntax: [RN_Clear, relation]
-        *
-        * Semantic: Clean all the tuples in a relation.
-        */
        void visitClear(const RamClear& clear, size_t exitAddress) override {
           code.push_back(LVM_Clear);
           code.push_back(symbolTable.lookup(clear.getRelation().getName()));
        }
        
-       /* Syntax: [RN_Drop, relation]
-        *
-        * Semantic: Delete relation from the environment
-        */
        void visitDrop(const RamDrop& drop, size_t exitAddress) override {
           code.push_back(LVM_Drop); 
           code.push_back(symbolTable.lookup(drop.getRelation().getName()));
        }
        
-       /* Syntax: [RN_LogSize, relation]
-        *
-        * Semantic: ??
-        */
        void visitLogSize(const RamLogSize& size, size_t exitAddress) override {
           code.push_back(LVM_LogSize);
           code.push_back(symbolTable.lookup(size.getRelation().getName()));
           code.push_back(symbolTable.lookup(size.getMessage()));
        }
 
-       /* Syntax: [RN_Store, RelationName, SourceIOs_idx]
-        *
-        * Semantic: Load [Relation] from [SourceIOs]
-        *
-        * The SourceIOs_Idx indicate the index of IOs in the IODirectivesPool.
-        */
        void visitLoad(const RamLoad& load, size_t exitAddress) override {
           code.push_back(LVM_Load); 
           code.push_back(symbolTable.lookup(load.getRelation().getName()));
@@ -884,13 +819,6 @@ class Interpreter {
           code.push_back(IODirectivesPool.size() - 1);
        }
 
-       /*
-        * Syntax: [RN_Store, RelationName, DestinationIOs_Idx]
-        *
-        * Semantic: Store [Relation] into [DestinationIOs]
-        * 
-        * The DestinationIOs_Idx indicate the index of the IOs in the IODirectivesPool.
-        */
        void visitStore(const RamStore& store, size_t exitAddress) override {
           code.push_back(LVM_Store);
           code.push_back(symbolTable.lookup(store.getRelation().getName()));
@@ -900,11 +828,6 @@ class Interpreter {
           code.push_back(IODirectivesPool.size() - 1);
        }
        
-       /*
-        * Syntax: [RN_Fact, targetRelationName, arity]
-        *
-        * Semantic: Pop [arity] values from stack, insert into [targetRelationName]
-        */
        void visitFact(const RamFact& fact, size_t exitAddress) override {
           size_t arity = fact.getRelation().getArity();
           auto values = fact.getValues();
@@ -917,11 +840,6 @@ class Interpreter {
           code.push_back(arity);
        }
 
-       /*
-        * Syntax: [RN_Query, depth]
-        *
-        * Semantic: Start loops
-        */
        void visitQuery(const RamQuery& insert, size_t exitAddress) override {
           code.push_back(LVM_Query);
           if (insert.getCondition() == nullptr) {
@@ -937,11 +855,6 @@ class Interpreter {
           setAddress(L0, code.size());
        }
 
-       /*
-        * Syntax: [RN_Merge, sourceName, targetName]
-        *
-        * Semantic: Merge [source] with [target].
-        */
        void visitMerge(const RamMerge& merge, size_t exitAddress) override {
           std::string source = merge.getSourceRelation().getName();
           std::string target = merge.getTargetRelation().getName();
@@ -950,11 +863,6 @@ class Interpreter {
           code.push_back(symbolTable.lookup(target));
        }
 
-       /*
-        * Syntax: [RN_Swap, FirstRelation, SecondRelation]
-        *
-        * Semantic: Swap [first] with [second].
-        */
        void visitSwap(const RamSwap& swap, size_t exitAddress) override {
           std::string first = swap.getFirstRelation().getName(); 
           std::string second = swap.getSecondRelation().getName(); 
@@ -964,6 +872,7 @@ class Interpreter {
        }
 
        void visitNode(const RamNode& node, size_t exitAddress) override {
+          assert(false && "Unknown Node type");
           /** Unknown Node */
        }
 
@@ -986,7 +895,7 @@ public:
    void executeMain();
 
    /** Execute main program */
-   void execute(LVMGenerator& generator, InterpreterContext& ctxt);
+   void execute(const LVMGenerator& generator, InterpreterContext& ctxt);
 
    /** Execute the subroutine */
    void executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
@@ -1003,13 +912,13 @@ public:
    
    /** Print out the instruction stream */
    // TODO Cache the program code
-   void printMain() {
+   void printMain() const {
       LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getP().getMain());
       print(generator);
    }
 
    /** Print out the instruction stream */
-   void print(LVMGenerator& g);
+   void print(const LVMGenerator& g) const;
 
 protected:
    /** Main Program Instruction Stream */

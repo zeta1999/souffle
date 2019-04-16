@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include <ffi.h>
+#include "ffi/ffi.h"
 
 namespace souffle {
 
@@ -114,7 +114,7 @@ void Interpreter::executeMain() {
     SignalHandler::instance()->reset();
 }
 
-void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
+void Interpreter::execute(const LVMGenerator& generator, InterpreterContext& ctxt) {
    size_t ip = 0;
    auto& code = generator.code;
    auto& symbolTable = generator.symbolTable;
@@ -588,12 +588,16 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             ip += 3;
             break;
          }
-         case LVM_Constraint: //TODO no needed
-            break;
-         case LVM_Scan: //TODO Remove Later
+         case LVM_Constraint:
+            /** Does nothing, just a label */
             ip += 1;
             break;
-         case LVM_IndexScan:  //TODO Remove Later
+         case LVM_Scan:
+            /** Does nothing, just a label */
+            ip += 1;
+            break;
+         case LVM_IndexScan:
+            /** Does nothing, just a label */
             ip += 1;
             break;
          case LVM_Search: {
@@ -611,6 +615,15 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             RamDomain arity = code[ip+3];
             RamDomain id = code[ip+4];
 
+            //TODO need confirm
+            //if (ctxt.isNull(referenceLevel)){
+            //   ip += 5;
+            //   break;
+            //}
+
+            //RamDomain ref = ctxt[referenceLevel][position];
+            
+            // TODO What is this testing for?
             RamDomain ref = ctxt[referenceLevel][position];
             if (isNull(ref)) {
                ip += 5;
@@ -670,7 +683,8 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             ip += 2;
             break;
          }
-         case LVM_Loop: {  //TODO Does nothing, for debugging
+         case LVM_Loop: {
+            /** Does nothing, jus a label */
             ip += 1;            
             break;
          }
@@ -887,33 +901,6 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             ip += 2;
             break;
          };
-         case LVM_Aggregate_MIN: {  //TODO don't need
-            RamDomain v1 = stack.top();
-            stack.pop();
-            RamDomain v2 = stack.top();
-            stack.pop();
-            stack.push(std::min(v1, v2));
-            ip += 1;
-            break;
-         };
-         case LVM_Aggregate_MAX: {  //TODO don't need
-            RamDomain v1 = stack.top();
-            stack.pop();
-            RamDomain v2 = stack.top();
-            stack.pop();
-            stack.push(std::max(v1, v2));
-            ip += 1;
-            break;
-         };
-         case LVM_Aggregate_SUM: {  //TODO don't need
-            RamDomain v1 = stack.top();
-            stack.pop();
-            RamDomain v2 = stack.top();
-            stack.pop();
-            stack.push(v1 + v2);
-            ip += 1;
-            break;
-         };
          case LVM_Aggregate_Return: {
             RamDomain id = code[ip+1];                          
             RamDomain res = stack.top();
@@ -922,11 +909,6 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             tuple[0] = res;
             ctxt[id] = tuple;
             ip += 2;
-            break;
-         };
-         case LVM_POP: {
-            //stack.pop();
-            ip += 1;
             break;
          };
          case LVM_ITER_TypeScan: {
@@ -975,10 +957,6 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             // get iterator range
             lookUpIndexScanIterator(idx); //TODO Imrpove
             indexScanIteratorPool[idx] = index->lowerUpperBound(low, hig);
-            //if (relName == "C") {
-            //   assert(indexScanIteratorPool[idx].first != indexScanIteratorPool[idx].second);
-            //}
-            //printf("%ld passed IndexScan\n", ip);
             ip += 4;
             break;
          }
@@ -1041,13 +1019,7 @@ void Interpreter::execute(LVMGenerator& generator, InterpreterContext& ctxt) {
             ip += 3;
             break;
          }
-         case LVM_Match:{   //TODO not need
-            break;
-         }
-         case LVM_LT: //TODO Don't Need
-            ip += 1;
-            break;
-         case LVM_STOP: 
+         case LVM_STOP:
             assert(stack.size() == 0);
             return;
          default:
@@ -1968,10 +1940,11 @@ void Interpreter_::executeSubroutine(const RamStatement& stmt, const std::vector
     evalOp(op, ctxt);
 }
 
-void Interpreter::print(LVMGenerator& generator) {
+void Interpreter::print(const LVMGenerator& generator) const{
    size_t ip = 0;
    auto& code = generator.code;
    auto& symbolTable = generator.symbolTable;
+   size_t stratumLevel = 0;
    while (true) {
       switch (generator.code[ip]) {
          case LVM_Number:
@@ -2283,7 +2256,7 @@ void Interpreter::print(LVMGenerator& generator) {
             break;
          }
          case LVM_Stratum: 
-            printf("%ld\tLVM_Stratum\t%d\n", ip, level++);
+            printf("%ld\tLVM_Stratum\t%ld\n", ip, stratumLevel++);
             ip += 1;
             break;
          case LVM_Create: {
@@ -2382,29 +2355,9 @@ void Interpreter::print(LVMGenerator& generator) {
             ip += 2;
             break;
          };
-         case LVM_Aggregate_MIN: {  //TODO don't need
-            printf("%ld\tLVM_Aggregate_MIN\t\n", ip);
-            ip += 1;
-            break;
-         };
-         case LVM_Aggregate_MAX: {  //TODO don't need
-            printf("%ld\tLVM_Aggregate_MAX\t\n", ip);
-            ip += 1;
-            break;
-         };
-         case LVM_Aggregate_SUM: {  //TODO don't need
-            printf("%ld\tLVM_Aggregate_SUM\t\n", ip);
-            ip += 1;
-            break;
-         };
          case LVM_Aggregate_Return: {
             printf("%ld\tLVM_Aggregate_Return\t%d\n", ip, code[ip+1]);
             ip += 2;
-            break;
-         };
-         case LVM_POP: {
-            printf("%ld\tLVM_POP\t\n", ip);
-            ip += 1;
             break;
          };
          case LVM_ITER_TypeIndexScan:
@@ -2432,24 +2385,11 @@ void Interpreter::print(LVMGenerator& generator) {
             printf("%ld\tLVM_ITER_Inc\tIter:%d\tType:%d\n", ip, code[ip+1], code[ip+2]);
             ip += 3;
             break;
-         case LVM_Match:   
-            printf("%ld\tLVM_Match\t\n", ip);
-            printf("\t%s\t%d\t%s\n",
-                  symbolTable.resolve(code[ip+1]).c_str(),
-                  code[ip+2],
-                  symbolTable.resolve(code[ip+3]).c_str());
-            ip += 4;
-            break;
-         case LVM_LT:
-            printf("%ld\tLVM_LT\n", ip);
-            ip += 1;
-            break;
-         case LVM_STOP: 
-            printf("%ld\tLVM_STOP\n", ip);
-            level = 0;
+         case LVM_STOP:
+            printf("%ld\tLVM_STOP\t\n", ip);
             return;
          default:
-            printf("Unkown\n");
+            printf("Unkown Operator id:%d\n", code[ip]);
             return;
       }
    }

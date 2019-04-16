@@ -170,7 +170,7 @@ public:
         return context();
     }
     class iterator : public std::iterator<std::forward_iterator_tag, RamDomain*> {
-        bool value;
+	    bool value;
 
     public:
         iterator(bool v = false) : value(v) {}

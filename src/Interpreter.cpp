@@ -732,7 +732,7 @@ void Interpreter::execute(const LVMGenerator& generator, InterpreterContext& ctx
             this->level ++;
             if (Global::config().has("profile") || this->level != 0) {
                for (const auto& rel : environment) {
-                  if (rel.first[0] == '@' || rel.second->getLevel() == this->level - 1) continue;
+                  if (rel.first[0] == '@' && rel.second->getLevel() == this->level - 1) continue;
 
                   ProfileEventSingleton::instance().makeStratumRecord( 
                         rel.second->getLevel(), "relation", rel.first, "arity", std::to_string(rel.second->getArity()));

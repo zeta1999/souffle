@@ -54,7 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include "ffi/ffi.h"
+#include <ffi.h>
 
 namespace souffle {
 
@@ -709,6 +709,7 @@ void Interpreter::execute(const LVMGenerator& generator, InterpreterContext& ctx
             break;
          }
          case LVM_LogTimer: {
+            //TODO The timer need to hang until end.
             std::string msg = symbolTable.resolve(code[ip+1]);
             if (code[ip+2] == 0) {
                Logger logger(msg.c_str(), this->getIterationNumber());
@@ -732,7 +733,8 @@ void Interpreter::execute(const LVMGenerator& generator, InterpreterContext& ctx
             this->level ++;
             if (Global::config().has("profile") || this->level != 0) {
                for (const auto& rel : environment) {
-                  if (rel.first[0] == '@' && rel.second->getLevel() == this->level - 1) continue;
+                  // Skip if is a temp rel or select only the relation in the same level
+                  if (rel.first[0] == '@' || rel.second->getLevel() != this->level - 1) continue;
 
                   ProfileEventSingleton::instance().makeStratumRecord( 
                         rel.second->getLevel(), "relation", rel.first, "arity", std::to_string(rel.second->getArity()));
@@ -2172,6 +2174,7 @@ void Interpreter::print(const LVMGenerator& generator) const{
             break;
          }
          case LVM_Constraint:
+            ip += 1;
             break;
          case LVM_Scan:
             printf("%ld\tLVM_Scan\t\n", ip);

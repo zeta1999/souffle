@@ -68,8 +68,10 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
         }));
     };
 
+    visitDepthFirst(program, [&](const RamQuery &query) {
+    std::cout << "Before:\n" << query << std::endl;
     // hoist conditions for each scan operation
-    visitDepthFirst(program, [&](const RamScan& scan) {
+    visitDepthFirst(query, [&](const RamScan& scan) {
         std::unique_ptr<RamCondition> levelledCondition;
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
@@ -80,6 +82,8 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 		// if filter condition matches level of scan, delete the filter operation
 		// and collect condition of the filter
                 if (rcla->getLevel(&condition) == scan.getIdentifier()) {
+		    std::cout << "Filter: " << scan.getIdentifier() << std::endl;
+		    std::cout << condition << std::endl;
                     collectCondition(levelledCondition, condition.clone());
                     changed = true;
                     return std::unique_ptr<RamOperation>(filter->getOperation().clone());
@@ -87,12 +91,16 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
             }
             return node;
         };
-        scan.getOperation().apply(makeLambdaRamMapper(filterRewriter));
+        scan.getOperation().apply(makeLambdaRamMapper(filterRewriter)); 
         // If a condition applies to this scan level, filter the scan based on the condition
         if (levelledCondition != nullptr) {
+	    std::cout << "Complete condition: " << std::endl;
+	    std::cout << *levelledCondition << std::endl;
             insertFilter((RamOperation*)&scan, levelledCondition);
             changed = true;
         }
+    });
+      std::cout << "After:\n" << query << std::endl;
     });
 
     // hoist conditions for the whole query 

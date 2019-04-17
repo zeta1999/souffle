@@ -1096,7 +1096,7 @@ private:
    size_t iteration = 0;
 
    /** Dynamic library for user-defined functors */
-   void* dll;
+   void* dll = nullptr;
    
    /** Iters for the indexScan operation */
    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;

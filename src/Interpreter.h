@@ -1254,10 +1254,10 @@ private:
     std::map<std::string, std::atomic<size_t>> reads;
 
     /** counter for $ operator */
-    int counter;
+    int counter = 0;
 
     /** iteration number (in a fix-point calculation) */
-    size_t iteration;
+    size_t iteration = 0;
 
     /** Dynamic library for user-defined functors */
     void* dll;

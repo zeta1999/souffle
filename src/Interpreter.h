@@ -24,8 +24,9 @@
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
-#include "RamVisitor.h" // TODO
-#include "RamOperationDepth.h" //TODO
+#include "RamVisitor.h" 
+#include "RamOperationDepth.h" 
+#include "Logger.h"
 
 #include <atomic>
 #include <cassert>
@@ -119,6 +120,7 @@ enum LVM_Type {
     LVM_ResetIterationNumber,
     LVM_Exit,
     LVM_LogTimer,
+    LVM_StopLogTimer,
     LVM_DebugInfo,
     LVM_Stratum,
     LVM_Create,
@@ -140,6 +142,7 @@ enum LVM_Type {
     LVM_ITER_Inc,          
     LVM_ITER_NotAtEnd,    
     LVM_STOP,
+    LVM_NOP,    // Padding operation
 
     // LVM Relation Struct Representation
     LVM_BTREE,
@@ -196,6 +199,10 @@ class Interpreter {
        size_t indexScanIteratorIndex = 0;
        size_t getNewScanIterator() {return scanIteratorIndex++; }
        size_t getNewIndexScanIterator() {return indexScanIteratorIndex++; }
+
+       /** Timer */
+       size_t timerIndex = 0;
+       size_t getNewTimer() {return timerIndex++; }
 
        /* Return the value of the addressLabel. 
         * Return 0 if label doesn't exits. 
@@ -747,14 +754,20 @@ class Interpreter {
        
        void visitLogTimer(const RamLogTimer& timer, size_t exitAddress) override {
           code.push_back(LVM_LogTimer);
+          size_t timerIndex = getNewTimer();
           code.push_back(symbolTable.lookup(timer.getMessage()));
           if (timer.getRelation() == nullptr) {
              code.push_back(0);
+             code.push_back(LVM_NOP);
+             code.push_back(timerIndex);
           } else {
              code.push_back(1);
              code.push_back(symbolTable.lookup(timer.getRelation()->getName())); //TODO getRelation return type not consitent
+             code.push_back(timerIndex);
           }
           visit(timer.getStatement(), exitAddress);
+          code.push_back(LVM_StopLogTimer);
+          code.push_back(timerIndex);
        }
        
        void visitDebugInfo(const RamDebugInfo& dbg, size_t exitAddress) override {
@@ -1043,6 +1056,18 @@ protected:
       return scanIteratorPool[idx];
    }
 
+   void insertTimerAt(size_t index, Logger* timer) {
+      if (index >= timers.size()) {
+         timers.resize((index + 1) * 2, nullptr);
+      }
+      timers[index] = timer;
+   }
+
+   void stopTimerAt(size_t index) {
+      assert(index < timers.size());
+      timers[index]->~Logger();
+   }
+
 private:
    friend InterpreterProgInterface;
 
@@ -1078,6 +1103,9 @@ private:
    
    /** Iters for the Scan operation */
    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;
+
+   /** Timer table for logtimer */
+   std::vector<Logger*> timers;
 
    /** for stratum */ 
    int level = 0;

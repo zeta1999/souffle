@@ -712,19 +712,27 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
             }
             ip += 2;
             break;
-        }
-        case LVM_LogTimer: {
+         }
+         case LVM_LogTimer: {
             std::string msg = symbolTable.resolve(code[ip+1]);
+            size_t timerIndex = code[ip+4];
+            Logger* logger;
             if (code[ip+2] == 0) {
-                Logger logger(msg.c_str(), this->getIterationNumber());
-                ip += 3;
+               logger = new Logger(msg.c_str(), this->getIterationNumber());
             } else {
-                std::string relName = symbolTable.resolve(code[ip+3]);
-                const InterpreterRelation& rel = getRelation(relName);
-                Logger logger(msg.c_str(), this->getIterationNumber(),
-                              std::bind(&InterpreterRelation::size, &rel));
-                ip += 4;
+               std::string relName = symbolTable.resolve(code[ip+3]);
+               const InterpreterRelation& rel = getRelation(relName);
+               logger = new Logger(msg.c_str(), this->getIterationNumber(),
+                           std::bind(&InterpreterRelation::size, &rel));
             }
+            insertTimerAt(timerIndex, logger);
+            ip += 5;
+            break;
+         }
+         case LVM_StopLogTimer: {
+            size_t timerIndex = code[ip+1];
+            stopTimerAt(timerIndex);
+            ip += 2;
             break;
         }
         case LVM_DebugInfo: {
@@ -1336,10 +1344,15 @@ void LVMCode::print() const {
         }
         case LVM_LogTimer: {
             printf("%ld\tLVM_LogTimer\t\n", ip);
-            ip += 3 + code[ip+2];
+            ip += 5;
             break;
-        }
-        case LVM_DebugInfo: {
+         }
+         case LVM_StopLogTimer: {
+            printf("%ld\tLVM_StopLogTimer\t\n", ip);
+            ip += 2;
+            break;                      
+         }
+         case LVM_DebugInfo: {
             printf("%ld\tLVM_DebugInfo\t\n", ip);
             ip += 2;
             break;
@@ -1474,7 +1487,11 @@ void LVMCode::print() const {
             printf("%ld\tLVM_ITER_Inc\tIter:%d\tType:%d\n", ip, code[ip+1], code[ip+2]);
             ip += 3;
             break;
-        case LVM_STOP:
+         case LVM_NOP:
+            printf("%ld\tLVM_NOP\n", ip);
+            ip += 1;
+            break;
+         case LVM_STOP:
             printf("%ld\tLVM_STOP\t\n", ip);
             return;
         default:

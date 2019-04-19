@@ -26,6 +26,7 @@
 #include "RelationRepresentation.h"
 #include "RamVisitor.h"
 #include "RamOperationDepth.h"
+#include "Logger.h"
 
 #include <atomic>
 #include <cassert>
@@ -119,6 +120,7 @@ enum LVM_Type {
     LVM_ResetIterationNumber,
     LVM_Exit,
     LVM_LogTimer,
+    LVM_StopLogTimer,
     LVM_DebugInfo,
     LVM_Stratum,
     LVM_Create,
@@ -140,6 +142,7 @@ enum LVM_Type {
     LVM_ITER_Inc,
     LVM_ITER_NotAtEnd,
     LVM_STOP,
+    LVM_NOP,
 
     // LVM Relation Struct Representation
     LVM_BTREE,
@@ -744,14 +747,20 @@ protected:
 
     void visitLogTimer(const RamLogTimer& timer, size_t exitAddress) override {
         code->push_back(LVM_LogTimer);
+        size_t timerIndex = getNewTimer();
         code->push_back(symbolTable.lookup(timer.getMessage()));
         if (timer.getRelation() == nullptr) {
             code->push_back(0);
+            code->push_back(LVM_NOP);
+            code->push_back(timerIndex);
         } else {
             code->push_back(1);
             code->push_back(symbolTable.lookup(timer.getRelation()->getName())); //TODO getRelation return type not consitent
+            code->push_back(timerIndex);
         }
         visit(timer.getStatement(), exitAddress);
+        code->push_back(LVM_StopLogTimer);
+        code->push_back(timerIndex);
     }
 
     void visitDebugInfo(const RamDebugInfo& dbg, size_t exitAddress) override {
@@ -898,6 +907,10 @@ private:
         return scanIteratorIndex++;
     }
 
+    /** Timer */
+    size_t timerIndex = 0;
+    size_t getNewTimer() {return timerIndex++; }
+
     size_t indexScanIteratorIndex = 0;
     size_t getNewIndexScanIterator() {
         return indexScanIteratorIndex++;
@@ -985,6 +998,19 @@ protected:
     using relation_map = std::map<std::string, InterpreterRelation*>;
 
     using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator, std::allocator<const RamDomain*>, 512>;
+
+
+    void insertTimerAt(size_t index, Logger* timer) {
+        if (index >= timers.size()) {
+            timers.resize((index + 1) * 2, nullptr);
+        }
+        timers[index] = timer;
+    }
+
+    void stopTimerAt(size_t index) {
+        assert(index < timers.size());
+        timers[index]->~Logger();
+    }
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
@@ -1123,6 +1149,9 @@ private:
 
     /** counters for non-existence check */
     std::map<std::string, std::atomic<size_t>> reads;
+
+    /** Timer table for logtimer */
+    std::vector<Logger*> timers;
 
     /** counter for $ operator */
     int counter = 0;

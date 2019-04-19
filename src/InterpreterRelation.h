@@ -321,7 +321,7 @@ private:
     std::vector<std::string> attributeTypeQualifiers;
 
     //TODO add stratum location
-    int level;
+    size_t level;
 };
 
 /**

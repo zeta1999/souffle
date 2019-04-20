@@ -290,12 +290,12 @@ void LVMCode::print() const {
             break;
         }
         case LVM_Parallel: {
-            printf("%ld\tLVM_Parallel\tNumber of stmts:%d\t\n", ip, code[ip+1]);
+            printf("%ld\tLVM_Parallel\tNumber of stmts:%d\tEnd:%d\n", ip, code[ip+1], code[ip+2]);
             for (int i = 0; i < code[ip+1]; ++i) {
-                printf("%d\t", code[ip+i]);
+                printf("Thread %d start at:%d\t", i, code[ip+3+i]);
             }
             putchar('\n');
-            ip += (1 + code[ip+1] + 1);
+            ip += 3 + code[ip+1];
             break;
         }
         case LVM_Stop_Parallel: {

@@ -243,7 +243,7 @@ private:
     std::unique_ptr<LVMCode> mainProgram = nullptr;
 
     /** Execute given program */
-    void execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt);
+    void execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip = 0);
 
     /** Relation Environment */
     relation_map environment;

@@ -119,8 +119,8 @@ void Interpreter::executeMain() {
     SignalHandler::instance()->reset();
 }
 
-void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt){
-    size_t ip = 0;
+void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip){
+    std::stack<RamDomain> stack; // Local stack to support parallel computing in future.
     const auto& code = codeStream->getCode();
     auto& symbolTable = codeStream->getSymbolTable();
     while (true) {
@@ -680,11 +680,23 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
             ip += 1;
             break;
         }
-        case LVM_Parallel: { //TODO Later
-            ip += (1 + code[ip+1] + 1);
+        case LVM_Parallel: { //TODO Later, need confirm
+            size_t size = code[ip+1];
+            size_t end = code[ip+2];
+            size_t startAddresses[size];
+            for (size_t i = 0; i < size; ++i) {
+                startAddresses[i] = code[ip+3+i];
+            }
+#pragma omp paralllel for
+            for (size_t i = 0; i < size; ++i) {
+                this->execute(codeStream, ctxt, startAddresses[i]);
+            }
+
+            ip = end;
             break;
         }
-        case LVM_Stop_Parallel: { //TODO later
+        case LVM_Stop_Parallel: { //TODO later, need confirm
+            return;
             ip += 2;
             break;
         }

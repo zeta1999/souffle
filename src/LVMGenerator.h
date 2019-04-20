@@ -532,12 +532,34 @@ protected:
         }
     }
 
+    // Size, End, block[0] + goto End, block[1] + goto End ... End:
     void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
-        //size_t num_blocks=  parallel.getStatements().size();
-        for (const auto& cur : parallel.getStatements()) {
-            visit(cur, exitAddress);
+        
+        auto stmts = parallel.getStatements();
+        size_t size = stmts.size();
+        if (size == 1) {
+            for (const auto& cur : parallel.getStatements()) {
+                visit(cur, exitAddress);
+            }
+            return;
+        }
+        code->push_back(LVM_Parallel);
+        code->push_back(size);
+        size_t endAddress = getNewAddressLabel();
+        code->push_back(lookupAddress(endAddress));
+        size_t startAddresses[size];
+        for (size_t i = 0; i < size; ++i){
+            startAddresses[i] = getNewAddressLabel();
+            code->push_back(lookupAddress(startAddresses[i]));
         }
 
+        for (size_t i = 0; i < size; ++i) {
+            setAddress(startAddresses[i], code->size());
+            visit(parallel.getStatements()[i], exitAddress);
+            code->push_back(LVM_Stop_Parallel);
+            code->push_back(LVM_NOP);
+        }
+        setAddress(endAddress, code->size());
         //TODO Implement real parallel
     }
 

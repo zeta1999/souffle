@@ -196,8 +196,7 @@ int main(int argc, char** argv) {
                         "execution engine."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\2', "", "", false, "Version."},
-                {"help", 'h', "", "", false, "Display this help message."},
-                {"mDebug", 'z', "", "", false, "Mdebug."}}; // TODO Owen 
+                {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
         // ------ command line arguments -------------
@@ -215,11 +214,6 @@ int main(int argc, char** argv) {
         if (!Global::config().has("") || Global::config().has("help")) {
             std::cout << Global::config().help();
             return 0;
-        }
-
-        if (Global::config().has("mDebug")) {   //TODO Owe
-            printf("Here\n");
-            mDebug = true;
         }
 
         /* check that datalog program exists */
@@ -525,16 +519,6 @@ int main(int argc, char** argv) {
     if (!Global::config().has("compile") && !Global::config().has("dl-program") &&
             !Global::config().has("generate")) {
         // ------- interpreter -------------
-
-        //TODO Owen: inject lvm here
-       // lvm.executeMain();
-       // 
-        if (mDebug) {
-            Interpreter lvm(*ramTranslationUnit);
-            printf("Finish generating\n");
-            lvm.printMain();
-            printf("==========\n");
-        }
 
         // configure interpreter
         std::unique_ptr<Interpreter> interpreter = std::make_unique<Interpreter>(*ramTranslationUnit);

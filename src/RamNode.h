@@ -27,7 +27,6 @@ namespace souffle {
 
 class RamNodeMapper;
 
-
 enum RamNodeType {
     // Relations
     RN_Relation,

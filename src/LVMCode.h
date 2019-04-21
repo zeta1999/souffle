@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "SymbolTable.h"
 #include "IODirectives.h"
+#include "SymbolTable.h"
 
 #include <iostream>
 #include <vector>
@@ -135,18 +135,17 @@ enum LVM_Type {
     LVM_ITER_TypeIndexScan,
 };
 
-
-class LVMCode : protected std::vector<RamDomain>{
+class LVMCode : protected std::vector<RamDomain> {
 public:
     LVMCode(SymbolTable& symbolTable) : symbolTable(symbolTable) {}
-    
+
     using std::vector<RamDomain>::push_back;
     using std::vector<RamDomain>::clear;
     using std::vector<RamDomain>::size;
     using std::vector<RamDomain>::operator[];
     using std::vector<RamDomain>::begin;
     using std::vector<RamDomain>::end;
-    
+
     std::vector<RamDomain>& getCode() {
         return *this;
     }
@@ -159,7 +158,7 @@ public:
         return IODirectivesPool;
     }
 
-    size_t getIODirectivesSize() const{
+    size_t getIODirectivesSize() const {
         return IODirectivesPool.size();
     }
 
@@ -173,11 +172,11 @@ public:
     virtual ~LVMCode() {}
 
 private:
-    /** Store reference to IODirectives */ //TODO Can we improve it?
+    /** Store reference to IODirectives */  // TODO Can we improve it?
     std::vector<std::vector<IODirectives>> IODirectivesPool;
 
     /** Class for converting string to number and vice versa */
-    SymbolTable& symbolTable;                
+    SymbolTable& symbolTable;
 };
 
-} // End of namespace souffle
+}  // End of namespace souffle

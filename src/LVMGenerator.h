@@ -15,15 +15,16 @@
  ***********************************************************************/
 #pragma once
 
-#include "RamVisitor.h"
 #include "LVMCode.h"
+#include "RamVisitor.h"
 
 #define SOUFFLE_DLL "libfunctors.so"
 
-namespace souffle{
+namespace souffle {
 class LVMGenerator : protected RamVisitor<void, size_t> {
 public:
-    LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry) : symbolTable(symbolTable), code(new LVMCode(symbolTable)) {
+    LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry)
+            : symbolTable(symbolTable), code(new LVMCode(symbolTable)) {
         // double pass
         (*this)(entry, 0);
         (*this).cleanUp();
@@ -34,6 +35,7 @@ public:
     virtual std::unique_ptr<LVMCode> getCodeStream() {
         return std::move(this->code);
     }
+
 protected:
     // Visit RAM Expressions
     void visitNumber(const RamNumber& num, size_t exitAddress) override {
@@ -54,120 +56,120 @@ protected:
     void visitIntrinsicOperator(const RamIntrinsicOperator& op, size_t exitAddress) override {
         const auto& args = op.getArguments();
         switch (op.getOperator()) {
-        /** Unary Functor Operators */
-        case FunctorOp::ORD:
-            visit(args[0], exitAddress);
-            code->push_back(LVM_OP_ORD);
-            break;
-        case FunctorOp::STRLEN:
-            visit(args[0], exitAddress);
-            code->push_back(LVM_OP_STRLEN);
-            break;
-        case FunctorOp::NEG:
-            visit(args[0], exitAddress);
-            code->push_back(LVM_OP_NEG);
-            break;
-        case FunctorOp::BNOT:
-            visit(args[0], exitAddress);
-            code->push_back(LVM_OP_BNOT);
-            break;
-        case FunctorOp::LNOT:
-            visit(args[0], exitAddress);
-            code->push_back(LVM_OP_LNOT);
-            break;
-        case FunctorOp::TONUMBER:
-            visit(args[0], exitAddress);
-            code->push_back(LVM_OP_TONUMBER);
-            break;
-        case FunctorOp::TOSTRING:
-            visit(args[0], exitAddress);
-            code->push_back(LVM_OP_TOSTRING);
-            break;
+            /** Unary Functor Operators */
+            case FunctorOp::ORD:
+                visit(args[0], exitAddress);
+                code->push_back(LVM_OP_ORD);
+                break;
+            case FunctorOp::STRLEN:
+                visit(args[0], exitAddress);
+                code->push_back(LVM_OP_STRLEN);
+                break;
+            case FunctorOp::NEG:
+                visit(args[0], exitAddress);
+                code->push_back(LVM_OP_NEG);
+                break;
+            case FunctorOp::BNOT:
+                visit(args[0], exitAddress);
+                code->push_back(LVM_OP_BNOT);
+                break;
+            case FunctorOp::LNOT:
+                visit(args[0], exitAddress);
+                code->push_back(LVM_OP_LNOT);
+                break;
+            case FunctorOp::TONUMBER:
+                visit(args[0], exitAddress);
+                code->push_back(LVM_OP_TONUMBER);
+                break;
+            case FunctorOp::TOSTRING:
+                visit(args[0], exitAddress);
+                code->push_back(LVM_OP_TOSTRING);
+                break;
 
-        /** Binary Functor Operators */
-        case FunctorOp::ADD:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_ADD);
-            break;
-        case FunctorOp::SUB:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_SUB);
-            break;
-        case FunctorOp::MUL:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_MUL);
-            break;
-        case FunctorOp::DIV:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_DIV);
-            break;
-        case FunctorOp::EXP:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_EXP);
-            break;
-        case FunctorOp::MOD:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_MOD);
-            break;
-        case FunctorOp::BAND:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_BAND);
-            break;
-        case FunctorOp::BOR:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_BOR);
-            break;
-        case FunctorOp::BXOR:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_BXOR);
-            break;
-        case FunctorOp::LAND:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_LAND);
-            break;
-        case FunctorOp::LOR:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_LOR);
-            break;
-        case FunctorOp::MAX:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_MAX);
-            break;
-        case FunctorOp::MIN:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_MIN);
-            break;
-        case FunctorOp::CAT:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            code->push_back(LVM_OP_CAT);
-            break;
+            /** Binary Functor Operators */
+            case FunctorOp::ADD:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_ADD);
+                break;
+            case FunctorOp::SUB:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_SUB);
+                break;
+            case FunctorOp::MUL:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_MUL);
+                break;
+            case FunctorOp::DIV:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_DIV);
+                break;
+            case FunctorOp::EXP:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_EXP);
+                break;
+            case FunctorOp::MOD:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_MOD);
+                break;
+            case FunctorOp::BAND:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_BAND);
+                break;
+            case FunctorOp::BOR:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_BOR);
+                break;
+            case FunctorOp::BXOR:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_BXOR);
+                break;
+            case FunctorOp::LAND:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_LAND);
+                break;
+            case FunctorOp::LOR:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_LOR);
+                break;
+            case FunctorOp::MAX:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_MAX);
+                break;
+            case FunctorOp::MIN:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_MIN);
+                break;
+            case FunctorOp::CAT:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                code->push_back(LVM_OP_CAT);
+                break;
 
-        /** Ternary Functor Operators */
-        case FunctorOp::SUBSTR:
-            visit(args[0], exitAddress);
-            visit(args[1], exitAddress);
-            visit(args[2], exitAddress);
-            code->push_back(LVM_OP_SUBSTR);
-            break;
+            /** Ternary Functor Operators */
+            case FunctorOp::SUBSTR:
+                visit(args[0], exitAddress);
+                visit(args[1], exitAddress);
+                visit(args[2], exitAddress);
+                code->push_back(LVM_OP_SUBSTR);
+                break;
 
-        /** Undefined */
-        default:
-            assert(false && "unsupported operator");
-            return;
+            /** Undefined */
+            default:
+                assert(false && "unsupported operator");
+                return;
         }
     }
 
@@ -227,12 +229,13 @@ protected:
         code->push_back(symbolTable.lookup(types));
     }
 
-    void visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists, size_t exitAddress) override {
+    void visitProvenanceExistenceCheck(
+            const RamProvenanceExistenceCheck& provExists, size_t exitAddress) override {
         auto values = provExists.getValues();
         auto arity = provExists.getRelation().getArity();
         std::string types;
         for (size_t i = 0; i < arity - 2; ++i) {
-            if(values[i]) {
+            if (values[i]) {
                 visit(values[i], exitAddress);
             }
             types += (values[i] == nullptr ? "_" : "V");
@@ -247,42 +250,40 @@ protected:
         visit(relOp.getLHS(), exitAddress);
         visit(relOp.getRHS(), exitAddress);
         switch (relOp.getOperator()) {
-        case BinaryConstraintOp::EQ:
-            code->push_back(LVM_OP_EQ);
-            break;
-        case BinaryConstraintOp::NE:
-            code->push_back(LVM_OP_NE);
-            break;
-        case BinaryConstraintOp::LT:
-            code->push_back(LVM_OP_LT);
-            break;
-        case BinaryConstraintOp::LE:
-            code->push_back(LVM_OP_LE);
-            break;
-        case BinaryConstraintOp::GT:
-            code->push_back(LVM_OP_GT);
-            break;
-        case BinaryConstraintOp::GE:
-            code->push_back(LVM_OP_GE);
-            break;
-        case BinaryConstraintOp::MATCH:
-            code->push_back(LVM_OP_MATCH);
-            break;
-        case BinaryConstraintOp::NOT_MATCH:
-            code->push_back(LVM_OP_NOT_MATCH);
-            break;
-        case BinaryConstraintOp::CONTAINS:
-            code->push_back(LVM_OP_CONTAINS);
-            break;
-        case BinaryConstraintOp::NOT_CONTAINS:
-            code->push_back(LVM_OP_NOT_CONTAINS);
-            break;
-        default:
-            assert(false && "unsupported operator");
-
+            case BinaryConstraintOp::EQ:
+                code->push_back(LVM_OP_EQ);
+                break;
+            case BinaryConstraintOp::NE:
+                code->push_back(LVM_OP_NE);
+                break;
+            case BinaryConstraintOp::LT:
+                code->push_back(LVM_OP_LT);
+                break;
+            case BinaryConstraintOp::LE:
+                code->push_back(LVM_OP_LE);
+                break;
+            case BinaryConstraintOp::GT:
+                code->push_back(LVM_OP_GT);
+                break;
+            case BinaryConstraintOp::GE:
+                code->push_back(LVM_OP_GE);
+                break;
+            case BinaryConstraintOp::MATCH:
+                code->push_back(LVM_OP_MATCH);
+                break;
+            case BinaryConstraintOp::NOT_MATCH:
+                code->push_back(LVM_OP_NOT_MATCH);
+                break;
+            case BinaryConstraintOp::CONTAINS:
+                code->push_back(LVM_OP_CONTAINS);
+                break;
+            case BinaryConstraintOp::NOT_CONTAINS:
+                code->push_back(LVM_OP_NOT_CONTAINS);
+                break;
+            default:
+                assert(false && "unsupported operator");
         }
     }
-
 
     /** Visit RAM Operations */
 
@@ -339,11 +340,11 @@ protected:
         auto patterns = scan.getRangePattern();
         std::string types;
         auto arity = scan.getRelation().getArity();
-        for (size_t i = 0; i < arity; i ++) {
+        for (size_t i = 0; i < arity; i++) {
             if (patterns[i]) {
                 visit(patterns[i], exitAddress);
             }
-            types += (patterns[i] == nullptr? "_" : "V");
+            types += (patterns[i] == nullptr ? "_" : "V");
         }
 
         code->push_back(LVM_ITER_TypeIndexScan);
@@ -388,11 +389,11 @@ protected:
         auto patterns = aggregate.getPattern();
         std::string types;
         auto arity = aggregate.getRelation().getArity();
-        for (size_t i = 0; i < arity; i ++) {
+        for (size_t i = 0; i < arity; i++) {
             if (patterns[i]) {
                 visit(patterns[i], exitAddress);
             }
-            types += (patterns[i] == nullptr? "_" : "V");
+            types += (patterns[i] == nullptr ? "_" : "V");
         }
         size_t counterLabel = getNewIndexScanIterator();
         size_t L1 = getNewAddressLabel();
@@ -402,36 +403,36 @@ protected:
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
 
-        if (aggregate.getFunction() == RamAggregate::COUNT) {   // To count, there is no need to iterate
+        if (aggregate.getFunction() == RamAggregate::COUNT) {  // To count, there is no need to iterate
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(counterLabel);
         } else {
-            code->push_back(LVM_ITER_NotAtEnd);    // First check, if the range is empty, does nothing
+            code->push_back(LVM_ITER_NotAtEnd);  // First check, if the rangeindex is empty, do nothing, return noything
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(LVM_Jmpez);
             code->push_back(lookupAddress(L2));
 
-            switch (aggregate.getFunction()) { // Init value
-            case RamAggregate::MIN:
-                code->push_back(LVM_Number);
-                code->push_back(MAX_RAM_DOMAIN);
-                break;
-            case RamAggregate::MAX:
-                code->push_back(LVM_Number);
-                code->push_back(MIN_RAM_DOMAIN);
-                break;
-            case RamAggregate::COUNT:
-                break;
-            case RamAggregate::SUM:
-                code->push_back(LVM_Number);
-                code->push_back(0);
-                break;
+            switch (aggregate.getFunction()) {  // Init value
+                case RamAggregate::MIN:
+                    code->push_back(LVM_Number);
+                    code->push_back(MAX_RAM_DOMAIN);
+                    break;
+                case RamAggregate::MAX:
+                    code->push_back(LVM_Number);
+                    code->push_back(MIN_RAM_DOMAIN);
+                    break;
+                case RamAggregate::COUNT:
+                    break;
+                case RamAggregate::SUM:
+                    code->push_back(LVM_Number);
+                    code->push_back(0);
+                    break;
             }
 
             size_t address_L0 = code->size();
 
-            code->push_back(LVM_ITER_NotAtEnd);    // Start the formal for loop if the relation is non-empty
+            code->push_back(LVM_ITER_NotAtEnd);  // Start the formal for loop if the relation is non-empty
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(LVM_Jmpez);
@@ -445,18 +446,18 @@ protected:
             visit(aggregate.getExpression(), exitAddress);
 
             switch (aggregate.getFunction()) {
-            case RamAggregate::MIN:
-                code->push_back(LVM_OP_MIN);  
-                break;
-            case RamAggregate::MAX:
-                code->push_back(LVM_OP_MAX); 
-                break;
-            case RamAggregate::COUNT:
-                assert (false);
-                break;
-            case RamAggregate::SUM:
-                code->push_back(LVM_OP_ADD);
-                break;
+                case RamAggregate::MIN:
+                    code->push_back(LVM_OP_MIN);
+                    break;
+                case RamAggregate::MAX:
+                    code->push_back(LVM_OP_MAX);
+                    break;
+                case RamAggregate::COUNT:
+                    assert(false);
+                    break;
+                case RamAggregate::SUM:
+                    code->push_back(LVM_OP_ADD);
+                    break;
             }
 
             code->push_back(LVM_ITER_Inc);
@@ -468,7 +469,7 @@ protected:
 
         setAddress(L1, code->size());
 
-        code->push_back(LVM_Aggregate_Return);  
+        code->push_back(LVM_Aggregate_Return);
         code->push_back(aggregate.getIdentifier());
 
         visitSearch(aggregate, exitAddress);
@@ -506,7 +507,7 @@ protected:
         code->push_back(symbolTable.lookup(relationName));
     }
     void visitReturn(const RamReturn& ret, size_t exitAddress) override {
-        //The value must be pushed in correct order
+        // The value must be pushed in correct order
         std::string types;
         auto expressions = ret.getValues();
         size_t size = expressions.size();
@@ -534,7 +535,6 @@ protected:
 
     // Size, End, block[0] + goto End, block[1] + goto End ... End:
     void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
-        
         auto stmts = parallel.getStatements();
         size_t size = stmts.size();
         if (size == 1) {
@@ -548,7 +548,7 @@ protected:
         size_t endAddress = getNewAddressLabel();
         code->push_back(lookupAddress(endAddress));
         size_t startAddresses[size];
-        for (size_t i = 0; i < size; ++i){
+        for (size_t i = 0; i < size; ++i) {
             startAddresses[i] = getNewAddressLabel();
             code->push_back(lookupAddress(startAddresses[i]));
         }
@@ -560,7 +560,7 @@ protected:
             code->push_back(LVM_NOP);
         }
         setAddress(endAddress, code->size());
-        //TODO Implement real parallel
+        // TODO Implement real parallel
     }
 
     void visitLoop(const RamLoop& loop, size_t exitAddress) override {
@@ -579,7 +579,7 @@ protected:
 
     void visitExit(const RamExit& exit, size_t exitAddress) override {
         visit(exit.getCondition(), exitAddress);
-        code->push_back(LVM_Jmpnz); // Jmp if condition is true
+        code->push_back(LVM_Jmpnz);  // Jmp if condition is true
         code->push_back(exitAddress);
     }
 
@@ -593,7 +593,8 @@ protected:
             code->push_back(timerIndex);
         } else {
             code->push_back(1);
-            code->push_back(symbolTable.lookup(timer.getRelation()->getName())); //TODO getRelation return type not consitent
+            code->push_back(symbolTable.lookup(
+                    timer.getRelation()->getName()));  // TODO getRelation return type not consitent
             code->push_back(timerIndex);
         }
         visit(timer.getStatement(), exitAddress);
@@ -617,19 +618,19 @@ protected:
         code->push_back(symbolTable.lookup(create.getRelation().getName()));
         code->push_back(create.getRelation().getArity());
         switch (create.getRelation().getRepresentation()) {
-        case RelationRepresentation::BTREE:
-            code->push_back(LVM_BTREE);
-            break;
-        case RelationRepresentation::BRIE:
-            code->push_back(LVM_BRIE);
-            break;
-        case RelationRepresentation::EQREL:
-            code->push_back(LVM_EQREL);
-            break;
-        case RelationRepresentation::DEFAULT:
-            code->push_back(LVM_DEFAULT);
-        default:
-            break;
+            case RelationRepresentation::BTREE:
+                code->push_back(LVM_BTREE);
+                break;
+            case RelationRepresentation::BRIE:
+                code->push_back(LVM_BRIE);
+                break;
+            case RelationRepresentation::EQREL:
+                code->push_back(LVM_EQREL);
+                break;
+            case RelationRepresentation::DEFAULT:
+                code->push_back(LVM_DEFAULT);
+            default:
+                break;
         }
 
         auto attributeTypes = create.getRelation().getAttributeTypeQualifiers();
@@ -676,7 +677,7 @@ protected:
         size_t arity = fact.getRelation().getArity();
         auto values = fact.getValues();
         for (size_t i = 0; i < arity; ++i) {
-            visit(values[i], exitAddress);       // Values cannot be null here
+            visit(values[i], exitAddress);  // Values cannot be null here
         }
         std::string targertRelation = fact.getRelation().getName();
         code->push_back(LVM_Fact);
@@ -712,7 +713,7 @@ protected:
 
 private:
     SymbolTable& symbolTable;
-    std::unique_ptr<LVMCode> code;            /** Instructions stream */
+    std::unique_ptr<LVMCode> code; /** Instructions stream */
 
     void cleanUp() {
         code->clear();
@@ -737,7 +738,9 @@ private:
 
     /** Timer */
     size_t timerIndex = 0;
-    size_t getNewTimer() {return timerIndex++; }
+    size_t getNewTimer() {
+        return timerIndex++;
+    }
 
     size_t indexScanIteratorIndex = 0;
     size_t getNewIndexScanIterator() {

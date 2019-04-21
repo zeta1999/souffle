@@ -191,7 +191,7 @@ protected:
 
     void visitArgument(const RamArgument& arg, size_t exitAddress) override {
         code->push_back(LVM_Argument);
-        code->push_back(arg.getArgCount());
+        code->push_back(arg.getArgument());
     }
 
     /** Visit RAM Conditions */
@@ -686,17 +686,7 @@ protected:
 
     void visitQuery(const RamQuery& insert, size_t exitAddress) override {
         code->push_back(LVM_Query);
-        if (insert.getCondition() == nullptr) {
-            code->push_back(LVM_Number);
-            code->push_back(true);  // Push true
-        } else {
-            visit(insert.getCondition(), exitAddress);
-        }
-        size_t L0 = getNewAddressLabel();
-        code->push_back(LVM_Jmpez);
-        code->push_back(lookupAddress(L0));
         visit(insert.getOperation(), exitAddress);
-        setAddress(L0, code->size());
     }
 
     void visitMerge(const RamMerge& merge, size_t exitAddress) override {

@@ -84,7 +84,7 @@ public:
             execute(subroutines.at(name), ctxt);   
         } else {
             // Parse and cache the progrme
-            LVMGenerator generator(translationUnit.getSymbolTable(), translationUnit.getP().getSubroutine(name));
+            LVMGenerator generator(translationUnit.getSymbolTable(), translationUnit.getProgram()->getSubroutine(name));
             subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
             execute(subroutines.at(name), ctxt);
         }
@@ -93,7 +93,7 @@ public:
     /** Print out the instruction stream */
     void printMain() {
         if (mainProgram.get() == nullptr) {
-            LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getP().getMain());
+            LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain());
             mainProgram = generator.getCodeStream();
         }
         mainProgram->print();

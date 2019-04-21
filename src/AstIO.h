@@ -53,12 +53,20 @@ public:
 
     /** Output to a given output stream */
     void print(std::ostream& os) const override {
-        os << getNames();
+        bool first = true;
+        for (auto& relationName : getNames()) {
+            if (first) {
+                first = false;
+            } else {
+                os << ',';
+            }
+            os << relationName;
+        }
         if (kvps.empty()) {
             return;
         }
         os << "(";
-        bool first = true;
+        first = true;
         for (auto& pair : kvps) {
             if (first) {
                 first = false;

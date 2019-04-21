@@ -102,7 +102,7 @@ public:
 protected:
     /** relation environment type */
     using relation_map = std::map<std::string, InterpreterRelation*>;
-
+  
     using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator, std::allocator<const RamDomain*>, 512>;
 
     /** Insert Logger */

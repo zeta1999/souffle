@@ -216,6 +216,10 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
 
         // check types of arguments
+        if (fun.getFunction() == FunctorOp::ORD) {
+            return;
+        }
+
         for (size_t i = 0; i < fun.getArity(); i++) {
             auto arg = fun.getArg(i);
             if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {

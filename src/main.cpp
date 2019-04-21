@@ -494,8 +494,17 @@ int main(int argc, char** argv) {
     ramTransforms.push_back(std::make_unique<ConvertExistenceChecksTransformer>());
 
     for (const auto& transform : ramTransforms) {
-        transform->apply(*ramTranslationUnit);
+        /* If the ram transform changed the program, show this */
+        if (transform->apply(*ramTranslationUnit)) {
+            std::stringstream ramProgStr;
+            ramProgStr << *ramTranslationUnit->getProgram();
+            ramTranslationUnit->getDebugReport().addSection(DebugReporter::getCodeSection(
+                    transform->getName(), "RAM Program after " + transform->getName(), ramProgStr.str()));
 
+        } else {
+            ramTranslationUnit->getDebugReport().addSection(DebugReportSection(
+                    transform->getName(), "After " + transform->getName() + " " + " (unchanged)", {}, ""));
+        }
         /* Abort evaluation of the program if errors were encountered */
         if (ramTranslationUnit->getErrorReport().getNumErrors() != 0) {
             std::cerr << ramTranslationUnit->getErrorReport();

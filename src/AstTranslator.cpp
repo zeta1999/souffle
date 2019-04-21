@@ -138,21 +138,29 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> outputDirectives;
 
-    for (const auto& current : rel->getStores()) {
-        IODirectives ioDirectives;
-        for (const auto& currentPair : current->getIODirectiveMap()) {
-            ioDirectives.set(currentPair.first, currentPair.second);
-        }
-        outputDirectives.push_back(ioDirectives);
-    }
-
     // If stdout is requested then remove all directives from the datalog file.
     if (Global::config().get("output-dir") == "-") {
-        outputDirectives.clear();
-        IODirectives ioDirectives;
-        ioDirectives.setIOType("stdout");
-        ioDirectives.set("headers", "true");
-        outputDirectives.push_back(ioDirectives);
+        bool hasOutput = false;
+        for (const auto* current : rel->getStores()) {
+            IODirectives ioDirectives;
+            if (dynamic_cast<const AstPrintSize*>(current) != nullptr) {
+                ioDirectives.setIOType("stdoutprintsize");
+                outputDirectives.push_back(ioDirectives);
+            } else if (!hasOutput) {
+                hasOutput = true;
+                ioDirectives.setIOType("stdout");
+                ioDirectives.set("headers", "true");
+                outputDirectives.push_back(ioDirectives);
+            }
+        }
+    } else {
+        for (const auto* current : rel->getStores()) {
+            IODirectives ioDirectives;
+            for (const auto& currentPair : current->getIODirectiveMap()) {
+                ioDirectives.set(currentPair.first, currentPair.second);
+            }
+            outputDirectives.push_back(ioDirectives);
+        }
     }
 
     if (outputDirectives.empty()) {
@@ -808,7 +816,12 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
     }
 
     /* generate the final RAM Insert statement */
-    return std::make_unique<RamQuery>(std::move(op), createCondition(originalClause));
+    std::unique_ptr<RamCondition> cond = createCondition(originalClause);
+    if (cond != nullptr) {
+        return std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(cond), std::move(op)));
+    } else {
+        return std::make_unique<RamQuery>(std::move(op));
+    }
 }
 
 /* utility for appending statements */
@@ -1488,11 +1501,6 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
             ramProgStr << *ramProg;
             debugReport.addSection(DebugReporter::getCodeSection(
                     "ram-program", "RAM Program " + runtimeStr, ramProgStr.str()));
-        }
-
-        if (!debugReport.empty()) {
-            std::ofstream debugReportStream(Global::config().get("debug-report"));
-            debugReportStream << debugReport;
         }
     }
     return std::make_unique<RamTranslationUnit>(std::move(ramProg), symTab, errReport, debugReport);

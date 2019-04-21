@@ -48,13 +48,6 @@ public:
  * Operator that represents an intrinsic (built-in) functor
  */
 class RamIntrinsicOperator : public RamExpression {
-private:
-    /** Operation symbol */
-    const FunctorOp operation;
-
-    /** Arguments of the function */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
 public:
     template <typename... Args>
     RamIntrinsicOperator(FunctorOp op, Args... args) : RamExpression(RN_IntrinsicOperator), operation(op) {
@@ -130,6 +123,12 @@ public:
     }
 
 protected:
+    /** Operation symbol */
+    const FunctorOp operation;
+
+    /** Arguments of the function */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIntrinsicOperator*>(&node));
@@ -142,16 +141,6 @@ protected:
  * Operator that represents an extrinsic (user-defined) functor
  */
 class RamUserDefinedOperator : public RamExpression {
-private:
-    /** Arguments of user defined operator */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
-    /** Name of user-defined operator */
-    const std::string name;
-
-    /** Argument types */
-    const std::string type;
-
 public:
     RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamExpression>> args)
             : RamExpression(RN_UserDefinedOperator), arguments(std::move(args)), name(std::move(n)),
@@ -218,6 +207,15 @@ public:
     }
 
 protected:
+    /** Arguments of user defined operator */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
+
+    /** Name of user-defined operator */
+    const std::string name;
+
+    /** Argument types */
+    const std::string type;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
@@ -230,18 +228,6 @@ protected:
  * Access element from the current tuple in a tuple environment
  */
 class RamElementAccess : public RamExpression {
-private:
-    /** Identifier for the tuple */
-    const size_t identifier;
-
-    /** Element number */
-    const size_t element;
-
-    /** Relation for debugging purposes
-     *  Set to nullptr for non-existent relations
-     */
-    std::unique_ptr<RamRelationReference> relationRef;
-
 public:
     RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
             : RamExpression(RN_ElementAccess), identifier(ident), element(elem),
@@ -268,7 +254,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>({relationRef.get()});
+        return {relationRef.get()};
     }
 
     /** Create clone */
@@ -289,6 +275,17 @@ public:
     }
 
 protected:
+    /** Identifier for the tuple */
+    const size_t identifier;
+
+    /** Element number */
+    const size_t element;
+
+    /** Relation for debugging purposes
+     *  Set to nullptr for non-existent relations
+     */
+    std::unique_ptr<RamRelationReference> relationRef;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamElementAccess*>(&node));
@@ -301,9 +298,6 @@ protected:
  * Number Constant
  */
 class RamNumber : public RamExpression {
-    /** Constant value */
-    const RamDomain constant;
-
 public:
     RamNumber(RamDomain c) : RamExpression(RN_Number), constant(c) {}
 
@@ -319,7 +313,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>();
+        return {};
     }
 
     /** Create clone */
@@ -332,6 +326,9 @@ public:
     void apply(const RamNodeMapper& map) override {}
 
 protected:
+    /** Constant value */
+    const RamDomain constant;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamNumber*>(&node));
@@ -357,7 +354,7 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>();
+        return {};
     }
 
     /** Create clone */
@@ -381,10 +378,6 @@ protected:
  * Record pack operation
  */
 class RamPackRecord : public RamExpression {
-private:
-    /** Arguments */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
 public:
     RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args)
             : RamExpression(RN_PackRecord), arguments(std::move(args)) {}
@@ -397,11 +390,7 @@ public:
     /** Print */
     void print(std::ostream& os) const override {
         os << "[" << join(arguments, ",", [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) {
-            if (arg) {
-                out << *arg;
-            } else {
-                out << "_";
-            }
+            out << *arg;
         }) << "]";
     }
 
@@ -439,6 +428,9 @@ public:
     }
 
 protected:
+    /** Arguments */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamPackRecord*>(&node));
@@ -455,14 +447,11 @@ protected:
  * subroutine.
  */
 class RamArgument : public RamExpression {
-    /** Argument number */
-    const size_t number;
-
 public:
     RamArgument(size_t number) : RamExpression(RN_Argument), number(number) {}
 
-    /** Get argument number */
-    size_t getArgCount() const {
+    /** Get argument */
+    size_t getArgument() const {
         return number;
     }
 
@@ -473,12 +462,12 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>();
+        return {};
     }
 
     /** Create clone */
     RamArgument* clone() const override {
-        auto* res = new RamArgument(getArgCount());
+        auto* res = new RamArgument(number);
         return res;
     }
 
@@ -486,11 +475,14 @@ public:
     void apply(const RamNodeMapper& map) override {}
 
 protected:
+    /** Argument number */
+    const size_t number;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamArgument*>(&node));
         const auto& other = static_cast<const RamArgument&>(node);
-        return getArgCount() == other.getArgCount();
+        return getArgument() == other.getArgument();
     }
 };
 

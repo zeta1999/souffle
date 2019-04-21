@@ -358,7 +358,6 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
             stack.push(lhs != rhs);
             ip += 1;
             break;
-
         }
         case LVM_OP_LT: {
             RamDomain rhs = stack.top();
@@ -516,7 +515,6 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 for (size_t i = 0; i < arity; i++) {
                     tuple[arity-i-1] = stack.top();
                     stack.pop();   //TODO Confirm, value can never be null.
-                    //Check visitExistenceCheck
                 }
                 stack.push(rel.exists(tuple));
                 ip += 3;
@@ -961,6 +959,7 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                     hig[arity-i-1] = MAX_RAM_DOMAIN;
                 }
             }
+
 
             // obtain index
             // TODO Do as function

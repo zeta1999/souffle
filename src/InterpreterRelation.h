@@ -38,7 +38,7 @@ public:
 
     virtual ~InterpreterRelation() = default;
    
-    //TODO Owen: getter and setter for attributes type
+    //TODO Xiaowen: getter and setter for attributes type
     void addAttributes(const std::vector<std::string> attributeTypes) {
         attributeTypeQualifiers = attributeTypes; 
     }
@@ -316,7 +316,7 @@ private:
     mutable Lock lock;
 
 
-    //TODO Owen: Add attributes type
+    //TODO Xiaowen: Add attributes type
     /** Type of attributes */
     std::vector<std::string> attributeTypeQualifiers;
 

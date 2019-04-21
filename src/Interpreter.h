@@ -18,23 +18,23 @@
 
 #include "InterpreterContext.h"
 #include "InterpreterRelation.h"
+#include "LVMCode.h"
+#include "LVMGenerator.h"
+#include "Logger.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
-#include "Logger.h"
-#include "LVMCode.h"
-#include "LVMGenerator.h"
 
 #include <atomic>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <map>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
 #include <dlfcn.h>
-#include <stack>
 
 #define SOUFFLE_DLL "libfunctors.so"
 
@@ -61,7 +61,7 @@ public:
 
     /** Interface for executing the main program */
     virtual void executeMain();
-    
+
     /** Clean the cache of main Program */
     void resetMainProgram() {
         mainProgram.reset();
@@ -74,17 +74,18 @@ public:
 
     /** Execute the subroutine */
     void executeSubroutine(const std::string& name, const std::vector<RamDomain>& arguments,
-                           std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) {
+            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) {
         InterpreterContext ctxt;
         ctxt.setReturnValues(returnValues);
         ctxt.setReturnErrors(returnErrors);
         ctxt.setArguments(arguments);
 
         if (subroutines.find(name) != subroutines.cend()) {
-            execute(subroutines.at(name), ctxt);   
+            execute(subroutines.at(name), ctxt);
         } else {
             // Parse and cache the progrme
-            LVMGenerator generator(translationUnit.getSymbolTable(), translationUnit.getProgram()->getSubroutine(name));
+            LVMGenerator generator(
+                    translationUnit.getSymbolTable(), translationUnit.getProgram()->getSubroutine(name));
             subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
             execute(subroutines.at(name), ctxt);
         }
@@ -93,7 +94,8 @@ public:
     /** Print out the instruction stream */
     void printMain() {
         if (mainProgram.get() == nullptr) {
-            LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain());
+            LVMGenerator generator(
+                    translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain());
             mainProgram = generator.getCodeStream();
         }
         mainProgram->print();
@@ -102,8 +104,9 @@ public:
 protected:
     /** relation environment type */
     using relation_map = std::map<std::string, InterpreterRelation*>;
-  
-    using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator, std::allocator<const RamDomain*>, 512>;
+
+    using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator,
+            std::allocator<const RamDomain*>, 512>;
 
     /** Insert Logger */
     void insertTimerAt(size_t index, Logger* timer) {
@@ -112,7 +115,7 @@ protected:
         }
         timers[index] = timer;
     }
-    
+
     /** Stop and destory logger */
     void stopTimerAt(size_t index) {
         assert(index < timers.size());
@@ -136,7 +139,7 @@ protected:
 
     /** Increment counter */
     int incCounter() {
-        return counter ++;
+        return counter++;
     }
 
     /** Increment iteration number */
@@ -154,7 +157,7 @@ protected:
     }
 
     /** TODO not implemented yet */
-    void createRelation(const RamRelation& id) { }
+    void createRelation(const RamRelation& id) {}
 
     /** Get relation */
     InterpreterRelation& getRelation(const std::string& name) {
@@ -169,7 +172,7 @@ protected:
         return getRelation(id.getName());
     }
 
-    /** Drop relation */  
+    /** Drop relation */
     void dropRelation(const RamRelation& id) {
         InterpreterRelation& rel = getRelation(id);
         environment.erase(id.getName());
@@ -183,7 +186,7 @@ protected:
         delete &rel;
     }
 
-    /** Swap relation */   
+    /** Swap relation */
     void swapRelation(const RamRelation& ramRel1, const RamRelation& ramRel2) {
         InterpreterRelation* rel1 = &getRelation(ramRel1);
         InterpreterRelation* rel2 = &getRelation(ramRel2);
@@ -216,16 +219,15 @@ protected:
     // Lookup for IndexScan iter, resize the vector if idx > size */
     std::pair<index_set::iterator, index_set::iterator>& lookUpIndexScanIterator(size_t idx) {
         if (idx >= indexScanIteratorPool.size()) {
-            indexScanIteratorPool.resize((idx+1) * 2);
+            indexScanIteratorPool.resize((idx + 1) * 2);
         }
         return indexScanIteratorPool[idx];
     }
 
-
     /** Lookup for Scan iter, resize the vector if idx > size */
     std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
         if (idx >= scanIteratorPool.size()) {
-            scanIteratorPool.resize((idx+1) * 2);
+            scanIteratorPool.resize((idx + 1) * 2);
         }
         return scanIteratorPool[idx];
     }
@@ -277,9 +279,6 @@ private:
 
     /** stratum */
     size_t level = 0;
-
 };
-
-
 
 }  // end of namespace souffle

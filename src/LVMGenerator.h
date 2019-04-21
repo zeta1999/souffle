@@ -142,20 +142,26 @@ protected:
                 visit(args[1], exitAddress);
                 code->push_back(LVM_OP_LOR);
                 break;
-            case FunctorOp::MAX:
-                visit(args[0], exitAddress);
-                visit(args[1], exitAddress);
+            case FunctorOp::MAX: {}
+                for (auto& arg : args) {
+                    visit(arg, exitAddress);
+                }
                 code->push_back(LVM_OP_MAX);
+                code->push_back(args.size());
                 break;
             case FunctorOp::MIN:
-                visit(args[0], exitAddress);
-                visit(args[1], exitAddress);
+                for (auto& arg : args) {
+                    visit(arg, exitAddress);
+                }
                 code->push_back(LVM_OP_MIN);
+                code->push_back(args.size());
                 break;
             case FunctorOp::CAT:
-                visit(args[0], exitAddress);
-                visit(args[1], exitAddress);
+                for (auto iter = args.rbegin(); iter != args.rend(); iter++){
+                    visit(*iter, exitAddress);
+                }
                 code->push_back(LVM_OP_CAT);
+                code->push_back(args.size());
                 break;
 
             /** Ternary Functor Operators */
@@ -416,7 +422,7 @@ protected:
             switch (aggregate.getFunction()) {  // Init value
                 case RamAggregate::MIN:
                     code->push_back(LVM_Number);
-                    code->push_back(MAX_RAM_DOMAIN);
+                    code->push_back(MAX_RAM_DOMAIN);  
                     break;
                 case RamAggregate::MAX:
                     code->push_back(LVM_Number);
@@ -448,9 +454,11 @@ protected:
             switch (aggregate.getFunction()) {
                 case RamAggregate::MIN:
                     code->push_back(LVM_OP_MIN);
+                    code->push_back(2);  //TODO quick fix, can be improved later
                     break;
                 case RamAggregate::MAX:
                     code->push_back(LVM_OP_MAX);
+                    code->push_back(2);  //TODO quick fix, can be improved later
                     break;
                 case RamAggregate::COUNT:
                     assert(false);

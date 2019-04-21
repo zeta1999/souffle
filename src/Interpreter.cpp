@@ -292,31 +292,36 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 break;
             }
             case LVM_OP_MAX: {
-                RamDomain rhs = stack.top();
-                stack.pop();
-                RamDomain lhs = stack.top();
-                stack.pop();
-                stack.push(std::max(lhs, rhs));
-                ip += 1;
+                size_t size = code[ip+1];
+                RamDomain val = MIN_RAM_DOMAIN;
+                for (size_t i = 0; i < size; ++i) {
+                    val = std::max(val, stack.top());
+                    stack.pop();
+                }
+                stack.push(val);
+                ip += 2;
                 break;
             }
             case LVM_OP_MIN: {
-                RamDomain rhs = stack.top();
-                stack.pop();
-                RamDomain lhs = stack.top();
-                stack.pop();
-                stack.push(std::min(lhs, rhs));
-                ip += 1;
+                size_t size = code[ip+1];
+                RamDomain val = MAX_RAM_DOMAIN;
+                for (size_t i = 0; i < size; ++i) {
+                    val = std::min(val, stack.top());
+                    stack.pop();
+                }
+                stack.push(val);
+                ip += 2;
                 break;
             }
             case LVM_OP_CAT: {
-                RamDomain s2 = stack.top();
-                stack.pop();
-                RamDomain s1 = stack.top();
-                stack.pop();
-                std::string cat = symbolTable.resolve(s1) + symbolTable.resolve(s2);
+                size_t size = code[ip+1];
+                std::string cat;
+                for (size_t i = 0; i < size; ++i) {
+                    cat += symbolTable.resolve(stack.top());
+                    stack.pop();
+                }
                 stack.push(symbolTable.lookup(cat));
-                ip += 1;
+                ip += 2;
                 break;
             }
             case LVM_OP_SUBSTR: {

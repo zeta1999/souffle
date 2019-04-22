@@ -747,7 +747,7 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 for (size_t i = 0; i < size; ++i) {
                     startAddresses[i] = code[ip + 3 + i];
                 }
-#pragma omp paralllel for
+#pragma omp parallel for
                 for (size_t i = 0; i < size; ++i) {
                     this->execute(codeStream, ctxt, startAddresses[i]);
                 }

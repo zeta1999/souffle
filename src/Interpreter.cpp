@@ -40,7 +40,6 @@
 #include "SymbolTable.h"
 #include "Util.h"
 #include "WriteStream.h"
-#include "ffi/ffi.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -55,6 +54,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
+#include <ffi.h>
 
 namespace souffle {
 

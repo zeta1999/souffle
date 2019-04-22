@@ -546,7 +546,7 @@ protected:
     void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
         auto stmts = parallel.getStatements();
         size_t size = stmts.size();
-        if (size == 1) {
+        if (size == 1 || true) {
             for (const auto& cur : parallel.getStatements()) {
                 visit(cur, exitAddress);
             }

@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2018, The Souffle Developers. All rights reserved.
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -18,9 +18,9 @@
 
 #include "InterpreterContext.h"
 #include "InterpreterRelation.h"
-#include "RamCondition.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
+#include "LVMCode.h"
+#include "LVMGenerator.h"
+#include "Logger.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <map>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
@@ -40,17 +41,13 @@
 namespace souffle {
 
 class InterpreterProgInterface;
-class RamOperation;
-class RamExpression;
-class SymbolTable;
 
 /**
  * Interpreter executing a RAM translation unit
  */
-
 class Interpreter {
 public:
-    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0), iteration(0), dll(nullptr) {}
+    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
     virtual ~Interpreter() {
         for (auto& x : environment) {
             delete x.second;
@@ -62,42 +59,82 @@ public:
         return translationUnit;
     }
 
-    /** Execute main program */
-    void executeMain();
+    /** Interface for executing the main program */
+    virtual void executeMain();
 
-    /* Execute subroutine */
-    void executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
-            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors);
+    /** Clean the cache of main Program */
+    void resetMainProgram() {
+        mainProgram.reset();
+    }
+
+    /** Clean the cache of subroutine */
+    void resetSubroutine(const std::string& name) {
+        subroutines.erase(name);
+    }
+
+    /** Execute the subroutine */
+    void executeSubroutine(const std::string& name, const std::vector<RamDomain>& arguments,
+            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) {
+        InterpreterContext ctxt;
+        ctxt.setReturnValues(returnValues);
+        ctxt.setReturnErrors(returnErrors);
+        ctxt.setArguments(arguments);
+
+        if (subroutines.find(name) != subroutines.cend()) {
+            execute(subroutines.at(name), ctxt);
+        } else {
+            // Parse and cache the progrme
+            LVMGenerator generator(
+                    translationUnit.getSymbolTable(), translationUnit.getProgram()->getSubroutine(name));
+            subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
+            execute(subroutines.at(name), ctxt);
+        }
+    }
+
+    /** Print out the instruction stream */
+    void printMain() {
+        if (mainProgram.get() == nullptr) {
+            LVMGenerator generator(
+                    translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain());
+            mainProgram = generator.getCodeStream();
+        }
+        mainProgram->print();
+    }
 
 protected:
     /** relation environment type */
     using relation_map = std::map<std::string, InterpreterRelation*>;
 
-    /** Evaluate value */
-    RamDomain evalExpr(const RamExpression& value, const InterpreterContext& ctxt = InterpreterContext());
+    using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator,
+            std::allocator<const RamDomain*>, 512>;
 
-    /** Evaluate operation */
-    void evalOp(const RamOperation& op, const InterpreterContext& args = InterpreterContext());
+    /** Insert Logger */
+    void insertTimerAt(size_t index, Logger* timer) {
+        if (index >= timers.size()) {
+            timers.resize((index + 1) * 2, nullptr);
+        }
+        timers[index] = timer;
+    }
 
-    /** Evaluate conditions */
-    bool evalCond(const RamCondition& cond, const InterpreterContext& ctxt = InterpreterContext());
-
-    /** Evaluate statement */
-    void evalStmt(const RamStatement& stmt);
+    /** Stop and destory logger */
+    void stopTimerAt(size_t index) {
+        assert(index < timers.size());
+        timers[index]->~Logger();
+    }
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
         return translationUnit.getSymbolTable();
     }
 
-    /** Get counter */
-    int getCounter() const {
-        return counter;
+    /** Get relation map */
+    relation_map& getRelationMap() const {
+        return const_cast<relation_map&>(environment);
     }
 
-    /** Get Iteration Number */
-    size_t getIterationNumber() const {
-        return iteration;
+    /** Get Counter */
+    int getCounter() {
+        return counter;
     }
 
     /** Increment counter */
@@ -110,21 +147,17 @@ protected:
         iteration++;
     }
 
+    /** Get Iteration Number */
+    size_t getIterationNumber() const {
+        return iteration;
+    }
     /** Reset iteration number */
     void resetIterationNumber() {
         iteration = 0;
     }
 
-    void createRelation(const RamRelation& id) {
-        InterpreterRelation* res = nullptr;
-        assert(environment.find(id.getName()) == environment.end());
-        if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = new InterpreterEqRelation(id.getArity());
-        } else {
-            res = new InterpreterRelation(id.getArity());
-        }
-        environment[id.getName()] = res;
-    }
+    /** TODO not implemented yet */
+    void createRelation(const RamRelation& id) {}
 
     /** Get relation */
     InterpreterRelation& getRelation(const std::string& name) {
@@ -139,15 +172,17 @@ protected:
         return getRelation(id.getName());
     }
 
-    /** Get relation map */
-    relation_map& getRelationMap() const {
-        return const_cast<relation_map&>(environment);
-    }
-
     /** Drop relation */
     void dropRelation(const RamRelation& id) {
         InterpreterRelation& rel = getRelation(id);
         environment.erase(id.getName());
+        delete &rel;
+    }
+
+    /** Drop relation */
+    void dropRelation(const std::string& relName) {
+        InterpreterRelation& rel = getRelation(relName);
+        environment.erase(relName);
         delete &rel;
     }
 
@@ -159,7 +194,15 @@ protected:
         environment[ramRel2.getName()] = rel1;
     }
 
-    /** Load dll */
+    /** Swap relation */
+    void swapRelation(const std::string& ramRel1, const std::string& ramRel2) {
+        InterpreterRelation* rel1 = &getRelation(ramRel1);
+        InterpreterRelation* rel2 = &getRelation(ramRel2);
+        environment[ramRel1] = rel2;
+        environment[ramRel2] = rel1;
+    }
+
+    /** load dll */
     void* loadDLL() {
         if (dll == nullptr) {
             // check environment variable
@@ -173,29 +216,69 @@ protected:
         return dll;
     }
 
+    // Lookup for IndexScan iter, resize the vector if idx > size */
+    std::pair<index_set::iterator, index_set::iterator>& lookUpIndexScanIterator(size_t idx) {
+        if (idx >= indexScanIteratorPool.size()) {
+            indexScanIteratorPool.resize((idx + 1) * 2);
+        }
+        return indexScanIteratorPool[idx];
+    }
+
+    /** Lookup for Scan iter, resize the vector if idx > size */
+    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
+        if (idx >= scanIteratorPool.size()) {
+            scanIteratorPool.resize((idx + 1) * 2);
+        }
+        return scanIteratorPool[idx];
+    }
+
 private:
     friend InterpreterProgInterface;
 
     /** RAM translation Unit */
     RamTranslationUnit& translationUnit;
 
-    /** relation environment */
+    /** subroutines */
+    std::map<std::string, std::unique_ptr<LVMCode>> subroutines;
+
+    /** Main program */
+    std::unique_ptr<LVMCode> mainProgram = nullptr;
+
+    /** Execute given program */
+    void execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip = 0);
+
+    /** Relation Environment */
     relation_map environment;
+
+    /** Value stack */
+    std::stack<RamDomain> stack;
 
     /** counters for atom profiling */
     std::map<std::string, std::map<size_t, size_t>> frequencies;
 
-    /** counters for non-existence checks */
+    /** counters for non-existence check */
     std::map<std::string, std::atomic<size_t>> reads;
 
+    /** List of loggers for logtimer */
+    std::vector<Logger*> timers;
+
     /** counter for $ operator */
-    int counter;
+    int counter = 0;
 
     /** iteration number (in a fix-point calculation) */
-    size_t iteration;
+    size_t iteration = 0;
 
     /** Dynamic library for user-defined functors */
-    void* dll;
+    void* dll = nullptr;
+
+    /** List of iters for indexScan operation */
+    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
+
+    /** List of iters for Scan operation */
+    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;
+
+    /** stratum */
+    size_t level = 0;
 };
 
 }  // end of namespace souffle

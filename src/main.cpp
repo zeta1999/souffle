@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
 #else
             // Check that -j option has not been changed from the default
             if (Global::config().get("jobs") != "1") {
-                //std::cerr << "\nWarning: OpenMP is not enabled\n"; TODO
+                std::cerr << "\nWarning: OpenMP is not enabled\n";
             }
 #endif
         } else {

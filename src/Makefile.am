@@ -108,6 +108,8 @@ souffle_sources = \
               InterpreterRecords.cpp InterpreterRecords.h \
               InterpreterRelation.h                     \
               LogStatement.h                            \
+			  LVMCode.cpp			LVMCode.h			\
+			  LVMGenerator.h							\
               MagicSet.cpp          MagicSet.h          \
               MinimiseProgramTransformer.cpp            \
               ParserDriver.cpp      ParserDriver.h      \

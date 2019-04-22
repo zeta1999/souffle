@@ -159,10 +159,6 @@ protected:
  * A RAM Relation in the RAM intermediate representation.
  */
 class RamRelationReference : public RamNode {
-protected:
-    /** Name of relation */
-    const RamRelation* relation;
-
 public:
     RamRelationReference(const RamRelation* relation) : RamNode(RN_RelationReference), relation(relation) {
         assert(relation != nullptr && "null relation");
@@ -194,6 +190,9 @@ public:
     void apply(const RamNodeMapper& map) override {}
 
 protected:
+    /** Name of relation */
+    const RamRelation* relation;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRelationReference*>(&node));

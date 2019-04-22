@@ -987,35 +987,9 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
 void SynthesiserEqrelRelation::computeIndices() {
     assert(!isProvenance && "eqrel cannot be used with provenance");
 
-    // Generate and set indices
-    std::vector<std::vector<int>> inds = indices.getAllOrders();
-
-    // generate a full index if no indices exist
-    if (inds.empty()) {
-        std::vector<int> fullInd(getArity());
-        std::iota(fullInd.begin(), fullInd.end(), 0);
-        inds.push_back(fullInd);
-    }
-
-    // expand all indexes to be full
-    for (auto& ind : inds) {
-        if (ind.size() != getArity()) {
-            // use a set as a cache for fast lookup
-            std::set<int> curIndexElems(ind.begin(), ind.end());
-
-            // expand index to be full
-            for (size_t i = 0; i < getArity(); i++) {
-                if (curIndexElems.find(i) == curIndexElems.end()) {
-                    ind.push_back(i);
-                }
-            }
-        }
-
-        assert(ind.size() == getArity());
-    }
-
     masterIndex = 0;
-    computedIndices = inds;
+    // {1, 0} is equivalent for an eqrel
+    computedIndices = {{0, 1}};
 }
 
 /** Generate type name of a eqrel relation */
@@ -1038,43 +1012,40 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
 
     // generate auxiliary iterators that reorder tuples according to index orders
-    for (size_t i = 0; i < numIndexes; i++) {
-        // generate auxiliary iterators which orderOut
-        out << "class iterator_" << i << " : public std::iterator<std::forward_iterator_tag, t_tuple> {\n";
-        out << "    using nested_iterator = typename t_ind_0::iterator;\n";
-        out << "    nested_iterator nested;\n";
-        out << "    t_tuple value;\n";
+    // generate auxiliary iterators which orderOut
+    out << "class iterator_0 : public std::iterator<std::forward_iterator_tag, t_tuple> {\n";
+    out << "    using nested_iterator = typename t_ind_0::iterator;\n";
+    out << "    nested_iterator nested;\n";
+    out << "    t_tuple value;\n";
 
-        out << "public:\n";
-        out << "    iterator_" << i << "() = default;\n";
-        out << "    iterator_" << i << "(const nested_iterator& iter) : nested(iter), value(orderOut_" << i
-            << "(*iter)) {}\n";
-        out << "    iterator_" << i << "(const iterator_" << i << "& other) = default;\n";
-        out << "    iterator_" << i << "& operator=(const iterator_" << i << "& other) = default;\n";
+    out << "public:\n";
+    out << "    iterator_0() = default;\n";
+    out << "    iterator_0(const nested_iterator& iter) : nested(iter), value(orderOut_0(*iter)) {}\n";
+    out << "    iterator_0(const iterator_0& other) = default;\n";
+    out << "    iterator_0& operator=(const iterator_0& other) = default;\n";
 
-        out << "    bool operator==(const iterator_" << i << "& other) const {\n";
-        out << "        return nested == other.nested;\n";
-        out << "    }\n";
+    out << "    bool operator==(const iterator_0& other) const {\n";
+    out << "        return nested == other.nested;\n";
+    out << "    }\n";
 
-        out << "    bool operator!=(const iterator_" << i << "& other) const {\n";
-        out << "        return !(*this == other);\n";
-        out << "    }\n";
+    out << "    bool operator!=(const iterator_0& other) const {\n";
+    out << "        return !(*this == other);\n";
+    out << "    }\n";
 
-        out << "    const t_tuple& operator*() const {\n";
-        out << "        return value;\n";
-        out << "    }\n";
+    out << "    const t_tuple& operator*() const {\n";
+    out << "        return value;\n";
+    out << "    }\n";
 
-        out << "    const t_tuple* operator->() const {\n";
-        out << "        return &value;\n";
-        out << "    }\n";
+    out << "    const t_tuple* operator->() const {\n";
+    out << "        return &value;\n";
+    out << "    }\n";
 
-        out << "    iterator_" << i << "& operator++() {\n";
-        out << "        ++nested;\n";
-        out << "        value = orderOut_" << i << "(*nested);\n";
-        out << "        return *this;\n";
-        out << "    }\n";
-        out << "};\n";
-    }
+    out << "    iterator_0& operator++() {\n";
+    out << "        ++nested;\n";
+    out << "        value = orderOut_0(*nested);\n";
+    out << "        return *this;\n";
+    out << "    }\n";
+    out << "};\n";
 
     out << "using iterator = iterator_" << masterIndex << ";\n";
 

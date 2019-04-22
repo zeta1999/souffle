@@ -142,7 +142,7 @@ protected:
                 visit(args[1], exitAddress);
                 code->push_back(LVM_OP_LOR);
                 break;
-            case FunctorOp::MAX: {}
+            case FunctorOp::MAX:
                 for (auto& arg : args) {
                     visit(arg, exitAddress);
                 }
@@ -157,7 +157,7 @@ protected:
                 code->push_back(args.size());
                 break;
             case FunctorOp::CAT:
-                for (auto iter = args.rbegin(); iter != args.rend(); iter++){
+                for (auto iter = args.rbegin(); iter != args.rend(); iter++) {
                     visit(*iter, exitAddress);
                 }
                 code->push_back(LVM_OP_CAT);
@@ -413,7 +413,8 @@ protected:
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(counterLabel);
         } else {
-            code->push_back(LVM_ITER_NotAtEnd);  // First check, if the rangeindex is empty, do nothing, return noything
+            code->push_back(LVM_ITER_NotAtEnd);  // First check, if the rangeindex is empty, do nothing,
+                                                 // return noything
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(LVM_Jmpez);
@@ -422,7 +423,7 @@ protected:
             switch (aggregate.getFunction()) {  // Init value
                 case RamAggregate::MIN:
                     code->push_back(LVM_Number);
-                    code->push_back(MAX_RAM_DOMAIN);  
+                    code->push_back(MAX_RAM_DOMAIN);
                     break;
                 case RamAggregate::MAX:
                     code->push_back(LVM_Number);
@@ -454,11 +455,11 @@ protected:
             switch (aggregate.getFunction()) {
                 case RamAggregate::MIN:
                     code->push_back(LVM_OP_MIN);
-                    code->push_back(2);  //TODO quick fix, can be improved later
+                    code->push_back(2);  // TODO quick fix, can be improved later
                     break;
                 case RamAggregate::MAX:
                     code->push_back(LVM_OP_MAX);
-                    code->push_back(2);  //TODO quick fix, can be improved later
+                    code->push_back(2);  // TODO quick fix, can be improved later
                     break;
                 case RamAggregate::COUNT:
                     assert(false);

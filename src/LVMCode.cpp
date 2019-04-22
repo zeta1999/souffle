@@ -126,17 +126,17 @@ void LVMCode::print() const {
                 break;
             }
             case LVM_OP_MAX: {
-                printf("%ld\tLVM_OP_MAX\tNumOfArgs:%d\n", ip, code[ip+1]);
+                printf("%ld\tLVM_OP_MAX\tNumOfArgs:%d\n", ip, code[ip + 1]);
                 ip += 2;
                 break;
             }
             case LVM_OP_MIN: {
-                printf("%ld\tLVM_OP_MIN\tNumOfArgs:%d\n", ip, code[ip+1]);
+                printf("%ld\tLVM_OP_MIN\tNumOfArgs:%d\n", ip, code[ip + 1]);
                 ip += 2;
                 break;
             }
             case LVM_OP_CAT: {
-                printf("%ld\tLVM_OP_CAT\tNumOfArgs:%d\n", ip, code[ip+1]);
+                printf("%ld\tLVM_OP_CAT\tNumOfArgs:%d\n", ip, code[ip + 1]);
                 ip += 2;
                 break;
             }

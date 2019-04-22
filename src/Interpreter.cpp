@@ -40,6 +40,7 @@
 #include "SymbolTable.h"
 #include "Util.h"
 #include "WriteStream.h"
+#include "ffi/ffi.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -54,7 +55,6 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <utility>
-#include "ffi/ffi.h"
 
 namespace souffle {
 
@@ -292,7 +292,7 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 break;
             }
             case LVM_OP_MAX: {
-                size_t size = code[ip+1];
+                size_t size = code[ip + 1];
                 RamDomain val = MIN_RAM_DOMAIN;
                 for (size_t i = 0; i < size; ++i) {
                     val = std::max(val, stack.top());
@@ -303,7 +303,7 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 break;
             }
             case LVM_OP_MIN: {
-                size_t size = code[ip+1];
+                size_t size = code[ip + 1];
                 RamDomain val = MAX_RAM_DOMAIN;
                 for (size_t i = 0; i < size; ++i) {
                     val = std::min(val, stack.top());
@@ -314,7 +314,7 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 break;
             }
             case LVM_OP_CAT: {
-                size_t size = code[ip+1];
+                size_t size = code[ip + 1];
                 std::string cat;
                 for (size_t i = 0; i < size; ++i) {
                     cat += symbolTable.resolve(stack.top());

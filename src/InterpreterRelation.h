@@ -37,13 +37,13 @@ public:
     InterpreterRelation(const InterpreterRelation& other) = delete;
 
     virtual ~InterpreterRelation() = default;
-   
-    //TODO Xiaowen: getter and setter for attributes type
+
+    // TODO Xiaowen: getter and setter for attributes type
     void addAttributes(const std::vector<std::string> attributeTypes) {
-        attributeTypeQualifiers = attributeTypes; 
+        attributeTypeQualifiers = attributeTypes;
     }
     std::vector<std::string>& getAttributeTypeQualifiers() {
-        return attributeTypeQualifiers; 
+        return attributeTypeQualifiers;
     }
 
     /** Get arity of relation */
@@ -259,11 +259,10 @@ public:
         }
 
     private:
-        //TODO Unsafe! remove const-qualified so that I can copy a iter...
+        // TODO Unsafe! remove const-qualified so that I can copy a iter...
         const InterpreterRelation* relation = nullptr;
         size_t index = 0;
         RamDomain* tuple = nullptr;
-
     };
 
     /** get iterator begin of relation */
@@ -315,12 +314,11 @@ private:
     /** Lock for parallel execution */
     mutable Lock lock;
 
-
-    //TODO Xiaowen: Add attributes type
+    // TODO Xiaowen: Add attributes type
     /** Type of attributes */
     std::vector<std::string> attributeTypeQualifiers;
 
-    //TODO add stratum location
+    // TODO add stratum location
     size_t level;
 };
 

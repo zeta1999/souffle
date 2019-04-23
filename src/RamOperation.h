@@ -317,7 +317,6 @@ public:
 
     /** Get target expression */
     const RamExpression* getExpression() const {
-        assert(expression);
         return expression.get();
     }
 

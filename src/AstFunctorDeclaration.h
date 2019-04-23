@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "AstNode.h"
 #include "Util.h"
 
 #include <algorithm>
@@ -114,7 +115,7 @@ public:
 
     /** clone */
     AstFunctorDeclaration* clone() const override {
-        AstFunctorDeclaration* res = new AstFunctorDeclaration(name, type);
+        auto* res = new AstFunctorDeclaration(name, type);
         res->setSrcLoc(getSrcLoc());
         return res;
     }

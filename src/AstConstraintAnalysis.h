@@ -59,53 +59,11 @@ struct AstConstraintAnalysisVar : public Variable<const AstArgument*, PropertySp
  */
 template <typename AnalysisVar>
 class AstConstraintAnalysis : public AstVisitor<void> {
+public:
     using value_type = typename AnalysisVar::property_space::value_type;
-
-    /** The list of constraints making underlying this analysis */
-    Problem<AnalysisVar> constraints;
-
-    /** A map mapping variables to unique instances to facilitate the unification of variables */
-    std::map<std::string, AnalysisVar> variables;
-
-protected:
-    // a few type definitions
     using constraint_type = std::shared_ptr<Constraint<AnalysisVar>>;
     using solution_type = std::map<const AstArgument*, value_type>;
 
-    /**
-     * A utility function mapping an AstArgument to its associated analysis variable.
-     *
-     * @param arg the AST argument to be mapped
-     * @return the analysis variable representing its associated value
-     */
-    AnalysisVar getVar(const AstArgument& arg) {
-        const auto* var = dynamic_cast<const AstVariable*>(&arg);
-        if (!var) {
-            // no mapping required
-            return AnalysisVar(arg);
-        }
-
-        // filter through map => always take the same variable
-        auto res = variables.insert(std::make_pair(var->getName(), AnalysisVar(var)));
-        return res.first->second;
-    }
-
-    /**
-     * A utility function mapping an AstArgument to its associated analysis variable.
-     *
-     * @param arg the AST argument to be mapped
-     * @return the analysis variable representing its associated value
-     */
-    AnalysisVar getVar(const AstArgument* arg) {
-        return getVar(*arg);
-    }
-
-    /** Adds another constraint to the internally maintained list of constraints */
-    void addConstraint(const constraint_type& constraint) {
-        constraints.add(constraint);
-    }
-
-public:
     /**
      * Runs this constraint analysis on the given clause.
      *
@@ -132,6 +90,49 @@ public:
         visitDepthFirst(clause, [&](const AstArgument& cur) { res[&cur] = ass[getVar(cur)]; });
         return res;
     }
+
+protected:
+    // a few type definitions
+
+    /**
+     * A utility function mapping an AstArgument to its associated analysis variable.
+     *
+     * @param arg the AST argument to be mapped
+     * @return the analysis variable representing its associated value
+     */
+    AnalysisVar getVar(const AstArgument& arg) {
+        const auto* var = dynamic_cast<const AstVariable*>(&arg);
+        if (!var) {
+            // no mapping required
+            return AnalysisVar(arg);
+        }
+
+        // filter through map => always take the same variable
+        auto res = variables.insert(std::make_pair(var->getName(), AnalysisVar(var)));
+        return res.first->second;
+    }
+
+    /**
+     * A utility function mapping an AstArgument to its associated analysis variable.
+     *
+     * @param arg the AST argument to be mapped
+     * @return the analysis variable representing its associated value
+     */
+    inline AnalysisVar getVar(const AstArgument* arg) {
+        return getVar(*arg);
+    }
+
+    /** Adds another constraint to the internally maintained list of constraints */
+    void addConstraint(const constraint_type& constraint) {
+        constraints.add(constraint);
+    }
+
+private:
+    /** The list of constraints making underlying this analysis */
+    Problem<AnalysisVar> constraints;
+
+    /** A map mapping variables to unique instances to facilitate the unification of variables */
+    std::map<std::string, AnalysisVar> variables;
 };
 
 }  // end namespace

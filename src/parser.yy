@@ -37,7 +37,7 @@
     #include "AstClause.h"
     #include "AstComponent.h"
     #include "AstFunctorDeclaration.h"
-    #include "AstIODirective.h"
+    #include "AstIO.h"
     #include "AstNode.h"
     #include "AstParserUtils.h"
     #include "AstProgram.h"
@@ -189,8 +189,16 @@
 %type <AstUnionType *>                   uniontype
 %type <std::vector<AstTypeIdentifier>>   type_params type_param_list
 %type <std::string>                      comp_override
-%type <AstIODirective *>                 key_value_pairs non_empty_key_value_pairs iodirective_body
-%type <std::vector<AstIODirective *>>    iodirective_head iodirective_list
+%type <AstIO *>                          key_value_pairs non_empty_key_value_pairs iodirective_body
+%type <std::vector<AstIO *>>             iodirective_list
+%type <std::vector<AstLoad *>>           load_head
+%type <std::vector<AstStore *>>          store_head
+
+%destructor { for (auto* cur : $$) { delete cur; } } head rule rule_def iodirective_list load_head store_head relation_list relation_decl
+%destructor { delete $$; } body conjunction disjunction literal term
+%destructor { delete $$; } rel_id
+%destructor { delete $$; } attributes non_empty_attributes
+
 %printer { yyoutput << $$; } <*>;
 
 %precedence AS
@@ -203,7 +211,7 @@
 %left STAR SLASH PERCENT
 %precedence BW_NOT L_NOT
 %precedence NEG
-%left CARET
+%right CARET
 
 %%
 %start program;
@@ -221,16 +229,31 @@ unit
         driver.addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration>($2));
     }
   | unit relation_decl {
-        for(const auto& cur : $2) driver.addRelation(std::unique_ptr<AstRelation>(cur));
+        for (auto* cur : $2) {
+            driver.addRelation(std::unique_ptr<AstRelation>(cur));
+        }
+        $2.clear();
     }
-  | unit iodirective_head {
-        for(const auto& cur : $2) driver.addIODirective(std::unique_ptr<AstIODirective>(cur));
+  | unit load_head {
+        for (auto* cur : $2) {
+            driver.addLoad(std::unique_ptr<AstLoad>(cur));
+        }
+        $2.clear();
+    }
+  | unit store_head {
+        for (auto* cur : $2) {
+            driver.addStore(std::unique_ptr<AstStore>(cur));
+        }
+        $2.clear();
     }
   | unit fact {
         driver.addClause(std::unique_ptr<AstClause>($2));
     }
   | unit rule {
-        for(const auto& cur : $2) driver.addClause(std::unique_ptr<AstClause>(cur));
+        for (auto* cur : $2) {
+            driver.addClause(std::unique_ptr<AstClause>(cur));
+        }
+        $2.clear();
     }
   | unit component {
         driver.addComponent(std::unique_ptr<AstComponent>($2));
@@ -327,6 +350,7 @@ rel_id
     }
   | rel_id DOT IDENT {
         $$ = $1;
+        $1 = nullptr;
         $$->append($3);
     }
 
@@ -335,22 +359,24 @@ rel_id
 non_empty_attributes
   : IDENT COLON type_id {
         $$ = new AstRelation();
-        AstAttribute *a = new AstAttribute($1, *$3);
+        auto a = std::make_unique<AstAttribute>($1, *$3);
         a->setSrcLoc(@3);
-        $$->addAttribute(std::unique_ptr<AstAttribute>(a));
+        $$->addAttribute(std::move(a));
         delete $3;
     }
   | attributes COMMA IDENT COLON type_id {
         $$ = $1;
-        AstAttribute *a = new AstAttribute($3, *$5);
+        $1 = nullptr;
+        auto a = std::make_unique<AstAttribute>($3, *$5);
         a->setSrcLoc(@5);
-        $$->addAttribute(std::unique_ptr<AstAttribute>(a));
+        $$->addAttribute(std::move(a));
         delete $5;
     }
 
 attributes
   : non_empty_attributes {
         $$ = $1;
+        $1 = nullptr;
     }
   | %empty {
         $$ = new AstRelation();
@@ -415,7 +441,7 @@ functor_type
   ;
 
 functor_typeargs
-  : functor_type COMMA functor_typeargs { $$ = $3 + $1; }
+  : functor_type COMMA functor_typeargs { $$ = $1 + $3; }
   | functor_type { $$ = $1;  }
   ;
 
@@ -439,6 +465,7 @@ relation_list
 relation_body
   : IDENT LPAREN attributes RPAREN qualifiers {
         $$ = $3;
+        $3 = nullptr;
         $$->setName($1);
         $$->setQualifier($5);
         $$->setSrcLoc(@$);
@@ -446,7 +473,7 @@ relation_body
 
 non_empty_key_value_pairs
   : IDENT EQUALS STRING {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->addKVP($1, $3);
     }
   | key_value_pairs COMMA IDENT EQUALS STRING {
@@ -454,7 +481,7 @@ non_empty_key_value_pairs
         $$->addKVP($3, $5);
     }
   | IDENT EQUALS IDENT {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->addKVP($1, $3);
     }
   | key_value_pairs COMMA IDENT EQUALS IDENT {
@@ -462,7 +489,7 @@ non_empty_key_value_pairs
         $$->addKVP($3, $5);
     }
   | IDENT EQUALS TRUE {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->addKVP($1, "true");
     }
   | key_value_pairs COMMA IDENT EQUALS TRUE {
@@ -470,7 +497,7 @@ non_empty_key_value_pairs
         $$->addKVP($3, "true");
     }
   | IDENT EQUALS FALSE {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->addKVP($1, "false");
     }
   | key_value_pairs COMMA IDENT EQUALS FALSE {
@@ -483,22 +510,32 @@ key_value_pairs
         $$ = $1;
     }
   | %empty {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->setSrcLoc(@$);
     }
 
-iodirective_head
+load_head
   : INPUT_DECL iodirective_list {
-      $$.swap($2);
-      for (auto& cur : $$) cur->setAsInput();
+      for (auto* cur : $2) {
+          $$.push_back(new AstLoad(*cur));
+          delete cur;
+      }
+      $2.clear();
     }
-  | OUTPUT_DECL iodirective_list {
-      $$.swap($2);
-      for (auto& cur : $$) cur->setAsOutput();
+store_head
+  : OUTPUT_DECL iodirective_list {
+      for (auto* cur : $2) {
+          $$.push_back(new AstStore(*cur));
+          delete cur;
+      }
+      $2.clear();
     }
   | PRINTSIZE_DECL iodirective_list {
-      $$.swap($2);
-      for (auto& cur : $$) cur->setAsPrintSize();
+      for (auto* cur : $2) {
+          $$.push_back(new AstPrintSize(*cur));
+          delete cur;
+      }
+      $2.clear();
     }
 
 iodirective_list
@@ -516,15 +553,14 @@ iodirective_list
 iodirective_body
   : rel_id LPAREN key_value_pairs RPAREN {
         $$ = $3;
-        $3->addName(*$1);
-        $3->setSrcLoc(@1);
-        delete $1;
+        $3 = nullptr;
+        $$->addName(*$1);
+        $$->setSrcLoc(@1);
     }
   | rel_id {
-        $$ = new AstIODirective();
+        $$ = new AstIO();
         $$->setName(*$1);
         $$->setSrcLoc(@1);
-        delete $1;
     }
 
 /* Atom */
@@ -601,16 +637,34 @@ arg
         $$ = new AstIntrinsicFunctor(FunctorOp::EXP, std::unique_ptr<AstArgument>($1), std::unique_ptr<AstArgument>($3));
         $$->setSrcLoc(@$);
     }
-  | MAX LPAREN arg COMMA arg RPAREN {
-        $$ = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5));
+  | MAX LPAREN arg COMMA non_empty_arg_list RPAREN {
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($3);
+        for (auto* arg : $5->getArguments()) {
+            args.emplace_back(arg->clone());
+        }
+        delete $5;
+        $$ = new AstIntrinsicFunctor(FunctorOp::MAX, std::move(args));
         $$->setSrcLoc(@$);
     }
-  | MIN LPAREN arg COMMA arg RPAREN {
-        $$ = new AstIntrinsicFunctor(FunctorOp::MIN, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5));
+  | MIN LPAREN arg COMMA non_empty_arg_list RPAREN {
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($3);
+        for (auto* arg : $5->getArguments()) {
+            args.emplace_back(arg->clone());
+        }
+        delete $5;
+        $$ = new AstIntrinsicFunctor(FunctorOp::MIN, std::move(args));
         $$->setSrcLoc(@$);
     }
-  | CAT LPAREN arg COMMA arg RPAREN {
-        $$ = new AstIntrinsicFunctor(FunctorOp::CAT, std::unique_ptr<AstArgument>($3), std::unique_ptr<AstArgument>($5));
+  | CAT LPAREN arg COMMA non_empty_arg_list RPAREN {
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($3);
+        for (auto* arg : $5->getArguments()) {
+            args.emplace_back(arg->clone());
+        }
+        delete $5;
+        $$ = new AstIntrinsicFunctor(FunctorOp::CAT, std::move(args));
         $$->setSrcLoc(@$);
     }
   | ORD LPAREN arg RPAREN {
@@ -684,11 +738,10 @@ arg
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
         }
-        for(const auto& cur : bodies[0]->getBodyLiterals()) {
+        for (const auto& cur : bodies[0]->getBodyLiterals()) {
             res->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
         delete bodies[0];
-        delete $4;
         $$ = res;
         $$->setSrcLoc(@$);
     }
@@ -707,11 +760,10 @@ arg
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
         }
-        for(const auto& cur : bodies[0]->getBodyLiterals()) {
+        for (const auto& cur : bodies[0]->getBodyLiterals()) {
 	    res->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
         delete bodies[0];
-        delete $5;
         $$ = res;
         $$->setSrcLoc(@$);
     }
@@ -730,11 +782,10 @@ arg
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
         }
-        for(const auto& cur : bodies[0]->getBodyLiterals()) {
+        for (const auto& cur : bodies[0]->getBodyLiterals()) {
             res->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
         delete bodies[0];
-        delete $5;
         $$ = res;
         $$->setSrcLoc(@$);
     }
@@ -753,11 +804,10 @@ arg
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
         }
-        for(const auto& cur : bodies[0]->getBodyLiterals()) {
+        for (const auto& cur : bodies[0]->getBodyLiterals()) {
             res->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
         delete bodies[0];
-        delete $5;
         $$ = res;
         $$->setSrcLoc(@$);
     }
@@ -817,8 +867,8 @@ arg_list
 atom
   : rel_id LPAREN arg_list RPAREN {
         $$ = $3;
-        $3->setName(*$1);
-        delete $1;
+        $3 = nullptr;
+        $$->setName(*$1);
         $$->setSrcLoc(@$);
     }
 
@@ -891,40 +941,47 @@ head
 term
   : literal {
         $$ = $1;
+        $1 = nullptr;
     }
   | EXCLAMATION term {
         $$ = $2;
+        $2 = nullptr;
         $$->negate();
     }
   | LPAREN disjunction RPAREN {
         $$ = $2;
+        $2 = nullptr;
     }
 
 /* Conjunction */
 conjunction
   : term {
         $$ = $1;
+        $1 = nullptr;
     }
   | conjunction COMMA term {
         $$ = $1;
+        $1 = nullptr;
         $$->conjunct(std::move(*$3));
-        delete $3;
     }
 
 /* Disjunction */
 disjunction
   : conjunction {
         $$ = $1;
+        $1 = nullptr;
     }
   | disjunction SEMICOLON conjunction {
         $$ = $1;
+        $1 = nullptr;
         $$->disjunct(std::move(*$3));
-        delete $3;
     }
 
 /* Body */
 body
-  : disjunction                        { $$ = $1;
+  : disjunction {
+        $$ = $1;
+        $1 = nullptr;
     }
 
 /* execution order list */
@@ -967,8 +1024,8 @@ exec_plan
 rule_def
   : head IF body DOT {
         auto bodies = $3->toClauseBodies();
-        for(const auto& head : $1) {
-            for(AstClause* body : bodies) {
+        for (const auto* head : $1) {
+            for (const auto* body : bodies) {
                 AstClause* cur = body->clone();
                 cur->setHead(std::unique_ptr<AstAtom>(head->clone()));
                 cur->setSrcLoc(@$);
@@ -976,27 +1033,29 @@ rule_def
                 $$.push_back(cur);
             }
         }
-        for(auto& head : $1) {
+        for (auto* head : $1) {
             delete head;
         }
-        for(AstClause* body : bodies) {
+        $1.clear();
+
+        for (auto* body : bodies) {
             delete body;
         }
-        delete $3;
     }
 
 /* Rule */
 rule
   : rule_def {
-        $$ = $1;
+        std::swap($$, $1);
     }
   | rule STRICT {
-        $$ = $1;
-        for(const auto& cur : $$) cur->setFixedExecutionPlan();
+        std::swap($$, $1);
+        for (auto* cur : $$) cur->setFixedExecutionPlan();
     }
   | rule exec_plan {
-        $$ = $1;
-        for(const auto& cur : $$) cur->setExecutionPlan(std::unique_ptr<AstExecutionPlan>($2->clone()));
+        std::swap($$, $1);
+        for (auto* cur : $$) cur->setExecutionPlan(std::unique_ptr<AstExecutionPlan>($2->clone()));
+        delete $2;
     }
 
 /* Type Parameters */
@@ -1048,11 +1107,24 @@ component_body
     }
   | component_body relation_decl {
         $$ = $1;
-        for(const auto& cur : $2) $$->addRelation(std::unique_ptr<AstRelation>(cur));
+        for (auto* cur : $2) {
+            $$->addRelation(std::unique_ptr<AstRelation>(cur));
+        }
+        $2.clear();
     }
-  | component_body iodirective_head {
+  | component_body load_head {
         $$ = $1;
-        for(const auto& cur : $2) $$->addIODirective(std::unique_ptr<AstIODirective>(cur));
+        for (auto* cur : $2) {
+            $$->addLoad(std::unique_ptr<AstLoad>(cur));
+        }
+        $2.clear();
+    }
+  | component_body store_head {
+        $$ = $1;
+        for (auto* cur : $2) {
+            $$->addStore(std::unique_ptr<AstStore>(cur));
+        }
+        $2.clear();
     }
   | component_body fact {
         $$ = $1;
@@ -1060,9 +1132,10 @@ component_body
     }
   | component_body rule {
         $$ = $1;
-        for(const auto& cur : $2) {
+        for (auto* cur : $2) {
             $$->addClause(std::unique_ptr<AstClause>(cur));
         }
+        $2.clear();
     }
   | component_body comp_override {
         $$ = $1;

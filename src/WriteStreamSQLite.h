@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "SymbolMask.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
 
@@ -30,7 +29,7 @@ namespace souffle {
 class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const SymbolMask& symbolMask, const SymbolTable& symbolTable, const bool provenance)
+            const std::vector<bool>& symbolMask, const SymbolTable& symbolTable, const bool provenance)
             : WriteStream(symbolMask, symbolTable, provenance), dbFilename(dbFilename),
               relationName(relationName) {
         openDB();
@@ -52,7 +51,7 @@ protected:
     void writeNextTuple(const RamDomain* tuple) override {
         for (size_t i = 0; i < arity; i++) {
             RamDomain value;
-            if (symbolMask.isSymbol(i)) {
+            if (symbolMask.at(i)) {
                 value = getSymbolTableID(tuple[i]);
             } else {
                 value = tuple[i];
@@ -215,7 +214,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (!symbolMask.isSymbol(i)) {
+            if (!symbolMask.at(i)) {
                 projectionClause << "'_" << relationName << "'.'" << columnName << "'";
             } else {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
@@ -256,8 +255,9 @@ private:
 
 class WriteSQLiteFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const SymbolMask& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const bool provenance) override {
+    std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& symbolMask,
+            const SymbolTable& symbolTable, const IODirectives& ioDirectives,
+            const bool provenance) override {
         std::string dbName = ioDirectives.get("dbname");
         std::string relationName = ioDirectives.getRelationName();
         return std::make_unique<WriteStreamSQLite>(dbName, relationName, symbolMask, symbolTable, provenance);

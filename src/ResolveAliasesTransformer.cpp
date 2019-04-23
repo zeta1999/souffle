@@ -15,8 +15,26 @@
  *
  ***********************************************************************/
 
+#include "AstArgument.h"
+#include "AstClause.h"
+#include "AstLiteral.h"
+#include "AstNode.h"
+#include "AstProgram.h"
+#include "AstRelation.h"
 #include "AstTransforms.h"
+#include "AstTranslationUnit.h"
 #include "AstVisitor.h"
+#include "BinaryConstraintOps.h"
+#include "Util.h"
+#include <cassert>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <set>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 
@@ -202,7 +220,7 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
     std::set<std::string> baseGroundedVariables;
     for (const AstAtom* atom : clause.getAtoms()) {
         for (const AstArgument* arg : atom->getArguments()) {
-            if (const AstVariable* var = dynamic_cast<const AstVariable*>(arg)) {
+            if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
                 baseGroundedVariables.insert(var->getName());
             }
         }

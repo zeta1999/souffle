@@ -21,16 +21,6 @@
 namespace souffle {
 
 class RamProgram : public RamNode {
-private:
-    /** Relations of RAM program */
-    std::map<std::string, std::unique_ptr<RamRelation>> relations;
-
-    /** Main program */
-    std::unique_ptr<RamStatement> main;
-
-    /** Subroutines for querying computed relations */
-    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
-
 public:
     RamProgram() : RamNode(RN_Program) {}
     RamProgram(std::unique_ptr<RamStatement> main) : RamNode(RN_Program), main(std::move(main)) {}
@@ -38,16 +28,13 @@ public:
     /** Obtain child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> children;
-
-        // add relations
+        if (main != nullptr) {
+            children = main->getChildNodes();
+        }
         for (auto& r : relations) {
             children.push_back(r.second.get());
         }
-
-        // add main program
         children.push_back(main.get());
-
-        // add subroutines
         for (auto& s : subroutines) {
             children.push_back(s.second.get());
         }
@@ -56,19 +43,23 @@ public:
 
     /** Print */
     void print(std::ostream& out) const override {
-        out << "DECLARATION " << std::endl;
-        for (const auto& rel : relations) {
-            rel.second->print(out);
-        }
-        out << "END DECLARATION " << std::endl;
         out << "PROGRAM" << std::endl;
-        out << *main;
-        out << "\nEND PROGRAM" << std::endl;
-        for (const auto& subroutine : subroutines) {
-            out << std::endl << "SUBROUTINE " << subroutine.first << std::endl;
-            out << *subroutine.second;
-            out << "\nEND SUBROUTINE" << std::endl;
+        out << " DECLARATION" << std::endl;
+        for (const auto& rel : relations) {
+            out << "  ";
+            rel.second->print(out);
+            out << std::endl;
         }
+        out << " END DECLARATION" << std::endl;
+        for (const auto& subroutine : subroutines) {
+            out << " SUBROUTINE " << subroutine.first << std::endl;
+            subroutine.second->print(out, 2);
+            out << " END SUBROUTINE" << std::endl;
+        }
+        out << " BEGIN MAIN" << std::endl;
+        main->print(out, 2);
+        out << " END MAIN" << std::endl;
+        out << "END PROGRAM" << std::endl;
     }
 
     /** Set main program */
@@ -118,39 +109,68 @@ public:
 
     /** Create clone */
     RamProgram* clone() const override {
+        std::map<const RamRelation*, const RamRelation*> refMap;
         RamProgram* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
+        for (auto& cur : relations) {
+            RamRelation* newRel = cur.second->clone();
+            refMap[cur.second.get()] = newRel;
+            res->addRelation(std::unique_ptr<RamRelation>(newRel));
+        }
         for (auto& cur : subroutines) {
             res->addSubroutine(cur.first, std::unique_ptr<RamStatement>(cur.second->clone()));
         }
+        res->apply(makeLambdaRamMapper([&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            // check whether it is a unnamed variable
+            if (const RamRelationReference* relRef = dynamic_cast<RamRelationReference*>(node.get())) {
+                const RamRelation* rel = refMap[relRef->get()];
+                assert(rel != nullptr && "dangling RAM relation reference");
+                return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
+            } else {
+                return node;
+            }
+        }));
         return res;
     }
 
     /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         main = map(std::move(main));
+        for (auto& cur : relations) {
+            cur.second = map(std::move(cur.second));
+        }
         for (auto& cur : subroutines) {
-            subroutines[cur.first] = map(std::move(cur.second));
+            cur.second = map(std::move(cur.second));
         }
     }
 
 protected:
+    /** Relations of RAM program */
+    std::map<std::string, std::unique_ptr<RamRelation>> relations;
+
+    /** Main program */
+    std::unique_ptr<RamStatement> main;
+
+    /** Subroutines for querying computed relations */
+    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProgram*>(&node));
         const auto& other = static_cast<const RamProgram&>(node);
-        bool areSubroutinesEqual = true;
+        if (relations.size() != other.relations.size() || subroutines.size() != other.subroutines.size()) {
+            return false;
+        }
         for (auto& cur : subroutines) {
-            if (other.subroutines.count(cur.first) == 0) {
-                areSubroutinesEqual = false;
-                break;
-            } else {
-                if (other.getSubroutine(cur.first) != getSubroutine(cur.first)) {
-                    areSubroutinesEqual = false;
-                    break;
-                }
+            if (other.getSubroutine(cur.first) != getSubroutine(cur.first)) {
+                return false;
             }
         }
-        return getMain() == other.getMain() && areSubroutinesEqual;
+        for (auto& cur : relations) {
+            if (other.getRelation(cur.first) != getRelation(cur.first)) {
+                return false;
+            }
+        }
+        return getMain() == other.getMain();
     }
 };
 

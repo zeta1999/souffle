@@ -38,9 +38,6 @@ class AstNodeMapper;
  *  @brief Abstract class for syntactic elements in a Datalog program.
  */
 class AstNode {
-    /** Source location of a syntactic element */
-    SrcLocation location;
-
 public:
     virtual ~AstNode() = default;
 
@@ -90,6 +87,10 @@ public:
 protected:
     /** Abstract equality check for two AST nodes */
     virtual bool equal(const AstNode& other) const = 0;
+
+private:
+    /** Source location of a syntactic element */
+    SrcLocation location;
 };
 
 /**
@@ -142,7 +143,7 @@ public:
  * Creates a node mapper based on a corresponding lambda expression.
  */
 template <typename Lambda>
-detail::LambdaNodeMapper<Lambda> makeLambdaMapper(const Lambda& lambda) {
+detail::LambdaNodeMapper<Lambda> makeLambdaAstMapper(const Lambda& lambda) {
     return detail::LambdaNodeMapper<Lambda>(lambda);
 }
 

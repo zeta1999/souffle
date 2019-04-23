@@ -15,10 +15,12 @@
  ***********************************************************************/
 
 #include "IndexSetAnalysis.h"
-#include "Global.h"
 #include "RamCondition.h"
+#include "RamExistenceCheckAnalysis.h"
+#include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
+#include "RamProvenanceExistenceCheckAnalysis.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
 #include <cstdint>
@@ -26,10 +28,6 @@
 #include <iostream>
 #include <iterator>
 #include <queue>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 namespace souffle {
 
@@ -282,20 +280,24 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
 
 /** Compute indexes */
 void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
+    const auto* indexScanKeysAnalysis = translationUnit.getAnalysis<RamIndexScanKeysAnalysis>();
+    const auto* existCheckAnalysis = translationUnit.getAnalysis<RamExistenceCheckAnalysis>();
+    const auto* provExistCheckAnalysis = translationUnit.getAnalysis<RamProvenanceExistenceCheckAnalysis>();
+
     // visit all nodes to collect searches of each relation
-    visitDepthFirst(translationUnit.getP(), [&](const RamNode& node) {
+    visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexScan = dynamic_cast<const RamIndexScan*>(&node)) {
             IndexSet& indexes = getIndexes(indexScan->getRelation());
-            indexes.addSearch(indexScan->getRangeQueryColumns());
+            indexes.addSearch(indexScanKeysAnalysis->getRangeQueryColumns(indexScan));
         } else if (const auto* agg = dynamic_cast<const RamAggregate*>(&node)) {
             IndexSet& indexes = getIndexes(agg->getRelation());
             indexes.addSearch(agg->getRangeQueryColumns());
-        } else if (const auto* ne = dynamic_cast<const RamNotExists*>(&node)) {
-            IndexSet& indexes = getIndexes(ne->getRelation());
-            indexes.addSearch(ne->getKey());
-        } else if (const RamProvenanceNotExists* ne = dynamic_cast<const RamProvenanceNotExists*>(&node)) {
-            IndexSet& indexes = getIndexes(ne->getRelation());
-            indexes.addSearch(ne->getKey());
+        } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
+            IndexSet& indexes = getIndexes(exists->getRelation());
+            indexes.addSearch(existCheckAnalysis->getKey(exists));
+        } else if (const auto* provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
+            IndexSet& indexes = getIndexes(provExists->getRelation());
+            indexes.addSearch(provExistCheckAnalysis->getKey(provExists));
         }
     });
 
@@ -312,7 +314,7 @@ void IndexSetAnalysis::print(std::ostream& os) const {
     for (auto& cur : data) {
         const std::string& relName = cur.first;
         const IndexSet& indexes = cur.second;
-        const RamRelationReference& rel = indexes.getRelation();
+        const RamRelation& rel = indexes.getRelation();
 
         /* Print searches */
         os << "Relation " << relName << "\n";

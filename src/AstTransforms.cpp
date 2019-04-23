@@ -28,11 +28,9 @@
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
-#include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
 #include "TypeSystem.h"
-#include <cassert>
 #include <cstddef>
 #include <functional>
 #include <map>
@@ -74,7 +72,7 @@ bool FixpointTransformer::transform(AstTranslationUnit& translationUnit) {
     return changed;
 }
 
-bool RemoveRelationCopiesTransformer::removeRelationCopies(AstProgram& program) {
+bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& translationUnit) {
     using alias_map = std::map<AstRelationIdentifier, AstRelationIdentifier>;
 
     // tests whether something is a variable
@@ -86,9 +84,13 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstProgram& program) 
     // collect aliases
     alias_map isDirectAliasOf;
 
+    IOType* ioType = translationUnit.getAnalysis<IOType>();
+
+    AstProgram& program = *translationUnit.getProgram();
+
     // search for relations only defined by a single rule ..
     for (AstRelation* rel : program.getRelations()) {
-        if (!rel->isInput() && !rel->isComputed() && rel->getClauses().size() == 1u) {
+        if (!ioType->isIO(rel) && rel->getClauses().size() == 1u) {
             // .. of shape r(x,y,..) :- s(x,y,..)
             AstClause* cl = rel->getClause(0);
             if (!cl->isFact() && cl->getBodySize() == 1u && cl->getAtoms().size() == 1u) {
@@ -254,8 +256,8 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             if (agg.getOperator() == AstAggregator::count) {
                 int count = 0;
                 for (const auto& cur : aggClause->getBodyLiterals()) {
-                    cur->apply(
-                            makeLambdaMapper([&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
+                    cur->apply(makeLambdaAstMapper(
+                            [&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
                                 // check whether it is a unnamed variable
                                 auto* var = dynamic_cast<AstUnnamedVariable*>(node.get());
                                 if (!var) {
@@ -358,26 +360,28 @@ bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(const A
 
 bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
+    auto* ioTypes = translationUnit.getAnalysis<IOType>();
     bool changed = false;
     for (auto rel : program.getRelations()) {
-        if (rel->clauseSize() == 0 && !rel->isInput()) {
-            changed |= removeEmptyRelationUses(translationUnit, rel);
+        if (rel->clauseSize() > 0 || ioTypes->isInput(rel)) {
+            continue;
+        }
+        changed |= removeEmptyRelationUses(translationUnit, rel);
 
-            bool usedInAggregate = false;
-            visitDepthFirst(program, [&](const AstAggregator& agg) {
-                for (const auto lit : agg.getBodyLiterals()) {
-                    visitDepthFirst(*lit, [&](const AstAtom& atom) {
-                        if (getAtomRelation(&atom, &program) == rel) {
-                            usedInAggregate = true;
-                        }
-                    });
-                }
-            });
-
-            if (!usedInAggregate && !rel->isComputed()) {
-                program.removeRelation(rel->getName());
-                changed = true;
+        bool usedInAggregate = false;
+        visitDepthFirst(program, [&](const AstAggregator& agg) {
+            for (const auto lit : agg.getBodyLiterals()) {
+                visitDepthFirst(*lit, [&](const AstAtom& atom) {
+                    if (getAtomRelation(&atom, &program) == rel) {
+                        usedInAggregate = true;
+                    }
+                });
             }
+        });
+
+        if (!usedInAggregate && !ioTypes->isOutput(rel)) {
+            program.removeRelation(rel->getName());
+            changed = true;
         }
     }
     return changed;
@@ -800,12 +804,13 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
     // Keep track of all relations that cannot be transformed
     std::set<AstRelationIdentifier> minimalIrreducibleRelations;
 
+    IOType* ioType = translationUnit.getAnalysis<IOType>();
+
     for (AstRelation* relation : program.getRelations()) {
-        if (relation->isComputed() || relation->isInput()) {
-            // No I/O relations can be transformed
+        // No I/O relations can be transformed
+        if (ioType->isIO(relation)) {
             minimalIrreducibleRelations.insert(relation->getName());
         }
-
         for (AstClause* clause : relation->getClauses()) {
             bool recursive = isRecursiveClause(*clause);
             visitDepthFirst(*clause, [&](const AstAtom& atom) {

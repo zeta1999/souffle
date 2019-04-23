@@ -21,6 +21,7 @@
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstComponentChecker.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstPragma.h"
@@ -79,13 +80,16 @@ class BddBddBTranslator : private AstVisitor<void, std::ostream&> {
     // literals aggregated to be added to the end of a rule while converting
     std::vector<std::string> extra_literals;
 
+    const IOType* ioTypes;
+
     int varCounter = 0;
 
 public:
     BddBddBTranslator() = default;
 
-    void convert(std::ostream& out, const AstProgram& program) {
-        visit(program, out);
+    void convert(std::ostream& out, const AstTranslationUnit& tu) {
+        ioTypes = tu.getAnalysis<IOType>();
+        visit(*tu.getProgram(), out);
     }
 
 private:
@@ -143,10 +147,10 @@ private:
         });
         out << ")";
 
-        if (rel.isInput()) {
+        if (ioTypes->isInput(&rel)) {
             out << " inputtuples";
         }
-        if (rel.isOutput()) {
+        if (ioTypes->isOutput(&rel)) {
             out << " outputtuples";
         }
 
@@ -266,7 +270,7 @@ private:
 
 /** Convert a Souffle program to a bddbddb program */
 void toBddbddb(std::ostream& out, const AstTranslationUnit& translationUnit) {
-    BddBddBTranslator().convert(out, *translationUnit.getProgram());
+    BddBddBTranslator().convert(out, translationUnit);
 }
 
 int main(int argc, char** argv) {
@@ -276,45 +280,33 @@ int main(int argc, char** argv) {
     /* have all to do with command line arguments in its own scope, as these are accessible through the global
      * configuration only */
     {
-        Global::config().processArgs(argc, argv,
-                []() {
-                    std::stringstream header;
-                    header << "============================================================================"
-                           << std::endl;
-                    header << "souffle2bdd -- translating souffle to bddbddb programs." << std::endl;
-                    header << "Usage: souffle2bdd [OPTION] FILE." << std::endl;
-                    header << "----------------------------------------------------------------------------"
-                           << std::endl;
-                    header << "Options:" << std::endl;
-                    return header.str();
-                }(),
-                []() {
-                    std::stringstream footer;
-                    footer << "----------------------------------------------------------------------------"
-                           << std::endl;
-                    footer << "Version: " << PACKAGE_VERSION << "" << std::endl;
-                    footer << "----------------------------------------------------------------------------"
-                           << std::endl;
-                    footer << "Copyright (c) 2016-18 The Souffle Developers." << std::endl;
-                    footer << "Copyright (c) 2013-16 Oracle and/or its affiliates." << std::endl;
-                    footer << "All rights reserved." << std::endl;
-                    footer << "============================================================================"
-                           << std::endl;
-                    return footer.str();
-                }(),
-                // command line options, the environment will be filled with the arguments passed to them, or
-                // the empty string if they take none
-                []() {
-                    MainOption opts[] = {// main option, the datalog program itself, key is always empty
-                            {"", 0, "", "", false, ""},
-                            {"include-dir", 'I', "DIR", ".", true, "Specify directory for include files."},
-                            {"output", 'o', "FILE", "", false, "Generate bddbddb Datalog program"},
-                            {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
-                            {"no-warn", 'w', "", "", false, "Disable warnings."},
-                            {"verbose", 'v', "", "", false, "Verbose output."},
-                            {"help", 'h', "", "", false, "Display this help message."}};
-                    return std::vector<MainOption>(std::begin(opts), std::end(opts));
-                }());
+        std::stringstream header;
+        header << "============================================================================" << std::endl;
+        header << "souffle2bdd -- translating souffle to bddbddb programs." << std::endl;
+        header << "Usage: souffle2bdd [OPTION] FILE." << std::endl;
+        header << "----------------------------------------------------------------------------" << std::endl;
+        header << "Options:" << std::endl;
+
+        std::stringstream footer;
+        footer << "----------------------------------------------------------------------------" << std::endl;
+        footer << "Version: " << PACKAGE_VERSION << "" << std::endl;
+        footer << "----------------------------------------------------------------------------" << std::endl;
+        footer << "Copyright (c) 2016-18 The Souffle Developers." << std::endl;
+        footer << "Copyright (c) 2013-16 Oracle and/or its affiliates." << std::endl;
+        footer << "All rights reserved." << std::endl;
+        footer << "============================================================================" << std::endl;
+
+        // command line options, the environment will be filled with the arguments passed to them, or
+        // the empty string if they take none
+        // main option, the datalog program itself, has an empty key
+        std::vector<MainOption> opts{{"", 0, "", "", false, ""},
+                {"include-dir", 'I', "DIR", ".", true, "Specify directory for include files."},
+                {"output", 'o', "FILE", "", false, "Generate bddbddb Datalog program"},
+                {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
+                {"no-warn", 'w', "", "", false, "Disable warnings."},
+                {"verbose", 'v', "", "", false, "Verbose output."},
+                {"help", 'h', "", "", false, "Display this help message."}};
+        Global::config().processArgs(argc, argv, header.str(), footer.str(), opts);
 
         // ------ command line arguments -------------
 

@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file trie_test.h
+ * @file brie_test.h
  *
  * A test case testing the trie implementation.
  *
  ***********************************************************************/
 
-#include "Trie.h"
+#include "Brie.h"
 #include "test.h"
 #include <cstring>
 

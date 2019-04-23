@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file Trie.h
+ * @file Brie.h
  *
  * This header file contains the implementation for a generic, fixed
  * length integer trie.
@@ -348,9 +348,9 @@ public:
      * to speed up the execution of various operations (optional parameter).
      */
     struct op_context {
-        index_type lastIndex = 0;
-        Node* lastNode;
-        op_context() : lastNode(nullptr) {}
+        index_type lastIndex{0};
+        Node* lastNode{nullptr};
+        op_context() = default;
     };
 
 private:
@@ -593,7 +593,7 @@ private:
             }
 
             // somebody else was faster => use standard insertion procedure
-            free(info.root);
+            delete info.root;
 
             // retrieve new root info
             info = getRootInfo();
@@ -636,7 +636,7 @@ private:
                 // try to update next
                 if (!aNext.compare_exchange_strong(next, newNext)) {
                     // some other thread was faster => use updated next
-                    free(newNext);
+                    delete newNext;
                 } else {
                     // the locally created next is the new next
                     next = newNext;
@@ -1201,7 +1201,7 @@ private:
      * Creates new nodes and initializes them with 0.
      */
     static Node* newNode() {
-        auto* res = (Node*)(malloc(sizeof(Node)));
+        auto* res = new Node();
         std::memset(res->cell, 0, sizeof(Cell) * NUM_CELLS);
         return res;
     }
@@ -1216,7 +1216,7 @@ private:
                 freeNodes(node->cell[i].ptr, level - 1);
             }
         }
-        free(node);
+        delete node;
     }
 
     /**
@@ -1236,7 +1236,7 @@ private:
         if (!node) return nullptr;
 
         // create a clone
-        auto* res = (Node*)(malloc(sizeof(Node)));
+        auto* res = new Node();
 
         // handle leaf level
         if (level == 0) {
@@ -1339,7 +1339,7 @@ private:
             oldRoot->parent = info.root;
         } else {
             // throw away temporary new node
-            free(newRoot);
+            delete newRoot;
         }
     }
 
@@ -2148,19 +2148,17 @@ public:
         using nested_ctxt = typename nested_trie_type::op_context;
 
         // for insert and contain
-        local_ctxt local;
-        RamDomain lastQuery;
-        nested_trie_type* lastNested;
-        nested_ctxt nestedCtxt;
+        local_ctxt local{};
+        RamDomain lastQuery{};
+        nested_trie_type* lastNested{nullptr};
+        nested_ctxt nestedCtxt{};
 
         // for boundaries
-        unsigned lastBoundaryLevels;
-        entry_type lastBoundaryRequest;
-        range<iterator> lastBoundaries;
+        unsigned lastBoundaryLevels{Dim + 1};
+        entry_type lastBoundaryRequest{};
+        range<iterator> lastBoundaries{iterator(), iterator()};
 
-        op_context()
-                : local(), lastNested(nullptr), lastBoundaryLevels(Dim + 1),
-                  lastBoundaries(iterator(), iterator()) {}
+        op_context() = default;
     };
 
     using base::contains;
@@ -2354,7 +2352,7 @@ public:
         base::hint_stats.get_boundaries.addMiss();
 
         // start with two end iterators
-        iterator begin, end;
+        iterator begin{}, end{};
 
         // adapt them level by level
         auto found = detail::fix_binding<levels, 0, Dim>()(store, begin, end, entry);

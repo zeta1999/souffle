@@ -16,9 +16,12 @@
 #pragma once
 
 #include "AstTransformer.h"
+#include "Global.h"
 
+#include <fstream>
 #include <memory>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -34,12 +37,6 @@ class AstTranslationUnit;
  * and the HTML code for the body of the section.
  */
 class DebugReportSection {
-private:
-    std::string id;
-    std::string title;
-    std::vector<DebugReportSection> subsections;
-    std::string body;
-
 public:
     DebugReportSection(const std::string& id, std::string title, std::vector<DebugReportSection> subsections,
             std::string body)
@@ -70,6 +67,11 @@ public:
     }
 
 private:
+    std::string id;
+    std::string title;
+    std::vector<DebugReportSection> subsections;
+    std::string body;
+
     static std::string generateUniqueID(const std::string& id) {
         static int count = 0;
         return id + std::to_string(count++);
@@ -80,10 +82,13 @@ private:
  * Class representing a HTML report, consisting of a list of sections.
  */
 class DebugReport {
-private:
-    std::vector<DebugReportSection> sections;
-
 public:
+    ~DebugReport() {
+        if (!empty()) {
+            std::ofstream debugReportStream(Global::config().get("debug-report"));
+            debugReportStream << *this;
+        }
+    }
     bool empty() const {
         return sections.empty();
     }
@@ -103,6 +108,9 @@ public:
         report.print(out);
         return out;
     }
+
+private:
+    std::vector<DebugReportSection> sections;
 };
 
 /**
@@ -111,11 +119,6 @@ public:
  * and adds it to the translation unit's debug report.
  */
 class DebugReporter : public MetaTransformer {
-private:
-    std::unique_ptr<AstTransformer> wrappedTransformer;
-
-    bool transform(AstTranslationUnit& translationUnit) override;
-
 public:
     DebugReporter(std::unique_ptr<AstTransformer> wrappedTransformer)
             : wrappedTransformer(std::move(wrappedTransformer)) {}
@@ -161,6 +164,11 @@ public:
      */
     static DebugReportSection getDotGraphSection(
             const std::string& id, std::string title, const std::string& dotSpec);
+
+private:
+    std::unique_ptr<AstTransformer> wrappedTransformer;
+
+    bool transform(AstTranslationUnit& translationUnit) override;
 };
 
 }  // end of namespace souffle

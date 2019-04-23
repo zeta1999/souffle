@@ -34,17 +34,12 @@ namespace souffle {
  *
  */
 class AstTypeIdentifier {
-    /**
-     * The list of names forming this identifier.
-     */
-    std::vector<std::string> names;
-
 public:
     // -- constructors --
 
     AstTypeIdentifier() : names() {}
 
-    AstTypeIdentifier(const std::string& name) : names(toVector(name)) {}
+    AstTypeIdentifier(const std::string& name) : names({name}) {}
 
     AstTypeIdentifier(const char* name) : AstTypeIdentifier(std::string(name)) {}
 
@@ -99,6 +94,10 @@ public:
         id.print(out);
         return out;
     }
+
+private:
+    /** The list of names forming this identifier. */
+    std::vector<std::string> names;
 };
 
 /**
@@ -116,12 +115,9 @@ inline AstTypeIdentifier operator+(const std::string& name, const AstTypeIdentif
  *
  */
 class AstType : public AstNode {
-    /** In the AST each type has to have a name forming a unique identifier */
-    AstTypeIdentifier name;
-
 public:
     /** Creates a new type */
-    AstType(AstTypeIdentifier name = "") : name(std::move(name)) {}
+    AstType(AstTypeIdentifier name = {""}) : name(std::move(name)) {}
 
     /** Obtains the name of this type */
     const AstTypeIdentifier& getName() const {
@@ -145,6 +141,10 @@ public:
     void apply(const AstNodeMapper& /*map*/) override {
         // no nested nodes in any type
     }
+
+private:
+    /** In the AST each type has to have a name forming a unique identifier */
+    AstTypeIdentifier name;
 };
 
 /**
@@ -153,9 +153,6 @@ public:
  * basic building blocks of souffle's type system.
  */
 class AstPrimitiveType : public AstType {
-    /** Indicates whether it is a number (true) or a symbol (false) */
-    bool num;
-
 public:
     /** Creates a new primitive type */
     AstPrimitiveType(const AstTypeIdentifier& name, bool num = false) : AstType(name), num(num) {}
@@ -177,7 +174,9 @@ public:
 
     /** Creates a clone of this AST sub-structure */
     AstPrimitiveType* clone() const override {
-        return new AstPrimitiveType(getName(), num);
+        auto res = new AstPrimitiveType(getName(), num);
+        res->setSrcLoc(getSrcLoc());
+        return res;
     }
 
 protected:
@@ -187,6 +186,10 @@ protected:
         const auto& other = static_cast<const AstPrimitiveType&>(node);
         return getName() == other.getName() && num == other.num;
     }
+
+private:
+    /** Indicates whether it is a number (true) or a symbol (false) */
+    bool num;
 };
 
 /**
@@ -195,9 +198,6 @@ protected:
  * union type.
  */
 class AstUnionType : public AstType {
-    /** The list of types aggregated by this union type */
-    std::vector<AstTypeIdentifier> types;
-
 public:
     /** Creates a new union type */
     AstUnionType() = default;
@@ -225,6 +225,7 @@ public:
     /** Creates a clone of this AST sub-structure */
     AstUnionType* clone() const override {
         auto res = new AstUnionType();
+        res->setSrcLoc(getSrcLoc());
         res->setName(getName());
         res->types = types;
         return res;
@@ -237,6 +238,10 @@ protected:
         const auto& other = static_cast<const AstUnionType&>(node);
         return getName() == other.getName() && types == other.types;
     }
+
+private:
+    /** The list of types aggregated by this union type */
+    std::vector<AstTypeIdentifier> types;
 };
 
 /**
@@ -257,11 +262,6 @@ public:
         }
     };
 
-private:
-    /** The list of fields constituting this record type */
-    std::vector<Field> fields;
-
-public:
     /** Creates a new record type */
     AstRecordType() = default;
 
@@ -298,6 +298,7 @@ public:
     /** Creates a clone of this AST sub-structure */
     AstRecordType* clone() const override {
         auto res = new AstRecordType();
+        res->setSrcLoc(getSrcLoc());
         res->setName(getName());
         res->fields = fields;
         return res;
@@ -310,6 +311,10 @@ protected:
         const auto& other = static_cast<const AstRecordType&>(node);
         return getName() == other.getName() && fields == other.fields;
     }
+
+private:
+    /** The list of fields constituting this record type */
+    std::vector<Field> fields;
 };
 
 }  // end of namespace souffle

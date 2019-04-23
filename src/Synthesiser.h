@@ -16,11 +16,10 @@
 
 #pragma once
 
-#include "IndexSetAnalysis.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
-#include "SynthesiserRelation.h"
 #include <map>
+#include <memory>
 #include <ostream>
 #include <set>
 #include <string>
@@ -28,14 +27,18 @@
 namespace souffle {
 
 class RamOperation;
-class RamRelationReference;
 class RamTranslationUnit;
+class SynthesiserRelation;
+class RamRelation;
 
 /**
  * A RAM synthesiser: synthesises a C++ program from a RAM program.
  */
 class Synthesiser {
 private:
+    /** RAM translation unit */
+    RamTranslationUnit& translationUnit;
+
     /** RAM identifier to C++ identifier map */
     std::map<const std::string, const std::string> identifiers;
 
@@ -56,13 +59,13 @@ protected:
     bool areIndexesDisabled();
 
     /** Get relation name */
-    const std::string getRelationName(const RamRelationReference& rel);
+    const std::string getRelationName(const RamRelation& rel);
 
     /** Get relation name */
     const std::string getRelationName(const std::string& relName);
 
     /** Get context name */
-    const std::string getOpContextName(const RamRelationReference& rel);
+    const std::string getOpContextName(const RamRelation& rel);
 
     /** Get relation struct definition */
     void generateRelationTypeStruct(std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType);
@@ -71,7 +74,7 @@ protected:
     std::string toIndex(SearchColumns key);
 
     /** Get referenced relations */
-    std::set<RamRelationReference> getReferencedRelations(const RamOperation& op);
+    std::set<const RamRelation*> getReferencedRelations(const RamOperation& op);
 
     /** Generate code */
     void emitCode(std::ostream& out, const RamStatement& stmt);
@@ -83,11 +86,15 @@ protected:
     size_t lookupReadIdx(const std::string& txt);
 
 public:
-    Synthesiser() = default;
+    Synthesiser(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
     virtual ~Synthesiser() = default;
 
+    /** Get translation unit */
+    RamTranslationUnit& getTranslationUnit() {
+        return translationUnit;
+    }
+
     /** Generate code */
-    void generateCode(
-            const RamTranslationUnit& tu, std::ostream& os, const std::string& id, bool& withSharedLibrary);
+    void generateCode(std::ostream& os, const std::string& id, bool& withSharedLibrary);
 };
 }  // end of namespace souffle

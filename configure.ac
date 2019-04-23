@@ -264,6 +264,7 @@ AC_CONFIG_FILES([
   src/Makefile
   tests/Makefile
   tests/atlocal
+  tests/interface/functors/Makefile
 ])
 AC_CONFIG_LINKS([include/souffle/BinaryConstraintOps.h:src/BinaryConstraintOps.h])
 AC_CONFIG_LINKS([include/souffle/BTree.h:src/BTree.h])
@@ -294,10 +295,9 @@ AC_CONFIG_LINKS([include/souffle/ReadStreamCSV.h:src/ReadStreamCSV.h])
 AC_CONFIG_LINKS([include/souffle/ReadStreamSQLite.h:src/ReadStreamSQLite.h])
 AC_CONFIG_LINKS([include/souffle/SignalHandler.h:src/SignalHandler.h])
 AC_CONFIG_LINKS([include/souffle/SouffleInterface.h:src/SouffleInterface.h])
-AC_CONFIG_LINKS([include/souffle/SymbolMask.h:src/SymbolMask.h])
 AC_CONFIG_LINKS([include/souffle/SymbolTable.h:src/SymbolTable.h])
 AC_CONFIG_LINKS([include/souffle/Table.h:src/Table.h])
-AC_CONFIG_LINKS([include/souffle/Trie.h:src/Trie.h])
+AC_CONFIG_LINKS([include/souffle/Brie.h:src/Brie.h])
 AC_CONFIG_LINKS([include/souffle/UnionFind.h:src/UnionFind.h])
 AC_CONFIG_LINKS([include/souffle/Util.h:src/Util.h])
 AC_CONFIG_LINKS([include/souffle/WriteStream.h:src/WriteStream.h])

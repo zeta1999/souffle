@@ -16,8 +16,13 @@
 
 #pragma once
 
+#include "RamConditionLevel.h"
+#include "RamConstValue.h"
+#include "RamExpressionLevel.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
+#include <memory>
+#include <string>
 
 namespace souffle {
 
@@ -28,11 +33,6 @@ class RamProgram;
  * can be evaluated.
  */
 class LevelConditionsTransformer : public RamTransformer {
-private:
-    bool transform(RamTranslationUnit& translationUnit) override {
-        return levelConditions(*translationUnit.getProgram());
-    }
-
 public:
     std::string getName() const override {
         return "LevelConditionsTransformer";
@@ -42,37 +42,45 @@ public:
      * @param program the program to be processed
      * @return whether the program was modified
      */
-    static bool levelConditions(RamProgram& program);
+    bool levelConditions(RamProgram& program);
+
+protected:
+    RamConditionLevelAnalysis* rcla{nullptr};
+
+    bool transform(RamTranslationUnit& translationUnit) override {
+        rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
+        return levelConditions(*translationUnit.getProgram());
+    }
 };
 
 class CreateIndicesTransformer : public RamTransformer {
-private:
-    bool transform(RamTranslationUnit& translationUnit) override {
-        return createIndices(*translationUnit.getProgram());
-    }
-
 public:
     std::string getName() const override {
         return "CreateIndicesTransformer";
     }
 
-    static std::unique_ptr<RamValue> getIndexElement(RamCondition* c, size_t& element, size_t level);
+    std::unique_ptr<RamExpression> getIndexElement(RamCondition* c, size_t& element, size_t level);
 
-    static std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
+    std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
 
     /**
      * @param program the program to be processed
      * @return whether the program was modified
      */
-    static bool createIndices(RamProgram& program);
+    bool createIndices(RamProgram& program);
+
+protected:
+    RamConstValueAnalysis* rcva{nullptr};
+    RamExpressionLevelAnalysis* rvla{nullptr};
+
+    bool transform(RamTranslationUnit& translationUnit) override {
+        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
+        rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
+        return createIndices(*translationUnit.getProgram());
+    }
 };
 
 class ConvertExistenceChecksTransformer : public RamTransformer {
-private:
-    bool transform(RamTranslationUnit& translationUnit) override {
-        return convertExistenceChecks(*translationUnit.getProgram());
-    }
-
 public:
     std::string getName() const override {
         return "ConvertExistenceChecksTransformer";
@@ -82,7 +90,19 @@ public:
      * @param program the program to be processed
      * @return whether the program was modified
      */
-    static bool convertExistenceChecks(RamProgram& program);
+    bool convertExistenceChecks(RamProgram& program);
+
+protected:
+    RamConstValueAnalysis* rcva{nullptr};
+    RamConditionLevelAnalysis* rcla{nullptr};
+    RamExpressionLevelAnalysis* rvla{nullptr};
+
+    bool transform(RamTranslationUnit& translationUnit) override {
+        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
+        rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
+        rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
+        return convertExistenceChecks(*translationUnit.getProgram());
+    }
 };
 
 }  // end of namespace souffle

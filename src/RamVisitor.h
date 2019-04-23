@@ -18,12 +18,12 @@
 #pragma once
 
 #include "RamCondition.h"
+#include "RamExpression.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
-#include "RamValue.h"
 
 #include <functional>
 #include <typeinfo>
@@ -78,46 +78,46 @@ struct RamVisitor : public ram_visitor_tag {
             FORWARD(Relation);
             FORWARD(RelationReference);
 
-            // values
+            // Expressions
             FORWARD(ElementAccess);
             FORWARD(Number);
             FORWARD(IntrinsicOperator);
             FORWARD(UserDefinedOperator);
             FORWARD(AutoIncrement);
-            FORWARD(Pack);
+            FORWARD(PackRecord);
             FORWARD(Argument);
 
-            // conditions
-            FORWARD(Empty);
-            FORWARD(NotExists);
-            FORWARD(ProvenanceNotExists);
-            FORWARD(And);
-            FORWARD(BinaryRelation);
+            // Conditions
+            FORWARD(EmptinessCheck);
+            FORWARD(ExistenceCheck);
+            FORWARD(ProvenanceExistenceCheck);
+            FORWARD(Conjunction);
+            FORWARD(Negation);
+            FORWARD(Constraint);
 
-            // operations
+            // Operations
             FORWARD(Filter);
             FORWARD(Project);
             FORWARD(Return);
-            FORWARD(Lookup);
+            FORWARD(UnpackRecord);
             FORWARD(Scan);
             FORWARD(IndexScan);
             FORWARD(Aggregate);
 
-            // statements
+            // Statements
             FORWARD(Create);
             FORWARD(Fact);
             FORWARD(Load);
             FORWARD(Store);
-            FORWARD(Insert);
+            FORWARD(Query);
             FORWARD(Clear);
             FORWARD(Drop);
-            FORWARD(PrintSize);
             FORWARD(LogSize);
 
             FORWARD(Merge);
             FORWARD(Swap);
 
-            // control flow
+            // Control-flow
             FORWARD(Program);
             FORWARD(Sequence);
             FORWARD(Loop);
@@ -160,10 +160,9 @@ protected:
     LINK(Fact, RelationStatement);
     LINK(Load, RelationStatement);
     LINK(Store, RelationStatement);
-    LINK(Insert, Statement);
+    LINK(Query, Statement);
     LINK(Clear, RelationStatement);
     LINK(Drop, RelationStatement);
-    LINK(PrintSize, RelationStatement);
     LINK(LogSize, RelationStatement);
 
     LINK(RelationStatement, Statement);
@@ -184,7 +183,7 @@ protected:
     // -- operations --
     LINK(Project, Operation);
     LINK(Return, Operation);
-    LINK(Lookup, Search);
+    LINK(UnpackRecord, Search);
     LINK(Scan, RelationSearch);
     LINK(IndexScan, RelationSearch);
     LINK(RelationSearch, Search);
@@ -196,24 +195,25 @@ protected:
     LINK(Operation, Node)
 
     // -- conditions --
-    LINK(And, Condition)
-    LINK(BinaryRelation, Condition)
-    LINK(NotExists, Condition)
-    LINK(ProvenanceNotExists, Condition)
-    LINK(Empty, Condition)
+    LINK(Conjunction, Condition)
+    LINK(Negation, Condition)
+    LINK(Constraint, Condition)
+    LINK(ExistenceCheck, Condition)
+    LINK(ProvenanceExistenceCheck, Condition)
+    LINK(EmptinessCheck, Condition)
 
     LINK(Condition, Node)
 
     // -- values --
-    LINK(Number, Value)
-    LINK(ElementAccess, Value)
-    LINK(IntrinsicOperator, Value)
-    LINK(UserDefinedOperator, Value)
-    LINK(AutoIncrement, Value)
-    LINK(Pack, Value)
-    LINK(Argument, Value)
+    LINK(Number, Expression)
+    LINK(ElementAccess, Expression)
+    LINK(IntrinsicOperator, Expression)
+    LINK(UserDefinedOperator, Expression)
+    LINK(AutoIncrement, Expression)
+    LINK(PackRecord, Expression)
+    LINK(Argument, Expression)
 
-    LINK(Value, Node)
+    LINK(Expression, Node)
 
     // -- program --
     LINK(Program, Node)

@@ -66,7 +66,8 @@ souffle_sources = \
               AstConstraintAnalysis.h                   \
               AstFunctorDeclaration.h                   \
               AstGroundAnalysis.cpp AstGroundAnalysis.h \
-              AstIODirective.h                          \
+              AstIO.h                                   \
+              AstIOTypeAnalysis.cpp AstIOTypeAnalysis.h \
               AstLiteral.h                              \
               AstNode.h                                 \
               AstParserUtils.cpp    AstParserUtils.h    \
@@ -83,7 +84,8 @@ souffle_sources = \
               AstTranslator.cpp     AstTranslator.h     \
               AstType.h                                 \
               AstTypeAnalysis.cpp   AstTypeAnalysis.h   \
-              AstTypeEnvironmentAnalysis.cpp AstTypeEnvironmentAnalysis.h \
+              AstTypeEnvironmentAnalysis.cpp            \
+              AstTypeEnvironmentAnalysis.h              \
               AstTypes.h                                \
               AstUtils.cpp          AstUtils.h          \
               AstVisitor.h                              \
@@ -106,6 +108,8 @@ souffle_sources = \
               InterpreterRecords.cpp InterpreterRecords.h \
               InterpreterRelation.h                     \
               LogStatement.h                            \
+			  LVMCode.cpp			LVMCode.h			\
+			  LVMGenerator.h							\
               MagicSet.cpp          MagicSet.h          \
               MinimiseProgramTransformer.cpp            \
               ParserDriver.cpp      ParserDriver.h      \
@@ -113,27 +117,35 @@ souffle_sources = \
               ProfileEvent.h                            \
               ProvenanceTransformer.cpp                 \
               RamAnalysis.h                             \
+              RamConstValue.cpp RamConstValue.h         \
+              RamExistenceCheckAnalysis.cpp RamExistenceCheckAnalysis.h \
+              RamProvenanceExistenceCheckAnalysis.cpp RamProvenanceExistenceCheckAnalysis.h \
+              RamIndexScanKeys.cpp  RamIndexScanKeys.h  \
+              RamConditionLevel.cpp RamConditionLevel.h \
+              RamOperationDepth.cpp RamOperationDepth.h \
+              RamExpressionLevel.cpp RamExpressionLevel.h         \
               RamCondition.h                            \
               RamNode.h                                 \
               RamOperation.cpp      RamOperation.h      \
               RamProgram.h                              \
               RamRelation.h                             \
-              RamSemanticChecker.h                      \
               RamStatement.h                            \
               RamTransformer.cpp    RamTransformer.h    \
               RamTransforms.cpp     RamTransforms.h     \
               RamTranslationUnit.h                      \
-              RamValue.h                                \
+              RamExpression.h                           \
               RamVisitor.h                              \
               ReadStream.h                              \
               ReadStreamCSV.h                           \
+              RelationRepresentation.h                  \
               ReorderLiteralsTransformer.cpp            \
               ResolveAliasesTransformer.cpp             \
               SignalHandler.h                           \
               SrcLocation.cpp    SrcLocation.h          \
               StringPool.h                              \
               Synthesiser.cpp       Synthesiser.h       \
-              SynthesiserRelation.cpp SynthesiserRelation.h \
+              SynthesiserRelation.cpp                   \
+              SynthesiserRelation.h                     \
               TypeSystem.cpp        TypeSystem.h        \
               WriteStream.h                             \
               WriteStreamCSV.h                          \
@@ -170,6 +182,8 @@ soufflepublicdir = $(includedir)/souffle
 
 soufflepublic_HEADERS = \
 						CompiledOptions.h       \
+						BinaryConstraintOps.h   \
+                        Brie.h                  \
                         BTree.h                 \
                         CompiledIndexUtils.h    \
                         CompiledRecord.h        \
@@ -196,10 +210,8 @@ soufflepublic_HEADERS = \
                         ReadStreamCSV.h         \
                         SignalHandler.h         \
                         SouffleInterface.h      \
-                        SymbolMask.h            \
                         SymbolTable.h           \
                         Table.h                 \
-                        Trie.h                  \
                         UnionFind.h             \
                         Util.h                  \
                         WriteStream.h           \
@@ -341,10 +353,10 @@ test_graph_utils_test_SOURCES = test/graph_utils_test.cpp
 test_graph_utils_test_LDADD = libsouffle.la
 
 # trie implementation
-check_PROGRAMS += test/trie_test
-test_trie_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
-test_trie_test_SOURCES = test/trie_test.cpp
-test_trie_test_LDADD = libsouffle.la
+check_PROGRAMS += test/brie_test
+test_brie_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_brie_test_SOURCES = test/brie_test.cpp
+test_brie_test_LDADD = libsouffle.la
 
 # parallel utils implementation
 check_PROGRAMS += test/parallel_utils_test

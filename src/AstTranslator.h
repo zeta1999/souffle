@@ -17,30 +17,35 @@
 #pragma once
 
 #include "AstArgument.h"
-#include "AstClause.h"
 #include "AstRelationIdentifier.h"
-#include "AstUtils.h"
-#include "IODirectives.h"
 #include "RamRelation.h"
-#include "RamStatement.h"
-#include "RamValue.h"
-#include "SymbolMask.h"
-
+#include "RelationRepresentation.h"
+#include "Util.h"
+#include <cassert>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <set>
 #include <string>
+#include <utility>
 
 namespace souffle {
 
 // forward declarations
+class AstAtom;
 class AstClause;
+class AstLiteral;
 class AstProgram;
 class AstRelation;
 class AstTranslationUnit;
+class IODirectives;
+class RamCondition;
+class RamElementAccess;
+class RamOperation;
 class RamProgram;
 class RamStatement;
 class RamTranslationUnit;
+class RamExpression;
 class RecursiveClauses;
 class TypeEnvironment;
 
@@ -48,12 +53,18 @@ class TypeEnvironment;
  * Main class for AST Translator
  */
 class AstTranslator {
+public:
+    AstTranslator() = default;
+
+    /** translates AST to translation unit  */
+    std::unique_ptr<RamTranslationUnit> translateUnit(AstTranslationUnit& tu);
+
 private:
     /** AST program */
-    const AstProgram* program;
+    const AstProgram* program = nullptr;
 
     /** Type environment */
-    const TypeEnvironment* typeEnv;
+    const TypeEnvironment* typeEnv = nullptr;
 
     /** RAM program */
     std::unique_ptr<RamProgram> ramProg;
@@ -62,12 +73,30 @@ private:
      * Concrete attribute
      */
     struct Location {
-        int level;         // loop level
-        int element;       // element in a tuple
-        std::string name;  // name of associated attribute
+        int identifier;
+        int element;
+        std::unique_ptr<RamRelationReference> relation{nullptr};
+
+        Location() = default;
+
+        Location(int ident, int elem, std::unique_ptr<RamRelationReference> rel = nullptr)
+                : identifier(ident), element(elem), relation(std::move(rel)) {}
+
+        Location(const Location& l) : identifier(l.identifier), element(l.element) {
+            if (l.relation != nullptr) {
+                relation = std::unique_ptr<RamRelationReference>(l.relation->clone());
+            }
+        }
+
+        Location& operator=(Location other) {
+            identifier = other.identifier;
+            element = other.element;
+            relation = std::move(other.relation);
+            return *this;
+        }
 
         bool operator==(const Location& loc) const {
-            return level == loc.level && element == loc.element;
+            return identifier == loc.identifier && element == loc.element;
         }
 
         bool operator!=(const Location& loc) const {
@@ -75,11 +104,11 @@ private:
         }
 
         bool operator<(const Location& loc) const {
-            return level < loc.level || (level == loc.level && element < loc.element);
+            return identifier < loc.identifier || (identifier == loc.identifier && element < loc.element);
         }
 
         void print(std::ostream& out) const {
-            out << "(" << level << "," << element << ")";
+            out << "(" << identifier << "," << element << ")";
         }
 
         friend std::ostream& operator<<(std::ostream& out, const Location& loc) {
@@ -107,12 +136,6 @@ private:
         using record_definition_map = std::map<const AstRecordInit*, Location>;
 
         /**
-         * The type mapping record init expressions to the loop level where
-         * they get unpacked.
-         */
-        using record_unpack_map = std::map<const AstRecordInit*, int>;
-
-        /**
          * A map from AstAggregators to storage locations. Note, since in this case
          * AstAggregators are indexed by their values (not their address) no standard
          * map can be utilized.
@@ -125,9 +148,6 @@ private:
         /** The index of record definition points */
         record_definition_map record_definitions;
 
-        /** The index of record-unpack levels */
-        record_unpack_map record_unpacks;
-
         /** The level of a nested ram operation that is handling a given aggregator operation */
         aggregator_location_map aggregator_locations;
 
@@ -139,8 +159,9 @@ private:
             locs.insert(l);
         }
 
-        void addVarReference(const AstVariable& var, int level, int pos, const std::string& name = "") {
-            addVarReference(var, Location({level, pos, name}));
+        void addVarReference(const AstVariable& var, int ident, int pos,
+                std::unique_ptr<RamRelationReference> rel = nullptr) {
+            addVarReference(var, Location({ident, pos, std::move(rel)}));
         }
 
         bool isDefined(const AstVariable& var) const {
@@ -165,8 +186,9 @@ private:
             record_definitions[&init] = l;
         }
 
-        void setRecordDefinition(const AstRecordInit& init, int level, int pos, std::string name = "") {
-            setRecordDefinition(init, Location({level, pos, std::move(name)}));
+        void setRecordDefinition(const AstRecordInit& init, int ident, int pos,
+                std::unique_ptr<RamRelationReference> rel = nullptr) {
+            setRecordDefinition(init, Location({ident, pos, std::move(rel)}));
         }
 
         const Location& getDefinitionPoint(const AstRecordInit& init) const {
@@ -178,21 +200,6 @@ private:
 
             static Location fail;
             return fail;
-        }
-
-        // - unpacking -
-
-        void setRecordUnpackLevel(const AstRecordInit& init, int level) {
-            record_unpacks[&init] = level;
-        }
-
-        int getRecordUnpackLevel(const AstRecordInit& init) const {
-            auto pos = record_unpacks.find(&init);
-            if (pos != record_unpacks.end()) {
-                return pos->second;
-            }
-            assert(false && "Requested record is not unpacked properly!");
-            return 0;
         }
 
         // -- aggregates --
@@ -222,7 +229,7 @@ private:
         bool isAggregator(const int level) const {
             // check for aggregator definitions
             for (const auto& cur : aggregator_locations) {
-                if (cur.second.level == level) {
+                if (cur.second.identifier == level) {
                     return true;
                 }
             }
@@ -233,13 +240,13 @@ private:
         bool isSomethingDefinedOn(int level) const {
             // check for variable definitions
             for (const auto& cur : var_references) {
-                if (cur.second.begin()->level == level) {
+                if (cur.second.begin()->identifier == level) {
                     return true;
                 }
             }
             // check for record definitions
             for (const auto& cur : record_definitions) {
-                if (cur.second.level == level) {
+                if (cur.second.identifier == level) {
                     return true;
                 }
             }
@@ -258,6 +265,9 @@ private:
         }
     };
 
+    /** create a RAM element access node */
+    static std::unique_ptr<RamElementAccess> makeRamElementAccess(const Location& loc);
+
     /**
      * assigns names to unnamed variables such that enclosing
      * constructs may be cloned without losing the variable-identity
@@ -266,9 +276,6 @@ private:
 
     /** append statement to a list of statements */
     void appendStmt(std::unique_ptr<RamStatement>& stmtList, std::unique_ptr<RamStatement> stmt);
-
-    /** get symbol mask of a relation describing type attributes */
-    SymbolMask getSymbolMask(const AstRelation& rel);
 
     /** converts the given relation identifier into a relation name */
     std::string getRelationName(const AstRelationIdentifier& id) {
@@ -287,8 +294,7 @@ private:
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity,
             const std::vector<std::string> attributeNames,
-            const std::vector<std::string> attributeTypeQualifiers, const SymbolMask mask, const bool input,
-            const bool computed, const bool output, const bool btree, const bool brie, const bool eqrel);
+            const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation structure);
 
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity);
@@ -307,7 +313,7 @@ private:
     std::unique_ptr<RamRelationReference> translateNewRelation(const AstRelation* rel);
 
     /** translate an AST argument to a RAM value */
-    std::unique_ptr<RamValue> translateValue(const AstArgument* arg, const ValueIndex& index);
+    std::unique_ptr<RamExpression> translateValue(const AstArgument* arg, const ValueIndex& index);
 
     /** translate an AST constraint to a RAM condition */
     std::unique_ptr<RamCondition> translateConstraint(const AstLiteral* arg, const ValueIndex& index);
@@ -390,12 +396,6 @@ private:
 
     /** translate AST to RAM Program */
     void translateProgram(const AstTranslationUnit& translationUnit);
-
-public:
-    AstTranslator() : program(nullptr){};
-
-    /** translates AST to translation unit  */
-    std::unique_ptr<RamTranslationUnit> translateUnit(AstTranslationUnit& tu);
 };
 
 }  // end of namespace souffle

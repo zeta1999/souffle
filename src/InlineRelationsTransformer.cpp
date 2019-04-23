@@ -25,6 +25,7 @@
 #include "AstTranslationUnit.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
+#include "FunctorOps.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -492,7 +493,7 @@ void renameVariables(AstArgument* arg) {
 // E.g. ( <aggr1, aggr2, aggr3, ...>, o > = (aggr1 o (aggr2 o (agg3 o (...))))
 // TODO (azreika): remove aggregator support
 AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, FunctorOp fun) {
-    assert(getFunctorOpArity(fun) == 2 && "not a binary functor");
+    assert(isValidFunctorOpArity(fun, 2) && "not a binary functor");
 
     // Due to variable scoping issues with aggregators, we rename all variables uniquely in the
     // added aggregator

@@ -782,21 +782,23 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                     std::move(op));
 
             // add a scan level
-            if (Global::config().has("profile")) {
-                std::stringstream ss;
-                ss << head->getName();
-                ss.str("");
-                ss << "@frequency-atom" << ';';
-                ss << originalClause.getHead()->getName() << ';';
-                ss << version << ';';
-                ss << stringify(toString(clause)) << ';';
-                ss << stringify(toString(*atom)) << ';';
-                ss << stringify(toString(originalClause)) << ';';
-                ss << level << ';';
-                op = std::make_unique<RamScan>(
-                        translator.translateRelation(atom), level, std::move(op), ss.str());
-            } else {
-                op = std::make_unique<RamScan>(translator.translateRelation(atom), level, std::move(op));
+            if (atom->getArity() != 0) {
+                if (Global::config().has("profile")) {
+                    std::stringstream ss;
+                    ss << head->getName();
+                    ss.str("");
+                    ss << "@frequency-atom" << ';';
+                    ss << originalClause.getHead()->getName() << ';';
+                    ss << version << ';';
+                    ss << stringify(toString(clause)) << ';';
+                    ss << stringify(toString(*atom)) << ';';
+                    ss << stringify(toString(originalClause)) << ';';
+                    ss << level << ';';
+                    op = std::make_unique<RamScan>(
+                            translator.translateRelation(atom), level, std::move(op), ss.str());
+                } else {
+                    op = std::make_unique<RamScan>(translator.translateRelation(atom), level, std::move(op));
+                }
             }
 
             // TODO: support constants in nested records!
@@ -1053,8 +1055,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                     r1->addToBody(std::make_unique<AstProvenanceNegation>(
                             std::unique_ptr<AstAtom>(cl->getHead()->clone())));
                 } else {
-                    r1->addToBody(
-                            std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cl->getHead()->clone())));
+                    if (r1->getHead()->getArity() > 0)
+                        r1->addToBody(std::make_unique<AstNegation>(
+                                std::unique_ptr<AstAtom>(cl->getHead()->clone())));
                 }
 
                 // replace wildcards with variables (reduces indices when wildcards are used in recursive

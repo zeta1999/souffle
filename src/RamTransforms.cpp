@@ -48,16 +48,42 @@ std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* con
 
 }  // namespace
 
+/**
+ * levelConditions assumes that filter operations are stored verbose,
+ * i.e. a conjunction is expressed by two consecutive filter operations.
+ * For example ..
+ *
+ *  QUERY
+ *    IF C1 /\ C2 then
+ *      ...
+ *
+ * should be rewritten / or produced by the translator as
+ *
+ *  QUERY
+ *    IF C1
+ *      IF C2
+ *
+ * otherwise the levelling becomes imprecise. For both conditions
+ * the most outer-level is sought rather than separately.
+ *
+ * If there are transformers prior to levelCondition that introduce
+ * conjunction, another transformer is required that splits the
+ * filter operations. However, at the moment this is not necessary
+ * because the translator delivers already this format.
+ */
+
 bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
+    // flag to determine whether the RAM program has changed
     bool changed = false;
 
     // helper for collecting conditions from filter operations
-    auto collectCondition = [](std::unique_ptr<RamCondition> condition, RamCondition* c) -> std::unique_ptr<RamCondition> {
-       if(condition == nullptr) {
-	      return std::unique_ptr<RamCondition>(c);
-       } else {
-              return std::make_unique<RamConjunction>(std::move(condition), std::unique_ptr<RamCondition>(c));
-       }
+    auto addCondition = [](std::unique_ptr<RamCondition> condition,
+                                RamCondition* c) -> std::unique_ptr<RamCondition> {
+        if (condition == nullptr) {
+            return std::unique_ptr<RamCondition>(c);
+        } else {
+            return std::make_unique<RamConjunction>(std::move(condition), std::unique_ptr<RamCondition>(c));
+        }
     };
 
     // insert a new filter
@@ -71,73 +97,60 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
         }));
     };
 
-    // hoist conditions for the whole query 
+    // hoist conditions to the most outer scope if they
+    // don't depend on RamSearches
     visitDepthFirst(program, [&](const RamQuery& query) {
-        // std::cout << "Query:\n" << query; 
-        std::unique_ptr<RamCondition> levelledCondition;
+        std::unique_ptr<RamCondition> newCondition;
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
-            node->apply(makeLambdaRamMapper(filterRewriter));
             if (auto* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition& condition = filter->getCondition();
-		// if filter condition is independent of a scan (and can be moved to the most outer level), 
-		// delete the filter operation and collect condition of the filter
+                // if filter condition is independent of any RamSearch,
+                // delete the filter operation and collect condition
                 if (rcla->getLevel(&condition) == -1) {
                     changed = true;
-		    // std::cout << "Condition: " << condition << std::endl;
-                    levelledCondition = collectCondition(std::move(levelledCondition), condition.clone());
-		    // std::cout << "Collected Condition: " << *levelledCondition << std::endl; 
+                    newCondition = addCondition(std::move(newCondition), condition.clone());
+                    node->apply(makeLambdaRamMapper(filterRewriter));
                     return std::unique_ptr<RamOperation>(filter->getOperation().clone());
                 }
             }
+            node->apply(makeLambdaRamMapper(filterRewriter));
             return node;
         };
-        query.getOperation().apply(makeLambdaRamMapper(filterRewriter));
-        // std::cout << "Final Collected Condition: " << *levelledCondition << std::endl; 
-        if (levelledCondition != nullptr) {
+        ((RamNode*)&query)->apply(makeLambdaRamMapper(filterRewriter));
+        if (newCondition != nullptr) {
+            // insert new filter operation at outer-most level of the query
             changed = true;
-            insertFilter((RamOperation*)&query, levelledCondition);
+            insertFilter((RamOperation*)&query, newCondition);
         }
-	// std::cout << "Transformed query:\n" << query << std::endl;
     });
 
-    // visitDepthFirst(program, [&](const RamQuery &query) {
-    // std::cout << "Before:\n" << query << std::endl;
-    // hoist conditions for each scan operation
+    // hoist conditions for each RamSearch operation
     visitDepthFirst(program, [&](const RamSearch& search) {
-        std::unique_ptr<RamCondition> levelledCondition;
+        std::unique_ptr<RamCondition> newCondition;
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
-            node->apply(makeLambdaRamMapper(filterRewriter));
             if (auto* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition& condition = filter->getCondition();
-		// if filter condition matches level of scan, delete the filter operation
-		// and collect condition of the filter
+                // if filter condition matches level of RamSearch,
+                // delete the filter operation and collect condition
                 if (rcla->getLevel(&condition) == search.getIdentifier()) {
                     changed = true;
-		    // std::cout << "Filter: " << search.getIdentifier() << std::endl;
-		    // std::cout << condition << std::endl;
-                    levelledCondition = collectCondition(std::move(levelledCondition), condition.clone());
-		    // std::cout << "Current condition:" << *levelledCondition << std::endl;
+                    newCondition = addCondition(std::move(newCondition), condition.clone());
+                    node->apply(makeLambdaRamMapper(filterRewriter));
                     return std::unique_ptr<RamOperation>(filter->getOperation().clone());
                 }
             }
+            node->apply(makeLambdaRamMapper(filterRewriter));
             return node;
         };
-        search.getOperation().apply(makeLambdaRamMapper(filterRewriter)); 
-        // If a condition applies to this scan level, filter the scan based on the condition
-        if (levelledCondition != nullptr) {
-	    // std::cout << "Complete condition: " << std::endl;
-	    // std::cout << *levelledCondition << std::endl;
-            insertFilter((RamOperation*)&search, levelledCondition);
+        ((RamNode*)&search)->apply(makeLambdaRamMapper(filterRewriter));
+        if (newCondition != nullptr) {
+            // insert new filter operation after the search operation
             changed = true;
+            insertFilter((RamOperation*)&search, newCondition);
         }
     });
-      // std::cout << "After:\n" << query << std::endl;
-   //  });
-
-
-
     return changed;
 }
 

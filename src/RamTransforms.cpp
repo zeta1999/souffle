@@ -212,15 +212,15 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
                     queryPattern[element] = std::move(value);
                 } else {
                     // TODO: this case is a recursive case introducing a new filter operation
-		    // at upper level, i.e., if .. queryPattern[element] == value .. 
+		    // at upper level, i.e., if queryPattern[element] == value ...
 		    // and apply indexing recursively to the rewritten program. 
+		    // At the moment we just another local condition which is sub-optimal
                     addCondition(std::move(cond));
                 }
             } else {
                 addCondition(std::move(cond));
             }
         }
-
 
         // replace scan by index scan
         if (indexable) {
@@ -238,7 +238,7 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
 
 bool CreateIndicesTransformer::createIndices(RamProgram& program) {
     bool changed = false; 
-    visitDepthFirst(program, [&](const RamScan& scan) {
+    visitDepthFirst(program, [&](const RamScan& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (auto* scan = dynamic_cast<RamScan*>(node.get())) {
@@ -250,7 +250,7 @@ bool CreateIndicesTransformer::createIndices(RamProgram& program) {
             node->apply(makeLambdaRamMapper(scanRewriter));
             return node;
         };
-        ((RamNode*)&scan)->apply(makeLambdaRamMapper(scanRewriter));
+        ((RamNode*)&query)->apply(makeLambdaRamMapper(scanRewriter));
     });
     return changed;
 }

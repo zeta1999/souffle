@@ -481,8 +481,8 @@ int main(int argc, char** argv) {
             AstTranslator().translateUnit(*astTranslationUnit);
 
     std::vector<std::unique_ptr<RamTransformer>> ramTransforms;
-    ramTransforms.push_back(std::make_unique<LevelConditionsTransformer>());
-    ramTransforms.push_back(std::make_unique<CreateIndicesTransformer>());
+    ramTransforms.push_back(std::make_unique<HoistConditionsTransformer>());
+    ramTransforms.push_back(std::make_unique<MakeIndexTransformer>());
     ramTransforms.push_back(std::make_unique<ConvertExistenceChecksTransformer>());
 
     for (const auto& transform : ramTransforms) {

@@ -54,7 +54,7 @@ std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* con
  * are not. Depending on the type, a different transformation is
  * required.
  */
-bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
+bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
     // flag to determine whether the RAM program has changed
     bool changed = false;
 
@@ -137,27 +137,10 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 }
 
 /**
- * createIndices assumes that the RAM has been levelled before, and
- * that the conditions that could be used for an index are located
- * immediately after the scan or aggregrate information
- *
- *  QUERY
- *   ...
- *   FOR t1 in A
- *    IF t1.x = 10 /\ t1.y = 20 /\ C
- *     ...
- *
- * will be rewritten to
- *
- *  QUERY
- *   ...
- *    SEARCH t1 in A INDEX (10, 20)
- *     IF C
- *      ...
  */
 
 /** Get expression of an equivalence constraint of the format t1.x = <expression> or <expression> = t1.x */
-std::unique_ptr<RamExpression> CreateIndicesTransformer::getExpression(
+std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
         RamCondition* c, size_t& element, int identifier) {
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
@@ -182,7 +165,7 @@ std::unique_ptr<RamExpression> CreateIndicesTransformer::getExpression(
     return nullptr;
 }
 
-std::unique_ptr<RamCondition> CreateIndicesTransformer::constructPattern(
+std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
         std::vector<std::unique_ptr<RamExpression>>& queryPattern, bool& indexable,
         std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier) {
     // Remaining conditions which cannot be handled by an index
@@ -219,7 +202,7 @@ std::unique_ptr<RamCondition> CreateIndicesTransformer::constructPattern(
 }
 
 /* Find the query pattern for an indexable scan operation and rewrite it to an IndexScan */
-std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteAggregate(const RamAggregate* agg) {
+std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAggregate* agg) {
     if (agg->getCondition() != nullptr) {
         const RamRelation& rel = agg->getRelation();
         int identifier = agg->getIdentifier();
@@ -240,7 +223,7 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteAggregate(const R
     return nullptr;
 }
 /* Find the query pattern for an indexable scan operation and rewrite it to an IndexScan */
-std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamScan* scan) {
+std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* scan) {
     if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
         const RamRelation& rel = scan->getRelation();
         const int identifier = scan->getIdentifier();
@@ -261,7 +244,7 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
     return nullptr;
 }
 
-bool CreateIndicesTransformer::createIndices(RamProgram& program) {
+bool MakeIndexTransformer::makeIndex(RamProgram& program) {
     bool changed = false;
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =

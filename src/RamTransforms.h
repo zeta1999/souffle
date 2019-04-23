@@ -32,7 +32,7 @@ class RamProgram;
  * Hoists the conditions to the earliest point in the loop nest where they
  * can be evaluated.
  *
- * levelConditions assumes that filter operations are stored verbose,
+ * hoistConditions assumes that filter operations are stored verbose,
  * i.e. a conjunction is expressed by two consecutive filter operations.
  * For example ..
  *
@@ -49,43 +49,58 @@ class RamProgram;
  *     IF C2
  *      ...
  *
- * otherwise the levelling becomes imprecise. For both conditions
- * the most outer-level is sought rather than separately.
+ * otherwise the levelling becomes imprecise, i.e., for both conditions
+ * the most outer-level is sought rather than considered separately.
  *
- * If there are transformers prior to levelCondition that introduce
+ * If there are transformers prior to hoistConditions() that introduce
  * conjunction, another transformer is required that splits the
  * filter operations. However, at the moment this is not necessary
- * because the translator delivers already this format.
- *
+ * because the translator delivers already the right RAM format.
  */
-class LevelConditionsTransformer : public RamTransformer {
+class HoistConditionsTransformer : public RamTransformer {
 public:
     std::string getName() const override {
-        return "LevelConditionsTransformer";
+        return "HoistConditionsTransformer";
     }
 
-    /**
-     * @param program the program to be processed
-     * @return whether the program was modified
-     */
-    bool levelConditions(RamProgram& program);
+    /** hoist all conditions in a RAM program to the outermost scope */
+    bool hoistConditions(RamProgram& program);
 
 protected:
     RamConditionLevelAnalysis* rcla{nullptr};
 
     bool transform(RamTranslationUnit& translationUnit) override {
         rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
-        return levelConditions(*translationUnit.getProgram());
+        return hoistConditions(*translationUnit.getProgram());
     }
 };
 
 /**
- * Convert RamScan operations to RamIndexScan operations
+ * Make indexable operations to indexed operations.
+ *
+ * makeIndex() assumes that the RAM has been levelled before, and
+ * that the conditions that could be used for an index are located
+ * immediately after the scan or aggregrate operation
+ *
+ *  QUERY
+ *   ...
+ *   FOR t1 in A
+ *    IF t1.x = 10 /\ t1.y = 20 /\ C
+ *     ...
+ *
+ * will be rewritten to
+ *
+ *  QUERY
+ *   ...
+ *    SEARCH t1 in A INDEX t1.x=10 and t1.y = 20
+ *     IF C
+ *      ...
  */
-class CreateIndicesTransformer : public RamTransformer {
+
+class MakeIndexTransformer : public RamTransformer {
 public:
     std::string getName() const override {
-        return "CreateIndicesTransformer";
+        return "MakeIndexTransformer";
     }
 
     /** Get expression of an equivalence relation of the format t1.x = <expr> or <expr> = t1.x */
@@ -101,16 +116,16 @@ public:
     /** Rewrite an aggregate operation to an indexed aggregate operation */
     std::unique_ptr<RamOperation> rewriteAggregate(const RamAggregate* agg);
 
-    bool createIndices(RamProgram& program);
+    /** Make indexable RAM operation indexed */
+    bool makeIndex(RamProgram& program);
 
 protected:
     RamExpressionLevelAnalysis* rvla{nullptr};
     RamConstValueAnalysis* rcva{nullptr};
-
     bool transform(RamTranslationUnit& translationUnit) override {
         rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
         rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
-        return createIndices(*translationUnit.getProgram());
+        return makeIndex(*translationUnit.getProgram());
     }
 };
 

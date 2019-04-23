@@ -88,23 +88,29 @@ public:
         return "CreateIndicesTransformer";
     }
 
+    /** Get expression of an equivalence relation of the format t1.x = <expr> or <expr> = t1.x */ 
     std::unique_ptr<RamExpression> getExpression(RamCondition* c, size_t& element, int level);
 
+    /** Construct patterns for an indexable operation and the remaining condition that cannot be indexed */ 
+    std::unique_ptr<RamCondition> constructPattern(std::vector<std::unique_ptr<RamExpression>> &queryPattern, bool &indexable, 
+		 std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier);
+
+    /** Rewrite a scan operation to an indexed scan operation */ 
     std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
 
-    /**
-     * @param program the program to be processed
-     * @return whether the program was modified
-     */
+    /** Rewrite an aggregate operation to an indexed aggregate operation */ 
+    std::unique_ptr<RamOperation> rewriteAggregate(const RamAggregate *agg); 
+
     bool createIndices(RamProgram& program);
 
 protected:
-    RamConstValueAnalysis* rcva{nullptr};
     RamExpressionLevelAnalysis* rvla{nullptr};
+    RamConstValueAnalysis* rcva{nullptr};
+ 
 
     bool transform(RamTranslationUnit& translationUnit) override {
-        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
         rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
+        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
         return createIndices(*translationUnit.getProgram());
     }
 };

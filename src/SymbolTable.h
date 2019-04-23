@@ -389,6 +389,30 @@ public:
         }
     }
 
+    /** Check if the symbol table contains a string */
+    bool contains(const std::string& symbol) const {
+        auto lease = access.acquire();
+        (void)lease;  // avoid warning;
+        auto result = strToNum.find(symbol);
+        if (result == strToNum.end()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /** Check if the symbol table contains an index */
+    bool contains(const RamDomain index) const {
+        auto lease = access.acquire();
+        (void)lease;  // avoid warning;
+        auto pos = static_cast<size_t>(index);
+        if (pos >= size()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     Lock::Lease acquireLock() const {
         return access.acquire();
     }

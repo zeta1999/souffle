@@ -46,35 +46,10 @@ public:
             std::signal(SIGWINCH, nullptr);
         }
 
-        // process commands
-        char buf[100];
-        std::string line;
-
         while (true) {
-            if (ncurses && !output) {
-                // reset command line on each loop
-                werase(queryWindow);
-                wrefresh(queryWindow);
-                mvwprintw(queryWindow, 1, 0, "Enter command > ");
-                curs_set(1);
-                echo();
-
-                // get next command
-                wgetnstr(queryWindow, buf, 100);
-                noecho();
-                curs_set(0);
-                line = buf;
-
-                // reset tree display on each loop
-                werase(treePad);
-                prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
-            } else {
-                std::cout << "Enter command > ";
-                if (!getline(std::cin, line)) {
-                    printStr("Exiting explain\n");
-                    break;
-                }
-            }
+            clearDisplay();
+            printPrompt("Enter command > ");
+            std::string line = getInput();
 
             std::vector<std::string> command = split(line, ' ', 1);
 
@@ -116,6 +91,54 @@ public:
                 }
                 std::unique_ptr<TreeNode> t = prov.explainSubproof(query.first, label, depthLimit);
                 printTree(std::move(t));
+            } else if (command[0] == "explainnegation") {
+                std::pair<std::string, std::vector<std::string>> query;
+                if (command.size() == 2) {
+                    query = parseTuple(command[1]);
+                } else {
+                    printStr(
+                            "Usage: explainnegation relation_name(\"<string element1>\", <number element2>, "
+                            "...)\n");
+                    continue;
+                }
+
+                size_t i = 1;
+                std::string rules;
+                for (auto rule : prov.getRules(query.first)) {
+                    rules += std::to_string(i) + ": ";
+                    rules += rule;
+                    rules += "\n\n";
+                    i++;
+                }
+                printStr(rules);
+
+                if (ncurses && !output) {
+                    prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
+                }
+
+                printPrompt("Pick a rule number: ");
+
+                std::string ruleNum = getInput();
+                auto variables =
+                        prov.explainNegationGetVariables(query.first, query.second, std::stoi(ruleNum));
+
+                if (variables.size() == 1 && variables[0] == "@") {
+                    printPrompt("The tuple exists, cannot explain negation of it!\n");
+                    continue;
+                } else if (variables.size() == 1 && variables[0] == "@non_matching") {
+                    printPrompt("The variable bindings don't match, cannot explain!\n");
+                    continue;
+                }
+
+                // this doesn't work with ncurses yet!!
+                std::map<std::string, std::string> varValues;
+                for (auto var : variables) {
+                    printPrompt("Pick a value for " + var + ": ");
+                    std::string varValue = getInput();
+                    varValues[var] = varValue;
+                }
+
+                printTree(prov.explainNegation(query.first, std::stoi(ruleNum), query.second, varValues));
             } else if (command[0] == "rule" && command.size() == 2) {
                 auto query = split(command[1], ' ');
                 if (query.size() != 2) {
@@ -328,6 +351,49 @@ private:
         treePad = newpad(MAX_TREE_HEIGHT, MAX_TREE_WIDTH);
 
         keypad(treePad, true);
+    }
+
+    std::string getInput() {
+        std::string line;
+
+        if (ncurses && !output) {
+            char buf[100];
+
+            curs_set(1);
+            echo();
+
+            // get next command
+            wgetnstr(queryWindow, buf, 100);
+            noecho();
+            curs_set(0);
+            line = buf;
+        } else {
+            if (!getline(std::cin, line)) {
+                printStr("Exiting explain\n");
+                return "q";
+            }
+        }
+
+        return line;
+    }
+
+    void printPrompt(std::string prompt) {
+        if (ncurses && !output) {
+            // reset command line on each loop
+            werase(queryWindow);
+            wrefresh(queryWindow);
+            mvwprintw(queryWindow, 1, 0, prompt.c_str());
+        } else {
+            std::cout << prompt;
+        }
+    }
+
+    void clearDisplay() {
+        if (ncurses && !output) {
+            // reset tree display on each loop
+            werase(treePad);
+            prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
+        }
     }
 };
 

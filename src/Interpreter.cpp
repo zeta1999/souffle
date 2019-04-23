@@ -28,7 +28,7 @@
 #include "ProfileEvent.h"
 #include "RamExistenceCheckAnalysis.h"
 #include "RamExpression.h"
-#include "RamIndexScanKeys.h"
+#include "RamIndexKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamOperationDepth.h"

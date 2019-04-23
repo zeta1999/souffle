@@ -483,7 +483,8 @@ int main(int argc, char** argv) {
     std::vector<std::unique_ptr<RamTransformer>> ramTransforms;
     ramTransforms.push_back(std::make_unique<LevelConditionsTransformer>());
     ramTransforms.push_back(std::make_unique<CreateIndicesTransformer>());
-    ramTransforms.push_back(std::make_unique<ConvertExistenceChecksTransformer>());
+    // TODO: not working:
+    // ramTransforms.push_back(std::make_unique<ConvertExistenceChecksTransformer>());
 
     for (const auto& transform : ramTransforms) {
         /* If the ram transform changed the program, show this */

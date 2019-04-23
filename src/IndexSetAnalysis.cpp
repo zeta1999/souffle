@@ -17,7 +17,7 @@
 #include "IndexSetAnalysis.h"
 #include "RamCondition.h"
 #include "RamExistenceCheckAnalysis.h"
-#include "RamIndexScanKeys.h"
+#include "RamIndexKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProvenanceExistenceCheckAnalysis.h"
@@ -280,18 +280,15 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
 
 /** Compute indexes */
 void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
-    const auto* indexScanKeysAnalysis = translationUnit.getAnalysis<RamIndexScanKeysAnalysis>();
+    const auto* indexKeysAnalysis = translationUnit.getAnalysis<RamIndexKeysAnalysis>();
     const auto* existCheckAnalysis = translationUnit.getAnalysis<RamExistenceCheckAnalysis>();
     const auto* provExistCheckAnalysis = translationUnit.getAnalysis<RamProvenanceExistenceCheckAnalysis>();
 
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
-        if (const auto* indexScan = dynamic_cast<const RamIndexScan*>(&node)) {
-            IndexSet& indexes = getIndexes(indexScan->getRelation());
-            indexes.addSearch(indexScanKeysAnalysis->getRangeQueryColumns(indexScan));
-        } else if (const auto* agg = dynamic_cast<const RamAggregate*>(&node)) {
-            IndexSet& indexes = getIndexes(agg->getRelation());
-            indexes.addSearch(agg->getRangeQueryColumns());
+        if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
+            IndexSet& indexes = getIndexes(indexSearch->getRelation());
+            indexes.addSearch(indexKeysAnalysis->getRangeQueryColumns(indexSearch));
         } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
             IndexSet& indexes = getIndexes(exists->getRelation());
             indexes.addSearch(existCheckAnalysis->getKey(exists));

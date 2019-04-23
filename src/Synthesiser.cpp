@@ -23,7 +23,7 @@
 #include "RamCondition.h"
 #include "RamExistenceCheckAnalysis.h"
 #include "RamExpression.h"
-#include "RamIndexScanKeys.h"
+#include "RamIndexKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
@@ -192,7 +192,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         Synthesiser& synthesiser;
         RamExistenceCheckAnalysis* existCheckAnalysis;
         RamProvenanceExistenceCheckAnalysis* provExistCheckAnalysis;
-        RamIndexScanKeysAnalysis* keysAnalysis;
+        RamIndexKeysAnalysis* keysAnalysis;
 
 // macros to add comments to generated code for debugging
 #ifndef PRINT_BEGIN_COMMENT
@@ -215,7 +215,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                   existCheckAnalysis(syn.getTranslationUnit().getAnalysis<RamExistenceCheckAnalysis>()),
                   provExistCheckAnalysis(
                           syn.getTranslationUnit().getAnalysis<RamProvenanceExistenceCheckAnalysis>()),
-                  keysAnalysis(syn.getTranslationUnit().getAnalysis<RamIndexScanKeysAnalysis>()) {
+                  keysAnalysis(syn.getTranslationUnit().getAnalysis<RamIndexKeysAnalysis>()) {
             rec = [&](std::ostream& out, const RamNode* node) { this->visit(*node, out); };
         }
 
@@ -753,8 +753,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // declare environment variable
             out << tuple_type << " env" << identifier << ";\n";
 
-            // special case: counting of number elements in a full relation
-            if (aggregate.getFunction() == RamAggregate::COUNT && aggregate.getRangeQueryColumns() == 0) {
+            // get range to aggregate
+            auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);
+
+            // special case: counting number elements in a full relation
+            if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -781,8 +784,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << "RamDomain res = " << init << ";\n";
 
-            // get range to aggregate
-            auto keys = aggregate.getRangeQueryColumns();
 
             // check whether there is an index to use
             if (keys == 0) {
@@ -793,8 +794,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // a lambda for printing boundary key values
                 auto printKeyTuple = [&]() {
                     for (size_t i = 0; i < arity; i++) {
-                        if (aggregate.getPattern()[i] != nullptr) {
-                            visit(aggregate.getPattern()[i], out);
+                        if (aggregate.getRangePattern()[i] != nullptr) {
+                            visit(aggregate.getRangePattern()[i], out);
                         } else {
                             out << "0";
                         }

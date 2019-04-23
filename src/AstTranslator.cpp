@@ -728,29 +728,46 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         const AstAtom* atom = dynamic_cast<const AstAtom*>(cur->getBodyLiterals()[0]);
         assert(atom && "Unsupported complex aggregation body encountered!");
 
-        // add Ram-Aggregation layer
-        std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(
-                std::move(op), fun, std::move(value), translator.translateRelation(atom), level);
-
-        // add constant constraints
+        std::unique_ptr<RamCondition> aggCondition;
         for (size_t pos = 0; pos < atom->argSize(); ++pos) {
             if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
-                aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                        std::make_unique<RamElementAccess>(level, pos, translator.translateRelation(atom)),
-                        std::make_unique<RamNumber>(c->getIndex())));
+		    std::unique_ptr<RamCondition> newCondition =std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                                           std::make_unique<RamElementAccess>(level, pos,
+                                                                   translator.translateRelation(atom)),
+                                                           std::make_unique<RamNumber>(c->getIndex())); 
+                if(aggCondition == nullptr) { 
+			aggCondition = std::move(newCondition); 
+		} else {
+		        aggCondition = std::make_unique<RamConjunction>(std::move(aggCondition), std::move(newCondition));
+		}
             } else if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {
                 // all other appearances
                 for (const Location& loc : valueIndex.getVariableReferences().find(var->getName())->second) {
                     if (level != loc.identifier || (int)pos != loc.element) {
-                        aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+			    std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                 makeRamElementAccess(loc),
                                 std::make_unique<RamElementAccess>(
-                                        level, pos, translator.translateRelation(atom))));
+                                        level, pos, translator.translateRelation(atom)));
+                if(aggCondition == nullptr) { 
+			aggCondition = std::move(newCondition); 
+		} else {
+		        aggCondition = std::make_unique<RamConjunction>(std::move(aggCondition), std::move(newCondition));
+		}
                         break;
                     }
                 }
             }
         }
+
+        // add Ram-Aggregation layer
+	std::vector<std::unique_ptr<RamExpression>> pattern(atom->getArity());
+        std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(std::move(op), 
+			  fun,
+                translator.translateRelation(atom), 
+		std::move(value), 
+		std::move(aggCondition), 
+		std::move(pattern), 
+		level);
         op = std::move(aggregate);
     }
 

@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamIndexScanKeys.h
+ * @file RamIndexKeys.h
  *
  * Get the indexable columns for a range query
  *
@@ -24,7 +24,7 @@ namespace souffle {
 /*
  * Class to compute the search columns of an index scan
  */
-class RamIndexScanKeysAnalysis : public RamAnalysis {
+class RamIndexKeysAnalysis : public RamAnalysis {
 public:
     /** Name of analysis */
     static constexpr const char* name = "index-scan-keys-analysis";
@@ -33,7 +33,7 @@ public:
     void run(const RamTranslationUnit& translationUnit) override {}
 
     /** Get indexable columns of index scan */
-    SearchColumns getRangeQueryColumns(const RamIndexScan* scan) const;
+    SearchColumns getRangeQueryColumns(const RamIndexRelationSearch* search) const;
 };
 
 }  // end of namespace souffle

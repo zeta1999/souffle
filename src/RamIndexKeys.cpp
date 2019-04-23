@@ -8,21 +8,21 @@
 
 /************************************************************************
  *
- * @file RamIndexScanKeys.cpp
+ * @file RamIndexKeys.cpp
  *
  * Implementation of RamIndexScan Keys Analysis
  *
  ***********************************************************************/
 
-#include "RamIndexScanKeys.h"
+#include "RamIndexKeys.h"
 #include "RamVisitor.h"
 
 namespace souffle {
 
 /** Get indexable columns of index scan */
-SearchColumns RamIndexScanKeysAnalysis::getRangeQueryColumns(const RamIndexScan* scan) const {
+SearchColumns RamIndexKeysAnalysis::getRangeQueryColumns(const RamIndexRelationSearch* search) const {
     SearchColumns keys = 0;
-    std::vector<RamExpression*> rangePattern = scan->getRangePattern();
+    std::vector<RamExpression*> rangePattern = search->getRangePattern();
     for (std::size_t i = 0; i < rangePattern.size(); i++) {
         if (rangePattern[i] != nullptr) {
             keys |= (1 << i);

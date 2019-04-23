@@ -1210,6 +1210,149 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
     return ProvenanceClauseTranslator(*this).translateClause(*intermediateClause, clause);
 }
 
+/** make a subroutine to search for subproofs for the non-existence of a tuple */
+std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
+    // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates or
+    // anything else...)
+
+    // build a vector of unique variables
+    std::vector<AstVariable> uniqueVariables;
+
+    visitDepthFirst(clause, [&](const AstVariable& var) {
+        if (var.getName().find("@level_num") == std::string::npos) {
+            if (std::find(uniqueVariables.begin(), uniqueVariables.end(), var) == uniqueVariables.end()) {
+                uniqueVariables.push_back(var);
+            }
+        }
+    });
+
+    // a mapper to replace variables with subroutine arguments
+    struct VariablesToArguments : public AstNodeMapper {
+        const std::vector<AstVariable>& uniqueVariables;
+
+        VariablesToArguments() = default;
+        VariablesToArguments(const std::vector<AstVariable>& uniqueVariables)
+                : uniqueVariables(uniqueVariables) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // apply recursive
+            node->apply(*this);
+
+            // replace unknown variables
+            if (auto varPtr = dynamic_cast<AstVariable*>(node.get())) {
+                auto var = *varPtr;
+                size_t argNum = std::find(uniqueVariables.begin(), uniqueVariables.end(), var) -
+                                uniqueVariables.begin();
+
+                return std::make_unique<AstSubroutineArgument>(argNum);
+            }
+
+            // otherwise nothing
+            return node;
+        }
+    };
+
+    // the structure of this subroutine is a sequence where each nested statement is a search in each relation
+    std::unique_ptr<RamSequence> searchSequence = std::make_unique<RamSequence>();
+
+    // go through each body atom and create a return
+    size_t litNumber = 0;
+    for (const auto& lit : clause.getBodyLiterals()) {
+        if (auto atom = dynamic_cast<AstAtom*>(lit)) {
+            // get a RamRelationReference
+            auto relRef = translateRelation(atom);
+
+            // construct a query
+            std::vector<std::unique_ptr<RamExpression>> query;
+            SearchColumns searchCols = 0;
+
+            // translate variables to subroutine arguments
+            VariablesToArguments varsToArgs(uniqueVariables);
+            atom->apply(varsToArgs);
+
+            // add each value (subroutine argument) to the search query
+            for (size_t i = 0; i < atom->getArity() - 2; i++) {
+                auto arg = atom->getArgument(i);
+                query.push_back(translateValue(arg, ValueIndex()));
+                searchCols = (searchCols << 1) + 1;
+            }
+
+            // fill up query with nullptrs for the provenance columns
+            query.push_back(nullptr);
+            query.push_back(nullptr);
+
+            // ensure the length of query tuple is correct
+            assert(query.size() == atom->getArity() && "wrong query tuple size");
+
+            // make the nested operation to return the atom number if it exists
+            auto returnValue = std::make_unique<RamReturn>(std::vector<std::unique_ptr<RamExpression>>());
+            returnValue->addValue(std::make_unique<RamNumber>(litNumber));
+
+            // create a search
+            auto search = std::make_unique<RamIndexScan>(
+                    std::move(relRef), litNumber, std::move(query), std::move(returnValue));
+
+            // now, return the values of the atoms, with a separator
+            auto returnAtom = std::make_unique<RamReturn>(std::vector<std::unique_ptr<RamExpression>>());
+            // separator between atom number and atom
+            returnAtom->addValue(nullptr);
+            // the actual atom
+            for (size_t i = 0; i < atom->getArity() - 2; i++) {
+                returnAtom->addValue(translateValue(atom->getArgument(i), ValueIndex()));
+            }
+
+            // chain the atom number and atom value together
+            auto atomSequence = std::make_unique<RamSequence>();
+            atomSequence->add(std::make_unique<RamQuery>(std::move(search)));
+            atomSequence->add(std::make_unique<RamQuery>(std::move(returnAtom)));
+
+            // append search to the sequence
+            searchSequence->add(std::move(atomSequence));
+
+        } else if (auto con = dynamic_cast<AstConstraint*>(lit)) {
+            VariablesToArguments varsToArgs(uniqueVariables);
+            con->apply(varsToArgs);
+
+            // translate to a RamCondition
+            auto condition = translateConstraint(con, ValueIndex());
+
+            // create a return value
+            auto returnValue = std::make_unique<RamReturn>(std::vector<std::unique_ptr<RamExpression>>());
+            returnValue->addValue(std::make_unique<RamNumber>(litNumber));
+
+            // create a filter
+            auto filter = std::make_unique<RamFilter>(std::move(condition), std::move(returnValue));
+
+            // now, return the values of the literal, with a separator
+            auto returnLit = std::make_unique<RamReturn>(std::vector<std::unique_ptr<RamExpression>>());
+            // separator between atom number and atom
+            returnLit->addValue(nullptr);
+            // add return values for binary constraints and negations
+            if (auto binaryConstraint = dynamic_cast<AstBinaryConstraint*>(con)) {
+                returnLit->addValue(translateValue(binaryConstraint->getLHS(), ValueIndex()));
+                returnLit->addValue(translateValue(binaryConstraint->getRHS(), ValueIndex()));
+            } else if (auto negation = dynamic_cast<AstNegation*>(con)) {
+                auto vals = negation->getAtom()->getArguments();
+                for (size_t i = 0; i < vals.size() - 2; i++) {
+                    returnLit->addValue(translateValue(vals[i], ValueIndex()));
+                }
+            }
+
+            // chain the atom number and atom value together
+            auto litSequence = std::make_unique<RamSequence>();
+            litSequence->add(std::make_unique<RamQuery>(std::move(filter)));
+            litSequence->add(std::make_unique<RamQuery>(std::move(returnLit)));
+
+            // append search to the sequence
+            searchSequence->add(std::move(litSequence));
+        }
+
+        litNumber++;
+    }
+
+    return std::move(searchSequence);
+}
+
 /** translates the given datalog program into an equivalent RAM program  */
 void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) {
     // obtain type environment from analysis
@@ -1510,6 +1653,10 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             std::string subroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_subproof";
             ramProg->addSubroutine(subroutineLabel, makeSubproofSubroutine(clause));
+
+            std::string negationSubroutineLabel =
+                    relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_negation_subproof";
+            ramProg->addSubroutine(negationSubroutineLabel, makeNegationSubproofSubroutine(clause));
         });
     }
 }

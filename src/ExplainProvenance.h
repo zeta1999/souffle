@@ -49,7 +49,7 @@ inline std::vector<std::string> split(const std::string& s, char delim, int time
 
 class ExplainProvenance {
 public:
-    ExplainProvenance(SouffleProgram& prog) : prog(prog) {}
+    ExplainProvenance(SouffleProgram& prog) : prog(prog), symTable(prog.getSymbolTable()) {}
     virtual ~ExplainProvenance() = default;
 
     virtual void setup() = 0;
@@ -60,7 +60,15 @@ public:
     virtual std::unique_ptr<TreeNode> explainSubproof(
             std::string relName, RamDomain label, size_t depthLimit) = 0;
 
+    virtual std::vector<std::string> explainNegationGetVariables(
+            std::string relName, std::vector<std::string> args, size_t ruleNum) = 0;
+
+    virtual std::unique_ptr<TreeNode> explainNegation(std::string relName, size_t ruleNum,
+            const std::vector<std::string>& tuple, std::map<std::string, std::string>& bodyVariables) = 0;
+
     virtual std::string getRule(std::string relName, size_t ruleNum) = 0;
+
+    virtual std::vector<std::string> getRules(std::string relName) = 0;
 
     virtual std::string measureRelation(std::string relName) = 0;
 
@@ -100,8 +108,10 @@ public:
 
 protected:
     SouffleProgram& prog;
+    SymbolTable& symTable;
 
-    std::vector<RamDomain> argsToNums(const std::string& relName, std::vector<std::string>& args) const {
+    std::vector<RamDomain> argsToNums(
+            const std::string& relName, const std::vector<std::string>& args) const {
         std::vector<RamDomain> nums;
 
         auto rel = prog.getRelation(relName);
@@ -114,7 +124,7 @@ protected:
                 // remove quotation marks
                 if (args[i].size() >= 2 && args[i][0] == '"' && args[i][args[i].size() - 1] == '"') {
                     auto originalStr = args[i].substr(1, args[i].size() - 2);
-                    nums.push_back(prog.getSymbolTable().lookupExisting(originalStr));
+                    nums.push_back(symTable.lookup(originalStr));
                 }
             } else {
                 nums.push_back(std::stoi(args[i]));
@@ -138,7 +148,7 @@ protected:
                 args.push_back("_");
             } else {
                 if (*rel->getAttrType(i) == 's') {
-                    args.push_back("\"" + std::string(prog.getSymbolTable().resolve(nums[i])) + "\"");
+                    args.push_back("\"" + std::string(symTable.resolve(nums[i])) + "\"");
                 } else {
                     args.push_back(std::to_string(nums[i]));
                 }

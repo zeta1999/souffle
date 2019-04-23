@@ -251,7 +251,7 @@ public:
     }
 
     /** Get symbol table */
-    const SymbolTable& getSymbolTable() const override {
+    SymbolTable& getSymbolTable() override {
         return symTable;
     }
 

@@ -610,6 +610,12 @@ public:
         return toPtrVector(expressions);
     }
 
+    /** Add expression */
+    void addValue(std::unique_ptr<RamExpression> expr) {
+        expressions.push_back(std::move(expr));
+    }
+
+    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         for (const auto& cur : expressions) {

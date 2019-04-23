@@ -1226,9 +1226,6 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     // the structure of this subroutine is a sequence where each nested statement is a search in each relation
     std::unique_ptr<RamSequence> searchSequence = std::make_unique<RamSequence>();
 
-    // value index
-    // auto valueIndex = ClauseTranslator(*this).createValueIndex(clause);
-
     // go through each body atom and create a return
     size_t litNumber = 0;
     for (const auto& lit : clause.getBodyLiterals()) {
@@ -1249,19 +1246,6 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
                 query.push_back(translateValue(arg, ValueIndex()));
                 searchCols = (searchCols << 1) + 1;
             }
-
-            /*
-            // get the query pattern and range query columns from subroutine arguments
-            visitDepthFirst(*atom, [&](const AstVariable& var) {
-                if (var.getName().find("@level_num") == std::string::npos) {
-                    // assume the variable has been found already
-                    size_t argNum = std::find(uniqueVariables.begin(), uniqueVariables.end(), var) -
-                                    uniqueVariables.begin();
-                    query.push_back(std::make_unique<RamArgument>(argNum));
-
-                }
-            });
-            */
 
             // fill up query with nullptrs for the provenance columns
             query.push_back(nullptr);

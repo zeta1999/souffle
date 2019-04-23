@@ -726,7 +726,7 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 RamDomain size = code[ip + 1];
                 std::string types = symbolTable.resolve(code[ip + 2]);
                 for (auto i = 0; i < size; ++i) {
-                    if (types[i] == '_') {
+                    if (types[size - i - 1] == '_') {
                         ctxt.addReturnValue(0, true);
                     } else {
                         ctxt.addReturnValue(stack.top(), false);

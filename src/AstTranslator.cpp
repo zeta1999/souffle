@@ -731,28 +731,30 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         std::unique_ptr<RamCondition> aggCondition;
         for (size_t pos = 0; pos < atom->argSize(); ++pos) {
             if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
-		    std::unique_ptr<RamCondition> newCondition =std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                           std::make_unique<RamElementAccess>(level, pos,
-                                                                   translator.translateRelation(atom)),
-                                                           std::make_unique<RamNumber>(c->getIndex())); 
-                if(aggCondition == nullptr) { 
-			aggCondition = std::move(newCondition); 
-		} else {
-		        aggCondition = std::make_unique<RamConjunction>(std::move(aggCondition), std::move(newCondition));
-		}
+                std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
+                        BinaryConstraintOp::EQ,
+                        std::make_unique<RamElementAccess>(level, pos, translator.translateRelation(atom)),
+                        std::make_unique<RamNumber>(c->getIndex()));
+                if (aggCondition == nullptr) {
+                    aggCondition = std::move(newCondition);
+                } else {
+                    aggCondition = std::make_unique<RamConjunction>(
+                            std::move(aggCondition), std::move(newCondition));
+                }
             } else if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {
                 // all other appearances
                 for (const Location& loc : valueIndex.getVariableReferences().find(var->getName())->second) {
                     if (level != loc.identifier || (int)pos != loc.element) {
-			    std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                makeRamElementAccess(loc),
+                        std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
+                                BinaryConstraintOp::EQ, makeRamElementAccess(loc),
                                 std::make_unique<RamElementAccess>(
                                         level, pos, translator.translateRelation(atom)));
-                if(aggCondition == nullptr) { 
-			aggCondition = std::move(newCondition); 
-		} else {
-		        aggCondition = std::make_unique<RamConjunction>(std::move(aggCondition), std::move(newCondition));
-		}
+                        if (aggCondition == nullptr) {
+                            aggCondition = std::move(newCondition);
+                        } else {
+                            aggCondition = std::make_unique<RamConjunction>(
+                                    std::move(aggCondition), std::move(newCondition));
+                        }
                         break;
                     }
                 }
@@ -760,14 +762,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
 
         // add Ram-Aggregation layer
-	std::vector<std::unique_ptr<RamExpression>> pattern(atom->getArity());
-        std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(std::move(op), 
-			  fun,
-                translator.translateRelation(atom), 
-		std::move(value), 
-		std::move(aggCondition), 
-		std::move(pattern), 
-		level);
+        std::vector<std::unique_ptr<RamExpression>> pattern(atom->getArity());
+        std::unique_ptr<RamAggregate> aggregate =
+                std::make_unique<RamAggregate>(std::move(op), fun, translator.translateRelation(atom),
+                        std::move(value), std::move(aggCondition), std::move(pattern), level);
         op = std::move(aggregate);
     }
 

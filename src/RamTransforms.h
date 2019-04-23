@@ -47,7 +47,7 @@ class RamProgram;
  *   ...
  *    IF C1
  *     IF C2
- *      ...   
+ *      ...
  *
  * otherwise the levelling becomes imprecise. For both conditions
  * the most outer-level is sought rather than separately.
@@ -80,7 +80,7 @@ protected:
 };
 
 /**
- * Convert RamScan operations to RamIndexScan operations 
+ * Convert RamScan operations to RamIndexScan operations
  */
 class CreateIndicesTransformer : public RamTransformer {
 public:
@@ -88,25 +88,24 @@ public:
         return "CreateIndicesTransformer";
     }
 
-    /** Get expression of an equivalence relation of the format t1.x = <expr> or <expr> = t1.x */ 
+    /** Get expression of an equivalence relation of the format t1.x = <expr> or <expr> = t1.x */
     std::unique_ptr<RamExpression> getExpression(RamCondition* c, size_t& element, int level);
 
-    /** Construct patterns for an indexable operation and the remaining condition that cannot be indexed */ 
-    std::unique_ptr<RamCondition> constructPattern(std::vector<std::unique_ptr<RamExpression>> &queryPattern, bool &indexable, 
-		 std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier);
+    /** Construct patterns for an indexable operation and the remaining condition that cannot be indexed */
+    std::unique_ptr<RamCondition> constructPattern(std::vector<std::unique_ptr<RamExpression>>& queryPattern,
+            bool& indexable, std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier);
 
-    /** Rewrite a scan operation to an indexed scan operation */ 
+    /** Rewrite a scan operation to an indexed scan operation */
     std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
 
-    /** Rewrite an aggregate operation to an indexed aggregate operation */ 
-    std::unique_ptr<RamOperation> rewriteAggregate(const RamAggregate *agg); 
+    /** Rewrite an aggregate operation to an indexed aggregate operation */
+    std::unique_ptr<RamOperation> rewriteAggregate(const RamAggregate* agg);
 
     bool createIndices(RamProgram& program);
 
 protected:
     RamExpressionLevelAnalysis* rvla{nullptr};
     RamConstValueAnalysis* rcva{nullptr};
- 
 
     bool transform(RamTranslationUnit& translationUnit) override {
         rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();

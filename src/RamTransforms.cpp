@@ -30,8 +30,7 @@
 
 namespace souffle {
 
-
-namespace  {
+namespace {
 
 std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* condition) {
     std::vector<std::unique_ptr<RamCondition>> conditions;
@@ -49,13 +48,11 @@ std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* con
 
 }  // namespace
 
-
-
 /**
- * levels filter operations: there are two types - filter operations 
- * that are dependent on tuples (i.e. RamSearch) and others that 
- * are not. Depending on the type, a different transformation is 
- * required. 
+ * levels filter operations: there are two types - filter operations
+ * that are dependent on tuples (i.e. RamSearch) and others that
+ * are not. Depending on the type, a different transformation is
+ * required.
  */
 bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     // flag to determine whether the RAM program has changed
@@ -140,23 +137,23 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
 }
 
 /**
- * createIndices assumes that the RAM has been levelled before, and 
+ * createIndices assumes that the RAM has been levelled before, and
  * that the conditions that could be used for an index are located
  * immediately after the scan or aggregrate information
  *
  *  QUERY
  *   ...
- *   FOR t1 in A 
+ *   FOR t1 in A
  *    IF t1.x = 10 /\ t1.y = 20 /\ C
  *     ...
  *
- * will be rewritten to 
+ * will be rewritten to
  *
  *  QUERY
  *   ...
- *    SEARCH t1 in A INDEX (10, 20) 
- *     IF C 
- *      ...   
+ *    SEARCH t1 in A INDEX (10, 20)
+ *     IF C
+ *      ...
  */
 
 /** Get expression of an equivalence constraint of the format t1.x = <expression> or <expression> = t1.x */
@@ -166,14 +163,16 @@ std::unique_ptr<RamExpression> CreateIndicesTransformer::getExpression(
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (const RamElementAccess* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamExpression* rhs = binRelOp->getRHS();
-                if (lhs->getIdentifier() == identifier && (rcva->isConstant(rhs) || rvla->getLevel(rhs) < identifier)) {
+                if (lhs->getIdentifier() == identifier &&
+                        (rcva->isConstant(rhs) || rvla->getLevel(rhs) < identifier)) {
                     element = lhs->getElement();
                     return std::unique_ptr<RamExpression>(rhs->clone());
                 }
             }
             if (const RamElementAccess* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamExpression* lhs = binRelOp->getLHS();
-                if (rhs->getIdentifier() == identifier && (rcva->isConstant(lhs) || rvla->getLevel(lhs) < identifier)) {
+                if (rhs->getIdentifier() == identifier &&
+                        (rcva->isConstant(lhs) || rvla->getLevel(lhs) < identifier)) {
                     element = rhs->getElement();
                     return std::unique_ptr<RamExpression>(lhs->clone());
                 }
@@ -183,63 +182,59 @@ std::unique_ptr<RamExpression> CreateIndicesTransformer::getExpression(
     return nullptr;
 }
 
-std::unique_ptr<RamCondition> CreateIndicesTransformer::constructPattern(std::vector<std::unique_ptr<RamExpression>> &queryPattern, bool &indexable, 
-		 std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier) 
-{
-        // Remaining conditions which cannot be handled by an index
-        std::unique_ptr<RamCondition> condition;
-        auto addCondition = [&](std::unique_ptr<RamCondition> c) {
-            if (condition != nullptr) {
-                condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
-            } else {
-                condition = std::move(c);
-            }
-        };
-
-	// Build query pattern and remaining condition 
-        for (auto& cond : conditionList) {
-            size_t element = 0;
-            if (std::unique_ptr<RamExpression> value = getExpression(cond.get(), element, identifier)) {
-                if (queryPattern[element] == nullptr) {
-                    indexable = true;
-                    queryPattern[element] = std::move(value);
-                } else {
-                    // TODO: This case is a recursive case introducing a new filter operation
-		    // at upper level, i.e., if queryPattern[element] == value ...
-		    // and apply indexing recursively to the rewritten program. 
-		    // At the moment we just another local condition which is sub-optimal
-		    // Note sure whether there are cases in practice that would improve the performance
-                    addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, 
-					    std::move(value), 
-					    std::unique_ptr<RamExpression>(queryPattern[element]->clone())));
-                }
-            } else {
-                addCondition(std::move(cond));
-            }
+std::unique_ptr<RamCondition> CreateIndicesTransformer::constructPattern(
+        std::vector<std::unique_ptr<RamExpression>>& queryPattern, bool& indexable,
+        std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier) {
+    // Remaining conditions which cannot be handled by an index
+    std::unique_ptr<RamCondition> condition;
+    auto addCondition = [&](std::unique_ptr<RamCondition> c) {
+        if (condition != nullptr) {
+            condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
+        } else {
+            condition = std::move(c);
         }
-	return condition; 
+    };
+
+    // Build query pattern and remaining condition
+    for (auto& cond : conditionList) {
+        size_t element = 0;
+        if (std::unique_ptr<RamExpression> value = getExpression(cond.get(), element, identifier)) {
+            if (queryPattern[element] == nullptr) {
+                indexable = true;
+                queryPattern[element] = std::move(value);
+            } else {
+                // TODO: This case is a recursive case introducing a new filter operation
+                // at upper level, i.e., if queryPattern[element] == value ...
+                // and apply indexing recursively to the rewritten program.
+                // At the moment we just another local condition which is sub-optimal
+                // Note sure whether there are cases in practice that would improve the performance
+                addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, std::move(value),
+                        std::unique_ptr<RamExpression>(queryPattern[element]->clone())));
+            }
+        } else {
+            addCondition(std::move(cond));
+        }
+    }
+    return condition;
 }
 
 /* Find the query pattern for an indexable scan operation and rewrite it to an IndexScan */
 std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteAggregate(const RamAggregate* agg) {
     if (agg->getCondition() != nullptr) {
         const RamRelation& rel = agg->getRelation();
-	int identifier = agg->getIdentifier();
+        int identifier = agg->getIdentifier();
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
         bool indexable = false;
-	std::unique_ptr<RamCondition> condition = constructPattern(queryPattern, indexable, getConditions(agg->getCondition()), identifier); 
+        std::unique_ptr<RamCondition> condition =
+                constructPattern(queryPattern, indexable, getConditions(agg->getCondition()), identifier);
         if (indexable) {
-  	 std::unique_ptr<RamExpression> expr;
-	 if (agg->getExpression() != nullptr) {
-	    expr = std::unique_ptr<RamExpression>(agg->getExpression()->clone());
-	 }
-         return std::make_unique<RamAggregate>(std::unique_ptr<RamOperation>(agg->getOperation().clone()),
-			  agg->getFunction(),
-                          std::make_unique<RamRelationReference>(&rel), 
-			  std::move(expr),
-		          std::move(condition), 
-		          std::move(queryPattern), 
-		          agg->getIdentifier());
+            std::unique_ptr<RamExpression> expr;
+            if (agg->getExpression() != nullptr) {
+                expr = std::unique_ptr<RamExpression>(agg->getExpression()->clone());
+            }
+            return std::make_unique<RamAggregate>(std::unique_ptr<RamOperation>(agg->getOperation().clone()),
+                    agg->getFunction(), std::make_unique<RamRelationReference>(&rel), std::move(expr),
+                    std::move(condition), std::move(queryPattern), agg->getIdentifier());
         }
     }
     return nullptr;
@@ -251,10 +246,9 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
         const int identifier = scan->getIdentifier();
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
         bool indexable = false;
-	std::unique_ptr<RamCondition> condition = constructPattern(queryPattern, indexable, getConditions(&filter->getCondition()), identifier); 
-	std::cout << "Scan:\n" << *scan;
+        std::unique_ptr<RamCondition> condition =
+                constructPattern(queryPattern, indexable, getConditions(&filter->getCondition()), identifier);
         if (indexable) {
-	    std::cout << "... happening\n";
             return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
                     std::move(queryPattern),
                     condition == nullptr
@@ -268,21 +262,21 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
 }
 
 bool CreateIndicesTransformer::createIndices(RamProgram& program) {
-    bool changed = false; 
+    bool changed = false;
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
-            if (const RamScan *scan = dynamic_cast<RamScan*>(node.get())) {
+            if (const RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
                 if (std::unique_ptr<RamOperation> op = rewriteScan(scan)) {
                     changed = true;
                     node = std::move(op);
                 }
-            } else if(const RamAggregate *agg = dynamic_cast<RamAggregate*>(node.get())) {
+            } else if (const RamAggregate* agg = dynamic_cast<RamAggregate*>(node.get())) {
                 if (std::unique_ptr<RamOperation> op = rewriteAggregate(agg)) {
                     changed = true;
                     node = std::move(op);
                 }
-	    }
+            }
             node->apply(makeLambdaRamMapper(scanRewriter));
             return node;
         };

@@ -200,12 +200,12 @@ public:
 class RamIndexRelationSearch : public RamRelationSearch {
 public:
     RamIndexRelationSearch(RamNodeType type, std::unique_ptr<RamRelationReference> r, int ident,
-            std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested, 
-	    std::string profileText = "") 
-           :   RamRelationSearch(type, std::move(r), ident, std::move(nested), std::move(profileText)),
+            std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
+            : RamRelationSearch(type, std::move(r), ident, std::move(nested), std::move(profileText)),
               queryPattern(std::move(queryPattern)) {
         assert(getRangePattern().size() == getRelation().getArity());
-    } 
+    }
 
     /** Get range pattern */
     std::vector<RamExpression*> getRangePattern() const {
@@ -253,8 +253,7 @@ public:
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
             : RamIndexRelationSearch(RN_IndexScan, std::move(r), ident, std::move(queryPattern),
-			    std::move(nested), std::move(profileText)) { 
-    }
+                      std::move(nested), std::move(profileText)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -290,29 +289,21 @@ public:
     }
 };
 
-
 /**
  * Aggregation
  */
-class RamAggregate :  public RamIndexRelationSearch  {
+class RamAggregate : public RamIndexRelationSearch {
 public:
     /** Types of aggregation functions */
     enum Function { MAX, MIN, COUNT, SUM };
 
     RamAggregate(std::unique_ptr<RamOperation> nested, Function fun,
-	    std::unique_ptr<RamRelationReference> relRef,
-            std::unique_ptr<RamExpression> expression, 
-	    std::unique_ptr<RamCondition> condition, 
-	    std::vector<std::unique_ptr<RamExpression>> queryPattern,
+            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
+            std::unique_ptr<RamCondition> condition, std::vector<std::unique_ptr<RamExpression>> queryPattern,
             int ident)
-            : RamIndexRelationSearch(RN_Aggregate, 
-			             std::move(relRef), 
-				     ident, 
-				     std::move(queryPattern), 
-				     std::move(nested)), 
-			     function(fun),
-                             expression(std::move(expression)),
-			     condition(std::move(condition)) { }
+            : RamIndexRelationSearch(
+                      RN_Aggregate, std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
+              function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
     /** Get condition */
     const RamCondition* getCondition() const {
@@ -379,16 +370,15 @@ public:
     }
 
     RamAggregate* clone() const override {
-	std::vector<std::unique_ptr<RamExpression>> pattern;
-        for (auto const &e: queryPattern) { 
-           pattern.push_back(std::unique_ptr<RamExpression>((e!=nullptr) ? e->clone(): nullptr)); 
+        std::vector<std::unique_ptr<RamExpression>> pattern;
+        for (auto const& e : queryPattern) {
+            pattern.push_back(std::unique_ptr<RamExpression>((e != nullptr) ? e->clone() : nullptr));
         }
         RamAggregate* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
-                std::unique_ptr<RamRelationReference>(relationRef->clone()), 
+                std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
-		std::move(pattern), 
-		getIdentifier());
+                std::move(pattern), getIdentifier());
         return res;
     }
 
@@ -403,14 +393,13 @@ public:
     }
 
 protected:
-
     /** Aggregation function */
     Function function;
 
     /** Aggregation expression */
     std::unique_ptr<RamExpression> expression;
 
-    /** Aggregation tuple condition */ 
+    /** Aggregation tuple condition */
     std::unique_ptr<RamCondition> condition;
 
     bool equal(const RamNode& node) const override {
@@ -421,8 +410,7 @@ protected:
             return false;
         }
         return RamIndexRelationSearch::equal(other) && getCondition() == other.getCondition() &&
-               getFunction() == other.getFunction() &&
-               getExpression() == other.getExpression();
+               getFunction() == other.getFunction() && getExpression() == other.getExpression();
     }
 };
 

@@ -784,7 +784,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << "RamDomain res = " << init << ";\n";
 
-
             // check whether there is an index to use
             if (keys == 0) {
                 // no index => use full relation

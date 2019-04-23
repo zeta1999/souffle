@@ -64,8 +64,7 @@ public:
             std::string relName, std::vector<std::string> args, size_t ruleNum) = 0;
 
     virtual std::unique_ptr<TreeNode> explainNegation(std::string relName, size_t ruleNum,
-            const std::vector<std::string>& tuple,
-            std::map<std::string, std::string>& bodyVariables) = 0;
+            const std::vector<std::string>& tuple, std::map<std::string, std::string>& bodyVariables) = 0;
 
     virtual std::string getRule(std::string relName, size_t ruleNum) = 0;
 

@@ -1241,6 +1241,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             VariablesToArguments varsToArgs(uniqueVariables);
             atom->apply(varsToArgs);
 
+            // add each value (subroutine argument) to the search query
             for (size_t i = 0; i < atom->getArity() - 2; i++) {
                 auto arg = atom->getArgument(i);
                 query.push_back(translateValue(arg, ValueIndex()));

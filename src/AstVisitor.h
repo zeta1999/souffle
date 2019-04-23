@@ -215,7 +215,7 @@ template <typename R, typename... Ps, typename... Args>
 void visitDepthFirstPostOrder(const AstNode& root, AstVisitor<R, Ps...>& visitor, Args&... args) {
     for (const AstNode* cur : root.getChildNodes()) {
         if (cur) {
-            visitDepthFirstPreOrder(*cur, visitor, args...);
+            visitDepthFirstPostOrder(*cur, visitor, args...);
         }
     }
     visitor(root, args...);

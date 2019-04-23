@@ -30,7 +30,8 @@
 
 namespace souffle {
 
-namespace {
+
+namespace  {
 
 std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* condition) {
     std::vector<std::unique_ptr<RamCondition>> conditions;
@@ -48,30 +49,14 @@ std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* con
 
 }  // namespace
 
-/**
- * levelConditions assumes that filter operations are stored verbose,
- * i.e. a conjunction is expressed by two consecutive filter operations.
- * For example ..
- *
- *  QUERY
- *    IF C1 /\ C2 then
- *      ...
- *
- * should be rewritten / or produced by the translator as
- *
- *  QUERY
- *    IF C1
- *      IF C2
- *
- * otherwise the levelling becomes imprecise. For both conditions
- * the most outer-level is sought rather than separately.
- *
- * If there are transformers prior to levelCondition that introduce
- * conjunction, another transformer is required that splits the
- * filter operations. However, at the moment this is not necessary
- * because the translator delivers already this format.
- */
 
+
+/**
+ * levels filter operations: there are two types - filter operations 
+ * that are dependent on tuples (i.e. RamSearch) and others that 
+ * are not. Depending on the type, a different transformation is 
+ * required. 
+ */
 bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     // flag to determine whether the RAM program has changed
     bool changed = false;
@@ -154,23 +139,41 @@ bool LevelConditionsTransformer::levelConditions(RamProgram& program) {
     return changed;
 }
 
-/** Get indexable element */
-std::unique_ptr<RamExpression> CreateIndicesTransformer::getIndexElement(
+/**
+ * createIndices assumes that the RAM has been levelled before, and 
+ * that the conditions that could be used for an index are located
+ * immediately after the scan or aggregrate information
+ *
+ *  QUERY
+ *   ...
+ *   FOR t1 in A 
+ *    IF t1.x = 10 /\ t1.y = 20 /\ C
+ *     ...
+ *
+ * will be rewritten to 
+ *
+ *  QUERY
+ *   ...
+ *    SEARCH t1 in A INDEX (10, 20) 
+ *     IF C 
+ *      ...   
+ */
+
+/** Get expression of an equivalence constraint of the format t1.x = <expression> or <expression> = t1.x */
+std::unique_ptr<RamExpression> CreateIndicesTransformer::getExpression(
         RamCondition* c, size_t& element, int identifier) {
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
-            if (auto* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
+            if (const RamElementAccess* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamExpression* rhs = binRelOp->getRHS();
-                if (rvla->getLevel(lhs) == identifier &&
-                        (rcva->isConstant(rhs) || rvla->getLevel(rhs) < identifier)) {
+                if (lhs->getIdentifier() == identifier && rvla->getLevel(rhs) < identifier) {
                     element = lhs->getElement();
                     return std::unique_ptr<RamExpression>(rhs->clone());
                 }
             }
-            if (auto* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
+            if (const RamElementAccess* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamExpression* lhs = binRelOp->getLHS();
-                if (rvla->getLevel(rhs) == identifier &&
-                        (rcva->isConstant(lhs) || rvla->getLevel(lhs) < identifier)) {
+                if (rhs->getIdentifier() == identifier && rvla->getLevel(lhs) < identifier) {
                     element = rhs->getElement();
                     return std::unique_ptr<RamExpression>(lhs->clone());
                 }
@@ -180,6 +183,7 @@ std::unique_ptr<RamExpression> CreateIndicesTransformer::getIndexElement(
     return nullptr;
 }
 
+/* Find the query pattern for an indexable scan operation and rewrite it to an IndexScan */
 std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamScan* scan) {
     if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
         const RamRelation& rel = scan->getRelation();
@@ -190,7 +194,6 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
 
         // Remaining conditions which weren't handled by an index
         std::unique_ptr<RamCondition> condition;
-
         auto addCondition = [&](std::unique_ptr<RamCondition> c) {
             if (condition != nullptr) {
                 condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
@@ -199,15 +202,18 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
             }
         };
 
+	// build query pattern and remaining condition 
         bool indexable = false;
-
         for (auto& cond : getConditions(&filter->getCondition())) {
             size_t element = 0;
-            if (std::unique_ptr<RamExpression> value = getIndexElement(cond.get(), element, identifier)) {
-                indexable = true;
+            if (std::unique_ptr<RamExpression> value = getExpression(cond.get(), element, identifier)) {
                 if (queryPattern[element] == nullptr) {
+                    indexable = true;
                     queryPattern[element] = std::move(value);
                 } else {
+                    // TODO: this case is a recursive case introducing a new filter operation
+		    // at upper level, i.e., if .. queryPattern[element] == value .. 
+		    // and apply indexing recursively to the rewritten program. 
                     addCondition(std::move(cond));
                 }
             } else {
@@ -215,8 +221,9 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
             }
         }
 
+
+        // replace scan by index scan
         if (indexable) {
-            // replace scan by index scan
             return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
                     std::move(queryPattern),
                     condition == nullptr
@@ -226,69 +233,26 @@ std::unique_ptr<RamOperation> CreateIndicesTransformer::rewriteScan(const RamSca
                     scan->getProfileText());
         }
     }
-
     return nullptr;
 }
 
 bool CreateIndicesTransformer::createIndices(RamProgram& program) {
-    // TODO: Change these to LambdaRamNodeMapper lambdas
-    // Node-mapper that searches for and updates RAM scans nested in RAM inserts
-    class RamScanCapturer : public RamNodeMapper {
-        mutable bool modified = false;
-        CreateIndicesTransformer* context;
-
-    public:
-        RamScanCapturer(CreateIndicesTransformer* c) : context(c) {}
-
-        bool getModified() const {
-            return modified;
-        }
-
-        std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
+    bool changed = false; 
+    visitDepthFirst(program, [&](const RamScan& scan) {
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (auto* scan = dynamic_cast<RamScan*>(node.get())) {
-                if (std::unique_ptr<RamOperation> op = context->rewriteScan(scan)) {
-                    modified = true;
+                if (std::unique_ptr<RamOperation> op = rewriteScan(scan)) {
+                    changed = true;
                     node = std::move(op);
                 }
             }
-            node->apply(*this);
+            node->apply(makeLambdaRamMapper(scanRewriter));
             return node;
-        }
-    };
-
-    // Node-mapper that searches for and updates RAM inserts
-    class RamQueryCapturer : public RamNodeMapper {
-        mutable bool modified;
-        CreateIndicesTransformer* context;
-
-    public:
-        RamQueryCapturer(CreateIndicesTransformer* c) : modified(false), context(c) {}
-
-        bool getModified() const {
-            return modified;
-        }
-
-        std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            // get all RAM inserts
-            if (auto* insert = dynamic_cast<RamQuery*>(node.get())) {
-                RamScanCapturer scanUpdate(context);
-                insert->apply(scanUpdate);
-                if (!modified && scanUpdate.getModified()) {
-                    modified = true;
-                }
-            } else {
-                // no need to search for nested RAM inserts
-                node->apply(*this);
-            }
-            return node;
-        }
-    };
-
-    // level all RAM inserts
-    RamQueryCapturer insertUpdate(this);
-    program.getMain()->apply(insertUpdate);
-
-    return insertUpdate.getModified();
+        };
+        ((RamNode*)&scan)->apply(makeLambdaRamMapper(scanRewriter));
+    });
+    return changed;
 }
 
 bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& program) {

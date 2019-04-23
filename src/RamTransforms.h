@@ -31,6 +31,32 @@ class RamProgram;
 /**
  * Hoists the conditions to the earliest point in the loop nest where they
  * can be evaluated.
+ *
+ * levelConditions assumes that filter operations are stored verbose,
+ * i.e. a conjunction is expressed by two consecutive filter operations.
+ * For example ..
+ *
+ *  QUERY
+ *   ...
+ *    IF C1 /\ C2 then
+ *     ...
+ *
+ * should be rewritten / or produced by the translator as
+ *
+ *  QUERY
+ *   ...
+ *    IF C1
+ *     IF C2
+ *      ...   
+ *
+ * otherwise the levelling becomes imprecise. For both conditions
+ * the most outer-level is sought rather than separately.
+ *
+ * If there are transformers prior to levelCondition that introduce
+ * conjunction, another transformer is required that splits the
+ * filter operations. However, at the moment this is not necessary
+ * because the translator delivers already this format.
+ *
  */
 class LevelConditionsTransformer : public RamTransformer {
 public:
@@ -53,13 +79,16 @@ protected:
     }
 };
 
+/**
+ * Convert RamScan operations to RamIndexScan operations 
+ */
 class CreateIndicesTransformer : public RamTransformer {
 public:
     std::string getName() const override {
         return "CreateIndicesTransformer";
     }
 
-    std::unique_ptr<RamExpression> getIndexElement(RamCondition* c, size_t& element, int level);
+    std::unique_ptr<RamExpression> getExpression(RamCondition* c, size_t& element, int level);
 
     std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
 

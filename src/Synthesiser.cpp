@@ -739,6 +739,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
         void visitAggregate(const RamAggregate& aggregate, std::ostream& out) override {
+            // Current version is not parallel
+            // Needs to be parallelized with OpenMP reduction statements!
+
             PRINT_BEGIN_COMMENT(out);
             // get some properties
             const auto& rel = aggregate.getRelation();
@@ -747,8 +750,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto identifier = aggregate.getIdentifier();
 
-            // get the tuple type working with
-            std::string tuple_type = "ram::Tuple<RamDomain," + toString(std::max(1u, arity)) + ">";
+            // aggregate tuple storing the result of aggregate
+            std::string tuple_type = "ram::Tuple<RamDomain,1>";
 
             // declare environment variable
             out << tuple_type << " env" << identifier << ";\n";
@@ -786,7 +789,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << "RamDomain res = " << init << ";\n";
 
-
             // check whether there is an index to use
             if (keys == 0) {
                 out << "for(const auto& env" << identifier << " : "
@@ -818,6 +820,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "for(const auto& env : range) {\n";
             }
 
+            // produce condition inside the loop
             auto condition = aggregate.getCondition();
             if (condition) {
                 out << "if( ";
@@ -863,10 +866,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // write result into environment tuple
             out << "env" << identifier << "[0] = res;\n";
-
-           
+          
 	    if (aggregate.getFunction() == RamAggregate::MIN ||
                 aggregate.getFunction() == RamAggregate::MAX) { 
+               // check whether there exists a min/max first before next loop
                out << "if(res != " << init << "){\n";
                visitSearch(aggregate, out);
 	       out << "}\n";

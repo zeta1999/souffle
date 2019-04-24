@@ -1207,6 +1207,7 @@ io_directive_list
                 io->addKVP(kvp.first, kvp.second);
             }
         }
+        $$ = $io_relation_list;
     }
   ;
 

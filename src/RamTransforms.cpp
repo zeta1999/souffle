@@ -269,41 +269,42 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
 }
 
 /** rewrite IndexScan to a filter/existence check if the tuple is not used in a consecutive RAM operation */
-std::unique_ptr<RamOperation> ConvertExistenceChecksTransformer::rewriteIndexScan(const RamIndexScan* indexScan) {
+std::unique_ptr<RamOperation> ConvertExistenceChecksTransformer::rewriteIndexScan(
+        const RamIndexScan* indexScan) {
     // check the existence of a use for the index-scan's tuple
     bool tupleNotUsed = true;
 
     // check for tuple element accesses
     visitDepthFirst(*indexScan, [&](const RamElementAccess& access) {
-        if(indexScan->getIdentifier() == access.getIdentifier()) {
+        if (indexScan->getIdentifier() == access.getIdentifier()) {
             tupleNotUsed = false;
         }
     });
 
     // check for record unpack operations
     visitDepthFirst(*indexScan, [&](const RamUnpackRecord& unpack) {
-        if(indexScan->getIdentifier() == unpack.getReferenceLevel()) {
+        if (indexScan->getIdentifier() == unpack.getReferenceLevel()) {
             tupleNotUsed = false;
         }
     });
 
     // if not used transform the IndexScan operation to an existence check
-    if (tupleNotUsed) { 
-            // replace IndexScan with an Filter/Existence check
-            std::vector<std::unique_ptr<RamExpression>> newValues;
-            for (auto& cur : indexScan->getRangePattern()) {
-               RamExpression* val = nullptr;
-               if (cur != nullptr) {
-                   val = cur->clone();
-               }
-               newValues.emplace_back(val);
+    if (tupleNotUsed) {
+        // replace IndexScan with an Filter/Existence check
+        std::vector<std::unique_ptr<RamExpression>> newValues;
+        for (auto& cur : indexScan->getRangePattern()) {
+            RamExpression* val = nullptr;
+            if (cur != nullptr) {
+                val = cur->clone();
             }
-            return std::make_unique<RamFilter>( 
-                    std::make_unique<RamExistenceCheck>(
-                       std::make_unique<RamRelationReference>(&indexScan->getRelation()),
-                       std::move(newValues)), 
-                    std::unique_ptr<RamOperation>(indexScan->getOperation().clone()),
-                    indexScan->getProfileText());
+            newValues.emplace_back(val);
+        }
+        return std::make_unique<RamFilter>(
+                std::make_unique<RamExistenceCheck>(
+                        std::make_unique<RamRelationReference>(&indexScan->getRelation()),
+                        std::move(newValues)),
+                std::unique_ptr<RamOperation>(indexScan->getOperation().clone()),
+                indexScan->getProfileText());
     }
     return nullptr;
 }

@@ -138,7 +138,6 @@ public:
     bool convertExistenceChecks(RamProgram& program);
 
 protected:
-
     bool transform(RamTranslationUnit& translationUnit) override {
         return convertExistenceChecks(*translationUnit.getProgram());
     }

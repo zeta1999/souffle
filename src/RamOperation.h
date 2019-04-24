@@ -439,8 +439,8 @@ public:
     }
 
     void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos) << "UNPACK t" << refLevel << "." << refPos << " INTO t"
-           << getIdentifier() << std::endl;
+        os << times(" ", tabpos) << "UNPACK t" << refLevel << "." << refPos << " INTO t" << getIdentifier()
+           << std::endl;
         RamSearch::print(os, tabpos + 1);
     }
 

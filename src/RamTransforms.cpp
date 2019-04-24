@@ -271,15 +271,25 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
 /** rewrite IndexScan to a filter/existence check if the tuple is not used in a consecutive RAM operation */
 std::unique_ptr<RamOperation> ConvertExistenceChecksTransformer::rewriteIndexScan(const RamIndexScan* indexScan) {
     // check the existence of a use for the index-scan's tuple
-    bool notUsed = true;
+    bool tupleNotUsed = true;
+
+    // check for tuple element accesses
     visitDepthFirst(*indexScan, [&](const RamElementAccess& access) {
         if(indexScan->getIdentifier() == access.getIdentifier()) {
-            notUsed = false;
+            tupleNotUsed = false;
+        }
+    });
+
+    // check for record unpack operations
+    visitDepthFirst(*indexScan, [&](const RamUnpackRecord& unpack) {
+        if(indexScan->getIdentifier() == unpack.getIdentifier()) {
+            tupleNotUsed = false;
         }
     });
 
     // if not used transform the IndexScan operation to an existence check
-    if (notUsed) { 
+    if (tupleNotUsed) { 
+            // replace IndexScan with an Filter/Existence check
             std::vector<std::unique_ptr<RamExpression>> newValues;
             for (auto& cur : indexScan->getRangePattern()) {
                RamExpression* val = nullptr;

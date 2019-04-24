@@ -757,7 +757,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);
 
             // special case: counting number elements in a full relation
-            if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0) {
+            if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0 && aggregate.getCondition() == nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -781,6 +781,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case RamAggregate::SUM:
                     init = "0";
                     break;
+		default:
+		    abort();
             }
             out << "RamDomain res = " << init << ";\n";
 
@@ -821,6 +823,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // aggregate result
             out << "for(const auto& cur : range) {\n";
 
+            auto condition = aggregate.getCondition();
+            if (condition) {
+                out << "if( ";
+                visit(condition, out);
+                out << ") {\n";
+	    }
+
             // create aggregation code
             if (aggregate.getFunction() == RamAggregate::COUNT) {
                 // count is easy
@@ -852,27 +861,25 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ");\n";
             }
 
+            if (condition) {
+                out << "}\n";
+            }
+
             // end aggregator loop
             out << "}\n";
 
             // write result into environment tuple
             out << "env" << identifier << "[0] = res;\n";
 
-            // continue with condition checks and nested body
-            out << "{\n";
-
-            auto condition = aggregate.getCondition();
-            if (condition) {
-                out << "if( ";
-                visit(condition, out);
-                out << ") {\n";
-                visitSearch(aggregate, out);
-                out << "}\n";
-            } else {
-                visitSearch(aggregate, out);
-            }
-
-            out << "}\n";
+           
+	    if (aggregate.getFunction() == RamAggregate::MIN ||
+                aggregate.getFunction() == RamAggregate::MAX) { 
+               out << "if(res != " << init << "){\n";
+               visitSearch(aggregate, out);
+	       out << "}\n";
+	    } else {
+               visitSearch(aggregate, out);
+	    }
 
             // end conditional nested block
             if (aggregate.getFunction() != RamAggregate::COUNT) {

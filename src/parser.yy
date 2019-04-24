@@ -742,6 +742,7 @@ arg
     /* user-defined functor */
   | AT IDENT LPAREN arg_list RPAREN {
         auto functor = new AstUserDefinedFunctor();
+        functor->setName($IDENT);
         for (auto* arg : $arg_list) {
             functor->add(std::unique_ptr<AstArgument>(arg));
         }

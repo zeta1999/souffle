@@ -178,11 +178,11 @@
 %type <std::vector<AstLoad *>>      load_head
 %type <std::vector<AstStore *>>     store_head
 %type <std::vector<AstIO *>>        io_directive_list
+%type <std::vector<AstIO *>>        io_relation_list
 %type <AstRecordType *>             record_type_list non_empty_record_type_list
 %type <AstUnionType *>              union_type_list
 %type <std::string>                 kvp_value
-%type <AstIO *>                     key_value_pairs non_empty_key_value_pairs
-%type <std::vector<std::vector<std::string>>> io_relation_list
+%type <std::vector<std::pair<std::string, std::string>>>    key_value_pairs non_empty_key_value_pairs
 
 /* TODO: think about these ones */
 %type <AstClause *>                 fact
@@ -368,7 +368,7 @@ relation_list
   | relation_list[curr_list] COMMA IDENT {
         auto* rel = new AstRelation();
         rel->setName($IDENT);
-        rel->setSrcLoc(@$);
+        rel->setSrcLoc(@IDENT);
 
         $$ = $curr_list;
         $$.push_back(rel);
@@ -1199,33 +1199,33 @@ store_head
 /* IO directive list */
 io_directive_list
   : io_relation_list {
-        for (const auto& rel : $io_relation_list) {
-            auto* io = new AstIO();
-            io->setName(rel);
-            io->setSrcLoc(@$);
-            $$.push_back(io);
-        }
+        $$ = $io_relation_list;
     }
   | io_relation_list LPAREN key_value_pairs RPAREN {
-        for (const auto& rel : $io_relation_list) {
-            auto* io = $key_value_pairs->clone();
-            io->setName(rel);
-            io->setSrcLoc(@$);
-            $$.push_back(io);
+        for (auto* io : $io_relation_list) {
+            for (const auto& kvp : $key_value_pairs) {
+                io->addKVP(kvp.first, kvp.second);
+            }
         }
-
-        delete $key_value_pairs;
     }
   ;
 
 /* IO relation list */
 io_relation_list
   : identifier {
-        $$.push_back($identifier);
+        auto* io = new AstIO();
+        io->setName($identifier);
+        io->setSrcLoc(@identifier);
+
+        $$.push_back(io);
     }
   | io_relation_list[curr_list] COMMA identifier {
+        auto* io = new AstIO();
+        io->setName($identifier);
+        io->setSrcLoc(@identifier);
+
         $$ = $curr_list;
-        $$.push_back($identifier);
+        $$.push_back(io);
     }
   ;
 
@@ -1235,19 +1235,16 @@ key_value_pairs
         $$ = $non_empty_key_value_pairs;
     }
   | %empty {
-        $$ = new AstIO();
-        $$->setSrcLoc(@$);
+        $$ = std::vector<std::pair<std::string, std::string>>();
     }
   ;
 non_empty_key_value_pairs
   : IDENT EQUALS kvp_value {
-        $$ = new AstIO();
-        $$->setSrcLoc(@$);
-        $$->addKVP($IDENT, $kvp_value);
+        $$.push_back(std::make_pair($IDENT, $kvp_value));
     }
   | non_empty_key_value_pairs[curr_io] COMMA IDENT EQUALS kvp_value {
         $$ = $curr_io;
-        $$->addKVP($IDENT, $kvp_value);
+        $$.push_back(std::make_pair($IDENT, $kvp_value));
     }
   ;
 kvp_value

@@ -159,17 +159,17 @@
 %type <AstType *>                   type
 %type <AstFunctorDeclaration *>     functor_decl
 %type <AstArgument *>               arg
-%type <std::vector<AstArgument *>>  arg_list non_empty_arg_list
+%type <std::vector<AstArgument *>>  non_empty_arg_list
 %type <AstAtom *>                   atom
 %type <std::vector<AstAtom *>>      head
 %type <AstComponent *>              component component_body component_head
 %type <AstComponentType *>          comp_type
 %type <AstComponentInit *>          comp_init
 %type <std::vector<AstTypeIdentifier>>  type_params type_param_list
-%type <std::string>                 functor_arg_type_list non_empty_functor_arg_type_list functor_type
+%type <std::string>                 non_empty_functor_arg_type_list functor_type
 %type <AstConstraint *>             constraint
 %type <RuleBody *>                  body conjunction disjunction term
-%type <std::vector<AstAttribute *>> attributes non_empty_attributes
+%type <std::vector<AstAttribute *>> non_empty_attributes
 %type <std::vector<AstRelation *>>  relation_decl relation_list
 %type <std::vector<AstClause *>>    rule rule_def
 %type <AstExecutionPlan *>          exec_plan exec_plan_list
@@ -179,10 +179,10 @@
 %type <std::vector<AstStore *>>     store_head
 %type <std::vector<AstIO *>>        io_directive_list
 %type <std::vector<AstIO *>>        io_relation_list
-%type <AstRecordType *>             record_type_list non_empty_record_type_list
+%type <AstRecordType *>             non_empty_record_type_list
 %type <AstUnionType *>              union_type_list
 %type <std::string>                 kvp_value
-%type <std::vector<std::pair<std::string, std::string>>>    key_value_pairs non_empty_key_value_pairs
+%type <std::vector<std::pair<std::string, std::string>>>    non_empty_key_value_pairs
 
 /* TODO: think about these ones */
 %type <AstClause *>                 fact
@@ -294,22 +294,19 @@ type
         $$->setName($IDENT);
         $$->setSrcLoc(@$);
     }
-  | TYPE IDENT EQUALS LBRACKET record_type_list RBRACKET {
-        $$ = $record_type_list;
+  | TYPE IDENT EQUALS LBRACKET RBRACKET {
+        $$ = new AstRecordType();
+        $$->setName($IDENT);
+        $$->setSrcLoc(@$);
+    }
+  | TYPE IDENT EQUALS LBRACKET non_empty_record_type_list RBRACKET {
+        $$ = $non_empty_record_type_list;
         $$->setName($IDENT);
         $$->setSrcLoc(@$);
     }
   ;
 
 /* Record type argument declarations */
-record_type_list
-  : non_empty_record_type_list {
-        $$ = $non_empty_record_type_list;
-    }
-  | %empty {
-        $$ = new AstRecordType();
-    }
-  ;
 non_empty_record_type_list
   : IDENT COLON identifier {
         $$ = new AstRecordType();
@@ -340,15 +337,22 @@ union_type_list
 
 /* Relation declaration */
 relation_decl
-  : DECL relation_list LPAREN attributes RPAREN qualifiers {
+  : DECL relation_list LPAREN RPAREN qualifiers {
         for (auto* rel : $relation_list) {
             rel->setQualifier($qualifiers);
-            for (auto* attr : $attributes) {
+        }
+
+        $$ = $relation_list;
+    }
+  | DECL relation_list LPAREN non_empty_attributes RPAREN qualifiers {
+        for (auto* rel : $relation_list) {
+            rel->setQualifier($qualifiers);
+            for (auto* attr : $non_empty_attributes) {
                 rel->addAttribute(std::unique_ptr<AstAttribute>(attr->clone()));
             }
         }
 
-        for (auto* attr : $attributes) {
+        for (auto* attr : $non_empty_attributes) {
             delete attr;
         }
 
@@ -376,14 +380,6 @@ relation_list
   ;
 
 /* Attribute definition of a relation */
-attributes
-  : non_empty_attributes {
-        $$ = $non_empty_attributes;
-    }
-  | %empty {
-        $$ = std::vector<AstAttribute*>();
-    }
-  ;
 non_empty_attributes
   : IDENT COLON identifier {
         auto attr = new AstAttribute($IDENT, $identifier);
@@ -612,11 +608,16 @@ term
 
 /* Rule body atom */
 atom
-  : identifier LPAREN arg_list RPAREN {
+  : identifier LPAREN non_empty_arg_list RPAREN {
         $$ = new AstAtom();
-        for (auto* arg : $arg_list) {
+        for (auto* arg : $non_empty_arg_list) {
             $$->addArgument(std::unique_ptr<AstArgument>(arg));
         }
+        $$->setName($identifier);
+        $$->setSrcLoc(@$);
+    }
+  | identifier LPAREN RPAREN {
+        $$ = new AstAtom();
         $$->setName($identifier);
         $$->setSrcLoc(@$);
     }
@@ -676,14 +677,6 @@ constraint
   ;
 
 /* Argument list */
-arg_list
-  : non_empty_arg_list {
-        $$ = $non_empty_arg_list;
-    }
-  | %empty {
-        $$ = std::vector<AstArgument*>();
-    }
-  ;
 non_empty_arg_list
   : arg {
         $$.push_back($arg);
@@ -732,9 +725,13 @@ arg
         $$->setSrcLoc(@$);
     }
   /* TODO (azreika): identifiers should be placed in for new typesystem */
-  | LBRACKET arg_list RBRACKET {
+  | LBRACKET RBRACKET {
+        $$ = new AstRecordInit();
+        $$->setSrcLoc(@$);
+    }
+  | LBRACKET non_empty_arg_list RBRACKET {
         auto record = new AstRecordInit();
-        for (auto* arg : $arg_list) {
+        for (auto* arg : $non_empty_arg_list) {
             record->add(std::unique_ptr<AstArgument>(arg));
         }
         $$ = record;
@@ -742,10 +739,16 @@ arg
     }
 
     /* user-defined functor */
-  | AT IDENT LPAREN arg_list RPAREN {
+  | AT IDENT LPAREN RPAREN {
         auto functor = new AstUserDefinedFunctor();
         functor->setName($IDENT);
-        for (auto* arg : $arg_list) {
+        $$ = functor;
+        $$->setSrcLoc(@$);
+    }
+  | AT IDENT LPAREN non_empty_arg_list RPAREN {
+        auto functor = new AstUserDefinedFunctor();
+        functor->setName($IDENT);
+        for (auto* arg : $non_empty_arg_list) {
             functor->add(std::unique_ptr<AstArgument>(arg));
         }
         $$ = functor;
@@ -1119,22 +1122,14 @@ comp_init
 
 /* Functor declaration */
 functor_decl
-  : FUNCTOR IDENT LPAREN functor_arg_type_list RPAREN COLON functor_type {
-        auto typesig = $functor_arg_type_list + $functor_type;
+  : FUNCTOR IDENT LPAREN non_empty_functor_arg_type_list RPAREN COLON functor_type {
+        auto typesig = $non_empty_functor_arg_type_list + $functor_type;
         $$ = new AstFunctorDeclaration($IDENT, typesig);
         $$->setSrcLoc(@$);
     }
   ;
 
 /* Functor argument list types */
-functor_arg_type_list
-  : non_empty_functor_arg_type_list {
-        $$ = $non_empty_functor_arg_type_list;
-    }
-  | %empty {
-        $$ = "";
-    }
-  ;
 non_empty_functor_arg_type_list
   : functor_type {
         $$ = $functor_type;
@@ -1204,9 +1199,12 @@ io_directive_list
   : io_relation_list {
         $$ = $io_relation_list;
     }
-  | io_relation_list LPAREN key_value_pairs RPAREN {
+  | io_relation_list LPAREN RPAREN {
+        $$ = $io_relation_list;
+    }
+  | io_relation_list LPAREN non_empty_key_value_pairs RPAREN {
         for (auto* io : $io_relation_list) {
-            for (const auto& kvp : $key_value_pairs) {
+            for (const auto& kvp : $non_empty_key_value_pairs) {
                 io->addKVP(kvp.first, kvp.second);
             }
         }
@@ -1234,14 +1232,6 @@ io_relation_list
   ;
 
 /* Key-value pairs */
-key_value_pairs
-  : non_empty_key_value_pairs {
-        $$ = $non_empty_key_value_pairs;
-    }
-  | %empty {
-        $$ = std::vector<std::pair<std::string, std::string>>();
-    }
-  ;
 non_empty_key_value_pairs
   : IDENT EQUALS kvp_value {
         $$.push_back(std::make_pair($IDENT, $kvp_value));

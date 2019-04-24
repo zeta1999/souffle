@@ -1122,7 +1122,12 @@ comp_init
 
 /* Functor declaration */
 functor_decl
-  : FUNCTOR IDENT LPAREN non_empty_functor_arg_type_list RPAREN COLON functor_type {
+  : FUNCTOR IDENT LPAREN RPAREN COLON functor_type {
+        auto typesig = $functor_type;
+        $$ = new AstFunctorDeclaration($IDENT, typesig);
+        $$->setSrcLoc(@$);
+    }
+  | FUNCTOR IDENT LPAREN non_empty_functor_arg_type_list RPAREN COLON functor_type {
         auto typesig = $non_empty_functor_arg_type_list + $functor_type;
         $$ = new AstFunctorDeclaration($IDENT, typesig);
         $$->setSrcLoc(@$);

@@ -499,6 +499,7 @@ protected:
             code->push_back(LVM_ElementAccess);
             code->push_back(aggregate.getIdentifier());
             code->push_back(0);
+            code->push_back(LVM_Number);
             code->push_back(aggregate.getFunction() == RamAggregate::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
             code->push_back(LVM_OP_EQ);
             code->push_back(LVM_Jmpnz); // If init == result, does not visit nested search

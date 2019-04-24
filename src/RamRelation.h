@@ -56,8 +56,7 @@ public:
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers,
             const RelationRepresentation representation)
-            : RamNode(RN_Relation), name(std::move(name)), arity(arity),
-              attributeNames(std::move(attributeNames)),
+            : RamNode(), name(std::move(name)), arity(arity), attributeNames(std::move(attributeNames)),
               attributeTypeQualifiers(std::move(attributeTypeQualifiers)), representation(representation) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
@@ -160,7 +159,7 @@ protected:
  */
 class RamRelationReference : public RamNode {
 public:
-    RamRelationReference(const RamRelation* relation) : RamNode(RN_RelationReference), relation(relation) {
+    RamRelationReference(const RamRelation* relation) : RamNode(), relation(relation) {
         assert(relation != nullptr && "null relation");
     }
 

@@ -36,7 +36,7 @@ namespace souffle {
  */
 class RamOperation : public RamNode {
 public:
-    RamOperation(RamNodeType type) : RamNode(type) {}
+    RamOperation() = default;
 
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
@@ -59,8 +59,8 @@ protected:
  */
 class RamNestedOperation : public RamOperation {
 public:
-    RamNestedOperation(RamNodeType type, std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamOperation(type), nestedOperation(std::move(nested)), profileText(std::move(profileText)) {}
+    RamNestedOperation(std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamOperation(), nestedOperation(std::move(nested)), profileText(std::move(profileText)) {}
 
     /** Get nested operation */
     RamOperation& getOperation() const {
@@ -104,8 +104,8 @@ protected:
  */
 class RamSearch : public RamNestedOperation {
 public:
-    RamSearch(RamNodeType type, int ident, std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamNestedOperation(type, std::move(nested), std::move(profileText)), identifier(ident) {}
+    RamSearch(int ident, std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamNestedOperation(std::move(nested), std::move(profileText)), identifier(ident) {}
 
     /** Get identifier */
     int getIdentifier() const {
@@ -132,10 +132,9 @@ protected:
  */
 class RamRelationSearch : public RamSearch {
 public:
-    RamRelationSearch(RamNodeType type, std::unique_ptr<RamRelationReference> relRef, int ident,
+    RamRelationSearch(std::unique_ptr<RamRelationReference> relRef, int ident,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamSearch(type, ident, std::move(nested), std::move(profileText)),
-              relationRef(std::move(relRef)) {}
+            : RamSearch(ident, std::move(nested), std::move(profileText)), relationRef(std::move(relRef)) {}
 
     /** Get search relation */
     const RamRelation& getRelation() const {
@@ -173,7 +172,7 @@ class RamScan : public RamRelationSearch {
 public:
     RamScan(std::unique_ptr<RamRelationReference> rel, int ident, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamRelationSearch(RN_Scan, std::move(rel), ident, std::move(nested), std::move(profileText)) {}
+            : RamRelationSearch(std::move(rel), ident, std::move(nested), std::move(profileText)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -199,10 +198,10 @@ public:
  */
 class RamIndexRelationSearch : public RamRelationSearch {
 public:
-    RamIndexRelationSearch(RamNodeType type, std::unique_ptr<RamRelationReference> r, int ident,
+    RamIndexRelationSearch(std::unique_ptr<RamRelationReference> r, int ident,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamRelationSearch(type, std::move(r), ident, std::move(nested), std::move(profileText)),
+            : RamRelationSearch(std::move(r), ident, std::move(nested), std::move(profileText)),
               queryPattern(std::move(queryPattern)) {
         assert(getRangePattern().size() == getRelation().getArity());
     }
@@ -252,8 +251,8 @@ public:
     RamIndexScan(std::unique_ptr<RamRelationReference> r, int ident,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamIndexRelationSearch(RN_IndexScan, std::move(r), ident, std::move(queryPattern),
-                      std::move(nested), std::move(profileText)) {}
+            : RamIndexRelationSearch(std::move(r), ident, std::move(queryPattern), std::move(nested),
+                      std::move(profileText)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -301,8 +300,7 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition, std::vector<std::unique_ptr<RamExpression>> queryPattern,
             int ident)
-            : RamIndexRelationSearch(
-                      RN_Aggregate, std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
+            : RamIndexRelationSearch(std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
               function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
     /** Get condition */
@@ -420,8 +418,7 @@ class RamUnpackRecord : public RamSearch {
 public:
     RamUnpackRecord(
             std::unique_ptr<RamOperation> nested, int ident, int ref_level, size_t ref_pos, size_t arity)
-            : RamSearch(RN_UnpackRecord, ident, std::move(nested)), refLevel(ref_level), refPos(ref_pos),
-              arity(arity) {}
+            : RamSearch(ident, std::move(nested)), refLevel(ref_level), refPos(ref_pos), arity(arity) {}
 
     /** Get reference level */
     int getReferenceLevel() const {
@@ -475,8 +472,7 @@ class RamFilter : public RamNestedOperation {
 public:
     RamFilter(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamNestedOperation(RN_Filter, std::move(nested), std::move(profileText)),
-              condition(std::move(cond)) {}
+            : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
 
     /** Get condition */
     const RamCondition& getCondition() const {
@@ -525,7 +521,7 @@ class RamProject : public RamOperation {
 public:
     RamProject(std::unique_ptr<RamRelationReference> relRef,
             std::vector<std::unique_ptr<RamExpression>> expressions)
-            : RamOperation(RN_Project), relationRef(std::move(relRef)), expressions(std::move(expressions)) {}
+            : RamOperation(), relationRef(std::move(relRef)), expressions(std::move(expressions)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {
@@ -587,7 +583,7 @@ protected:
 class RamReturnValue : public RamOperation {
 public:
     RamReturnValue(std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamOperation(RN_ReturnValue), expressions(std::move(vals)) {}
+            : RamOperation(), expressions(std::move(vals)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);

@@ -515,7 +515,7 @@ protected:
         code->push_back(arity);
         code->push_back(symbolTable.lookup(relationName));
     }
-    void visitReturn(const RamReturn& ret, size_t exitAddress) override {
+    void visitReturnValue(const RamReturnValue& ret, size_t exitAddress) override {
         // The value must be pushed in correct order
         std::string types;
         auto expressions = ret.getValues();
@@ -528,7 +528,7 @@ protected:
                 visit(expressions[i], exitAddress);
             }
         }
-        code->push_back(LVM_Return);
+        code->push_back(LVM_ReturnValue);
         code->push_back(ret.getValues().size());
         code->push_back(symbolTable.lookup(types));
     }

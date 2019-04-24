@@ -722,7 +722,7 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 ip += 3;
                 break;
             }
-            case LVM_Return: {
+            case LVM_ReturnValue: {
                 RamDomain size = code[ip + 1];
                 std::string types = symbolTable.resolve(code[ip + 2]);
                 for (auto i = 0; i < size; ++i) {

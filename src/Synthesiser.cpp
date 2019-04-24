@@ -1362,7 +1362,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- subroutine return --
 
-        void visitReturn(const RamReturn& ret, std::ostream& out) override {
+        void visitReturnValue(const RamReturnValue& ret, std::ostream& out) override {
             out << "std::lock_guard<std::mutex> guard(lock);\n";
             for (auto val : ret.getValues()) {
                 if (val == nullptr) {

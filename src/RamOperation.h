@@ -584,10 +584,10 @@ protected:
 };
 
 /** A statement for returning from a ram subroutine */
-class RamReturn : public RamOperation {
+class RamReturnValue : public RamOperation {
 public:
-    RamReturn(std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamOperation(RN_Return), expressions(std::move(vals)) {}
+    RamReturnValue(std::vector<std::unique_ptr<RamExpression>> vals)
+            : RamOperation(RN_ReturnValue), expressions(std::move(vals)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -621,7 +621,7 @@ public:
         return res;
     }
 
-    RamReturn* clone() const override {
+    RamReturnValue* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : expressions) {
             if (cur != nullptr) {
@@ -630,7 +630,7 @@ public:
                 newValues.push_back(nullptr);
             }
         }
-        return new RamReturn(std::move(newValues));
+        return new RamReturnValue(std::move(newValues));
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -645,8 +645,8 @@ protected:
     std::vector<std::unique_ptr<RamExpression>> expressions;
 
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamReturn*>(&node));
-        const auto& other = static_cast<const RamReturn&>(node);
+        assert(nullptr != dynamic_cast<const RamReturnValue*>(&node));
+        const auto& other = static_cast<const RamReturnValue&>(node);
         return equal_targets(expressions, other.expressions);
     }
 };

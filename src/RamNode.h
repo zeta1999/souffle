@@ -66,7 +66,7 @@ enum RamNodeType {
     RN_Clear,
     RN_Drop,
     RN_LogSize,
-    RN_Return,
+    RN_ReturnValue,
 
     RN_Merge,
     RN_Swap,

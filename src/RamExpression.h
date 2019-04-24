@@ -236,7 +236,7 @@ public:
     /** Print */
     void print(std::ostream& os) const override {
         if (nullptr == relationRef) {
-            os << "env(t" << identifier << ", i" << element << ")";
+            os << "t" << identifier << "." << element;
         } else {
             os << "t" << identifier << "." << relationRef->get()->getArg(element);
         }

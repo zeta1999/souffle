@@ -417,7 +417,7 @@ public:
     RamQuery(std::unique_ptr<RamOperation> o) : RamStatement(RN_Query), operation(std::move(o)) {}
 
     /** Get RAM operation */
-    const RamOperation& getOperation() const {
+    RamOperation& getOperation() const {
         assert(operation);
         return *operation;
     }

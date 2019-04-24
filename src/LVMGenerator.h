@@ -392,7 +392,7 @@ protected:
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
         code->push_back(LVM_Aggregate);
-        auto patterns = aggregate.getPattern();
+        auto patterns = aggregate.getRangePattern();
         std::string types;
         auto arity = aggregate.getRelation().getArity();
         for (size_t i = 0; i < arity; i++) {

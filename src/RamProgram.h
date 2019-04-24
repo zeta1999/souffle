@@ -34,7 +34,6 @@ public:
         for (auto& r : relations) {
             children.push_back(r.second.get());
         }
-        children.push_back(main.get());
         for (auto& s : subroutines) {
             children.push_back(s.second.get());
         }

@@ -30,34 +30,34 @@ void RamConditionLevelAnalysis::run(const RamTranslationUnit& translationUnit) {
 }
 
 /** Get level of condition (which for-loop of a query) */
-size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const {
+int RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const {
     // visitor
-    class ConditionLevelVisitor : public RamVisitor<size_t> {
+    class ConditionLevelVisitor : public RamVisitor<int> {
         RamExpressionLevelAnalysis* rvla;
 
     public:
         ConditionLevelVisitor(RamExpressionLevelAnalysis* rvla) : rvla(rvla) {}
 
         // conjunction
-        size_t visitConjunction(const RamConjunction& conj) override {
+        int visitConjunction(const RamConjunction& conj) override {
             return std::max(visit(conj.getLHS()), visit(conj.getRHS()));
         }
 
         // negation
-        size_t visitNegation(const RamNegation& neg) override {
+        int visitNegation(const RamNegation& neg) override {
             return visit(neg.getOperand());
         }
 
         // constraint
-        size_t visitConstraint(const RamConstraint& binRel) override {
+        int visitConstraint(const RamConstraint& binRel) override {
             return std::max(rvla->getLevel(binRel.getLHS()), rvla->getLevel(binRel.getRHS()));
         }
 
         // existence check
-        size_t visitExistenceCheck(const RamExistenceCheck& exists) override {
-            size_t level = 0;
+        int visitExistenceCheck(const RamExistenceCheck& exists) override {
+            int level = -1;
             for (const auto& cur : exists.getValues()) {
-                if (cur) {
+                if (cur != nullptr) {
                     level = std::max(level, rvla->getLevel(cur));
                 }
             }
@@ -65,10 +65,10 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         }
 
         // provenance existence check
-        size_t visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
-            size_t level = 0;
+        int visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
+            int level = -1;
             for (const auto& cur : provExists.getValues()) {
-                if (cur) {
+                if (cur != nullptr) {
                     level = std::max(level, rvla->getLevel(cur));
                 }
             }
@@ -76,8 +76,8 @@ size_t RamConditionLevelAnalysis::getLevel(const RamCondition* condition) const 
         }
 
         // emptiness check
-        size_t visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
-            return 0;  // can be in the top level
+        int visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
+            return -1;  // can be in the top level
         }
     };
     return ConditionLevelVisitor(rvla).visit(condition);

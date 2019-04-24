@@ -243,7 +243,7 @@ public:
     }
 
     /** Get identifier */
-    size_t getIdentifier() const {
+    int getIdentifier() const {
         return identifier;
     }
 

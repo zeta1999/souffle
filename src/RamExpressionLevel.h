@@ -33,7 +33,7 @@ public:
     void run(const RamTranslationUnit& translationUnit) override {}
 
     /** Get level */
-    size_t getLevel(const RamExpression* value) const;
+    int getLevel(const RamExpression* value) const;
 };
 
 }  // end of namespace souffle

@@ -23,7 +23,7 @@
 #include "RamCondition.h"
 #include "RamExistenceCheckAnalysis.h"
 #include "RamExpression.h"
-#include "RamIndexScanKeys.h"
+#include "RamIndexKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
@@ -192,7 +192,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         Synthesiser& synthesiser;
         RamExistenceCheckAnalysis* existCheckAnalysis;
         RamProvenanceExistenceCheckAnalysis* provExistCheckAnalysis;
-        RamIndexScanKeysAnalysis* keysAnalysis;
+        RamIndexKeysAnalysis* keysAnalysis;
 
 // macros to add comments to generated code for debugging
 #ifndef PRINT_BEGIN_COMMENT
@@ -215,7 +215,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                   existCheckAnalysis(syn.getTranslationUnit().getAnalysis<RamExistenceCheckAnalysis>()),
                   provExistCheckAnalysis(
                           syn.getTranslationUnit().getAnalysis<RamProvenanceExistenceCheckAnalysis>()),
-                  keysAnalysis(syn.getTranslationUnit().getAnalysis<RamIndexScanKeysAnalysis>()) {
+                  keysAnalysis(syn.getTranslationUnit().getAnalysis<RamIndexKeysAnalysis>()) {
             rec = [&](std::ostream& out, const RamNode* node) { this->visit(*node, out); };
         }
 
@@ -291,10 +291,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitQuery(const RamQuery& query, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            // enclose operation with a check for an empty relation
-            std::set<std::string> inputRelNames;
-            std::string projectRelName;
-            int projectRelArity = -1;
 
             // check whether the outer-most filter operation
             // can be pushed out of the parallel context
@@ -319,33 +315,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
             }
 
-            // get name of projection relation and arity
-            visitDepthFirst(query, [&](const RamProject& project) {
-                projectRelArity = project.getRelation().getArity();
-                projectRelName = project.getRelation().getName();
-            });
-
-            // TODO(#941): the check for empty relations of a query needs
-            // to be expressed in RAM / not in the synthesis via C++.
-            visitDepthFirst(query, [&](const RamRelationSearch& scan) {
-                inputRelNames.insert(scan.getRelation().getName());
-            });
-            if (!inputRelNames.empty() || projectRelArity == 0) {
-                out << "if (";
-                if (!inputRelNames.empty()) {
-                    out << join(inputRelNames, "&&", [&](std::ostream& os, const std::string relName) {
-                        os << "!" << synthesiser.getRelationName(relName) << "->empty()";
-                    });
-                }
-                if (projectRelArity == 0) {
-                    if (!inputRelNames.empty()) {
-                        out << "&&";
-                    }
-                    out << synthesiser.getRelationName(projectRelName) << "->empty()";
-                }
-                out << ") ";
-            }
-
             // outline each search operation to improve compilation time
 #ifdef __clang__
 #if __clang_major > 3
@@ -359,55 +328,63 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // check whether loop nest can be parallelized
             bool parallel = false;
-            if (const auto* scan = dynamic_cast<const RamScan*>(next)) {
-                parallel = scan->getIdentifier() == 0 && !scan->getRelation().isNullary();
-                if (parallel) {
-                    const auto& rel = scan->getRelation();
-                    const auto& relName = synthesiser.getRelationName(rel);
-                    // partition outermost relation
-                    out << "auto part = " << relName << "->partition();\n";
 
-                    // build a parallel block around this loop nest
-                    out << "PARALLEL_START;\n";
+            visitDepthFirst(*next, [&](const RamScan& scan) {
+                if (!parallel) {
+                    parallel = scan.getIdentifier() == 0 && !scan.getRelation().isNullary();
+                    if (parallel) {
+                        const auto& rel = scan.getRelation();
+                        const auto& relName = synthesiser.getRelationName(rel);
+                        // partition outermost relation
+                        out << "auto part = " << relName << "->partition();\n";
+
+                        // build a parallel block around this loop nest
+                        out << "PARALLEL_START;\n";
+                    }
                 }
-            } else if (const auto* scan = dynamic_cast<const RamIndexScan*>(next)) {
-                parallel = scan->getIdentifier() == 0;
-                if (parallel) {
-                    const auto& rel = scan->getRelation();
-                    const auto& relName = synthesiser.getRelationName(rel);
+            });
 
-                    // check list of keys
-                    auto arity = rel.getArity();
-                    const auto& rangePattern = scan->getRangePattern();
+            if (!parallel)
+                visitDepthFirst(*next, [&](const RamIndexScan& scan) {
+                    if (!parallel) {
+                        parallel = scan.getIdentifier() == 0;
+                        if (parallel) {
+                            const auto& rel = scan.getRelation();
+                            const auto& relName = synthesiser.getRelationName(rel);
 
-                    // a lambda for printing boundary key values
-                    auto printKeyTuple = [&]() {
-                        for (size_t i = 0; i < arity; i++) {
-                            if (rangePattern[i] != nullptr) {
-                                visit(rangePattern[i], out);
-                            } else {
-                                out << "0";
-                            }
-                            if (i + 1 < arity) {
-                                out << ",";
-                            }
+                            // check list of keys
+                            auto arity = rel.getArity();
+                            const auto& rangePattern = scan.getRangePattern();
+
+                            // a lambda for printing boundary key values
+                            auto printKeyTuple = [&]() {
+                                for (size_t i = 0; i < arity; i++) {
+                                    if (rangePattern[i] != nullptr) {
+                                        visit(rangePattern[i], out);
+                                    } else {
+                                        out << "0";
+                                    }
+                                    if (i + 1 < arity) {
+                                        out << ",";
+                                    }
+                                }
+                            };
+
+                            // get index to be queried
+                            auto keys = keysAnalysis->getRangeQueryColumns(&scan);
+
+                            out << "const Tuple<RamDomain," << arity << "> key({{";
+                            printKeyTuple();
+                            out << "}});\n";
+                            out << "auto range = " << relName << "->"
+                                << "equalRange_" << keys << "(key);\n";
+                            out << "auto part = range.partition();\n";
+
+                            // build a parallel block around this loop nest
+                            out << "PARALLEL_START;\n";
                         }
-                    };
-
-                    // get index to be queried
-                    auto keys = keysAnalysis->getRangeQueryColumns(scan);
-
-                    out << "const Tuple<RamDomain," << arity << "> key({{";
-                    printKeyTuple();
-                    out << "}});\n";
-                    out << "auto range = " << relName << "->"
-                        << "equalRange_" << keys << "(key);\n";
-                    out << "auto part = range.partition();\n";
-
-                    // build a parallel block around this loop nest
-                    out << "PARALLEL_START;\n";
-                }
-            }
+                    }
+                });
 
             // create operation contexts for this operation
             for (const RamRelation* rel : synthesiser.getReferencedRelations(query.getOperation())) {
@@ -776,8 +753,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // declare environment variable
             out << tuple_type << " env" << identifier << ";\n";
 
-            // special case: counting of number elements in a full relation
-            if (aggregate.getFunction() == RamAggregate::COUNT && aggregate.getRangeQueryColumns() == 0) {
+            // get range to aggregate
+            auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);
+
+            // special case: counting number elements in a full relation
+            if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -804,9 +784,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << "RamDomain res = " << init << ";\n";
 
-            // get range to aggregate
-            auto keys = aggregate.getRangeQueryColumns();
-
             // check whether there is an index to use
             if (keys == 0) {
                 // no index => use full relation
@@ -816,8 +793,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // a lambda for printing boundary key values
                 auto printKeyTuple = [&]() {
                     for (size_t i = 0; i < arity; i++) {
-                        if (aggregate.getPattern()[i] != nullptr) {
-                            visit(aggregate.getPattern()[i], out);
+                        if (aggregate.getRangePattern()[i] != nullptr) {
+                            visit(aggregate.getRangePattern()[i], out);
                         } else {
                             out << "0";
                         }

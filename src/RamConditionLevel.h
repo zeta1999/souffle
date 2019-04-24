@@ -36,7 +36,7 @@ public:
     void run(const RamTranslationUnit& translationUnit) override;
 
     /** Get level */
-    size_t getLevel(const RamCondition* condition) const;
+    int getLevel(const RamCondition* condition) const;
 
 protected:
     RamExpressionLevelAnalysis* rvla;

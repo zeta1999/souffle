@@ -282,7 +282,7 @@ std::unique_ptr<RamOperation> ConvertExistenceChecksTransformer::rewriteIndexSca
 
     // check for record unpack operations
     visitDepthFirst(*indexScan, [&](const RamUnpackRecord& unpack) {
-        if(indexScan->getIdentifier() == unpack.getIdentifier()) {
+        if(indexScan->getIdentifier() == unpack.getReferenceLevel()) {
             tupleNotUsed = false;
         }
     });

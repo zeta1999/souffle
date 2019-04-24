@@ -134,22 +134,12 @@ public:
     std::string getName() const override {
         return "ConvertExistenceChecksTransformer";
     }
-
-    /**
-     * @param program the program to be processed
-     * @return whether the program was modified
-     */
+    std::unique_ptr<RamOperation> rewriteIndexScan(const RamIndexScan* indexScan);
     bool convertExistenceChecks(RamProgram& program);
 
 protected:
-    RamConstValueAnalysis* rcva{nullptr};
-    RamConditionLevelAnalysis* rcla{nullptr};
-    RamExpressionLevelAnalysis* rvla{nullptr};
 
     bool transform(RamTranslationUnit& translationUnit) override {
-        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
-        rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
-        rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
         return convertExistenceChecks(*translationUnit.getProgram());
     }
 };

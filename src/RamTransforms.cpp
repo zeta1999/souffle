@@ -268,165 +268,53 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
     return changed;
 }
 
+/** rewrite IndexScan to a filter/existence check if the tuple is not used in a consecutive RAM operation */
+std::unique_ptr<RamOperation> ConvertExistenceChecksTransformer::rewriteIndexScan(const RamIndexScan* indexScan) {
+    // check the existence of a use for the index-scan's tuple
+    bool notUsed = true;
+    visitDepthFirst(*indexScan, [&](const RamElementAccess& access) {
+        if(indexScan->getIdentifier() == access.getIdentifier()) {
+            notUsed = false;
+        }
+    });
+
+    // if not used transform the IndexScan operation to an existence check
+    if (notUsed) { 
+            std::vector<std::unique_ptr<RamExpression>> newValues;
+            for (auto& cur : indexScan->getRangePattern()) {
+               RamExpression* val = nullptr;
+               if (cur != nullptr) {
+                   val = cur->clone();
+               }
+               newValues.emplace_back(val);
+            }
+            return std::make_unique<RamFilter>( 
+                    std::make_unique<RamExistenceCheck>(
+                       std::make_unique<RamRelationReference>(&indexScan->getRelation()),
+                       std::move(newValues)), 
+                    std::unique_ptr<RamOperation>(indexScan->getOperation().clone()),
+                    indexScan->getProfileText());
+    }
+    return nullptr;
+}
+
 bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& program) {
-    // TODO: Change these to LambdaRamNodeMapper lambdas
-    // Node-mapper that searches for and updates RAM scans nested in RAM inserts
-
-    class RamScanCapturer : public RamNodeMapper {
-        mutable bool modified = false;
-        ConvertExistenceChecksTransformer* context;
-
-    public:
-        RamScanCapturer(ConvertExistenceChecksTransformer* c) : context(c) {}
-
-        bool getModified() const {
-            return modified;
-        }
-
-        bool dependsOn(const RamExpression* value, const int identifier) const {
-            std::vector<const RamExpression*> queue = {value};
-            while (!queue.empty()) {
-                const RamExpression* val = queue.back();
-                queue.pop_back();
-                if (const auto* elemAccess = dynamic_cast<const RamElementAccess*>(val)) {
-                    if (context->rvla->getLevel(elemAccess) == identifier) {
-                        return true;
-                    }
-                } else if (const auto* intrinsicOp = dynamic_cast<const RamIntrinsicOperator*>(val)) {
-                    for (const RamExpression* arg : intrinsicOp->getArguments()) {
-                        queue.push_back(arg);
-                    }
-                } else if (const auto* userDefinedOp = dynamic_cast<const RamUserDefinedOperator*>(val)) {
-                    for (const RamExpression* arg : userDefinedOp->getArguments()) {
-                        queue.push_back(arg);
-                    }
+    bool changed = false;
+    visitDepthFirst(program, [&](const RamQuery& query) {
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            if (const RamIndexScan* scan = dynamic_cast<RamIndexScan*>(node.get())) {
+                if (std::unique_ptr<RamOperation> op = rewriteIndexScan(scan)) {
+                    changed = true;
+                    node = std::move(op);
                 }
             }
-            return false;
-        }
-
-        bool dependsOn(const RamCondition* condition, const int identifier) const {
-            if (const auto* binRel = dynamic_cast<const RamConstraint*>(condition)) {
-                return dependsOn(binRel->getLHS(), identifier) || dependsOn(binRel->getRHS(), identifier);
-            }
-            return false;
-        }
-
-        std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            if (auto* scan = dynamic_cast<RamRelationSearch*>(node.get())) {
-                const int identifier = scan->getIdentifier();
-                bool isExistCheck = true;
-                visitDepthFirst(scan->getOperation(), [&](const RamProject& project) {
-                    if (isExistCheck) {
-                        std::vector<const RamExpression*> values;
-                        // TODO: function to extend vectors
-                        const std::vector<RamExpression*> initialVals = project.getValues();
-                        values.insert(values.end(), initialVals.begin(), initialVals.end());
-
-                        while (!values.empty()) {
-                            const RamExpression* value = values.back();
-                            values.pop_back();
-
-                            if (const auto* pack = dynamic_cast<const RamPackRecord*>(value)) {
-                                const std::vector<RamExpression*> args = pack->getArguments();
-                                values.insert(values.end(), args.begin(), args.end());
-                            } else if (const auto* intrinsicOp =
-                                               dynamic_cast<const RamIntrinsicOperator*>(value)) {
-                                for (auto* arg : intrinsicOp->getArguments()) {
-                                    values.push_back(arg);
-                                }
-                            } else if (value != nullptr && !context->rcva->isConstant(value) &&
-                                       context->rvla->getLevel(value) == identifier) {
-                                isExistCheck = false;
-                                break;
-                            }
-                        }
-                    }
-                });
-                if (isExistCheck) {
-                    visitDepthFirst(scan->getOperation(), [&](const RamUnpackRecord& lookup) {
-                        if (isExistCheck) {
-                            if (lookup.getReferenceLevel() == identifier) {
-                                isExistCheck = false;
-                            }
-                        }
-                    });
-                }
-                if (isExistCheck) {
-                    visitDepthFirst(scan->getOperation(), [&](const RamExpression& expression) {
-                        if (isExistCheck) {
-                            if (dependsOn(&expression, identifier)) {
-                                isExistCheck = false;
-                            }
-                        }
-                    });
-                }
-                if (isExistCheck) {
-                    // create constraint
-                    std::unique_ptr<RamCondition> constraint;
-
-                    if (nullptr != dynamic_cast<RamScan*>(scan)) {
-                        constraint = std::make_unique<RamNegation>(std::make_unique<RamEmptinessCheck>(
-                                std::make_unique<RamRelationReference>(&scan->getRelation())));
-                    } else if (auto* indexScan = dynamic_cast<RamIndexScan*>(scan)) {
-                        std::vector<std::unique_ptr<RamExpression>> values;
-                        for (RamExpression* value : indexScan->getRangePattern()) {
-                            if (value != nullptr) {
-                                values.emplace_back(value->clone());
-                            } else {
-                                values.push_back(nullptr);
-                            }
-                        }
-                        constraint = std::make_unique<RamExistenceCheck>(
-                                std::make_unique<RamRelationReference>(&scan->getRelation()),
-                                std::move(values));
-                    }
-
-                    node = std::make_unique<RamFilter>(std::move(constraint),
-                            std::unique_ptr<RamOperation>(scan->getOperation().clone()),
-                            scan->getProfileText());
-                    modified = true;
-                }
-            }
-            node->apply(*this);
+            node->apply(makeLambdaRamMapper(scanRewriter));
             return node;
-        }
-    };
-
-    // Node-mapper that searches for and updates RAM inserts
-    class RamQueryCapturer : public RamNodeMapper {
-        mutable bool modified;
-        ConvertExistenceChecksTransformer* context;
-
-    public:
-        RamQueryCapturer(ConvertExistenceChecksTransformer* c) : modified(false), context(c) {}
-
-        bool getModified() const {
-            return modified;
-        }
-
-        std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-            // get all RAM inserts
-            if (auto* insert = dynamic_cast<RamQuery*>(node.get())) {
-                RamScanCapturer scanUpdate(context);
-                insert->apply(scanUpdate);
-
-                if (scanUpdate.getModified()) {
-                    modified = true;
-                }
-            } else {
-                // no need to search for nested RAM inserts
-                node->apply(*this);
-            }
-            return node;
-        }
-    };
-
-    // level all RAM inserts
-    RamQueryCapturer insertUpdate(this);
-    program.getMain()->apply(insertUpdate);
-
-    return insertUpdate.getModified();
+        };
+        ((RamNode*)&query)->apply(makeLambdaRamMapper(scanRewriter));
+    });
+    return changed;
 }
 
 }  // end of namespace souffle

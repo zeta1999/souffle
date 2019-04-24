@@ -558,10 +558,12 @@ exec_plan
 /* Rule execution plan list */
 exec_plan_list
   : NUMBER COLON LPAREN exec_order_list RPAREN {
+        $exec_order_list->setSrcLoc(@LPAREN);
         $$ = new AstExecutionPlan();
         $$->setOrderFor($NUMBER, std::unique_ptr<AstExecutionOrder>($exec_order_list));
     }
   | exec_plan_list[curr_list] COMMA NUMBER COLON LPAREN exec_order_list RPAREN {
+        $exec_order_list->setSrcLoc(@LPAREN);
         $$ = $curr_list;
         $$->setOrderFor($NUMBER, std::unique_ptr<AstExecutionOrder>($exec_order_list));
     }

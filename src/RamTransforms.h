@@ -129,6 +129,25 @@ protected:
     }
 };
 
+/**
+ * Convert IndexScan operations to Filter/Existence Checks
+ * if the IndexScan's tuple is not further used in subsequent
+ * operations.
+ *
+ *  QUERY
+ *   ...
+ *    SEARCH t1 IN A INDEX t1.x=10 AND t1.y = 20
+ *      ... // no occurrence of t1
+ *
+ * will be rewritten to
+ *
+ *  QUERY
+ *   ...
+ *    IF (10,20) NOT IN A
+ *      ...
+ *
+ */
+
 class ConvertExistenceChecksTransformer : public RamTransformer {
 public:
     std::string getName() const override {

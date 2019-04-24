@@ -36,7 +36,7 @@ size_t RamOperationDepthAnalysis::getDepth(const RamOperation* op) const {
         }
 
         // return
-        size_t visitReturn(const RamReturn& ret) override {
+        size_t visitReturnValue(const RamReturnValue& ret) override {
             return 1;
         }
     };

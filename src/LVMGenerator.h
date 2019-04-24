@@ -413,13 +413,15 @@ protected:
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(counterLabel);
         } else {
-            code->push_back(LVM_ITER_NotAtEnd);  // First check, if the rangeindex is empty, do nothing,
-                                                 // return noything
-            code->push_back(counterLabel);
-            code->push_back(LVM_ITER_TypeIndexScan);
-            code->push_back(LVM_Jmpez);
-            code->push_back(lookupAddress(L2));
 
+            if (aggregate.getFunction() == RamAggregate::MIN || aggregate.getFunction() == RamAggregate::MAX) {
+                // Does not return a result for max/min of an empty relation
+                code->push_back(LVM_ITER_NotAtEnd);  
+                code->push_back(counterLabel);
+                code->push_back(LVM_ITER_TypeIndexScan);
+                code->push_back(LVM_Jmpez);
+                code->push_back(lookupAddress(L2));
+            }
             switch (aggregate.getFunction()) {  // Init value
                 case RamAggregate::MIN:
                     code->push_back(LVM_Number);
@@ -439,11 +441,19 @@ protected:
 
             size_t address_L0 = code->size();
 
-            code->push_back(LVM_ITER_NotAtEnd);  // Start the formal for loop if the relation is non-empty
+            code->push_back(LVM_ITER_NotAtEnd);  // Start the aggregate for loop if the relation is non-empty
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(LVM_Jmpez);
             code->push_back(lookupAddress(L1));
+            
+            // Produce condition inside the loop
+            size_t endOfLoop = getNewAddressLabel();
+            if (aggregate.getCondition() != nullptr) {
+                visit(aggregate.getCondition(), exitAddress);
+                code->push_back(LVM_Jmpez);
+                code->push_back(lookupAddress(endOfLoop));
+            }
 
             code->push_back(LVM_ITER_Select);
             code->push_back(counterLabel);
@@ -468,7 +478,7 @@ protected:
                     code->push_back(LVM_OP_ADD);
                     break;
             }
-
+            setAddress(endOfLoop, code->size());
             code->push_back(LVM_ITER_Inc);
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeIndexScan);
@@ -478,9 +488,22 @@ protected:
 
         setAddress(L1, code->size());
 
+        // write result into environment tuple
         code->push_back(LVM_Aggregate_Return);
         code->push_back(aggregate.getIdentifier());
 
+	    if (aggregate.getFunction() == RamAggregate::MIN || aggregate.getFunction() == RamAggregate::MAX) { 
+            // check whether there exists a min/max first before next loop
+            
+            // Retrive the result we just saved.
+            code->push_back(LVM_ElementAccess);
+            code->push_back(aggregate.getIdentifier());
+            code->push_back(0);
+            code->push_back(aggregate.getFunction() == RamAggregate::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
+            code->push_back(LVM_OP_EQ);
+            code->push_back(LVM_Jmpnz); // If init == result, does not visit nested search
+            code->push_back(lookupAddress(L2));
+	    }
         visitSearch(aggregate, exitAddress);
         setAddress(L2, code->size());
     }

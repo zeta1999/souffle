@@ -756,7 +756,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // get range to aggregate
             auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);
 
-            // special case: counting number elements in a full relation
+            // special case: counting number elements over an unrestricted predicate
             if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0 && aggregate.getCondition() == nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -786,11 +786,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << "RamDomain res = " << init << ";\n";
 
+
             // check whether there is an index to use
             if (keys == 0) {
-                // no index => use full relation
-                out << "auto& range = "
-                    << "*" << relName << ";\n";
+                out << "for(const auto& env" << identifier << " : "
+                    << "*" << relName << ") {\n";
             } else {
                 // a lambda for printing boundary key values
                 auto printKeyTuple = [&]() {
@@ -813,15 +813,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}});\n";
                 out << "auto range = " << relName << "->"
                     << "equalRange_" << keys << "(key," << ctxName << ");\n";
-            }
 
-            // add existence check
-            if (aggregate.getFunction() != RamAggregate::COUNT) {
-                out << "if(!range.empty()) {\n";
+                // aggregate result
+                out << "for(const auto& env : range) {\n";
             }
-
-            // aggregate result
-            out << "for(const auto& cur : range) {\n";
 
             auto condition = aggregate.getCondition();
             if (condition) {
@@ -835,7 +830,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // count is easy
                 out << "++res\n;";
             } else if (aggregate.getFunction() == RamAggregate::SUM) {
-                out << "env" << identifier << " = cur;\n";
                 out << "res += ";
                 visit(*aggregate.getExpression(), out);
                 out << ";\n";
@@ -855,7 +849,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         assert(false);
                 }
 
-                out << "env" << identifier << " = cur;\n";
                 out << "res = " << fun << "(res,";
                 visit(*aggregate.getExpression(), out);
                 out << ");\n";
@@ -881,10 +874,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                visitSearch(aggregate, out);
 	    }
 
-            // end conditional nested block
-            if (aggregate.getFunction() != RamAggregate::COUNT) {
-                out << "}\n";
-            }
             PRINT_END_COMMENT(out);
         }
 

@@ -367,15 +367,6 @@ private:
         ProvenanceClauseTranslator(AstTranslator& translator) : ClauseTranslator(translator) {}
     };
 
-    class ProvenanceNegationClauseTranslator : public ClauseTranslator {
-    protected:
-        std::unique_ptr<RamOperation> createOperation(const AstClause& clause) override;
-        std::unique_ptr<RamCondition> createCondition(const AstClause& originalClause) override;
-
-    public:
-        ProvenanceNegationClauseTranslator(AstTranslator& translator) : ClauseTranslator(translator) {}
-    };
-
     /**
      * translate RAM code for the non-recursive clauses of the given relation.
      *

@@ -270,8 +270,7 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
 
 /** rewrite IndexScan to a filter/existence check if the IndexScan's tuple
  * is not used in a consecutive RAM operation */
-std::unique_ptr<RamOperation> ConvertExistenceChecksTransformer::rewriteIndexScan(
-        const RamIndexScan* indexScan) {
+std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const RamIndexScan* indexScan) {
     // check whether tuple is used in subsequent operations
     bool tupleNotUsed = true;
     visitDepthFirst(*indexScan, [&](const RamElementAccess& access) {
@@ -307,7 +306,7 @@ std::unique_ptr<RamOperation> ConvertExistenceChecksTransformer::rewriteIndexSca
 }
 
 /** Search for queries and rewrite their IndexScan operations if possible */
-bool ConvertExistenceChecksTransformer::convertExistenceChecks(RamProgram& program) {
+bool IfConversionTransformer::convertExistenceChecks(RamProgram& program) {
     bool changed = false;
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =

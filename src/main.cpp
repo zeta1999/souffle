@@ -483,7 +483,7 @@ int main(int argc, char** argv) {
     std::vector<std::unique_ptr<RamTransformer>> ramTransforms;
     ramTransforms.push_back(std::make_unique<HoistConditionsTransformer>());
     ramTransforms.push_back(std::make_unique<MakeIndexTransformer>());
-    ramTransforms.push_back(std::make_unique<ConvertExistenceChecksTransformer>());
+    ramTransforms.push_back(std::make_unique<IfConversionTransformer>());
 
     for (const auto& transform : ramTransforms) {
         /* If the ram transform changed the program, show this */

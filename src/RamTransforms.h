@@ -148,10 +148,10 @@ protected:
  *
  */
 
-class ConvertExistenceChecksTransformer : public RamTransformer {
+class IfConversionTransformer : public RamTransformer {
 public:
     std::string getName() const override {
-        return "ConvertExistenceChecksTransformer";
+        return "IfConversionTransformer";
     }
     std::unique_ptr<RamOperation> rewriteIndexScan(const RamIndexScan* indexScan);
     bool convertExistenceChecks(RamProgram& program);

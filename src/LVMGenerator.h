@@ -393,10 +393,10 @@ protected:
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
         // TODO xiaowen: The aggregate operation is now written in a less efficient way
         // e.g. The max & min now support arbitray number of arguments, we should take use of it
-        // count operation can be futhuer simpfied
+        // count operation can be further simpfied
         //
         // This should be reviewed later.
-    
+
         code->push_back(LVM_Aggregate);
         auto patterns = aggregate.getRangePattern();
         std::string types;
@@ -414,9 +414,9 @@ protected:
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
-    
+
         // Special case for counting
-        if (aggregate.getFunction() == RamAggregate::COUNT && aggregate.getCondition() == nullptr) {  
+        if (aggregate.getFunction() == RamAggregate::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(counterLabel);
         } else {
@@ -441,17 +441,17 @@ protected:
 
             size_t address_L0 = code->size();
 
-            code->push_back(LVM_ITER_NotAtEnd);  // Start the aggregate for loop 
+            code->push_back(LVM_ITER_NotAtEnd);  // Start the aggregate for loop
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(LVM_Jmpez);
             code->push_back(lookupAddress(L1));
-            
+
             // Produce condition inside the loop
             size_t endOfLoop = getNewAddressLabel();
             if (aggregate.getCondition() != nullptr) {
                 visit(aggregate.getCondition(), exitAddress);
-                code->push_back(LVM_Jmpez); // Continue; if condition is not met
+                code->push_back(LVM_Jmpez);  // Continue; if condition is not met
                 code->push_back(lookupAddress(endOfLoop));
             }
 
@@ -494,9 +494,9 @@ protected:
         code->push_back(LVM_Aggregate_Return);
         code->push_back(aggregate.getIdentifier());
 
-	    if (aggregate.getFunction() == RamAggregate::MIN || aggregate.getFunction() == RamAggregate::MAX) { 
+        if (aggregate.getFunction() == RamAggregate::MIN || aggregate.getFunction() == RamAggregate::MAX) {
             // check whether there exists a min/max first before next loop
-            
+
             // Retrive the result we just saved.
             code->push_back(LVM_ElementAccess);
             code->push_back(aggregate.getIdentifier());
@@ -504,9 +504,9 @@ protected:
             code->push_back(LVM_Number);
             code->push_back(aggregate.getFunction() == RamAggregate::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
             code->push_back(LVM_OP_EQ);
-            code->push_back(LVM_Jmpnz); // If init == result, does not visit nested search
+            code->push_back(LVM_Jmpnz);  // If init == result, does not visit nested search
             code->push_back(lookupAddress(L2));
-	    }
+        }
         visitSearch(aggregate, exitAddress);
         setAddress(L2, code->size());
     }

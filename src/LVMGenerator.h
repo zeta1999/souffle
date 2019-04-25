@@ -447,6 +447,11 @@ protected:
             code->push_back(LVM_Jmpez);
             code->push_back(lookupAddress(L1));
 
+            code->push_back(LVM_ITER_Select);
+            code->push_back(counterLabel);
+            code->push_back(LVM_ITER_TypeIndexScan);
+            code->push_back(aggregate.getIdentifier());
+
             // Produce condition inside the loop
             size_t endOfLoop = getNewAddressLabel();
             if (aggregate.getCondition() != nullptr) {
@@ -454,13 +459,10 @@ protected:
                 code->push_back(LVM_Jmpez);  // Continue; if condition is not met
                 code->push_back(lookupAddress(endOfLoop));
             }
-
-            code->push_back(LVM_ITER_Select);
-            code->push_back(counterLabel);
-            code->push_back(LVM_ITER_TypeIndexScan);
-            code->push_back(aggregate.getIdentifier());
-
-            visit(aggregate.getExpression(), exitAddress);
+            
+            if (aggregate.getFunction() != RamAggregate::COUNT) {
+                visit(aggregate.getExpression(), exitAddress);
+            }
 
             switch (aggregate.getFunction()) {
                 case RamAggregate::MIN:

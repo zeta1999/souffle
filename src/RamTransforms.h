@@ -154,11 +154,11 @@ public:
         return "IfConversionTransformer";
     }
     std::unique_ptr<RamOperation> rewriteIndexScan(const RamIndexScan* indexScan);
-    bool convertExistenceChecks(RamProgram& program);
+    bool convertIndexScans(RamProgram& program);
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
-        return convertExistenceChecks(*translationUnit.getProgram());
+        return convertIndexScans(*translationUnit.getProgram());
     }
 };
 

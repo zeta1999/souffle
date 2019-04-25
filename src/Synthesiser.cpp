@@ -751,10 +751,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = aggregate.getIdentifier();
 
             // aggregate tuple storing the result of aggregate
-            std::string tuple_type = "ram::Tuple<RamDomain,1>";
+            std::string tuple_type = "ram::Tuple<RamDomain," + toString(std::max(1u, arity)) + ">";
 
             // declare environment variable
-            out << tuple_type << " env" << identifier << ";\n";
+            out <<"ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // get range to aggregate
             auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);

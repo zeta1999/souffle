@@ -391,6 +391,12 @@ protected:
     }
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
+        // TODO xiaowen: The aggregate operation is now written in a less efficient way
+        // e.g. The max & min now support arbitray number of arguments, we should take use of it
+        // count operation can be futhuer simpfied
+        //
+        // This should be reviewed later.
+    
         code->push_back(LVM_Aggregate);
         auto patterns = aggregate.getRangePattern();
         std::string types;
@@ -408,20 +414,12 @@ protected:
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
-
-        if (aggregate.getFunction() == RamAggregate::COUNT) {  // To count, there is no need to iterate
+    
+        // Special case for counting
+        if (aggregate.getFunction() == RamAggregate::COUNT && aggregate.getCondition() == nullptr) {  
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(counterLabel);
         } else {
-
-            if (aggregate.getFunction() == RamAggregate::MIN || aggregate.getFunction() == RamAggregate::MAX) {
-                // Does not return a result for max/min of an empty relation
-                code->push_back(LVM_ITER_NotAtEnd);  
-                code->push_back(counterLabel);
-                code->push_back(LVM_ITER_TypeIndexScan);
-                code->push_back(LVM_Jmpez);
-                code->push_back(lookupAddress(L2));
-            }
             switch (aggregate.getFunction()) {  // Init value
                 case RamAggregate::MIN:
                     code->push_back(LVM_Number);
@@ -432,6 +430,8 @@ protected:
                     code->push_back(MIN_RAM_DOMAIN);
                     break;
                 case RamAggregate::COUNT:
+                    code->push_back(LVM_Number);
+                    code->push_back(0);
                     break;
                 case RamAggregate::SUM:
                     code->push_back(LVM_Number);
@@ -441,7 +441,7 @@ protected:
 
             size_t address_L0 = code->size();
 
-            code->push_back(LVM_ITER_NotAtEnd);  // Start the aggregate for loop if the relation is non-empty
+            code->push_back(LVM_ITER_NotAtEnd);  // Start the aggregate for loop 
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(LVM_Jmpez);
@@ -451,7 +451,7 @@ protected:
             size_t endOfLoop = getNewAddressLabel();
             if (aggregate.getCondition() != nullptr) {
                 visit(aggregate.getCondition(), exitAddress);
-                code->push_back(LVM_Jmpez);
+                code->push_back(LVM_Jmpez); // Continue; if condition is not met
                 code->push_back(lookupAddress(endOfLoop));
             }
 
@@ -472,7 +472,9 @@ protected:
                     code->push_back(2);  // TODO quick fix, can be improved later
                     break;
                 case RamAggregate::COUNT:
-                    assert(false);
+                    code->push_back(LVM_Number);
+                    code->push_back(1);
+                    code->push_back(LVM_OP_ADD);
                     break;
                 case RamAggregate::SUM:
                     code->push_back(LVM_OP_ADD);

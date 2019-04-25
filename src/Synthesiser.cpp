@@ -788,7 +788,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 default:
                     abort();
             }
-            out << "RamDomain res = " << init << ";\n";
+            out << "RamDomain res" <<identifier <<" = " << init << ";\n";
 
             // check whether there is an index to use
             if (keys == 0) {
@@ -832,9 +832,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // create aggregation code
             if (aggregate.getFunction() == RamAggregate::COUNT) {
                 // count is easy
-                out << "++res\n;";
+                out << "++res" << identifier << "\n;";
             } else if (aggregate.getFunction() == RamAggregate::SUM) {
-                out << "res += ";
+                out << "res" << identifier << " += ";
                 visit(*aggregate.getExpression(), out);
                 out << ";\n";
             } else {
@@ -853,7 +853,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         assert(false);
                 }
 
-                out << "res = " << fun << "(res,";
+                out << "res" << identifier << " = " << fun << "(res" << identifier << ",";
                 visit(*aggregate.getExpression(), out);
                 out << ");\n";
             }
@@ -866,12 +866,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "}\n";
 
             // write result into environment tuple
-            out << "env" << identifier << "[0] = res;\n";
+            out << "env" << identifier << "[0] = res" << identifier << ";\n";
 
             if (aggregate.getFunction() == RamAggregate::MIN ||
                     aggregate.getFunction() == RamAggregate::MAX) {
                 // check whether there exists a min/max first before next loop
-                out << "if(res != " << init << "){\n";
+                out << "if(res" << identifier << " != " << init << "){\n";
                 visitSearch(aggregate, out);
                 out << "}\n";
             } else {

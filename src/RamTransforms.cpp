@@ -82,7 +82,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
 
     // hoist conditions to the most outer scope if they
     // don't depend on RamSearches
-    visitDepthFirst(program, [&](RamQuery& query) {
+    visitDepthFirst(program, [&](const RamQuery& query) {
         std::unique_ptr<RamCondition> newCondition;
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
@@ -100,7 +100,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
             node->apply(makeLambdaRamMapper(filterRewriter));
             return node;
         };
-        query.apply(makeLambdaRamMapper(filterRewriter));
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(filterRewriter));
         if (newCondition != nullptr) {
             // insert new filter operation at outer-most level of the query
             changed = true;
@@ -109,7 +109,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
     });
 
     // hoist conditions for each RamSearch operation
-    visitDepthFirst(program, [&](RamSearch& search) {
+    visitDepthFirst(program, [&](const RamSearch& search) {
         std::unique_ptr<RamCondition> newCondition;
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
@@ -127,7 +127,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
             node->apply(makeLambdaRamMapper(filterRewriter));
             return node;
         };
-        search.apply(makeLambdaRamMapper(filterRewriter));
+        const_cast<RamSearch*>(&search)->apply(makeLambdaRamMapper(filterRewriter));
         if (newCondition != nullptr) {
             // insert new filter operation after the search operation
             changed = true;
@@ -242,7 +242,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* s
 
 bool MakeIndexTransformer::makeIndex(RamProgram& program) {
     bool changed = false;
-    visitDepthFirst(program, [&](RamQuery& query) {
+    visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
@@ -259,7 +259,7 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
             node->apply(makeLambdaRamMapper(scanRewriter));
             return node;
         };
-        query.apply(makeLambdaRamMapper(scanRewriter));
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(scanRewriter));
     });
     return changed;
 }
@@ -302,7 +302,7 @@ std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const Ra
 
 bool IfConversionTransformer::convertIndexScans(RamProgram& program) {
     bool changed = false;
-    visitDepthFirst(program, [&](RamQuery& query) {
+    visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamIndexScan* scan = dynamic_cast<RamIndexScan*>(node.get())) {
@@ -314,7 +314,7 @@ bool IfConversionTransformer::convertIndexScans(RamProgram& program) {
             node->apply(makeLambdaRamMapper(scanRewriter));
             return node;
         };
-        query.apply(makeLambdaRamMapper(scanRewriter));
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(scanRewriter));
     });
     return changed;
 }

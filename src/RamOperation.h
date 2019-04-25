@@ -341,9 +341,9 @@ public:
         if (function != COUNT) {
             os << *expression << " ";
         }
-        os <<" FOR ALL t" << getIdentifier() << " ∈ " << getRelation().getName();
+        os << " FOR ALL t" << getIdentifier() << " ∈ " << getRelation().getName();
         bool first = true;
-        os <<" INDEX ";
+        os << " INDEX ";
         for (unsigned int i = 0; i < rel.getArity(); ++i) {
             if (queryPattern[i] != nullptr) {
                 if (first) {
@@ -354,7 +354,7 @@ public:
                 os << "t" << getIdentifier() << "." << rel.getArg(i) << "=" << *queryPattern[i];
             }
         }
-        if(first) {
+        if (first) {
             os << "none";
         }
         if (condition != nullptr) {

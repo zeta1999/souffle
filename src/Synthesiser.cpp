@@ -760,7 +760,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0 && aggregate.getCondition() == nullptr) {
+            if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0 &&
+                    aggregate.getCondition() == nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -784,8 +785,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case RamAggregate::SUM:
                     init = "0";
                     break;
-		default:
-		    abort();
+                default:
+                    abort();
             }
             out << "RamDomain res = " << init << ";\n";
 
@@ -826,7 +827,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "if( ";
                 visit(condition, out);
                 out << ") {\n";
-	    }
+            }
 
             // create aggregation code
             if (aggregate.getFunction() == RamAggregate::COUNT) {
@@ -866,16 +867,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // write result into environment tuple
             out << "env" << identifier << "[0] = res;\n";
-          
-	    if (aggregate.getFunction() == RamAggregate::MIN ||
-                aggregate.getFunction() == RamAggregate::MAX) { 
-               // check whether there exists a min/max first before next loop
-               out << "if(res != " << init << "){\n";
-               visitSearch(aggregate, out);
-	       out << "}\n";
-	    } else {
-               visitSearch(aggregate, out);
-	    }
+
+            if (aggregate.getFunction() == RamAggregate::MIN ||
+                    aggregate.getFunction() == RamAggregate::MAX) {
+                // check whether there exists a min/max first before next loop
+                out << "if(res != " << init << "){\n";
+                visitSearch(aggregate, out);
+                out << "}\n";
+            } else {
+                visitSearch(aggregate, out);
+            }
 
             PRINT_END_COMMENT(out);
         }

@@ -89,7 +89,7 @@ enum LVM_Type {
     LVM_Aggregate,
     LVM_Filter,
     LVM_Project,
-    LVM_Return,
+    LVM_ReturnValue,
     LVM_Search,
 
     // LVM Stmts

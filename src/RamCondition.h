@@ -36,7 +36,7 @@ namespace souffle {
  */
 class RamCondition : public RamNode {
 public:
-    RamCondition(RamNodeType type) : RamNode(type) {}
+    RamCondition() = default;
 
     /** Create clone */
     RamCondition* clone() const override = 0;
@@ -48,7 +48,7 @@ public:
 class RamConjunction : public RamCondition {
 public:
     RamConjunction(std::unique_ptr<RamCondition> l, std::unique_ptr<RamCondition> r)
-            : RamCondition(RN_Conjunction), lhs(std::move(l)), rhs(std::move(r)) {}
+            : RamCondition(), lhs(std::move(l)), rhs(std::move(r)) {}
 
     /** Get left-hand side of conjunction */
     const RamCondition& getLHS() const {
@@ -109,8 +109,7 @@ protected:
  */
 class RamNegation : public RamCondition {
 public:
-    RamNegation(std::unique_ptr<RamCondition> operand)
-            : RamCondition(RN_Negation), operand(std::move(operand)) {}
+    RamNegation(std::unique_ptr<RamCondition> operand) : RamCondition(), operand(std::move(operand)) {}
 
     /** Get operand of negation */
     const RamCondition& getOperand() const {
@@ -159,7 +158,7 @@ protected:
 class RamConstraint : public RamCondition {
 public:
     RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamExpression> l, std::unique_ptr<RamExpression> r)
-            : RamCondition(RN_Constraint), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
+            : RamCondition(), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -227,9 +226,9 @@ protected:
  */
 class RamAbstractExistenceCheck : public RamCondition {
 public:
-    RamAbstractExistenceCheck(RamNodeType type, std::unique_ptr<RamRelationReference> relRef,
-            std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamCondition(type), relationRef(std::move(relRef)), values(std::move(vals)) {}
+    RamAbstractExistenceCheck(
+            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
+            : RamCondition(), relationRef(std::move(relRef)), values(std::move(vals)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {
@@ -282,7 +281,7 @@ class RamExistenceCheck : public RamAbstractExistenceCheck {
 public:
     RamExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamAbstractExistenceCheck(RN_ExistenceCheck, std::move(relRef), std::move(vals)) {}
+            : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -328,7 +327,7 @@ class RamProvenanceExistenceCheck : public RamAbstractExistenceCheck {
 public:
     RamProvenanceExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamAbstractExistenceCheck(RN_ProvenanceExistenceCheck, std::move(relRef), std::move(vals)) {}
+            : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -373,7 +372,7 @@ protected:
 class RamEmptinessCheck : public RamCondition {
 public:
     RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef)
-            : RamCondition(RN_EmptinessCheck), relationRef(std::move(relRef)) {}
+            : RamCondition(), relationRef(std::move(relRef)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {

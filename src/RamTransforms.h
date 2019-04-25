@@ -29,10 +29,13 @@ namespace souffle {
 class RamProgram;
 
 /**
- * Hoists the conditions to the earliest point in the loop nest where they
- * can be evaluated.
+ * @class HoistConditionsTransformer
+ * @brief Hosts conditions in a loop-nest to the most-outer/semantically-correct loop
  *
- * hoistConditions assumes that filter operations are stored verbose,
+ * Hoists the conditions to the earliest point in the loop nest where their
+ * evaluation is still semantically correct.
+ *
+ * The transformations assumes that filter operations are stored verbose,
  * i.e. a conjunction is expressed by two consecutive filter operations.
  * For example ..
  *
@@ -56,6 +59,9 @@ class RamProgram;
  * conjunction, another transformer is required that splits the
  * filter operations. However, at the moment this is not necessary
  * because the translator delivers already the right RAM format.
+ *
+ * TODO: break-up conditions while transforming so that this requirement
+ * is removed.
  */
 class HoistConditionsTransformer : public RamTransformer {
 public:
@@ -63,7 +69,17 @@ public:
         return "HoistConditionsTransformer";
     }
 
-    /** hoist all conditions in a RAM program to the outermost scope */
+    /**
+     * @brief Hoist filter operations.
+     * @param Program that is transformed
+     * @return Flag showing whether the program has been changed by the transformation
+     *
+     * There are two types of conditions in
+     * filter operations. The first type depends on tuples of
+     * RamSearch operations. The second type are independent of
+     * tuple access. Both types of conditions will be hoisted to
+     * the most out-scope such that the program is still valid.
+     */
     bool hoistConditions(RamProgram& program);
 
 protected:
@@ -76,11 +92,12 @@ protected:
 };
 
 /**
- * Make indexable operations to indexed operations.
+ * @class MakeIndexTransformer
+ * @brief Make indexable operations to indexed operations.
  *
- * makeIndex() assumes that the RAM has been levelled before, and
- * that the conditions that could be used for an index are located
- * immediately after the scan or aggregrate operation
+ * The transformer assumes that the RAM has been levelled before.
+ * The conditions that could be used for an index must be located
+ * immediately after the scan or aggregrate operation.
  *
  *  QUERY
  *   ...
@@ -103,20 +120,50 @@ public:
         return "MakeIndexTransformer";
     }
 
-    /** Get expression of an equivalence relation of the format t1.x = <expr> or <expr> = t1.x */
+    /**
+     * @brief Get expression of RAM element access
+     *
+     * @param Equivalence constraints of the format t1.x = <expression> or <expression> = t1.x
+     * @param Element that was accessed, e.g., for t1.x this would be the index of attribute x.
+     * @param Tuple identifier
+     *
+     * The method retrieves expression the expression of an equivalence constraint of the
+     * format t1.x = <expr> or <expr> = t1.x
+     */
     std::unique_ptr<RamExpression> getExpression(RamCondition* c, size_t& element, int level);
 
-    /** Construct patterns for an indexable operation and the remaining condition that cannot be indexed */
+    /**
+     * @brief Construct query patterns for an indexable operation
+     * @param Query pattern that is to be constructed
+     * @param Flag to indicate whether operation is indexable
+     * @param A list of conditions that will be transformed to query patterns
+     * @param Tuple identifier of the indexable operation
+     * @result Remaining conditions that could not be transformed to an index
+     */
     std::unique_ptr<RamCondition> constructPattern(std::vector<std::unique_ptr<RamExpression>>& queryPattern,
             bool& indexable, std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier);
 
-    /** Rewrite a scan operation to an indexed scan operation */
+    /**
+     * @brief Rewrite a scan operation to an indexed scan operation
+     * @param Scan operation that is potentially rewritten to an IndexScan
+     * @result The result is null if the scan could not be rewritten to an IndexScan;
+     *         otherwise the new IndexScan operation is returned.
+     */
     std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
 
-    /** Rewrite an aggregate operation to an indexed aggregate operation */
+    /**
+     * @brief Rewrite an aggregate operation to an indexed aggregate operation
+     * @param Aggregate operation that is potentially rewritten to an indexed version
+     * @result The result is null if the aggregate could not be rewritten to an indexed version;
+     *         otherwise the new indexed version of the aggregate is returned.
+     */
     std::unique_ptr<RamOperation> rewriteAggregate(const RamAggregate* agg);
 
-    /** Make indexable RAM operation indexed */
+    /**
+     * @brief Make indexable RAM operation indexed
+     * @param RAM program that is transformed
+     * @result Flag that indicates whether the input program has changed
+     */
     bool makeIndex(RamProgram& program);
 
 protected:
@@ -129,28 +176,57 @@ protected:
     }
 };
 
-class ConvertExistenceChecksTransformer : public RamTransformer {
+/**
+ * @class IfConversionTransformer
+ * @brief Convert IndexScan operations to Filter/Existence Checks
+
+ * If there exists IndexScan operations in the RAM, and their tuples
+ * are not further used in subsequent operations, the IndexScan operations
+ * will be rewritten to Filter/Existence Checks.
+ *
+ * For example,
+ *
+ *  QUERY
+ *   ...
+ *    SEARCH t1 IN A INDEX t1.x=10 AND t1.y = 20
+ *      ... // no occurrence of t1
+ *
+ * will be rewritten to
+ *
+ *  QUERY
+ *   ...
+ *    IF (10,20) NOT IN A
+ *      ...
+ *
+ */
+class IfConversionTransformer : public RamTransformer {
 public:
     std::string getName() const override {
-        return "ConvertExistenceChecksTransformer";
+        return "IfConversionTransformer";
     }
 
     /**
-     * @param program the program to be processed
-     * @return whether the program was modified
+     * @brief Rewrite IndexScan operations
+     * @param An index operation
+     * @result The old operation if the if-conversion fails; otherwise the filter/existence check
+     *
+     * Rewrites IndexScan operations to a filter/existence check if the IndexScan's tuple
+     * is not used in a consecutive RAM operation
      */
-    bool convertExistenceChecks(RamProgram& program);
+    std::unique_ptr<RamOperation> rewriteIndexScan(const RamIndexScan* indexScan);
+
+    /**
+     * @brief Apply if-conversion to the whole program
+     * @param RAM program
+     * @result A flag indicating whether the RAM program has been changed.
+     *
+     * Search for queries and rewrite their IndexScan operations if possible.
+     */
+    bool convertIndexScans(RamProgram& program);
 
 protected:
-    RamConstValueAnalysis* rcva{nullptr};
-    RamConditionLevelAnalysis* rcla{nullptr};
-    RamExpressionLevelAnalysis* rvla{nullptr};
-
     bool transform(RamTranslationUnit& translationUnit) override {
-        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
-        rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
-        rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
-        return convertExistenceChecks(*translationUnit.getProgram());
+        return convertIndexScans(*translationUnit.getProgram());
     }
 };
 

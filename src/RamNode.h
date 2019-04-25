@@ -27,87 +27,16 @@ namespace souffle {
 
 class RamNodeMapper;
 
-enum RamNodeType {
-    // Relations
-    RN_Relation,
-    RN_RelationReference,
-
-    // Expressions
-    RN_ElementAccess,
-    RN_Number,
-    RN_IntrinsicOperator,
-    RN_UserDefinedOperator,
-    RN_AutoIncrement,
-    RN_PackRecord,
-    RN_Argument,
-
-    // Conditions
-    RN_ExistenceCheck,
-    RN_ProvenanceExistenceCheck,
-    RN_EmptinessCheck,
-    RN_Conjunction,
-    RN_Negation,
-    RN_Constraint,
-
-    // Operations
-    RN_Project,
-    RN_UnpackRecord,
-    RN_Scan,
-    RN_IndexScan,
-    RN_Aggregate,
-    RN_Filter,
-
-    // Statements
-    RN_Create,
-    RN_Fact,
-    RN_Load,
-    RN_Store,
-    RN_Query,
-    RN_Clear,
-    RN_Drop,
-    RN_LogSize,
-    RN_Return,
-
-    RN_Merge,
-    RN_Swap,
-
-    // Control-flow
-    RN_Program,
-    RN_Sequence,
-    RN_Loop,
-    RN_Parallel,
-    RN_Exit,
-    RN_LogTimer,
-    RN_DebugInfo,
-    RN_Stratum
-
-#ifdef USE_MPI
-    // mpi
-    ,
-    RN_Send,
-    RN_Recv,
-    RN_Notify,
-    RN_Wait,
-#endif
-};
-
 /**
  *  @class RamNode
  *  @brief RamNode is a superclass for all RAM IR classes.
  */
 class RamNode {
-    const RamNodeType type;
-
 public:
-    RamNode(RamNodeType type) : type(type) {}
+    RamNode() = default;
 
     /** A virtual destructor for RAM nodes */
     virtual ~RamNode() = default;
-
-    /** Get type of node */
-    RamNodeType getNodeType() const {
-        return type;
-    }
 
     /** Equivalence check for two RAM nodes */
     bool operator==(const RamNode& other) const {

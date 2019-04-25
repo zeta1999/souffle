@@ -274,8 +274,8 @@ void LVMCode::print() const {
                 printf("\tTarget: %s\t\n", symbolTable.resolve(code[ip + 2]).c_str());
                 ip += 3;
                 break;
-            case LVM_Return: {
-                printf("%ld\tLVM_Return\tArity:%dTypes:%s\t\n", ip, code[ip + 1],
+            case LVM_ReturnValue: {
+                printf("%ld\tLVM_ReturnValue\tArity:%dTypes:%s\t\n", ip, code[ip + 1],
                         symbolTable.resolve(code[ip + 2]).c_str());
                 ip += 3;
                 break;

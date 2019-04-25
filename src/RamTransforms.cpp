@@ -32,6 +32,14 @@ namespace souffle {
 
 namespace {
 
+/**
+ * \brief Convert terms of a conjunction to a list
+ * \param A RAM condition
+ * \param A list of RAM conditions
+ *
+ * Convert a condition of the format C1 /\ C2 /\ ... /\ Cn
+ * to a list {C1, C2, ..., Cn}.
+ */
 std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* condition) {
     std::vector<std::unique_ptr<RamCondition>> conditions;
     while (condition != nullptr) {
@@ -45,15 +53,8 @@ std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* con
     }
     return conditions;
 }
-
 }  // namespace
 
-/**
- * levels filter operations: there are two types - filter operations
- * that are dependent on tuples (i.e. RamSearch) and others that
- * are not. Depending on the type, a different transformation is
- * required.
- */
 bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
     // flag to determine whether the RAM program has changed
     bool changed = false;
@@ -136,10 +137,6 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
     return changed;
 }
 
-/**
- */
-
-/** Get expression of an equivalence constraint of the format t1.x = <expression> or <expression> = t1.x */
 std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
         RamCondition* c, size_t& element, int identifier) {
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
@@ -201,7 +198,6 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
     return condition;
 }
 
-/* Find the query pattern for an indexable scan operation and rewrite it to an IndexScan */
 std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAggregate* agg) {
     if (agg->getCondition() != nullptr) {
         const RamRelation& rel = agg->getRelation();
@@ -222,7 +218,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
     }
     return nullptr;
 }
-/* Find the query pattern for an indexable scan operation and rewrite it to an IndexScan */
+
 std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* scan) {
     if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
         const RamRelation& rel = scan->getRelation();
@@ -268,8 +264,6 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
     return changed;
 }
 
-/** rewrite IndexScan to a filter/existence check if the IndexScan's tuple
- * is not used in a consecutive RAM operation */
 std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const RamIndexScan* indexScan) {
     // check whether tuple is used in subsequent operations
     bool tupleNotUsed = true;
@@ -306,10 +300,9 @@ std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const Ra
     return nullptr;
 }
 
-/** Search for queries and rewrite their IndexScan operations if possible */
 bool IfConversionTransformer::convertIndexScans(RamProgram& program) {
     bool changed = false;
-    visitDepthFirst(program, [&]( RamQuery& query) {
+    visitDepthFirst(program, [&](RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamIndexScan* scan = dynamic_cast<RamIndexScan*>(node.get())) {

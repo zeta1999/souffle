@@ -8,9 +8,9 @@
 
 /************************************************************************
  *
- * @file RAMInterpreter.h
+ * @file RAMI.h
  *
- * Declares the RAMInterpreter class for executing RAM programs.
+ * Declares the RAMI (RamInterpreter) class for executing RAM programs.
  *
  ***********************************************************************/
 
@@ -49,16 +49,16 @@ class SymbolTable;
  * Interpreter executing a RAM translation unit
  */
 
-class RAMInterpreter : public Interpreter{
+class RAMI : public Interpreter{
 public:
-    RAMInterpreter(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
-    virtual ~RAMInterpreter() {}
+    RAMI(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
+    virtual ~RAMI() {}
 
     /** Execute main program */
     void executeMain();
 
     /* Execute subroutine */
-    void executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
+    void executeSubroutine(const std::string& name, const std::vector<RamDomain>& arguments,
             std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors);
 
 protected:

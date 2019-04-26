@@ -459,7 +459,7 @@ protected:
                 code->push_back(LVM_Jmpez);  // Continue; if condition is not met
                 code->push_back(lookupAddress(endOfLoop));
             }
-            
+
             if (aggregate.getFunction() != RamAggregate::COUNT) {
                 visit(aggregate.getExpression(), exitAddress);
             }

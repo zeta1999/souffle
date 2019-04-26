@@ -754,7 +754,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             std::string tuple_type = "ram::Tuple<RamDomain," + toString(std::max(1u, arity)) + ">";
 
             // declare environment variable
-            out <<"ram::Tuple<RamDomain,1> env" << identifier << ";\n";
+            out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // get range to aggregate
             auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);
@@ -788,7 +788,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 default:
                     abort();
             }
-            out << "RamDomain res" <<identifier <<" = " << init << ";\n";
+            out << "RamDomain res" << identifier << " = " << init << ";\n";
 
             // check whether there is an index to use
             if (keys == 0) {

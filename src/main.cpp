@@ -26,7 +26,9 @@
 #include "Global.h"
 #include "Interpreter.h"
 #include "InterpreterInterface.h"
+#include "LVM.h"
 #include "ParserDriver.h"
+#include "RamInterpreter.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
@@ -519,7 +521,7 @@ int main(int argc, char** argv) {
         // ------- interpreter -------------
 
         // configure interpreter
-        std::unique_ptr<Interpreter> interpreter = std::make_unique<Interpreter>(*ramTranslationUnit);
+        std::unique_ptr<Interpreter> interpreter = std::make_unique<LVM>(*ramTranslationUnit);
 
         std::thread profiler;
         // Start up profiler if needed

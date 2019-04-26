@@ -747,17 +747,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto identifier = aggregate.getIdentifier();
 
-            // get the tuple type working with
-            std::string tuple_type = "ram::Tuple<RamDomain," + toString(std::max(1u, arity)) + ">";
+            // aggregate tuple storing the result of aggregate
+            std::string tuple_type = "ram::Tuple<RamDomain," + toString(arity) + ">";
 
             // declare environment variable
-            out << tuple_type << " env" << identifier << ";\n";
+            out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // get range to aggregate
             auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);
 
-            // special case: counting number elements in a full relation
-            if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0) {
+            // special case: counting number elements over an unrestricted predicate
+            if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0 &&
+                    aggregate.getCondition() == nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -781,14 +782,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case RamAggregate::SUM:
                     init = "0";
                     break;
+                default:
+                    abort();
             }
-            out << "RamDomain res = " << init << ";\n";
+            out << "RamDomain res" << identifier << " = " << init << ";\n";
 
             // check whether there is an index to use
             if (keys == 0) {
-                // no index => use full relation
-                out << "auto& range = "
-                    << "*" << relName << ";\n";
+                out << "for(const auto& env" << identifier << " : "
+                    << "*" << relName << ") {\n";
             } else {
                 // a lambda for printing boundary key values
                 auto printKeyTuple = [&]() {
@@ -811,23 +813,25 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}});\n";
                 out << "auto range = " << relName << "->"
                     << "equalRange_" << keys << "(key," << ctxName << ");\n";
+
+                // aggregate result
+                out << "for(const auto& env" << identifier << " : range) {\n";
             }
 
-            // add existence check
-            if (aggregate.getFunction() != RamAggregate::COUNT) {
-                out << "if(!range.empty()) {\n";
+            // produce condition inside the loop
+            auto condition = aggregate.getCondition();
+            if (condition != nullptr) {
+                out << "if( ";
+                visit(condition, out);
+                out << ") {\n";
             }
-
-            // aggregate result
-            out << "for(const auto& cur : range) {\n";
 
             // create aggregation code
             if (aggregate.getFunction() == RamAggregate::COUNT) {
                 // count is easy
-                out << "++res\n;";
+                out << "++res" << identifier << "\n;";
             } else if (aggregate.getFunction() == RamAggregate::SUM) {
-                out << "env" << identifier << " = cur;\n";
-                out << "res += ";
+                out << "res" << identifier << " += ";
                 visit(*aggregate.getExpression(), out);
                 out << ";\n";
             } else {
@@ -846,38 +850,31 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         assert(false);
                 }
 
-                out << "env" << identifier << " = cur;\n";
-                out << "res = " << fun << "(res,";
+                out << "res" << identifier << " = " << fun << "(res" << identifier << ",";
                 visit(*aggregate.getExpression(), out);
                 out << ");\n";
+            }
+
+            if (condition != nullptr) {
+                out << "}\n";
             }
 
             // end aggregator loop
             out << "}\n";
 
             // write result into environment tuple
-            out << "env" << identifier << "[0] = res;\n";
+            out << "env" << identifier << "[0] = res" << identifier << ";\n";
 
-            // continue with condition checks and nested body
-            out << "{\n";
-
-            auto condition = aggregate.getCondition();
-            if (condition) {
-                out << "if( ";
-                visit(condition, out);
-                out << ") {\n";
+            if (aggregate.getFunction() == RamAggregate::MIN ||
+                    aggregate.getFunction() == RamAggregate::MAX) {
+                // check whether there exists a min/max first before next loop
+                out << "if(res" << identifier << " != " << init << "){\n";
                 visitSearch(aggregate, out);
                 out << "}\n";
             } else {
                 visitSearch(aggregate, out);
             }
 
-            out << "}\n";
-
-            // end conditional nested block
-            if (aggregate.getFunction() != RamAggregate::COUNT) {
-                out << "}\n";
-            }
             PRINT_END_COMMENT(out);
         }
 

@@ -236,13 +236,15 @@ public:
         return "ChoiceConversionTransformer";
     }
 
-    //    std::unique_ptr<RamOperation> rewriteScan(const RamScan* Scan);
+    std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
     std::unique_ptr<RamOperation> rewriteIndexScan(const RamIndexScan* indexScan);
 
     bool convertScans(RamProgram& program);
 
 protected:
+    RamConditionLevelAnalysis* rcla{nullptr};
     bool transform(RamTranslationUnit& translationUnit) override {
+        rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
         return convertScans(*translationUnit.getProgram());
     }
 };

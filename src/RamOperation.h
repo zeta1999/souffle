@@ -310,6 +310,7 @@ public:
         os << "CHOICE t" << getIdentifier();
         os << " IN " << getRelation().getName();
         os << " WHERE " << getCondition();
+        os << std::endl;
         RamRelationSearch::print(os, tabpos + 1);
     }
 

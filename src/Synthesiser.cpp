@@ -818,7 +818,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     << "equalRange_" << keys << "(key," << ctxName << ");\n";
 
                 // aggregate result
-                out << "for(const auto& env : range) {\n";
+                out << "for(const auto& env" << identifier << " : range) {\n";
             }
 
             // produce condition inside the loop

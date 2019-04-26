@@ -10,7 +10,7 @@
  *
  * @file LVM.h
  *
- * Declares the interpreter class for executing RAM programs.
+ * Declares the bytecode interpreter class
  *
  ***********************************************************************/
 

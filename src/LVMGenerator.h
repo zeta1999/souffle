@@ -391,8 +391,8 @@ protected:
     }
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
-        // TODO xiaowen: The aggregate operation is now written in a less efficient way
-        // e.g. The max & min now support arbitray number of arguments, we should take use of it
+        // TODO (xiaowen): The aggregate operation is now written in a less efficient way
+        // e.g. The max & min now support arbitrary number of arguments, we should make use of it
         // count operation can be further simpfied
         //
         // This should be reviewed later.
@@ -415,7 +415,6 @@ protected:
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
 
-        // Special case for counting
         if (aggregate.getFunction() == RamAggregate::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(counterLabel);
@@ -441,7 +440,8 @@ protected:
 
             size_t address_L0 = code->size();
 
-            code->push_back(LVM_ITER_NotAtEnd);  // Start the aggregate for loop
+            // Start the aggregate for loop
+            code->push_back(LVM_ITER_NotAtEnd);
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(LVM_Jmpez);
@@ -499,7 +499,7 @@ protected:
         if (aggregate.getFunction() == RamAggregate::MIN || aggregate.getFunction() == RamAggregate::MAX) {
             // check whether there exists a min/max first before next loop
 
-            // Retrive the result we just saved.
+            // Retrieve the result we just saved.
             code->push_back(LVM_ElementAccess);
             code->push_back(aggregate.getIdentifier());
             code->push_back(0);

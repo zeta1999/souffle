@@ -739,9 +739,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
         void visitAggregate(const RamAggregate& aggregate, std::ostream& out) override {
-            // Current version is not parallel
-            // Needs to be parallelized with OpenMP reduction statements!
-
             PRINT_BEGIN_COMMENT(out);
             // get some properties
             const auto& rel = aggregate.getRelation();
@@ -823,7 +820,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // produce condition inside the loop
             auto condition = aggregate.getCondition();
-            if (condition) {
+            if (condition != nullptr) {
                 out << "if( ";
                 visit(condition, out);
                 out << ") {\n";
@@ -858,7 +855,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ");\n";
             }
 
-            if (condition) {
+            if (condition != nullptr) {
                 out << "}\n";
             }
 

@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2018, The Souffle Developers. All rights reserved.
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,9 +8,9 @@
 
 /************************************************************************
  *
- * @file Interpreter.h
+ * @file RAMInterpreter.h
  *
- * Declares the interpreter class for executing RAM programs.
+ * Declares the RAMInterpreter class for executing RAM programs.
  *
  ***********************************************************************/
 
@@ -24,6 +24,7 @@
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
+#include "Interpreter.h"
 
 #include <atomic>
 #include <cassert>
@@ -48,19 +49,10 @@ class SymbolTable;
  * Interpreter executing a RAM translation unit
  */
 
-class Interpreter {
+class RAMInterpreter : public Interpreter{
 public:
-    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit), counter(0), iteration(0), dll(nullptr) {}
-    virtual ~Interpreter() {
-        for (auto& x : environment) {
-            delete x.second;
-        }
-    }
-
-    /** Get translation unit */
-    RamTranslationUnit& getTranslationUnit() {
-        return translationUnit;
-    }
+    RAMInterpreter(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
+    virtual ~RAMInterpreter() {}
 
     /** Execute main program */
     void executeMain();
@@ -70,9 +62,6 @@ public:
             std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors);
 
 protected:
-    /** relation environment type */
-    using relation_map = std::map<std::string, InterpreterRelation*>;
-
     /** Evaluate value */
     RamDomain evalExpr(const RamExpression& value, const InterpreterContext& ctxt = InterpreterContext());
 
@@ -139,11 +128,6 @@ protected:
         return getRelation(id.getName());
     }
 
-    /** Get relation map */
-    relation_map& getRelationMap() const {
-        return const_cast<relation_map&>(environment);
-    }
-
     /** Drop relation */
     void dropRelation(const RamRelation& id) {
         InterpreterRelation& rel = getRelation(id);
@@ -176,12 +160,6 @@ protected:
 private:
     friend InterpreterProgInterface;
 
-    /** RAM translation Unit */
-    RamTranslationUnit& translationUnit;
-
-    /** relation environment */
-    relation_map environment;
-
     /** counters for atom profiling */
     std::map<std::string, std::map<size_t, size_t>> frequencies;
 
@@ -189,13 +167,13 @@ private:
     std::map<std::string, std::atomic<size_t>> reads;
 
     /** counter for $ operator */
-    int counter;
+    int counter = 0;
 
     /** iteration number (in a fix-point calculation) */
-    size_t iteration;
+    size_t iteration = 0;
 
     /** Dynamic library for user-defined functors */
-    void* dll;
+    void* dll = nullptr;
 };
 
 }  // end of namespace souffle

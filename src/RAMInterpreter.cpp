@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file Interpreter.cpp
+ * @file RAMInterpreter.cpp
  *
- * Implementation of Souffle's interpreter.
+ * Implementation of Souffle's RAMInterpreter.
  *
  ***********************************************************************/
 
-#include "Interpreter.h"
+#include "RAMInterpreter.h"
 #include "BTree.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
@@ -26,9 +26,9 @@
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
+#include "RamIndexKeys.h"
 #include "RamExistenceCheckAnalysis.h"
 #include "RamExpression.h"
-#include "RamIndexScanKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamOperationDepth.h"
@@ -59,13 +59,13 @@
 namespace souffle {
 
 /** Evaluate RAM Expression */
-RamDomain Interpreter::evalExpr(const RamExpression& expr, const InterpreterContext& ctxt) {
+RamDomain RAMInterpreter::evalExpr(const RamExpression& expr, const InterpreterContext& ctxt) {
     class ExpressionEvaluator : public RamVisitor<RamDomain> {
-        Interpreter& interpreter;
+        RAMInterpreter& interpreter;
         const InterpreterContext& ctxt;
 
     public:
-        ExpressionEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
+        ExpressionEvaluator(RAMInterpreter& interp, const InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt) {}
 
         RamDomain visitNumber(const RamNumber& num) override {
@@ -285,15 +285,15 @@ RamDomain Interpreter::evalExpr(const RamExpression& expr, const InterpreterCont
 }
 
 /** Evaluate RAM Condition */
-bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
+bool RAMInterpreter::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
     class ConditionEvaluator : public RamVisitor<bool> {
-        Interpreter& interpreter;
+        RAMInterpreter& interpreter;
         const InterpreterContext& ctxt;
         RamExistenceCheckAnalysis* existCheckAnalysis;
         RamProvenanceExistenceCheckAnalysis* provExistCheckAnalysis;
 
     public:
-        ConditionEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
+        ConditionEvaluator(RAMInterpreter& interp, const InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt),
                   existCheckAnalysis(interp.getTranslationUnit().getAnalysis<RamExistenceCheckAnalysis>()),
                   provExistCheckAnalysis(
@@ -452,16 +452,16 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 }
 
 /** Evaluate RAM operation */
-void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args) {
+void RAMInterpreter::evalOp(const RamOperation& op, const InterpreterContext& args) {
     class OperationEvaluator : public RamVisitor<void> {
-        Interpreter& interpreter;
+        RAMInterpreter& interpreter;
         InterpreterContext& ctxt;
-        RamIndexScanKeysAnalysis* keysAnalysis;
+        RamIndexKeysAnalysis* keysAnalysis;
 
     public:
-        OperationEvaluator(Interpreter& interp, InterpreterContext& ctxt)
+        OperationEvaluator(RAMInterpreter& interp, InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt),
-                  keysAnalysis(interp.getTranslationUnit().getAnalysis<RamIndexScanKeysAnalysis>()) {}
+                  keysAnalysis(interp.getTranslationUnit().getAnalysis<RamIndexKeysAnalysis>()) {}
 
         // -- Operations -----------------------------
 
@@ -689,12 +689,12 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
 }
 
 /** Evaluate RAM statement */
-void Interpreter::evalStmt(const RamStatement& stmt) {
+void RAMInterpreter::evalStmt(const RamStatement& stmt) {
     class StatementEvaluator : public RamVisitor<bool> {
-        Interpreter& interpreter;
+        RAMInterpreter& interpreter;
 
     public:
-        StatementEvaluator(Interpreter& interp) : interpreter(interp) {}
+        StatementEvaluator(RAMInterpreter& interp) : interpreter(interp) {}
 
         // -- Statements -----------------------------
 
@@ -899,7 +899,7 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
 }
 
 /** Execute main program of a translation unit */
-void Interpreter::executeMain() {
+void RAMInterpreter::executeMain() {
     SignalHandler::instance()->set();
     if (Global::config().has("verbose")) {
         SignalHandler::instance()->enableLogging();
@@ -954,7 +954,7 @@ void Interpreter::executeMain() {
 }
 
 /** Execute subroutine */
-void Interpreter::executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
+void RAMInterpreter::executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
         std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) {
     InterpreterContext ctxt;
     ctxt.setReturnValues(returnValues);

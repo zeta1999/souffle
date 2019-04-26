@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file LVMInterpreter.h
+ * @file LVM.h
  *
  * Declares the interpreter class for executing RAM programs.
  *
@@ -18,6 +18,7 @@
 
 #include "InterpreterContext.h"
 #include "InterpreterRelation.h"
+#include "Interpreter.h"
 #include "LVMCode.h"
 #include "LVMGenerator.h"
 #include "Logger.h"
@@ -45,19 +46,11 @@ class InterpreterProgInterface;
 /**
  * Interpreter executing a RAM translation unit
  */
-class LVMInterpreter {
+class LVM : public Interpreter{
 public:
-    LVMInterpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
-    virtual ~LVMInterpreter() {
-        for (auto& x : environment) {
-            delete x.second;
-        }
-    }
+    LVM(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
 
-    /** Get translation unit */
-    RamTranslationUnit& getTranslationUnit() {
-        return translationUnit;
-    }
+    virtual ~LVM() {}
 
     /** Interface for executing the main program */
     virtual void executeMain();
@@ -102,9 +95,6 @@ public:
     }
 
 protected:
-    /** relation environment type */
-    using relation_map = std::map<std::string, InterpreterRelation*>;
-
     using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator,
             std::allocator<const RamDomain*>, 512>;
 
@@ -125,11 +115,6 @@ protected:
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
         return translationUnit.getSymbolTable();
-    }
-
-    /** Get relation map */
-    relation_map& getRelationMap() const {
-        return const_cast<relation_map&>(environment);
     }
 
     /** Get Counter */
@@ -156,9 +141,6 @@ protected:
         iteration = 0;
     }
 
-    /** TODO not implemented yet */
-    void createRelation(const RamRelation& id) {}
-
     /** Get relation */
     InterpreterRelation& getRelation(const std::string& name) {
         // look up relation
@@ -167,31 +149,11 @@ protected:
         return *pos->second;
     }
 
-    /** Get relation */
-    inline InterpreterRelation& getRelation(const RamRelation& id) {
-        return getRelation(id.getName());
-    }
-
-    /** Drop relation */
-    void dropRelation(const RamRelation& id) {
-        InterpreterRelation& rel = getRelation(id);
-        environment.erase(id.getName());
-        delete &rel;
-    }
-
     /** Drop relation */
     void dropRelation(const std::string& relName) {
         InterpreterRelation& rel = getRelation(relName);
         environment.erase(relName);
         delete &rel;
-    }
-
-    /** Swap relation */
-    void swapRelation(const RamRelation& ramRel1, const RamRelation& ramRel2) {
-        InterpreterRelation* rel1 = &getRelation(ramRel1);
-        InterpreterRelation* rel2 = &getRelation(ramRel2);
-        environment[ramRel1.getName()] = rel2;
-        environment[ramRel2.getName()] = rel1;
     }
 
     /** Swap relation */
@@ -235,9 +197,6 @@ protected:
 private:
     friend InterpreterProgInterface;
 
-    /** RAM translation Unit */
-    RamTranslationUnit& translationUnit;
-
     /** subroutines */
     std::map<std::string, std::unique_ptr<LVMCode>> subroutines;
 
@@ -246,12 +205,6 @@ private:
 
     /** Execute given program */
     void execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip = 0);
-
-    /** Relation Environment */
-    relation_map environment;
-
-    /** Value stack */
-    std::stack<RamDomain> stack;
 
     /** counters for atom profiling */
     std::map<std::string, std::map<size_t, size_t>> frequencies;

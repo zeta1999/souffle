@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "RAMInterpreter.h"
+#include "Interpreter.h"
 #include "BTree.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
@@ -26,9 +26,10 @@
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
-#include "RamIndexKeys.h"
 #include "RamExistenceCheckAnalysis.h"
 #include "RamExpression.h"
+#include "RamIndexKeys.h"
+#include "RamInterpreter.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamOperationDepth.h"
@@ -566,7 +567,7 @@ void RAMInterpreter::evalOp(const RamOperation& op, const InterpreterContext& ar
             auto arity = rel.getArity();
 
             // get lower and upper boundaries for iteration
-            const auto& pattern = aggregate.getPattern();
+            const auto& pattern = aggregate.getRangePattern();
             RamDomain low[arity];
             RamDomain hig[arity];
 
@@ -581,7 +582,7 @@ void RAMInterpreter::evalOp(const RamOperation& op, const InterpreterContext& ar
             }
 
             // obtain index
-            auto idx = rel.getIndex(aggregate.getRangeQueryColumns());
+            auto idx = rel.getIndex(keysAnalysis->getRangeQueryColumns(&aggregate));
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
@@ -663,7 +664,7 @@ void RAMInterpreter::evalOp(const RamOperation& op, const InterpreterContext& ar
         }
 
         // -- return from subroutine --
-        void visitReturn(const RamReturn& ret) override {
+        void visitReturnValue (const RamReturnValue& ret) override {
             for (auto val : ret.getValues()) {
                 if (val == nullptr) {
                     ctxt.addReturnValue(0, true);

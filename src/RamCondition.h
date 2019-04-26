@@ -436,22 +436,23 @@ inline std::vector<std::unique_ptr<RamCondition>> toConjList(const RamCondition*
 }
 
 /**
- * @brief Convert terms of a conjunction to a list
- * @param A RAM condition
+ * @brief Convert list of conditions to a conjunction
  * @param A list of RAM conditions
+ * @param A RAM condition
  *
- * Convert a condition of the format C1 /\ C2 /\ ... /\ Cn
- * to a list {C1, C2, ..., Cn}.
+ * Convert a list {C1, C2, ..., Cn} to a condition of
+ * the format C1 /\ C2 /\ ... /\ Cn.
  */
-inline std::unique_ptr<RamCondition> toCondition(const std::vector<const RamCondition *> &list) {
+inline std::unique_ptr<RamCondition> toCondition(const std::vector<const RamCondition*>& list) {
     std::unique_ptr<RamCondition> result;
-    for(const RamCondition *cur: list) { 
-       if(result == nullptr) { 
-          result = std::unique_ptr<RamCondition>(cur->clone());
-       } else { 
-          result = std::make_unique<RamConjunction>(std::move(result), std::unique_ptr<RamCondition>(cur->clone()));
-       } 
-    } 
+    for (const RamCondition* cur : list) {
+        if (result == nullptr) {
+            result = std::unique_ptr<RamCondition>(cur->clone());
+        } else {
+            result = std::make_unique<RamConjunction>(
+                    std::move(result), std::unique_ptr<RamCondition>(cur->clone()));
+        }
+    }
     return result;
 }
 

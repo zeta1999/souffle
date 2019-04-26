@@ -230,4 +230,21 @@ protected:
     }
 };
 
+class ChoiceConversionTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "ChoiceConversionTransformer";
+    }
+
+    //    std::unique_ptr<RamOperation> rewriteScan(const RamScan* Scan);
+    std::unique_ptr<RamOperation> rewriteIndexScan(const RamIndexScan* indexScan);
+
+    bool convertScans(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return convertScans(*translationUnit.getProgram());
+    }
+};
+
 }  // end of namespace souffle

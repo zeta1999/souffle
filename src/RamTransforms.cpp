@@ -319,4 +319,78 @@ bool IfConversionTransformer::convertIndexScans(RamProgram& program) {
     return changed;
 }
 
+std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(const RamIndexScan* indexScan) {
+    // check whether tuple is used in subsequent operations
+    bool tupleNotUsed = true;
+
+    if (tupleNotUsed) {
+        if (const auto* filter = dynamic_cast<const RamFilter*>(&indexScan->getOperation())) {
+            visitDepthFirst(*filter, [&](const RamNode& node) {
+                if (const RamElementAccess* element = dynamic_cast<const RamElementAccess*>(&node)) {
+                    if (element->getIdentifier() == indexScan->getIdentifier()) {
+                        tupleNotUsed = false;
+                    }
+                } else if (const RamUnpackRecord* unpack = dynamic_cast<const RamUnpackRecord*>(&node)) {
+                    if (unpack->getReferenceLevel() == indexScan->getIdentifier()) {
+                        tupleNotUsed = false;
+                    }
+                }
+            });
+        } else {
+            tupleNotUsed = false;
+        }
+    }
+
+    // if not used, transform the IndexScan to an IndexChoice
+    if (tupleNotUsed) {
+        std::vector<std::unique_ptr<RamExpression>> newValues;
+        const auto* filter = dynamic_cast<const RamFilter*>(&indexScan->getOperation());
+        const RamRelation& rel = indexScan->getRelation();
+        const int identifier = indexScan->getIdentifier();
+        std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
+
+        for (auto& cur : indexScan->getRangePattern()) {
+            RamExpression* val = nullptr;
+            if (cur != nullptr) {
+                val = cur->clone();
+            }
+            newValues.emplace_back(val);
+        }
+
+        return std::make_unique<RamIndexChoice>(std::make_unique<RamRelationReference>(&rel), identifier,
+                std::unique_ptr<RamCondition>(filter->getCondition().clone()), std::move(queryPattern),
+                std::unique_ptr<RamOperation>(filter->clone()), indexScan->getProfileText());
+    }
+    return nullptr;
+}
+
+bool ChoiceConversionTransformer::convertScans(RamProgram& program) {
+    bool changed = false;
+    visitDepthFirst(program, [&](const RamQuery& query) {
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            /*
+            if (const RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
+                if (std::unique_ptr<RamOperation> op = rewriteScan(scan)) {
+                    changed = true;
+                    node = std::move(op);
+                }
+            } else
+           */
+            if (const RamIndexScan* indexScan = dynamic_cast<RamIndexScan*>(node.get())) {
+                if (std::unique_ptr<RamOperation> op = rewriteIndexScan(indexScan)) {
+                    changed = true;
+                    node = std::move(op);
+
+                }
+            }
+            node->apply(makeLambdaRamMapper(scanRewriter));
+            return node;
+        };
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(scanRewriter));
+    });
+
+    return changed;
+}
+
 }  // end of namespace souffle

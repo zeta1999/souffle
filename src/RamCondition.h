@@ -413,4 +413,46 @@ protected:
     }
 };
 
+/**
+ * @brief Convert terms of a conjunction to a list
+ * @param A RAM condition
+ * @param A list of RAM conditions
+ *
+ * Convert a condition of the format C1 /\ C2 /\ ... /\ Cn
+ * to a list {C1, C2, ..., Cn}.
+ */
+inline std::vector<std::unique_ptr<RamCondition>> toConjList(const RamCondition* condition) {
+    std::vector<std::unique_ptr<RamCondition>> conditions;
+    while (condition != nullptr) {
+        if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
+            conditions.emplace_back(ramConj->getRHS().clone());
+            condition = &ramConj->getLHS();
+        } else {
+            conditions.emplace_back(condition->clone());
+            break;
+        }
+    }
+    return conditions;
+}
+
+/**
+ * @brief Convert terms of a conjunction to a list
+ * @param A RAM condition
+ * @param A list of RAM conditions
+ *
+ * Convert a condition of the format C1 /\ C2 /\ ... /\ Cn
+ * to a list {C1, C2, ..., Cn}.
+ */
+inline std::unique_ptr<RamCondition> toCondition(const std::vector<const RamCondition *> &list) {
+    std::unique_ptr<RamCondition> result;
+    for(const RamCondition *cur: list) { 
+       if(result == nullptr) { 
+          result = std::unique_ptr<RamCondition>(cur->clone());
+       } else { 
+          result = std::make_unique<RamConjunction>(std::move(result), std::unique_ptr<RamCondition>(cur->clone()));
+       } 
+    } 
+    return result;
+}
+
 }  // end of namespace souffle

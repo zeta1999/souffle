@@ -162,6 +162,18 @@ std::vector<T*> toPtrVector(const std::vector<std::unique_ptr<T>>& v) {
  * A utility function enabling the creation of a vector of pointers.
  */
 template <typename T>
+std::vector<const T*> toConstPtrVector(const std::vector<std::unique_ptr<T>>& v) {
+    std::vector<const T*> res;
+    for (auto& e : v) {
+        res.push_back(e.get());
+    }
+    return res;
+}
+
+/**
+ * A utility function enabling the creation of a vector of pointers.
+ */
+template <typename T>
 std::vector<T*> toPtrVector(const std::vector<std::shared_ptr<T>>& v) {
     std::vector<T*> res;
     for (auto& e : v) {

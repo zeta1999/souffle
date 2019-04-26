@@ -295,24 +295,28 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // check whether the outer-most filter operation
             // can be pushed out of the parallel context
             const RamOperation* next = &query.getOperation();
-            const RamCondition* cond = nullptr;
+            std::vector<std::unique_ptr<RamCondition>> requireCtx;
+            std::vector<std::unique_ptr<RamCondition>> freeOfCtx;
             if (const RamFilter* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
-                // cannot pull filter out of parallel loop if it requires a context for
-                // existence checks of tuples
-                cond = &filter->getCondition();
-                bool needContext = false;
-                visitDepthFirst(*cond, [&](const RamExistenceCheck& exists) { needContext = true; });
-                if (!needContext) {
-                    // discharge condition of filter in
-                    // the outer scope
-                    next = &filter->getOperation();
-                    out << "if(";
-                    visit(*cond, out);
-                    out << ") {\n";
-                } else {
-                    // undo filter / contains context operations
-                    cond = nullptr;
-                }
+                next = &filter->getOperation();
+                // Check terms of outer filter operation whether they can be pushed before
+                // the context-generation for speed imrovements 
+                auto conditions = toConjList(&filter->getCondition());
+                for(auto const &cur : conditions) {
+                    bool needContext = false;
+                    visitDepthFirst(*cur, [&](const RamExistenceCheck& exists) { needContext = true; });
+                    if(needContext) { 
+                       requireCtx.push_back(std::unique_ptr<RamCondition>(cur->clone()));
+                    } else {
+                       freeOfCtx.push_back(std::unique_ptr<RamCondition>(cur->clone()));
+                    }
+                } 
+                // discharge conditions that do not require a context
+                if(freeOfCtx.size() > 0) {
+                out << "if(";
+                visit(*toCondition(toConstPtrVector(freeOfCtx)), out);
+                out << ") {\n";
+                } 
             }
 
             // outline each search operation to improve compilation time
@@ -394,11 +398,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "," << synthesiser.getRelationName(*rel);
                 out << "->createContext());\n";
             }
-            visit(*next, out);
+
+            // discharge conditions that require a context 
+            if (requireCtx.size() > 0 ) {
+                out << "if(";
+                visit(*toCondition(toConstPtrVector(requireCtx)), out);
+                out << ") {\n";
+                visit(*next, out);
+                out << "}\n";
+            } else {
+               visit(*next, out);
+            }
 
             if (parallel) {
                 out << "PARALLEL_END;\n";  // end parallel
-                // aggregate proof counters
             }
 
             out << "}\n";
@@ -409,7 +422,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 #else
             out << "();";  // call lambda
 #endif
-            if (cond != nullptr) {
+            if(freeOfCtx.size() > 0) {
                 out << "}\n";
             }
 

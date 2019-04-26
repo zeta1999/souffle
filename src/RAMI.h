@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "Interpreter.h"
 #include "InterpreterContext.h"
 #include "InterpreterRelation.h"
 #include "RamCondition.h"
@@ -24,7 +25,6 @@
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
-#include "Interpreter.h"
 
 #include <atomic>
 #include <cassert>
@@ -49,7 +49,7 @@ class SymbolTable;
  * Interpreter executing a RAM translation unit
  */
 
-class RAMI : public Interpreter{
+class RAMI : public Interpreter {
 public:
     RAMI(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
     virtual ~RAMI() {}

@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
 #endif
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
-                {"interpreter", '\1', "[ RAMI | LVM ]", "", false, "Switch interpreter implementation." },
+                {"interpreter", '\1', "[ RAMI | LVM ]", "", false, "Switch interpreter implementation."},
                 {"hostfile", '\2', "FILE", "", false,
                         "Specify --hostfile option for call to mpiexec when using mpi as "
                         "execution engine."},

@@ -14,13 +14,14 @@
  *
  ***********************************************************************/
 
-#include "Interpreter.h"
+#include "RAMI.h"
 #include "BTree.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"
+#include "Interpreter.h"
 #include "InterpreterIndex.h"
 #include "InterpreterRecords.h"
 #include "Logger.h"
@@ -29,7 +30,6 @@
 #include "RamExistenceCheckAnalysis.h"
 #include "RamExpression.h"
 #include "RamIndexKeys.h"
-#include "RAMI.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamOperationDepth.h"
@@ -66,8 +66,7 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
         const InterpreterContext& ctxt;
 
     public:
-        ExpressionEvaluator(RAMI& interp, const InterpreterContext& ctxt)
-                : interpreter(interp), ctxt(ctxt) {}
+        ExpressionEvaluator(RAMI& interp, const InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
 
         RamDomain visitNumber(const RamNumber& num) override {
             return num.getConstant();
@@ -587,18 +586,16 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
 
-            // check for emptiness
-            if (aggregate.getFunction() != RamAggregate::COUNT) {
-                if (range.first == range.second) {
-                    return;  // no elements => no min/max
-                }
-            }
-
             // iterate through values
             for (auto ip = range.first; ip != range.second; ++ip) {
                 // link tuple
                 const RamDomain* data = *(ip);
                 ctxt[aggregate.getIdentifier()] = data;
+
+                if (aggregate.getCondition() != nullptr &&
+                        !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
+                    continue;
+                }
 
                 // count is easy
                 if (aggregate.getFunction() == RamAggregate::COUNT) {
@@ -633,6 +630,12 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             ctxt[aggregate.getIdentifier()] = tuple;
 
             // run nested part - using base class visitor
+            if (aggregate.getFunction() == RamAggregate::MAX ||
+                    aggregate.getFunction() == RamAggregate::MIN) {
+                if (res == (aggregate.getFunction() == RamAggregate::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
+                    return;
+                }
+            }
             visitSearch(aggregate);
         }
 
@@ -664,7 +667,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
         }
 
         // -- return from subroutine --
-        void visitReturnValue (const RamReturnValue& ret) override {
+        void visitReturnValue(const RamReturnValue& ret) override {
             for (auto val : ret.getValues()) {
                 if (val == nullptr) {
                     ctxt.addReturnValue(0, true);

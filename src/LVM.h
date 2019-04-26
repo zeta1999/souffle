@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include "Interpreter.h"
 #include "InterpreterContext.h"
 #include "InterpreterRelation.h"
-#include "Interpreter.h"
 #include "LVMCode.h"
 #include "LVMGenerator.h"
 #include "Logger.h"
@@ -46,7 +46,7 @@ class InterpreterProgInterface;
 /**
  * Interpreter executing a RAM translation unit
  */
-class LVM : public Interpreter{
+class LVM : public Interpreter {
 public:
     LVM(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
 

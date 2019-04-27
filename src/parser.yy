@@ -196,12 +196,10 @@
 %right CARET
 %precedence BW_NOT L_NOT
 %precedence NEG
-%precedence AS
 
 /* TODO:
  *  -- Ordering of operator precedence
  *  -- Memory leaks
- *  -- Change AS syntax
  */
 
 %%
@@ -715,8 +713,8 @@ arg
     }
 
     /* type-cast */
-  | arg[nested_arg] AS IDENT {
-        $$ = new AstTypeCast(std::unique_ptr<AstArgument>($nested_arg), $IDENT);
+  | AS LPAREN arg[nested_arg] COMMA identifier RPAREN {
+        $$ = new AstTypeCast(std::unique_ptr<AstArgument>($nested_arg), $identifier);
         $$->setSrcLoc(@$);
     }
 

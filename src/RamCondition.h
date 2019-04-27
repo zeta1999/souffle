@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include <stack>
 
 #include <cstdlib>
 
@@ -421,18 +422,23 @@ protected:
  * Convert a condition of the format C1 /\ C2 /\ ... /\ Cn
  * to a list {C1, C2, ..., Cn}.
  */
-inline std::vector<std::unique_ptr<RamCondition>> toConjList(const RamCondition* condition) {
-    std::vector<std::unique_ptr<RamCondition>> conditions;
-    while (condition != nullptr) {
-        if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
-            conditions.emplace_back(ramConj->getRHS().clone());
-            condition = &ramConj->getLHS();
-        } else {
-            conditions.emplace_back(condition->clone());
-            break;
-        }
-    }
-    return conditions;
+inline std::vector<std::unique_ptr<RamCondition>> toConjunctionList(const RamCondition* condition) {
+    std::vector<std::unique_ptr<RamCondition>> list;
+    std::stack<const RamCondition *> stack; 
+    if (condition != nullptr) { 
+       stack.push(condition); 
+       while (stack.size() > 0) {
+	   condition = stack.top();
+	   stack.pop();
+           if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
+               stack.push(&ramConj->getLHS());
+               stack.push(&ramConj->getRHS());
+           } else {
+               list.emplace_back(condition->clone());
+           }
+       }
+    } 
+    return list;
 }
 
 /**

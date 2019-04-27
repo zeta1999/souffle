@@ -26,7 +26,9 @@
 #include "Global.h"
 #include "Interpreter.h"
 #include "InterpreterInterface.h"
+#include "LVM.h"
 #include "ParserDriver.h"
+#include "RAMI.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
@@ -189,11 +191,12 @@ int main(int argc, char** argv) {
 #endif
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
-                {"hostfile", '\1', "FILE", "", false,
+                {"interpreter", '\1', "[ RAMI | LVM ]", "", false, "Switch interpreter implementation."},
+                {"hostfile", '\2', "FILE", "", false,
                         "Specify --hostfile option for call to mpiexec when using mpi as "
                         "execution engine."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
-                {"version", '\2', "", "", false, "Version."},
+                {"version", '\3', "", "", false, "Version."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
@@ -519,7 +522,16 @@ int main(int argc, char** argv) {
         // ------- interpreter -------------
 
         // configure interpreter
-        std::unique_ptr<Interpreter> interpreter = std::make_unique<Interpreter>(*ramTranslationUnit);
+        std::unique_ptr<Interpreter> interpreter;
+        if (!Global::config().has("interpreter")) {
+            interpreter = std::make_unique<LVM>(*ramTranslationUnit);
+        } else {
+            if (Global::config().get("interpreter") == "RAMI") {
+                interpreter = std::make_unique<RAMI>(*ramTranslationUnit);
+            } else {
+                interpreter = std::make_unique<LVM>(*ramTranslationUnit);
+            }
+        }
 
         std::thread profiler;
         // Start up profiler if needed

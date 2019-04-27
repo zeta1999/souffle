@@ -30,31 +30,6 @@
 
 namespace souffle {
 
-namespace {
-
-/**
- * \brief Convert terms of a conjunction to a list
- * \param A RAM condition
- * \param A list of RAM conditions
- *
- * Convert a condition of the format C1 /\ C2 /\ ... /\ Cn
- * to a list {C1, C2, ..., Cn}.
- */
-std::vector<std::unique_ptr<RamCondition>> getConditions(const RamCondition* condition) {
-    std::vector<std::unique_ptr<RamCondition>> conditions;
-    while (condition != nullptr) {
-        if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
-            conditions.emplace_back(ramConj->getRHS().clone());
-            condition = &ramConj->getLHS();
-        } else {
-            conditions.emplace_back(condition->clone());
-            break;
-        }
-    }
-    return conditions;
-}
-}  // namespace
-
 bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
     // flag to determine whether the RAM program has changed
     bool changed = false;
@@ -205,7 +180,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
         bool indexable = false;
         std::unique_ptr<RamCondition> condition =
-                constructPattern(queryPattern, indexable, getConditions(agg->getCondition()), identifier);
+                constructPattern(queryPattern, indexable, toConjList(agg->getCondition()), identifier);
         if (indexable) {
             std::unique_ptr<RamExpression> expr;
             if (agg->getExpression() != nullptr) {
@@ -226,7 +201,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* s
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
         bool indexable = false;
         std::unique_ptr<RamCondition> condition =
-                constructPattern(queryPattern, indexable, getConditions(&filter->getCondition()), identifier);
+                constructPattern(queryPattern, indexable, toConjList(&filter->getCondition()), identifier);
         if (indexable) {
             return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
                     std::move(queryPattern),

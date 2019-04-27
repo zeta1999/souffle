@@ -292,26 +292,31 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitQuery(const RamQuery& query, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            // check whether the outer-most filter operation
-            // can be pushed out of the parallel context
+            // split terms of conditions of outer filter operation
+            // into terms that require a context and terms that
+            // do not require a context
             const RamOperation* next = &query.getOperation();
-            const RamCondition* cond = nullptr;
+            std::vector<std::unique_ptr<RamCondition>> requireCtx;
+            std::vector<std::unique_ptr<RamCondition>> freeOfCtx;
             if (const RamFilter* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
-                // cannot pull filter out of parallel loop if it requires a context for
-                // existence checks of tuples
-                cond = &filter->getCondition();
-                bool needContext = false;
-                visitDepthFirst(*cond, [&](const RamExistenceCheck& exists) { needContext = true; });
-                if (!needContext) {
-                    // discharge condition of filter in
-                    // the outer scope
-                    next = &filter->getOperation();
+                next = &filter->getOperation();
+                // Check terms of outer filter operation whether they can be pushed before
+                // the context-generation for speed imrovements
+                auto conditions = toConjList(&filter->getCondition());
+                for (auto const& cur : conditions) {
+                    bool needContext = false;
+                    visitDepthFirst(*cur, [&](const RamExistenceCheck& exists) { needContext = true; });
+                    if (needContext) {
+                        requireCtx.push_back(std::unique_ptr<RamCondition>(cur->clone()));
+                    } else {
+                        freeOfCtx.push_back(std::unique_ptr<RamCondition>(cur->clone()));
+                    }
+                }
+                // discharge conditions that do not require a context
+                if (freeOfCtx.size() > 0) {
                     out << "if(";
-                    visit(*cond, out);
+                    visit(*toCondition(toConstPtrVector(freeOfCtx)), out);
                     out << ") {\n";
-                } else {
-                    // undo filter / contains context operations
-                    cond = nullptr;
                 }
             }
 
@@ -329,62 +334,67 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // check whether loop nest can be parallelized
             bool parallel = false;
 
+            // check whether outer-most loop is an scan operation
+            const RamScan* outerScan = nullptr;
             visitDepthFirst(*next, [&](const RamScan& scan) {
-                if (!parallel) {
-                    parallel = scan.getIdentifier() == 0 && !scan.getRelation().isNullary();
-                    if (parallel) {
-                        const auto& rel = scan.getRelation();
-                        const auto& relName = synthesiser.getRelationName(rel);
-                        // partition outermost relation
-                        out << "auto part = " << relName << "->partition();\n";
-
-                        // build a parallel block around this loop nest
-                        out << "PARALLEL_START;\n";
-                    }
+                if (scan.getIdentifier() == 0 && !scan.getRelation().isNullary()) {
+                    outerScan = &scan;
                 }
             });
+            if (outerScan != nullptr) {
+                parallel = true;
+                const auto& rel = outerScan->getRelation();
+                const auto& relName = synthesiser.getRelationName(rel);
+                // partition outermost relation
+                out << "auto part = " << relName << "->partition();\n";
 
-            if (!parallel)
-                visitDepthFirst(*next, [&](const RamIndexScan& scan) {
-                    if (!parallel) {
-                        parallel = scan.getIdentifier() == 0;
-                        if (parallel) {
-                            const auto& rel = scan.getRelation();
-                            const auto& relName = synthesiser.getRelationName(rel);
+                // build a parallel block around this loop nest
+                out << "PARALLEL_START;\n";
+            }
 
-                            // check list of keys
-                            auto arity = rel.getArity();
-                            const auto& rangePattern = scan.getRangePattern();
+            // check whether outer-most loop is an IndexScan
+            const RamIndexScan* outerIndexScan = nullptr;
+            visitDepthFirst(*next, [&](const RamIndexScan& indexScan) {
+                if (indexScan.getIdentifier() == 0) {
+                    outerIndexScan = &indexScan;
+                }
+            });
+            if (outerIndexScan != nullptr) {
+                parallel = true;
+                const auto& rel = outerIndexScan->getRelation();
+                const auto& relName = synthesiser.getRelationName(rel);
 
-                            // a lambda for printing boundary key values
-                            auto printKeyTuple = [&]() {
-                                for (size_t i = 0; i < arity; i++) {
-                                    if (rangePattern[i] != nullptr) {
-                                        visit(rangePattern[i], out);
-                                    } else {
-                                        out << "0";
-                                    }
-                                    if (i + 1 < arity) {
-                                        out << ",";
-                                    }
-                                }
-                            };
+                // check list of keys
+                auto arity = rel.getArity();
+                const auto& rangePattern = outerIndexScan->getRangePattern();
 
-                            // get index to be queried
-                            auto keys = keysAnalysis->getRangeQueryColumns(&scan);
-
-                            out << "const Tuple<RamDomain," << arity << "> key({{";
-                            printKeyTuple();
-                            out << "}});\n";
-                            out << "auto range = " << relName << "->"
-                                << "equalRange_" << keys << "(key);\n";
-                            out << "auto part = range.partition();\n";
-
-                            // build a parallel block around this loop nest
-                            out << "PARALLEL_START;\n";
+                // a lambda for printing boundary key values
+                auto printKeyTuple = [&]() {
+                    for (size_t i = 0; i < arity; i++) {
+                        if (rangePattern[i] != nullptr) {
+                            visit(rangePattern[i], out);
+                        } else {
+                            out << "0";
+                        }
+                        if (i + 1 < arity) {
+                            out << ",";
                         }
                     }
-                });
+                };
+
+                // get index to be queried
+                auto keys = keysAnalysis->getRangeQueryColumns(outerIndexScan);
+
+                out << "const Tuple<RamDomain," << arity << "> key({{";
+                printKeyTuple();
+                out << "}});\n";
+                out << "auto range = " << relName << "->"
+                    << "equalRange_" << keys << "(key);\n";
+                out << "auto part = range.partition();\n";
+
+                // build a parallel block around this loop nest
+                out << "PARALLEL_START;\n";
+            }
 
             // create operation contexts for this operation
             for (const RamRelation* rel : synthesiser.getReferencedRelations(query.getOperation())) {
@@ -394,11 +404,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "," << synthesiser.getRelationName(*rel);
                 out << "->createContext());\n";
             }
-            visit(*next, out);
+
+            // discharge conditions that require a context
+            if (requireCtx.size() > 0) {
+                out << "if(";
+                visit(*toCondition(toConstPtrVector(requireCtx)), out);
+                out << ") {\n";
+                visit(*next, out);
+                out << "}\n";
+            } else {
+                visit(*next, out);
+            }
 
             if (parallel) {
                 out << "PARALLEL_END;\n";  // end parallel
-                // aggregate proof counters
             }
 
             out << "}\n";
@@ -409,7 +428,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 #else
             out << "();";  // call lambda
 #endif
-            if (cond != nullptr) {
+            if (freeOfCtx.size() > 0) {
                 out << "}\n";
             }
 
@@ -748,7 +767,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = aggregate.getIdentifier();
 
             // aggregate tuple storing the result of aggregate
-            std::string tuple_type = "ram::Tuple<RamDomain," + toString(std::max(1u, arity)) + ">";
+            std::string tuple_type = "ram::Tuple<RamDomain," + toString(arity) + ">";
 
             // declare environment variable
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";

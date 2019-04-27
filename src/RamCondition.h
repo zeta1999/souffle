@@ -25,8 +25,8 @@
 
 #include <algorithm>
 #include <sstream>
-#include <string>
 #include <stack>
+#include <string>
 
 #include <cstdlib>
 
@@ -424,20 +424,20 @@ protected:
  */
 inline std::vector<std::unique_ptr<RamCondition>> toConjunctionList(const RamCondition* condition) {
     std::vector<std::unique_ptr<RamCondition>> list;
-    std::stack<const RamCondition *> stack; 
-    if (condition != nullptr) { 
-       stack.push(condition); 
-       while (stack.size() > 0) {
-	   condition = stack.top();
-	   stack.pop();
-           if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
-               stack.push(&ramConj->getLHS());
-               stack.push(&ramConj->getRHS());
-           } else {
-               list.emplace_back(condition->clone());
-           }
-       }
-    } 
+    std::stack<const RamCondition*> stack;
+    if (condition != nullptr) {
+        stack.push(condition);
+        while (stack.size() > 0) {
+            condition = stack.top();
+            stack.pop();
+            if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
+                stack.push(&ramConj->getLHS());
+                stack.push(&ramConj->getRHS());
+            } else {
+                list.emplace_back(condition->clone());
+            }
+        }
+    }
     return list;
 }
 

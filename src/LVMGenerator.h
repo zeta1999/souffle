@@ -355,7 +355,7 @@ protected:
         code->push_back(lookupAddress(L2));
 
         visit(choice.getCondition(), exitAddress);
-        code->push_back(LVM_Jmpez);
+        code->push_back(LVM_Jmpnz);
         code->push_back(lookupAddress(L1));
 
         code->push_back(LVM_ITER_Select);
@@ -371,7 +371,7 @@ protected:
 
         setAddress(L1, code->size());
         visitSearch(choice, exitAddress);
-		setAddress(L2, code->size());
+        setAddress(L2, code->size());
     }
 
     void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
@@ -415,6 +415,54 @@ protected:
         code->push_back(LVM_Goto);
         code->push_back(address_L0);
         setAddress(L1, code->size());
+    }
+
+    void visitIndexChoice(const RamIndexChoice& indexChoice, size_t exitAddress) override {
+        code->push_back(LVM_IndexChoice);
+        size_t counterLabel = getNewIndexChoiceIterator();
+        size_t L1 = getNewAddressLabel();
+        size_t L2 = getNewAddressLabel();
+
+        auto patterns = indexChoice.getRangePattern();
+        std::string types;
+        auto arity = indexChoice.getRelation().getArity();
+        for (size_t i = 0; i < arity; i++) {
+            if (patterns[i]) {
+                visit(patterns[i], exitAddress);
+            }
+            types += (patterns[i] == nullptr ? "_" : "V");
+        }
+
+        code->push_back(LVM_ITER_TypeIndexChoice);
+        code->push_back(counterLabel);
+        code->push_back(symbolTable.lookup(indexChoice.getRelation().getName()));
+        code->push_back(symbolTable.lookup(types));
+
+        size_t address_L0 = code->size();
+
+        code->push_back(LVM_ITER_NotAtEnd);
+        code->push_back(counterLabel);
+        code->push_back(LVM_ITER_TypeIndexChoice);
+        code->push_back(LVM_Jmpez);
+        code->push_back(lookupAddress(L2));
+
+        visit(indexChoice.getCondition(), exitAddress);
+        code->push_back(LVM_Jmpnz);
+        code->push_back(lookupAddress(L1));
+
+        code->push_back(LVM_ITER_Select);
+        code->push_back(counterLabel);
+        code->push_back(LVM_ITER_TypeIndexChoice);
+        code->push_back(indexChoice.getIdentifier());
+
+        code->push_back(LVM_ITER_Inc);
+        code->push_back(counterLabel);
+        code->push_back(LVM_ITER_TypeIndexChoice);
+        code->push_back(LVM_Goto);
+        code->push_back(address_L0);
+        setAddress(L1, code->size());
+        visitSearch(indexChoice, exitAddress);
+        setAddress(L2, code->size());
     }
 
     void visitUnpackRecord(const RamUnpackRecord& lookup, size_t exitAddress) override {
@@ -781,10 +829,16 @@ private:
         return scanIteratorIndex++;
     }
 
-	/** Iter */
+    /** Iter */
     size_t choiceIteratorIndex = 0;
     size_t getNewChoiceIterator() {
         return choiceIteratorIndex++;
+    }
+
+    /** Iter */
+    size_t indexChoiceIteratorIndex = 0;
+    size_t getNewIndexChoiceIterator() {
+        return indexChoiceIteratorIndex++;
     }
 
     /** Timer */

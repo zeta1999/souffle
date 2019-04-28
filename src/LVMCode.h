@@ -86,6 +86,7 @@ enum LVM_Type {
     LVM_Scan,
     LVM_IndexScan,
     LVM_Choice,
+    LVM_IndexChoice,
     LVM_UnpackRecord,
     LVM_Aggregate,
     LVM_Filter,
@@ -135,6 +136,7 @@ enum LVM_Type {
     LVM_ITER_TypeScan,
     LVM_ITER_TypeChoice,
     LVM_ITER_TypeIndexScan,
+    LVM_ITER_TypeIndexChoice,
 };
 
 class LVMCode : protected std::vector<RamDomain> {

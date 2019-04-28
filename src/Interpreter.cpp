@@ -670,6 +670,10 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 /** Does nothing, just a label */
                 ip += 1;
                 break;
+            case LVM_IndexChoice:
+                /** Does nothing, just a label */
+                ip += 1;
+                break;
             case LVM_Search: {
                 if (Global::config().has("profile") && code[ip + 1] != 0) {
                     std::string msg = symbolTable.resolve(code[ip + 2]);
@@ -1057,6 +1061,42 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 ip += 4;
                 break;
             }
+            case LVM_ITER_TypeIndexChoice: {
+                RamDomain idx = code[ip + 1];
+                std::string relName = symbolTable.resolve(code[ip + 2]);
+                InterpreterRelation& rel = getRelation(relName);
+                std::string pattern = symbolTable.resolve(code[ip + 3]);
+
+                // create pattern tuple for range query
+                auto arity = rel.getArity();
+                RamDomain low[arity];
+                RamDomain hig[arity];
+                for (size_t i = 0; i < arity; i++) {
+                    if (pattern[arity - i - 1] == 'V') {
+                        low[arity - i - 1] = stack.top();
+                        stack.pop();
+                        hig[arity - i - 1] = low[arity - i - 1];
+                    } else {
+                        low[arity - i - 1] = MIN_RAM_DOMAIN;
+                        hig[arity - i - 1] = MAX_RAM_DOMAIN;
+                    }
+                }
+
+                // obtain index
+                // TODO Do as function
+                SearchColumns keys = 0;
+                for (size_t i = 0; i < arity; i++) {
+                    if (pattern[i] == 'V') {
+                        keys |= (1 << i);
+                    }
+                }
+                auto index = rel.getIndex(keys);
+
+                // get iterator range
+                lookUpIndexChoiceIterator(idx) = index->lowerUpperBound(low, hig);
+                ip += 4;
+                break;
+            }
             case LVM_ITER_NotAtEnd: {
                 RamDomain idx = code[ip + 1];
                 switch (code[ip + 2]) {
@@ -1072,6 +1112,11 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                     }
                     case LVM_ITER_TypeChoice: {
                         auto iter = choiceIteratorPool[idx];
+                        stack.push(iter.first != iter.second);
+                        break;
+                    }
+                    case LVM_ITER_TypeIndexChoice: {
+                        auto iter = indexChoiceIteratorPool[idx];
                         stack.push(iter.first != iter.second);
                         break;
                     }
@@ -1101,6 +1146,11 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                         ctxt[id] = *iter.first;
                         break;
                     }
+                    case LVM_ITER_TypeIndexChoice: {
+                        auto iter = indexChoiceIteratorPool[idx];
+                        ctxt[id] = *iter.first;
+                        break;
+                    }
                     default:
                         printf("Unknown iter type at LVM_ITER_Select\n");
                         break;
@@ -1121,6 +1171,10 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                     }
                     case LVM_ITER_TypeChoice: {
                         ++choiceIteratorPool[idx].first;
+                        break;
+                    }
+                    case LVM_ITER_TypeIndexChoice: {
+                        ++indexChoiceIteratorPool[idx].first;
                         break;
                     }
                     default:

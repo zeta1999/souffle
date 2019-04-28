@@ -224,6 +224,14 @@ protected:
         return indexScanIteratorPool[idx];
     }
 
+    // Lookup for IndexChoice iter, resize the vector if idx > size */
+    std::pair<index_set::iterator, index_set::iterator>& lookUpIndexChoiceIterator(size_t idx) {
+        if (idx >= indexChoiceIteratorPool.size()) {
+            indexChoiceIteratorPool.resize((idx + 1) * 2);
+        }
+        return indexChoiceIteratorPool[idx];
+    }
+
     /** Lookup for Scan iter, resize the vector if idx > size */
     std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
         if (idx >= scanIteratorPool.size()) {
@@ -280,8 +288,11 @@ private:
     /** Dynamic library for user-defined functors */
     void* dll = nullptr;
 
-    /** List of iters for indexScan operation */
+    /** List of iters for IndexScan operation */
     std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
+
+    /** List of iters for IndexChoice operation */
+    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexChoiceIteratorPool;
 
     /** List of iters for Scan operation */
     std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;

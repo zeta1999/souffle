@@ -353,11 +353,10 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const Ram
     if (tupleNotUsed && tupleUsedInCond) {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation());
-        const RamRelation& rel = scan->getRelation();
         const int identifier = scan->getIdentifier();
 
-        return std::make_unique<RamChoice>(std::make_unique<RamRelationReference>(&rel), identifier,
-                std::unique_ptr<RamCondition>(filter->getCondition().clone()),
+        return std::make_unique<RamChoice>(std::make_unique<RamRelationReference>(&scan->getRelation()),
+                identifier, std::unique_ptr<RamCondition>(filter->getCondition().clone()),
                 std::unique_ptr<RamOperation>(filter->clone()), scan->getProfileText());
     }
     return nullptr;
@@ -397,9 +396,8 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
     if (tupleNotUsed && tupleUsedInCond) {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         const auto* filter = dynamic_cast<const RamFilter*>(&indexScan->getOperation());
-        const RamRelation& rel = indexScan->getRelation();
         const int identifier = indexScan->getIdentifier();
-        std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
+        std::vector<std::unique_ptr<RamExpression>> queryPattern(indexScan->getRelation().getArity());
 
         for (auto& cur : indexScan->getRangePattern()) {
             RamExpression* val = nullptr;
@@ -409,7 +407,8 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
             newValues.emplace_back(val);
         }
 
-        return std::make_unique<RamIndexChoice>(std::make_unique<RamRelationReference>(&rel), identifier,
+        return std::make_unique<RamIndexChoice>(
+                std::make_unique<RamRelationReference>(&indexScan->getRelation()), identifier,
                 std::unique_ptr<RamCondition>(filter->getCondition().clone()), std::move(queryPattern),
                 std::unique_ptr<RamOperation>(filter->clone()), indexScan->getProfileText());
     }

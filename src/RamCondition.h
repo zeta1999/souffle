@@ -427,7 +427,7 @@ inline std::vector<std::unique_ptr<RamCondition>> toConjunctionList(const RamCon
     std::stack<const RamCondition*> stack;
     if (condition != nullptr) {
         stack.push(condition);
-        while (stack.size() > 0) {
+        while (!stack.empty()) {
             condition = stack.top();
             stack.pop();
             if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {

@@ -338,6 +338,42 @@ protected:
         setAddress(L1, code->size());
     }
 
+    void visitChoice(const RamChoice& choice, size_t exitAddress) override {
+        code->push_back(LVM_Choice);
+        size_t counterLabel = getNewChoiceIterator();
+        code->push_back(LVM_ITER_TypeChoice);
+        code->push_back(counterLabel);
+        code->push_back(symbolTable.lookup(choice.getRelation().getName()));
+        size_t address_L0 = code->size();
+
+        code->push_back(LVM_ITER_NotAtEnd);
+        code->push_back(counterLabel);
+        code->push_back(LVM_ITER_TypeChoice);
+        code->push_back(LVM_Jmpez);
+        size_t L1 = getNewAddressLabel();
+        size_t L2 = getNewAddressLabel();
+        code->push_back(lookupAddress(L2));
+
+        visit(choice.getCondition(), exitAddress);
+        code->push_back(LVM_Jmpez);
+        code->push_back(lookupAddress(L1));
+
+        code->push_back(LVM_ITER_Select);
+        code->push_back(counterLabel);
+        code->push_back(LVM_ITER_TypeChoice);
+        code->push_back(choice.getIdentifier());
+
+        code->push_back(LVM_ITER_Inc);
+        code->push_back(counterLabel);
+        code->push_back(LVM_ITER_TypeChoice);
+        code->push_back(LVM_Goto);
+        code->push_back(address_L0);
+
+        setAddress(L1, code->size());
+        visitSearch(choice, exitAddress);
+		setAddress(L2, code->size());
+    }
+
     void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
         code->push_back(LVM_IndexScan);
         size_t counterLabel = getNewIndexScanIterator();
@@ -743,6 +779,12 @@ private:
     size_t scanIteratorIndex = 0;
     size_t getNewScanIterator() {
         return scanIteratorIndex++;
+    }
+
+	/** Iter */
+    size_t choiceIteratorIndex = 0;
+    size_t getNewChoiceIterator() {
+        return choiceIteratorIndex++;
     }
 
     /** Timer */

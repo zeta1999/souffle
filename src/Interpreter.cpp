@@ -666,6 +666,10 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 /** Does nothing, just a label */
                 ip += 1;
                 break;
+            case LVM_Choice:
+                /** Does nothing, just a label */
+                ip += 1;
+                break;
             case LVM_Search: {
                 if (Global::config().has("profile") && code[ip + 1] != 0) {
                     std::string msg = symbolTable.resolve(code[ip + 2]);
@@ -1004,6 +1008,19 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                 ip += 3;
                 break;
             }
+            case LVM_ITER_TypeChoice: {
+                RamDomain idx = code[ip + 1];
+
+                std::string relName = symbolTable.resolve(code[ip + 2]);
+                InterpreterRelation& rel = getRelation(relName);
+                lookUpChoiceIterator(idx) =
+                        std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>(
+                                rel.begin(), rel.end());
+                assert(rel.begin() != rel.end() || rel.empty());
+
+                ip += 3;
+                break;
+            }
             case LVM_ITER_TypeIndexScan: {
                 RamDomain idx = code[ip + 1];
                 std::string relName = symbolTable.resolve(code[ip + 2]);
@@ -1053,6 +1070,11 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                         stack.push(iter.first != iter.second);
                         break;
                     }
+                    case LVM_ITER_TypeChoice: {
+                        auto iter = choiceIteratorPool[idx];
+                        stack.push(iter.first != iter.second);
+                        break;
+                    }
                     default:
                         printf("Unknown iter type at LVM_ITER_NotAtEnd\n");
                         break;
@@ -1074,6 +1096,11 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                         ctxt[id] = *iter.first;
                         break;
                     }
+                    case LVM_ITER_TypeChoice: {
+                        auto iter = choiceIteratorPool[idx];
+                        ctxt[id] = *iter.first;
+                        break;
+                    }
                     default:
                         printf("Unknown iter type at LVM_ITER_Select\n");
                         break;
@@ -1090,6 +1117,10 @@ void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterConte
                     }
                     case LVM_ITER_TypeIndexScan: {
                         ++indexScanIteratorPool[idx].first;
+                        break;
+                    }
+                    case LVM_ITER_TypeChoice: {
+                        ++choiceIteratorPool[idx].first;
                         break;
                     }
                     default:

@@ -232,6 +232,15 @@ protected:
         return scanIteratorPool[idx];
     }
 
+    /** Lookup for Choice iter, resize the vector if idx > size */
+    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpChoiceIterator(
+            size_t idx) {
+        if (idx >= choiceIteratorPool.size()) {
+            choiceIteratorPool.resize((idx + 1) * 2);
+        }
+        return choiceIteratorPool[idx];
+    }
+
 private:
     friend InterpreterProgInterface;
 
@@ -276,6 +285,9 @@ private:
 
     /** List of iters for Scan operation */
     std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;
+
+    /** List of iters for Choice operation */
+    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> choiceIteratorPool;
 
     /** stratum */
     size_t level = 0;

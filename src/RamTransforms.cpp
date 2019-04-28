@@ -180,7 +180,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
         bool indexable = false;
         std::unique_ptr<RamCondition> condition =
-                constructPattern(queryPattern, indexable, toConjList(agg->getCondition()), identifier);
+                constructPattern(queryPattern, indexable, toConjunctionList(agg->getCondition()), identifier);
         if (indexable) {
             std::unique_ptr<RamExpression> expr;
             if (agg->getExpression() != nullptr) {
@@ -200,8 +200,8 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* s
         const int identifier = scan->getIdentifier();
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
         bool indexable = false;
-        std::unique_ptr<RamCondition> condition =
-                constructPattern(queryPattern, indexable, toConjList(&filter->getCondition()), identifier);
+        std::unique_ptr<RamCondition> condition = constructPattern(
+                queryPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
         if (indexable) {
             return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
                     std::move(queryPattern),

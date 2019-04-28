@@ -302,7 +302,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 next = &filter->getOperation();
                 // Check terms of outer filter operation whether they can be pushed before
                 // the context-generation for speed imrovements
-                auto conditions = toConjList(&filter->getCondition());
+                auto conditions = toConjunctionList(&filter->getCondition());
                 for (auto const& cur : conditions) {
                     bool needContext = false;
                     visitDepthFirst(*cur, [&](const RamExistenceCheck& exists) { needContext = true; });

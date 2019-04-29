@@ -368,8 +368,12 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             }
 
             // add constraint
-            return std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
-                    translator.translateRelation(atom), std::move(values)));
+            if (arity > 0) {
+                return std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
+                        translator.translateRelation(atom), std::move(values)));
+            } else {
+                return std::make_unique<RamEmptinessCheck>(translator.translateRelation(atom));
+            }
         }
 
         /** for provenance negation */

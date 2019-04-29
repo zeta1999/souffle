@@ -535,8 +535,8 @@ protected:
  */
 class AstTypeCast : public AstArgument {
 public:
-    AstTypeCast(std::unique_ptr<AstArgument> value, const AstTypeIdentifier& type)
-            : value(std::move(value)), type(type) {}
+    AstTypeCast(std::unique_ptr<AstArgument> value, AstTypeIdentifier type)
+            : value(std::move(value)), type(std::move(type)) {}
 
     void print(std::ostream& os) const override {
         os << "as(" << *value << "," << type << ")";

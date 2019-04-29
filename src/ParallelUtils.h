@@ -202,10 +202,10 @@ namespace detail {
  * A utility class managing waiting operations for spin locks.
  */
 class Waiter {
-    int i;
+    int i = 0;
 
 public:
-    Waiter() : i(0) {}
+    Waiter() {}
 
     /**
      * Conducts a wait operation.

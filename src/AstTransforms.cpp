@@ -84,7 +84,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
     // collect aliases
     alias_map isDirectAliasOf;
 
-    IOType* ioType = translationUnit.getAnalysis<IOType>();
+    auto* ioType = translationUnit.getAnalysis<IOType>();
 
     AstProgram& program = *translationUnit.getProgram();
 
@@ -804,7 +804,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
     // Keep track of all relations that cannot be transformed
     std::set<AstRelationIdentifier> minimalIrreducibleRelations;
 
-    IOType* ioType = translationUnit.getAnalysis<IOType>();
+    auto* ioType = translationUnit.getAnalysis<IOType>();
 
     for (AstRelation* relation : program.getRelations()) {
         // No I/O relations can be transformed

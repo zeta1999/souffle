@@ -78,7 +78,7 @@ void RedundantRelations::run(const AstTranslationUnit& translationUnit) {
 
     std::set<const AstRelation*> work;
     std::set<const AstRelation*> notRedundant;
-    IOType* ioType = translationUnit.getAnalysis<IOType>();
+    auto* ioType = translationUnit.getAnalysis<IOType>();
 
     const std::vector<AstRelation*>& relations = translationUnit.getProgram()->getRelations();
     /* Add all output relations to the work set */

@@ -195,7 +195,7 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
 
             // load DLL (if not done yet)
             void* handle = interpreter.loadDLL();
-            void (*fn)() = (void (*)())dlsym(handle, name.c_str());
+            auto fn = reinterpret_cast<void (*)()>(dlsym(handle, name.c_str()));
             if (fn == nullptr) {
                 std::cerr << "Cannot find user-defined operator " << name << " in " << SOUFFLE_DLL
                           << std::endl;

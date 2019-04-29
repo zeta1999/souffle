@@ -292,7 +292,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const RamOperation* next = &query.getOperation();
             std::vector<std::unique_ptr<RamCondition>> requireCtx;
             std::vector<std::unique_ptr<RamCondition>> freeOfCtx;
-            if (const RamFilter* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
+            if (const auto* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
                 next = &filter->getOperation();
                 // Check terms of outer filter operation whether they can be pushed before
                 // the context-generation for speed imrovements

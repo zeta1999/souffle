@@ -1035,7 +1035,7 @@ inline bool isExecutable(const std::string& name) {
 inline std::string which(const std::string& name) {
     char buf[PATH_MAX];
     if (::realpath(name.c_str(), buf) && isExecutable(buf)) {
-        return std::string(buf);
+        return buf;
     }
     const char* syspath = ::getenv("PATH");
     if (syspath == nullptr) {
@@ -1047,7 +1047,7 @@ inline std::string which(const std::string& name) {
     while (std::getline(sstr, sub, ':')) {
         std::string path = sub + "/" + name;
         if (isExecutable(path) && realpath(path.c_str(), buf)) {
-            return std::string(buf);
+            return buf;
         }
     }
     return "";

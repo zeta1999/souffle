@@ -188,7 +188,7 @@ public:
     /** Print out the code stream */
     virtual void print() const;
 
-    virtual ~LVMCode() {}
+    virtual ~LVMCode() = default;
 
 private:
     /** Store reference to IODirectives */

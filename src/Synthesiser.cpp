@@ -609,6 +609,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // get relation name
             const auto& rel = scan.getRelation();
+            assert(rel.getArity() > 0 && "AstTranslator failed");
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
@@ -623,13 +624,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
             });
 
-            // if this search is a full scan
-            if (scan.getRelation().isNullary()) {
-                out << "if(!" << relName << "->"
-                    << "empty()) {\n";
-                visitSearch(scan, out);
-                out << "}\n";
-            } else if (parallel) {
+            if (parallel) {
                 // make this loop parallel
                 // partition outermost relation
                 out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
@@ -666,6 +661,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // check list of keys
             auto arity = rel.getArity();
+            assert(arity > 0 && "AstTranslator failed");
             const auto& rangePattern = scan.getRangePattern();
 
             // get index to be queried
@@ -1050,6 +1046,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto arity = rel.getArity();
+            assert(arity > 0 && "AstTranslator failed");
             std::string before, after;
             if (Global::config().has("profile") && !exists.getRelation().isTemp()) {
                 out << R"_((reads[)_" << synthesiser.lookupReadIdx(rel.getName()) << R"_(]++,)_";

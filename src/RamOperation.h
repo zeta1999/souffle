@@ -344,24 +344,19 @@ protected:
  *
  * Find a tuple in relation such that condition holds.
  */
-class RamIndexChoice : public RamRelationSearch {
+class RamIndexChoice : public RamIndexRelationSearch {
 public:
-    RamIndexChoice(std::unique_ptr<RamRelationReference> r, size_t ident, std::unique_ptr<RamCondition> cond,
+    RamIndexChoice(std::unique_ptr<RamRelationReference> r, int ident, std::unique_ptr<RamCondition> cond,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamRelationSearch(std::move(r), ident, std::move(nested), std::move(profileText)),
-              condition(std::move(cond)), queryPattern(std::move(queryPattern)) {
-        assert(getRangePattern().size() == getRelation().getArity());
-    }
+            : RamIndexRelationSearch(std::move(r), ident, std::move(queryPattern), std::move(nested),
+                      std::move(profileText)), condition(std::move(cond)) {
+				assert(getRangePattern().size() == getRelation().getArity());
+			}
 
     /** get condition */
     const RamCondition& getCondition() const {
         return *condition;
-    }
-
-    /** Get range pattern */
-    std::vector<RamExpression*> getRangePattern() const {
-        return toPtrVector(queryPattern);
     }
 
     /** Print */
@@ -383,21 +378,9 @@ public:
         }
         os << " WHERE " << getCondition();
         os << std::endl;
-        RamRelationSearch::print(os, tabpos + 1);
+        RamIndexRelationSearch::print(os, tabpos + 1);
     }
 
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        auto res = RamRelationSearch::getChildNodes();
-        for (auto& cur : queryPattern) {
-            if (cur != nullptr) {
-                res.push_back(cur.get());
-            }
-        }
-        return res;
-    }
-
-    /** Create clone */
     RamIndexChoice* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
         for (unsigned int i = 0; i < queryPattern.size(); ++i) {
@@ -406,28 +389,14 @@ public:
             }
         }
         RamIndexChoice* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getIdentifier(), std::unique_ptr<RamCondition>(condition->clone()),
-                std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
-                getProfileText());
+                getIdentifier(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
-    }
-
-    /** Apply mapper */
-    void apply(const RamNodeMapper& map) override {
-        RamRelationSearch::apply(map);
-        for (auto& cur : queryPattern) {
-            if (cur != nullptr) {
-                cur = map(std::move(cur));
-            }
-        }
     }
 
 protected:
     /** Condition */
     std::unique_ptr<RamCondition> condition;
-
-    /** Values of index per column of table (if indexable) */
-    std::vector<std::unique_ptr<RamExpression>> queryPattern;
 
     /** Check equality */
     bool equal(const RamNode& node) const override {

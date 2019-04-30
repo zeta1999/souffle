@@ -841,33 +841,28 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ") {\n";
             }
 
-            // create aggregation code
-            if (aggregate.getFunction() == souffle::COUNT) {
-                // count is easy
-                out << "++res" << identifier << "\n;";
-            } else if (aggregate.getFunction() == souffle::SUM) {
-                out << "res" << identifier << " += ";
-                visit(*aggregate.getExpression(), out);
-                out << ";\n";
-            } else {
-                // pick function
-                std::string fun = "min";
-                switch (aggregate.getFunction()) {
-                    case souffle::MIN:
-                        fun = "std::min";
-                        break;
-                    case souffle::MAX:
-                        fun = "std::max";
-                        break;
-                    case souffle::COUNT:
-                        assert(false);
-                    case souffle::SUM:
-                        assert(false);
-                }
-
-                out << "res" << identifier << " = " << fun << "(res" << identifier << ",";
-                visit(*aggregate.getExpression(), out);
-                out << ");\n";
+            switch (aggregate.getFunction()) {
+                case souffle::MIN:
+                    out << "res" << identifier << " = std::min (res" << identifier << ",";
+                    visit(*aggregate.getExpression(), out);
+                    out << ");\n";
+                    break;
+                case souffle::MAX:
+                    out << "res" << identifier << " = std::max (res" << identifier << ",";
+                    visit(*aggregate.getExpression(), out);
+                    out << ");\n";
+                    break;
+                case souffle::COUNT:
+                    // count is easy
+                    out << "++res" << identifier << "\n;";
+                    break;
+                case souffle::SUM:
+                    out << "res" << identifier << " += ";
+                    visit(*aggregate.getExpression(), out);
+                    out << ";\n";
+                    break;
+                default:
+                    abort();
             }
 
             if (condition != nullptr) {
@@ -896,13 +891,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             // get some properties
             const auto& rel = aggregate.getRelation();
-            auto arity = rel.getArity();
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto identifier = aggregate.getIdentifier();
-
-            // aggregate tuple storing the result of aggregate
-            std::string tuple_type = "ram::Tuple<RamDomain," + toString(arity) + ">";
 
             // declare environment variable
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
@@ -949,33 +940,28 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ") {\n";
             }
 
-            // create aggregation code
-            if (aggregate.getFunction() == souffle::COUNT) {
-                // count is easy
-                out << "++res" << identifier << "\n;";
-            } else if (aggregate.getFunction() == souffle::SUM) {
-                out << "res" << identifier << " += ";
-                visit(*aggregate.getExpression(), out);
-                out << ";\n";
-            } else {
-                // pick function
-                std::string fun = "min";
-                switch (aggregate.getFunction()) {
-                    case souffle::MIN:
-                        fun = "std::min";
-                        break;
-                    case souffle::MAX:
-                        fun = "std::max";
-                        break;
-                    case souffle::COUNT:
-                        assert(false);
-                    case souffle::SUM:
-                        assert(false);
-                }
-
-                out << "res" << identifier << " = " << fun << "(res" << identifier << ",";
-                visit(*aggregate.getExpression(), out);
-                out << ");\n";
+            // pick function
+            switch (aggregate.getFunction()) {
+                case souffle::MIN:
+                    out << "res" << identifier << " = std::min(res" << identifier << ",";
+                    visit(*aggregate.getExpression(), out);
+                    out << ");\n";
+                    break;
+                case souffle::MAX:
+                    out << "res" << identifier << " = std::max(res" << identifier << ",";
+                    visit(*aggregate.getExpression(), out);
+                    out << ");\n";
+                    break;
+                case souffle::COUNT:
+                    out << "++res" << identifier << "\n;";
+                    break;
+                case souffle::SUM:
+                    out << "res" << identifier << " += ";
+                    visit(*aggregate.getExpression(), out);
+                    out << ";\n";
+                    break;
+                default:
+                    abort();
             }
 
             if (condition != nullptr) {

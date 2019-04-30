@@ -707,19 +707,19 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         const AstAggregator* cur = *it;
 
         // translate aggregation function
-        RamAggregate::Function fun = RamAggregate::MIN;
+        AggregateFunction fun = souffle::MIN;
         switch (cur->getOperator()) {
             case AstAggregator::min:
-                fun = RamAggregate::MIN;
+                fun = souffle::MIN;
                 break;
             case AstAggregator::max:
-                fun = RamAggregate::MAX;
+                fun = souffle::MAX;
                 break;
             case AstAggregator::count:
-                fun = RamAggregate::COUNT;
+                fun = souffle::COUNT;
                 break;
             case AstAggregator::sum:
-                fun = RamAggregate::SUM;
+                fun = souffle::SUM;
                 break;
         }
 
@@ -766,10 +766,9 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
 
         // add Ram-Aggregation layer
-        std::vector<std::unique_ptr<RamExpression>> pattern(atom->getArity());
         std::unique_ptr<RamAggregate> aggregate =
                 std::make_unique<RamAggregate>(std::move(op), fun, translator.translateRelation(atom),
-                        std::move(value), std::move(aggCondition), std::move(pattern), level);
+                        std::move(value), std::move(aggCondition), level);
         op = std::move(aggregate);
     }
 

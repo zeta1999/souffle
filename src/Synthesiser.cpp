@@ -753,7 +753,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitAggregate(const RamAggregate& aggregate, std::ostream& out) override {
+        void visitIndexAggregate(const RamIndexAggregate& aggregate, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // get some properties
             const auto& rel = aggregate.getRelation();
@@ -772,7 +772,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == RamAggregate::COUNT && keys == 0 &&
+            if (aggregate.getFunction() == souffle::COUNT && keys == 0 &&
                     aggregate.getCondition() == nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -785,16 +785,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case RamAggregate::MIN:
+                case souffle::MIN:
                     init = "MAX_RAM_DOMAIN";
                     break;
-                case RamAggregate::MAX:
+                case souffle::MAX:
                     init = "MIN_RAM_DOMAIN";
                     break;
-                case RamAggregate::COUNT:
+                case souffle::COUNT:
                     init = "0";
                     break;
-                case RamAggregate::SUM:
+                case souffle::SUM:
                     init = "0";
                     break;
                 default:
@@ -842,10 +842,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // create aggregation code
-            if (aggregate.getFunction() == RamAggregate::COUNT) {
+            if (aggregate.getFunction() == souffle::COUNT) {
                 // count is easy
                 out << "++res" << identifier << "\n;";
-            } else if (aggregate.getFunction() == RamAggregate::SUM) {
+            } else if (aggregate.getFunction() == souffle::SUM) {
                 out << "res" << identifier << " += ";
                 visit(*aggregate.getExpression(), out);
                 out << ";\n";
@@ -853,15 +853,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // pick function
                 std::string fun = "min";
                 switch (aggregate.getFunction()) {
-                    case RamAggregate::MIN:
+                    case souffle::MIN:
                         fun = "std::min";
                         break;
-                    case RamAggregate::MAX:
+                    case souffle::MAX:
                         fun = "std::max";
                         break;
-                    case RamAggregate::COUNT:
+                    case souffle::COUNT:
                         assert(false);
-                    case RamAggregate::SUM:
+                    case souffle::SUM:
                         assert(false);
                 }
 
@@ -880,8 +880,118 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // write result into environment tuple
             out << "env" << identifier << "[0] = res" << identifier << ";\n";
 
-            if (aggregate.getFunction() == RamAggregate::MIN ||
-                    aggregate.getFunction() == RamAggregate::MAX) {
+            if (aggregate.getFunction() == souffle::MIN ||
+                    aggregate.getFunction() == souffle::MAX) {
+                // check whether there exists a min/max first before next loop
+                out << "if(res" << identifier << " != " << init << "){\n";
+                visitSearch(aggregate, out);
+                out << "}\n";
+            } else {
+                visitSearch(aggregate, out);
+            }
+
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitAggregate(const RamAggregate& aggregate, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            // get some properties
+            const auto& rel = aggregate.getRelation();
+            auto arity = rel.getArity();
+            auto relName = synthesiser.getRelationName(rel);
+            auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
+            auto identifier = aggregate.getIdentifier();
+
+            // aggregate tuple storing the result of aggregate
+            std::string tuple_type = "ram::Tuple<RamDomain," + toString(arity) + ">";
+
+            // declare environment variable
+            out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
+
+            // special case: counting number elements over an unrestricted predicate
+            if (aggregate.getFunction() == souffle::COUNT  &&
+                    aggregate.getCondition() == nullptr) {
+                // shortcut: use relation size
+                out << "env" << identifier << "[0] = " << relName << "->"
+                    << "size();\n";
+                visitSearch(aggregate, out);
+                PRINT_END_COMMENT(out);
+                return;
+            }
+
+            // init result
+            std::string init;
+            switch (aggregate.getFunction()) {
+                case souffle::MIN:
+                    init = "MAX_RAM_DOMAIN";
+                    break;
+                case souffle::MAX:
+                    init = "MIN_RAM_DOMAIN";
+                    break;
+                case souffle::COUNT:
+                    init = "0";
+                    break;
+                case souffle::SUM:
+                    init = "0";
+                    break;
+                default:
+                    abort();
+            }
+            out << "RamDomain res" << identifier << " = " << init << ";\n";
+
+            // check whether there is an index to use
+            out << "for(const auto& env" << identifier << " : "
+                << "*" << relName << ") {\n";
+
+            // produce condition inside the loop
+            auto condition = aggregate.getCondition();
+            if (condition != nullptr) {
+                out << "if( ";
+                visit(condition, out);
+                out << ") {\n";
+            }
+
+            // create aggregation code
+            if (aggregate.getFunction() == souffle::COUNT) {
+                // count is easy
+                out << "++res" << identifier << "\n;";
+            } else if (aggregate.getFunction() == souffle::SUM) {
+                out << "res" << identifier << " += ";
+                visit(*aggregate.getExpression(), out);
+                out << ";\n";
+            } else {
+                // pick function
+                std::string fun = "min";
+                switch (aggregate.getFunction()) {
+                    case souffle::MIN:
+                        fun = "std::min";
+                        break;
+                    case souffle::MAX:
+                        fun = "std::max";
+                        break;
+                    case souffle::COUNT:
+                        assert(false);
+                    case souffle::SUM:
+                        assert(false);
+                }
+
+                out << "res" << identifier << " = " << fun << "(res" << identifier << ",";
+                visit(*aggregate.getExpression(), out);
+                out << ");\n";
+            }
+
+            if (condition != nullptr) {
+                out << "}\n";
+            }
+
+            // end aggregator loop
+            out << "}\n";
+
+            // write result into environment tuple
+            out << "env" << identifier << "[0] = res" << identifier << ";\n";
+
+            if (aggregate.getFunction() == souffle::MIN ||
+                    aggregate.getFunction() == souffle::MAX) {
                 // check whether there exists a min/max first before next loop
                 out << "if(res" << identifier << " != " << init << "){\n";
                 visitSearch(aggregate, out);

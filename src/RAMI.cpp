@@ -548,16 +548,87 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // initialize result
             RamDomain res = 0;
             switch (aggregate.getFunction()) {
-                case RamAggregate::MIN:
+                case souffle::MIN:
                     res = MAX_RAM_DOMAIN;
                     break;
-                case RamAggregate::MAX:
+                case souffle::MAX:
                     res = MIN_RAM_DOMAIN;
                     break;
-                case RamAggregate::COUNT:
+                case souffle::COUNT:
                     res = 0;
                     break;
-                case RamAggregate::SUM:
+                case souffle::SUM:
+                    res = 0;
+                    break;
+            }
+
+            for (const RamDomain* data : rel) {
+                ctxt[aggregate.getIdentifier()] = data;
+
+                if (aggregate.getCondition() != nullptr &&
+                        !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
+                    continue;
+                }
+
+                // count is easy
+                if (aggregate.getFunction() == souffle::COUNT) {
+                    ++res;
+                    continue;
+                }
+
+                // aggregation is a bit more difficult
+
+                // eval target expression
+                RamDomain cur = interpreter.evalExpr(*aggregate.getExpression(), ctxt);
+
+                switch (aggregate.getFunction()) {
+                    case souffle::MIN:
+                        res = std::min(res, cur);
+                        break;
+                    case souffle::MAX:
+                        res = std::max(res, cur);
+                        break;
+                    case souffle::COUNT:
+                        res = 0;
+                        break;
+                    case souffle::SUM:
+                        res += cur;
+                        break;
+                }
+            }
+
+            // write result to environment
+            RamDomain tuple[1];
+            tuple[0] = res;
+            ctxt[aggregate.getIdentifier()] = tuple;
+
+            // run nested part - using base class visitor
+            if (aggregate.getFunction() == souffle::MAX ||
+                    aggregate.getFunction() == souffle::MIN) {
+                if (res == (aggregate.getFunction() == souffle::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
+                    return;
+                }
+            }
+            visitSearch(aggregate);
+        }
+
+        void visitIndexAggregate(const RamIndexAggregate& aggregate) override {
+            // get the targeted relation
+            const InterpreterRelation& rel = interpreter.getRelation(aggregate.getRelation());
+
+            // initialize result
+            RamDomain res = 0;
+            switch (aggregate.getFunction()) {
+                case souffle::MIN:
+                    res = MAX_RAM_DOMAIN;
+                    break;
+                case souffle::MAX:
+                    res = MIN_RAM_DOMAIN;
+                    break;
+                case souffle::COUNT:
+                    res = 0;
+                    break;
+                case souffle::SUM:
                     res = 0;
                     break;
             }
@@ -598,7 +669,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                 }
 
                 // count is easy
-                if (aggregate.getFunction() == RamAggregate::COUNT) {
+                if (aggregate.getFunction() == souffle::COUNT) {
                     ++res;
                     continue;
                 }
@@ -609,16 +680,16 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                 RamDomain cur = interpreter.evalExpr(*aggregate.getExpression(), ctxt);
 
                 switch (aggregate.getFunction()) {
-                    case RamAggregate::MIN:
+                    case souffle::MIN:
                         res = std::min(res, cur);
                         break;
-                    case RamAggregate::MAX:
+                    case souffle::MAX:
                         res = std::max(res, cur);
                         break;
-                    case RamAggregate::COUNT:
+                    case souffle::COUNT:
                         res = 0;
                         break;
-                    case RamAggregate::SUM:
+                    case souffle::SUM:
                         res += cur;
                         break;
                 }
@@ -630,9 +701,9 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             ctxt[aggregate.getIdentifier()] = tuple;
 
             // run nested part - using base class visitor
-            if (aggregate.getFunction() == RamAggregate::MAX ||
-                    aggregate.getFunction() == RamAggregate::MIN) {
-                if (res == (aggregate.getFunction() == RamAggregate::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
+            if (aggregate.getFunction() == souffle::MAX ||
+                    aggregate.getFunction() == souffle::MIN) {
+                if (res == (aggregate.getFunction() == souffle::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
                     return;
                 }
             }

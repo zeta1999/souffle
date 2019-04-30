@@ -391,6 +391,11 @@ protected:
     }
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
+        // TODO:
+        abort();
+    }
+
+    void visitIndexAggregate(const RamIndexAggregate& aggregate, size_t exitAddress) override {
         // TODO (xiaowen): The aggregate operation is now written in a less efficient way
         // e.g. The max & min now support arbitrary number of arguments, we should make use of it
         // count operation can be further simpfied
@@ -415,24 +420,24 @@ protected:
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
 
-        if (aggregate.getFunction() == RamAggregate::COUNT && aggregate.getCondition() == nullptr) {
+        if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(counterLabel);
         } else {
             switch (aggregate.getFunction()) {  // Init value
-                case RamAggregate::MIN:
+                case souffle::MIN:
                     code->push_back(LVM_Number);
                     code->push_back(MAX_RAM_DOMAIN);
                     break;
-                case RamAggregate::MAX:
+                case souffle::MAX:
                     code->push_back(LVM_Number);
                     code->push_back(MIN_RAM_DOMAIN);
                     break;
-                case RamAggregate::COUNT:
+                case souffle::COUNT:
                     code->push_back(LVM_Number);
                     code->push_back(0);
                     break;
-                case RamAggregate::SUM:
+                case souffle::SUM:
                     code->push_back(LVM_Number);
                     code->push_back(0);
                     break;
@@ -460,25 +465,25 @@ protected:
                 code->push_back(lookupAddress(endOfLoop));
             }
 
-            if (aggregate.getFunction() != RamAggregate::COUNT) {
+            if (aggregate.getFunction() != souffle::COUNT) {
                 visit(aggregate.getExpression(), exitAddress);
             }
 
             switch (aggregate.getFunction()) {
-                case RamAggregate::MIN:
+                case souffle::MIN:
                     code->push_back(LVM_OP_MIN);
                     code->push_back(2);  // TODO quick fix, can be improved later
                     break;
-                case RamAggregate::MAX:
+                case souffle::MAX:
                     code->push_back(LVM_OP_MAX);
                     code->push_back(2);  // TODO quick fix, can be improved later
                     break;
-                case RamAggregate::COUNT:
+                case souffle::COUNT:
                     code->push_back(LVM_Number);
                     code->push_back(1);
                     code->push_back(LVM_OP_ADD);
                     break;
-                case RamAggregate::SUM:
+                case souffle::SUM:
                     code->push_back(LVM_OP_ADD);
                     break;
             }
@@ -496,7 +501,7 @@ protected:
         code->push_back(LVM_Aggregate_Return);
         code->push_back(aggregate.getIdentifier());
 
-        if (aggregate.getFunction() == RamAggregate::MIN || aggregate.getFunction() == RamAggregate::MAX) {
+        if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
             // check whether there exists a min/max first before next loop
 
             // Retrieve the result we just saved.
@@ -504,7 +509,7 @@ protected:
             code->push_back(aggregate.getIdentifier());
             code->push_back(0);
             code->push_back(LVM_Number);
-            code->push_back(aggregate.getFunction() == RamAggregate::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
+            code->push_back(aggregate.getFunction() == souffle::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
             code->push_back(LVM_OP_EQ);
             code->push_back(LVM_Jmpnz);  // If init == result, does not visit nested search
             code->push_back(lookupAddress(L2));

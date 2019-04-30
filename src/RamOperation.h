@@ -378,8 +378,8 @@ public:
         for (auto const& e : queryPattern) {
             pattern.push_back(std::unique_ptr<RamExpression>((e != nullptr) ? e->clone() : nullptr));
         }
-        RamIndexAggregate* res = new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
-                std::unique_ptr<RamRelationReference>(relationRef->clone()),
+        RamIndexAggregate* res = new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()),
+                function, std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
                 std::move(pattern), getIdentifier());
@@ -418,18 +418,16 @@ protected:
     }
 };
 
-
 /**
  * Aggregation
  */
 class RamAggregate : public RamRelationSearch {
 public:
-
     RamAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition, int ident)
-            : RamRelationSearch(std::move(relRef), ident, std::move(nested)),
-              function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
+            : RamRelationSearch(std::move(relRef), ident, std::move(nested)), function(fun),
+              expression(std::move(expression)), condition(std::move(condition)) {}
 
     /** Get condition */
     const RamCondition* getCondition() const {

@@ -603,8 +603,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             ctxt[aggregate.getIdentifier()] = tuple;
 
             // run nested part - using base class visitor
-            if (aggregate.getFunction() == souffle::MAX ||
-                    aggregate.getFunction() == souffle::MIN) {
+            if (aggregate.getFunction() == souffle::MAX || aggregate.getFunction() == souffle::MIN) {
                 if (res == (aggregate.getFunction() == souffle::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
                     return;
                 }
@@ -701,8 +700,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             ctxt[aggregate.getIdentifier()] = tuple;
 
             // run nested part - using base class visitor
-            if (aggregate.getFunction() == souffle::MAX ||
-                    aggregate.getFunction() == souffle::MIN) {
+            if (aggregate.getFunction() == souffle::MAX || aggregate.getFunction() == souffle::MIN) {
                 if (res == (aggregate.getFunction() == souffle::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
                     return;
                 }

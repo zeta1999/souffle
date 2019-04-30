@@ -880,8 +880,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // write result into environment tuple
             out << "env" << identifier << "[0] = res" << identifier << ";\n";
 
-            if (aggregate.getFunction() == souffle::MIN ||
-                    aggregate.getFunction() == souffle::MAX) {
+            if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
                 // check whether there exists a min/max first before next loop
                 out << "if(res" << identifier << " != " << init << "){\n";
                 visitSearch(aggregate, out);
@@ -909,8 +908,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == souffle::COUNT  &&
-                    aggregate.getCondition() == nullptr) {
+            if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -990,8 +988,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // write result into environment tuple
             out << "env" << identifier << "[0] = res" << identifier << ";\n";
 
-            if (aggregate.getFunction() == souffle::MIN ||
-                    aggregate.getFunction() == souffle::MAX) {
+            if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
                 // check whether there exists a min/max first before next loop
                 out << "if(res" << identifier << " != " << init << "){\n";
                 visitSearch(aggregate, out);

@@ -766,9 +766,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
 
         // add Ram-Aggregation layer
-        std::unique_ptr<RamAggregate> aggregate =
-                std::make_unique<RamAggregate>(std::move(op), fun, translator.translateRelation(atom),
-                        std::move(value), std::move(aggCondition), level);
+        std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(std::move(op), fun,
+                translator.translateRelation(atom), std::move(value), std::move(aggCondition), level);
         op = std::move(aggregate);
     }
 

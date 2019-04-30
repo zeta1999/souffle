@@ -393,7 +393,7 @@ protected:
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
         code->push_back(LVM_Aggregate);
 
-        size_t counterLabel = getNewIndexScanIterator();
+        size_t counterLabel = getNewScanIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
 
@@ -403,6 +403,7 @@ protected:
 
         if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
+            code->push_back(LVM_ITER_TypeScan);
             code->push_back(counterLabel);
         } else {
             switch (aggregate.getFunction()) {  // Init value
@@ -506,7 +507,7 @@ protected:
         //
         // This should be reviewed later.
 
-        code->push_back(LVM_Aggregate);
+        code->push_back(LVM_IndexAggregate);
         auto patterns = aggregate.getRangePattern();
         std::string types;
         auto arity = aggregate.getRelation().getArity();
@@ -526,6 +527,7 @@ protected:
 
         if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
+            code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(counterLabel);
         } else {
             switch (aggregate.getFunction()) {  // Init value

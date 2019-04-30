@@ -981,11 +981,15 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 RamDomain idx = code[ip + 2];
                 if (code[ip + 1] == LVM_ITER_TypeScan) {
                     auto& iters = scanIteratorPool[idx];
-                    for (auto i = iters.first; i != iters.second; ++i) res++;
+                    for (auto i = iters.first; i != iters.second; ++i) {
+                        res++;
+                    }
                     stack.push(res);
                 } else {
                     auto& iters = indexScanIteratorPool[idx];
-                    for (auto i = iters.first; i != iters.second; ++i) res++;
+                    for (auto i = iters.first; i != iters.second; ++i) {
+                        res++;
+                    }
                     stack.push(res);
                 }
                 ip += 3;

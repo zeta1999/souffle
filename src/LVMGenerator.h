@@ -354,14 +354,14 @@ protected:
         size_t L2 = getNewAddressLabel();
         code->push_back(lookupAddress(L2));
 
-        visit(choice.getCondition(), exitAddress);
-        code->push_back(LVM_Jmpnz);
-        code->push_back(lookupAddress(L1));
-
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeChoice);
         code->push_back(choice.getIdentifier());
+
+        visit(choice.getCondition(), exitAddress);
+        code->push_back(LVM_Jmpnz);
+        code->push_back(lookupAddress(L1));
 
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
@@ -446,14 +446,14 @@ protected:
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L2));
 
-        visit(indexChoice.getCondition(), exitAddress);
-        code->push_back(LVM_Jmpnz);
-        code->push_back(lookupAddress(L1));
-
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexChoice);
         code->push_back(indexChoice.getIdentifier());
+
+        visit(indexChoice.getCondition(), exitAddress);
+        code->push_back(LVM_Jmpnz);
+        code->push_back(lookupAddress(L1));
 
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);

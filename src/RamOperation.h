@@ -350,9 +350,10 @@ public:
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
             : RamIndexRelationSearch(std::move(r), ident, std::move(queryPattern), std::move(nested),
-                      std::move(profileText)), condition(std::move(cond)) {
-				assert(getRangePattern().size() == getRelation().getArity());
-			}
+                      std::move(profileText)),
+              condition(std::move(cond)) {
+        assert(getRangePattern().size() == getRelation().getArity());
+    }
 
     /** get condition */
     const RamCondition& getCondition() const {
@@ -381,6 +382,17 @@ public:
         RamIndexRelationSearch::print(os, tabpos + 1);
     }
 
+    /** Apply mapper */
+    void apply(const RamNodeMapper& map) override {
+        RamRelationSearch::apply(map);
+        for (auto& cur : queryPattern) {
+            if (cur != nullptr) {
+                cur = map(std::move(cur));
+            }
+        }
+        condition = map(std::move(condition));
+    }
+
     RamIndexChoice* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
         for (unsigned int i = 0; i < queryPattern.size(); ++i) {
@@ -389,8 +401,9 @@ public:
             }
         }
         RamIndexChoice* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getIdentifier(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+                getIdentifier(), std::unique_ptr<RamCondition>(condition->clone()),
+                std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
+                getProfileText());
         return res;
     }
 

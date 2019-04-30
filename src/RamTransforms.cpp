@@ -357,7 +357,7 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const Ram
 
         return std::make_unique<RamChoice>(std::make_unique<RamRelationReference>(&scan->getRelation()),
                 identifier, std::unique_ptr<RamCondition>(filter->getCondition().clone()),
-                std::unique_ptr<RamOperation>(filter->getOperation().clone()), scan->getProfileText());
+                std::unique_ptr<RamOperation>(scan->getOperation().clone()), scan->getProfileText());
     }
     return nullptr;
 }
@@ -409,7 +409,8 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
         return std::make_unique<RamIndexChoice>(
                 std::make_unique<RamRelationReference>(&indexScan->getRelation()), identifier,
                 std::unique_ptr<RamCondition>(filter->getCondition().clone()), std::move(newValues),
-                std::unique_ptr<RamOperation>(filter->getOperation().clone()), indexScan->getProfileText());
+                std::unique_ptr<RamOperation>(indexScan->getOperation().clone()),
+                indexScan->getProfileText());
     }
     return nullptr;
 }
@@ -431,6 +432,7 @@ bool ChoiceConversionTransformer::convertScans(RamProgram& program) {
                 }
             }
             node->apply(makeLambdaRamMapper(scanRewriter));
+
             return node;
         };
         const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(scanRewriter));

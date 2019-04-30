@@ -972,6 +972,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 ip += 1;
                 break;
             };
+            case LVM_IndexAggregate: {
+                ip += 1;
+                break;
+            };
             case LVM_Aggregate_COUNT: {
                 RamDomain idx = code[ip + 1];
                 auto iters = indexScanIteratorPool[idx];

@@ -418,6 +418,10 @@ void LVMCode::print() const {
                 printf("%ld\tLVM_Aggregate\t%d\n", ip, code[ip + 1]);
                 ip += 1;
                 break;
+            case LVM_IndexAggregate:
+                printf("%ld\tLVM_IndexAggregate\t%d\n", ip, code[ip + 1]);
+                ip += 1;
+                break;
             case LVM_Aggregate_COUNT: {
                 printf("%ld\tLVM_Aggregate_COUNT\t IndexScanIterID:%d\n", ip, code[ip + 1]);
                 ip += 2;

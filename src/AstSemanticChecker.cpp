@@ -949,7 +949,7 @@ void AstSemanticChecker::checkWitnessProblem(ErrorReport& report, const AstProgr
         visitDepthFirst(*clause.getHead(), [&](const AstVariable& var) {
             headVariables->addArgument(std::unique_ptr<AstVariable>(var.clone()));
         });
-        AstNegation* headNegation = new AstNegation(std::move(headVariables));
+        auto* headNegation = new AstNegation(std::move(headVariables));
         bodyLiterals.push_back(headNegation);
 
         // Perform the check

@@ -298,7 +298,7 @@ std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const Ra
 
         // check if there is a break statement nested in the Scan - if so, remove it
         RamOperation* newOp;
-        if (const RamBreak* breakOp = dynamic_cast<const RamBreak*>(&indexScan->getOperation())) {
+        if (const auto* breakOp = dynamic_cast<const RamBreak*>(&indexScan->getOperation())) {
             newOp = breakOp->getOperation().clone();
         } else {
             newOp = indexScan->getOperation().clone();

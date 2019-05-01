@@ -109,7 +109,7 @@ public:
     /** Create clone */
     RamProgram* clone() const override {
         std::map<const RamRelation*, const RamRelation*> refMap;
-        RamProgram* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
+        auto* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
         for (auto& cur : relations) {
             RamRelation* newRel = cur.second->clone();
             refMap[cur.second.get()] = newRel;

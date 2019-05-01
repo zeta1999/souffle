@@ -77,7 +77,7 @@ public:
 
     /** Creates a clone of this AST sub-structure */
     AstVariable* clone() const override {
-        AstVariable* res = new AstVariable(name);
+        auto* res = new AstVariable(name);
         res->setSrcLoc(getSrcLoc());
         return res;
     }

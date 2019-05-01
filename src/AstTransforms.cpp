@@ -239,7 +239,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                 relName = "__agg_rel_" + toString(counter++);
             }
 
-            AstAtom* head = new AstAtom();
+            auto* head = new AstAtom();
             head->setName(relName);
             std::vector<bool> symbolArguments;
             for (const auto& cur : vars) {

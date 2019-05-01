@@ -195,7 +195,8 @@ protected:
     }
 
     /** Lookup for Choice iter, resize the vector if idx > size */
-    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpChoiceIterator(size_t idx) {
+    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpChoiceIterator(
+            size_t idx) {
         if (idx >= choiceIteratorPool.size()) {
             choiceIteratorPool.resize((idx + 1) * 2);
         }

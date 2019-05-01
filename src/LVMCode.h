@@ -87,6 +87,7 @@ enum LVM_Type {
     LVM_IndexScan,
     LVM_UnpackRecord,
     LVM_Aggregate,
+    LVM_IndexAggregate,
     LVM_Filter,
     LVM_Project,
     LVM_ReturnValue,

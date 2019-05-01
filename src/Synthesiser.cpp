@@ -205,7 +205,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         std::function<void(std::ostream&, const RamNode*)> rec;
         std::ostringstream preamble;
-        bool preambleIssued;
+        bool preambleIssued = false;
 
     public:
         CodeEmitter(Synthesiser& syn)

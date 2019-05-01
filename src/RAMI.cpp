@@ -73,7 +73,7 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
         }
 
         RamDomain visitElementAccess(const RamElementAccess& access) override {
-            return ctxt[access.getIdentifier()][access.getElement()];
+            return ctxt[access.getTupleId()][access.getElement()];
         }
 
         RamDomain visitAutoIncrement(const RamAutoIncrement&) override {
@@ -483,7 +483,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
 
             // use simple iterator
             for (const RamDomain* cur : rel) {
-                ctxt[scan.getIdentifier()] = cur;
+                ctxt[scan.getTupleId()] = cur;
                 visitSearch(scan);
             }
         }
@@ -516,7 +516,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // conduct range query
             for (auto ip = range.first; ip != range.second; ++ip) {
                 const RamDomain* data = *(ip);
-                ctxt[scan.getIdentifier()] = data;
+                ctxt[scan.getTupleId()] = data;
                 visitSearch(scan);
             }
         }
@@ -535,7 +535,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             const RamDomain* tuple = unpack(ref, arity);
 
             // save reference to temporary value
-            ctxt[lookup.getIdentifier()] = tuple;
+            ctxt[lookup.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
             visitSearch(lookup);
@@ -563,7 +563,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             }
 
             for (const RamDomain* data : rel) {
-                ctxt[aggregate.getIdentifier()] = data;
+                ctxt[aggregate.getTupleId()] = data;
 
                 if (aggregate.getCondition() != nullptr &&
                         !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
@@ -600,7 +600,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // write result to environment
             RamDomain tuple[1];
             tuple[0] = res;
-            ctxt[aggregate.getIdentifier()] = tuple;
+            ctxt[aggregate.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
             if (aggregate.getFunction() == souffle::MAX || aggregate.getFunction() == souffle::MIN) {
@@ -660,7 +660,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             for (auto ip = range.first; ip != range.second; ++ip) {
                 // link tuple
                 const RamDomain* data = *(ip);
-                ctxt[aggregate.getIdentifier()] = data;
+                ctxt[aggregate.getTupleId()] = data;
 
                 if (aggregate.getCondition() != nullptr &&
                         !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
@@ -697,7 +697,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // write result to environment
             RamDomain tuple[1];
             tuple[0] = res;
-            ctxt[aggregate.getIdentifier()] = tuple;
+            ctxt[aggregate.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
             if (aggregate.getFunction() == souffle::MAX || aggregate.getFunction() == souffle::MIN) {

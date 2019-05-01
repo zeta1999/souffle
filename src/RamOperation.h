@@ -364,7 +364,7 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "CHOICE " << rel.getName() << " AS t" << getIdentifier() << " ON INDEX ";
+        os << "CHOICE " << rel.getName() << " AS t" << getIdentifier() << " INDEX ";
         bool first = true;
         for (unsigned int i = 0; i < rel.getArity(); ++i) {
             if (queryPattern[i] != nullptr) {

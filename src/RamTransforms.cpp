@@ -296,37 +296,36 @@ bool IfConversionTransformer::convertIndexScans(RamProgram& program) {
 }
 
 std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const RamScan* scan) {
-    bool tupleNotUsed = true;
-    bool tupleUsedInCond = false;
+    bool transformTuple = false;
 
     // Check that RamFilter follows the Scan in the loop nest
     if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
+        transformTuple = true;
+
         // Check that the Filter uses the identifier in the Scan
-        if (rcla->getLevel(&filter->getCondition()) == scan->getIdentifier()) {
-            tupleUsedInCond = true;
+        if (rcla->getLevel(&filter->getCondition()) != scan->getIdentifier()) {
+            transformTuple = false;
         }
 
-        if (tupleUsedInCond) {
+        if (transformTuple) {
             // Check that the filter is not referred to after
             const auto* nextNode = dynamic_cast<const RamNode*>(&filter->getOperation());
             visitDepthFirst(*nextNode, [&](const RamNode& node) {
                 if (const RamElementAccess* element = dynamic_cast<const RamElementAccess*>(&node)) {
                     if (element->getIdentifier() == scan->getIdentifier()) {
-                        tupleNotUsed = false;
+                        transformTuple = false;
                     }
                 } else if (const RamUnpackRecord* unpack = dynamic_cast<const RamUnpackRecord*>(&node)) {
                     if (unpack->getReferenceLevel() == scan->getIdentifier()) {
-                        tupleNotUsed = false;
+                        transformTuple = false;
                     }
                 }
             });
         }
-    } else {
-        tupleNotUsed = false;
     }
 
     // Convert the Scan/If pair into a Choice
-    if (tupleNotUsed && tupleUsedInCond) {
+    if (transformTuple) {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation());
         const int identifier = scan->getIdentifier();

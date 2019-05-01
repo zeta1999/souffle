@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RamStatement.h"
+#include <memory>
 
 namespace souffle {
 
@@ -123,7 +124,7 @@ public:
             if (const RamRelationReference* relRef = dynamic_cast<RamRelationReference*>(node.get())) {
                 const RamRelation* rel = refMap[relRef->get()];
                 assert(rel != nullptr && "dangling RAM relation reference");
-                return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
+                return std::make_unique<RamRelationReference>(rel);
             } else {
                 return node;
             }

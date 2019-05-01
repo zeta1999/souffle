@@ -459,7 +459,9 @@ public:
     }
 
     void print(std::ostream& os, int tabpos) const override {
+        const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
+        os << "t" << getIdentifier() << ".0=";
         switch (function) {
             case MIN:
                 os << "MIN ";
@@ -477,19 +479,24 @@ public:
         if (function != COUNT) {
             os << *expression << " ";
         }
-        os << "AS t" << getIdentifier() << ".0 IN t" << getIdentifier() << " ∈ " << getRelation().getName();
-        os << "("
-           << join(queryPattern, ",",
-                      [&](std::ostream& out, const std::unique_ptr<RamExpression>& expression) {
-                          if (expression == nullptr) {
-                              out << "_";
-                          } else {
-                              out << *expression;
-                          }
-                      })
-           << ")";
+        os << " FOR ALL t" << getIdentifier() << " ∈ " << getRelation().getName();
+        bool first = true;
+        os << " INDEX ";
+        for (unsigned int i = 0; i < rel.getArity(); ++i) {
+            if (queryPattern[i] != nullptr) {
+                if (first) {
+                    first = false;
+                } else {
+                    os << " and ";
+                }
+                os << "t" << getIdentifier() << "." << rel.getArg(i) << "=" << *queryPattern[i];
+            }
+        }
+        if (first) {
+            os << "none";
+        }
         if (condition != nullptr) {
-            os << " WHERE " << getCondition();
+            os << " WHERE " << *getCondition();
         }
         os << std::endl;
         RamIndexRelationSearch::print(os, tabpos + 1);

@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <stack>
 #include <string>
 
 #include <cstdlib>
@@ -412,5 +413,53 @@ protected:
         return getRelation() == other.getRelation();
     }
 };
+
+/**
+ * @brief Convert terms of a conjunction to a list
+ * @param A RAM condition
+ * @param A list of RAM conditions
+ *
+ * Convert a condition of the format C1 /\ C2 /\ ... /\ Cn
+ * to a list {C1, C2, ..., Cn}.
+ */
+inline std::vector<std::unique_ptr<RamCondition>> toConjunctionList(const RamCondition* condition) {
+    std::vector<std::unique_ptr<RamCondition>> list;
+    std::stack<const RamCondition*> stack;
+    if (condition != nullptr) {
+        stack.push(condition);
+        while (!stack.empty()) {
+            condition = stack.top();
+            stack.pop();
+            if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
+                stack.push(&ramConj->getLHS());
+                stack.push(&ramConj->getRHS());
+            } else {
+                list.emplace_back(condition->clone());
+            }
+        }
+    }
+    return list;
+}
+
+/**
+ * @brief Convert list of conditions to a conjunction
+ * @param A list of RAM conditions
+ * @param A RAM condition
+ *
+ * Convert a list {C1, C2, ..., Cn} to a condition of
+ * the format C1 /\ C2 /\ ... /\ Cn.
+ */
+inline std::unique_ptr<RamCondition> toCondition(const std::vector<const RamCondition*>& list) {
+    std::unique_ptr<RamCondition> result;
+    for (const RamCondition* cur : list) {
+        if (result == nullptr) {
+            result = std::unique_ptr<RamCondition>(cur->clone());
+        } else {
+            result = std::make_unique<RamConjunction>(
+                    std::move(result), std::unique_ptr<RamCondition>(cur->clone()));
+        }
+    }
+    return result;
+}
 
 }  // end of namespace souffle

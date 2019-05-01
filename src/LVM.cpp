@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file Interpreter.cpp
+ * @file LVM.cpp
  *
- * Implementation of Souffle's LVM interpreter.
+ * Implementation of Souffle's bytecode interpreter.
  *
  ***********************************************************************/
 
-#include "Interpreter.h"
+#include "LVM.h"
 #include "BTree.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
@@ -58,7 +58,7 @@
 
 namespace souffle {
 
-void Interpreter::executeMain() {
+void LVM::executeMain() {
     const RamStatement& main = *translationUnit.getProgram()->getMain();
     if (mainProgram.get() == nullptr) {
         LVMGenerator generator(translationUnit.getSymbolTable(), main);
@@ -117,7 +117,7 @@ void Interpreter::executeMain() {
     SignalHandler::instance()->reset();
 }
 
-void Interpreter::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip) {
+void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip) {
     std::stack<RamDomain> stack;  // Local stack to support parallel computing in future.
     const auto& code = codeStream->getCode();
     auto& symbolTable = codeStream->getSymbolTable();

@@ -32,7 +32,7 @@ int RamExpressionLevelAnalysis::getLevel(const RamExpression* value) const {
 
         // tuple element access
         int visitElementAccess(const RamElementAccess& elem) override {
-            return elem.getIdentifier();
+            return elem.getTupleId();
         }
 
         // auto increment

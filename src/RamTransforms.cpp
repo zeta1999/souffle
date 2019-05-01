@@ -92,7 +92,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
                 const RamCondition& condition = filter->getCondition();
                 // if filter condition matches level of RamSearch,
                 // delete the filter operation and collect condition
-                if (rcla->getLevel(&condition) == search.getIdentifier()) {
+                if (rcla->getLevel(&condition) == search.getTupleId()) {
                     changed = true;
                     newCondition = addCondition(std::move(newCondition), condition.clone());
                     node->apply(makeLambdaRamMapper(filterRewriter));
@@ -118,7 +118,7 @@ std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (const RamElementAccess* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamExpression* rhs = binRelOp->getRHS();
-                if (lhs->getIdentifier() == identifier &&
+                if (lhs->getTupleId() == identifier &&
                         (rcva->isConstant(rhs) || rvla->getLevel(rhs) < identifier)) {
                     element = lhs->getElement();
                     return std::unique_ptr<RamExpression>(rhs->clone());
@@ -126,7 +126,7 @@ std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
             }
             if (const RamElementAccess* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamExpression* lhs = binRelOp->getLHS();
-                if (rhs->getIdentifier() == identifier &&
+                if (rhs->getTupleId() == identifier &&
                         (rcva->isConstant(lhs) || rvla->getLevel(lhs) < identifier)) {
                     element = rhs->getElement();
                     return std::unique_ptr<RamExpression>(lhs->clone());
@@ -176,7 +176,7 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
 std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAggregate* agg) {
     if (agg->getCondition() != nullptr) {
         const RamRelation& rel = agg->getRelation();
-        int identifier = agg->getIdentifier();
+        int identifier = agg->getTupleId();
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
         bool indexable = false;
         std::unique_ptr<RamCondition> condition =
@@ -189,7 +189,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
             return std::make_unique<RamIndexAggregate>(
                     std::unique_ptr<RamOperation>(agg->getOperation().clone()), agg->getFunction(),
                     std::make_unique<RamRelationReference>(&rel), std::move(expr), std::move(condition),
-                    std::move(queryPattern), agg->getIdentifier());
+                    std::move(queryPattern), agg->getTupleId());
         }
     }
     return nullptr;
@@ -198,7 +198,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
 std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* scan) {
     if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
         const RamRelation& rel = scan->getRelation();
-        const int identifier = scan->getIdentifier();
+        const int identifier = scan->getTupleId();
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
         bool indexable = false;
         std::unique_ptr<RamCondition> condition = constructPattern(
@@ -245,11 +245,11 @@ std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const Ra
     bool tupleNotUsed = true;
     visitDepthFirst(*indexScan, [&](const RamNode& node) {
         if (const RamElementAccess* element = dynamic_cast<const RamElementAccess*>(&node)) {
-            if (element->getIdentifier() == indexScan->getIdentifier()) {
+            if (element->getTupleId() == indexScan->getTupleId()) {
                 tupleNotUsed = false;
             }
         } else if (const RamUnpackRecord* unpack = dynamic_cast<const RamUnpackRecord*>(&node)) {
-            if (unpack->getReferenceLevel() == indexScan->getIdentifier()) {
+            if (unpack->getReferenceLevel() == indexScan->getTupleId()) {
                 tupleNotUsed = false;
             }
         }

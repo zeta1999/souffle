@@ -304,8 +304,8 @@ public:
     }
     void showFullText(const std::string& text) {
         clearPrompt(text.size());
-        for (size_t i = 0; i < text.size(); i++) {
-            std::cout << text.at(i) << std::flush;
+        for (char i : text) {
+            std::cout << i << std::flush;
         }
 
         for (size_t i = cursor_pos; i < text.size(); i++) {

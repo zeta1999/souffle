@@ -382,11 +382,9 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
             newValues.emplace_back(val);
         }
 
-        return std::make_unique<RamIndexChoice>(
-                std::make_unique<RamRelationReference>(&rel), identifier,
+        return std::make_unique<RamIndexChoice>(std::make_unique<RamRelationReference>(&rel), identifier,
                 std::unique_ptr<RamCondition>(filter->getCondition().clone()), std::move(newValues),
-                std::unique_ptr<RamOperation>(filter->getOperation().clone()),
-                indexScan->getProfileText());
+                std::unique_ptr<RamOperation>(filter->getOperation().clone()), indexScan->getProfileText());
     }
     return nullptr;
 }

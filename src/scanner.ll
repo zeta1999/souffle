@@ -187,7 +187,7 @@
 [\?a-zA-Z]|[_\?a-zA-Z][_\?a-zA-Z0-9]+ {
                                         return yy::parser::make_IDENT(SLOOKUP(yytext), yylloc);
                                       }
-\"([^\"]*|\\\")*\"                     {
+\"(\\.|[^"\\])*\"                     {
                                         yytext[strlen(yytext)-1]=0;
                                         for(size_t i = 1; i <= strlen(&yytext[1]); i++) {
                                           if(yytext[i] == '\t' || yytext[i] == '\n') {

@@ -555,8 +555,8 @@ public:
     }
 
     RamUnpackRecord* clone() const override {
-        RamUnpackRecord* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()),
-                getTupleId(), refLevel, refPos, arity);
+        RamUnpackRecord* res = new RamUnpackRecord(
+                std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(), refLevel, refPos, arity);
         return res;
     }
 

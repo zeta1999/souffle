@@ -741,8 +741,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "auto ref = env" << lookup.getReferenceLevel() << "[" << lookup.getReferencePosition()
                 << "];\n";
             out << "if (isNull<" << tuple_type << ">(ref)) continue;\n";
-            out << tuple_type << " env" << lookup.getTupleId() << " = unpack<" << tuple_type
-                << ">(ref);\n";
+            out << tuple_type << " env" << lookup.getTupleId() << " = unpack<" << tuple_type << ">(ref);\n";
 
             out << "{\n";
 

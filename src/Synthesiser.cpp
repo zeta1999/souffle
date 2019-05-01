@@ -653,7 +653,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitChoice(const RamChoice& choice, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            auto identifier = choice.getIdentifier();
+            auto identifier = choice.getTupleId();
 
             // get relation name
             const auto& rel = choice.getRelation();
@@ -776,7 +776,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             const auto& rel = indexChoice.getRelation();
             auto relName = synthesiser.getRelationName(rel);
-            auto identifier = indexChoice.getIdentifier();
+            auto identifier = indexChoice.getTupleId();
 
             // check list of keys
             auto arity = rel.getArity();

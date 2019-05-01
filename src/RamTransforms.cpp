@@ -301,18 +301,18 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const Ram
     // Check that RamFilter follows the Scan in the loop nest
     if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
         // Check that the Filter uses the identifier in the Scan
-        if (rcla->getLevel(&filter->getCondition()) == scan->getIdentifier()) {
+        if (rcla->getLevel(&filter->getCondition()) == scan->getTupleId()) {
             transformTuple = true;
 
             // Check that the filter is not referred to after
             const auto* nextNode = dynamic_cast<const RamNode*>(&filter->getOperation());
             visitDepthFirst(*nextNode, [&](const RamNode& node) {
                 if (const RamElementAccess* element = dynamic_cast<const RamElementAccess*>(&node)) {
-                    if (element->getIdentifier() == scan->getIdentifier()) {
+                    if (element->getTupleId() == scan->getTupleId()) {
                         transformTuple = false;
                     }
                 } else if (const RamUnpackRecord* unpack = dynamic_cast<const RamUnpackRecord*>(&node)) {
-                    if (unpack->getReferenceLevel() == scan->getIdentifier()) {
+                    if (unpack->getReferenceLevel() == scan->getTupleId()) {
                         transformTuple = false;
                     }
                 }
@@ -324,7 +324,7 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const Ram
     if (transformTuple) {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation());
-        const int identifier = scan->getIdentifier();
+        const int identifier = scan->getTupleId();
 
         return std::make_unique<RamChoice>(std::make_unique<RamRelationReference>(&scan->getRelation()),
                 identifier, std::unique_ptr<RamCondition>(filter->getCondition().clone()),
@@ -339,18 +339,18 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
     // Check that RamFilter follows the IndexScan in the loop nest
     if (const auto* filter = dynamic_cast<const RamFilter*>(&indexScan->getOperation())) {
         // Check that the Filter uses the identifier in the IndexScan
-        if (rcla->getLevel(&filter->getCondition()) == indexScan->getIdentifier()) {
+        if (rcla->getLevel(&filter->getCondition()) == indexScan->getTupleId()) {
             transformTuple = true;
 
             // Check that the filter is not referred to after
             const auto* nextNode = dynamic_cast<const RamNode*>(&filter->getOperation());
             visitDepthFirst(*nextNode, [&](const RamNode& node) {
                 if (const RamElementAccess* element = dynamic_cast<const RamElementAccess*>(&node)) {
-                    if (element->getIdentifier() == indexScan->getIdentifier()) {
+                    if (element->getTupleId() == indexScan->getTupleId()) {
                         transformTuple = false;
                     }
                 } else if (const RamUnpackRecord* unpack = dynamic_cast<const RamUnpackRecord*>(&node)) {
-                    if (unpack->getReferenceLevel() == indexScan->getIdentifier()) {
+                    if (unpack->getReferenceLevel() == indexScan->getTupleId()) {
                         transformTuple = false;
                     }
                 }
@@ -362,7 +362,7 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
     if (transformTuple) {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         const auto* filter = dynamic_cast<const RamFilter*>(&indexScan->getOperation());
-        const int identifier = indexScan->getIdentifier();
+        const int identifier = indexScan->getTupleId();
         const RamRelation& rel = indexScan->getRelation();
 
         for (auto& cur : indexScan->getRangePattern()) {

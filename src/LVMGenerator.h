@@ -357,7 +357,7 @@ protected:
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeChoice);
-        code->push_back(choice.getIdentifier());
+        code->push_back(choice.getTupleId());
 
         visit(choice.getCondition(), exitAddress);
         code->push_back(LVM_Jmpnz);
@@ -449,7 +449,7 @@ protected:
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexChoice);
-        code->push_back(indexChoice.getIdentifier());
+        code->push_back(indexChoice.getTupleId());
 
         visit(indexChoice.getCondition(), exitAddress);
         code->push_back(LVM_Jmpnz);

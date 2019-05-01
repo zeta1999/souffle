@@ -527,7 +527,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
 
             // use simple iterator
             for (const RamDomain* cur : rel) {
-                ctxt[choice.getIdentifier()] = cur;
+                ctxt[choice.getTupleId()] = cur;
                 if (interpreter.evalCond(choice.getCondition(), ctxt)) {
                     visitSearch(choice);
                     break;
@@ -563,7 +563,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // conduct range query
             for (auto ip = range.first; ip != range.second; ++ip) {
                 const RamDomain* data = *(ip);
-                ctxt[choice.getIdentifier()] = data;
+                ctxt[choice.getTupleId()] = data;
                 if (interpreter.evalCond(choice.getCondition(), ctxt)) {
                     visitSearch(choice);
                     break;

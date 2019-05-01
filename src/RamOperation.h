@@ -307,7 +307,7 @@ public:
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
-        os << "CHOICE t" << getIdentifier();
+        os << "CHOICE t" << getTupleId();
         os << " IN " << getRelation().getName();
         os << " WHERE " << getCondition();
         os << std::endl;
@@ -320,7 +320,7 @@ public:
     }
 
     RamChoice* clone() const override {
-        return new RamChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()), getIdentifier(),
+        return new RamChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::unique_ptr<RamCondition>(condition->clone()),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
@@ -364,7 +364,7 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "CHOICE " << rel.getName() << " AS t" << getIdentifier() << " INDEX ";
+        os << "CHOICE " << rel.getName() << " AS t" << getTupleId() << " INDEX ";
         bool first = true;
         for (unsigned int i = 0; i < rel.getArity(); ++i) {
             if (queryPattern[i] != nullptr) {
@@ -373,7 +373,7 @@ public:
                 } else {
                     os << " and ";
                 }
-                os << "t" << getIdentifier() << "." << rel.getArg(i) << "=";
+                os << "t" << getTupleId() << "." << rel.getArg(i) << "=";
                 queryPattern[i]->print(os);
             }
         }
@@ -409,9 +409,8 @@ public:
             }
         }
         RamIndexChoice* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getIdentifier(), std::unique_ptr<RamCondition>(condition->clone()),
-                std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
-                getProfileText());
+                getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
     }
 
@@ -501,6 +500,7 @@ public:
         os << std::endl;
         RamIndexRelationSearch::print(os, tabpos + 1);
     }
+
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamIndexRelationSearch::getChildNodes();
         if (expression != nullptr) {

@@ -980,13 +980,27 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 ip += 1;
                 break;
             };
+            case LVM_IndexAggregate: {
+                ip += 1;
+                break;
+            };
             case LVM_Aggregate_COUNT: {
-                RamDomain idx = code[ip + 1];
-                auto iters = indexScanIteratorPool[idx];
                 RamDomain res = 0;
-                for (auto i = iters.first; i != iters.second; ++i) res++;
-                stack.push(res);
-                ip += 2;
+                RamDomain idx = code[ip + 2];
+                if (code[ip + 1] == LVM_ITER_TypeScan) {
+                    auto& iters = scanIteratorPool[idx];
+                    for (auto i = iters.first; i != iters.second; ++i) {
+                        res++;
+                    }
+                    stack.push(res);
+                } else {
+                    auto& iters = indexScanIteratorPool[idx];
+                    for (auto i = iters.first; i != iters.second; ++i) {
+                        res++;
+                    }
+                    stack.push(res);
+                }
+                ip += 3;
                 break;
             };
             case LVM_Aggregate_Return: {

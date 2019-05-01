@@ -475,13 +475,123 @@ protected:
     }
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
+        code->push_back(LVM_Aggregate);
+
+        size_t counterLabel = getNewScanIterator();
+        size_t L1 = getNewAddressLabel();
+        size_t L2 = getNewAddressLabel();
+
+        code->push_back(LVM_ITER_TypeScan);
+        code->push_back(counterLabel);
+        code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
+
+        if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
+            code->push_back(LVM_Aggregate_COUNT);
+            code->push_back(LVM_ITER_TypeScan);
+            code->push_back(counterLabel);
+        } else {
+            switch (aggregate.getFunction()) {  // Init value
+                case souffle::MIN:
+                    code->push_back(LVM_Number);
+                    code->push_back(MAX_RAM_DOMAIN);
+                    break;
+                case souffle::MAX:
+                    code->push_back(LVM_Number);
+                    code->push_back(MIN_RAM_DOMAIN);
+                    break;
+                case souffle::COUNT:
+                    code->push_back(LVM_Number);
+                    code->push_back(0);
+                    break;
+                case souffle::SUM:
+                    code->push_back(LVM_Number);
+                    code->push_back(0);
+                    break;
+            }
+
+            size_t address_L0 = code->size();
+
+            // Start the aggregate for loop
+            code->push_back(LVM_ITER_NotAtEnd);
+            code->push_back(counterLabel);
+            code->push_back(LVM_ITER_TypeScan);
+            code->push_back(LVM_Jmpez);
+            code->push_back(lookupAddress(L1));
+
+            code->push_back(LVM_ITER_Select);
+            code->push_back(counterLabel);
+            code->push_back(LVM_ITER_TypeScan);
+            code->push_back(aggregate.getIdentifier());
+
+            // Produce condition inside the loop
+            size_t endOfLoop = getNewAddressLabel();
+            if (aggregate.getCondition() != nullptr) {
+                visit(aggregate.getCondition(), exitAddress);
+                code->push_back(LVM_Jmpez);  // Continue; if condition is not met
+                code->push_back(lookupAddress(endOfLoop));
+            }
+
+            if (aggregate.getFunction() != souffle::COUNT) {
+                visit(aggregate.getExpression(), exitAddress);
+            }
+
+            switch (aggregate.getFunction()) {
+                case souffle::MIN:
+                    code->push_back(LVM_OP_MIN);
+                    code->push_back(2);  // TODO quick fix, can be improved later
+                    break;
+                case souffle::MAX:
+                    code->push_back(LVM_OP_MAX);
+                    code->push_back(2);  // TODO quick fix, can be improved later
+                    break;
+                case souffle::COUNT:
+                    code->push_back(LVM_Number);
+                    code->push_back(1);
+                    code->push_back(LVM_OP_ADD);
+                    break;
+                case souffle::SUM:
+                    code->push_back(LVM_OP_ADD);
+                    break;
+            }
+            setAddress(endOfLoop, code->size());
+            code->push_back(LVM_ITER_Inc);
+            code->push_back(counterLabel);
+            code->push_back(LVM_ITER_TypeScan);
+            code->push_back(LVM_Goto);
+            code->push_back(address_L0);
+        }
+
+        setAddress(L1, code->size());
+
+        // write result into environment tuple
+        code->push_back(LVM_Aggregate_Return);
+        code->push_back(aggregate.getIdentifier());
+
+        if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
+            // check whether there exists a min/max first before next loop
+
+            // Retrieve the result we just saved.
+            code->push_back(LVM_ElementAccess);
+            code->push_back(aggregate.getIdentifier());
+            code->push_back(0);
+            code->push_back(LVM_Number);
+            code->push_back(aggregate.getFunction() == souffle::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
+            code->push_back(LVM_OP_EQ);
+            code->push_back(LVM_Jmpnz);  // If init == result, does not visit nested search
+            code->push_back(lookupAddress(L2));
+        }
+        visitSearch(aggregate, exitAddress);
+        setAddress(L2, code->size());
+    }
+
+    void visitIndexAggregate(const RamIndexAggregate& aggregate, size_t exitAddress) override {
         // TODO (xiaowen): The aggregate operation is now written in a less efficient way
         // e.g. The max & min now support arbitrary number of arguments, we should make use of it
         // count operation can be further simpfied
         //
         // This should be reviewed later.
 
-        code->push_back(LVM_Aggregate);
+        code->push_back(LVM_IndexAggregate);
         auto patterns = aggregate.getRangePattern();
         std::string types;
         auto arity = aggregate.getRelation().getArity();
@@ -499,24 +609,25 @@ protected:
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
 
-        if (aggregate.getFunction() == RamAggregate::COUNT && aggregate.getCondition() == nullptr) {
+        if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
+            code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(counterLabel);
         } else {
             switch (aggregate.getFunction()) {  // Init value
-                case RamAggregate::MIN:
+                case souffle::MIN:
                     code->push_back(LVM_Number);
                     code->push_back(MAX_RAM_DOMAIN);
                     break;
-                case RamAggregate::MAX:
+                case souffle::MAX:
                     code->push_back(LVM_Number);
                     code->push_back(MIN_RAM_DOMAIN);
                     break;
-                case RamAggregate::COUNT:
+                case souffle::COUNT:
                     code->push_back(LVM_Number);
                     code->push_back(0);
                     break;
-                case RamAggregate::SUM:
+                case souffle::SUM:
                     code->push_back(LVM_Number);
                     code->push_back(0);
                     break;
@@ -544,25 +655,25 @@ protected:
                 code->push_back(lookupAddress(endOfLoop));
             }
 
-            if (aggregate.getFunction() != RamAggregate::COUNT) {
+            if (aggregate.getFunction() != souffle::COUNT) {
                 visit(aggregate.getExpression(), exitAddress);
             }
 
             switch (aggregate.getFunction()) {
-                case RamAggregate::MIN:
+                case souffle::MIN:
                     code->push_back(LVM_OP_MIN);
                     code->push_back(2);  // TODO quick fix, can be improved later
                     break;
-                case RamAggregate::MAX:
+                case souffle::MAX:
                     code->push_back(LVM_OP_MAX);
                     code->push_back(2);  // TODO quick fix, can be improved later
                     break;
-                case RamAggregate::COUNT:
+                case souffle::COUNT:
                     code->push_back(LVM_Number);
                     code->push_back(1);
                     code->push_back(LVM_OP_ADD);
                     break;
-                case RamAggregate::SUM:
+                case souffle::SUM:
                     code->push_back(LVM_OP_ADD);
                     break;
             }
@@ -580,7 +691,7 @@ protected:
         code->push_back(LVM_Aggregate_Return);
         code->push_back(aggregate.getIdentifier());
 
-        if (aggregate.getFunction() == RamAggregate::MIN || aggregate.getFunction() == RamAggregate::MAX) {
+        if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
             // check whether there exists a min/max first before next loop
 
             // Retrieve the result we just saved.
@@ -588,7 +699,7 @@ protected:
             code->push_back(aggregate.getIdentifier());
             code->push_back(0);
             code->push_back(LVM_Number);
-            code->push_back(aggregate.getFunction() == RamAggregate::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
+            code->push_back(aggregate.getFunction() == souffle::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
             code->push_back(LVM_OP_EQ);
             code->push_back(LVM_Jmpnz);  // If init == result, does not visit nested search
             code->push_back(lookupAddress(L2));

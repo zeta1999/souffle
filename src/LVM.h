@@ -61,7 +61,7 @@ public:
     }
 
     /** Execute the main program */
-    virtual void executeMain();
+    void executeMain() override;
 
     /** Clean the cache of main Program */
     void resetMainProgram() {
@@ -75,7 +75,7 @@ public:
 
     /** Execute the subroutine */
     void executeSubroutine(const std::string& name, const std::vector<RamDomain>& arguments,
-            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) {
+            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) override {
         InterpreterContext ctxt;
         ctxt.setReturnValues(returnValues);
         ctxt.setReturnErrors(returnErrors);

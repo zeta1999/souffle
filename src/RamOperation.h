@@ -393,6 +393,14 @@ public:
         condition = map(std::move(condition));
     }
 
+    std::vector<const RamNode*> getChildNodes() const override {
+        auto res = RamIndexRelationSearch::getChildNodes();
+        if (condition != nullptr) {
+            res.push_back(condition.get());
+        }
+        return res;
+    }
+
     RamIndexChoice* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
         for (unsigned int i = 0; i < queryPattern.size(); ++i) {

@@ -807,6 +807,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 << "equalRange_" << keys << "(key," << ctxName << ");\n";
             out << "for(const auto& env" << identifier << " : range) {\n";
             out << nullaryStopStmt;
+            out << "\n";
             out << "if( ";
             visit(indexChoice.getCondition(), out);
             out << ") {\n";

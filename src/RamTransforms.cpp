@@ -397,6 +397,7 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
         std::vector<std::unique_ptr<RamExpression>> newValues;
         const auto* filter = dynamic_cast<const RamFilter*>(&indexScan->getOperation());
         const int identifier = indexScan->getIdentifier();
+        const RamRelation& rel = indexScan->getRelation();
 
         for (auto& cur : indexScan->getRangePattern()) {
             RamExpression* val = nullptr;
@@ -407,9 +408,9 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
         }
 
         return std::make_unique<RamIndexChoice>(
-                std::make_unique<RamRelationReference>(&indexScan->getRelation()), identifier,
+                std::make_unique<RamRelationReference>(&rel), identifier,
                 std::unique_ptr<RamCondition>(filter->getCondition().clone()), std::move(newValues),
-                std::unique_ptr<RamOperation>(indexScan->getOperation().clone()),
+                std::unique_ptr<RamOperation>(filter->getOperation().clone()),
                 indexScan->getProfileText());
     }
     return nullptr;

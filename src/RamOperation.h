@@ -108,7 +108,7 @@ public:
             : RamNestedOperation(std::move(nested), std::move(profileText)), identifier(ident) {}
 
     /** Get identifier */
-    int getIdentifier() const {
+    int getTupleId() const {
         return identifier;
     }
 
@@ -123,7 +123,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSearch*>(&node));
         const auto& other = static_cast<const RamSearch&>(node);
-        return RamNestedOperation::equal(other) && getIdentifier() == other.getIdentifier();
+        return RamNestedOperation::equal(other) && getTupleId() == other.getTupleId();
     }
 };
 
@@ -176,13 +176,13 @@ public:
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
-        os << "FOR t" << getIdentifier();
+        os << "FOR t" << getTupleId();
         os << " IN " << getRelation().getName() << std::endl;
         RamRelationSearch::print(os, tabpos + 1);
     }
 
     RamScan* clone() const override {
-        return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getIdentifier(),
+        return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 
@@ -257,7 +257,7 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "SEARCH " << rel.getName() << " AS t" << getIdentifier() << " ON INDEX ";
+        os << "SEARCH " << rel.getName() << " AS t" << getTupleId() << " ON INDEX ";
         bool first = true;
         for (unsigned int i = 0; i < rel.getArity(); ++i) {
             if (queryPattern[i] != nullptr) {
@@ -266,7 +266,7 @@ public:
                 } else {
                     os << " and ";
                 }
-                os << "t" << getIdentifier() << "." << rel.getArg(i) << "=";
+                os << "t" << getTupleId() << "." << rel.getArg(i) << "=";
                 queryPattern[i]->print(os);
             }
         }
@@ -282,7 +282,7 @@ public:
             }
         }
         RamIndexScan* res = new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getIdentifier(), std::move(resQueryPattern),
+                getTupleId(), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
     }
@@ -461,7 +461,7 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "t" << getIdentifier() << ".0=";
+        os << "t" << getTupleId() << ".0=";
         switch (function) {
             case MIN:
                 os << "MIN ";
@@ -479,7 +479,7 @@ public:
         if (function != COUNT) {
             os << *expression << " ";
         }
-        os << " SEARCH t" << getIdentifier() << " ∈ " << getRelation().getName();
+        os << " SEARCH t" << getTupleId() << " ∈ " << getRelation().getName();
         bool first = true;
         os << " INDEX ";
         for (unsigned int i = 0; i < rel.getArity(); ++i) {
@@ -489,7 +489,7 @@ public:
                 } else {
                     os << " and ";
                 }
-                os << "t" << getIdentifier() << "." << rel.getArg(i) << "=" << *queryPattern[i];
+                os << "t" << getTupleId() << "." << rel.getArg(i) << "=" << *queryPattern[i];
             }
         }
         if (first) {
@@ -521,7 +521,7 @@ public:
                 function, std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
-                std::move(pattern), getIdentifier());
+                std::move(pattern), getTupleId());
         return res;
     }
 
@@ -585,7 +585,7 @@ public:
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
-        os << "t" << getIdentifier() << ".0=";
+        os << "t" << getTupleId() << ".0=";
         switch (function) {
             case MIN:
                 os << "MIN ";
@@ -603,7 +603,7 @@ public:
         if (function != COUNT) {
             os << *expression << " ";
         }
-        os << " FOR ALL t" << getIdentifier() << " ∈ " << getRelation().getName();
+        os << " FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
         if (condition != nullptr) {
             os << " WHERE " << *getCondition();
         }
@@ -627,7 +627,7 @@ public:
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
-                getIdentifier());
+                getTupleId());
         return res;
     }
 
@@ -688,14 +688,14 @@ public:
     }
 
     void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos) << "UNPACK t" << refLevel << "." << refPos << " INTO t" << getIdentifier()
+        os << times(" ", tabpos) << "UNPACK t" << refLevel << "." << refPos << " INTO t" << getTupleId()
            << std::endl;
         RamSearch::print(os, tabpos + 1);
     }
 
     RamUnpackRecord* clone() const override {
-        RamUnpackRecord* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()),
-                getIdentifier(), refLevel, refPos, arity);
+        RamUnpackRecord* res = new RamUnpackRecord(
+                std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(), refLevel, refPos, arity);
         return res;
     }
 

@@ -337,7 +337,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // check whether outer-most loop is an scan operation
             const RamScan* outerScan = nullptr;
             visitDepthFirst(*next, [&](const RamScan& scan) {
-                if (scan.getIdentifier() == 0 && !scan.getRelation().isNullary()) {
+                if (scan.getTupleId() == 0 && !scan.getRelation().isNullary()) {
                     outerScan = &scan;
                 }
             });
@@ -355,7 +355,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // check whether outer-most loop is an IndexScan
             const RamIndexScan* outerIndexScan = nullptr;
             visitDepthFirst(*next, [&](const RamIndexScan& indexScan) {
-                if (indexScan.getIdentifier() == 0) {
+                if (indexScan.getTupleId() == 0) {
                     outerIndexScan = &indexScan;
                 }
             });
@@ -603,7 +603,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitScan(const RamScan& scan, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            auto identifier = scan.getIdentifier();
+            auto identifier = scan.getTupleId();
 
             const bool parallel = identifier == 0 && !scan.getRelation().isNullary();
 
@@ -697,7 +697,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             const auto& rel = scan.getRelation();
             auto relName = synthesiser.getRelationName(rel);
-            auto identifier = scan.getIdentifier();
+            auto identifier = scan.getTupleId();
 
             const bool parallel = identifier == 0;
 
@@ -844,8 +844,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "auto ref = env" << lookup.getReferenceLevel() << "[" << lookup.getReferencePosition()
                 << "];\n";
             out << "if (isNull<" << tuple_type << ">(ref)) continue;\n";
-            out << tuple_type << " env" << lookup.getIdentifier() << " = unpack<" << tuple_type
-                << ">(ref);\n";
+            out << tuple_type << " env" << lookup.getTupleId() << " = unpack<" << tuple_type << ">(ref);\n";
 
             out << "{\n";
 
@@ -863,7 +862,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto arity = rel.getArity();
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
-            auto identifier = aggregate.getIdentifier();
+            auto identifier = aggregate.getTupleId();
 
             // aggregate tuple storing the result of aggregate
             std::string tuple_type = "ram::Tuple<RamDomain," + toString(arity) + ">";
@@ -996,7 +995,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const auto& rel = aggregate.getRelation();
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
-            auto identifier = aggregate.getIdentifier();
+            auto identifier = aggregate.getTupleId();
 
             // declare environment variable
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
@@ -1319,7 +1318,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitElementAccess(const RamElementAccess& access, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "env" << access.getIdentifier() << "[" << access.getElement() << "]";
+            out << "env" << access.getTupleId() << "[" << access.getElement() << "]";
             PRINT_END_COMMENT(out);
         }
 

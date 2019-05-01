@@ -45,7 +45,7 @@ protected:
 
     void visitElementAccess(const RamElementAccess& access, size_t exitAddress) override {
         code->push_back(LVM_ElementAccess);
-        code->push_back(access.getIdentifier());
+        code->push_back(access.getTupleId());
         code->push_back(access.getElement());
     }
 
@@ -326,7 +326,7 @@ protected:
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeScan);
-        code->push_back(scan.getIdentifier());
+        code->push_back(scan.getTupleId());
 
         visitSearch(scan, exitAddress);
         code->push_back(LVM_ITER_Inc);
@@ -405,7 +405,7 @@ protected:
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexScan);
-        code->push_back(scan.getIdentifier());
+        code->push_back(scan.getTupleId());
 
         visitSearch(scan, exitAddress);
 
@@ -470,7 +470,7 @@ protected:
         code->push_back(lookup.getReferenceLevel());
         code->push_back(lookup.getReferencePosition());
         code->push_back(lookup.getArity());
-        code->push_back(lookup.getIdentifier());
+        code->push_back(lookup.getTupleId());
         visitSearch(lookup, exitAddress);
     }
 
@@ -521,7 +521,7 @@ protected:
             code->push_back(LVM_ITER_Select);
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeScan);
-            code->push_back(aggregate.getIdentifier());
+            code->push_back(aggregate.getTupleId());
 
             // Produce condition inside the loop
             size_t endOfLoop = getNewAddressLabel();
@@ -565,14 +565,14 @@ protected:
 
         // write result into environment tuple
         code->push_back(LVM_Aggregate_Return);
-        code->push_back(aggregate.getIdentifier());
+        code->push_back(aggregate.getTupleId());
 
         if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
             // check whether there exists a min/max first before next loop
 
             // Retrieve the result we just saved.
             code->push_back(LVM_ElementAccess);
-            code->push_back(aggregate.getIdentifier());
+            code->push_back(aggregate.getTupleId());
             code->push_back(0);
             code->push_back(LVM_Number);
             code->push_back(aggregate.getFunction() == souffle::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
@@ -645,7 +645,7 @@ protected:
             code->push_back(LVM_ITER_Select);
             code->push_back(counterLabel);
             code->push_back(LVM_ITER_TypeIndexScan);
-            code->push_back(aggregate.getIdentifier());
+            code->push_back(aggregate.getTupleId());
 
             // Produce condition inside the loop
             size_t endOfLoop = getNewAddressLabel();
@@ -689,14 +689,14 @@ protected:
 
         // write result into environment tuple
         code->push_back(LVM_Aggregate_Return);
-        code->push_back(aggregate.getIdentifier());
+        code->push_back(aggregate.getTupleId());
 
         if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
             // check whether there exists a min/max first before next loop
 
             // Retrieve the result we just saved.
             code->push_back(LVM_ElementAccess);
-            code->push_back(aggregate.getIdentifier());
+            code->push_back(aggregate.getTupleId());
             code->push_back(0);
             code->push_back(LVM_Number);
             code->push_back(aggregate.getFunction() == souffle::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);

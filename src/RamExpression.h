@@ -242,7 +242,7 @@ public:
     }
 
     /** Get identifier */
-    int getIdentifier() const {
+    int getTupleId() const {
         return identifier;
     }
 
@@ -289,7 +289,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamElementAccess*>(&node));
         const auto& other = static_cast<const RamElementAccess&>(node);
-        return getIdentifier() == other.getIdentifier() && getElement() == other.getElement();
+        return getTupleId() == other.getTupleId() && getElement() == other.getElement();
     }
 };
 

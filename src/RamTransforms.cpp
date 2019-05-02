@@ -102,7 +102,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
                 const RamCondition& condition = filter->getCondition();
                 // if filter condition is independent of any RamSearch,
                 // delete the filter operation and collect condition
-                if (rcla->getLevel(&condition) == -1) {
+                if (rla->getLevel(&condition) == -1) {
                     changed = true;
                     newCondition = addCondition(std::move(newCondition), condition.clone());
                     node->apply(makeLambdaRamMapper(filterRewriter));
@@ -129,7 +129,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
                 const RamCondition& condition = filter->getCondition();
                 // if filter condition matches level of RamSearch,
                 // delete the filter operation and collect condition
-                if (rcla->getLevel(&condition) == search.getTupleId()) {
+                if (rla->getLevel(&condition) == search.getTupleId()) {
                     changed = true;
                     newCondition = addCondition(std::move(newCondition), condition.clone());
                     node->apply(makeLambdaRamMapper(filterRewriter));
@@ -156,7 +156,7 @@ std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
             if (const RamElementAccess* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamExpression* rhs = binRelOp->getRHS();
                 if (lhs->getTupleId() == identifier &&
-                        (rcva->isConstant(rhs) || rvla->getLevel(rhs) < identifier)) {
+                        (rcva->isConstant(rhs) || rla->getLevel(rhs) < identifier)) {
                     element = lhs->getElement();
                     return std::unique_ptr<RamExpression>(rhs->clone());
                 }
@@ -164,7 +164,7 @@ std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
             if (const RamElementAccess* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamExpression* lhs = binRelOp->getLHS();
                 if (rhs->getTupleId() == identifier &&
-                        (rcva->isConstant(lhs) || rvla->getLevel(lhs) < identifier)) {
+                        (rcva->isConstant(lhs) || rla->getLevel(lhs) < identifier)) {
                     element = rhs->getElement();
                     return std::unique_ptr<RamExpression>(lhs->clone());
                 }
@@ -338,7 +338,7 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const Ram
     // Check that RamFilter follows the Scan in the loop nest
     if (const auto* filter = dynamic_cast<const RamFilter*>(&scan->getOperation())) {
         // Check that the Filter uses the identifier in the Scan
-        if (rcla->getLevel(&filter->getCondition()) == scan->getTupleId()) {
+        if (rla->getLevel(&filter->getCondition()) == scan->getTupleId()) {
             transformTuple = true;
 
             // Check that the filter is not referred to after
@@ -377,7 +377,7 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
     // Check that RamFilter follows the IndexScan in the loop nest
     if (const auto* filter = dynamic_cast<const RamFilter*>(&indexScan->getOperation())) {
         // Check that the Filter uses the identifier in the IndexScan
-        if (rcla->getLevel(&filter->getCondition()) == indexScan->getTupleId()) {
+        if (rla->getLevel(&filter->getCondition()) == indexScan->getTupleId()) {
             transformTuple = true;
 
             // Check that the filter is not referred to after

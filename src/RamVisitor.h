@@ -185,12 +185,13 @@ protected:
     LINK(ReturnValue, Operation);
     LINK(UnpackRecord, Search);
     LINK(Scan, RelationSearch);
-    LINK(IndexScan, RelationSearch);
+    LINK(IndexScan, IndexRelationSearch);
     LINK(Choice, RelationSearch);
-    LINK(IndexChoice, RelationSearch);
+    LINK(IndexChoice, IndexRelationSearch);
     LINK(RelationSearch, Search);
     LINK(Aggregate, RelationSearch);
-    LINK(IndexAggregate, RelationSearch);
+    LINK(IndexAggregate, IndexRelationSearch);
+    LINK(IndexRelationSearch, RelationSearch);
     LINK(Search, NestedOperation);
     LINK(Filter, NestedOperation);
     LINK(NestedOperation, Operation);

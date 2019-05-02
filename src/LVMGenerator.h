@@ -427,10 +427,12 @@ protected:
         std::string types;
         auto arity = indexChoice.getRelation().getArity();
         for (size_t i = 0; i < arity; i++) {
-            if (patterns[i]) {
+            if (patterns[i] != nullptr) {
                 visit(patterns[i], exitAddress);
+                types += "V";
+            } else {
+                types += "_";
             }
-            types += (patterns[i] == nullptr ? "_" : "V");
         }
 
         code->push_back(LVM_ITER_TypeIndexChoice);
@@ -968,13 +970,11 @@ private:
         return scanIteratorIndex++;
     }
 
-    /** Iter */
     size_t choiceIteratorIndex = 0;
     size_t getNewChoiceIterator() {
         return choiceIteratorIndex++;
     }
 
-    /** Iter */
     size_t indexChoiceIteratorIndex = 0;
     size_t getNewIndexChoiceIterator() {
         return indexChoiceIteratorIndex++;

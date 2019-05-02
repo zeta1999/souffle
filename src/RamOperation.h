@@ -289,9 +289,7 @@ public:
 };
 
 /**
- * Relation Choice
- *
- * Find a tuple in relation such that condition holds.
+ * Find a tuple in a relation such that a given condition holds.
  */
 class RamChoice : public RamRelationSearch {
 public:
@@ -340,9 +338,7 @@ protected:
 };
 
 /**
- * Relation Choice with Index
- *
- * Find a tuple in relation such that condition holds.
+ * Use an index to find a tuple in a relation such that a given condition holds.
  */
 class RamIndexChoice : public RamIndexRelationSearch {
 public:
@@ -403,7 +399,7 @@ public:
 
     RamIndexChoice* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
-        for (unsigned int i = 0; i < queryPattern.size(); ++i) {
+        for (size_t i = 0; i < queryPattern.size(); ++i) {
             if (nullptr != queryPattern[i]) {
                 resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
             }
@@ -415,7 +411,6 @@ public:
     }
 
 protected:
-    /** Condition */
     std::unique_ptr<RamCondition> condition;
 
     /** Check equality */

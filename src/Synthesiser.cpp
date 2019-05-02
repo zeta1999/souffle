@@ -678,7 +678,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 visitSearch(choice, out);
                 out << "}\n";
             } else {
-                // TODO: parallel
+                // TODO (dcol): Consider parallelism
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
                 out << nullaryStopStmt;

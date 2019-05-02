@@ -1061,7 +1061,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 }
 
                 // obtain index
-                // TODO Do as function
+                // TODO (XiaowenHu96): Do as function
                 SearchColumns keys = 0;
                 for (size_t i = 0; i < arity; i++) {
                     if (pattern[i] == 'V') {
@@ -1097,7 +1097,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 }
 
                 // obtain index
-                // TODO Do as function
+                // TODO (XiaowenHu96): Do as function
                 SearchColumns keys = 0;
                 for (size_t i = 0; i < arity; i++) {
                     if (pattern[i] == 'V') {

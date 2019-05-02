@@ -306,15 +306,16 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const Ram
 
             // Check that the filter is not referred to after
             const auto* nextNode = dynamic_cast<const RamNode*>(&filter->getOperation());
-            visitDepthFirst(*nextNode, [&](const RamNode& node) {
-                if (const RamElementAccess* element = dynamic_cast<const RamElementAccess*>(&node)) {
-                    if (element->getTupleId() == scan->getTupleId()) {
-                        transformTuple = false;
-                    }
-                } else if (const RamUnpackRecord* unpack = dynamic_cast<const RamUnpackRecord*>(&node)) {
-                    if (unpack->getReferenceLevel() == scan->getTupleId()) {
-                        transformTuple = false;
-                    }
+
+            visitDepthFirst(*nextNode, [&](const RamElementAccess& element) {
+                if (element.getTupleId() == scan->getTupleId()) {
+                    transformTuple = false;
+                }
+            });
+
+            visitDepthFirst(*nextNode, [&](const RamUnpackRecord& unpack) {
+                if (unpack.getReferenceLevel() == scan->getTupleId()) {
+                    transformTuple = false;
                 }
             });
         }
@@ -344,15 +345,16 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
 
             // Check that the filter is not referred to after
             const auto* nextNode = dynamic_cast<const RamNode*>(&filter->getOperation());
-            visitDepthFirst(*nextNode, [&](const RamNode& node) {
-                if (const RamElementAccess* element = dynamic_cast<const RamElementAccess*>(&node)) {
-                    if (element->getTupleId() == indexScan->getTupleId()) {
-                        transformTuple = false;
-                    }
-                } else if (const RamUnpackRecord* unpack = dynamic_cast<const RamUnpackRecord*>(&node)) {
-                    if (unpack->getReferenceLevel() == indexScan->getTupleId()) {
-                        transformTuple = false;
-                    }
+
+            visitDepthFirst(*nextNode, [&](const RamElementAccess& element) {
+                if (element.getTupleId() == indexScan->getTupleId()) {
+                    transformTuple = false;
+                }
+            });
+
+            visitDepthFirst(*nextNode, [&](const RamUnpackRecord& unpack) {
+                if (unpack.getReferenceLevel() == indexScan->getTupleId()) {
+                    transformTuple = false;
                 }
             });
         }

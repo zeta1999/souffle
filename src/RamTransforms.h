@@ -29,7 +29,7 @@ namespace souffle {
 class RamProgram;
 
 /**
- * @class FilterExpansionTransformer
+ * @class ExpandFilterTransformer
  * @brief Transforms RamConjunctions into consecutive filter operations.
  *
  * For example ..
@@ -48,10 +48,10 @@ class RamProgram;
  *      ...
  *
  */
-class FilterExpansionTransformer : public RamTransformer {
+class ExpandFilterTransformer : public RamTransformer {
 public:
     std::string getName() const override {
-        return "FilterExpansionTransformer";
+        return "ExpandFilterTransformer";
     }
 
     /**

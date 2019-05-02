@@ -30,7 +30,7 @@
 
 namespace souffle {
 
-bool FilterExpansionTransformer::expandFilters(RamProgram& program) {
+bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
     // flag to determine whether the RAM program has changed
     bool changed = false;
 

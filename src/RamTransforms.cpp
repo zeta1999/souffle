@@ -43,7 +43,7 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
                 if (conditionList.size() > 1) {
                     changed = true;
                     std::vector<std::unique_ptr<RamFilter>> filters;
-                    for (auto iter = conditionList.rbegin(); iter != conditionList.rend(); iter++) {
+                    for (auto iter = conditionList.rbegin(); iter != conditionList.rend(); ++iter) {
                         auto& cond = *iter;
                         auto tempCond = cond->clone();
                         if (filters.empty()) {

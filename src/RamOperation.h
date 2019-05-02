@@ -288,6 +288,140 @@ public:
     }
 };
 
+/**
+ * Find a tuple in a relation such that a given condition holds.
+ */
+class RamChoice : public RamRelationSearch {
+public:
+    RamChoice(std::unique_ptr<RamRelationReference> rel, size_t ident, std::unique_ptr<RamCondition> cond,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamRelationSearch(std::move(rel), ident, std::move(nested), std::move(profileText)),
+              condition(std::move(cond)) {}
+
+    /** get condition */
+    const RamCondition& getCondition() const {
+        return *condition;
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "CHOICE t" << getTupleId();
+        os << " IN " << getRelation().getName();
+        os << " WHERE " << getCondition();
+        os << std::endl;
+        RamRelationSearch::print(os, tabpos + 1);
+    }
+
+    void apply(const RamNodeMapper& map) override {
+        RamRelationSearch::apply(map);
+        condition = map(std::move(condition));
+    }
+
+    RamChoice* clone() const override {
+        return new RamChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
+                std::unique_ptr<RamCondition>(condition->clone()),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
+    std::vector<const RamNode*> getChildNodes() const override {
+        return {nestedOperation.get(), relationRef.get(), condition.get()};
+    }
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamChoice*>(&node));
+        const auto& other = static_cast<const RamChoice&>(node);
+        return RamRelationSearch::equal(other) && getCondition() == other.getCondition();
+    }
+
+protected:
+    std::unique_ptr<RamCondition> condition;
+};
+
+/**
+ * Use an index to find a tuple in a relation such that a given condition holds.
+ */
+class RamIndexChoice : public RamIndexRelationSearch {
+public:
+    RamIndexChoice(std::unique_ptr<RamRelationReference> r, int ident, std::unique_ptr<RamCondition> cond,
+            std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
+            : RamIndexRelationSearch(std::move(r), ident, std::move(queryPattern), std::move(nested),
+                      std::move(profileText)),
+              condition(std::move(cond)) {
+        assert(getRangePattern().size() == getRelation().getArity());
+    }
+
+    /** get condition */
+    const RamCondition& getCondition() const {
+        return *condition;
+    }
+
+    /** Print */
+    void print(std::ostream& os, int tabpos) const override {
+        const RamRelation& rel = getRelation();
+        os << times(" ", tabpos);
+        os << "CHOICE " << rel.getName() << " AS t" << getTupleId() << " INDEX ";
+        bool first = true;
+        for (unsigned int i = 0; i < rel.getArity(); ++i) {
+            if (queryPattern[i] != nullptr) {
+                if (first) {
+                    first = false;
+                } else {
+                    os << " and ";
+                }
+                os << "t" << getTupleId() << "." << rel.getArg(i) << "=";
+                queryPattern[i]->print(os);
+            }
+        }
+        os << " WHERE " << getCondition();
+        os << std::endl;
+        RamIndexRelationSearch::print(os, tabpos + 1);
+    }
+
+    /** Apply mapper */
+    void apply(const RamNodeMapper& map) override {
+        RamRelationSearch::apply(map);
+        for (auto& cur : queryPattern) {
+            if (cur != nullptr) {
+                cur = map(std::move(cur));
+            }
+        }
+        condition = map(std::move(condition));
+    }
+
+    std::vector<const RamNode*> getChildNodes() const override {
+        auto res = RamIndexRelationSearch::getChildNodes();
+        if (condition != nullptr) {
+            res.push_back(condition.get());
+        }
+        return res;
+    }
+
+    RamIndexChoice* clone() const override {
+        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
+        for (size_t i = 0; i < queryPattern.size(); ++i) {
+            if (nullptr != queryPattern[i]) {
+                resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
+            }
+        }
+        RamIndexChoice* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return res;
+    }
+
+protected:
+    std::unique_ptr<RamCondition> condition;
+
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamIndexChoice*>(&node));
+        const auto& other = static_cast<const RamIndexChoice&>(node);
+        return RamRelationSearch::equal(other) && equal_targets(queryPattern, other.queryPattern) &&
+               getCondition() == other.getCondition();
+    }
+};
+
 /** Types of aggregation functions */
 enum AggregateFunction { MAX, MIN, COUNT, SUM };
 

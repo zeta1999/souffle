@@ -45,14 +45,17 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
                 if (conditionList.size() > 1) {
                     changed = true;
                     std::vector<std::unique_ptr<RamFilter>> filters;
-                    for (auto iter = conditionList.end(); iter != conditionList.begin(); --iter) {
+                    for (auto iter = conditionList.rbegin(); iter != conditionList.rend(); iter++) {
                         auto& cond = *iter;
+                        auto tempCond = cond->clone();
                         if (filters.empty()) {
-                            filters.emplace_back(std::make_unique<RamFilter>(std::move(cond),
+                            filters.emplace_back(std::make_unique<RamFilter>(
+                                    std::unique_ptr<RamCondition>(std::move(tempCond)),
                                     std::unique_ptr<RamOperation>(filter->getOperation().clone())));
                         } else {
-                            filters.emplace_back(
-                                    std::make_unique<RamFilter>(std::move(cond), std::move(filters.back())));
+                            filters.emplace_back(std::make_unique<RamFilter>(
+                                    std::unique_ptr<RamCondition>(std::move(tempCond)),
+                                    std::move(filters.back())));
                         }
                     }
                     node = std::move(filters.back());

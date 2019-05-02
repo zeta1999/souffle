@@ -34,14 +34,12 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
     // flag to determine whether the RAM program has changed
     bool changed = false;
 
-    std::vector<std::unique_ptr<RamCondition>> conditionList;
-
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition* condition = &filter->getCondition();
-                conditionList = toConjunctionList(condition);
+                std::vector<std::unique_ptr<RamCondition>> conditionList = toConjunctionList(condition);
                 if (conditionList.size() > 1) {
                     changed = true;
                     std::vector<std::unique_ptr<RamFilter>> filters;

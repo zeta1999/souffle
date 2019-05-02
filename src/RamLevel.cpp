@@ -24,7 +24,6 @@ int RamLevelAnalysis::getLevel(const RamNode* value) const {
     // visitor
     class ValueLevelVisitor : public RamVisitor<int> {
     public:
-
         // number
         int visitNumber(const RamNumber& num) override {
             return -1;
@@ -120,11 +119,11 @@ int RamLevelAnalysis::getLevel(const RamNode* value) const {
             return -1;  // can be in the top level
         }
 
-	// default rule
-	int visitNode(const RamNode& node) {
-		assert(false && "RamNode not implemented!"); 
-		return -1;
-	}
+        // default rule
+        int visitNode(const RamNode& node) {
+            assert(false && "RamNode not implemented!");
+            return -1;
+        }
     };
     return ValueLevelVisitor().visit(value);
 }

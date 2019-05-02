@@ -484,7 +484,7 @@ int main(int argc, char** argv) {
             AstTranslator().translateUnit(*astTranslationUnit);
 
     std::vector<std::unique_ptr<RamTransformer>> ramTransforms;
-    ramTransforms.push_back(std::make_unique<FilterExpansionTransformer>());
+    ramTransforms.push_back(std::make_unique<ExpandFilterTransformer>());
     ramTransforms.push_back(std::make_unique<HoistConditionsTransformer>());
     ramTransforms.push_back(std::make_unique<MakeIndexTransformer>());
     ramTransforms.push_back(std::make_unique<IfConversionTransformer>());

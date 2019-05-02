@@ -29,6 +29,45 @@ namespace souffle {
 class RamProgram;
 
 /**
+ * @class ExpandFilterTransformer
+ * @brief Transforms RamConjunctions into consecutive filter operations.
+ *
+ * For example ..
+ *
+ *  QUERY
+ *   ...
+ *    IF C1 /\ C2 then
+ *     ...
+ *
+ * will be rewritten to
+ *
+ *  QUERY
+ *   ...
+ *    IF C1
+ *     IF C2
+ *      ...
+ *
+ */
+class ExpandFilterTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "ExpandFilterTransformer";
+    }
+
+    /**
+     * @brief Expand filter operations
+     * @param Program that is transformed
+     * @return Flag showing whether the program has been changed by the transformation
+     */
+    bool expandFilters(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return expandFilters(*translationUnit.getProgram());
+    }
+};
+
+/**
  * @class HoistConditionsTransformer
  * @brief Hosts conditions in a loop-nest to the most-outer/semantically-correct loop
  *

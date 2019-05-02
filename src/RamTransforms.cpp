@@ -30,6 +30,43 @@
 
 namespace souffle {
 
+bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
+    // flag to determine whether the RAM program has changed
+    bool changed = false;
+
+    visitDepthFirst(program, [&](const RamQuery& query) {
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
+                const RamCondition* condition = &filter->getCondition();
+                std::vector<std::unique_ptr<RamCondition>> conditionList = toConjunctionList(condition);
+                if (conditionList.size() > 1) {
+                    changed = true;
+                    std::vector<std::unique_ptr<RamFilter>> filters;
+                    for (auto iter = conditionList.rbegin(); iter != conditionList.rend(); ++iter) {
+                        auto& cond = *iter;
+                        auto tempCond = cond->clone();
+                        if (filters.empty()) {
+                            filters.emplace_back(std::make_unique<RamFilter>(
+                                    std::unique_ptr<RamCondition>(std::move(tempCond)),
+                                    std::unique_ptr<RamOperation>(filter->getOperation().clone())));
+                        } else {
+                            filters.emplace_back(std::make_unique<RamFilter>(
+                                    std::unique_ptr<RamCondition>(std::move(tempCond)),
+                                    std::move(filters.back())));
+                        }
+                    }
+                    node = std::move(filters.back());
+                }
+            }
+            node->apply(makeLambdaRamMapper(filterRewriter));
+            return node;
+        };
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(filterRewriter));
+    });
+    return changed;
+}
+
 bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
     // flag to determine whether the RAM program has changed
     bool changed = false;

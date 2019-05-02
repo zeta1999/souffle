@@ -624,6 +624,10 @@ protected:
         setAddress(L2, code->size());
     }
 
+    void visitBreak(const RamBreak& breakOp, size_t exitAddress) override {
+	    // TODO
+    }
+
     void visitFilter(const RamFilter& filter, size_t exitAddress) override {
         code->push_back(LVM_Filter);
 

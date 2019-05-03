@@ -43,6 +43,8 @@ public:
 
     AstTypeIdentifier(const char* name) : AstTypeIdentifier(std::string(name)) {}
 
+    AstTypeIdentifier(const std::vector<std::string> names) : names(names) {}
+
     AstTypeIdentifier(const AstTypeIdentifier&) = default;
     AstTypeIdentifier(AstTypeIdentifier&&) = default;
 

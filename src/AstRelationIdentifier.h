@@ -39,6 +39,8 @@ public:
 
     AstRelationIdentifier(const char* name) : AstRelationIdentifier(std::string(name)) {}
 
+    AstRelationIdentifier(std::vector<std::string> names) : names(names) {}
+
     AstRelationIdentifier(const AstRelationIdentifier&) = default;
     AstRelationIdentifier(AstRelationIdentifier&&) = default;
 

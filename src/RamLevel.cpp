@@ -20,7 +20,7 @@
 
 namespace souffle {
 
-int RamLevelAnalysis::getLevel(const RamNode* value) const {
+int RamLevelAnalysis::getLevel(const RamNode* node) const {
     // visitor
     class ValueLevelVisitor : public RamVisitor<int> {
     public:
@@ -125,7 +125,11 @@ int RamLevelAnalysis::getLevel(const RamNode* value) const {
             return -1;
         }
     };
-    return ValueLevelVisitor().visit(value);
+
+    assert((dynamic_cast<const RamExpression*>(node) != nullptr ||
+                   dynamic_cast<const RamCondition*>(node) != nullptr) &&
+            "not an expression/condition");
+    return ValueLevelVisitor().visit(node);
 }
 
 }  // end of namespace souffle

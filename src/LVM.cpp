@@ -118,7 +118,7 @@ void LVM::executeMain() {
 }
 
 void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip) {
-    std::stack<RamDomain> stack;  // Local stack to support parallel computing in future.
+    std::stack<RamDomain> stack;  
     const auto& code = codeStream->getCode();
     auto& symbolTable = codeStream->getSymbolTable();
     while (true) {
@@ -131,7 +131,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 stack.push(ctxt[code[ip + 1]][code[ip + 2]]);
                 ip += 3;
                 break;
-            case LVM_AutoIncrement:  // Push the old counter then increment
+            case LVM_AutoIncrement:  
                 stack.push(this->counter);
                 incCounter();
                 ip += 1;
@@ -202,7 +202,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 break;
             }
             case LVM_OP_SUB: {
-                RamDomain rhs = stack.top();  // rhs was pushed last, so on top
+                // Rhs was pushed last in the generator, so it should be on top.
+                RamDomain rhs = stack.top();  
                 stack.pop();
                 RamDomain lhs = stack.top();
                 stack.pop();
@@ -577,7 +578,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     RamDomain tuple[arity];
                     for (size_t i = 0; i < arity; i++) {
                         tuple[arity - i - 1] = stack.top();
-                        stack.pop();  // TODO Confirm, value can never be null.
+                        stack.pop();
                     }
                     stack.push(rel.exists(tuple));
                     ip += 3;
@@ -597,13 +598,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                         }
                     }
 
-                    // obtain index TODO do as a function
-                    SearchColumns res = 0;
-                    for (size_t i = 0; i < arity; ++i) {
-                        if (patterns[i] == 'V') {
-                            res |= (1 << i);
-                        }
-                    }
+                    SearchColumns res = getSearchColumns(patterns, arity);
                     auto idx = rel.getIndex(res);
                     auto range = idx->lowerUpperBound(low, high);
 
@@ -622,7 +617,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
 
                 RamDomain low[arity];
                 RamDomain high[arity];
-                // Arity - 2
+
                 for (size_t i = 2; i < arity; i++) {
                     if (patterns[arity - i - 1] == 'V') {
                         low[arity - i - 1] = stack.top();
@@ -650,7 +645,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
 
                 auto idx = rel.getIndex(res);
                 auto range = idx->lowerUpperBound(low, high);
-                stack.push(range.first != range.second);  // if there is something => done
+                stack.push(range.first != range.second);  
                 ip += 3;
                 break;
             }
@@ -748,7 +743,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 ip += 1;
                 break;
             }
-            case LVM_Parallel: {  // TODO Later, need confirm
+            case LVM_Parallel: {
                 size_t size = code[ip + 1];
                 size_t end = code[ip + 2];
                 size_t startAddresses[size];
@@ -763,8 +758,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 ip = end;
                 break;
             }
-            case LVM_Stop_Parallel: {  // TODO later, need confirm
-                return;
+            case LVM_Stop_Parallel: {
                 ip += 2;
                 break;
             }
@@ -958,7 +952,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 break;
             }
             case LVM_Query:
-                // Does nothing
+                /** Does nothing, just a label */
                 ip += 1;
                 break;
             case LVM_Goto:
@@ -1060,14 +1054,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     }
                 }
 
-                // obtain index
-                // TODO (XiaowenHu96): Do as function
-                SearchColumns keys = 0;
-                for (size_t i = 0; i < arity; i++) {
-                    if (pattern[i] == 'V') {
-                        keys |= (1 << i);
-                    }
-                }
+                SearchColumns keys = getSearchColumns(pattern, arity);
                 auto index = rel.getIndex(keys);
 
                 // get iterator range
@@ -1096,14 +1083,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     }
                 }
 
-                // obtain index
-                // TODO (XiaowenHu96): Do as function
-                SearchColumns keys = 0;
-                for (size_t i = 0; i < arity; i++) {
-                    if (pattern[i] == 'V') {
-                        keys |= (1 << i);
-                    }
-                }
+                SearchColumns keys = getSearchColumns(pattern, arity);
                 auto index = rel.getIndex(keys);
 
                 // get iterator range

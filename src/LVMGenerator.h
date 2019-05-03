@@ -21,11 +21,19 @@
 #define SOUFFLE_DLL "libfunctors.so"
 
 namespace souffle {
+
+/**
+ * LVMGenerator takes an RAM program and transfer it into an equivalent Bytecode representation.
+ */
 class LVMGenerator : protected RamVisitor<void, size_t> {
 public:
+    /**
+     * The transformation is done in the constructor.
+     * This is done by traversing the tree twice, in order to find the necessary information (Jump
+     * destination) for LVM branch operations.
+     */
     LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry)
             : symbolTable(symbolTable), code(new LVMCode(symbolTable)) {
-        // double pass
         (*this)(entry, 0);
         (*this).cleanUp();
         (*this)(entry, 0);
@@ -37,7 +45,9 @@ public:
     }
 
 protected:
+
     // Visit RAM Expressions
+    
     void visitNumber(const RamNumber& num, size_t exitAddress) override {
         code->push_back(LVM_Number);
         code->push_back(num.getConstant());
@@ -56,7 +66,7 @@ protected:
     void visitIntrinsicOperator(const RamIntrinsicOperator& op, size_t exitAddress) override {
         const auto& args = op.getArguments();
         switch (op.getOperator()) {
-            /** Unary Functor Operators */
+            // Unary Functor Operator
             case FunctorOp::ORD:
                 visit(args[0], exitAddress);
                 code->push_back(LVM_OP_ORD);
@@ -86,7 +96,7 @@ protected:
                 code->push_back(LVM_OP_TOSTRING);
                 break;
 
-            /** Binary Functor Operators */
+            // Binary Functor Operators
             case FunctorOp::ADD:
                 visit(args[0], exitAddress);
                 visit(args[1], exitAddress);
@@ -164,7 +174,7 @@ protected:
                 code->push_back(args.size());
                 break;
 
-            /** Ternary Functor Operators */
+            // Ternary Functor Operators
             case FunctorOp::SUBSTR:
                 visit(args[0], exitAddress);
                 visit(args[1], exitAddress);
@@ -172,7 +182,7 @@ protected:
                 code->push_back(LVM_OP_SUBSTR);
                 break;
 
-            /** Undefined */
+            // Undefined
             default:
                 assert(false && "unsupported operator");
                 return;
@@ -202,7 +212,7 @@ protected:
         code->push_back(arg.getArgument());
     }
 
-    /** Visit RAM Conditions */
+    // Visit RAM Conditions
 
     void visitConjunction(const RamConjunction& conj, size_t exitAddress) override {
         visit(conj.getLHS(), exitAddress);
@@ -291,7 +301,7 @@ protected:
         }
     }
 
-    /** Visit RAM Operations */
+    // Visit RAM Operations
 
     void visitNestedOperation(const RamNestedOperation& nested, size_t exitAddress) override {
         visit(nested.getOperation(), exitAddress);
@@ -307,28 +317,35 @@ protected:
         code->push_back(symbolTable.lookup(search.getProfileText()));
         visitNestedOperation(search, exitAddress);
     }
-
+    
     void visitScan(const RamScan& scan, size_t exitAddress) override {
-        code->push_back(LVM_Scan);
         size_t counterLabel = getNewScanIterator();
+        size_t L1 = getNewAddressLabel();
+        
+        // Init the Iterator
+        code->push_back(LVM_Scan);
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(scan.getRelation().getName()));
+    
+        // While iterator is not at end
         size_t address_L0 = code->size();
-
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(LVM_Jmpez);
-        size_t L1 = getNewAddressLabel();
         code->push_back(lookupAddress(L1));
-
+        
+        // Select the tuple pointed by iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(scan.getTupleId());
-
+        
+        // Perform nested operation
         visitSearch(scan, exitAddress);
+        
+        // Increment the Iter and jump to the start of the while loop
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeScan);
@@ -339,30 +356,36 @@ protected:
     }
 
     void visitChoice(const RamChoice& choice, size_t exitAddress) override {
-        code->push_back(LVM_Choice);
         size_t counterLabel = getNewChoiceIterator();
+        size_t L1 = getNewAddressLabel();
+        size_t L2 = getNewAddressLabel();
+
+        // Init the Iterator
+        code->push_back(LVM_Choice);
         code->push_back(LVM_ITER_TypeChoice);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(choice.getRelation().getName()));
+       
+        // While iterator is not at end 
         size_t address_L0 = code->size();
-
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeChoice);
         code->push_back(LVM_Jmpez);
-        size_t L1 = getNewAddressLabel();
-        size_t L2 = getNewAddressLabel();
         code->push_back(lookupAddress(L2));
-
+        
+        // Select the tuple pointed by iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeChoice);
         code->push_back(choice.getTupleId());
-
+        
+        // If condition is met, perform nested operation and exit.
         visit(choice.getCondition(), exitAddress);
         code->push_back(LVM_Jmpnz);
         code->push_back(lookupAddress(L1));
-
+        
+        // Else increment the iter and jump to the start of the while loop.
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeChoice);
@@ -378,7 +401,8 @@ protected:
         code->push_back(LVM_IndexScan);
         size_t counterLabel = getNewIndexScanIterator();
         size_t L1 = getNewAddressLabel();
-
+        
+        // Obtain the pattern for index
         auto patterns = scan.getRangePattern();
         std::string types;
         auto arity = scan.getRelation().getArity();
@@ -388,27 +412,31 @@ protected:
             }
             types += (patterns[i] == nullptr ? "_" : "V");
         }
-
+        
+        // Init the iter
         code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(scan.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
-
+        
+        // While iter is not at end
         size_t address_L0 = code->size();
-
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L1));
-
+        
+        // Select the tuple pointed by the iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(scan.getTupleId());
-
+        
+        // Visit nested operation.
         visitSearch(scan, exitAddress);
-
+        
+        // Increment the iter and jump to the start of while loop.
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexScan);
@@ -434,29 +462,33 @@ protected:
                 types += "_";
             }
         }
-
+        
+        // Init the iter
         code->push_back(LVM_ITER_TypeIndexChoice);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(indexChoice.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
-
+        
+        // While iter is not at end.
         size_t address_L0 = code->size();
-
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexChoice);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L2));
-
+        
+        // Select the tuple pointed by iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexChoice);
         code->push_back(indexChoice.getTupleId());
 
         visit(indexChoice.getCondition(), exitAddress);
+        // If condition is true, perform nested operation and return.
         code->push_back(LVM_Jmpnz);
         code->push_back(lookupAddress(L1));
-
+        
+        // Else increment the iter and continue
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexChoice);

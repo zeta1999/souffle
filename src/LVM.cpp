@@ -688,7 +688,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
 
                 if (isNull(ref)) {
                     ip = exitAddress;
-                    stack.push(true);
                     break;
                 }
 

@@ -839,7 +839,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     attributeTypes.push_back(symbolTable.resolve(code[ip + 4 + i]));
                 }
                 attributeTypes.reserve(attributeTypes.size());
-                res->addAttributes(attributeTypes);
+                res->setAttributes(attributeTypes);
                 res->setLevel(level);
                 environment[relName] = res;
                 ip += 3 + code[ip + 2] + 1;

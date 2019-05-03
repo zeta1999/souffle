@@ -38,10 +38,12 @@ public:
 
     virtual ~InterpreterRelation() = default;
 
-    // TODO Xiaowen: getter and setter for attributes type
-    void addAttributes(const std::vector<std::string> attributeTypes) {
+    /** Set AttributeType for the relation */
+    void setAttributes(const std::vector<std::string> attributeTypes) {
         attributeTypeQualifiers = attributeTypes;
     }
+
+    /** Get AttributeType for the relation */
     std::vector<std::string>& getAttributeTypeQualifiers() {
         return attributeTypeQualifiers;
     }
@@ -314,11 +316,10 @@ private:
     /** Lock for parallel execution */
     mutable Lock lock;
 
-    // TODO Xiaowen: Add attributes type
     /** Type of attributes */
     std::vector<std::string> attributeTypeQualifiers;
 
-    // TODO add stratum location
+    /** Stratum level information */
     size_t level;
 };
 

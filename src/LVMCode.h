@@ -30,7 +30,7 @@ enum LVM_Type {
     LVM_ElementAccess,
     LVM_AutoIncrement,
 
-    /** Unary Functor Operations */
+    // Unary Functor Operations
     LVM_OP_ORD,
     LVM_OP_STRLEN,
     LVM_OP_NEG,
@@ -38,7 +38,8 @@ enum LVM_Type {
     LVM_OP_LNOT,
     LVM_OP_TONUMBER,
     LVM_OP_TOSTRING,
-    /** Binary Functor Operators */
+
+    // Binary Functor Operators
     LVM_OP_ADD,
     LVM_OP_SUB,
     LVM_OP_MUL,
@@ -53,10 +54,11 @@ enum LVM_Type {
     LVM_OP_MAX,
     LVM_OP_MIN,
     LVM_OP_CAT,
-    /** Ternary Functor Operators */
+
+    // Ternary Functor Operators
     LVM_OP_SUBSTR,
 
-    // LVM Constraint Op
+    // Constraint Op
     LVM_OP_EQ,
     LVM_OP_NE,
     LVM_OP_LT,
@@ -118,28 +120,34 @@ enum LVM_Type {
     LVM_Swap,
     LVM_Query,
 
-    // LVM internal operation
+    // LVM Branch
     LVM_Goto,
     LVM_Jmpnz,
     LVM_Jmpez,
-    LVM_ITER_Select,
-    LVM_ITER_Inc,
-    LVM_ITER_NotAtEnd,
     LVM_STOP,
     LVM_NOP,
 
-    // LVM Relation Struct Representation
+    // LVM Relation Structure Representation
     LVM_BTREE,
     LVM_BRIE,
     LVM_EQREL,
     LVM_DEFAULT,
 
+    // LVM iterator Type
     LVM_ITER_TypeScan,
     LVM_ITER_TypeChoice,
     LVM_ITER_TypeIndexScan,
     LVM_ITER_TypeIndexChoice,
+    LVM_ITER_Select,
+    LVM_ITER_Inc,
+    LVM_ITER_NotAtEnd,
+
 };
 
+/**
+ * LVMCode is an array of LVM Opcode and operands.
+ * It also contains information (e.g. IODirectives and SymbolTable) which is necessary for it to be executed by the LVM.
+ */
 class LVMCode : protected std::vector<RamDomain> {
 public:
     LVMCode(SymbolTable& symbolTable) : symbolTable(symbolTable) {}
@@ -150,34 +158,39 @@ public:
     using std::vector<RamDomain>::operator[];
     using std::vector<RamDomain>::begin;
     using std::vector<RamDomain>::end;
-
+    
+    /** Return reference to code stream */
     std::vector<RamDomain>& getCode() {
         return *this;
     }
 
+    /** Return code stream */
     std::vector<RamDomain> getCode() const {
         return *this;
     }
 
+    /** Return IODirectives pool */
     std::vector<std::vector<IODirectives>>& getIODirectives() {
         return IODirectivesPool;
     }
 
+    /** Return size of the IODirectives pool */
     size_t getIODirectivesSize() const {
         return IODirectivesPool.size();
     }
 
+    /** Return SymbolTabel */
     SymbolTable& getSymbolTable() {
         return symbolTable;
     }
 
-    /** Print out the instruction stream */
+    /** Print out the code stream */
     virtual void print() const;
 
     virtual ~LVMCode() {}
 
 private:
-    /** Store reference to IODirectives */  // TODO Can we improve it?
+    /** Store reference to IODirectives */
     std::vector<std::vector<IODirectives>> IODirectivesPool;
 
     /** Class for converting string to number and vice versa */

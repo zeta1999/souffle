@@ -178,20 +178,37 @@ protected:
         return dll;
     }
 
-    // Lookup for IndexScan iter, resize the vector if idx > size */
+    /** Lookup IndexScan iterator, resizing iterator pool if necessary */
     std::pair<index_set::iterator, index_set::iterator>& lookUpIndexScanIterator(size_t idx) {
         if (idx >= indexScanIteratorPool.size()) {
-            indexScanIteratorPool.resize((idx + 1) * 2);
+            indexScanIteratorPool.resize(idx + 1);
         }
         return indexScanIteratorPool[idx];
     }
 
-    /** Lookup for Scan iter, resize the vector if idx > size */
+    /** Lookup Scan iterator, resizing iterator pool if necessary */
     std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
         if (idx >= scanIteratorPool.size()) {
-            scanIteratorPool.resize((idx + 1) * 2);
+            scanIteratorPool.resize(idx + 1);
         }
         return scanIteratorPool[idx];
+    }
+
+    /** Lookup Choice iterator, resizing iterator pool if necessary */
+    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpChoiceIterator(
+            size_t idx) {
+        if (idx >= choiceIteratorPool.size()) {
+            choiceIteratorPool.resize(idx + 1);
+        }
+        return choiceIteratorPool[idx];
+    }
+
+    /** Lookup IndexChoice iterator, resizing iterator pool if necessary */
+    std::pair<index_set::iterator, index_set::iterator>& lookUpIndexChoiceIterator(size_t idx) {
+        if (idx >= indexChoiceIteratorPool.size()) {
+            indexChoiceIteratorPool.resize(idx + 1);
+        }
+        return indexChoiceIteratorPool[idx];
     }
 
 private:
@@ -229,6 +246,12 @@ private:
 
     /** List of iters for Scan operation */
     std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;
+
+    /** List of iters for indexChoice operation */
+    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexChoiceIteratorPool;
+
+    /** List of iters for Choice operation */
+    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> choiceIteratorPool;
 
     /** stratum */
     size_t level = 0;

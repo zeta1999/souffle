@@ -432,8 +432,18 @@ void LVMCode::print() const {
                 ip += 2;
                 break;
             };
+            case LVM_ITER_TypeIndexChoice:
+                printf("%ld\tLVM_ITER_TypeIndexChoice\t RelationName:%s\n", ip,
+                        symbolTable.resolve(code[ip + 2]).c_str());
+                ip += 4;
+                break;
             case LVM_ITER_TypeIndexScan:
                 printf("%ld\tLVM_ITER_TypeIndexScan\t RelationName:%s\n", ip,
+                        symbolTable.resolve(code[ip + 2]).c_str());
+                ip += 4;
+                break;
+            case LVM_ITER_TypeChoice:
+                printf("%ld\tLVM_ITER_TypeChoice\t RelationName:%s\n", ip,
                         symbolTable.resolve(code[ip + 2]).c_str());
                 ip += 4;
                 break;
@@ -443,22 +453,53 @@ void LVMCode::print() const {
                 ip += 3;
                 break;
             }
-            case LVM_ITER_NotAtEnd:
-                printf("%ld\tLVM_NotAtEnd\tIterID:%d\tType:%s\n", ip, code[ip + 1],
-                        (code[ip + 2] == LVM_ITER_TypeScan ? "ScanIter" : "IndexScanIter"));
+            case LVM_ITER_NotAtEnd: {
+                std::string iterType;
+                if (code[ip + 2] == LVM_ITER_TypeScan) {
+                    iterType = "ScanIter";
+                } else if (code[ip + 2] == LVM_ITER_TypeIndexScan) {
+                    iterType = "IndexScanIter";
+                } else if (code[ip + 2] == LVM_ITER_TypeChoice) {
+                    iterType = "ChoiceIter";
+                } else {
+                    iterType = "IndexChoiceIter";
+                }
+                printf("%ld\tLVM_NotAtEnd\tIterID:%d\tType:%s\n", ip, code[ip + 1], iterType.c_str());
                 ip += 3;
                 break;
-            case LVM_ITER_Select:
+            }
+            case LVM_ITER_Select: {
+                std::string iterType;
+                if (code[ip + 2] == LVM_ITER_TypeScan) {
+                    iterType = "ScanIter";
+                } else if (code[ip + 2] == LVM_ITER_TypeIndexScan) {
+                    iterType = "IndexScanIter";
+                } else if (code[ip + 2] == LVM_ITER_TypeChoice) {
+                    iterType = "ChoiceIter";
+                } else {
+                    iterType = "IndexChoiceIter";
+                }
                 printf("%ld\tLVM_ITER_Select\t\n", ip);
-                printf("\tIterID:%d\tType:%s\tStore into CtxtId:%d\n", code[ip + 1],
-                        (code[ip + 2] == LVM_ITER_TypeScan ? "ScanIter" : "IndexScanIter"), code[ip + 3]);
+                printf("\tIterID:%d\tType:%s\tStore into CtxtId:%d\n", code[ip + 1], iterType.c_str(),
+                        code[ip + 3]);
                 ip += 4;
                 break;
-            case LVM_ITER_Inc:
-                printf("%ld\tLVM_ITER_Inc\tIterID:%d\tType:%s\n", ip, code[ip + 1],
-                        (code[ip + 2] == LVM_ITER_TypeScan ? "ScanIter" : "IndexScanIter"));
+            }
+            case LVM_ITER_Inc: {
+                std::string iterType;
+                if (code[ip + 2] == LVM_ITER_TypeScan) {
+                    iterType = "ScanIter";
+                } else if (code[ip + 2] == LVM_ITER_TypeIndexScan) {
+                    iterType = "IndexScanIter";
+                } else if (code[ip + 2] == LVM_ITER_TypeChoice) {
+                    iterType = "ChoiceIter";
+                } else {
+                    iterType = "IndexChoiceIter";
+                }
+                printf("%ld\tLVM_ITER_Inc\tIterID:%d\tType:%s\n", ip, code[ip + 1], iterType.c_str());
                 ip += 3;
                 break;
+            }
             case LVM_NOP:
                 printf("%ld\tLVM_NOP\n", ip);
                 ip += 1;

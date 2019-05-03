@@ -330,6 +330,7 @@ protected:
     
         // While iterator is not at end
         size_t address_L0 = code->size();
+
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeScan);
@@ -341,9 +342,9 @@ protected:
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(scan.getTupleId());
-        
+
         // Perform nested operation
-        visitSearch(scan, exitAddress);
+        visitSearch(scan, lookupAddress(L1));
         
         // Increment the Iter and jump to the start of the while loop
         code->push_back(LVM_ITER_Inc);
@@ -432,11 +433,13 @@ protected:
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(scan.getTupleId());
-        
+
         // Visit nested operation.
         visitSearch(scan, exitAddress);
         
         // Increment the iter and jump to the start of while loop.
+        visitSearch(scan, lookupAddress(L1));
+
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexScan);
@@ -500,12 +503,18 @@ protected:
     }
 
     void visitUnpackRecord(const RamUnpackRecord& lookup, size_t exitAddress) override {
+        // (xiaowen): In the case where reference we want to look up is null, we should return.
+        // This can be expressed by the LVM instructions or delegate to CPP code.
+        // For now, it is done by passing the next IP (L0) and let CPP to handle the case.
         code->push_back(LVM_UnpackRecord);
+        size_t L0 = getNewAddressLabel();
         code->push_back(lookup.getReferenceLevel());
         code->push_back(lookup.getReferencePosition());
         code->push_back(lookup.getArity());
         code->push_back(lookup.getTupleId());
+        code->push_back(lookupAddress(L0));
         visitSearch(lookup, exitAddress);
+        setAddress(L0, code->size());
     }
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
@@ -740,6 +749,13 @@ protected:
         }
         visitSearch(aggregate, exitAddress);
         setAddress(L2, code->size());
+    }
+
+    void visitBreak(const RamBreak& breakOp, size_t exitAddress) override {
+        visit(breakOp.getCondition(), exitAddress);
+        code->push_back(LVM_Jmpnz);
+        code->push_back(exitAddress);
+        visitNestedOperation(breakOp, exitAddress);
     }
 
     void visitFilter(const RamFilter& filter, size_t exitAddress) override {

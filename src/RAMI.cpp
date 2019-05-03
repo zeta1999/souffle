@@ -453,7 +453,7 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
 
 /** Evaluate RAM operation */
 void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
-    class OperationEvaluator : public RamVisitor<void> {
+    class OperationEvaluator : public RamVisitor<bool> {
         RAMI& interpreter;
         InterpreterContext& ctxt;
         RamIndexKeysAnalysis* keysAnalysis;
@@ -465,30 +465,32 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
 
         // -- Operations -----------------------------
 
-        void visitNestedOperation(const RamNestedOperation& nested) override {
-            visit(nested.getOperation());
+        bool visitNestedOperation(const RamNestedOperation& nested) override {
+            return visit(nested.getOperation());
         }
 
-        void visitSearch(const RamSearch& search) override {
-            visitNestedOperation(search);
+        bool visitSearch(const RamSearch& search) override {
+            bool result = visitNestedOperation(search);
 
             if (Global::config().has("profile") && !search.getProfileText().empty()) {
                 interpreter.frequencies[search.getProfileText()][interpreter.getIterationNumber()]++;
             }
+            return result;
         }
 
-        void visitScan(const RamScan& scan) override {
+        bool visitScan(const RamScan& scan) override {
             // get the targeted relation
             const InterpreterRelation& rel = interpreter.getRelation(scan.getRelation());
 
             // use simple iterator
             for (const RamDomain* cur : rel) {
                 ctxt[scan.getTupleId()] = cur;
-                visitSearch(scan);
+                if (!visitSearch(scan)) break;
             }
+            return true;
         }
 
-        void visitIndexScan(const RamIndexScan& scan) override {
+        bool visitIndexScan(const RamIndexScan& scan) override {
             // get the targeted relation
             const InterpreterRelation& rel = interpreter.getRelation(scan.getRelation());
 
@@ -517,67 +519,18 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             for (auto ip = range.first; ip != range.second; ++ip) {
                 const RamDomain* data = *(ip);
                 ctxt[scan.getTupleId()] = data;
-                visitSearch(scan);
+                if (!visitSearch(scan)) break;
             }
+            return true;
         }
 
-        void visitChoice(const RamChoice& choice) override {
-            // get the targeted relation
-            const InterpreterRelation& rel = interpreter.getRelation(choice.getRelation());
-
-            // use simple iterator
-            for (const RamDomain* cur : rel) {
-                ctxt[choice.getTupleId()] = cur;
-                if (interpreter.evalCond(choice.getCondition(), ctxt)) {
-                    visitSearch(choice);
-                    break;
-                }
-            }
-        }
-
-        void visitIndexChoice(const RamIndexChoice& choice) override {
-            // get the targeted relation
-            const InterpreterRelation& rel = interpreter.getRelation(choice.getRelation());
-
-            // create pattern tuple for range query
-            auto arity = rel.getArity();
-            RamDomain low[arity];
-            RamDomain hig[arity];
-            auto pattern = choice.getRangePattern();
-            for (size_t i = 0; i < arity; i++) {
-                if (pattern[i] != nullptr) {
-                    low[i] = interpreter.evalExpr(*pattern[i], ctxt);
-                    hig[i] = low[i];
-                } else {
-                    low[i] = MIN_RAM_DOMAIN;
-                    hig[i] = MAX_RAM_DOMAIN;
-                }
-            }
-
-            // obtain index
-            auto idx = rel.getIndex(keysAnalysis->getRangeQueryColumns(&choice), nullptr);
-
-            // get iterator range
-            auto range = idx->lowerUpperBound(low, hig);
-
-            // conduct range query
-            for (auto ip = range.first; ip != range.second; ++ip) {
-                const RamDomain* data = *(ip);
-                ctxt[choice.getTupleId()] = data;
-                if (interpreter.evalCond(choice.getCondition(), ctxt)) {
-                    visitSearch(choice);
-                    break;
-                }
-            }
-        }
-
-        void visitUnpackRecord(const RamUnpackRecord& lookup) override {
+        bool visitUnpackRecord(const RamUnpackRecord& lookup) override {
             // get reference
             RamDomain ref = ctxt[lookup.getReferenceLevel()][lookup.getReferencePosition()];
 
             // check for null
             if (isNull(ref)) {
-                return;
+                return true;
             }
 
             // update environment variable
@@ -588,10 +541,10 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             ctxt[lookup.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
-            visitSearch(lookup);
+            return visitSearch(lookup);
         }
 
-        void visitAggregate(const RamAggregate& aggregate) override {
+        bool visitAggregate(const RamAggregate& aggregate) override {
             // get the targeted relation
             const InterpreterRelation& rel = interpreter.getRelation(aggregate.getRelation());
 
@@ -655,13 +608,13 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // run nested part - using base class visitor
             if (aggregate.getFunction() == souffle::MAX || aggregate.getFunction() == souffle::MIN) {
                 if (res == (aggregate.getFunction() == souffle::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
-                    return;
+                    return true;
                 }
             }
-            visitSearch(aggregate);
+            return visitSearch(aggregate);
         }
 
-        void visitIndexAggregate(const RamIndexAggregate& aggregate) override {
+        bool visitIndexAggregate(const RamIndexAggregate& aggregate) override {
             // get the targeted relation
             const InterpreterRelation& rel = interpreter.getRelation(aggregate.getRelation());
 
@@ -752,25 +705,35 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // run nested part - using base class visitor
             if (aggregate.getFunction() == souffle::MAX || aggregate.getFunction() == souffle::MIN) {
                 if (res == (aggregate.getFunction() == souffle::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
-                    return;
+                    return true;
                 }
             }
-            visitSearch(aggregate);
+            return visitSearch(aggregate);
         }
 
-        void visitFilter(const RamFilter& filter) override {
+        bool visitBreak(const RamBreak& breakOp) override {
+            // check condition
+            if (interpreter.evalCond(breakOp.getCondition(), ctxt)) {
+                return false;
+            }
+            return visitNestedOperation(breakOp);
+        }
+
+        bool visitFilter(const RamFilter& filter) override {
+            bool result = true;
             // check condition
             if (interpreter.evalCond(filter.getCondition(), ctxt)) {
                 // process nested
-                visitNestedOperation(filter);
+                result = visitNestedOperation(filter);
             }
 
             if (Global::config().has("profile") && !filter.getProfileText().empty()) {
                 interpreter.frequencies[filter.getProfileText()][interpreter.getIterationNumber()]++;
             }
+            return result;
         }
 
-        void visitProject(const RamProject& project) override {
+        bool visitProject(const RamProject& project) override {
             // create a tuple of the proper arity (also supports arity 0)
             auto arity = project.getRelation().getArity();
             const auto& values = project.getValues();
@@ -783,10 +746,12 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // insert in target relation
             InterpreterRelation& rel = interpreter.getRelation(project.getRelation());
             rel.insert(tuple);
+
+            return true;
         }
 
         // -- return from subroutine --
-        void visitReturnValue(const RamReturnValue& ret) override {
+        bool visitReturnValue(const RamReturnValue& ret) override {
             for (auto val : ret.getValues()) {
                 if (val == nullptr) {
                     ctxt.addReturnValue(0, true);
@@ -794,10 +759,11 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                     ctxt.addReturnValue(interpreter.evalExpr(*val, ctxt));
                 }
             }
+            return true;
         }
 
         // -- safety net --
-        void visitNode(const RamNode& node) override {
+        bool visitNode(const RamNode& node) override {
             std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
             assert(false && "Unsupported Node Type!");
         }

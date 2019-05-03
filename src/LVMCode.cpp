@@ -261,9 +261,9 @@ void LVMCode::print() const {
                 break;
             }
             case LVM_UnpackRecord:
-                printf("%ld\tLVM_UnpackRecord\tLvl:%d Pos:%d Arity:%d ID:%d\n", ip, code[ip + 1],
-                        code[ip + 2], code[ip + 3], code[ip + 4]);
-                ip += 5;
+                printf("%ld\tLVM_UnpackRecord\tLvl:%d Pos:%d Arity:%d ID:%d ExistAddress:%d\n", ip,
+                        code[ip + 1], code[ip + 2], code[ip + 3], code[ip + 4], code[ip + 5]);
+                ip += 6;
                 break;
             case LVM_Filter:
                 printf("%ld\tLVM_Filter\n", ip);

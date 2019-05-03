@@ -864,7 +864,7 @@ arg
   | MAX LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
         std::vector<std::unique_ptr<AstArgument>> args;
         args.emplace_back($first);
-        for (auto* arg : rest) {
+        for (auto* arg : $rest) {
             args.emplace_back(arg->clone());
         }
         $$ = new AstIntrinsicFunctor(FunctorOp::MAX, std::move(args));
@@ -873,7 +873,7 @@ arg
   | MIN LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
         std::vector<std::unique_ptr<AstArgument>> args;
         args.emplace_back($first);
-        for (auto* arg : rest) {
+        for (auto* arg : $rest) {
             args.emplace_back(arg->clone());
         }
         $$ = new AstIntrinsicFunctor(FunctorOp::MIN, std::move(args));
@@ -882,7 +882,7 @@ arg
   | CAT LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
         std::vector<std::unique_ptr<AstArgument>> args;
         args.emplace_back($first);
-        for (auto* arg : rest) {
+        for (auto* arg : $rest) {
             args.emplace_back(arg->clone());
         }
         $$ = new AstIntrinsicFunctor(FunctorOp::CAT, std::move(args));

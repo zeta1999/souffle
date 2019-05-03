@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include "RamConditionLevel.h"
 #include "RamConstValue.h"
-#include "RamExpressionLevel.h"
+#include "RamLevel.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
 #include <memory>
@@ -122,10 +121,10 @@ public:
     bool hoistConditions(RamProgram& program);
 
 protected:
-    RamConditionLevelAnalysis* rcla{nullptr};
+    RamLevelAnalysis* rla{nullptr};
 
     bool transform(RamTranslationUnit& translationUnit) override {
-        rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
+        rla = translationUnit.getAnalysis<RamLevelAnalysis>();
         return hoistConditions(*translationUnit.getProgram());
     }
 };
@@ -206,10 +205,10 @@ public:
     bool makeIndex(RamProgram& program);
 
 protected:
-    RamExpressionLevelAnalysis* rvla{nullptr};
+    RamLevelAnalysis* rla{nullptr};
     RamConstValueAnalysis* rcva{nullptr};
     bool transform(RamTranslationUnit& translationUnit) override {
-        rvla = translationUnit.getAnalysis<RamExpressionLevelAnalysis>();
+        rla = translationUnit.getAnalysis<RamLevelAnalysis>();
         rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
         return makeIndex(*translationUnit.getProgram());
     }
@@ -333,9 +332,9 @@ public:
     bool convertScans(RamProgram& program);
 
 protected:
-    RamConditionLevelAnalysis* rcla{nullptr};
+    RamLevelAnalysis* rla{nullptr};
     bool transform(RamTranslationUnit& translationUnit) override {
-        rcla = translationUnit.getAnalysis<RamConditionLevelAnalysis>();
+        rla = translationUnit.getAnalysis<RamLevelAnalysis>();
         return convertScans(*translationUnit.getProgram());
     }
 };

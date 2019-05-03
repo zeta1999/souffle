@@ -8,20 +8,19 @@
 
 /************************************************************************
  *
- * @file RamExpressionLevel.cpp
+ * @file RamLevel.cpp
  *
- * Implementation of RAM Expression Level Analysis
+ * Implementation of RAM Level Analysis
  *
  ***********************************************************************/
 
-#include "RamExpressionLevel.h"
+#include "RamLevel.h"
 #include "RamVisitor.h"
 #include <algorithm>
 
 namespace souffle {
 
-/** Get level of value (which for-loop of a query) */
-int RamExpressionLevelAnalysis::getLevel(const RamExpression* value) const {
+int RamLevelAnalysis::getLevel(const RamNode* node) const {
     // visitor
     class ValueLevelVisitor : public RamVisitor<int> {
     public:
@@ -77,8 +76,60 @@ int RamExpressionLevelAnalysis::getLevel(const RamExpression* value) const {
             }
             return level;
         }
+
+        // conjunction
+        int visitConjunction(const RamConjunction& conj) override {
+            return std::max(visit(conj.getLHS()), visit(conj.getRHS()));
+        }
+
+        // negation
+        int visitNegation(const RamNegation& neg) override {
+            return visit(neg.getOperand());
+        }
+
+        // constraint
+        int visitConstraint(const RamConstraint& binRel) override {
+            return std::max(visit(binRel.getLHS()), visit(binRel.getRHS()));
+        }
+
+        // existence check
+        int visitExistenceCheck(const RamExistenceCheck& exists) override {
+            int level = -1;
+            for (const auto& cur : exists.getValues()) {
+                if (cur != nullptr) {
+                    level = std::max(level, visit(cur));
+                }
+            }
+            return level;
+        }
+
+        // provenance existence check
+        int visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
+            int level = -1;
+            for (const auto& cur : provExists.getValues()) {
+                if (cur != nullptr) {
+                    level = std::max(level, visit(cur));
+                }
+            }
+            return level;
+        }
+
+        // emptiness check
+        int visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
+            return -1;  // can be in the top level
+        }
+
+        // default rule
+        int visitNode(const RamNode& node) {
+            assert(false && "RamNode not implemented!");
+            return -1;
+        }
     };
-    return ValueLevelVisitor().visit(value);
+
+    assert((dynamic_cast<const RamExpression*>(node) != nullptr ||
+                   dynamic_cast<const RamCondition*>(node) != nullptr) &&
+            "not an expression/condition");
+    return ValueLevelVisitor().visit(node);
 }
 
 }  // end of namespace souffle

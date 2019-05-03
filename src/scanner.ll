@@ -104,6 +104,7 @@
 "btree"                               { return yy::parser::make_BTREE_QUALIFIER(yylloc); }
 "min"                                 { return yy::parser::make_MIN(yylloc); }
 "max"                                 { return yy::parser::make_MAX(yylloc); }
+"as"                                  { return yy::parser::make_AS(yylloc); }
 "nil"                                 { return yy::parser::make_NIL(yylloc); }
 "_"                                   { return yy::parser::make_UNDERSCORE(yylloc); }
 "count"                               { return yy::parser::make_COUNT(yylloc); }

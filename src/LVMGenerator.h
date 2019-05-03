@@ -328,7 +328,7 @@ protected:
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(scan.getTupleId());
 
-        visitSearch(scan, exitAddress);
+        visitSearch(scan, lookupAddress(L1));
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeScan);
@@ -371,7 +371,7 @@ protected:
         code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(scan.getTupleId());
 
-        visitSearch(scan, exitAddress);
+        visitSearch(scan, lookupAddress(L1));
 
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
@@ -382,12 +382,18 @@ protected:
     }
 
     void visitUnpackRecord(const RamUnpackRecord& lookup, size_t exitAddress) override {
+        // (xiaowen): In the case where reference we want to look up is null, we should return.
+        // This can be expressed by the LVM instructions or delegate to CPP code.
+        // For now, it is done by passing the next IP (L0) and let CPP to handle the case.
         code->push_back(LVM_UnpackRecord);
+        size_t L0 = getNewAddressLabel();
         code->push_back(lookup.getReferenceLevel());
         code->push_back(lookup.getReferencePosition());
         code->push_back(lookup.getArity());
         code->push_back(lookup.getTupleId());
+        code->push_back(lookupAddress(L0));
         visitSearch(lookup, exitAddress);
+        setAddress(L0, code->size());
     }
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
@@ -625,7 +631,10 @@ protected:
     }
 
     void visitBreak(const RamBreak& breakOp, size_t exitAddress) override {
-	    // TODO
+        visit(breakOp.getCondition(), exitAddress);
+        code->push_back(LVM_Jmpnz);
+        code->push_back(exitAddress);
+        visitNestedOperation(breakOp, exitAddress);
     }
 
     void visitFilter(const RamFilter& filter, size_t exitAddress) override {

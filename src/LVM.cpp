@@ -31,7 +31,6 @@
 #include "RamIndexKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
-#include "RamOperationDepth.h"
 #include "RamProgram.h"
 #include "RamProvenanceExistenceCheckAnalysis.h"
 #include "RamVisitor.h"

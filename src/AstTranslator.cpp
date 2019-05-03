@@ -1357,7 +1357,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
         litNumber++;
     }
 
-    return searchSequence;
+    return std::move(searchSequence);
 }
 
 /** translates the given datalog program into an equivalent RAM program  */

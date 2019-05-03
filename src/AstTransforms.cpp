@@ -1106,14 +1106,18 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
 bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) {
     struct M : public AstNodeMapper {
         mutable bool changed{false};
-        M() = default;
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // remove sub-typecasts first
+            node->apply(*this);
+
+            // if current node is a typecast, replace with the value directly
             if (auto* cast = dynamic_cast<AstTypeCast*>(node.get())) {
                 changed = true;
                 return std::unique_ptr<AstArgument>(cast->getValue()->clone());
             }
-            node->apply(*this);
+
+            // otherwise, return the original node
             return node;
         }
     };

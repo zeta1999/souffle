@@ -268,7 +268,6 @@ public:
     AstRecordType() = default;
 
     /** Adds a new field to this record type */
-    // TODO: add -> addField?
     void add(const std::string& name, const AstTypeIdentifier& type) {
         fields.push_back(Field({name, type}));
     }

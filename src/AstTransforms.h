@@ -332,7 +332,7 @@ private:
 };
 
 /**
- * Transformation to remove type casts.
+ * Transformation to remove typecasts.
  */
 class RemoveTypecastsTransformer : public AstTransformer {
 private:

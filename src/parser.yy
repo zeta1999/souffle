@@ -185,7 +185,7 @@
 %type <std::vector<AstStore *>>         store_head
 %type <std::vector<std::pair<std::string, std::string>>>    non_empty_key_value_pairs
 
-/* Operator precedence */
+/* -- Operator precedence -- */
 %left L_OR
 %left L_AND
 %left BW_OR
@@ -196,6 +196,7 @@
 %precedence NEG BW_NOT L_NOT
 %right CARET
 
+/* -- Grammar -- */
 %%
 
 %start program;

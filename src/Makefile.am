@@ -123,7 +123,6 @@ souffle_sources = \
               RamProvenanceExistenceCheckAnalysis.cpp RamProvenanceExistenceCheckAnalysis.h \
               RamIndexKeys.cpp  RamIndexKeys.h          \
 			  RAMI.cpp RAMI.h 							\
-              RamOperationDepth.cpp RamOperationDepth.h \
               RamLevel.cpp RamLevel.h                   \
               RamCondition.h                            \
               RamNode.h                                 \

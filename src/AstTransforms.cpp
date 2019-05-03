@@ -1103,4 +1103,25 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
     return changed;
 }
 
+bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) {
+    struct M : public AstNodeMapper {
+        mutable bool changed{false};
+        M() = default;
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            if (auto* cast = dynamic_cast<AstTypeCast*>(node.get())) {
+                changed = true;
+                return std::unique_ptr<AstArgument>(cast->getValue()->clone());
+            }
+            node->apply(*this);
+            return node;
+        }
+    };
+
+    M update;
+    translationUnit.getProgram()->apply(update);
+
+    return update.changed;
+}
+
 }  // end of namespace souffle

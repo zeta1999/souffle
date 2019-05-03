@@ -536,11 +536,11 @@ protected:
  */
 class AstTypeCast : public AstArgument {
 public:
-    AstTypeCast(std::unique_ptr<AstArgument> value, AstTypeIdentifier type)
+    AstTypeCast(std::unique_ptr<AstArgument> value, const AstTypeIdentifier& type)
             : value(std::move(value)), type(type) {}
 
     void print(std::ostream& os) const override {
-        os << *value << " as " << type;
+        os << "as(" << *value << "," << type << ")";
     }
 
     AstArgument* getValue() const {
@@ -549,6 +549,10 @@ public:
 
     const AstTypeIdentifier& getType() const {
         return type;
+    }
+
+    void setType(const AstTypeIdentifier& type) {
+        this->type = type;
     }
 
     /** Obtains a list of all embedded child nodes */

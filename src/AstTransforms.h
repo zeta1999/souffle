@@ -332,6 +332,19 @@ private:
 };
 
 /**
+ * Transformation to remove type casts.
+ */
+class RemoveTypecastsTransformer : public AstTransformer {
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+
+public:
+    std::string getName() const override {
+        return "RemoveTypecastsTransformer";
+    }
+};
+
+/**
  * Transformer that holds an arbitrary number of sub-transformations
  */
 class PipelineTransformer : public MetaTransformer {

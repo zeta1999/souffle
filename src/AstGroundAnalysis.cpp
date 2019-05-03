@@ -235,6 +235,11 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
             }
             addConstraint(imply(varArgs, fun));
         }
+
+        // casts propogate groundedness in and out
+        void visitTypeCast(const AstTypeCast& cast) override {
+            addConstraint(imply(getVar(cast.getValue()), getVar(cast)));
+        }
     };
 
     // run analysis on given clause

@@ -42,7 +42,7 @@ then
   FILES="[{\"includePattern\": \"./(.*\.tar.gz)\", \"uploadPattern\": \"\$1\"}],"
 
 else
-  DIST=xenial,yakkety,zesty,artful,bionic
+  DIST=xenial,bionic,cosmic,disco
 
   FILES="[{\"includePattern\": \"deploy/(.*\.deb)\", \"uploadPattern\": \"pool/main/s/souffle/\$1\",
     \"matrixParams\": {

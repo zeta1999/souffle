@@ -860,23 +860,32 @@ arg
         $$->setSrcLoc(@$);
     }
 
-    /* binary prefix functors */
-  | MIN LPAREN arg[left] COMMA arg[right] RPAREN {
-        $$ = new AstIntrinsicFunctor(FunctorOp::MIN,
-                std::unique_ptr<AstArgument>($left),
-                std::unique_ptr<AstArgument>($right));
+    /* binary (or more) prefix functors */
+  | MAX LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($first);
+        for (auto* arg : rest) {
+            args.emplace_back(arg->clone());
+        }
+        $$ = new AstIntrinsicFunctor(FunctorOp::MAX, std::move(args));
         $$->setSrcLoc(@$);
     }
-  | MAX LPAREN arg[left] COMMA arg[right] RPAREN {
-        $$ = new AstIntrinsicFunctor(FunctorOp::MAX,
-                std::unique_ptr<AstArgument>($left),
-                std::unique_ptr<AstArgument>($right));
+  | MIN LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($first);
+        for (auto* arg : rest) {
+            args.emplace_back(arg->clone());
+        }
+        $$ = new AstIntrinsicFunctor(FunctorOp::MIN, std::move(args));
         $$->setSrcLoc(@$);
     }
-  | CAT LPAREN arg[left] COMMA arg[right] RPAREN {
-        $$ = new AstIntrinsicFunctor(FunctorOp::CAT,
-                std::unique_ptr<AstArgument>($left),
-                std::unique_ptr<AstArgument>($right));
+  | CAT LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($first);
+        for (auto* arg : rest) {
+            args.emplace_back(arg->clone());
+        }
+        $$ = new AstIntrinsicFunctor(FunctorOp::CAT, std::move(args));
         $$->setSrcLoc(@$);
     }
 

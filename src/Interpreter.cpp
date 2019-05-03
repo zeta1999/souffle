@@ -146,15 +146,25 @@ RamDomain Interpreter::evalExpr(const RamExpression& expr, const InterpreterCont
                     return visit(args[0]) || visit(args[1]);
                 }
                 case FunctorOp::MAX: {
-                    return std::max(visit(args[0]), visit(args[1]));
+                    auto result = visit(args[0]);
+                    for (size_t i = 1; i < args.size(); i++) {
+                        result = std::max(result, visit(args[i]));
+                    }
+                    return result;
                 }
                 case FunctorOp::MIN: {
-                    return std::min(visit(args[0]), visit(args[1]));
+                    auto result = visit(args[0]);
+                    for (size_t i = 1; i < args.size(); i++) {
+                        result = std::min(result, visit(args[i]));
+                    }
+                    return result;
                 }
                 case FunctorOp::CAT: {
-                    return interpreter.getSymbolTable().lookup(
-                            interpreter.getSymbolTable().resolve(visit(args[0])) +
-                            interpreter.getSymbolTable().resolve(visit(args[1])));
+                    std::stringstream ss;
+                    for (auto& arg : args) {
+                        ss << interpreter.getSymbolTable().resolve(visit(arg));
+                    }
+                    return interpreter.getSymbolTable().lookup(ss.str());
                 }
 
                 /** Ternary Functor Operators */
@@ -847,17 +857,8 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
             return true;
         }
 
-        bool visitQuery(const RamQuery& insert) override {
-            // run generic query executor
-
-            const RamCondition* c = insert.getCondition();
-            if (c != nullptr) {
-                if (interpreter.evalCond(*insert.getCondition())) {
-                    interpreter.evalOp(insert.getOperation());
-                }
-            } else {
-                interpreter.evalOp(insert.getOperation());
-            }
+        bool visitQuery(const RamQuery& query) override {
+            interpreter.evalOp(query.getOperation());
             return true;
         }
 

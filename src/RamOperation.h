@@ -123,6 +123,11 @@ public:
         return identifier;
     }
 
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        return RamNestedOperation::getChildNodes();
+    }
+
 protected:
     /** Identifier for the tuple */
     const size_t identifier;
@@ -156,6 +161,13 @@ public:
         relationRef = map(std::move(relationRef));
     }
 
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        auto res = RamSearch::getChildNodes();
+        res.push_back(relationRef.get());
+        return res;
+    }
+
 protected:
     /** Search relation */
     std::unique_ptr<RamRelationReference> relationRef;
@@ -181,17 +193,21 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times("  ", tabpos);
-        os << "for t" << getIdentifier() << " in " << getRelation().getName();
-        os << " {\n";
+        os << times(" ", tabpos);
+        os << "FOR t" << getIdentifier();
+        os << " in " << getRelation().getName() << std::endl;
         RamRelationSearch::print(os, tabpos + 1);
-        os << times("  ", tabpos) << "}\n";
     }
 
     /** Create clone */
     RamScan* clone() const override {
         return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getIdentifier(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
+    /** Obtain list of child nodes */
+    std::vector<const RamNode*> getChildNodes() const override {
+        return RamRelationSearch::getChildNodes();
     }
 };
 
@@ -218,7 +234,7 @@ public:
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
-        os << times("  ", tabpos);
+        os << times(" ", tabpos);
         os << "SEARCH " << rel.getName() << " AS t" << getIdentifier() << " ON INDEX ";
         bool first = true;
         for (unsigned int i = 0; i < rel.getArity(); ++i) {
@@ -232,7 +248,7 @@ public:
                 queryPattern[i]->print(os);
             }
         }
-        os << '\n';
+        os << std::endl;
         RamRelationSearch::print(os, tabpos + 1);
     }
 
@@ -310,8 +326,8 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times("  ", tabpos) << "UNPACK env(t" << refLevel << ", i" << refPos << ") INTO t"
-           << getIdentifier() << " FOR \n";
+        os << times(" ", tabpos) << "UNPACK env(t" << refLevel << ", i" << refPos << ") INTO t"
+           << getIdentifier() << std::endl;
         RamSearch::print(os, tabpos + 1);
     }
 
@@ -395,8 +411,7 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times("  ", tabpos);
-
+        os << times(" ", tabpos);
         switch (function) {
             case MIN:
                 os << "MIN ";
@@ -411,11 +426,9 @@ public:
                 os << "SUM ";
                 break;
         }
-
         if (function != COUNT) {
             os << *expression << " ";
         }
-
         os << "AS t" << getIdentifier() << ".0 IN t" << getIdentifier() << " ∈ " << getRelation().getName();
         os << "("
            << join(pattern, ",",
@@ -427,19 +440,17 @@ public:
                           }
                       })
            << ")";
-
-        if (auto condition = getCondition()) {
-            os << " WHERE ";
-            condition->print(os);
+        if (condition != nullptr) {
+            os << " WHERE " << getCondition();
         }
-
-        os << " FOR \n";
+        os << std::endl;
         RamSearch::print(os, tabpos + 1);
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamSearch::getChildNodes();
+        res.push_back(relationRef.get());
         if (condition != nullptr) {
             res.push_back(condition.get());
         }
@@ -537,16 +548,16 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        os << times("  ", tabpos) << "IF ";
-        getCondition().print(os);
-        os << " {\n";
+        os << times(" ", tabpos);
+        os << "IF " << getCondition() << std::endl;
         RamNestedOperation::print(os, tabpos + 1);
-        os << times("  ", tabpos) << "}\n";
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return {condition.get(), &getOperation()};
+        auto res = RamNestedOperation::getChildNodes();
+        res.push_back(condition.get());
+        return res;
     }
 
     /** Create clone */
@@ -596,10 +607,9 @@ public:
 
     /** Print */
     void print(std::ostream& os, int tabpos) const override {
-        const std::string tabs(tabpos, '\t');
-
-        os << tabs << "PROJECT (" << join(expressions, ", ", print_deref<std::unique_ptr<RamExpression>>())
-           << ") INTO " << getRelation().getName();
+        os << times(" ", tabpos);
+        os << "PROJECT (" << join(expressions, ", ", print_deref<std::unique_ptr<RamExpression>>())
+           << ") INTO " << getRelation().getName() << std::endl;
     }
 
     /** Obtain list of child nodes */
@@ -653,11 +663,8 @@ public:
             : RamOperation(RN_Return), expressions(std::move(vals)) {}
 
     void print(std::ostream& os, int tabpos) const override {
-        const std::string tabs(tabpos, '\t');
-
-        // return
-        os << tabs << "RETURN (";
-
+        os << times(" ", tabpos);
+        os << "RETURN (";
         for (auto val : getValues()) {
             if (val == nullptr) {
                 os << "_";
@@ -669,8 +676,7 @@ public:
                 os << ", ";
             }
         }
-
-        os << ")";
+        os << ")" << std::endl;
     }
 
     std::vector<RamExpression*> getValues() const {

@@ -193,14 +193,8 @@
 %left BW_AND
 %left PLUS MINUS
 %left STAR SLASH PERCENT
+%precedence NEG BW_NOT L_NOT
 %right CARET
-%precedence BW_NOT L_NOT
-%precedence NEG
-
-/* TODO:
- *  -- Ordering of operator precedence
- *  -- Memory leaks
- */
 
 %%
 
@@ -263,7 +257,7 @@ identifier
   : IDENT {
         $$.push_back($IDENT);
     }
-    /* TODO (azreika): with new typesystem: DOT -> DOUBLECOLON */
+    /* TODO (azreika): in next version: DOT -> DOUBLECOLON */
   | identifier[curr_identifier] DOT IDENT {
         $$ = $curr_identifier;
         $$.push_back($IDENT);
@@ -723,7 +717,7 @@ arg
         $$ = new AstNullConstant();
         $$->setSrcLoc(@$);
     }
-  /* TODO (azreika): identifiers should be placed in for new typesystem */
+  /* TODO (azreika): in next version: prepend records with identifiers */
   | LBRACKET RBRACKET {
         $$ = new AstRecordInit();
         $$->setSrcLoc(@$);

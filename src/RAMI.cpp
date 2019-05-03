@@ -475,7 +475,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             if (Global::config().has("profile") && !search.getProfileText().empty()) {
                 interpreter.frequencies[search.getProfileText()][interpreter.getIterationNumber()]++;
             }
-	    return result;
+            return result;
         }
 
         bool visitScan(const RamScan& scan) override {
@@ -485,9 +485,9 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // use simple iterator
             for (const RamDomain* cur : rel) {
                 ctxt[scan.getTupleId()] = cur;
-                if (!visitSearch(scan)) break; 
+                if (!visitSearch(scan)) break;
             }
-	    return true;
+            return true;
         }
 
         bool visitIndexScan(const RamIndexScan& scan) override {
@@ -519,9 +519,9 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             for (auto ip = range.first; ip != range.second; ++ip) {
                 const RamDomain* data = *(ip);
                 ctxt[scan.getTupleId()] = data;
-                if(!visitSearch(scan)) break; 
+                if (!visitSearch(scan)) break;
             }
-	    return true;
+            return true;
         }
 
         bool visitUnpackRecord(const RamUnpackRecord& lookup) override {
@@ -714,13 +714,13 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
         bool visitBreak(const RamBreak& breakOp) override {
             // check condition
             if (interpreter.evalCond(breakOp.getCondition(), ctxt)) {
-		 return false;
+                return false;
             }
             return visitNestedOperation(breakOp);
         }
 
         bool visitFilter(const RamFilter& filter) override {
-	    bool result = true;
+            bool result = true;
             // check condition
             if (interpreter.evalCond(filter.getCondition(), ctxt)) {
                 // process nested
@@ -730,7 +730,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             if (Global::config().has("profile") && !filter.getProfileText().empty()) {
                 interpreter.frequencies[filter.getProfileText()][interpreter.getIterationNumber()]++;
             }
-	    return result;
+            return result;
         }
 
         bool visitProject(const RamProject& project) override {
@@ -747,7 +747,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             InterpreterRelation& rel = interpreter.getRelation(project.getRelation());
             rel.insert(tuple);
 
-	    return true;
+            return true;
         }
 
         // -- return from subroutine --
@@ -759,7 +759,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                     ctxt.addReturnValue(interpreter.evalExpr(*val, ctxt));
                 }
             }
-	    return true;
+            return true;
         }
 
         // -- safety net --

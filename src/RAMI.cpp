@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,19 +8,20 @@
 
 /************************************************************************
  *
- * @file Interpreter.cpp
+ * @file RAMI.cpp
  *
- * Implementation of Souffle's interpreter.
+ * Implementation of RAMI (RamInterpreter).
  *
  ***********************************************************************/
 
-#include "Interpreter.h"
+#include "RAMI.h"
 #include "BTree.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"
+#include "Interpreter.h"
 #include "InterpreterIndex.h"
 #include "InterpreterRecords.h"
 #include "Logger.h"
@@ -28,7 +29,7 @@
 #include "ProfileEvent.h"
 #include "RamExistenceCheckAnalysis.h"
 #include "RamExpression.h"
-#include "RamIndexScanKeys.h"
+#include "RamIndexKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamOperationDepth.h"
@@ -59,21 +60,20 @@
 namespace souffle {
 
 /** Evaluate RAM Expression */
-RamDomain Interpreter::evalExpr(const RamExpression& expr, const InterpreterContext& ctxt) {
+RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ctxt) {
     class ExpressionEvaluator : public RamVisitor<RamDomain> {
-        Interpreter& interpreter;
+        RAMI& interpreter;
         const InterpreterContext& ctxt;
 
     public:
-        ExpressionEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
-                : interpreter(interp), ctxt(ctxt) {}
+        ExpressionEvaluator(RAMI& interp, const InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
 
         RamDomain visitNumber(const RamNumber& num) override {
             return num.getConstant();
         }
 
         RamDomain visitElementAccess(const RamElementAccess& access) override {
-            return ctxt[access.getIdentifier()][access.getElement()];
+            return ctxt[access.getTupleId()][access.getElement()];
         }
 
         RamDomain visitAutoIncrement(const RamAutoIncrement&) override {
@@ -285,15 +285,15 @@ RamDomain Interpreter::evalExpr(const RamExpression& expr, const InterpreterCont
 }
 
 /** Evaluate RAM Condition */
-bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
+bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
     class ConditionEvaluator : public RamVisitor<bool> {
-        Interpreter& interpreter;
+        RAMI& interpreter;
         const InterpreterContext& ctxt;
         RamExistenceCheckAnalysis* existCheckAnalysis;
         RamProvenanceExistenceCheckAnalysis* provExistCheckAnalysis;
 
     public:
-        ConditionEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
+        ConditionEvaluator(RAMI& interp, const InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt),
                   existCheckAnalysis(interp.getTranslationUnit().getAnalysis<RamExistenceCheckAnalysis>()),
                   provExistCheckAnalysis(
@@ -452,16 +452,16 @@ bool Interpreter::evalCond(const RamCondition& cond, const InterpreterContext& c
 }
 
 /** Evaluate RAM operation */
-void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args) {
+void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
     class OperationEvaluator : public RamVisitor<void> {
-        Interpreter& interpreter;
+        RAMI& interpreter;
         InterpreterContext& ctxt;
-        RamIndexScanKeysAnalysis* keysAnalysis;
+        RamIndexKeysAnalysis* keysAnalysis;
 
     public:
-        OperationEvaluator(Interpreter& interp, InterpreterContext& ctxt)
+        OperationEvaluator(RAMI& interp, InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt),
-                  keysAnalysis(interp.getTranslationUnit().getAnalysis<RamIndexScanKeysAnalysis>()) {}
+                  keysAnalysis(interp.getTranslationUnit().getAnalysis<RamIndexKeysAnalysis>()) {}
 
         // -- Operations -----------------------------
 
@@ -483,7 +483,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
 
             // use simple iterator
             for (const RamDomain* cur : rel) {
-                ctxt[scan.getIdentifier()] = cur;
+                ctxt[scan.getTupleId()] = cur;
                 visitSearch(scan);
             }
         }
@@ -516,8 +516,58 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             // conduct range query
             for (auto ip = range.first; ip != range.second; ++ip) {
                 const RamDomain* data = *(ip);
-                ctxt[scan.getIdentifier()] = data;
+                ctxt[scan.getTupleId()] = data;
                 visitSearch(scan);
+            }
+        }
+
+        void visitChoice(const RamChoice& choice) override {
+            // get the targeted relation
+            const InterpreterRelation& rel = interpreter.getRelation(choice.getRelation());
+
+            // use simple iterator
+            for (const RamDomain* cur : rel) {
+                ctxt[choice.getTupleId()] = cur;
+                if (interpreter.evalCond(choice.getCondition(), ctxt)) {
+                    visitSearch(choice);
+                    break;
+                }
+            }
+        }
+
+        void visitIndexChoice(const RamIndexChoice& choice) override {
+            // get the targeted relation
+            const InterpreterRelation& rel = interpreter.getRelation(choice.getRelation());
+
+            // create pattern tuple for range query
+            auto arity = rel.getArity();
+            RamDomain low[arity];
+            RamDomain hig[arity];
+            auto pattern = choice.getRangePattern();
+            for (size_t i = 0; i < arity; i++) {
+                if (pattern[i] != nullptr) {
+                    low[i] = interpreter.evalExpr(*pattern[i], ctxt);
+                    hig[i] = low[i];
+                } else {
+                    low[i] = MIN_RAM_DOMAIN;
+                    hig[i] = MAX_RAM_DOMAIN;
+                }
+            }
+
+            // obtain index
+            auto idx = rel.getIndex(keysAnalysis->getRangeQueryColumns(&choice), nullptr);
+
+            // get iterator range
+            auto range = idx->lowerUpperBound(low, hig);
+
+            // conduct range query
+            for (auto ip = range.first; ip != range.second; ++ip) {
+                const RamDomain* data = *(ip);
+                ctxt[choice.getTupleId()] = data;
+                if (interpreter.evalCond(choice.getCondition(), ctxt)) {
+                    visitSearch(choice);
+                    break;
+                }
             }
         }
 
@@ -535,7 +585,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             const RamDomain* tuple = unpack(ref, arity);
 
             // save reference to temporary value
-            ctxt[lookup.getIdentifier()] = tuple;
+            ctxt[lookup.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
             visitSearch(lookup);
@@ -548,16 +598,86 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             // initialize result
             RamDomain res = 0;
             switch (aggregate.getFunction()) {
-                case RamAggregate::MIN:
+                case souffle::MIN:
                     res = MAX_RAM_DOMAIN;
                     break;
-                case RamAggregate::MAX:
+                case souffle::MAX:
                     res = MIN_RAM_DOMAIN;
                     break;
-                case RamAggregate::COUNT:
+                case souffle::COUNT:
                     res = 0;
                     break;
-                case RamAggregate::SUM:
+                case souffle::SUM:
+                    res = 0;
+                    break;
+            }
+
+            for (const RamDomain* data : rel) {
+                ctxt[aggregate.getTupleId()] = data;
+
+                if (aggregate.getCondition() != nullptr &&
+                        !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
+                    continue;
+                }
+
+                // count is easy
+                if (aggregate.getFunction() == souffle::COUNT) {
+                    ++res;
+                    continue;
+                }
+
+                // aggregation is a bit more difficult
+
+                // eval target expression
+                RamDomain cur = interpreter.evalExpr(*aggregate.getExpression(), ctxt);
+
+                switch (aggregate.getFunction()) {
+                    case souffle::MIN:
+                        res = std::min(res, cur);
+                        break;
+                    case souffle::MAX:
+                        res = std::max(res, cur);
+                        break;
+                    case souffle::COUNT:
+                        res = 0;
+                        break;
+                    case souffle::SUM:
+                        res += cur;
+                        break;
+                }
+            }
+
+            // write result to environment
+            RamDomain tuple[1];
+            tuple[0] = res;
+            ctxt[aggregate.getTupleId()] = tuple;
+
+            // run nested part - using base class visitor
+            if (aggregate.getFunction() == souffle::MAX || aggregate.getFunction() == souffle::MIN) {
+                if (res == (aggregate.getFunction() == souffle::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
+                    return;
+                }
+            }
+            visitSearch(aggregate);
+        }
+
+        void visitIndexAggregate(const RamIndexAggregate& aggregate) override {
+            // get the targeted relation
+            const InterpreterRelation& rel = interpreter.getRelation(aggregate.getRelation());
+
+            // initialize result
+            RamDomain res = 0;
+            switch (aggregate.getFunction()) {
+                case souffle::MIN:
+                    res = MAX_RAM_DOMAIN;
+                    break;
+                case souffle::MAX:
+                    res = MIN_RAM_DOMAIN;
+                    break;
+                case souffle::COUNT:
+                    res = 0;
+                    break;
+                case souffle::SUM:
                     res = 0;
                     break;
             }
@@ -566,7 +686,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             auto arity = rel.getArity();
 
             // get lower and upper boundaries for iteration
-            const auto& pattern = aggregate.getPattern();
+            const auto& pattern = aggregate.getRangePattern();
             RamDomain low[arity];
             RamDomain hig[arity];
 
@@ -581,26 +701,24 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             }
 
             // obtain index
-            auto idx = rel.getIndex(aggregate.getRangeQueryColumns());
+            auto idx = rel.getIndex(keysAnalysis->getRangeQueryColumns(&aggregate));
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
-
-            // check for emptiness
-            if (aggregate.getFunction() != RamAggregate::COUNT) {
-                if (range.first == range.second) {
-                    return;  // no elements => no min/max
-                }
-            }
 
             // iterate through values
             for (auto ip = range.first; ip != range.second; ++ip) {
                 // link tuple
                 const RamDomain* data = *(ip);
-                ctxt[aggregate.getIdentifier()] = data;
+                ctxt[aggregate.getTupleId()] = data;
+
+                if (aggregate.getCondition() != nullptr &&
+                        !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
+                    continue;
+                }
 
                 // count is easy
-                if (aggregate.getFunction() == RamAggregate::COUNT) {
+                if (aggregate.getFunction() == souffle::COUNT) {
                     ++res;
                     continue;
                 }
@@ -611,16 +729,16 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
                 RamDomain cur = interpreter.evalExpr(*aggregate.getExpression(), ctxt);
 
                 switch (aggregate.getFunction()) {
-                    case RamAggregate::MIN:
+                    case souffle::MIN:
                         res = std::min(res, cur);
                         break;
-                    case RamAggregate::MAX:
+                    case souffle::MAX:
                         res = std::max(res, cur);
                         break;
-                    case RamAggregate::COUNT:
+                    case souffle::COUNT:
                         res = 0;
                         break;
-                    case RamAggregate::SUM:
+                    case souffle::SUM:
                         res += cur;
                         break;
                 }
@@ -629,9 +747,14 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
             // write result to environment
             RamDomain tuple[1];
             tuple[0] = res;
-            ctxt[aggregate.getIdentifier()] = tuple;
+            ctxt[aggregate.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
+            if (aggregate.getFunction() == souffle::MAX || aggregate.getFunction() == souffle::MIN) {
+                if (res == (aggregate.getFunction() == souffle::MAX ? MIN_RAM_DOMAIN : MAX_RAM_DOMAIN)) {
+                    return;
+                }
+            }
             visitSearch(aggregate);
         }
 
@@ -663,7 +786,7 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
         }
 
         // -- return from subroutine --
-        void visitReturn(const RamReturn& ret) override {
+        void visitReturnValue(const RamReturnValue& ret) override {
             for (auto val : ret.getValues()) {
                 if (val == nullptr) {
                     ctxt.addReturnValue(0, true);
@@ -689,12 +812,12 @@ void Interpreter::evalOp(const RamOperation& op, const InterpreterContext& args)
 }
 
 /** Evaluate RAM statement */
-void Interpreter::evalStmt(const RamStatement& stmt) {
+void RAMI::evalStmt(const RamStatement& stmt) {
     class StatementEvaluator : public RamVisitor<bool> {
-        Interpreter& interpreter;
+        RAMI& interpreter;
 
     public:
-        StatementEvaluator(Interpreter& interp) : interpreter(interp) {}
+        StatementEvaluator(RAMI& interp) : interpreter(interp) {}
 
         // -- Statements -----------------------------
 
@@ -899,7 +1022,7 @@ void Interpreter::evalStmt(const RamStatement& stmt) {
 }
 
 /** Execute main program of a translation unit */
-void Interpreter::executeMain() {
+void RAMI::executeMain() {
     SignalHandler::instance()->set();
     if (Global::config().has("verbose")) {
         SignalHandler::instance()->enableLogging();
@@ -954,12 +1077,13 @@ void Interpreter::executeMain() {
 }
 
 /** Execute subroutine */
-void Interpreter::executeSubroutine(const RamStatement& stmt, const std::vector<RamDomain>& arguments,
+void RAMI::executeSubroutine(const std::string& name, const std::vector<RamDomain>& arguments,
         std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) {
     InterpreterContext ctxt;
     ctxt.setReturnValues(returnValues);
     ctxt.setReturnErrors(returnErrors);
     ctxt.setArguments(arguments);
+    const RamStatement& stmt = translationUnit.getProgram()->getSubroutine(name);
 
     // run subroutine
     const RamOperation& op = static_cast<const RamQuery&>(stmt).getOperation();

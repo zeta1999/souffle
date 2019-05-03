@@ -368,8 +368,12 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             }
 
             // add constraint
-            return std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
-                    translator.translateRelation(atom), std::move(values)));
+            if (arity > 0) {
+                return std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
+                        translator.translateRelation(atom), std::move(values)));
+            } else {
+                return std::make_unique<RamEmptinessCheck>(translator.translateRelation(atom));
+            }
         }
 
         /** for provenance negation */
@@ -533,8 +537,13 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
         values.push_back(translator.translateValue(arg, valueIndex));
     }
 
-    std::unique_ptr<RamProject> project =
+    std::unique_ptr<RamOperation> project =
             std::make_unique<RamProject>(translator.translateRelation(head), std::move(values));
+
+    if (head->getArity() == 0) {
+        project = std::make_unique<RamFilter>(
+                std::make_unique<RamEmptinessCheck>(translator.translateRelation(head)), std::move(project));
+    }
 
     // check existence for original tuple if we have provenance
     // only if we don't compile
@@ -568,7 +577,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     }
 
     // build up insertion call
-    return std::move(project);  // start with innermost
+    return project;  // start with innermost
 }
 
 std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createOperation(
@@ -598,7 +607,7 @@ std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createO
         }
     }
 
-    return std::make_unique<RamReturn>(std::move(values));
+    return std::make_unique<RamReturnValue>(std::move(values));
 }
 
 std::unique_ptr<RamCondition> AstTranslator::ClauseTranslator::createCondition(
@@ -698,19 +707,19 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         const AstAggregator* cur = *it;
 
         // translate aggregation function
-        RamAggregate::Function fun = RamAggregate::MIN;
+        AggregateFunction fun = souffle::MIN;
         switch (cur->getOperator()) {
             case AstAggregator::min:
-                fun = RamAggregate::MIN;
+                fun = souffle::MIN;
                 break;
             case AstAggregator::max:
-                fun = RamAggregate::MAX;
+                fun = souffle::MAX;
                 break;
             case AstAggregator::count:
-                fun = RamAggregate::COUNT;
+                fun = souffle::COUNT;
                 break;
             case AstAggregator::sum:
-                fun = RamAggregate::SUM;
+                fun = souffle::SUM;
                 break;
         }
 
@@ -723,29 +732,42 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         const AstAtom* atom = dynamic_cast<const AstAtom*>(cur->getBodyLiterals()[0]);
         assert(atom && "Unsupported complex aggregation body encountered!");
 
-        // add Ram-Aggregation layer
-        std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(
-                std::move(op), fun, std::move(value), translator.translateRelation(atom), level);
-
-        // add constant constraints
+        std::unique_ptr<RamCondition> aggCondition;
         for (size_t pos = 0; pos < atom->argSize(); ++pos) {
             if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
-                aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
+                        BinaryConstraintOp::EQ,
                         std::make_unique<RamElementAccess>(level, pos, translator.translateRelation(atom)),
-                        std::make_unique<RamNumber>(c->getIndex())));
+                        std::make_unique<RamNumber>(c->getIndex()));
+                if (aggCondition == nullptr) {
+                    aggCondition = std::move(newCondition);
+                } else {
+                    aggCondition = std::make_unique<RamConjunction>(
+                            std::move(aggCondition), std::move(newCondition));
+                }
             } else if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {
                 // all other appearances
                 for (const Location& loc : valueIndex.getVariableReferences().find(var->getName())->second) {
                     if (level != loc.identifier || (int)pos != loc.element) {
-                        aggregate->addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                makeRamElementAccess(loc),
+                        std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
+                                BinaryConstraintOp::EQ, makeRamElementAccess(loc),
                                 std::make_unique<RamElementAccess>(
-                                        level, pos, translator.translateRelation(atom))));
+                                        level, pos, translator.translateRelation(atom)));
+                        if (aggCondition == nullptr) {
+                            aggCondition = std::move(newCondition);
+                        } else {
+                            aggCondition = std::make_unique<RamConjunction>(
+                                    std::move(aggCondition), std::move(newCondition));
+                        }
                         break;
                     }
                 }
             }
         }
+
+        // add Ram-Aggregation layer
+        std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(std::move(op), fun,
+                translator.translateRelation(atom), std::move(value), std::move(aggCondition), level);
         op = std::move(aggregate);
     }
 
@@ -770,22 +792,30 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 }
             }
 
+            // add check for emptiness for an atom
+            op = std::make_unique<RamFilter>(
+                    std::make_unique<RamNegation>(
+                            std::make_unique<RamEmptinessCheck>(translator.translateRelation(atom))),
+                    std::move(op));
+
             // add a scan level
-            if (Global::config().has("profile")) {
-                std::stringstream ss;
-                ss << head->getName();
-                ss.str("");
-                ss << "@frequency-atom" << ';';
-                ss << originalClause.getHead()->getName() << ';';
-                ss << version << ';';
-                ss << stringify(toString(clause)) << ';';
-                ss << stringify(toString(*atom)) << ';';
-                ss << stringify(toString(originalClause)) << ';';
-                ss << level << ';';
-                op = std::make_unique<RamScan>(
-                        translator.translateRelation(atom), level, std::move(op), ss.str());
-            } else {
-                op = std::make_unique<RamScan>(translator.translateRelation(atom), level, std::move(op));
+            if (atom->getArity() != 0) {
+                if (Global::config().has("profile")) {
+                    std::stringstream ss;
+                    ss << head->getName();
+                    ss.str("");
+                    ss << "@frequency-atom" << ';';
+                    ss << originalClause.getHead()->getName() << ';';
+                    ss << version << ';';
+                    ss << stringify(toString(clause)) << ';';
+                    ss << stringify(toString(*atom)) << ';';
+                    ss << stringify(toString(originalClause)) << ';';
+                    ss << level << ';';
+                    op = std::make_unique<RamScan>(
+                            translator.translateRelation(atom), level, std::move(op), ss.str());
+                } else {
+                    op = std::make_unique<RamScan>(translator.translateRelation(atom), level, std::move(op));
+                }
             }
 
             // TODO: support constants in nested records!
@@ -1042,8 +1072,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                     r1->addToBody(std::make_unique<AstProvenanceNegation>(
                             std::unique_ptr<AstAtom>(cl->getHead()->clone())));
                 } else {
-                    r1->addToBody(
-                            std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cl->getHead()->clone())));
+                    if (r1->getHead()->getArity() > 0)
+                        r1->addToBody(std::make_unique<AstNegation>(
+                                std::unique_ptr<AstAtom>(cl->getHead()->clone())));
                 }
 
                 // replace wildcards with variables (reduces indices when wildcards are used in recursive
@@ -1179,6 +1210,152 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
     }
 
     return ProvenanceClauseTranslator(*this).translateClause(*intermediateClause, clause);
+}
+
+/** make a subroutine to search for subproofs for the non-existence of a tuple */
+std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
+    // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates or
+    // anything else...)
+
+    // build a vector of unique variables
+    std::vector<AstVariable> uniqueVariables;
+
+    visitDepthFirst(clause, [&](const AstVariable& var) {
+        if (var.getName().find("@level_num") == std::string::npos) {
+            if (std::find(uniqueVariables.begin(), uniqueVariables.end(), var) == uniqueVariables.end()) {
+                uniqueVariables.push_back(var);
+            }
+        }
+    });
+
+    // a mapper to replace variables with subroutine arguments
+    struct VariablesToArguments : public AstNodeMapper {
+        const std::vector<AstVariable>& uniqueVariables;
+
+        VariablesToArguments() = default;
+        VariablesToArguments(const std::vector<AstVariable>& uniqueVariables)
+                : uniqueVariables(uniqueVariables) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // apply recursive
+            node->apply(*this);
+
+            // replace unknown variables
+            if (auto varPtr = dynamic_cast<AstVariable*>(node.get())) {
+                auto var = *varPtr;
+                size_t argNum = std::find(uniqueVariables.begin(), uniqueVariables.end(), var) -
+                                uniqueVariables.begin();
+
+                return std::make_unique<AstSubroutineArgument>(argNum);
+            }
+
+            // otherwise nothing
+            return node;
+        }
+    };
+
+    // the structure of this subroutine is a sequence where each nested statement is a search in each relation
+    std::unique_ptr<RamSequence> searchSequence = std::make_unique<RamSequence>();
+
+    // go through each body atom and create a return
+    size_t litNumber = 0;
+    for (const auto& lit : clause.getBodyLiterals()) {
+        if (auto atom = dynamic_cast<AstAtom*>(lit)) {
+            // get a RamRelationReference
+            auto relRef = translateRelation(atom);
+
+            // construct a query
+            std::vector<std::unique_ptr<RamExpression>> query;
+            SearchColumns searchCols = 0;
+
+            // translate variables to subroutine arguments
+            VariablesToArguments varsToArgs(uniqueVariables);
+            atom->apply(varsToArgs);
+
+            // add each value (subroutine argument) to the search query
+            for (size_t i = 0; i < atom->getArity() - 2; i++) {
+                auto arg = atom->getArgument(i);
+                query.push_back(translateValue(arg, ValueIndex()));
+                searchCols = (searchCols << 1) + 1;
+            }
+
+            // fill up query with nullptrs for the provenance columns
+            query.push_back(nullptr);
+            query.push_back(nullptr);
+
+            // ensure the length of query tuple is correct
+            assert(query.size() == atom->getArity() && "wrong query tuple size");
+
+            // make the nested operation to return the atom number if it exists
+            std::vector<std::unique_ptr<RamExpression>> returnValue;
+            returnValue.push_back(std::make_unique<RamNumber>(litNumber));
+
+            // create a search
+            auto search = std::make_unique<RamIndexScan>(std::move(relRef), litNumber, std::move(query),
+                    std::make_unique<RamReturnValue>(std::move(returnValue)));
+
+            // now, return the values of the atoms, with a separator
+            // between atom number and atom
+            std::vector<std::unique_ptr<RamExpression>> returnAtom;
+            returnAtom.push_back(nullptr);
+            // the actual atom
+            for (size_t i = 0; i < atom->getArity() - 2; i++) {
+                returnAtom.push_back(translateValue(atom->getArgument(i), ValueIndex()));
+            }
+
+            // chain the atom number and atom value together
+            auto atomSequence = std::make_unique<RamSequence>();
+            atomSequence->add(std::make_unique<RamQuery>(std::move(search)));
+            atomSequence->add(
+                    std::make_unique<RamQuery>(std::make_unique<RamReturnValue>(std::move(returnAtom))));
+
+            // append search to the sequence
+            searchSequence->add(std::move(atomSequence));
+
+        } else if (auto con = dynamic_cast<AstConstraint*>(lit)) {
+            VariablesToArguments varsToArgs(uniqueVariables);
+            con->apply(varsToArgs);
+
+            // translate to a RamCondition
+            auto condition = translateConstraint(con, ValueIndex());
+
+            // create a return value
+            std::vector<std::unique_ptr<RamExpression>> returnValue;
+            returnValue.push_back(std::make_unique<RamNumber>(litNumber));
+
+            // create a filter
+            auto filter = std::make_unique<RamFilter>(
+                    std::move(condition), std::make_unique<RamReturnValue>(std::move(returnValue)));
+
+            // now, return the values of the literal, with a separator
+            // between atom number and atom
+            std::vector<std::unique_ptr<RamExpression>> returnLit;
+            returnLit.push_back(nullptr);
+            // add return values for binary constraints and negations
+            if (auto binaryConstraint = dynamic_cast<AstBinaryConstraint*>(con)) {
+                returnLit.push_back(translateValue(binaryConstraint->getLHS(), ValueIndex()));
+                returnLit.push_back(translateValue(binaryConstraint->getRHS(), ValueIndex()));
+            } else if (auto negation = dynamic_cast<AstNegation*>(con)) {
+                auto vals = negation->getAtom()->getArguments();
+                for (size_t i = 0; i < vals.size() - 2; i++) {
+                    returnLit.push_back(translateValue(vals[i], ValueIndex()));
+                }
+            }
+
+            // chain the atom number and atom value together
+            auto litSequence = std::make_unique<RamSequence>();
+            litSequence->add(std::make_unique<RamQuery>(std::move(filter)));
+            litSequence->add(
+                    std::make_unique<RamQuery>(std::make_unique<RamReturnValue>(std::move(returnLit))));
+
+            // append search to the sequence
+            searchSequence->add(std::move(litSequence));
+        }
+
+        litNumber++;
+    }
+
+    return std::move(searchSequence);
 }
 
 /** translates the given datalog program into an equivalent RAM program  */
@@ -1481,6 +1658,10 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             std::string subroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_subproof";
             ramProg->addSubroutine(subroutineLabel, makeSubproofSubroutine(clause));
+
+            std::string negationSubroutineLabel =
+                    relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_negation_subproof";
+            ramProg->addSubroutine(negationSubroutineLabel, makeNegationSubproofSubroutine(clause));
         });
     }
 }

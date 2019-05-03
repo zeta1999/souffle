@@ -48,21 +48,21 @@ public:
 
             // find all the info tuples
             for (auto& tuple : *rel) {
-                std::vector<std::string> bodyRels;
+                std::vector<std::string> bodyLiterals;
 
                 RamDomain ruleNum;
                 tuple >> ruleNum;
 
                 for (size_t i = 1; i < rel->getArity() - 1; i++) {
-                    std::string bodyRel;
-                    tuple >> bodyRel;
-                    bodyRels.push_back(bodyRel);
+                    std::string bodyLit;
+                    tuple >> bodyLit;
+                    bodyLiterals.push_back(bodyLit);
                 }
 
                 std::string rule;
                 tuple >> rule;
 
-                info.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), bodyRels});
+                info.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), bodyLiterals});
                 rules.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), rule});
             }
         }
@@ -114,7 +114,14 @@ public:
 
         // recursively get nodes for subproofs
         size_t tupleCurInd = 0;
-        for (std::string bodyRel : info[std::make_pair(relName, ruleNum)]) {
+        auto bodyRelations = info[std::make_pair(relName, ruleNum)];
+
+        // start from begin + 1 because the first element represents the head atom
+        for (auto it = bodyRelations.begin() + 1; it < bodyRelations.end(); it++) {
+            std::string bodyLiteral = *it;
+            // split bodyLiteral since it contains relation name plus arguments
+            std::string bodyRel = splitString(bodyLiteral, ',')[0];
+
             // check whether the current atom is a constraint
             bool isConstraint =
                     std::find(constraintList.begin(), constraintList.end(), bodyRel) != constraintList.end();
@@ -162,8 +169,8 @@ public:
                 if (isNumericBinaryConstraintOp(toBinaryConstraintOp(bodyRel))) {
                     joinedConstraint << subproofTuple[0] << " " << bodyRel << " " << subproofTuple[1];
                 } else {
-                    joinedConstraint << bodyRel << "(\"" << prog.getSymbolTable().resolve(subproofTuple[0])
-                                     << "\", \"" << prog.getSymbolTable().resolve(subproofTuple[1]) << "\")";
+                    joinedConstraint << bodyRel << "(\"" << symTable.resolve(subproofTuple[0]) << "\", \""
+                                     << symTable.resolve(subproofTuple[1]) << "\")";
                 }
 
                 internalNode->add_child(std::make_unique<LeafNode>(joinedConstraint.str()));
@@ -215,6 +222,214 @@ public:
         return explain(relName, tup, ruleNum, levelNum, depthLimit);
     }
 
+    std::vector<std::string> explainNegationGetVariables(
+            std::string relName, std::vector<std::string> args, size_t ruleNum) override {
+        std::vector<std::string> variables;
+
+        // check that the tuple actually doesn't exist
+        if (findTuple(relName, argsToNums(relName, args)) != std::make_pair(-1, -1)) {
+            // return a sentinel value
+            return std::vector<std::string>({"@"});
+        }
+
+        // atom meta information stored for the current rule
+        auto atoms = info[std::make_pair(relName, ruleNum)];
+
+        // atoms[0] represents variables in the head atom
+        auto headVariables = splitString(atoms[0], ',');
+
+        // check that head variable bindings make sense, i.e. for a head like a(x, x), make sure both x are
+        // the same value
+        std::map<std::string, std::string> headVariableMapping;
+        for (size_t i = 0; i < headVariables.size(); i++) {
+            if (headVariableMapping.find(headVariables[i]) == headVariableMapping.end()) {
+                headVariableMapping[headVariables[i]] = args[i];
+            } else {
+                if (headVariableMapping[headVariables[i]] != args[i]) {
+                    return std::vector<std::string>({"@non_matching"});
+                }
+            }
+        }
+
+        // get body variables
+        std::vector<std::string> uniqueBodyVariables;
+        for (auto it = atoms.begin() + 1; it < atoms.end(); it++) {
+            auto atomRepresentation = splitString(*it, ',');
+
+            // atomRepresentation.begin() + 1 because the first element is the relation name of the atom
+            // which is not relevant for finding variables
+            for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
+                if (!contains(uniqueBodyVariables, *atomIt) && !contains(headVariables, *atomIt)) {
+                    uniqueBodyVariables.push_back(*atomIt);
+                }
+            }
+        }
+
+        return uniqueBodyVariables;
+    }
+
+    std::unique_ptr<TreeNode> explainNegation(std::string relName, size_t ruleNum,
+            const std::vector<std::string>& tuple,
+            std::map<std::string, std::string>& bodyVariables) override {
+        // construct a vector of unique variables that occur in the rule
+        std::vector<std::string> uniqueVariables;
+
+        // we also need to know the type of each variable
+        std::map<std::string, char> variableTypes;
+
+        // atom meta information stored for the current rule
+        auto atoms = info[std::make_pair(relName, ruleNum)];
+
+        // atoms[0] represents variables in the head atom
+        auto headVariables = splitString(atoms[0], ',');
+
+        uniqueVariables.insert(uniqueVariables.end(), headVariables.begin(), headVariables.end());
+
+        // get body variables
+        for (auto it = atoms.begin() + 1; it < atoms.end(); it++) {
+            auto atomRepresentation = splitString(*it, ',');
+
+            // atomRepresentation.begin() + 1 because the first element is the relation name of the atom
+            // which is not relevant for finding variables
+            for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
+                if (!contains(uniqueVariables, *atomIt) && !contains(headVariables, *atomIt)) {
+                    uniqueVariables.push_back(*atomIt);
+
+                    // store type of variable
+                    auto currentRel = prog.getRelation(atomRepresentation[0]);
+                    assert(currentRel != nullptr &&
+                            ("relation " + atomRepresentation[0] + " doesn't exist").c_str());
+                    variableTypes[*atomIt] =
+                            *currentRel->getAttrType(atomIt - atomRepresentation.begin() - 1);
+                }
+            }
+        }
+
+        std::vector<RamDomain> args;
+
+        size_t varCounter = 0;
+
+        // construct arguments to pass in to the subroutine
+        // - this contains the variable bindings selected by the user
+
+        // add number representation of tuple
+        auto tupleNums = argsToNums(relName, tuple);
+        args.insert(args.end(), tupleNums.begin(), tupleNums.end());
+        varCounter += tuple.size();
+
+        while (varCounter < uniqueVariables.size()) {
+            auto var = uniqueVariables[varCounter];
+            auto varValue = bodyVariables[var];
+            if (variableTypes[var] == 's') {
+                if (varValue.size() >= 2 && varValue[0] == '"' && varValue[varValue.size() - 1] == '"') {
+                    auto originalStr = varValue.substr(1, varValue.size() - 2);
+                    args.push_back(symTable.lookup(originalStr));
+                } else {
+                    // assume no quotation marks
+                    args.push_back(symTable.lookup(varValue));
+                }
+            } else {
+                args.push_back(std::stoi(varValue));
+            }
+
+            varCounter++;
+        }
+
+        // set up return and error vectors for subroutine calling
+        std::vector<RamDomain> ret;
+        std::vector<bool> err;
+
+        // execute subroutine to get subproofs
+        prog.executeSubroutine(
+                relName + "_" + std::to_string(ruleNum) + "_negation_subproof", args, ret, err);
+
+        // construct tree nodes
+        std::stringstream joinedArgsStr;
+        joinedArgsStr << join(tuple, ",");
+        auto internalNode = std::make_unique<InnerNode>(
+                relName + "(" + joinedArgsStr.str() + ")", "(R" + std::to_string(ruleNum) + ")");
+
+        // traverse return vector and construct child nodes
+        // making sure we display existent and non-existent tuples correctly
+        int literalCounter = 1;
+        for (size_t returnCounter = 0; returnCounter < ret.size(); returnCounter++) {
+            // check what the next contained atom is
+            bool atomExists;
+            if (err[returnCounter]) {
+                atomExists = false;
+                returnCounter++;
+            } else {
+                atomExists = true;
+                assert(err[returnCounter + 1] && "there should be a separator for literals in return");
+                returnCounter += 2;
+            }
+
+            // get the relation of the current atom
+            auto atomRepresentation = splitString(atoms[literalCounter], ',');
+            std::string bodyRel = atomRepresentation[0];
+
+            // check whether the current atom is a constraint
+            bool isConstraint =
+                    std::find(constraintList.begin(), constraintList.end(), bodyRel) != constraintList.end();
+
+            // handle negated atom names
+            auto bodyRelAtomName = bodyRel;
+            if (bodyRel[0] == '!') {
+                bodyRelAtomName = bodyRel.substr(1);
+            }
+
+            // traverse subroutine return
+            size_t arity;
+            if (isConstraint) {
+                // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
+                // annotations
+                arity = 4;
+            } else {
+                arity = prog.getRelation(bodyRelAtomName)->getArity();
+            }
+
+            // process current literal
+            std::vector<RamDomain> atomValues;
+            std::vector<bool> atomErrs;
+            size_t j = returnCounter;
+            for (; j < returnCounter + arity - 2; j++) {
+                atomValues.push_back(ret[j]);
+                atomErrs.push_back(err[j]);
+            }
+
+            // add child nodes to the proof tree
+            std::stringstream childLabel;
+            if (isConstraint) {
+                assert(atomValues.size() == 2 && "not a binary constraint");
+
+                if (isNumericBinaryConstraintOp(toBinaryConstraintOp(bodyRel))) {
+                    childLabel << atomValues[0] << " " << bodyRel << " " << atomValues[1];
+                } else {
+                    childLabel << bodyRel << "(\"" << symTable.resolve(atomValues[0]) << "\", \""
+                               << symTable.resolve(atomValues[1]) << "\")";
+                }
+            } else {
+                childLabel << bodyRel << "(";
+                childLabel << join(numsToArgs(bodyRelAtomName, atomValues, &atomErrs), ", ");
+                childLabel << ")";
+            }
+
+            if (atomExists) {
+                childLabel << " ✓";
+            } else {
+                childLabel << " x";
+            }
+
+            internalNode->add_child(std::make_unique<LeafNode>(childLabel.str()));
+            internalNode->setSize(internalNode->getSize() + 1);
+
+            returnCounter = j - 1;
+            literalCounter++;
+        }
+
+        return std::move(internalNode);
+    }
+
     std::string getRule(std::string relName, size_t ruleNum) override {
         auto key = make_pair(relName, ruleNum);
 
@@ -224,6 +439,18 @@ public:
         } else {
             return rule->second;
         }
+    }
+
+    std::vector<std::string> getRules(std::string relName) override {
+        std::vector<std::string> relRules;
+        // go through all rules
+        for (auto it = rules.begin(); it != rules.end(); it++) {
+            if (it->first.first == relName) {
+                relRules.push_back(it->second);
+            }
+        }
+
+        return relRules;
     }
 
     std::string measureRelation(std::string relName) override {
@@ -258,7 +485,7 @@ public:
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
                     tuple >> s;
-                    n = prog.getSymbolTable().lookupExisting(s.c_str());
+                    n = symTable.lookupExisting(s.c_str());
                 } else {
                     tuple >> n;
                 }
@@ -331,7 +558,7 @@ private:
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
                     tuple >> s;
-                    n = prog.getSymbolTable().lookupExisting(s);
+                    n = symTable.lookupExisting(s);
                 } else {
                     tuple >> n;
                 }

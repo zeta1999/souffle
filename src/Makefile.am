@@ -101,13 +101,16 @@ souffle_sources = \
               IOSystem.h                                \
               IndexSetAnalysis.cpp   IndexSetAnalysis.h \
               InlineRelationsTransformer.cpp            \
-              Interpreter.cpp       Interpreter.h       \
+              Interpreter.h       						\
               InterpreterContext.h                      \
               InterpreterIndex.h                        \
               InterpreterInterface.h                    \
               InterpreterRecords.cpp InterpreterRecords.h \
               InterpreterRelation.h                     \
               LogStatement.h                            \
+			  LVM.cpp 				LVM.h 				\
+			  LVMCode.cpp			LVMCode.h			\
+			  LVMGenerator.h							\
               MagicSet.cpp          MagicSet.h          \
               MinimiseProgramTransformer.cpp            \
               ParserDriver.cpp      ParserDriver.h      \
@@ -118,13 +121,13 @@ souffle_sources = \
               RamConstValue.cpp RamConstValue.h         \
               RamExistenceCheckAnalysis.cpp RamExistenceCheckAnalysis.h \
               RamProvenanceExistenceCheckAnalysis.cpp RamProvenanceExistenceCheckAnalysis.h \
-              RamIndexScanKeys.cpp  RamIndexScanKeys.h  \
-              RamConditionLevel.cpp RamConditionLevel.h \
+              RamIndexKeys.cpp  RamIndexKeys.h          \
+			  RAMI.cpp RAMI.h 							\
               RamOperationDepth.cpp RamOperationDepth.h \
-              RamExpressionLevel.cpp RamExpressionLevel.h         \
+              RamLevel.cpp RamLevel.h                   \
               RamCondition.h                            \
               RamNode.h                                 \
-              RamOperation.cpp      RamOperation.h      \
+              RamOperation.h                            \
               RamProgram.h                              \
               RamRelation.h                             \
               RamStatement.h                            \

@@ -247,11 +247,11 @@ public:
     /** Run subroutine */
     void executeSubroutine(std::string name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret,
             std::vector<bool>& err) override {
-        exec.executeSubroutine(prog.getSubroutine(name), args, ret, err);
+        exec.executeSubroutine(name, args, ret, err);
     }
 
     /** Get symbol table */
-    const SymbolTable& getSymbolTable() const override {
+    SymbolTable& getSymbolTable() override {
         return symTable;
     }
 

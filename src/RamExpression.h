@@ -20,6 +20,7 @@
 #include "RamNode.h"
 #include "RamRelation.h"
 #include "SymbolTable.h"
+#include "Util.h"
 
 #include <algorithm>
 #include <array>
@@ -36,7 +37,7 @@ namespace souffle {
  */
 class RamExpression : public RamNode {
 public:
-    RamExpression(RamNodeType type) : RamNode(type) {}
+    RamExpression() = default;
 
     /** Create clone */
     RamExpression* clone() const override = 0;
@@ -50,7 +51,7 @@ public:
 class RamIntrinsicOperator : public RamExpression {
 public:
     template <typename... Args>
-    RamIntrinsicOperator(FunctorOp op, Args... args) : RamExpression(RN_IntrinsicOperator), operation(op) {
+    RamIntrinsicOperator(FunctorOp op, Args... args) : RamExpression(), operation(op) {
         std::unique_ptr<RamExpression> tmp[] = {std::move(args)...};
         for (auto& cur : tmp) {
             arguments.push_back(std::move(cur));
@@ -58,7 +59,7 @@ public:
     }
 
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamExpression>> args)
-            : RamExpression(RN_IntrinsicOperator), operation(op), arguments(std::move(args)) {}
+            : RamExpression(), operation(op), arguments(std::move(args)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -143,8 +144,7 @@ protected:
 class RamUserDefinedOperator : public RamExpression {
 public:
     RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamExpression>> args)
-            : RamExpression(RN_UserDefinedOperator), arguments(std::move(args)), name(std::move(n)),
-              type(std::move(t)) {}
+            : RamExpression(), arguments(std::move(args)), name(std::move(n)), type(std::move(t)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -230,20 +230,19 @@ protected:
 class RamElementAccess : public RamExpression {
 public:
     RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
-            : RamExpression(RN_ElementAccess), identifier(ident), element(elem),
-              relationRef(std::move(relRef)) {}
+            : RamExpression(), identifier(ident), element(elem), relationRef(std::move(relRef)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
         if (nullptr == relationRef) {
-            os << "env(t" << identifier << ", i" << element << ")";
+            os << "t" << identifier << "." << element;
         } else {
             os << "t" << identifier << "." << relationRef->get()->getArg(element);
         }
     }
 
     /** Get identifier */
-    size_t getIdentifier() const {
+    int getTupleId() const {
         return identifier;
     }
 
@@ -290,7 +289,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamElementAccess*>(&node));
         const auto& other = static_cast<const RamElementAccess&>(node);
-        return getIdentifier() == other.getIdentifier() && getElement() == other.getElement();
+        return getTupleId() == other.getTupleId() && getElement() == other.getElement();
     }
 };
 
@@ -299,7 +298,7 @@ protected:
  */
 class RamNumber : public RamExpression {
 public:
-    RamNumber(RamDomain c) : RamExpression(RN_Number), constant(c) {}
+    RamNumber(RamDomain c) : RamExpression(), constant(c) {}
 
     /** Get constant */
     RamDomain getConstant() const {
@@ -345,7 +344,7 @@ protected:
  */
 class RamAutoIncrement : public RamExpression {
 public:
-    RamAutoIncrement() : RamExpression(RN_AutoIncrement) {}
+    RamAutoIncrement() = default;
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -380,7 +379,7 @@ protected:
 class RamPackRecord : public RamExpression {
 public:
     RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args)
-            : RamExpression(RN_PackRecord), arguments(std::move(args)) {}
+            : RamExpression(), arguments(std::move(args)) {}
 
     /** Get arguments */
     std::vector<RamExpression*> getArguments() const {
@@ -448,7 +447,7 @@ protected:
  */
 class RamArgument : public RamExpression {
 public:
-    RamArgument(size_t number) : RamExpression(RN_Argument), number(number) {}
+    RamArgument(size_t number) : RamExpression(), number(number) {}
 
     /** Get argument */
     size_t getArgument() const {

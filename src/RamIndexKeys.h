@@ -8,32 +8,32 @@
 
 /************************************************************************
  *
- * @file RamExpressionLevel.h
+ * @file RamIndexKeys.h
  *
- * Get level of an expression to determine the placement in the loop-nest
+ * Get the indexable columns for a range query
  *
  ***********************************************************************/
 
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamExpression.h"
+#include "RamOperation.h"
 
 namespace souffle {
 
 /*
- * Class for a level analysis
+ * Class to compute the search columns of an index scan
  */
-class RamExpressionLevelAnalysis : public RamAnalysis {
+class RamIndexKeysAnalysis : public RamAnalysis {
 public:
-    /** name of analysis */
-    static constexpr const char* name = "value-level-analysis";
+    /** Name of analysis */
+    static constexpr const char* name = "index-scan-keys-analysis";
 
-    /** run level analysis for a RAM translation unit */
+    /** Run keys analysis for a RAM translation unit */
     void run(const RamTranslationUnit& translationUnit) override {}
 
-    /** Get level */
-    size_t getLevel(const RamExpression* value) const;
+    /** Get indexable columns of index scan */
+    SearchColumns getRangeQueryColumns(const RamIndexRelationSearch* search) const;
 };
 
 }  // end of namespace souffle

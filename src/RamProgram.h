@@ -22,8 +22,8 @@ namespace souffle {
 
 class RamProgram : public RamNode {
 public:
-    RamProgram() : RamNode(RN_Program) {}
-    RamProgram(std::unique_ptr<RamStatement> main) : RamNode(RN_Program), main(std::move(main)) {}
+    RamProgram() = default;
+    RamProgram(std::unique_ptr<RamStatement> main) : RamNode(), main(std::move(main)) {}
 
     /** Obtain child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
@@ -34,7 +34,6 @@ public:
         for (auto& r : relations) {
             children.push_back(r.second.get());
         }
-        children.push_back(main.get());
         for (auto& s : subroutines) {
             children.push_back(s.second.get());
         }

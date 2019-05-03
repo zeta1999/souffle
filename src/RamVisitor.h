@@ -70,73 +70,73 @@ struct RamVisitor : public ram_visitor_tag {
     virtual R visit(const RamNode& node, Params... args) {
         // dispatch node processing based on dynamic type
 
-        switch (node.getNodeType()) {
 #define FORWARD(Kind) \
-    case (RN_##Kind): \
-        return visit##Kind(static_cast<const Ram##Kind&>(node), args...);
-            // Relation
-            FORWARD(Relation);
-            FORWARD(RelationReference);
+    if (const auto* n = dynamic_cast<const Ram##Kind*>(&node)) return visit##Kind(*n, args...);
+        // Relation
+        FORWARD(Relation);
+        FORWARD(RelationReference);
 
-            // Expressions
-            FORWARD(ElementAccess);
-            FORWARD(Number);
-            FORWARD(IntrinsicOperator);
-            FORWARD(UserDefinedOperator);
-            FORWARD(AutoIncrement);
-            FORWARD(PackRecord);
-            FORWARD(Argument);
+        // Expressions
+        FORWARD(ElementAccess);
+        FORWARD(Number);
+        FORWARD(IntrinsicOperator);
+        FORWARD(UserDefinedOperator);
+        FORWARD(AutoIncrement);
+        FORWARD(PackRecord);
+        FORWARD(Argument);
 
-            // Conditions
-            FORWARD(EmptinessCheck);
-            FORWARD(ExistenceCheck);
-            FORWARD(ProvenanceExistenceCheck);
-            FORWARD(Conjunction);
-            FORWARD(Negation);
-            FORWARD(Constraint);
+        // Conditions
+        FORWARD(EmptinessCheck);
+        FORWARD(ExistenceCheck);
+        FORWARD(ProvenanceExistenceCheck);
+        FORWARD(Conjunction);
+        FORWARD(Negation);
+        FORWARD(Constraint);
 
-            // Operations
-            FORWARD(Filter);
-            FORWARD(Project);
-            FORWARD(Return);
-            FORWARD(UnpackRecord);
-            FORWARD(Scan);
-            FORWARD(IndexScan);
-            FORWARD(Aggregate);
+        // Operations
+        FORWARD(Filter);
+        FORWARD(Project);
+        FORWARD(ReturnValue);
+        FORWARD(UnpackRecord);
+        FORWARD(Scan);
+        FORWARD(IndexScan);
+        FORWARD(Choice);
+        FORWARD(IndexChoice);
+        FORWARD(Aggregate);
+        FORWARD(IndexAggregate);
 
-            // Statements
-            FORWARD(Create);
-            FORWARD(Fact);
-            FORWARD(Load);
-            FORWARD(Store);
-            FORWARD(Query);
-            FORWARD(Clear);
-            FORWARD(Drop);
-            FORWARD(LogSize);
+        // Statements
+        FORWARD(Create);
+        FORWARD(Fact);
+        FORWARD(Load);
+        FORWARD(Store);
+        FORWARD(Query);
+        FORWARD(Clear);
+        FORWARD(Drop);
+        FORWARD(LogSize);
 
-            FORWARD(Merge);
-            FORWARD(Swap);
+        FORWARD(Merge);
+        FORWARD(Swap);
 
-            // Control-flow
-            FORWARD(Program);
-            FORWARD(Sequence);
-            FORWARD(Loop);
-            FORWARD(Parallel);
-            FORWARD(Exit);
-            FORWARD(LogTimer);
-            FORWARD(DebugInfo);
-            FORWARD(Stratum);
+        // Control-flow
+        FORWARD(Program);
+        FORWARD(Sequence);
+        FORWARD(Loop);
+        FORWARD(Parallel);
+        FORWARD(Exit);
+        FORWARD(LogTimer);
+        FORWARD(DebugInfo);
+        FORWARD(Stratum);
 
 #ifdef USE_MPI
-            // mpi
-            FORWARD(Send);
-            FORWARD(Recv);
-            FORWARD(Notify);
-            FORWARD(Wait);
+        // mpi
+        FORWARD(Send);
+        FORWARD(Recv);
+        FORWARD(Notify);
+        FORWARD(Wait);
 #endif
 
 #undef FORWARD
-        }
 
         // did not work ...
 
@@ -182,12 +182,16 @@ protected:
 
     // -- operations --
     LINK(Project, Operation);
-    LINK(Return, Operation);
+    LINK(ReturnValue, Operation);
     LINK(UnpackRecord, Search);
     LINK(Scan, RelationSearch);
-    LINK(IndexScan, RelationSearch);
+    LINK(IndexScan, IndexRelationSearch);
+    LINK(Choice, RelationSearch);
+    LINK(IndexChoice, IndexRelationSearch);
     LINK(RelationSearch, Search);
-    LINK(Aggregate, Search);
+    LINK(Aggregate, RelationSearch);
+    LINK(IndexAggregate, IndexRelationSearch);
+    LINK(IndexRelationSearch, RelationSearch);
     LINK(Search, NestedOperation);
     LINK(Filter, NestedOperation);
     LINK(NestedOperation, Operation);
@@ -250,29 +254,10 @@ template <typename R, typename... Ps, typename... Args>
 void visitDepthFirstPreOrder(const RamNode& root, RamVisitor<R, Ps...>& visitor, Args&... args) {
     visitor(root, args...);
     for (const RamNode* cur : root.getChildNodes()) {
-        if (cur) {
+        if (cur != nullptr) {
             visitDepthFirstPreOrder(*cur, visitor, args...);
         }
     }
-}
-
-/**
- * A utility function visiting all nodes within the RAM fragment rooted by the given node
- * recursively in a depth-first post-order fashion applying the given visitor to each
- * encountered node.
- *
- * @param root the root of the RAM fragment to be visited
- * @param visitor the visitor to be applied on each node
- * @param args a list of extra parameters to be forwarded to the visitor
- */
-template <typename R, typename... Ps, typename... Args>
-void visitDepthFirstPostOrder(const RamNode& root, RamVisitor<R, Ps...>& visitor, Args&... args) {
-    for (const RamNode* cur : root.getChildNodes()) {
-        if (cur) {
-            visitDepthFirstPreOrder(*cur, visitor, args...);
-        }
-    }
-    visitor(root, args...);
 }
 
 /**

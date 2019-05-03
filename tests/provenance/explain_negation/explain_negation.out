@@ -1,0 +1,12 @@
+Explain is invoked.
+Enter command > 1: path(x,y) :- 
+   edge(x,y).
+
+2: path(x,z) :- 
+   edge(x,y),
+   path(y,z).
+
+Pick a rule number: Pick a value for y: edge("a", "b") ✓ path("b", "3") x 
+--------------------------------(R2)
+           path("a","3")            
+Enter command > Exiting explain

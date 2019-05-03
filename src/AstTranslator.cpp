@@ -1291,7 +1291,10 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             returnValue.push_back(std::make_unique<RamNumber>(litNumber));
 
             // create a search
-            auto search = std::make_unique<RamIndexScan>(std::move(relRef), litNumber, std::move(query),
+            // a filter to find whether the current atom exists or not
+            auto searchFilter = std::make_unique<RamFilter>(
+                    std::make_unique<RamExistenceCheck>(
+                            std::unique_ptr<RamRelationReference>(relRef->clone()), std::move(query)),
                     std::make_unique<RamReturnValue>(std::move(returnValue)));
 
             // now, return the values of the atoms, with a separator
@@ -1305,13 +1308,12 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
             // chain the atom number and atom value together
             auto atomSequence = std::make_unique<RamSequence>();
-            atomSequence->add(std::make_unique<RamQuery>(std::move(search)));
+            atomSequence->add(std::make_unique<RamQuery>(std::move(searchFilter)));
             atomSequence->add(
                     std::make_unique<RamQuery>(std::make_unique<RamReturnValue>(std::move(returnAtom))));
 
             // append search to the sequence
             searchSequence->add(std::move(atomSequence));
-
         } else if (auto con = dynamic_cast<AstConstraint*>(lit)) {
             VariablesToArguments varsToArgs(uniqueVariables);
             con->apply(varsToArgs);
@@ -1355,7 +1357,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
         litNumber++;
     }
 
-    return std::move(searchSequence);
+    return searchSequence;
 }
 
 /** translates the given datalog program into an equivalent RAM program  */

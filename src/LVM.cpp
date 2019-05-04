@@ -993,7 +993,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 RamDomain id = code[ip + 1];
                 RamDomain res = stack.top();
                 stack.pop();
-                RamDomain* tuple = new RamDomain[1];  // TODO memory leak here
+                RamDomain* tuple = ctxt.allocateNewTuple(1);
                 tuple[0] = res;
                 ctxt[id] = tuple;
                 ip += 2;

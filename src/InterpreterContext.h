@@ -31,7 +31,7 @@ class InterpreterContext {
     std::vector<RamDomain>* returnValues = nullptr;
     std::vector<bool>* returnErrors = nullptr;
     const std::vector<RamDomain>* args = nullptr;
-
+    std::vector<std::unique_ptr<RamDomain>> allocatedData;
 public:
     InterpreterContext(size_t size = 0) : data(size) {}
     virtual ~InterpreterContext() = default;
@@ -45,6 +45,13 @@ public:
 
     const RamDomain* const& operator[](size_t index) const {
         return data[index];
+    }
+    
+    /** Allocate a tuple */
+    RamDomain* allocateNewTuple(size_t size) {
+        std::unique_ptr<RamDomain> newData(new RamDomain[size]);
+        allocatedData.push_back(std::move(newData));
+        return allocatedData.back().get();
     }
 
     std::vector<RamDomain>& getReturnValues() const {

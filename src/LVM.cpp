@@ -681,7 +681,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 RamDomain position = code[ip + 2];
                 RamDomain arity = code[ip + 3];
                 RamDomain id = code[ip + 4];
-                RamDomain exitAddress = code[ip+5];
+                RamDomain exitAddress = code[ip + 5];
 
                 RamDomain ref = ctxt[referenceLevel][position];
 

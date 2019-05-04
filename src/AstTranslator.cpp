@@ -733,7 +733,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         };
 
         // translate constraints of sub-clause
-        for (const auto& lit : clause.getBodyLiterals()) {
+        for (const auto& lit : cur->getBodyLiterals()) {
             if (auto newCondition = translator.translateConstraint(lit, valueIndex)) {
                 addAggCondition(newCondition);
             }
@@ -741,10 +741,13 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         // get the predicate of the sub-clause; at most one atom is permitted.
         const AstAtom* atom = nullptr;
-        for (const auto& lit : clause.getBodyLiterals()) {
-            assert(atom != nullptr && dynamic_cast<const AstAtom*>(lit) != nullptr &&
-                    "Unsupported complex aggregation body encountered!");
-            atom = dynamic_cast<const AstAtom*>(lit);
+        for (const auto& lit : cur->getBodyLiterals()) {
+	    if (atom == nullptr) {
+	       atom = dynamic_cast<const AstAtom*>(lit);
+            } else {
+                assert(dynamic_cast<const AstAtom*>(lit) != nullptr &&
+                       "Unsupported complex aggregation body encountered!");
+	    }
         }
 
         // translate arguments's of atom (if exists) to conditions

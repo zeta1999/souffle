@@ -1016,7 +1016,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
         std::set<AstBinaryConstraint*>& constraints;
         mutable int changeCount;
 
-        M(std::set<AstBinaryConstraint*>& constraints, int changeCount)
+        constraintNoramliser(std::set<AstBinaryConstraint*>& constraints, int changeCount)
                 : constraints(constraints), changeCount(changeCount) {}
 
         bool hasChanged() const {

@@ -1183,6 +1183,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     // values X where it is true, while a2(X) does not. Then, the produced argument
     // `max( max X: a1(X),  max X: a2(X) )` will not return anything (as one of its arguments fails), while
     // `max X: a(X)` will.
+    // Can work around this with emptiness checks (e.g. `!a1(_), ... ; !a2(_), ... ; ...`)
 
     // This corner case prevents generalising aggregator inlining with the current set up.
 

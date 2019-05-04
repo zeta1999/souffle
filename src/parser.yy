@@ -36,12 +36,12 @@
     #include "AstFunctorDeclaration.h"
     #include "AstIO.h"
     #include "AstNode.h"
+    #include "AstParserUtils.h"
     #include "AstPragma.h"
     #include "AstProgram.h"
     #include "AstTypes.h"
     #include "BinaryConstraintOps.h"
     #include "FunctorOps.h"
-    #include "AstParserUtils.h"
 
     using namespace souffle;
 
@@ -154,36 +154,50 @@
 %token L_NOT                     "lnot"
 
 /* -- Non-Terminal Types -- */
-%type <std::vector<std::string>>        identifier
-%type <AstType *>                       type
-%type <AstRecordType *>                 non_empty_record_type_list
-%type <AstUnionType *>                  union_type_list
-%type <std::vector<AstRelation *>>      relation_decl relation_list
-%type <AstFunctorDeclaration *>         functor_decl
-%type <std::string>                     non_empty_functor_arg_type_list functor_type
-%type <std::vector<AstTypeIdentifier>>  type_params type_param_list
-%type <AstArgument *>                   arg
-%type <AstConstraint *>                 constraint
-%type <std::vector<AstArgument *>>      non_empty_arg_list
-%type <AstAtom *>                       atom
-%type <RuleBody *>                      body conjunction disjunction term
-%type <std::vector<AstAtom *>>          head
-%type <AstClause *>                     fact
-%type <std::vector<AstClause *>>        rule rule_def
-%type <AstExecutionPlan *>              exec_plan exec_plan_list
-%type <AstExecutionOrder *>             exec_order_list non_empty_exec_order_list
-%type <AstComponentType *>              comp_type
-%type <AstComponentInit *>              comp_init
-%type <AstComponent *>                  component component_body component_head
-%type <AstPragma *>                     pragma
-%type <std::vector<AstIO *>>            io_directive_list
-%type <std::vector<AstIO *>>            io_relation_list
-%type <std::vector<AstAttribute *>>     non_empty_attributes
-%type <uint32_t>                        qualifiers
-%type <std::string>                     kvp_value
-%type <std::vector<AstLoad *>>          load_head
-%type <std::vector<AstStore *>>         store_head
-%type <std::vector<std::pair<std::string, std::string>>>    non_empty_key_value_pairs
+%type <AstAtom *>                           atom
+%type <AstArgument *>                       arg
+%type <RuleBody *>                          body
+%type <AstComponentType *>                  comp_type
+%type <AstComponentInit *>                  comp_init
+%type <AstComponent *>                      component
+%type <AstComponent *>                      component_body
+%type <AstComponent *>                      component_head
+%type <RuleBody *>                          conjunction
+%type <AstConstraint *>                     constraint
+%type <RuleBody *>                          disjunction
+%type <AstExecutionOrder *>                 exec_order_list
+%type <AstExecutionPlan *>                  exec_plan
+%type <AstExecutionPlan *>                  exec_plan_list
+%type <AstClause *>                         fact
+%type <AstFunctorDeclaration *>             functor_decl
+%type <std::string>                         functor_type
+%type <std::vector<AstAtom *>>              head
+%type <std::vector<std::string>>            identifier
+%type <std::vector<AstIO *>>                io_directive_list
+%type <std::vector<AstIO *>>                io_relation_list
+%type <std::string>                         kvp_value
+%type <std::vector<AstLoad *>>              load_head
+%type <std::vector<AstArgument *>>          non_empty_arg_list
+%type <std::vector<AstAttribute *>>         non_empty_attributes
+%type <AstExecutionOrder *>                 non_empty_exec_order_list
+%type <std::string>                         non_empty_functor_arg_type_list
+%type <std::vector<std::pair
+            <std::string, std::string>>>    non_empty_key_value_pairs
+%type <AstRecordType *>                     non_empty_record_type_list
+%type <AstPragma *>                         pragma
+%type <uint32_t>                            qualifiers
+%type <std::vector<AstRelation *>>          relation_decl
+%type <std::vector<AstRelation *>>          relation_list
+%type <std::vector<AstClause *>>            rule
+%type <std::vector<AstClause *>>            rule_def
+%type <std::vector<AstStore *>>             store_head
+%type <RuleBody *>                          term
+%type <AstType *>                           type
+%type <std::vector<AstTypeIdentifier>>      type_params
+%type <std::vector<AstTypeIdentifier>>      type_param_list
+%type <AstUnionType *>                      union_type_list
+
+
 
 /* -- Operator precedence -- */
 %left L_OR

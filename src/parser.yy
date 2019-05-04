@@ -36,12 +36,12 @@
     #include "AstFunctorDeclaration.h"
     #include "AstIO.h"
     #include "AstNode.h"
+    #include "AstParserUtils.h"
     #include "AstPragma.h"
     #include "AstProgram.h"
     #include "AstTypes.h"
     #include "BinaryConstraintOps.h"
     #include "FunctorOps.h"
-    #include "AstParserUtils.h"
 
     using namespace souffle;
 

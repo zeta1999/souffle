@@ -1104,7 +1104,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
 }
 
 bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) {
-    struct M : public AstNodeMapper {
+    struct TypecastRemover : public AstNodeMapper {
         mutable bool changed{false};
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
@@ -1122,7 +1122,7 @@ bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) 
         }
     };
 
-    M update;
+    TypecastRemover update;
     translationUnit.getProgram()->apply(update);
 
     return update.changed;

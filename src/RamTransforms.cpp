@@ -156,7 +156,7 @@ std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
             if (const RamElementAccess* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamExpression* rhs = binRelOp->getRHS();
                 if (lhs->getTupleId() == identifier &&
-                        (rcva->isConstant(rhs) || rla->getLevel(rhs) < identifier)) {
+                         rla->getLevel(rhs) < identifier) {
                     element = lhs->getElement();
                     return std::unique_ptr<RamExpression>(rhs->clone());
                 }
@@ -164,7 +164,7 @@ std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
             if (const RamElementAccess* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamExpression* lhs = binRelOp->getLHS();
                 if (rhs->getTupleId() == identifier &&
-                        (rcva->isConstant(lhs) || rla->getLevel(lhs) < identifier)) {
+                       rla->getLevel(lhs) < identifier) {
                     element = rhs->getElement();
                     return std::unique_ptr<RamExpression>(lhs->clone());
                 }

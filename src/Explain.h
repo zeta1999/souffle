@@ -34,8 +34,9 @@ namespace souffle {
 
 class Explain {
 public:
-    Explain(ExplainProvenance& p, bool ncurses, int d = 4)
-            : prov(p), ncurses(ncurses), depthLimit(d), output(nullptr), json(false) {}
+    Explain(ExplainProvenance& p, bool ncurses, bool silentPrompt, int d = 4)
+            : prov(p), ncurses(ncurses), silentPrompt(silentPrompt), depthLimit(d), output(nullptr),
+              json(false) {}
     ~Explain() {
         delete output;
     }
@@ -45,6 +46,8 @@ public:
             initialiseWindow();
             std::signal(SIGWINCH, nullptr);
         }
+
+        printPrompt("Explain is invoked.\n");
 
         while (true) {
             clearDisplay();
@@ -68,7 +71,7 @@ public:
                     printStr("<" + command[1] + "> is not a valid depth\n");
                     continue;
                 }
-                printStr("Depth is now " + std::to_string(depthLimit) + "\n");
+                printPrompt("Depth is now " + std::to_string(depthLimit) + "\n");
             } else if (command[0] == "explain") {
                 std::pair<std::string, std::vector<std::string>> query;
                 if (command.size() == 2) {
@@ -130,7 +133,7 @@ public:
                     continue;
                 }
 
-                // this doesn't work with ncurses yet!!
+                // TODO (taipan-snake): this doesn't work with ncurses yet!!
                 std::map<std::string, std::string> varValues;
                 for (auto var : variables) {
                     printPrompt("Pick a value for " + var + ": ");
@@ -176,7 +179,7 @@ public:
                     printStr("Usage: format <json|proof>\n");
                 }
             } else if (command[0] == "exit" || command[0] == "q" || command[0] == "quit") {
-                printStr("Exiting explain\n");
+                printPrompt("Exiting explain\n");
                 break;
             } else {
                 printStr(
@@ -208,6 +211,7 @@ private:
     ExplainProvenance& prov;
 
     bool ncurses;
+    bool silentPrompt;
     WINDOW* treePad = nullptr;
     WINDOW* queryWindow = nullptr;
     int maxx = 0, maxy = 0;
@@ -369,7 +373,7 @@ private:
             line = buf;
         } else {
             if (!getline(std::cin, line)) {
-                printStr("Exiting explain\n");
+                printPrompt("Exiting explain\n");
                 return "q";
             }
         }
@@ -377,14 +381,16 @@ private:
         return line;
     }
 
-    void printPrompt(std::string prompt) {
-        if (ncurses && !output) {
-            // reset command line on each loop
-            werase(queryWindow);
-            wrefresh(queryWindow);
-            mvwprintw(queryWindow, 1, 0, prompt.c_str());
-        } else {
-            std::cout << prompt;
+    void printPrompt(const std::string& prompt) {
+        if (!silentPrompt) {
+            if (ncurses && !output) {
+                // reset command line on each loop
+                werase(queryWindow);
+                wrefresh(queryWindow);
+                mvwprintw(queryWindow, 1, 0, prompt.c_str());
+            } else {
+                std::cout << prompt;
+            }
         }
     }
 
@@ -397,12 +403,10 @@ private:
     }
 };
 
-inline void explain(SouffleProgram& prog, bool sld = true, bool ncurses = false) {
-    std::cout << "Explain is invoked.\n";
-
+inline void explain(SouffleProgram& prog, bool sld = true, bool ncurses = false, bool silent = false) {
     ExplainProvenanceSLD prov(prog);
 
-    Explain exp(prov, ncurses);
+    Explain exp(prov, ncurses, silent);
     exp.explain();
 }
 

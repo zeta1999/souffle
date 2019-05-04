@@ -188,6 +188,8 @@ int main(int argc, char** argv) {
 #ifdef USE_PROVENANCE
                 {"provenance", 't', "[ none | explain | explore ]", "", false,
                         "Enable provenance instrumentation and interaction."},
+                {"provenance-silent", '\4', "", "", false,
+                        "Silence the provenance interface, useful for scripting."},
 #endif
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
@@ -555,9 +557,9 @@ int main(int argc, char** argv) {
             // construct SouffleProgram from env
             InterpreterProgInterface interface(*interpreter);
             if (Global::config().get("provenance") == "explain") {
-                explain(interface, true, false);
+                explain(interface, true, false, Global::config().has("provenance-silent"));
             } else if (Global::config().get("provenance") == "explore") {
-                explain(interface, true, true);
+                explain(interface, true, true, Global::config().has("provenance-silent"));
             }
         }
 #endif

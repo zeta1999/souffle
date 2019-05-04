@@ -528,7 +528,6 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
     });
 }
 
-/** begin with projection */
 std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(const AstClause& clause) {
     const auto head = clause.getHead();
 
@@ -723,51 +722,74 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 break;
         }
 
-        // translate target expression
-        std::unique_ptr<RamExpression> value =
-                translator.translateValue(cur->getTargetExpression(), valueIndex);
-
-        // translate body literal
-        assert(cur->getBodyLiterals().size() == 1 && "Unsupported complex aggregation body encountered!");
-        const AstAtom* atom = dynamic_cast<const AstAtom*>(cur->getBodyLiterals()[0]);
-        assert(atom && "Unsupported complex aggregation body encountered!");
-
+        // condition for aggregate and helper function to add terms
         std::unique_ptr<RamCondition> aggCondition;
-        for (size_t pos = 0; pos < atom->argSize(); ++pos) {
-            if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
-                std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
-                        BinaryConstraintOp::EQ,
-                        std::make_unique<RamElementAccess>(level, pos, translator.translateRelation(atom)),
-                        std::make_unique<RamNumber>(c->getIndex()));
-                if (aggCondition == nullptr) {
-                    aggCondition = std::move(newCondition);
-                } else {
-                    aggCondition = std::make_unique<RamConjunction>(
-                            std::move(aggCondition), std::move(newCondition));
-                }
-            } else if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {
-                // all other appearances
-                for (const Location& loc : valueIndex.getVariableReferences().find(var->getName())->second) {
-                    if (level != loc.identifier || (int)pos != loc.element) {
-                        std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
-                                BinaryConstraintOp::EQ, makeRamElementAccess(loc),
-                                std::make_unique<RamElementAccess>(
-                                        level, pos, translator.translateRelation(atom)));
-                        if (aggCondition == nullptr) {
-                            aggCondition = std::move(newCondition);
-                        } else {
-                            aggCondition = std::make_unique<RamConjunction>(
-                                    std::move(aggCondition), std::move(newCondition));
+        auto addAggCondition = [&](std::unique_ptr<RamCondition>& arg) {
+            if (aggCondition == nullptr) {
+                aggCondition = std::move(arg);
+            } else {
+                aggCondition = std::make_unique<RamConjunction>(std::move(aggCondition), std::move(arg));
+            }
+        };
+
+        // translate constraints of sub-clause
+        for (const auto& lit : cur->getBodyLiterals()) {
+            if (auto newCondition = translator.translateConstraint(lit, valueIndex)) {
+                addAggCondition(newCondition);
+            }
+        }
+
+        // get the first predicate of the sub-clause
+        // NB: at most one atom is permitted in a sub-clause
+        const AstAtom* atom = nullptr;
+        for (const auto& lit : cur->getBodyLiterals()) {
+            if (atom == nullptr) {
+                atom = dynamic_cast<const AstAtom*>(lit);
+            } else {
+                assert(dynamic_cast<const AstAtom*>(lit) != nullptr &&
+                        "Unsupported complex aggregation body encountered!");
+            }
+        }
+
+        // translate arguments's of atom (if exists) to conditions
+        if (atom != nullptr) {
+            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
+                // variable bindings are issued differently since we don't want self
+                // referential variable bindings
+                if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {
+                    for (const Location& loc :
+                            valueIndex.getVariableReferences().find(var->getName())->second) {
+                        if (level != loc.identifier || (int)pos != loc.element) {
+                            std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
+                                    BinaryConstraintOp::EQ, makeRamElementAccess(loc),
+                                    std::make_unique<RamElementAccess>(
+                                            level, pos, translator.translateRelation(atom)));
+                            addAggCondition(newCondition);
+                            break;
                         }
-                        break;
+                    }
+                } else if (atom->getArgument(pos) != nullptr) {
+                    std::unique_ptr<RamExpression> value =
+                            translator.translateValue(atom->getArgument(pos), valueIndex);
+                    if (value != nullptr) {
+                        std::unique_ptr<RamCondition> newCondition =
+                                std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                        std::make_unique<RamElementAccess>(
+                                                level, pos, translator.translateRelation(atom)),
+                                        std::move(value));
+                        addAggCondition(newCondition);
                     }
                 }
             }
         }
 
+        // translate aggregate expression
+        std::unique_ptr<RamExpression> expr =
+                translator.translateValue(cur->getTargetExpression(), valueIndex);
+
         // add Ram-Aggregation layer
         std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(std::move(op), fun,
-                translator.translateRelation(atom), std::move(value), std::move(aggCondition), level);
+                translator.translateRelation(atom), std::move(expr), std::move(aggCondition), level);
         op = std::move(aggregate);
     }
 
@@ -840,7 +862,6 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             op = std::make_unique<RamUnpackRecord>(
                     std::move(op), level, loc.identifier, loc.element, rec->getArguments().size());
         } else {
-            std::cout << "Unsupported AST node type: " << typeid(*cur).name() << "\n";
             assert(false && "Unsupported AST node for creation of scan-level!");
         }
     }
@@ -1214,8 +1235,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
 /** make a subroutine to search for subproofs for the non-existence of a tuple */
 std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
-    // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates or
-    // anything else...)
+    // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates
+    // or anything else...)
 
     // build a vector of unique variables
     std::vector<AstVariable> uniqueVariables;
@@ -1254,7 +1275,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
         }
     };
 
-    // the structure of this subroutine is a sequence where each nested statement is a search in each relation
+    // the structure of this subroutine is a sequence where each nested statement is a search in each
+    // relation
     std::unique_ptr<RamSequence> searchSequence = std::make_unique<RamSequence>();
 
     // go through each body atom and create a return
@@ -1266,7 +1288,6 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
             // construct a query
             std::vector<std::unique_ptr<RamExpression>> query;
-            SearchColumns searchCols = 0;
 
             // translate variables to subroutine arguments
             VariablesToArguments varsToArgs(uniqueVariables);
@@ -1276,7 +1297,6 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             for (size_t i = 0; i < atom->getArity() - 2; i++) {
                 auto arg = atom->getArgument(i);
                 query.push_back(translateValue(arg, ValueIndex()));
-                searchCols = (searchCols << 1) + 1;
             }
 
             // fill up query with nullptrs for the provenance columns
@@ -1452,8 +1472,8 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         // find out if the current SCC is recursive
         const auto& isRecursive = sccGraph.isRecursive(scc);
 
-        // make variables for particular sets of relations contained within the current SCC, and, predecessors
-        // and successor SCCs thereof
+        // make variables for particular sets of relations contained within the current SCC, and,
+        // predecessors and successor SCCs thereof
         const auto& allInterns = sccGraph.getInternalRelations(scc);
         const auto& internIns = sccGraph.getInternalInputRelations(scc);
         const auto& internOuts = sccGraph.getInternalOutputRelations(scc);
@@ -1504,11 +1524,13 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
             // if a communication engine has been specified...
             if (Global::config().has("engine")) {
-                // load all external output predecessor relations from the output dir with a .csv extension
+                // load all external output predecessor relations from the output dir with a .csv
+                // extension
                 for (const auto& relation : externOutPreds) {
                     makeRamLoad(current, relation, "output-dir", ".csv");
                 }
-                // load all external output predecessor relations from the output dir with a .facts extension
+                // load all external output predecessor relations from the output dir with a .facts
+                // extension
                 for (const auto& relation : externNonOutPreds) {
                     makeRamLoad(current, relation, "output-dir", ".facts");
                 }
@@ -1539,8 +1561,8 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         {
             // if a communication engine is enabled...
             if (Global::config().has("engine")) {
-                // store all internal non-output relations with external successors to the output dir with a
-                // .facts extension
+                // store all internal non-output relations with external successors to the output dir with
+                // a .facts extension
                 for (const auto& relation : internNonOutsWithExternSuccs) {
                     makeRamStore(current, relation, "output-dir", ".facts");
                 }

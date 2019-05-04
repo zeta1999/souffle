@@ -155,16 +155,14 @@ std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
             if (const RamElementAccess* lhs = dynamic_cast<RamElementAccess*>(binRelOp->getLHS())) {
                 RamExpression* rhs = binRelOp->getRHS();
-                if (lhs->getTupleId() == identifier &&
-                         rla->getLevel(rhs) < identifier) {
+                if (lhs->getTupleId() == identifier && rla->getLevel(rhs) < identifier) {
                     element = lhs->getElement();
                     return std::unique_ptr<RamExpression>(rhs->clone());
                 }
             }
             if (const RamElementAccess* rhs = dynamic_cast<RamElementAccess*>(binRelOp->getRHS())) {
                 RamExpression* lhs = binRelOp->getLHS();
-                if (rhs->getTupleId() == identifier &&
-                       rla->getLevel(lhs) < identifier) {
+                if (rhs->getTupleId() == identifier && rla->getLevel(lhs) < identifier) {
                     element = rhs->getElement();
                     return std::unique_ptr<RamExpression>(lhs->clone());
                 }

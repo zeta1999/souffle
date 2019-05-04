@@ -204,6 +204,13 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
+    // type casts name a valid type
+    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
+        if (!typeEnv.isType(cast.getType())) {
+            report.addError("Type cast is to undeclared type " + toString(cast.getType()), cast.getSrcLoc());
+        }
+    });
+
     // - intrinsic functors -
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         // check type of result
@@ -355,6 +362,9 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (dynamic_cast<const AstCounter*>(arg)) {
         return false;
     }
+    if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {
+        return hasUnnamedVariable(cast->getValue());
+    }
     if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
         return any_of(inf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
@@ -474,6 +484,8 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         }
     } else if (dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
         report.addError("User-defined functor in fact", argument.getSrcLoc());
+    } else if (auto* cast = dynamic_cast<const AstTypeCast*>(&argument)) {
+        checkConstant(report, *cast->getValue());
     } else if (dynamic_cast<const AstCounter*>(&argument)) {
         report.addError("Counter in fact", argument.getSrcLoc());
     } else if (dynamic_cast<const AstConstant*>(&argument)) {

@@ -32,7 +32,6 @@
 #include "RamIndexKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
-#include "RamOperationDepth.h"
 #include "RamProgram.h"
 #include "RamProvenanceExistenceCheckAnalysis.h"
 #include "RamVisitor.h"
@@ -770,7 +769,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
     };
 
     // create and run interpreter for operations
-    InterpreterContext ctxt(translationUnit.getAnalysis<RamOperationDepthAnalysis>()->getDepth(&op));
+    InterpreterContext ctxt;
     ctxt.setReturnValues(args.getReturnValues());
     ctxt.setReturnErrors(args.getReturnErrors());
     ctxt.setArguments(args.getArguments());

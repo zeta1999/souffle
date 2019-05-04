@@ -722,9 +722,9 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 break;
         }
 
-        // Aggregate Condition
+        // condition for aggregate and helper function to add terms
         std::unique_ptr<RamCondition> aggCondition;
-        auto addAggCondition = [&](std::unique_ptr<RamCondition> &arg) {
+        auto addAggCondition = [&](std::unique_ptr<RamCondition>& arg) {
             if (aggCondition == nullptr) {
                 aggCondition = std::move(arg);
             } else {
@@ -739,15 +739,16 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             }
         }
 
-        // get the predicate of the sub-clause; at most one atom is permitted.
+        // get the first predicate of the sub-clause
+        // NB: at most one atom is permitted in a sub-clause
         const AstAtom* atom = nullptr;
         for (const auto& lit : cur->getBodyLiterals()) {
-	    if (atom == nullptr) {
-	       atom = dynamic_cast<const AstAtom*>(lit);
+            if (atom == nullptr) {
+                atom = dynamic_cast<const AstAtom*>(lit);
             } else {
                 assert(dynamic_cast<const AstAtom*>(lit) != nullptr &&
-                       "Unsupported complex aggregation body encountered!");
-	    }
+                        "Unsupported complex aggregation body encountered!");
+            }
         }
 
         // translate arguments's of atom (if exists) to conditions
@@ -767,13 +768,17 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                             break;
                         }
                     }
-                } else {
-                    std::unique_ptr<RamCondition> newCondition =
-                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                    std::make_unique<RamElementAccess>(
-                                            level, pos, translator.translateRelation(atom)),
-                                    translator.translateValue(atom->getArgument(pos), valueIndex));
-                    addAggCondition(newCondition);
+                } else if (atom->getArgument(pos) != nullptr) {
+                    std::unique_ptr<RamExpression> value =
+                            translator.translateValue(atom->getArgument(pos), valueIndex);
+                    if (value != nullptr) {
+                        std::unique_ptr<RamCondition> newCondition =
+                                std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                        std::make_unique<RamElementAccess>(
+                                                level, pos, translator.translateRelation(atom)),
+                                        std::move(value));
+                        addAggCondition(newCondition);
+                    }
                 }
             }
         }
@@ -857,7 +862,6 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             op = std::make_unique<RamUnpackRecord>(
                     std::move(op), level, loc.identifier, loc.element, rec->getArguments().size());
         } else {
-            std::cout << "Unsupported AST node type: " << typeid(*cur).name() << "\n";
             assert(false && "Unsupported AST node for creation of scan-level!");
         }
     }

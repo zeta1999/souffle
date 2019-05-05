@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "RamConstValue.h"
 #include "RamLevel.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
@@ -206,10 +205,8 @@ public:
 
 protected:
     RamLevelAnalysis* rla{nullptr};
-    RamConstValueAnalysis* rcva{nullptr};
     bool transform(RamTranslationUnit& translationUnit) override {
         rla = translationUnit.getAnalysis<RamLevelAnalysis>();
-        rcva = translationUnit.getAnalysis<RamConstValueAnalysis>();
         return makeIndex(*translationUnit.getProgram());
     }
 };

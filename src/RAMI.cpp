@@ -485,8 +485,8 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             for (const RamDomain* cur : rel) {
                 ctxt[scan.getTupleId()] = cur;
                 if (!visitSearch(scan)) {
-			break;
-		}
+                    break;
+                }
             }
             return true;
         }
@@ -659,15 +659,15 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             ctxt[aggregate.getTupleId()] = tuple;
 
             if (aggregate.getFunction() == souffle::MAX && res == MIN_RAM_DOMAIN) {
-	       // no maximum found
-               return true;
-	    } else if (aggregate.getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
-	       // no minimum found
-               return true;
-	    } else { 
-               // run nested part - using base class visitor
-               return visitSearch(aggregate);
-	    }
+                // no maximum found
+                return true;
+            } else if (aggregate.getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
+                // no minimum found
+                return true;
+            } else {
+                // run nested part - using base class visitor
+                return visitSearch(aggregate);
+            }
         }
 
         bool visitIndexAggregate(const RamIndexAggregate& aggregate) override {
@@ -760,15 +760,15 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
 
             // run nested part - using base class visitor
             if (aggregate.getFunction() == souffle::MAX && res == MIN_RAM_DOMAIN) {
-	       // no maximum found
-               return true;
-	    } else if (aggregate.getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
-	       // no minimum found
-               return true;
-	    } else { 
-               // run nested part - using base class visitor
-               return visitSearch(aggregate);
-	    }
+                // no maximum found
+                return true;
+            } else if (aggregate.getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
+                // no minimum found
+                return true;
+            } else {
+                // run nested part - using base class visitor
+                return visitSearch(aggregate);
+            }
         }
 
         bool visitBreak(const RamBreak& breakOp) override {

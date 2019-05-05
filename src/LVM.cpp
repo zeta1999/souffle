@@ -117,7 +117,7 @@ void LVM::executeMain() {
 }
 
 void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip) {
-    std::stack<RamDomain> stack;  
+    std::stack<RamDomain> stack;
     const auto& code = codeStream->getCode();
     auto& symbolTable = codeStream->getSymbolTable();
     while (true) {
@@ -130,7 +130,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 stack.push(ctxt[code[ip + 1]][code[ip + 2]]);
                 ip += 3;
                 break;
-            case LVM_AutoIncrement:  
+            case LVM_AutoIncrement:
                 stack.push(this->counter);
                 incCounter();
                 ip += 1;
@@ -202,7 +202,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             }
             case LVM_OP_SUB: {
                 // Rhs was pushed last in the generator, so it should be on top.
-                RamDomain rhs = stack.top();  
+                RamDomain rhs = stack.top();
                 stack.pop();
                 RamDomain lhs = stack.top();
                 stack.pop();
@@ -644,7 +644,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
 
                 auto idx = rel.getIndex(res);
                 auto range = idx->lowerUpperBound(low, high);
-                stack.push(range.first != range.second);  
+                stack.push(range.first != range.second);
                 ip += 3;
                 break;
             }

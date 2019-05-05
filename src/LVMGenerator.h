@@ -45,9 +45,8 @@ public:
     }
 
 protected:
-
     // Visit RAM Expressions
-    
+
     void visitNumber(const RamNumber& num, size_t exitAddress) override {
         code->push_back(LVM_Number);
         code->push_back(num.getConstant());
@@ -317,17 +316,17 @@ protected:
         code->push_back(symbolTable.lookup(search.getProfileText()));
         visitNestedOperation(search, exitAddress);
     }
-    
+
     void visitScan(const RamScan& scan, size_t exitAddress) override {
         size_t counterLabel = getNewScanIterator();
         size_t L1 = getNewAddressLabel();
-        
+
         // Init the Iterator
         code->push_back(LVM_Scan);
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(scan.getRelation().getName()));
-    
+
         // While iterator is not at end
         size_t address_L0 = code->size();
 
@@ -336,7 +335,7 @@ protected:
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L1));
-        
+
         // Select the tuple pointed by iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
@@ -345,7 +344,7 @@ protected:
 
         // Perform nested operation
         visitSearch(scan, lookupAddress(L1));
-        
+
         // Increment the Iter and jump to the start of the while loop
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
@@ -366,26 +365,26 @@ protected:
         code->push_back(LVM_ITER_TypeChoice);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(choice.getRelation().getName()));
-       
-        // While iterator is not at end 
+
+        // While iterator is not at end
         size_t address_L0 = code->size();
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeChoice);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L2));
-        
+
         // Select the tuple pointed by iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeChoice);
         code->push_back(choice.getTupleId());
-        
+
         // If condition is met, perform nested operation and exit.
         visit(choice.getCondition(), exitAddress);
         code->push_back(LVM_Jmpnz);
         code->push_back(lookupAddress(L1));
-        
+
         // Else increment the iter and jump to the start of the while loop.
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
@@ -402,7 +401,7 @@ protected:
         code->push_back(LVM_IndexScan);
         size_t counterLabel = getNewIndexScanIterator();
         size_t L1 = getNewAddressLabel();
-        
+
         // Obtain the pattern for index
         auto patterns = scan.getRangePattern();
         std::string types;
@@ -413,13 +412,13 @@ protected:
             }
             types += (patterns[i] == nullptr ? "_" : "V");
         }
-        
+
         // Init the iter
         code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(scan.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
-        
+
         // While iter is not at end
         size_t address_L0 = code->size();
         code->push_back(LVM_ITER_NotAtEnd);
@@ -427,7 +426,7 @@ protected:
         code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L1));
-        
+
         // Select the tuple pointed by the iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
@@ -436,7 +435,7 @@ protected:
 
         // Visit nested operation.
         visitSearch(scan, exitAddress);
-        
+
         // Increment the iter and jump to the start of while loop.
         visitSearch(scan, lookupAddress(L1));
 
@@ -465,13 +464,13 @@ protected:
                 types += "_";
             }
         }
-        
+
         // Init the iter
         code->push_back(LVM_ITER_TypeIndexChoice);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(indexChoice.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
-        
+
         // While iter is not at end.
         size_t address_L0 = code->size();
         code->push_back(LVM_ITER_NotAtEnd);
@@ -479,7 +478,7 @@ protected:
         code->push_back(LVM_ITER_TypeIndexChoice);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L2));
-        
+
         // Select the tuple pointed by iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
@@ -490,7 +489,7 @@ protected:
         // If condition is true, perform nested operation and return.
         code->push_back(LVM_Jmpnz);
         code->push_back(lookupAddress(L1));
-        
+
         // Else increment the iter and continue
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
@@ -526,7 +525,7 @@ protected:
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
-    
+
         // TODO (xiaowen/#992): Count -> Size for optimization
         if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
@@ -534,7 +533,7 @@ protected:
             code->push_back(counterLabel);
         } else {
             // Init value
-            switch (aggregate.getFunction()) {  
+            switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     code->push_back(LVM_Number);
                     code->push_back(MAX_RAM_DOMAIN);
@@ -561,7 +560,7 @@ protected:
             code->push_back(LVM_ITER_TypeScan);
             code->push_back(LVM_Jmpez);
             code->push_back(lookupAddress(L1));
-            
+
             // Select the element pointed by iter
             code->push_back(LVM_ITER_Select);
             code->push_back(counterLabel);
@@ -575,7 +574,7 @@ protected:
                 code->push_back(LVM_Jmpez);  // Continue; if condition is not met
                 code->push_back(lookupAddress(endOfLoop));
             }
-            
+
             if (aggregate.getFunction() != souffle::COUNT) {
                 visit(aggregate.getExpression(), exitAddress);
             }
@@ -583,11 +582,11 @@ protected:
             switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     code->push_back(LVM_OP_MIN);
-                    code->push_back(2);  
+                    code->push_back(2);
                     break;
                 case souffle::MAX:
                     code->push_back(LVM_OP_MAX);
-                    code->push_back(2);  
+                    code->push_back(2);
                     break;
                 case souffle::COUNT:
                     code->push_back(LVM_Number);
@@ -656,7 +655,7 @@ protected:
             code->push_back(counterLabel);
         } else {
             // Init value
-            switch (aggregate.getFunction()) {  
+            switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     code->push_back(LVM_Number);
                     code->push_back(MAX_RAM_DOMAIN);
@@ -704,11 +703,11 @@ protected:
             switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     code->push_back(LVM_OP_MIN);
-                    code->push_back(2);  
+                    code->push_back(2);
                     break;
                 case souffle::MAX:
                     code->push_back(LVM_OP_MAX);
-                    code->push_back(2);  
+                    code->push_back(2);
                     break;
                 case souffle::COUNT:
                     code->push_back(LVM_Number);
@@ -834,12 +833,12 @@ protected:
         size_t endAddress = getNewAddressLabel();
         code->push_back(lookupAddress(endAddress));
         size_t startAddresses[size];
-        
+
         for (size_t i = 0; i < size; ++i) {
             startAddresses[i] = getNewAddressLabel();
             code->push_back(lookupAddress(startAddresses[i]));
         }
-        
+
         for (size_t i = 0; i < size; ++i) {
             setAddress(startAddresses[i], code->size());
             visit(parallel.getStatements()[i], exitAddress);
@@ -878,12 +877,11 @@ protected:
         code->push_back(symbolTable.lookup(timer.getMessage()));
         if (timer.getRelation() == nullptr) {
             code->push_back(0);
-            code->push_back(LVM_NOP); // Empty slot to make the number of operands consistent.
+            code->push_back(LVM_NOP);  // Empty slot to make the number of operands consistent.
             code->push_back(timerIndex);
         } else {
             code->push_back(1);
-            code->push_back(symbolTable.lookup(
-                    timer.getRelation()->getName()));
+            code->push_back(symbolTable.lookup(timer.getRelation()->getName()));
             code->push_back(timerIndex);
         }
         visit(timer.getStatement(), exitAddress);
@@ -1001,9 +999,9 @@ protected:
 private:
     /** Symbol table */
     SymbolTable& symbolTable;
-    
+
     /** code stream */
-    std::unique_ptr<LVMCode> code; 
+    std::unique_ptr<LVMCode> code;
 
     /** Current address label */
     size_t currentAddressLabel = 0;
@@ -1025,8 +1023,8 @@ private:
 
     /** Current timer index for logger */
     size_t timerIndex = 0;
-    
-    /** Clean up all the content except for addressMap 
+
+    /** Clean up all the content except for addressMap
      *  This is for the double traverse when transforming from RAM -> LVM Bytecode.
      * */
     void cleanUp() {
@@ -1049,7 +1047,7 @@ private:
     size_t getNewScanIterator() {
         return scanIteratorIndex++;
     }
-    
+
     /** Get new choice iterator */
     size_t getNewChoiceIterator() {
         return choiceIteratorIndex++;
@@ -1059,12 +1057,11 @@ private:
     size_t getNewIndexChoiceIterator() {
         return indexChoiceIteratorIndex++;
     }
-    
+
     /** Get new indexScan iterator */
     size_t getNewIndexScanIterator() {
         return indexScanIteratorIndex++;
     }
-
 
     /** Get new Timer */
     size_t getNewTimer() {

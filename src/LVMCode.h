@@ -146,7 +146,8 @@ enum LVM_Type {
 
 /**
  * LVMCode is an array of LVM Opcode and operands.
- * It also contains information (e.g. IODirectives and SymbolTable) which is necessary for it to be executed by the LVM.
+ * It also contains information (e.g. IODirectives and SymbolTable) which is necessary for it to be executed
+ * by the LVM.
  */
 class LVMCode : protected std::vector<RamDomain> {
 public:
@@ -158,7 +159,7 @@ public:
     using std::vector<RamDomain>::operator[];
     using std::vector<RamDomain>::begin;
     using std::vector<RamDomain>::end;
-    
+
     /** Return reference to code stream */
     std::vector<RamDomain>& getCode() {
         return *this;

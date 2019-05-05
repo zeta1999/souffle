@@ -686,25 +686,18 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 RamDomain position = code[ip + 2];
                 RamDomain arity = code[ip + 3];
                 RamDomain id = code[ip + 4];
-
-                // TODO need confirm
-                // if (ctxt.isNull(referenceLevel)){
-                //   ip += 5;
-                //   break;
-                //}
-
-                // RamDomain ref = ctxt[referenceLevel][position];
+                RamDomain exitAddress = code[ip + 5];
 
                 RamDomain ref = ctxt[referenceLevel][position];
-                // TODO What is this testing for?
+
                 if (isNull(ref)) {
-                    ip += 5;
+                    ip = exitAddress;
                     break;
                 }
 
                 RamDomain* tuple = unpack(ref, arity);
                 ctxt[id] = tuple;
-                ip += 5;
+                ip += 6;
                 break;
             }
             case LVM_Filter:

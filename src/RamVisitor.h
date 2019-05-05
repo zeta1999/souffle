@@ -95,6 +95,7 @@ struct RamVisitor : public ram_visitor_tag {
 
         // Operations
         FORWARD(Filter);
+        FORWARD(Break);
         FORWARD(Project);
         FORWARD(ReturnValue);
         FORWARD(UnpackRecord);
@@ -194,6 +195,7 @@ protected:
     LINK(IndexRelationSearch, RelationSearch);
     LINK(Search, NestedOperation);
     LINK(Filter, NestedOperation);
+    LINK(Break, NestedOperation);
     LINK(NestedOperation, Operation);
 
     LINK(Operation, Node)

@@ -613,38 +613,19 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
-            // construct empty condition for nullary relations
-            std::string nullaryStopStmt;
-            std::string nullaryCond;
-            visitDepthFirst(scan, [&](const RamProject& project) {
-                std::string projectRelName = synthesiser.getRelationName(project.getRelation().getName());
-                if (project.getRelation().isNullary()) {
-                    nullaryStopStmt = "if(!" + projectRelName + "->empty()) break;";
-                    nullaryCond = projectRelName + "->empty()";
-                }
-            });
-
             if (parallel) {
                 // make this loop parallel
                 // partition outermost relation
                 out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
-                if (nullaryCond.length() > 0) {
-                    out << "if(" << nullaryCond << ") {\n";
-                }
                 out << "try{";
                 out << "for(const auto& env0 : *it) {\n";
-                out << nullaryStopStmt;
                 visitSearch(scan, out);
                 out << "}\n";
                 out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
-                if (nullaryCond.length() > 0) {
-                    out << "}\n";
-                }
                 out << "}\n";
             } else {
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
-                out << nullaryStopStmt;
                 visitSearch(scan, out);
                 out << "}\n";
             }
@@ -726,34 +707,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // get relation name
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
-            // construct empty condition for nullary relations
-            std::string nullaryStopStmt;
-            std::string nullaryCond;
-            visitDepthFirst(scan, [&](const RamProject& project) {
-                int arity = project.getRelation().getArity();
-                std::string projectRelName = synthesiser.getRelationName(project.getRelation().getName());
-                if (arity == 0) {
-                    nullaryStopStmt = "if(!" + projectRelName + "->empty()) break;";
-                    nullaryCond = projectRelName + "->empty()";
-                }
-            });
-
             // if this is the parallel level
             if (parallel) {
                 // make this loop parallel
                 out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
-                if (nullaryCond.length() > 0) {
-                    out << "if(" << nullaryCond << ") {\n";
-                }
                 out << "try{";
                 out << "for(const auto& env0 : *it) {\n";
-                out << nullaryStopStmt;
                 visitSearch(scan, out);
                 out << "}\n";
                 out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
-                if (nullaryCond.length() > 0) {
-                    out << "}\n";
-                }
                 out << "}\n";
                 PRINT_END_COMMENT(out);
                 return;
@@ -766,7 +728,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "auto range = " << relName << "->"
                 << "equalRange_" << keys << "(key," << ctxName << ");\n";
             out << "for(const auto& env" << identifier << " : range) {\n";
-            out << nullaryStopStmt;
             visitSearch(scan, out);
             out << "}\n";
             PRINT_END_COMMENT(out);
@@ -1095,6 +1056,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << ") {\n";
             visitNestedOperation(filter, out);
             out << "}\n";
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitBreak(const RamBreak& breakOp, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            out << "if( ";
+            visit(breakOp.getCondition(), out);
+            out << ") break;\n";
+            visitNestedOperation(breakOp, out);
             PRINT_END_COMMENT(out);
         }
 

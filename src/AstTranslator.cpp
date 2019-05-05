@@ -822,6 +822,12 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
             // add a scan level
             if (atom->getArity() != 0) {
+                if (head->getArity() == 0) {
+                    op = std::make_unique<RamBreak>(
+                            std::make_unique<RamNegation>(
+                                    std::make_unique<RamEmptinessCheck>(translator.translateRelation(head))),
+                            std::move(op));
+                }
                 if (Global::config().has("profile")) {
                     std::stringstream ss;
                     ss << head->getName();

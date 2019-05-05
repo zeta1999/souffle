@@ -301,12 +301,20 @@ std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const Ra
             }
             newValues.emplace_back(val);
         }
+
+        // check if there is a break statement nested in the Scan - if so, remove it
+        RamOperation* newOp;
+        if (const RamBreak* breakOp = dynamic_cast<const RamBreak*>(&indexScan->getOperation())) {
+            newOp = breakOp->getOperation().clone();
+        } else {
+            newOp = indexScan->getOperation().clone();
+        }
+
         return std::make_unique<RamFilter>(
                 std::make_unique<RamExistenceCheck>(
                         std::make_unique<RamRelationReference>(&indexScan->getRelation()),
                         std::move(newValues)),
-                std::unique_ptr<RamOperation>(indexScan->getOperation().clone()),
-                indexScan->getProfileText());
+                std::unique_ptr<RamOperation>(newOp), indexScan->getProfileText());
     }
     return nullptr;
 }

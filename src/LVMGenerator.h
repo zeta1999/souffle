@@ -519,7 +519,6 @@ protected:
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
         code->push_back(LVM_Aggregate);
-
         size_t counterLabel = getNewScanIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
@@ -527,7 +526,8 @@ protected:
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
-
+    
+        // TODO (xiaowen/#992): Count -> Size for optimization
         if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(LVM_ITER_TypeScan);
@@ -620,6 +620,7 @@ protected:
             code->push_back(aggregate.getTupleId());
             code->push_back(0);
             code->push_back(LVM_Number);
+
             code->push_back(aggregate.getFunction() == souffle::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
             code->push_back(LVM_OP_EQ);
             code->push_back(LVM_Jmpnz);  // If init == result, does not visit nested search
@@ -740,6 +741,7 @@ protected:
             code->push_back(aggregate.getTupleId());
             code->push_back(0);
             code->push_back(LVM_Number);
+
             code->push_back(aggregate.getFunction() == souffle::MIN ? MAX_RAM_DOMAIN : MIN_RAM_DOMAIN);
             code->push_back(LVM_OP_EQ);
             code->push_back(LVM_Jmpnz);  // If init == result, does not visit nested search
@@ -813,18 +815,20 @@ protected:
     }
 
     void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
-        // TODO(xiaowen): Currently parallel execution is suppressed.
+        // TODO(xiaowen/#998): Currently parallel execution is suppressed.
         // All parallel execution will be executed in sequence.
 
         auto stmts = parallel.getStatements();
         size_t size = stmts.size();
+        // Special case when size = 1: run in sequence instead.
+        // Currently all parallel is executed in sequence.
         if (size == 1 || true) {
             for (const auto& cur : parallel.getStatements()) {
                 visit(cur, exitAddress);
             }
             return;
         }
-        // LVM_Parallel <Number of routines> <List of Routine start addresses> 
+
         code->push_back(LVM_Parallel);
         code->push_back(size);
         size_t endAddress = getNewAddressLabel();
@@ -874,7 +878,7 @@ protected:
         code->push_back(symbolTable.lookup(timer.getMessage()));
         if (timer.getRelation() == nullptr) {
             code->push_back(0);
-            code->push_back(LVM_NOP);
+            code->push_back(LVM_NOP); // Empty slot to make the number of operands consistent.
             code->push_back(timerIndex);
         } else {
             code->push_back(1);
@@ -1033,6 +1037,7 @@ private:
         indexScanIteratorIndex = 0;
         choiceIteratorIndex = 0;
         indexChoiceIteratorIndex = 0;
+        timerIndex = 0;
     }
 
     /** Get new Address Label */

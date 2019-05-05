@@ -229,32 +229,23 @@ protected:
 private:
     friend InterpreterProgInterface;
 
+    /** Execute given program
+     *
+     * @param ip the instruction pointer start position, default is 0.
+     * */
+    void execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip = 0);
+
     /** subroutines */
     std::map<std::string, std::unique_ptr<LVMCode>> subroutines;
 
     /** Main program */
     std::unique_ptr<LVMCode> mainProgram = nullptr;
 
-    /** Execute given program */
-    void execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip = 0);
-
     /** counters for atom profiling */
     std::map<std::string, std::map<size_t, size_t>> frequencies;
 
     /** counters for non-existence check */
     std::map<std::string, std::atomic<size_t>> reads;
-
-    /** List of loggers for logtimer */
-    std::vector<Logger*> timers;
-
-    /** counter for $ operator */
-    int counter = 0;
-
-    /** iteration number (in a fix-point calculation) */
-    size_t iteration = 0;
-
-    /** Dynamic library for user-defined functors */
-    void* dll = nullptr;
 
     /** List of iters for indexScan operation */
     std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
@@ -270,6 +261,18 @@ private:
 
     /** stratum */
     size_t level = 0;
+
+    /** List of loggers for logtimer */
+    std::vector<Logger*> timers;
+
+    /** counter for $ operator */
+    int counter = 0;
+
+    /** iteration number (in a fix-point calculation) */
+    size_t iteration = 0;
+
+    /** Dynamic library for user-defined functors */
+    void* dll = nullptr;
 };
 
 }  // end of namespace souffle

@@ -520,7 +520,9 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             for (auto ip = range.first; ip != range.second; ++ip) {
                 const RamDomain* data = *(ip);
                 ctxt[scan.getTupleId()] = data;
-                if (!visitSearch(scan)) break;
+                if (!visitSearch(scan)) {
+                    break;
+                }
             }
             return true;
         }

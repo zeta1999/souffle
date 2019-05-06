@@ -206,8 +206,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
     public:
         CodeEmitter(Synthesiser& syn)
-                : synthesiser(syn),
-                  isa(syn.getTranslationUnit().getAnalysis<IndexSetAnalysis>()) {
+                : synthesiser(syn), isa(syn.getTranslationUnit().getAnalysis<IndexSetAnalysis>()) {
             rec = [&](std::ostream& out, const RamNode* node) { this->visit(*node, out); };
         }
 

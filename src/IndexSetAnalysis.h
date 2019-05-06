@@ -17,9 +17,9 @@
 #pragma once
 
 #include "RamAnalysis.h"
+#include "RamOperation.h"
 #include "RamRelation.h"
 #include "RamTypes.h"
-#include "RamOperation.h"
 #include <cassert>
 #include <cstdlib>
 #include <functional>

@@ -277,7 +277,6 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
 
 /** Compute indexes */
 void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
-
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
@@ -347,8 +346,7 @@ SearchColumns IndexSetAnalysis::getRangeQueryColumns(const RamIndexRelationSearc
 }
 
 /** Get key */
-SearchColumns IndexSetAnalysis::getKey(
-        const RamAbstractExistenceCheck* provExistCheck) const {
+SearchColumns IndexSetAnalysis::getKey(const RamAbstractExistenceCheck* provExistCheck) const {
     const auto values = provExistCheck->getValues();
     SearchColumns res = 0;
     // values.size() - 1 because we discard the height annotation

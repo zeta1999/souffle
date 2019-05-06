@@ -185,9 +185,30 @@ public:
         return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
+};
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        return RamRelationSearch::getChildNodes();
+
+/**
+ * Parallel Relation Scan
+ *
+ * Iterate all tuples of a relation in parallel
+ */
+class RamParallelScan : public RamScan {
+public:
+    RamParallelScan(std::unique_ptr<RamRelationReference> rel, int ident, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
+            : RamScan(std::move(rel), ident, std::move(nested), profileText) { }
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "PARALLEL FOR t" << getTupleId();
+        os << " IN " << getRelation().getName() << std::endl;
+        RamRelationSearch::print(os, tabpos + 1);
+    }
+
+    RamParallelScan* clone() const override {
+        return new RamParallelScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 };
 

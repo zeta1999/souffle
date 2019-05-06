@@ -22,8 +22,11 @@
 #include <iostream>
 #include <regex>
 #include <string>
-#include <ncurses.h>
 #include <unistd.h>
+
+#ifdef USE_NCURSES
+#include <ncurses.h>
+#endif
 
 #include "SouffleInterface.h"
 #include "WriteStreamCSV.h"
@@ -351,6 +354,7 @@ private:
     }
 };
 
+#ifdef USE_NCURSES
 class ExplainNcurses : public Explain {
 public:
     ExplainNcurses(ExplainProvenance& provenance) : Explain(provenance) {}
@@ -510,13 +514,18 @@ private:
         prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
     }
 };
+#endif
 
 inline void explain(SouffleProgram& prog, bool ncurses = false) {
     ExplainProvenanceImpl prov(prog);
 
     if (ncurses) {
+#ifdef USE_NCURSES
         ExplainNcurses exp(prov);
         exp.explain();
+#else
+        std::cout << "The ncurses-based interface is not enabled\n";
+#endif
     } else {
         ExplainConsole exp(prov);
         exp.explain();

@@ -27,16 +27,16 @@ CXXFLAGS=" -Wall -std=c++11"
 
 # Disable provenance
 AC_ARG_ENABLE(
-  [provenance],
-  AS_HELP_STRING([--disable-provenance], [Disable provenance display])
+  [ncurses],
+  AS_HELP_STRING([--disable-ncurses], [Disable ncurses-based provenance display])
 )
-AS_IF([test "x$enable_provenance" != "xno"], [
+AS_IF([test "x$enable_ncurses" != "xno"], [
   AX_WITH_CURSES
-  AS_IF([test "x$ax_cv_ncurses" != "xyes"],[AC_MSG_ERROR([ncurses library is needed for support of provenance display. To build without provenance support use --disable-provenance.])])
+  AS_IF([test "x$ax_cv_ncurses" != "xyes"],[AC_MSG_ERROR([ncurses library is needed for support of the ncurses provenance display. To build without ncurses support use --disable-ncurses.])])
   AS_VAR_APPEND(LIBS, ["$CURSES_LIB"])
-  AS_VAR_APPEND(CXXFLAGS, [" -DUSE_PROVENANCE "])
+  AS_VAR_APPEND(CXXFLAGS, [" -DUSE_NCURSES "])
 ])
-AM_CONDITIONAL([PROVENANCE], [test "x$enable_provenance" != "xno"])
+AM_CONDITIONAL([NCURSES], [test "x$enable_ncurses" != "xno"])
 
 # Enable sanitise memory mode
 AC_ARG_ENABLE(

@@ -557,9 +557,9 @@ int main(int argc, char** argv) {
             // construct SouffleProgram from env
             InterpreterProgInterface interface(*interpreter);
             if (Global::config().get("provenance") == "explain") {
-                explain(interface, true, false, Global::config().has("provenance-silent"));
+                explain(interface, false, Global::config().has("provenance-silent"));
             } else if (Global::config().get("provenance") == "explore") {
-                explain(interface, true, true, Global::config().has("provenance-silent"));
+                explain(interface, true, Global::config().has("provenance-silent"));
             }
         }
 #endif

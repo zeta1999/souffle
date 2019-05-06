@@ -23,6 +23,7 @@
 #include <regex>
 #include <string>
 #include <ncurses.h>
+#include <unistd.h>
 
 #include "SouffleInterface.h"
 #include "WriteStreamCSV.h"
@@ -49,34 +50,7 @@ public:
     /* Configuration variables */
     std::ostream* outputStream = nullptr;
     bool json = false;
-    bool silentPrompt = false;
     int depthLimit = 4;
-
-    /*
-    std::ostream& getOutputStream() {
-        return outputStream;
-    }
-
-    void setOutputStream(std::ostream& o) {
-        outputStream = o;
-    }
-
-    bool getJson() {
-        return json;
-    }
-
-    void setJson(bool j) {
-        json = j;
-    }
-
-    bool getDepthLimit() {
-        return depthLimit;
-    }
-
-    void setDepthLimit(int d) {
-        depthLimit = d;
-    }
-    */
 
 private:
     ExplainConfig() {}
@@ -161,12 +135,6 @@ public:
             }
             printInfo(rules);
 
-            /*
-            if (ncurses && !output) {
-                prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
-            }
-            */
-
             printPrompt("Pick a rule number: ");
 
             std::string ruleNum = getInput();
@@ -180,7 +148,6 @@ public:
                 return true;
             }
 
-            // TODO (taipan-snake): this doesn't work with ncurses yet!!
             std::map<std::string, std::string> varValues;
             for (auto var : variables) {
                 printPrompt("Pick a value for " + var + ": ");
@@ -235,7 +202,7 @@ public:
                     "explain <relation>(<element1>, <element2>, ...): Prints derivation tree\n"
                     "explainnegation <relation>(<element1>, <element2>, ...): Enters an interactive\n"
                     "    interface where the non-existence of a tuple can be explained\n"
-                    "subproof <relation>(<label>): Prints derivation tree for a subproof, label is "
+                    "subproof <relation>(<label>): Prints derivation tree for a subproof, label is\n"
                     "    generated if a derivation tree exceeds height limit\n"
                     "rule <relation name> <rule number>: Prints a rule\n"
                     "output <filename>: Write output into a file/disable output\n"
@@ -340,7 +307,7 @@ private:
 
     /* Print a command prompt */
     void printPrompt(const std::string& prompt) override {
-        if (!ExplainConfig::getExplainConfig().silentPrompt) {
+        if (isatty(fileno(stdin))) {
             std::cout << prompt;
         }
     }
@@ -373,7 +340,7 @@ private:
 
     /* Print any other information */
     void printInfo(const std::string& info) override {
-        if (!ExplainConfig::getExplainConfig().silentPrompt) {
+        if (isatty(fileno(stdin))) {
             std::cout << info;
         }
     }
@@ -439,7 +406,7 @@ private:
 
     /* Print a command prompt */
     void printPrompt(const std::string& prompt) override {
-        if (!ExplainConfig::getExplainConfig().silentPrompt) {
+        if (isatty(fileno(stdin))) {
             std::cout << prompt;
         }
         werase(queryWindow);
@@ -479,14 +446,16 @@ private:
 
     /* Print any other information */
     void printInfo(const std::string& info) override {
-        if (!ExplainConfig::getExplainConfig().silentPrompt) {
+        if (isatty(fileno(stdin))) {
             wprintw(treePad, info.c_str());
+            prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
         }
     }
 
     /* Print an error, such as a wrong command */
     void printError(const std::string& error) override {
         wprintw(treePad, error.c_str());
+        prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
     }
 
     /* Initialise ncurses window */
@@ -542,107 +511,8 @@ private:
     }
 };
 
-/*
-class Explain {
-public:
-    Explain(ExplainProvenance& p, bool ncurses, bool silentPrompt, int d = 4)
-            : prov(p), ncurses(ncurses), silentPrompt(silentPrompt), depthLimit(d), output(nullptr),
-              json(false) {}
-    ~Explain() {
-        delete output;
-    }
-
-    void explain() {
-        if (ncurses && !output) {
-            initialiseWindow();
-            std::signal(SIGWINCH, nullptr);
-        }
-
-        printPrompt("Explain is invoked.\n");
-
-        while (true) {
-            clearDisplay();
-            printPrompt("Enter command > ");
-            std::string line = getInput();
-
-
-            // refresh treePad and allow scrolling
-            if (ncurses && !output) {
-                prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
-                scrollTree(maxx, maxy);
-            }
-        }
-        if (ncurses && !output) {
-            endwin();
-        }
-    }
-
-private:
-    ExplainProvenance& prov;
-
-    bool ncurses;
-    bool silentPrompt;
-    WINDOW* treePad = nullptr;
-    WINDOW* queryWindow = nullptr;
-    int maxx = 0, maxy = 0;
-
-    int depthLimit;
-
-    std::ostream* output;
-
-    bool json;
-
-    std::string getInput() {
-        std::string line;
-
-        if (ncurses && !output) {
-            char buf[100];
-
-            curs_set(1);
-            echo();
-
-            // get next command
-            wgetnstr(queryWindow, buf, 100);
-            noecho();
-            curs_set(0);
-            line = buf;
-        } else {
-            if (!getline(std::cin, line)) {
-                printPrompt("Exiting explain\n");
-                return "q";
-            }
-        }
-
-        return line;
-    }
-
-    void printPrompt(const std::string& prompt) {
-        if (!silentPrompt) {
-            if (ncurses && !output) {
-                // reset command line on each loop
-                werase(queryWindow);
-                wrefresh(queryWindow);
-                mvwprintw(queryWindow, 1, 0, prompt.c_str());
-            } else {
-                std::cout << prompt;
-            }
-        }
-    }
-
-    void clearDisplay() {
-        if (ncurses && !output) {
-            // reset tree display on each loop
-            werase(treePad);
-            prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
-        }
-    }
-};
-*/
-
-inline void explain(SouffleProgram& prog, bool ncurses = false, bool silent = false) {
+inline void explain(SouffleProgram& prog, bool ncurses = false) {
     ExplainProvenanceImpl prov(prog);
-
-    ExplainConfig::getExplainConfig().silentPrompt = silent;
 
     if (ncurses) {
         ExplainNcurses exp(prov);

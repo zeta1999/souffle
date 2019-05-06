@@ -16,11 +16,8 @@
 
 #include "IndexSetAnalysis.h"
 #include "RamCondition.h"
-#include "RamExistenceCheckAnalysis.h"
-#include "RamIndexKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
-#include "RamProvenanceExistenceCheckAnalysis.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
 #include <cstdint>
@@ -280,21 +277,18 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
 
 /** Compute indexes */
 void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
-    const auto* indexKeysAnalysis = translationUnit.getAnalysis<RamIndexKeysAnalysis>();
-    const auto* existCheckAnalysis = translationUnit.getAnalysis<RamExistenceCheckAnalysis>();
-    const auto* provExistCheckAnalysis = translationUnit.getAnalysis<RamProvenanceExistenceCheckAnalysis>();
 
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
             IndexSet& indexes = getIndexes(indexSearch->getRelation());
-            indexes.addSearch(indexKeysAnalysis->getRangeQueryColumns(indexSearch));
+            indexes.addSearch(getRangeQueryColumns(indexSearch));
         } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
             IndexSet& indexes = getIndexes(exists->getRelation());
-            indexes.addSearch(existCheckAnalysis->getKey(exists));
-        } else if (const auto* provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
+            indexes.addSearch(getKey(exists));
+        } else if (const auto* provExists = dynamic_cast<const RamAbstractExistenceCheck*>(&node)) {
             IndexSet& indexes = getIndexes(provExists->getRelation());
-            indexes.addSearch(provExistCheckAnalysis->getKey(provExists));
+            indexes.addSearch(getKey(provExists));
         }
     });
 
@@ -338,6 +332,42 @@ void IndexSetAnalysis::print(std::ostream& os) const {
         }
     }
     os << "------ End of Auto-Index-Generation Report -------\n";
+}
+
+/** Get indexable columns of index scan */
+SearchColumns IndexSetAnalysis::getRangeQueryColumns(const RamIndexRelationSearch* search) const {
+    SearchColumns keys = 0;
+    std::vector<RamExpression*> rangePattern = search->getRangePattern();
+    for (std::size_t i = 0; i < rangePattern.size(); i++) {
+        if (rangePattern[i] != nullptr) {
+            keys |= (1 << i);
+        }
+    }
+    return keys;
+}
+
+/** Get key */
+SearchColumns IndexSetAnalysis::getKey(
+        const RamAbstractExistenceCheck* provExistCheck) const {
+    const auto values = provExistCheck->getValues();
+    SearchColumns res = 0;
+    // values.size() - 1 because we discard the height annotation
+    for (std::size_t i = 0; i < values.size() - 1; i++) {
+        if (values[i] != nullptr) {
+            res |= (1 << i);
+        }
+    }
+    return res;
+}
+
+/** Is key total */
+bool IndexSetAnalysis::isTotal(const RamAbstractExistenceCheck* provExistCheck) const {
+    for (const auto& cur : provExistCheck->getValues()) {
+        if (cur == nullptr) {
+            return false;
+        }
+    }
+    return true;
 }
 
 }  // end of namespace souffle

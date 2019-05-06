@@ -19,6 +19,7 @@
 #include "RamAnalysis.h"
 #include "RamRelation.h"
 #include "RamTypes.h"
+#include "RamOperation.h"
 #include <cassert>
 #include <cstdlib>
 #include <functional>
@@ -260,6 +261,15 @@ public:
             return ret.first->second;
         }
     }
+
+    /** Get indexable columns of index scan */
+    SearchColumns getRangeQueryColumns(const RamIndexRelationSearch* search) const;
+
+    /** get key */
+    SearchColumns getKey(const RamAbstractExistenceCheck* existCheck) const;
+
+    /** is key total */
+    bool isTotal(const RamAbstractExistenceCheck* existCheck) const;
 
 private:
     std::map<std::string, IndexSet> data;

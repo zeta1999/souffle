@@ -21,7 +21,6 @@
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"
-#include "IndexSetAnalysis.h"
 #include "Interpreter.h"
 #include "InterpreterIndex.h"
 #include "InterpreterRecords.h"
@@ -29,6 +28,7 @@
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
 #include "RamExpression.h"
+#include "RamIndexAnalysis.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
@@ -286,12 +286,12 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
     class ConditionEvaluator : public RamVisitor<bool> {
         RAMI& interpreter;
         const InterpreterContext& ctxt;
-        IndexSetAnalysis* isa;
+        RamIndexAnalysis* isa;
 
     public:
         ConditionEvaluator(RAMI& interp, const InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt),
-                  isa(interp.getTranslationUnit().getAnalysis<IndexSetAnalysis>()) {}
+                  isa(interp.getTranslationUnit().getAnalysis<RamIndexAnalysis>()) {}
 
         // -- connectors operators --
 
@@ -450,12 +450,12 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
     class OperationEvaluator : public RamVisitor<bool> {
         RAMI& interpreter;
         InterpreterContext& ctxt;
-        IndexSetAnalysis* isa;
+        RamIndexAnalysis* isa;
 
     public:
         OperationEvaluator(RAMI& interp, InterpreterContext& ctxt)
                 : interpreter(interp), ctxt(ctxt),
-                  isa(interp.getTranslationUnit().getAnalysis<IndexSetAnalysis>()) {}
+                  isa(interp.getTranslationUnit().getAnalysis<RamIndexAnalysis>()) {}
 
         // -- Operations -----------------------------
 

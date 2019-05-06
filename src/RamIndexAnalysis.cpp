@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "IndexSetAnalysis.h"
+#include "RamIndexAnalysis.h"
 #include "RamCondition.h"
 #include "RamNode.h"
 #include "RamOperation.h"
@@ -276,7 +276,7 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
 }
 
 /** Compute indexes */
-void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
+void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
@@ -299,7 +299,7 @@ void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
 }
 
 /** Print indexes */
-void IndexSetAnalysis::print(std::ostream& os) const {
+void RamIndexAnalysis::print(std::ostream& os) const {
     os << "------ Auto-Index-Generation Report -------\n";
     for (auto& cur : data) {
         const std::string& relName = cur.first;
@@ -334,7 +334,7 @@ void IndexSetAnalysis::print(std::ostream& os) const {
 }
 
 /** Get indexable columns of index scan */
-SearchColumns IndexSetAnalysis::getRangeQueryColumns(const RamIndexRelationSearch* search) const {
+SearchColumns RamIndexAnalysis::getRangeQueryColumns(const RamIndexRelationSearch* search) const {
     SearchColumns keys = 0;
     std::vector<RamExpression*> rangePattern = search->getRangePattern();
     for (std::size_t i = 0; i < rangePattern.size(); i++) {
@@ -346,7 +346,7 @@ SearchColumns IndexSetAnalysis::getRangeQueryColumns(const RamIndexRelationSearc
 }
 
 /** Get key */
-SearchColumns IndexSetAnalysis::getKey(const RamAbstractExistenceCheck* provExistCheck) const {
+SearchColumns RamIndexAnalysis::getKey(const RamAbstractExistenceCheck* provExistCheck) const {
     const auto values = provExistCheck->getValues();
     SearchColumns res = 0;
     // values.size() - 1 because we discard the height annotation
@@ -359,7 +359,7 @@ SearchColumns IndexSetAnalysis::getKey(const RamAbstractExistenceCheck* provExis
 }
 
 /** Is key total */
-bool IndexSetAnalysis::isTotal(const RamAbstractExistenceCheck* provExistCheck) const {
+bool RamIndexAnalysis::isTotal(const RamAbstractExistenceCheck* provExistCheck) const {
     for (const auto& cur : provExistCheck->getValues()) {
         if (cur == nullptr) {
             return false;

@@ -99,7 +99,7 @@ souffle_sources = \
               GraphUtils.h                              \
               IODirectives.h                            \
               IOSystem.h                                \
-              IndexSetAnalysis.cpp   IndexSetAnalysis.h \
+              RamIndexAnalysis.cpp   RamIndexAnalysis.h \
               InlineRelationsTransformer.cpp            \
               Interpreter.h       						\
               InterpreterContext.h                      \

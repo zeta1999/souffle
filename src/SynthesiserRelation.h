@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "IndexSetAnalysis.h"
+#include "RamIndexAnalysis.h"
 #include "RamRelation.h"
 
 #include <memory>

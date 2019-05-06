@@ -8,7 +8,7 @@
 
 /***************************************************************************
  *
- * @file IndexSetAnalysis.h
+ * @file RamIndexAnalysis.h
  *
  * Computes indexes for relations in a translation unit
  *
@@ -240,7 +240,7 @@ protected:
 /**
  * Analysis pass computing the index sets of RAM relations
  */
-class IndexSetAnalysis : public RamAnalysis {
+class RamIndexAnalysis : public RamAnalysis {
 public:
     static constexpr const char* name = "index-analysis";
 

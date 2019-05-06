@@ -19,9 +19,9 @@
 #include "FunctorOps.h"
 #include "Global.h"
 #include "IODirectives.h"
-#include "IndexSetAnalysis.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
+#include "RamIndexAnalysis.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
@@ -187,7 +187,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     class CodeEmitter : public RamVisitor<void, std::ostream&> {
     private:
         Synthesiser& synthesiser;
-        IndexSetAnalysis* isa;
+        RamIndexAnalysis* isa;
 
 // macros to add comments to generated code for debugging
 #ifndef PRINT_BEGIN_COMMENT
@@ -206,7 +206,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
     public:
         CodeEmitter(Synthesiser& syn)
-                : synthesiser(syn), isa(syn.getTranslationUnit().getAnalysis<IndexSetAnalysis>()) {
+                : synthesiser(syn), isa(syn.getTranslationUnit().getAnalysis<RamIndexAnalysis>()) {
             rec = [&](std::ostream& out, const RamNode* node) { this->visit(*node, out); };
         }
 
@@ -1634,7 +1634,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // ---------------------------------------------------------------
     const SymbolTable& symTable = translationUnit.getSymbolTable();
     const RamProgram& prog = *translationUnit.getProgram();
-    auto* idxAnalysis = translationUnit.getAnalysis<IndexSetAnalysis>();
+    auto* idxAnalysis = translationUnit.getAnalysis<RamIndexAnalysis>();
 
     // ---------------------------------------------------------------
     //                      Code Generation

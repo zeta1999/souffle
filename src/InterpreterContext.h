@@ -31,7 +31,7 @@ class InterpreterContext {
     std::vector<RamDomain>* returnValues = nullptr;
     std::vector<bool>* returnErrors = nullptr;
     const std::vector<RamDomain>* args = nullptr;
-    std::vector<std::unique_ptr<RamDomain>> allocatedDataContainer;
+    std::vector<std::unique_ptr<RamDomain[]>> allocatedDataContainer;
 
 public:
     InterpreterContext(size_t size = 0) : data(size) {}
@@ -51,7 +51,7 @@ public:
     /** Allocate a tuple.
      *  allocatedDataContainer has the ownership of those tuples. */
     RamDomain* allocateNewTuple(size_t size) {
-        std::unique_ptr<RamDomain> newTuple(new RamDomain[size]);
+        std::unique_ptr<RamDomain[]> newTuple(new RamDomain[size]);
         allocatedDataContainer.push_back(std::move(newTuple));
 
         // Return the reference as raw pointer.

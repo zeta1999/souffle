@@ -182,13 +182,8 @@ int main(int argc, char** argv) {
                         "Use profile log-file <FILE> for profile-guided optimization."},
                 {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
                 {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
-                {"provenance", 't',
-                        "[ none | explain "
-#ifdef USE_NCURSES
-                        "| explore"
-#endif
-                        "]",
-                        "", false, "Enable provenance instrumentation and interaction."},
+                {"provenance", 't', "[ none | explain | explore ]", "", false,
+                        "Enable provenance instrumentation and interaction."},
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
                 {"interpreter", '\1', "[ RAMI | LVM ]", "", false, "Switch interpreter implementation."},

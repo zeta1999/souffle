@@ -141,7 +141,7 @@ private:
  * If the indexes of a relation can cover several searches, the minimal
  * set of indexes is computed by Dilworth's problem. See
  *
- * "Automatic Index Selection for Large-Scale Datalog Computation" 
+ * "Automatic Index Selection for Large-Scale Datalog Computation"
  * http://www.vldb.org/pvldb/vol12/p141-subotic.pdf
  *
  */
@@ -263,9 +263,9 @@ protected:
 
     /** @brief get a chain from a matching
      *  @param Starting node of a chain
-     *  @param Matching 
+     *  @param Matching
      *  @result A minimal chain
-     * given an unmapped node from set A 
+     * given an unmapped node from set A
      * we follow it from set B until it cannot be matched from B
      * if not matched from B then umn is a chain.
      */

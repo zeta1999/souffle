@@ -19,7 +19,8 @@ namespace souffle {
 
 class SynthesiserRelation {
 public:
-    SynthesiserRelation(const RamRelation& rel, const MinIndexSelection& indices, const bool isProvenance = false)
+    SynthesiserRelation(
+            const RamRelation& rel, const MinIndexSelection& indices, const bool isProvenance = false)
             : relation(rel), indices(indices), isProvenance(isProvenance) {}
 
     virtual ~SynthesiserRelation() = default;
@@ -86,7 +87,8 @@ protected:
 
 class SynthesiserNullaryRelation : public SynthesiserRelation {
 public:
-    SynthesiserNullaryRelation(const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
+    SynthesiserNullaryRelation(
+            const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;
@@ -106,7 +108,8 @@ public:
 
 class SynthesiserIndirectRelation : public SynthesiserRelation {
 public:
-    SynthesiserIndirectRelation(const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
+    SynthesiserIndirectRelation(
+            const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;

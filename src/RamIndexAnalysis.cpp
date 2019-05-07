@@ -205,7 +205,8 @@ void MinIndexSelection::solve() {
     }
 }
 
-MinIndexSelection::Chain MinIndexSelection::getChain(const SearchSignature umn, const MaxMatching::Matchings& match) {
+MinIndexSelection::Chain MinIndexSelection::getChain(
+        const SearchSignature umn, const MaxMatching::Matchings& match) {
     SearchSignature start = umn;  // start at an unmateched node
     Chain chain;
     // given an unmapped node from set A we follow it from set B until it cannot be matched from B

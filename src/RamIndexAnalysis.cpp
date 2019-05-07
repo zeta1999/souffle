@@ -115,7 +115,7 @@ const MaxMatching::Matchings& MaxMatching::solve() {
     return match;
 }
 
-void IndexSet::solve() {
+void MinIndexSelection::solve() {
     // map the keys in the key set to lexicographical order
     if (searches.empty()) {
         return;
@@ -135,7 +135,7 @@ void IndexSet::solve() {
         // every search pattern gets its naive index
         for (SearchSignature cur : searches) {
             // obtain order
-            LexicographicalOrder order;
+            LexOrder order;
             SearchSignature mask = cur;
             for (int i = 0; mask != 0; i++) {
                 if (!(1 << i & mask)) {
@@ -205,11 +205,11 @@ void IndexSet::solve() {
     }
 }
 
-IndexSet::Chain IndexSet::getChain(const SearchSignature umn, const MaxMatching::Matchings& match) {
+MinIndexSelection::Chain MinIndexSelection::getChain(const SearchSignature umn, const MaxMatching::Matchings& match) {
     SearchSignature start = umn;  // start at an unmateched node
     Chain chain;
     // given an unmapped node from set A we follow it from set B until it cannot be matched from B
-    //  not mateched from B then umn is a chain
+    //  if not mateched from B then umn is a chain
     //
     // Assume : no circular mappings, i.e. a in A -> b in B -> ........ -> a in A is not allowed.
     // Given this, the loop will terminate
@@ -227,7 +227,7 @@ IndexSet::Chain IndexSet::getChain(const SearchSignature umn, const MaxMatching:
     }
 }
 
-const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
+const MinIndexSelection::ChainOrderMap MinIndexSelection::getChainsFromMatching(
         const MaxMatching::Matchings& match, const SearchSet& nodes) {
     assert(!nodes.empty());
 
@@ -265,30 +265,30 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
-            IndexSet& indexes = getIndexes(indexSearch->getRelation());
+            MinIndexSelection& indexes = getIndexes(indexSearch->getRelation());
             indexes.addSearch(getSearchSignature(indexSearch));
         } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
-            IndexSet& indexes = getIndexes(exists->getRelation());
+            MinIndexSelection& indexes = getIndexes(exists->getRelation());
             indexes.addSearch(getSearchSignature(exists));
         } else if (const auto* provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
-            IndexSet& indexes = getIndexes(provExists->getRelation());
+            MinIndexSelection& indexes = getIndexes(provExists->getRelation());
             indexes.addSearch(getSearchSignature(provExists));
         }
     });
 
     // find optimal indexes for relations
     for (auto& cur : minIndexCover) {
-        IndexSet& indexes = cur.second;
+        MinIndexSelection& indexes = cur.second;
         indexes.solve();
     }
 }
 
-IndexSet& RamIndexAnalysis::getIndexes(const RamRelation& rel) {
+MinIndexSelection& RamIndexAnalysis::getIndexes(const RamRelation& rel) {
     auto pos = minIndexCover.find(&rel);
     if (pos != minIndexCover.end()) {
         return pos->second;
     } else {
-        auto ret = minIndexCover.insert(std::make_pair(&rel, IndexSet()));
+        auto ret = minIndexCover.insert(std::make_pair(&rel, MinIndexSelection()));
         assert(ret.second);
         return ret.first->second;
     }
@@ -298,7 +298,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
     os << "------ Auto-Index-Generation Report -------\n";
     for (auto& cur : minIndexCover) {
         const RamRelation& rel = *cur.first;
-        const IndexSet& indexes = cur.second;
+        const MinIndexSelection& indexes = cur.second;
         const std::string& relName = rel.getName();
 
         /* Print searches */
@@ -331,7 +331,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexRelationSearch* search) const {
     SearchSignature keys = 0;
     std::vector<RamExpression*> rangePattern = search->getRangePattern();
-    for (std::size_t i = 0; i < rangePattern.size(); i++) {
+    for (int i = 0; i < rangePattern.size(); i++) {
         if (rangePattern[i] != nullptr) {
             keys |= (1 << i);
         }
@@ -344,7 +344,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
     const auto values = provExistCheck->getValues();
     SearchSignature res = 0;
     // values.size() - 1 because we discard the height annotation
-    for (std::size_t i = 0; i < values.size() - 1; i++) {
+    for (int i = 0; i < values.size() - 1; i++) {
         if (values[i] != nullptr) {
             res |= (1 << i);
         }
@@ -355,7 +355,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* existCheck) const {
     const auto values = existCheck->getValues();
     SearchSignature res = 0;
-    for (std::size_t i = 0; i < values.size(); i++) {
+    for (int i = 0; i < values.size(); i++) {
         if (values[i] != nullptr) {
             res |= (1 << i);
         }

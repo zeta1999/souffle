@@ -134,29 +134,28 @@ private:
 };
 
 /**
- * @class IndexSet
+ * @class MinIndexSelection
  * @brief computes the minimal index cover for a relation
- *
- * This class is a helper class for RamIndexAnalysis.
+ *        in a RAM Program.
  *
  * If the indexes of a relation can cover several searches, the minimal
  * set of indexes is computed by Dilworth's problem. See
  *
- * "Optimal On The Fly Index Selection in Polynomial Time"
- * https://arxiv.org/abs/1709.03685
+ * "Automatic Index Selection for Large-Scale Datalog Computation" 
+ * http://www.vldb.org/pvldb/vol12/p141-subotic.pdf
  *
  */
 
-class IndexSet {
+class MinIndexSelection {
 public:
-    using LexicographicalOrder = std::vector<int>;
-    using OrderCollection = std::vector<LexicographicalOrder>;
+    using LexOrder = std::vector<int>;
+    using OrderCollection = std::vector<LexOrder>;
     using Chain = std::set<SearchSignature>;
     using ChainOrderMap = std::vector<Chain>;
     using SearchSet = std::set<SearchSignature>;
 
-    IndexSet() = default;
-    ~IndexSet() = default;
+    MinIndexSelection() = default;
+    ~MinIndexSelection() = default;
 
     /** @brief Add new key to an Index Set */
     inline void addSearch(SearchSignature cols) {
@@ -171,7 +170,7 @@ public:
     }
 
     /** @brief Get index for a search */
-    const LexicographicalOrder getLexOrder(SearchSignature cols) const {
+    const LexOrder getLexOrder(SearchSignature cols) const {
         int idx = map(cols);
         return orders[idx];
     }
@@ -247,8 +246,8 @@ protected:
         return (~(a) | (b)) == tt && a != b;
     }
 
-    /** @brief insert an index based on the delta*/
-    void insertIndex(std::vector<int>& ids, SearchSignature delta) {
+    /** @brief insert an index based on the delta */
+    void insertIndex(LexOrder& ids, SearchSignature delta) {
         int pos = 0;
         SearchSignature mask = 0;
 
@@ -262,8 +261,14 @@ protected:
         }
     }
 
-    /** @brief given an unmapped node from set A we follow it from set B until it cannot be matched from B
-        if not mateched from B then umn is a chain*/
+    /** @brief get a chain from a matching
+     *  @param Starting node of a chain
+     *  @param Matching 
+     *  @result A minimal chain
+     * given an unmapped node from set A 
+     * we follow it from set B until it cannot be matched from B
+     * if not matched from B then umn is a chain.
+     */
     Chain getChain(const SearchSignature umn, const MaxMatching::Matchings& match);
 
     /** @brief get all chains from the matching */
@@ -271,7 +276,6 @@ protected:
 
     /** @brief get all nodes which are unmated from A-> B */
     const SearchSet getUnmatchedKeys(const MaxMatching::Matchings& match, const SearchSet& nodes) {
-        assert(!nodes.empty());
         SearchSet unmatched;
 
         // For all nodes n such that n is not in match
@@ -286,8 +290,7 @@ protected:
 
 /**
  * @class RamIndexAnalyis
- * @brief
- * Analysis pass computing the index sets of RAM relations
+ * @brief Analysis pass computing the index sets of RAM relations
  */
 class RamIndexAnalysis : public RamAnalysis {
 public:
@@ -302,7 +305,7 @@ public:
      * @param relation
      * @result set of indexes of the minimal index cover
      */
-    IndexSet& getIndexes(const RamRelation& rel);
+    MinIndexSelection& getIndexes(const RamRelation& rel);
 
     /**
      * @brief Get index signature for an Ram IndexRelationSearch operation
@@ -338,7 +341,7 @@ private:
     /**
      * minimal index cover for relations, i.e., maps a relation to a set of indexes
      */
-    std::map<const RamRelation*, IndexSet> minIndexCover;
+    std::map<const RamRelation*, MinIndexSelection> minIndexCover;
 };
 
 }  // end of namespace souffle

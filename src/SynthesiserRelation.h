@@ -14,13 +14,12 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <vector>
 
 namespace souffle {
 
 class SynthesiserRelation {
 public:
-    SynthesiserRelation(const RamRelation& rel, const IndexSet& indices, const bool isProvenance = false)
+    SynthesiserRelation(const RamRelation& rel, const MinIndexSelection& indices, const bool isProvenance = false)
             : relation(rel), indices(indices), isProvenance(isProvenance) {}
 
     virtual ~SynthesiserRelation() = default;
@@ -39,14 +38,14 @@ public:
     }
 
     /** Get list of indices used for relation,
-     * guaranteed that original indices in IndexSet
+     * guaranteed that original indices in MinIndexSelection
      * come before any generated indices */
-    std::vector<std::vector<int>> getIndices() const {
+    MinIndexSelection::OrderCollection getIndices() const {
         return computedIndices;
     }
 
-    /** Get stored IndexSet */
-    const IndexSet& getIndexSet() const {
+    /** Get stored MinIndexSelection */
+    const MinIndexSelection& getMinIndexSelection() const {
         return indices;
     }
 
@@ -63,20 +62,20 @@ public:
 
     /** Factory method to generate a SynthesiserRelation */
     static std::unique_ptr<SynthesiserRelation> getSynthesiserRelation(
-            const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance);
+            const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance);
 
 protected:
     /** Ram relation referred to by this */
     const RamRelation& relation;
 
     /** Indices used for this relation */
-    const IndexSet& indices;
+    const MinIndexSelection& indices;
 
     /** The data structure used for the relation */
     std::string dataStructure;
 
     /** The final list of indices used */
-    std::vector<IndexSet::LexicographicalOrder> computedIndices;
+    MinIndexSelection::OrderCollection computedIndices;
 
     /** The number of the master index */
     size_t masterIndex = -1;
@@ -87,7 +86,7 @@ protected:
 
 class SynthesiserNullaryRelation : public SynthesiserRelation {
 public:
-    SynthesiserNullaryRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserNullaryRelation(const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;
@@ -97,7 +96,7 @@ public:
 
 class SynthesiserDirectRelation : public SynthesiserRelation {
 public:
-    SynthesiserDirectRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserDirectRelation(const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;
@@ -107,7 +106,7 @@ public:
 
 class SynthesiserIndirectRelation : public SynthesiserRelation {
 public:
-    SynthesiserIndirectRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserIndirectRelation(const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;
@@ -117,7 +116,7 @@ public:
 
 class SynthesiserBrieRelation : public SynthesiserRelation {
 public:
-    SynthesiserBrieRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserBrieRelation(const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;
@@ -127,7 +126,7 @@ public:
 
 class SynthesiserEqrelRelation : public SynthesiserRelation {
 public:
-    SynthesiserEqrelRelation(const RamRelation& ramRel, const IndexSet& indexSet, bool isProvenance)
+    SynthesiserEqrelRelation(const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;

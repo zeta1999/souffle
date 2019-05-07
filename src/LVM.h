@@ -44,7 +44,11 @@ namespace souffle {
 class InterpreterProgInterface;
 
 /**
- * Interpreter executing a RAM translation unit
+ * Bytecode Interpreter executing a RAM translation unit.
+ *
+ * RAM is transferred into an equivalent Bytecode Representation (LVMCode) by LVMGenerator.
+ * LVM then directly execute the program by interpreting the LVMCode.
+ * The LVMCode will be cached in the memory to save time when repeatedly execution is needed.
  */
 class LVM : public Interpreter {
 public:
@@ -52,7 +56,7 @@ public:
 
     virtual ~LVM() {}
 
-    /** Interface for executing the main program */
+    /** Execute the main program */
     virtual void executeMain();
 
     /** Clean the cache of main Program */
@@ -76,7 +80,7 @@ public:
         if (subroutines.find(name) != subroutines.cend()) {
             execute(subroutines.at(name), ctxt);
         } else {
-            // Parse and cache the progrme
+            // Parse and cache the program
             LVMGenerator generator(
                     translationUnit.getSymbolTable(), translationUnit.getProgram()->getSubroutine(name));
             subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
@@ -101,12 +105,12 @@ protected:
     /** Insert Logger */
     void insertTimerAt(size_t index, Logger* timer) {
         if (index >= timers.size()) {
-            timers.resize((index + 1) * 2, nullptr);
+            timers.resize((index + 1), nullptr);
         }
         timers[index] = timer;
     }
 
-    /** Stop and destory logger */
+    /** Stop and destroy logger */
     void stopTimerAt(size_t index) {
         assert(index < timers.size());
         timers[index]->~Logger();
@@ -178,7 +182,7 @@ protected:
         return dll;
     }
 
-    /** Lookup IndexScan iterator, resizing iterator pool if necessary */
+    /** Lookup IndexScan iterator, resize the iterator pool if necessary */
     std::pair<index_set::iterator, index_set::iterator>& lookUpIndexScanIterator(size_t idx) {
         if (idx >= indexScanIteratorPool.size()) {
             indexScanIteratorPool.resize(idx + 1);
@@ -186,7 +190,7 @@ protected:
         return indexScanIteratorPool[idx];
     }
 
-    /** Lookup Scan iterator, resizing iterator pool if necessary */
+    /** Lookup Scan iterator, resize the iterator pool if necessary */
     std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
         if (idx >= scanIteratorPool.size()) {
             scanIteratorPool.resize(idx + 1);
@@ -194,7 +198,7 @@ protected:
         return scanIteratorPool[idx];
     }
 
-    /** Lookup Choice iterator, resizing iterator pool if necessary */
+    /** Lookup Choice iterator, resize the iterator pool if necessary */
     std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpChoiceIterator(
             size_t idx) {
         if (idx >= choiceIteratorPool.size()) {
@@ -203,7 +207,7 @@ protected:
         return choiceIteratorPool[idx];
     }
 
-    /** Lookup IndexChoice iterator, resizing iterator pool if necessary */
+    /** Lookup IndexChoice iterator, resize the iterator pool if necessary */
     std::pair<index_set::iterator, index_set::iterator>& lookUpIndexChoiceIterator(size_t idx) {
         if (idx >= indexChoiceIteratorPool.size()) {
             indexChoiceIteratorPool.resize(idx + 1);
@@ -211,8 +215,25 @@ protected:
         return indexChoiceIteratorPool[idx];
     }
 
+    /** Obtain the search columns */
+    SearchColumns getSearchColumns(const std::string& patterns, size_t arity) {
+        SearchColumns res = 0;
+        for (size_t i = 0; i < arity; ++i) {
+            if (patterns[i] == 'V') {
+                res |= (1 << i);
+            }
+        }
+        return res;
+    }
+
 private:
     friend InterpreterProgInterface;
+
+    /** Execute given program
+     *
+     * @param ip the instruction pointer start position, default is 0.
+     * */
+    void execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip = 0);
 
     /** subroutines */
     std::map<std::string, std::unique_ptr<LVMCode>> subroutines;
@@ -220,26 +241,11 @@ private:
     /** Main program */
     std::unique_ptr<LVMCode> mainProgram = nullptr;
 
-    /** Execute given program */
-    void execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip = 0);
-
     /** counters for atom profiling */
     std::map<std::string, std::map<size_t, size_t>> frequencies;
 
     /** counters for non-existence check */
     std::map<std::string, std::atomic<size_t>> reads;
-
-    /** List of loggers for logtimer */
-    std::vector<Logger*> timers;
-
-    /** counter for $ operator */
-    int counter = 0;
-
-    /** iteration number (in a fix-point calculation) */
-    size_t iteration = 0;
-
-    /** Dynamic library for user-defined functors */
-    void* dll = nullptr;
 
     /** List of iters for indexScan operation */
     std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
@@ -255,6 +261,18 @@ private:
 
     /** stratum */
     size_t level = 0;
+
+    /** List of loggers for logtimer */
+    std::vector<Logger*> timers;
+
+    /** counter for $ operator */
+    int counter = 0;
+
+    /** iteration number (in a fix-point calculation) */
+    size_t iteration = 0;
+
+    /** Dynamic library for user-defined functors */
+    void* dll = nullptr;
 };
 
 }  // end of namespace souffle

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "RamLevel.h"
+#include "RamLevelAnalysis.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
 #include <memory>
@@ -32,18 +32,22 @@ class RamProgram;
  *
  * For example ..
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *    IF C1 /\ C2 then
  *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * will be rewritten to
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *    IF C1
  *     IF C2
  *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  */
 class ExpandFilterTransformer : public RamTransformer {
@@ -76,18 +80,22 @@ protected:
  * i.e. a conjunction is expressed by two consecutive filter operations.
  * For example ..
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *    IF C1 /\ C2 then
  *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * should be rewritten / or produced by the translator as
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *    IF C1
  *     IF C2
  *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * otherwise the levelling becomes imprecise, i.e., for both conditions
  * the most outer-level is sought rather than considered separately.
@@ -136,19 +144,23 @@ protected:
  * The conditions that could be used for an index must be located
  * immediately after the scan or aggregrate operation.
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *   FOR t1 in A
  *    IF t1.x = 10 /\ t1.y = 20 /\ C
  *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * will be rewritten to
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *    SEARCH t1 in A INDEX t1.x=10 and t1.y = 20
  *     IF C
  *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
 class MakeIndexTransformer : public RamTransformer {
@@ -221,17 +233,21 @@ protected:
  *
  * For example,
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *    SEARCH t1 IN A INDEX t1.x=10 AND t1.y = 20
  *      ... // no occurrence of t1
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * will be rewritten to
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *    IF (10,20) NOT IN A
  *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  */
 class IfConversionTransformer : public RamTransformer {
@@ -278,19 +294,23 @@ protected:
  *
  * For example,
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *    SEARCH t1 IN A INDEX t1.x=10 AND t1.y = 20
  *    	IF (t1.x, t1.y) NOT IN A
  *          ... // no occurrence of t1
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * will be rewritten to
  *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
  *    INDEXCHOICE AS t1 ON INDEX t1.x=10 AND t1.y = 20
  *    WHERE (t1.x, t1.y) NOT IN A
  *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  */
 class ChoiceConversionTransformer : public RamTransformer {

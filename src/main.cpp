@@ -23,6 +23,7 @@
 #include "ComponentModel.h"
 #include "DebugReport.h"
 #include "ErrorReport.h"
+#include "Explain.h"
 #include "Global.h"
 #include "Interpreter.h"
 #include "InterpreterInterface.h"
@@ -38,10 +39,6 @@
 #include "Util.h"
 #include "config.h"
 #include "profile/Tui.h"
-
-#ifdef USE_PROVENANCE
-#include "Explain.h"
-#endif
 
 #ifdef USE_MPI
 #include "Mpi.h"
@@ -185,12 +182,13 @@ int main(int argc, char** argv) {
                         "Use profile log-file <FILE> for profile-guided optimization."},
                 {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
                 {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
-#ifdef USE_PROVENANCE
-                {"provenance", 't', "[ none | explain | explore ]", "", false,
-                        "Enable provenance instrumentation and interaction."},
-                {"provenance-silent", '\4', "", "", false,
-                        "Silence the provenance interface, useful for scripting."},
+                {"provenance", 't',
+                        "[ none | explain "
+#ifdef USE_NCURSES
+                        "| explore"
 #endif
+                        "]",
+                        "", false, "Enable provenance instrumentation and interaction."},
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
                 {"interpreter", '\1', "[ RAMI | LVM ]", "", false, "Switch interpreter implementation."},
@@ -423,13 +421,9 @@ int main(int argc, char** argv) {
                     std::make_unique<RemoveEmptyRelationsTransformer>(),
                     std::make_unique<RemoveRedundantRelationsTransformer>());
 
-#ifdef USE_PROVENANCE
     // Provenance pipeline
     auto provenancePipeline = std::make_unique<PipelineTransformer>(std::make_unique<ConditionalTransformer>(
             Global::config().has("provenance"), std::make_unique<ProvenanceTransformer>()));
-#else
-    auto provenancePipeline = std::make_unique<PipelineTransformer>();
-#endif
 
     // Main pipeline
     auto pipeline = std::make_unique<PipelineTransformer>(std::make_unique<AstComponentChecker>(),
@@ -551,18 +545,16 @@ int main(int argc, char** argv) {
             profiler.join();
         }
 
-#ifdef USE_PROVENANCE
         // only run explain interface if interpreted
         if (Global::config().has("provenance")) {
             // construct SouffleProgram from env
             InterpreterProgInterface interface(*interpreter);
             if (Global::config().get("provenance") == "explain") {
-                explain(interface, true, false, Global::config().has("provenance-silent"));
+                explain(interface, false);
             } else if (Global::config().get("provenance") == "explore") {
-                explain(interface, true, true, Global::config().has("provenance-silent"));
+                explain(interface, true);
             }
         }
-#endif
 
     } else {
         // ------- compiler -------------

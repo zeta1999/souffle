@@ -100,8 +100,8 @@
 %token MAX                       "max aggregator"
 %token COUNT                     "count aggregator"
 %token SUM                       "sum aggregator"
-%token STRUE                     "true literal constraint"
-%token SFALSE                    "false literal constraint"
+%token TRUE                      "true literal constraint"
+%token FALSE                     "false literal constraint"
 %token STRICT                    "strict marker"
 %token PLAN                      "plan keyword"
 %token IF                        ":-"
@@ -674,11 +674,11 @@ constraint
     }
 
     /* zero-arity constraints */
-  | STRUE {
+  | TRUE {
         $$ = new AstBooleanConstraint(true);
         $$->setSrcLoc(@$);
     }
-  | SFALSE {
+  | FALSE {
         $$ = new AstBooleanConstraint(false);
         $$->setSrcLoc(@$);
     }
@@ -1270,10 +1270,10 @@ kvp_value
   | IDENT {
         $$ = $IDENT;
     }
-  | STRUE {
+  | TRUE {
         $$ = "true";
     }
-  | SFALSE {
+  | FALSE {
         $$ = "false";
     }
   ;

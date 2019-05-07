@@ -109,8 +109,8 @@
 "_"                                   { return yy::parser::make_UNDERSCORE(yylloc); }
 "count"                               { return yy::parser::make_COUNT(yylloc); }
 "sum"                                 { return yy::parser::make_SUM(yylloc); }
-"true"                                { return yy::parser::make_STRUE(yylloc); }
-"false"                               { return yy::parser::make_SFALSE(yylloc); }
+"true"                                { return yy::parser::make_TRUE(yylloc); }
+"false"                               { return yy::parser::make_FALSE(yylloc); }
 "to_string"                           { return yy::parser::make_TOSTRING(yylloc); }
 "to_number"                           { return yy::parser::make_TONUMBER(yylloc); }
 ".strict"                             { return yy::parser::make_STRICT(yylloc); }

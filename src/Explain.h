@@ -532,4 +532,10 @@ inline void explain(SouffleProgram& prog, bool ncurses = false) {
     }
 }
 
+// this is necessary because ncurses.h defines TRUE and FALSE macros, and they otherwise clash with our parser
+#ifdef USE_NCURSES
+#undef TRUE
+#undef FALSE
+#endif
+
 }  // end of namespace souffle

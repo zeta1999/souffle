@@ -46,8 +46,8 @@ public:
 
     /* Obtain the global ExplainConfiguration */
     static ExplainConfig& getExplainConfig() {
-        static ExplainConfig _config;
-        return _config;
+        static ExplainConfig config;
+        return config;
     }
 
     /* Configuration variables */
@@ -63,14 +63,8 @@ class Explain {
 public:
     ExplainProvenance& prov;
 
-    Explain(ExplainProvenance& p) : prov(p) {}
-    ~Explain() {
-        // close file streama
-        if (ExplainConfig::getExplainConfig().outputStream != nullptr) {
-            delete ExplainConfig::getExplainConfig().outputStream;
-            ExplainConfig::getExplainConfig().outputStream = nullptr;
-        }
-    }
+    Explain(ExplainProvenance& prov) : prov(prov) {}
+    ~Explain() {}
 
     /* Process a command, a return value of true indicates to continue, returning false indicates to break (if
      * the command is q/exit) */
@@ -95,39 +89,33 @@ public:
             printInfo("Depth is now " + std::to_string(ExplainConfig::getExplainConfig().depthLimit) + "\n");
         } else if (command[0] == "explain") {
             std::pair<std::string, std::vector<std::string>> query;
-            if (command.size() == 2) {
-                query = parseTuple(command[1]);
-            } else {
+            if (command.size() != 2) {
                 printError("Usage: explain relation_name(\"<string element1>\", <number element2>, ...)\n");
                 return true;
             }
-            std::unique_ptr<TreeNode> t =
-                    prov.explain(query.first, query.second, ExplainConfig::getExplainConfig().depthLimit);
-            printTree(std::move(t));
+            query = parseTuple(command[1]);
+            printTree(prov.explain(query.first, query.second, ExplainConfig::getExplainConfig().depthLimit));
         } else if (command[0] == "subproof") {
             std::pair<std::string, std::vector<std::string>> query;
             int label = -1;
-            if (command.size() > 1) {
-                query = parseTuple(command[1]);
-                label = std::stoi(query.second[0]);
-            } else {
+            if (command.size() <= 1) {
                 printError("Usage: subproof relation_name(<label>)\n");
                 return true;
             }
-            std::unique_ptr<TreeNode> t =
-                    prov.explainSubproof(query.first, label, ExplainConfig::getExplainConfig().depthLimit);
-            printTree(std::move(t));
+            query = parseTuple(command[1]);
+            label = std::stoi(query.second[0]);
+            printTree(prov.explainSubproof(query.first, label, ExplainConfig::getExplainConfig().depthLimit));
         } else if (command[0] == "explainnegation") {
             std::pair<std::string, std::vector<std::string>> query;
-            if (command.size() == 2) {
-                query = parseTuple(command[1]);
-            } else {
+            if (command.size() != 2) {
                 printError(
                         "Usage: explainnegation relation_name(\"<string element1>\", <number element2>, "
                         "...)\n");
                 return true;
             }
+            query = parseTuple(command[1]);
 
+            // a counter for the rule numbers
             size_t i = 1;
             std::string rules;
             for (auto rule : prov.getRules(query.first)) {
@@ -154,8 +142,7 @@ public:
             std::map<std::string, std::string> varValues;
             for (auto var : variables) {
                 printPrompt("Pick a value for " + var + ": ");
-                std::string varValue = getInput();
-                varValues[var] = varValue;
+                varValues[var] = getInput();
             }
 
             printTree(prov.explainNegation(query.first, std::stoi(ruleNum), query.second, varValues));
@@ -208,7 +195,8 @@ public:
                     "subproof <relation>(<label>): Prints derivation tree for a subproof, label is\n"
                     "    generated if a derivation tree exceeds height limit\n"
                     "rule <relation name> <rule number>: Prints a rule\n"
-                    "output <filename>: Write output into a file/disable output\n"
+                    "output <filename>: Write output into a file, or provide empty filename to\n"
+                    "    disable output\n"
                     "format <json|proof>: switch format between json and proof-trees\n"
                     "exit: Exits this interface\n\n");
         }
@@ -223,19 +211,22 @@ private:
     /* Get input */
     virtual std::string getInput() = 0;
 
-    /* Print a command prompt */
+    /* Print a command prompt, disabled for non-terminal outputs */
     virtual void printPrompt(const std::string& prompt) = 0;
 
     /* Print a tree */
     virtual void printTree(std::unique_ptr<TreeNode> tree) = 0;
 
-    /* Print any other information */
+    /* Print any other information, disabled for non-terminal outputs */
     virtual void printInfo(const std::string& info) = 0;
 
     /* Print an error, such as a wrong command */
     virtual void printError(const std::string& error) = 0;
 
-    /* Parse tuple, split into relation name and values */
+    /**
+     * Parse tuple, split into relation name and values
+     * @param str The string to parse, should be something like "R(x1, x2, x3, ...)"
+     */
     std::pair<std::string, std::vector<std::string>> parseTuple(const std::string& str) {
         std::string relName;
         std::vector<std::string> args;
@@ -308,44 +299,48 @@ private:
         return line;
     }
 
-    /* Print a command prompt */
+    /* Print a command prompt, disabled for non-terminal outputs */
     void printPrompt(const std::string& prompt) override {
-        if (isatty(fileno(stdin))) {
-            std::cout << prompt;
+        if (!isatty(fileno(stdin))) {
+            return;
         }
+        std::cout << prompt;
     }
 
     /* Print a tree */
     void printTree(std::unique_ptr<TreeNode> tree) override {
-        if (tree) {
-            // handle a file ostream output
-            std::ostream* output;
-            if (ExplainConfig::getExplainConfig().outputStream == nullptr) {
-                output = &std::cout;
-            } else {
-                output = ExplainConfig::getExplainConfig().outputStream;
-            }
+        if (!tree) {
+            return;
+        }
 
-            if (!ExplainConfig::getExplainConfig().json) {
-                tree->place(0, 0);
-                ScreenBuffer screenBuffer(tree->getWidth(), tree->getHeight());
-                tree->render(screenBuffer);
-                *output << screenBuffer.getString();
-            } else {
-                *output << "{ \"proof\":\n";
-                tree->printJSON(*output, 1);
-                *output << ",";
-                prov.printRulesJSON(*output);
-                *output << "}\n";
-            }
+        // handle a file ostream output
+        std::ostream* output;
+        if (ExplainConfig::getExplainConfig().outputStream == nullptr) {
+            output = &std::cout;
+        } else {
+            output = ExplainConfig::getExplainConfig().outputStream;
+        }
+
+        if (!ExplainConfig::getExplainConfig().json) {
+            tree->place(0, 0);
+            ScreenBuffer screenBuffer(tree->getWidth(), tree->getHeight());
+            tree->render(screenBuffer);
+            *output << screenBuffer.getString();
+        } else {
+            *output << "{ \"proof\":\n";
+            tree->printJSON(*output, 1);
+            *output << ",";
+            prov.printRulesJSON(*output);
+            *output << "}\n";
         }
     }
 
-    /* Print any other information */
+    /* Print any other information, disabled for non-terminal outputs */
     void printInfo(const std::string& info) override {
-        if (isatty(fileno(stdin))) {
-            std::cout << info;
+        if (!isatty(fileno(stdin))) {
+            return;
         }
+        std::cout << info;
     }
 
     /* Print an error, such as a wrong command */
@@ -408,10 +403,10 @@ private:
         return line;
     }
 
-    /* Print a command prompt */
+    /* Print a command prompt, disabled for non-terminal outputs */
     void printPrompt(const std::string& prompt) override {
-        if (isatty(fileno(stdin))) {
-            std::cout << prompt;
+        if (!isatty(fileno(stdin))) {
+            return;
         }
         werase(queryWindow);
         wrefresh(queryWindow);
@@ -420,40 +415,43 @@ private:
 
     /* Print a tree */
     void printTree(std::unique_ptr<TreeNode> tree) override {
-        if (tree) {
-            if (!ExplainConfig::getExplainConfig().json) {
-                tree->place(0, 0);
-                ScreenBuffer screenBuffer(tree->getWidth(), tree->getHeight());
-                tree->render(screenBuffer);
-                wprintw(treePad, screenBuffer.getString().c_str());
-            } else {
-                if (ExplainConfig::getExplainConfig().outputStream == nullptr) {
-                    std::stringstream ss;
-                    ss << "{ \"proof\":\n";
-                    tree->printJSON(ss, 1);
-                    ss << ",";
-                    prov.printRulesJSON(ss);
-                    ss << "}\n";
+        if (!tree) {
+            return;
+        }
 
-                    wprintw(treePad, ss.str().c_str());
-                } else {
-                    std::ostream* output = ExplainConfig::getExplainConfig().outputStream;
-                    *output << "{ \"proof\":\n";
-                    tree->printJSON(*output, 1);
-                    *output << ",";
-                    prov.printRulesJSON(*output);
-                    *output << "}\n";
-                }
+        if (!ExplainConfig::getExplainConfig().json) {
+            tree->place(0, 0);
+            ScreenBuffer screenBuffer(tree->getWidth(), tree->getHeight());
+            tree->render(screenBuffer);
+            wprintw(treePad, screenBuffer.getString().c_str());
+        } else {
+            if (ExplainConfig::getExplainConfig().outputStream == nullptr) {
+                std::stringstream ss;
+                ss << "{ \"proof\":\n";
+                tree->printJSON(ss, 1);
+                ss << ",";
+                prov.printRulesJSON(ss);
+                ss << "}\n";
+
+                wprintw(treePad, ss.str().c_str());
+            } else {
+                std::ostream* output = ExplainConfig::getExplainConfig().outputStream;
+                *output << "{ \"proof\":\n";
+                tree->printJSON(*output, 1);
+                *output << ",";
+                prov.printRulesJSON(*output);
+                *output << "}\n";
             }
         }
     }
 
-    /* Print any other information */
+    /* Print any other information, disabled for non-terminal outputs */
     void printInfo(const std::string& info) override {
-        if (isatty(fileno(stdin))) {
-            wprintw(treePad, info.c_str());
-            prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
+        if (!isatty(fileno(stdin))) {
+            return;
         }
+        wprintw(treePad, info.c_str());
+        prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
     }
 
     /* Print an error, such as a wrong command */
@@ -462,14 +460,14 @@ private:
         prefresh(treePad, 0, 0, 0, 0, maxy - 3, maxx - 1);
     }
 
-    /* Initialise ncurses window */
+    /* Initialise ncurses command prompt window */
     WINDOW* makeQueryWindow() {
-        WINDOW* w = newwin(3, maxx, maxy - 2, 0);
-        wrefresh(w);
-        return w;
+        WINDOW* queryWindow = newwin(3, maxx, maxy - 2, 0);
+        wrefresh(queryWindow);
+        return queryWindow;
     }
 
-    // initialise ncurses window
+    /* Initialise ncurses window */
     void initialiseWindow() {
         initscr();
 
@@ -483,7 +481,7 @@ private:
         keypad(treePad, true);
     }
 
-    // allow scrolling of provenance tree
+    /* Allow scrolling of provenance tree */
     void scrollTree(int maxx, int maxy) {
         int x = 0;
         int y = 0;
@@ -508,6 +506,7 @@ private:
         }
     }
 
+    /* Clear the tree display */
     void clearDisplay() {
         // reset tree display on each loop
         werase(treePad);

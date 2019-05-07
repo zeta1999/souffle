@@ -29,17 +29,16 @@
 using namespace std;
 using namespace souffle;
 
-RamRelation rel("test", 0, {}, {}, {});
 class TestAutoIndex : public IndexSet {
 public:
-    TestAutoIndex() : IndexSet(rel) {}
+    TestAutoIndex() : IndexSet() {}
     /** returns number of unique matchings */
     int getNumMatchings() {
         return matching.getNumMatchings();
     }
 };
 
-using Nodes = set<SearchColumns>;
+using Nodes = set<SearchSignature>;
 
 TEST(Matching, StaticTest_1) {
     TestAutoIndex order;

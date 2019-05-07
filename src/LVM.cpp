@@ -594,7 +594,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                         }
                     }
 
-                    SearchColumns res = getSearchColumns(patterns, arity);
+                    SearchSignature res = getSearchSignature(patterns, arity);
                     auto idx = rel.getIndex(res);
                     auto range = idx->lowerUpperBound(low, high);
 
@@ -631,7 +631,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 high[arity - 1] = MAX_RAM_DOMAIN;
 
                 // obtain index
-                SearchColumns res = 0;
+                SearchSignature res = 0;
                 // values.size() - 1 because we discard the height annotation
                 for (std::size_t i = 0; i < arity - 1; i++) {
                     if (patterns[i] == 'V') {
@@ -1043,7 +1043,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     }
                 }
 
-                SearchColumns keys = getSearchColumns(pattern, arity);
+                SearchSignature keys = getSearchSignature(pattern, arity);
                 auto index = rel.getIndex(keys);
 
                 // get iterator range
@@ -1072,7 +1072,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     }
                 }
 
-                SearchColumns keys = getSearchColumns(pattern, arity);
+                SearchSignature keys = getSearchSignature(pattern, arity);
                 auto index = rel.getIndex(keys);
 
                 // get iterator range

@@ -43,43 +43,90 @@ namespace souffle {
 class RamTranslationUnit;
 
 /**
- * Computes a maximum matching with Hopcroft-Karp algorithm
+ * @class MaxMatching
+ * @brief Computes a maximum matching with Hopcroft-Karp algorithm
+ *
+ * This class is a helper class for RamIndexAnalysis.
+ *
+ * This implements a standard maximum matching algorithm for a bi-partite graph
+ * also known as a marriage problem. Given a set of edges in a bi-partite graph
+ * select a subset of edges that each node in the bi-partite graph has at most
+ * one adjacent edge associated with.
+ *
+ * The nodes of the bi-partite graph represent index-signatures stemming from
+ * RAM operations and RAM existence checks for a relation. A relation between
+ * two nodes represent whether an index operation subsumes another operation.
+ *
  * Source: http://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm#Pseudocode
  */
 class MaxMatching {
 public:
-    using Matchings = std::map<SearchColumns, SearchColumns, std::greater<SearchColumns>>;
-    using Nodes = std::set<SearchColumns, std::greater<SearchColumns>>;
+    /* The nodes of the bi-partite graph are index signatures of RAM operation */
+    using Nodes = std::set<SearchSignature, std::greater<SearchSignature>>;
+
+    /**
+     * Matching represent a solution of the matching, i.e., which node in the bi-partite
+     * graph maps to another node. If no map exist for a node, there is no adjacent edge
+     * exists for that node.
+     */
+    using Matchings = std::map<SearchSignature, SearchSignature, std::greater<SearchSignature>>;
 
 public:
-    /** Solve */
+    /**
+     * @brief solve the maximum matching problem
+     * @result returns the matching
+     */
     const Matchings& solve();
 
-    /** Get number of matches */
+    /**
+     * @brief get number of matches in the solution
+     * @return number of matches
+     */
     int getNumMatchings() const {
         return match.size() / 2;
     }
 
-    /** Add edge */
-    void addEdge(SearchColumns u, SearchColumns v);
+    /**
+     * @brief add an edge to the bi-partite graph
+     * @param two subsuming index-signatures of the relation
+     */
+    void addEdge(SearchSignature u, SearchSignature v);
 
 protected:
-    /** Get match */
-    SearchColumns getMatch(SearchColumns v);
+    /**
+     * @brief get match for a node
+     * @param node
+     */
+    SearchSignature getMatch(SearchSignature v);
 
-    /** Get distance */
+    /**
+     * @brief get distance of a node
+     */
     int getDistance(int v);
 
-    /** breadth first search */
+    /**
+     * @brief perform a breadth first search in the graph
+     */
     bool bfSearch();
 
-    /** depth first search */
-    bool dfSearch(SearchColumns u);
+    /**
+     * @brief perform a depth first search in the graph
+     */
+    bool dfSearch(SearchSignature u);
 
 private:
-    using Edges = std::set<SearchColumns>;
-    using Graph = std::map<SearchColumns, Edges>;
-    using Distance = std::map<SearchColumns, int>;
+    /**
+     * Edges in the bi-partite graph
+     */
+    using Edges = std::set<SearchSignature>;
+    /**
+     * Bi-partite graph of instance
+     */
+    using Graph = std::map<SearchSignature, Edges>;
+    /**
+     * distance function of nodes
+     */
+    using Distance = std::map<SearchSignature, int>;
 
     Matchings match;
     Graph graph;
@@ -87,7 +134,10 @@ private:
 };
 
 /**
- * Computes the index set for a relation
+ * @class IndexSet
+ * @brief computes the minimal index cover for a relation
+ *
+ * This class is a helper class for RamIndexAnalysis.
  *
  * If the indexes of a relation can cover several searches, the minimal
  * set of indexes is computed by Dilworth's problem. See
@@ -101,78 +151,75 @@ class IndexSet {
 public:
     using LexicographicalOrder = std::vector<int>;
     using OrderCollection = std::vector<LexicographicalOrder>;
-    using Chain = std::set<SearchColumns>;
+    using Chain = std::set<SearchSignature>;
     using ChainOrderMap = std::vector<Chain>;
-    using SearchSet = std::set<SearchColumns>;
+    using SearchSet = std::set<SearchSignature>;
 
-    IndexSet(const RamRelation& rel) : relation(rel) {}
+    IndexSet() = default;
+    ~IndexSet() = default;
 
-    /** Add new key to an Index Set */
-    inline void addSearch(SearchColumns cols) {
+    /** @brief Add new key to an Index Set */
+    inline void addSearch(SearchSignature cols) {
         if (cols != 0) {
             searches.insert(cols);
         }
     }
-    /** Get relation */
-    const RamRelation& getRelation() const {
-        return relation;
-    }
 
-    /** Get searches **/
+    /** @brief Get searches **/
     const SearchSet& getSearches() const {
         return searches;
     }
 
-    /** Get index for a search */
-    const LexicographicalOrder getLexOrder(SearchColumns cols) const {
+    /** @brief Get index for a search */
+    const LexicographicalOrder getLexOrder(SearchSignature cols) const {
         int idx = map(cols);
         return orders[idx];
     }
 
-    /** Get all indexes */
+    /** @brief Get all indexes */
     const OrderCollection getAllOrders() const {
         return orders;
     }
 
+    /** @brief Get all chains */
     const ChainOrderMap getAllChains() const {
         return chainToOrder;
     }
 
-    /** check whether number of bits in k is not equal
+    /** @brief check whether number of bits in k is not equal
         to number of columns in lexicographical order */
-    bool isSubset(SearchColumns cols) const {
+    bool isSubset(SearchSignature cols) const {
         int idx = map(cols);
         return card(cols) < orders[idx].size();
     }
 
-    /** map the keys in the key set to lexicographical order */
+    /** @brief map the keys in the key set to lexicographical order */
     void solve();
 
-    /** convert from a representation of A verticies to B verticies */
-    static SearchColumns toB(SearchColumns a) {
-        SearchColumns msb = 1;
+    /** @brief convert from a representation of A verticies to B verticies */
+    static SearchSignature toB(SearchSignature a) {
+        SearchSignature msb = 1;
         msb <<= (4 * 8 - 1);
         return (a | msb);
     }
 
-    /** convert from a representation of B verticies to A verticies */
-    static SearchColumns toA(SearchColumns b) {
-        SearchColumns msb = 1;
+    /** @brief convert from a representation of B verticies to A verticies */
+    static SearchSignature toA(SearchSignature b) {
+        SearchSignature msb = 1;
         msb <<= (4 * 8 - 1);
         return (b xor msb);
     }
 
 protected:
-    SearchSet searches;           // set of search patterns on table
-    OrderCollection orders;       // collection of lexicographical orders
-    ChainOrderMap chainToOrder;   // maps order index to set of searches covered by chain
-    MaxMatching matching;         // matching problem for finding minimal number of orders
-    const RamRelation& relation;  // relation
+    SearchSet searches;          // set of search patterns on table
+    OrderCollection orders;      // collection of lexicographical orders
+    ChainOrderMap chainToOrder;  // maps order index to set of searches covered by chain
+    MaxMatching matching;        // matching problem for finding minimal number of orders
 
     /** count the number of bits in key */
-    static size_t card(SearchColumns cols) {
+    static size_t card(SearchSignature cols) {
         size_t sz = 0, idx = 1;
-        for (size_t i = 0; i < sizeof(SearchColumns) * 8; i++) {
+        for (size_t i = 0; i < sizeof(SearchSignature) * 8; i++) {
             if (idx & cols) {
                 sz++;
             }
@@ -181,8 +228,8 @@ protected:
         return sz;
     }
 
-    /** maps search columns to an lexicographical order (labeled by a number) */
-    int map(SearchColumns cols) const {
+    /** @brief maps search columns to an lexicographical order (labeled by a number) */
+    int map(SearchSignature cols) const {
         assert(orders.size() == chainToOrder.size() && "Order and Chain Sizes do not match!!");
         int i = 0;
         for (auto it = chainToOrder.begin(); it != chainToOrder.end(); ++it, ++i) {
@@ -194,20 +241,20 @@ protected:
         abort();
     }
 
-    /** determine if key a is a strict subset of key b*/
-    static bool isStrictSubset(SearchColumns a, SearchColumns b) {
-        auto tt = static_cast<SearchColumns>(std::numeric_limits<SearchColumns>::max());
+    /** @brief determine if key a is a strict subset of key b*/
+    static bool isStrictSubset(SearchSignature a, SearchSignature b) {
+        auto tt = static_cast<SearchSignature>(std::numeric_limits<SearchSignature>::max());
         return (~(a) | (b)) == tt && a != b;
     }
 
-    /** insert an index based on the delta*/
-    void insertIndex(std::vector<int>& ids, SearchColumns delta) {
+    /** @brief insert an index based on the delta*/
+    void insertIndex(std::vector<int>& ids, SearchSignature delta) {
         int pos = 0;
-        SearchColumns mask = 0;
+        SearchSignature mask = 0;
 
         while (mask < delta) {
-            mask = SearchColumns(1 << (pos));
-            SearchColumns result = (delta) & (mask);
+            mask = SearchSignature(1 << (pos));
+            SearchSignature result = (delta) & (mask);
             if (result) {
                 ids.push_back(pos);
             }
@@ -215,14 +262,14 @@ protected:
         }
     }
 
-    /** given an unmapped node from set A we follow it from set B until it cannot be matched from B
+    /** @brief given an unmapped node from set A we follow it from set B until it cannot be matched from B
         if not mateched from B then umn is a chain*/
-    Chain getChain(const SearchColumns umn, const MaxMatching::Matchings& match);
+    Chain getChain(const SearchSignature umn, const MaxMatching::Matchings& match);
 
-    /** get all chains from the matching */
+    /** @brief get all chains from the matching */
     const ChainOrderMap getChainsFromMatching(const MaxMatching::Matchings& match, const SearchSet& nodes);
 
-    /** get all nodes which are unmated from A-> B */
+    /** @brief get all nodes which are unmated from A-> B */
     const SearchSet getUnmatchedKeys(const MaxMatching::Matchings& match, const SearchSet& nodes) {
         assert(!nodes.empty());
         SearchSet unmatched;
@@ -238,41 +285,60 @@ protected:
 };
 
 /**
+ * @class RamIndexAnalyis
+ * @brief
  * Analysis pass computing the index sets of RAM relations
  */
 class RamIndexAnalysis : public RamAnalysis {
 public:
     static constexpr const char* name = "index-analysis";
 
-    /** run analysis */
     void run(const RamTranslationUnit& translationUnit) override;
 
-    /** print analysis */
     void print(std::ostream& os) const override;
 
-    /** get indexes */
-    IndexSet& getIndexes(const RamRelation& rel) {
-        auto pos = data.find(rel.getName());
-        if (pos != data.end()) {
-            return pos->second;
-        } else {
-            auto ret = data.insert(make_pair(rel.getName(), IndexSet(rel)));
-            assert(ret.second);
-            return ret.first->second;
-        }
-    }
+    /**
+     * @brief get the minimal index cover for a relation
+     * @param relation
+     * @result set of indexes of the minimal index cover
+     */
+    IndexSet& getIndexes(const RamRelation& rel);
 
-    /** Get indexable columns of index scan */
-    SearchColumns getRangeQueryColumns(const RamIndexRelationSearch* search) const;
+    /**
+     * @brief Get index signature for an Ram IndexRelationSearch operation
+     * @param  Index-relation-search operation
+     * @result Index signature of operation
+     */
+    SearchSignature getSearchSignature(const RamIndexRelationSearch* search) const;
 
-    /** get key */
-    SearchColumns getKey(const RamAbstractExistenceCheck* existCheck) const;
+    /**
+     * @brief Get the index signature for an existence check
+     * @param Existence check
+     * @result index signature of existence check
+     */
+    SearchSignature getSearchSignature(const RamExistenceCheck* existCheck) const;
 
-    /** is key total */
-    bool isTotal(const RamAbstractExistenceCheck* existCheck) const;
+    /**
+     * @brief Get the index signature for a provenance existence check
+     * @param Provenance-existence check
+     * @result index signature of provenance-existence check
+     */
+    SearchSignature getSearchSignature(const RamProvenanceExistenceCheck* existCheck) const;
+
+    /**
+     * @brief index signature of existence check resembles a total index
+     * @param (provenance) existence check
+     *
+     * isTotalSignature returns true if all elements of a tuple are used for the
+     * the existence check.
+     */
+    bool isTotalSignature(const RamAbstractExistenceCheck* existCheck) const;
 
 private:
-    std::map<std::string, IndexSet> data;
+    /**
+     * minimal index cover for relations, i.e., maps a relation to a set of indexes
+     */
+    std::map<const RamRelation*, IndexSet> minIndexCover;
 };
 
 }  // end of namespace souffle

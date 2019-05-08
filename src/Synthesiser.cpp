@@ -325,7 +325,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // check whether loop nest can be parallelized
             bool parallel = false;
 
-            // check whether outer-most loop is an scan operation
+            // check whether outer-most loop is a scan operation
             const RamScan* outerScan = nullptr;
             visitDepthFirst(*next, [&](const RamScan& scan) {
                 if (scan.getTupleId() == 0 && !scan.getRelation().isNullary()) {
@@ -335,6 +335,23 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (outerScan != nullptr) {
                 parallel = true;
                 const auto& rel = outerScan->getRelation();
+                const auto& relName = synthesiser.getRelationName(rel);
+                // partition outermost relation
+                out << "auto part = " << relName << "->partition();\n";
+
+                // build a parallel block around this loop nest
+                out << "PARALLEL_START;\n";
+            }
+            // check whether outer-most loop is a choice operation
+            const RamChoice* outerChoice = nullptr;
+            visitDepthFirst(*next, [&](const RamChoice& choice) {
+                if (choice.getTupleId() == 0 && !choice.getRelation().isNullary()) {
+                    outerChoice = &choice;
+                }
+            });
+            if (outerChoice != nullptr) {
+                parallel = true;
+                const auto& rel = outerChoice->getRelation();
                 const auto& relName = synthesiser.getRelationName(rel);
                 // partition outermost relation
                 out << "auto part = " << relName << "->partition();\n";
@@ -375,6 +392,49 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
                 // get index to be queried
                 auto keys = isa->getSearchSignature(outerIndexScan);
+
+                out << "const Tuple<RamDomain," << arity << "> key({{";
+                printKeyTuple();
+                out << "}});\n";
+                out << "auto range = " << relName << "->"
+                    << "equalRange_" << keys << "(key);\n";
+                out << "auto part = range.partition();\n";
+
+                // build a parallel block around this loop nest
+                out << "PARALLEL_START;\n";
+            }
+            // check whether outer-most loop is an IndexScan
+            const RamIndexChoice* outerIndexChoice = nullptr;
+            visitDepthFirst(*next, [&](const RamIndexChoice& indexChoice) {
+                if (indexChoice.getTupleId() == 0) {
+                    outerIndexChoice = &indexChoice;
+                }
+            });
+            if (outerIndexChoice != nullptr) {
+                parallel = true;
+                const auto& rel = outerIndexChoice->getRelation();
+                const auto& relName = synthesiser.getRelationName(rel);
+
+                // check list of keys
+                auto arity = rel.getArity();
+                const auto& rangePattern = outerIndexChoice->getRangePattern();
+
+                // a lambda for printing boundary key values
+                auto printKeyTuple = [&]() {
+                    for (size_t i = 0; i < arity; i++) {
+                        if (rangePattern[i] != nullptr) {
+                            visit(rangePattern[i], out);
+                        } else {
+                            out << "0";
+                        }
+                        if (i + 1 < arity) {
+                            out << ",";
+                        }
+                    }
+                };
+
+                // get index to be queried
+                auto keys = isa->getSearchSignature(outerIndexChoice);
 
                 out << "const Tuple<RamDomain," << arity << "> key({{";
                 printKeyTuple();
@@ -627,33 +687,32 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             auto identifier = choice.getTupleId();
 
+            const bool parallel = identifier == 0 && !choice.getRelation().isNullary();
+
             // get relation name
             const auto& rel = choice.getRelation();
+            assert(rel.getArity() > 0 && "AstTranslator failed");
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
-            // construct empty condition for nullary relations
-            std::string nullaryStopStmt;
-            std::string nullaryCond;
-            visitDepthFirst(choice, [&](const RamProject& project) {
-                std::string projectRelName = synthesiser.getRelationName(project.getRelation().getName());
-                if (project.getRelation().isNullary()) {
-                    nullaryStopStmt = "if(!" + projectRelName + "->empty()) break;";
-                    nullaryCond = projectRelName + "->empty()";
-                }
-            });
-
-            // if nullary
-            if (choice.getRelation().isNullary()) {
-                out << "if(!" << relName << "->"
-                    << "empty()) {\n";
+            if (parallel) {
+                // make this loop parallel
+                // partition outermost relation
+                out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
+                out << "try{";
+                out << "for(const auto& env0 : *it) {\n";
+                out << "if( ";
+                visit(choice.getCondition(), out);
+                out << ") {\n";
                 visitSearch(choice, out);
+                out << "break;\n";
+                out << "}\n";
+                out << "}\n";
+                out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
                 out << "}\n";
             } else {
-                // TODO (dcol): Consider parallelism
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
-                out << nullaryStopStmt;
                 out << "if( ";
                 visit(choice.getCondition(), out);
                 out << ") {\n";
@@ -730,8 +789,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto identifier = indexChoice.getTupleId();
 
+            const bool parallel = identifier == 0;
+
             // check list of keys
             auto arity = rel.getArity();
+            assert(arity > 0 && "AstTranslator failed");
             const auto& rangePattern = indexChoice.getRangePattern();
 
             // get index to be queried
@@ -754,17 +816,24 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // get relation name
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
-            // construct empty condition for nullary relations
-            std::string nullaryStopStmt;
-            std::string nullaryCond;
-            visitDepthFirst(indexChoice, [&](const RamProject& project) {
-                int arity = project.getRelation().getArity();
-                std::string projectRelName = synthesiser.getRelationName(project.getRelation().getName());
-                if (arity == 0) {
-                    nullaryStopStmt = "if(!" + projectRelName + "->empty()) break;";
-                    nullaryCond = projectRelName + "->empty()";
-                }
-            });
+            // if this is the parallel level
+            if (parallel) {
+                // make this loop parallel
+                out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
+                out << "try{";
+                out << "for(const auto& env0 : *it) {\n";
+                out << "if( ";
+                visit(indexChoice.getCondition(), out);
+                out << ") {\n";
+                visitSearch(indexChoice, out);
+                out << "break;\n";
+                out << "}\n";
+                out << "}\n";
+                out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+                out << "}\n";
+                PRINT_END_COMMENT(out);
+                return;
+            }
 
             // if it is a equality-range query
             out << "const Tuple<RamDomain," << arity << "> key({{";
@@ -773,8 +842,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "auto range = " << relName << "->"
                 << "equalRange_" << keys << "(key," << ctxName << ");\n";
             out << "for(const auto& env" << identifier << " : range) {\n";
-            out << nullaryStopStmt;
-            out << "\n";
             out << "if( ";
             visit(indexChoice.getCondition(), out);
             out << ") {\n";

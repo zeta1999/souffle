@@ -200,21 +200,21 @@
 /* -- Destructors -- */
 %destructor { delete $$; }                  atom
 %destructor { delete $$; }                  arg
-/* %destructor { delete $$; }                  body */
+%destructor { delete $$; }                  body
 /* %destructor { delete $$; }                  comp_type */
 /* %destructor { delete $$; }                  comp_init */
 /* %destructor { delete $$; }                  component_body */
 /* %destructor { delete $$; }                  component_head */
 %destructor { delete $$; }                  conjunction
-/* %destructor { delete $$; }                  constraint */
+%destructor { delete $$; }                  constraint
 %destructor { delete $$; }                  disjunction
 %destructor { delete $$; }                  exec_order_list
 %destructor { delete $$; }                  exec_plan
 %destructor { delete $$; }                  exec_plan_list
-/* %destructor { delete $$; }                  fact */
+%destructor { delete $$; }                  fact
 /* %destructor { delete $$; }                  functor_decl */
 /* %destructor { }                             functor_type */
-/* %destructor { for (auto* cur : $$) { delete cur; } }       head */
+%destructor { for (auto* cur : $$) { delete cur; } }       head
 /* %destructor { for (auto* cur : $$) { delete cur; } }       io_directive_list */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       io_relation_list */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       load_head */
@@ -585,15 +585,9 @@ rule_def
             }
         }
 
-        for (auto* head : heads) {
-            delete head;
-        }
-
         for (auto* body : bodies) {
             delete body;
         }
-
-        delete $body;
     }
   ;
 
@@ -1168,8 +1162,6 @@ arg
 
         $$ = aggr;
         $$->setSrcLoc(@$);
-
-        delete $body;
     }
 
   | SUM arg[target_expr] COLON atom {
@@ -1203,7 +1195,6 @@ arg
         $$->setSrcLoc(@$);
 
         $target_expr = nullptr;
-        delete $body;
     }
 
   | MIN arg[target_expr] COLON atom {
@@ -1238,7 +1229,6 @@ arg
         $$->setSrcLoc(@$);
 
         $target_expr = nullptr;
-        delete $body;
     }
 
   | MAX arg[target_expr] COLON atom {
@@ -1272,7 +1262,6 @@ arg
         $$->setSrcLoc(@$);
 
         $target_expr = nullptr;
-        delete $body;
     }
   ;
 

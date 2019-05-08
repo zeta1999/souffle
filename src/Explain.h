@@ -165,6 +165,8 @@ public:
             }
         } else if (command[0] == "output") {
             if (command.size() == 2) {
+                // close the previous file stream, safe even if outputStream is nullptr
+                delete ExplainConfig::getExplainConfig().outputStream;
                 ExplainConfig::getExplainConfig().outputStream = new std::ofstream(command[1]);
             } else if (command.size() == 1) {
                 delete ExplainConfig::getExplainConfig().outputStream;
@@ -181,6 +183,8 @@ public:
                 printError("Usage: format <json|proof>\n");
             }
         } else if (command[0] == "exit" || command[0] == "q" || command[0] == "quit") {
+            // close file stream so that output is actually written to file
+            delete ExplainConfig::getExplainConfig().outputStream;
             printPrompt("Exiting explain\n");
             return false;
         } else {

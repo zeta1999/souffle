@@ -745,9 +745,11 @@ non_empty_arg_list
         $$.push_back($arg);
     }
   | non_empty_arg_list[curr_arg_list] COMMA arg {
-        /* TODO: potential swap? */
         $$ = $curr_arg_list;
         $$.push_back($arg);
+
+        $curr_arg_list.clear();
+        $arg = nullptr;
     }
   ;
 

@@ -663,18 +663,14 @@ protected:
  */
 class RamUnpackRecord : public RamSearch {
 public:
-    RamUnpackRecord(
-            std::unique_ptr<RamOperation> nested, int ident, int ref_level, size_t ref_pos, size_t arity)
-            : RamSearch(ident, std::move(nested)), refLevel(ref_level), refPos(ref_pos), arity(arity) {}
+    RamUnpackRecord(std::unique_ptr<RamOperation> nested, int ident, std::unique_ptr<RamExpression> expr,
+            size_t arity)
+            : RamSearch(ident, std::move(nested)), expression(std::move(expr)), arity(arity) {}
 
-    /** Get reference level */
-    int getReferenceLevel() const {
-        return refLevel;
-    }
-
-    /** Get reference position */
-    std::size_t getReferencePosition() const {
-        return refPos;
+    /** Get expression */
+    const RamExpression& getExpression() const {
+        assert(expression != nullptr);
+        return *expression.get();
     }
 
     /** Get arity */
@@ -682,24 +678,26 @@ public:
         return arity;
     }
 
+    std::vector<const RamNode*> getChildNodes() const override {
+        auto res = RamSearch::getChildNodes();
+        res.push_back(expression.get());
+        return res;
+    }
+
     void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos) << "UNPACK t" << refLevel << "." << refPos << " INTO t" << getTupleId()
-           << std::endl;
+        os << times(" ", tabpos) << "UNPACK " << getExpression() << " INTO t" << getTupleId() << std::endl;
         RamSearch::print(os, tabpos + 1);
     }
 
     RamUnpackRecord* clone() const override {
-        RamUnpackRecord* res = new RamUnpackRecord(
-                std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(), refLevel, refPos, arity);
+        RamUnpackRecord* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()),
+                getTupleId(), std::unique_ptr<RamExpression>(getExpression().clone()), arity);
         return res;
     }
 
 protected:
-    /** Level of the tuple containing record reference */
-    const int refLevel;
-
-    /** Position of the tuple containing record reference */
-    const size_t refPos;
+    /** Expression for record reference */
+    std::unique_ptr<RamExpression> expression;
 
     /** Arity of the unpacked tuple */
     const size_t arity;
@@ -707,8 +705,8 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamUnpackRecord*>(&node));
         const auto& other = static_cast<const RamUnpackRecord&>(node);
-        return RamSearch::equal(other) && getReferencePosition() == other.getReferencePosition() &&
-               getReferenceLevel() == other.getReferenceLevel() && getArity() == other.getArity();
+        return RamSearch::equal(other) && getExpression() == other.getExpression() &&
+               getArity() == other.getArity();
     }
 };
 

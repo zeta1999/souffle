@@ -278,15 +278,9 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
 std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const RamIndexScan* indexScan) {
     // check whether tuple is used in subsequent operations
     bool tupleNotUsed = true;
-    visitDepthFirst(*indexScan, [&](const RamNode& node) {
-        if (const RamElementAccess* element = dynamic_cast<const RamElementAccess*>(&node)) {
-            if (element->getTupleId() == indexScan->getTupleId()) {
-                tupleNotUsed = false;
-            }
-        } else if (const RamUnpackRecord* unpack = dynamic_cast<const RamUnpackRecord*>(&node)) {
-            if (unpack->getReferenceLevel() == indexScan->getTupleId()) {
-                tupleNotUsed = false;
-            }
+    visitDepthFirst(*indexScan, [&](const RamElementAccess& element) {
+        if (element.getTupleId() == indexScan->getTupleId()) {
+            tupleNotUsed = false;
         }
     });
 
@@ -355,12 +349,6 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const Ram
                     transformTuple = false;
                 }
             });
-
-            visitDepthFirst(*nextNode, [&](const RamUnpackRecord& unpack) {
-                if (unpack.getReferenceLevel() == scan->getTupleId()) {
-                    transformTuple = false;
-                }
-            });
         }
     }
 
@@ -391,12 +379,6 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
 
             visitDepthFirst(*nextNode, [&](const RamElementAccess& element) {
                 if (element.getTupleId() == indexScan->getTupleId()) {
-                    transformTuple = false;
-                }
-            });
-
-            visitDepthFirst(*nextNode, [&](const RamUnpackRecord& unpack) {
-                if (unpack.getReferenceLevel() == indexScan->getTupleId()) {
                     transformTuple = false;
                 }
             });

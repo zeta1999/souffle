@@ -581,7 +581,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
 
         bool visitUnpackRecord(const RamUnpackRecord& lookup) override {
             // get reference
-            RamDomain ref = ctxt[lookup.getReferenceLevel()][lookup.getReferencePosition()];
+            RamDomain ref = interpreter.evalExpr(lookup.getExpression(), ctxt);
 
             // check for null
             if (isNull(ref)) {

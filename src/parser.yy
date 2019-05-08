@@ -228,8 +228,8 @@
 /* %destructor { }                             qualifiers */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       relation_decl */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       relation_list */
-/* %destructor { for (auto* cur : $$) { delete cur; } }       rule */
-/* %destructor { for (auto* cur : $$) { delete cur; } }       rule_def */
+%destructor { for (auto* cur : $$) { delete cur; } }       rule
+%destructor { for (auto* cur : $$) { delete cur; } }       rule_def
 /* %destructor { for (auto* cur : $$) { delete cur; } }       store_head */
 /* %destructor { delete $$; }                  term */
 /* %destructor { delete $$; }                  type */

@@ -218,12 +218,12 @@
 /* %destructor { for (auto* cur : $$) { delete cur; } }       io_directive_list */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       io_relation_list */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       load_head */
-/* %destructor { for (auto* cur : $$) { delete cur; } }       non_empty_arg_list */
-/* %destructor { for (auto* cur : $$) { delete cur; } }       non_empty_attributes */
-/* %destructor { delete $$; }       non_empty_exec_order_list */
-/* %destructor { }                             non_empty_functor_arg_type_list */
-/* %destructor { }                             non_empty_key_value_pairs */
-/* %destructor { delete $$; }                  non_empty_record_type_list */
+%destructor { for (auto* cur : $$) { delete cur; } }       non_empty_arg_list
+%destructor { for (auto* cur : $$) { delete cur; } }       non_empty_attributes
+%destructor { delete $$; }                     non_empty_exec_order_list
+%destructor { }                             non_empty_functor_arg_type_list
+%destructor { }                             non_empty_key_value_pairs
+%destructor { delete $$; }                  non_empty_record_type_list
 /* %destructor { delete $$; }                  pragma */
 /* %destructor { }                             qualifiers */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       relation_decl */
@@ -434,9 +434,6 @@ relation_decl
         $$ = $relation_list;
 
         $relation_list.clear();
-        for (auto* attr : $non_empty_attributes) {
-            delete attr;
-        }
     }
   ;
 

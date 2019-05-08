@@ -539,6 +539,7 @@ disjunction
   | disjunction[curr_disjunction] SEMICOLON conjunction {
         $$ = $curr_disjunction;
         $$->disjunct(std::move(*$conjunction));
+        delete $conjunction;
     }
   ;
 
@@ -550,6 +551,7 @@ conjunction
   | conjunction[curr_conjunction] COMMA term {
         $$ = $curr_conjunction;
         $$->conjunct(std::move(*$term));
+        delete $term;
     }
   ;
 

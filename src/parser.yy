@@ -205,9 +205,9 @@
 /* %destructor { delete $$; }                  comp_init */
 /* %destructor { delete $$; }                  component_body */
 /* %destructor { delete $$; }                  component_head */
-/* %destructor { delete $$; }                  conjunction */
+%destructor { delete $$; }                  conjunction
 /* %destructor { delete $$; }                  constraint */
-/* %destructor { delete $$; }                  disjunction */
+%destructor { delete $$; }                  disjunction
 %destructor { delete $$; }                  exec_order_list
 %destructor { delete $$; }                  exec_plan
 %destructor { delete $$; }                  exec_plan_list
@@ -637,7 +637,6 @@ disjunction
         $$->disjunct(std::move(*$conjunction));
 
         $curr_disjunction = nullptr;
-        delete $conjunction;
     }
   ;
 

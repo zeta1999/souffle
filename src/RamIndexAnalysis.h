@@ -88,21 +88,22 @@ public:
 
     /**
      * @brief add an edge to the bi-partite graph
-     * @param two subsuming index-signatures of the relation
+     * @param u search signature 
+     * @param v subsuming search signature
      */
     void addEdge(SearchSignature u, SearchSignature v);
 
 protected:
     /**
-     * @brief get match for a node
-     * @param node
+     * @brief get match for a search signature
+     * @param v search signature
      */
     SearchSignature getMatch(SearchSignature v);
 
     /**
      * @brief get distance of a node
      */
-    int getDistance(int v);
+    int getDistance(SearchSignature v);
 
     /**
      * @brief perform a breadth first search in the graph
@@ -111,6 +112,7 @@ protected:
 
     /**
      * @brief perform a depth first search in the graph
+     * @param u search signature
      */
     bool dfSearch(SearchSignature u);
 

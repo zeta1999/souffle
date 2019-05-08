@@ -44,7 +44,7 @@ class RamTranslationUnit;
 
 /**
  * @class MaxMatching
- * @brief Computes a maximum matching with Hopcroft-Karp algorithm
+ * @Brief Computes a maximum matching with Hopcroft-Karp algorithm
  *
  * This class is a helper class for RamIndexAnalysis.
  *
@@ -73,13 +73,13 @@ public:
 
 public:
     /**
-     * @brief solve the maximum matching problem
+     * @Brief solve the maximum matching problem
      * @result returns the matching
      */
     const Matchings& solve();
 
     /**
-     * @brief get number of matches in the solution
+     * @Brief get number of matches in the solution
      * @return number of matches
      */
     int getNumMatchings() const {
@@ -87,31 +87,31 @@ public:
     }
 
     /**
-     * @brief add an edge to the bi-partite graph
-     * @param u search signature 
+     * @Brief add an edge to the bi-partite graph
+     * @param u search signature
      * @param v subsuming search signature
      */
     void addEdge(SearchSignature u, SearchSignature v);
 
 protected:
     /**
-     * @brief get match for a search signature
+     * @Brief get match for a search signature
      * @param v search signature
      */
     SearchSignature getMatch(SearchSignature v);
 
     /**
-     * @brief get distance of a node
+     * @Brief get distance of a node
      */
     int getDistance(SearchSignature v);
 
     /**
-     * @brief perform a breadth first search in the graph
+     * @Brief perform a breadth first search in the graph
      */
     bool bfSearch();
 
     /**
-     * @brief perform a depth first search in the graph
+     * @Brief perform a depth first search in the graph
      * @param u search signature
      */
     bool dfSearch(SearchSignature u);
@@ -137,7 +137,7 @@ private:
 
 /**
  * @class MinIndexSelection
- * @brief computes the minimal index cover for a relation
+ * @Brief computes the minimal index cover for a relation
  *        in a RAM Program.
  *
  * If the indexes of a relation can cover several searches, the minimal
@@ -159,52 +159,52 @@ public:
     MinIndexSelection() = default;
     ~MinIndexSelection() = default;
 
-    /** @brief Add new key to an Index Set */
+    /** @Brief Add new key to an Index Set */
     inline void addSearch(SearchSignature cols) {
         if (cols != 0) {
             searches.insert(cols);
         }
     }
 
-    /** @brief Get searches **/
+    /** @Brief Get searches **/
     const SearchSet& getSearches() const {
         return searches;
     }
 
-    /** @brief Get index for a search */
+    /** @Brief Get index for a search */
     const LexOrder getLexOrder(SearchSignature cols) const {
         int idx = map(cols);
         return orders[idx];
     }
 
-    /** @brief Get all indexes */
+    /** @Brief Get all indexes */
     const OrderCollection getAllOrders() const {
         return orders;
     }
 
-    /** @brief Get all chains */
+    /** @Brief Get all chains */
     const ChainOrderMap getAllChains() const {
         return chainToOrder;
     }
 
-    /** @brief check whether number of bits in k is not equal
+    /** @Brief check whether number of bits in k is not equal
         to number of columns in lexicographical order */
     bool isSubset(SearchSignature cols) const {
         int idx = map(cols);
         return card(cols) < orders[idx].size();
     }
 
-    /** @brief map the keys in the key set to lexicographical order */
+    /** @Brief map the keys in the key set to lexicographical order */
     void solve();
 
-    /** @brief convert from a representation of A verticies to B verticies */
+    /** @Brief convert from a representation of A verticies to B verticies */
     static SearchSignature toB(SearchSignature a) {
         SearchSignature msb = 1;
         msb <<= (4 * 8 - 1);
         return (a | msb);
     }
 
-    /** @brief convert from a representation of B verticies to A verticies */
+    /** @Brief convert from a representation of B verticies to A verticies */
     static SearchSignature toA(SearchSignature b) {
         SearchSignature msb = 1;
         msb <<= (4 * 8 - 1);
@@ -229,7 +229,7 @@ protected:
         return sz;
     }
 
-    /** @brief maps search columns to an lexicographical order (labeled by a number) */
+    /** @Brief maps search columns to an lexicographical order (labeled by a number) */
     int map(SearchSignature cols) const {
         assert(orders.size() == chainToOrder.size() && "Order and Chain Sizes do not match!!");
         int i = 0;
@@ -242,13 +242,13 @@ protected:
         abort();
     }
 
-    /** @brief determine if key a is a strict subset of key b*/
+    /** @Brief determine if key a is a strict subset of key b*/
     static bool isStrictSubset(SearchSignature a, SearchSignature b) {
         auto tt = static_cast<SearchSignature>(std::numeric_limits<SearchSignature>::max());
         return (~(a) | (b)) == tt && a != b;
     }
 
-    /** @brief insert an index based on the delta */
+    /** @Brief insert an index based on the delta */
     void insertIndex(LexOrder& ids, SearchSignature delta) {
         int pos = 0;
         SearchSignature mask = 0;
@@ -263,7 +263,7 @@ protected:
         }
     }
 
-    /** @brief get a chain from a matching
+    /** @Brief get a chain from a matching
      *  @param Starting node of a chain
      *  @param Matching
      *  @result A minimal chain
@@ -273,10 +273,10 @@ protected:
      */
     Chain getChain(const SearchSignature umn, const MaxMatching::Matchings& match);
 
-    /** @brief get all chains from the matching */
+    /** @Brief get all chains from the matching */
     const ChainOrderMap getChainsFromMatching(const MaxMatching::Matchings& match, const SearchSet& nodes);
 
-    /** @brief get all nodes which are unmated from A-> B */
+    /** @Brief get all nodes which are unmated from A-> B */
     const SearchSet getUnmatchedKeys(const MaxMatching::Matchings& match, const SearchSet& nodes) {
         SearchSet unmatched;
 
@@ -292,7 +292,7 @@ protected:
 
 /**
  * @class RamIndexAnalyis
- * @brief Analysis pass computing the index sets of RAM relations
+ * @Brief Analysis pass computing the index sets of RAM relations
  */
 class RamIndexAnalysis : public RamAnalysis {
 public:
@@ -303,35 +303,35 @@ public:
     void print(std::ostream& os) const override;
 
     /**
-     * @brief get the minimal index cover for a relation
+     * @Brief get the minimal index cover for a relation
      * @param relation
      * @result set of indexes of the minimal index cover
      */
     MinIndexSelection& getIndexes(const RamRelation& rel);
 
     /**
-     * @brief Get index signature for an Ram IndexRelationSearch operation
+     * @Brief Get index signature for an Ram IndexRelationSearch operation
      * @param  Index-relation-search operation
      * @result Index signature of operation
      */
     SearchSignature getSearchSignature(const RamIndexRelationSearch* search) const;
 
     /**
-     * @brief Get the index signature for an existence check
+     * @Brief Get the index signature for an existence check
      * @param Existence check
      * @result index signature of existence check
      */
     SearchSignature getSearchSignature(const RamExistenceCheck* existCheck) const;
 
     /**
-     * @brief Get the index signature for a provenance existence check
+     * @Brief Get the index signature for a provenance existence check
      * @param Provenance-existence check
      * @result index signature of provenance-existence check
      */
     SearchSignature getSearchSignature(const RamProvenanceExistenceCheck* existCheck) const;
 
     /**
-     * @brief index signature of existence check resembles a total index
+     * @Brief index signature of existence check resembles a total index
      * @param (provenance) existence check
      *
      * isTotalSignature returns true if all elements of a tuple are used for the

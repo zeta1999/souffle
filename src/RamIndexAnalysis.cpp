@@ -46,7 +46,7 @@ SearchSignature MaxMatching::getMatch(SearchSignature v) {
     return it->second;
 }
 
-int MaxMatching::getDistance(int v) {
+int MaxMatching::getDistance(SearchSignature v) {
     auto it = distance.find(v);
     if (it == distance.end()) {
         return INF;
@@ -332,7 +332,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexRelationSearch* search) const {
     SearchSignature keys = 0;
     std::vector<RamExpression*> rangePattern = search->getRangePattern();
-    for (int i = 0; i < rangePattern.size(); i++) {
+    for (int i = 0; i < (int)rangePattern.size(); i++) {
         if (rangePattern[i] != nullptr) {
             keys |= (1 << i);
         }
@@ -345,7 +345,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
     const auto values = provExistCheck->getValues();
     SearchSignature res = 0;
     // values.size() - 1 because we discard the height annotation
-    for (int i = 0; i < values.size() - 1; i++) {
+    for (int i = 0; i < (int)values.size() - 1; i++) {
         if (values[i] != nullptr) {
             res |= (1 << i);
         }
@@ -356,7 +356,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* existCheck) const {
     const auto values = existCheck->getValues();
     SearchSignature res = 0;
-    for (int i = 0; i < values.size(); i++) {
+    for (int i = 0; i < (int)values.size(); i++) {
         if (values[i] != nullptr) {
             res |= (1 << i);
         }

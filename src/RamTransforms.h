@@ -58,7 +58,7 @@ public:
 
     /**
      * @brief Expand filter operations
-     * @param Program that is transformed
+     * @param program Program that is transformed
      * @return Flag showing whether the program has been changed by the transformation
      */
     bool expandFilters(RamProgram& program);
@@ -116,7 +116,7 @@ public:
 
     /**
      * @brief Hoist filter operations.
-     * @param Program that is transformed
+     * @param program that is transformed
      * @return Flag showing whether the program has been changed by the transformation
      *
      * There are two types of conditions in
@@ -258,7 +258,7 @@ public:
 
     /**
      * @brief Rewrite IndexScan operations
-     * @param An index operation
+     * @param indexScan An index operation
      * @result The old operation if the if-conversion fails; otherwise the filter/existence check
      *
      * Rewrites IndexScan operations to a filter/existence check if the IndexScan's tuple

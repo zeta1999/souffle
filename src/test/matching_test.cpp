@@ -29,9 +29,9 @@
 using namespace std;
 using namespace souffle;
 
-class TestAutoIndex : public IndexSet {
+class TestAutoIndex : public MinIndexSelection {
 public:
-    TestAutoIndex() : IndexSet() {}
+    TestAutoIndex() : MinIndexSelection() {}
     /** returns number of unique matchings */
     int getNumMatchings() {
         return matching.getNumMatchings();

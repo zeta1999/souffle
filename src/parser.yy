@@ -928,10 +928,10 @@ arg
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,
                 std::unique_ptr<AstArgument>($nested_arg));
+            $nested_arg = nullptr;
             $$->setSrcLoc(@$);
         }
 
-        $nested_arg = nullptr;
     }
   | BW_NOT arg[nested_arg] {
         $$ = new AstIntrinsicFunctor(FunctorOp::BNOT,

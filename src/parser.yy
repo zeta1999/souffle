@@ -1280,6 +1280,8 @@ component
         $$->setComponentType(std::unique_ptr<AstComponentType>(type));
         $$->copyBaseComponents($component_head);
         $$->setSrcLoc(@$);
+
+        $component_body = nullptr;
     }
   ;
 

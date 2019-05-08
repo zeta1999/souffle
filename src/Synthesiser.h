@@ -71,7 +71,7 @@ protected:
     void generateRelationTypeStruct(std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType);
 
     /* Convert SearchColums to a template index */
-    std::string toIndex(SearchColumns key);
+    std::string toIndex(SearchSignature key);
 
     /** Get referenced relations */
     std::set<const RamRelation*> getReferencedRelations(const RamOperation& op);

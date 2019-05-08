@@ -677,13 +677,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 break;
             }
             case LVM_UnpackRecord: {
-                RamDomain referenceLevel = code[ip + 1];
-                RamDomain position = code[ip + 2];
-                RamDomain arity = code[ip + 3];
-                RamDomain id = code[ip + 4];
-                RamDomain exitAddress = code[ip + 5];
+                RamDomain arity = code[ip + 1];
+                RamDomain id = code[ip + 2];
+                RamDomain exitAddress = code[ip + 3];
 
-                RamDomain ref = ctxt[referenceLevel][position];
+                RamDomain ref = stack.top();
+                stack.pop();
 
                 if (isNull(ref)) {
                     ip = exitAddress;
@@ -692,7 +691,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
 
                 RamDomain* tuple = unpack(ref, arity);
                 ctxt[id] = tuple;
-                ip += 6;
+                ip += 4;
                 break;
             }
             case LVM_Filter:

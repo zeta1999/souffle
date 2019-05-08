@@ -215,9 +215,9 @@
 %destructor { delete $$; }                  functor_decl
 %destructor { }                             functor_type
 %destructor { for (auto* cur : $$) { delete cur; } }       head
-/* %destructor { for (auto* cur : $$) { delete cur; } }       io_directive_list */
-/* %destructor { for (auto* cur : $$) { delete cur; } }       io_relation_list */
-/* %destructor { for (auto* cur : $$) { delete cur; } }       load_head */
+%destructor { for (auto* cur : $$) { delete cur; } }       io_directive_list
+%destructor { for (auto* cur : $$) { delete cur; } }       io_relation_list
+%destructor { for (auto* cur : $$) { delete cur; } }       load_head
 %destructor { for (auto* cur : $$) { delete cur; } }       non_empty_arg_list
 %destructor { for (auto* cur : $$) { delete cur; } }       non_empty_attributes
 %destructor { delete $$; }                     non_empty_exec_order_list
@@ -231,7 +231,7 @@
 %destructor { for (auto* cur : $$) { delete cur; } }       rule
 %destructor { for (auto* cur : $$) { delete cur; } }       rule_def
 /* %destructor { for (auto* cur : $$) { delete cur; } }       store_head */
-/* %destructor { delete $$; }                  term */
+%destructor { delete $$; }                  term
 /* %destructor { delete $$; }                  type */
 %destructor { }                             type_params
 %destructor { }                             type_param_list
@@ -643,7 +643,6 @@ conjunction
         $$->conjunct(std::move(*$term));
 
         $curr_conjunction = nullptr;
-        delete $term;
     }
   ;
 
@@ -1454,11 +1453,6 @@ load_head
         for (const auto* io : $io_directive_list) {
             $$.push_back(new AstLoad(*io));
         }
-
-        for (auto* io : $io_directive_list) {
-            delete io;
-        }
-        $io_directive_list.clear();
     }
   ;
 
@@ -1468,21 +1462,11 @@ store_head
         for (const auto* io : $io_directive_list) {
             $$.push_back(new AstStore(*io));
         }
-
-        for (auto* io : $io_directive_list) {
-            delete io;
-        }
-        $io_directive_list.clear();
     }
   | PRINTSIZE_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
             $$.push_back(new AstPrintSize(*io));
         }
-
-        for (auto* io : $io_directive_list) {
-            delete io;
-        }
-        $io_directive_list.clear();
     }
   ;
 

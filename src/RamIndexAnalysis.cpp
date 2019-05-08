@@ -14,13 +14,10 @@
  *
  ***********************************************************************/
 
-#include "IndexSetAnalysis.h"
+#include "RamIndexAnalysis.h"
 #include "RamCondition.h"
-#include "RamExistenceCheckAnalysis.h"
-#include "RamIndexKeys.h"
 #include "RamNode.h"
 #include "RamOperation.h"
-#include "RamProvenanceExistenceCheckAnalysis.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
 #include <cstdint>
@@ -31,12 +28,7 @@
 
 namespace souffle {
 
-/**
- * Class MaxMatching
- */
-
-/** Add edge */
-void MaxMatching::addEdge(SearchColumns u, SearchColumns v) {
+void MaxMatching::addEdge(SearchSignature u, SearchSignature v) {
     if (graph.find(u) == graph.end()) {
         Edges vals;
         vals.insert(v);
@@ -46,8 +38,7 @@ void MaxMatching::addEdge(SearchColumns u, SearchColumns v) {
     }
 }
 
-/** Get match */
-SearchColumns MaxMatching::getMatch(SearchColumns v) {
+SearchSignature MaxMatching::getMatch(SearchSignature v) {
     auto it = match.find(v);
     if (it == match.end()) {
         return NIL;
@@ -55,8 +46,7 @@ SearchColumns MaxMatching::getMatch(SearchColumns v) {
     return it->second;
 }
 
-/** Get Distance */
-int MaxMatching::getDistance(int v) {
+int MaxMatching::getDistance(SearchSignature v) {
     auto it = distance.find(v);
     if (it == distance.end()) {
         return INF;
@@ -64,10 +54,9 @@ int MaxMatching::getDistance(int v) {
     return it->second;
 }
 
-/** Breadth first search */
 bool MaxMatching::bfSearch() {
-    SearchColumns u;
-    std::queue<SearchColumns> bfQueue;
+    SearchSignature u;
+    std::queue<SearchSignature> bfQueue;
     // Build layers
     for (auto& it : graph) {
         if (getMatch(it.first) == NIL) {
@@ -84,7 +73,7 @@ bool MaxMatching::bfSearch() {
         assert(u != NIL);
         const Edges& children = graph[u];
         for (auto it : children) {
-            SearchColumns mv = getMatch(it);
+            SearchSignature mv = getMatch(it);
             if (getDistance(mv) == INF) {
                 distance[mv] = getDistance(u) + 1;
                 if (mv != NIL) {
@@ -96,8 +85,7 @@ bool MaxMatching::bfSearch() {
     return (getDistance(0) != INF);
 }
 
-/** Depth first search */
-bool MaxMatching::dfSearch(SearchColumns u) {
+bool MaxMatching::dfSearch(SearchSignature u) {
     if (u != 0) {
         Edges& children = graph[u];
         for (auto v : children) {
@@ -116,7 +104,6 @@ bool MaxMatching::dfSearch(SearchColumns u) {
     return true;
 }
 
-/** Calculate max-matching */
 const MaxMatching::Matchings& MaxMatching::solve() {
     while (bfSearch()) {
         for (auto& it : graph) {
@@ -128,12 +115,8 @@ const MaxMatching::Matchings& MaxMatching::solve() {
     return match;
 }
 
-/*
- * Class IndexSet
- */
-
-/** map the keys in the key set to lexicographical order */
-void IndexSet::solve() {
+void MinIndexSelection::solve() {
+    // map the keys in the key set to lexicographical order
     if (searches.empty()) {
         return;
     }
@@ -150,10 +133,10 @@ void IndexSet::solve() {
         }
 
         // every search pattern gets its naive index
-        for (SearchColumns cur : searches) {
+        for (SearchSignature cur : searches) {
             // obtain order
-            LexicographicalOrder order;
-            SearchColumns mask = cur;
+            LexOrder order;
+            SearchSignature mask = cur;
             for (int i = 0; mask != 0; i++) {
                 if (!(1 << i & mask)) {
                     continue;
@@ -197,11 +180,11 @@ void IndexSet::solve() {
 
     for (const auto& chain : chains) {
         std::vector<int> ids;
-        SearchColumns initDelta = *(chain.begin());
+        SearchSignature initDelta = *(chain.begin());
         insertIndex(ids, initDelta);
 
         for (auto iit = chain.begin(); next(iit) != chain.end(); ++iit) {
-            SearchColumns delta = *(next(iit)) - *iit;
+            SearchSignature delta = *(next(iit)) - *iit;
             insertIndex(ids, delta);
         }
 
@@ -214,7 +197,7 @@ void IndexSet::solve() {
     for (auto search : searches) {
         int idx = map(search);
         size_t l = card(search);
-        SearchColumns k = 0;
+        SearchSignature k = 0;
         for (size_t i = 0; i < l; i++) {
             k = k + (1 << (orders[idx][i]));
         }
@@ -222,11 +205,13 @@ void IndexSet::solve() {
     }
 }
 
-/** given an unmapped node from set A we follow it from set B until it cannot be matched from B
-  if not mateched from B then umn is a chain*/
-IndexSet::Chain IndexSet::getChain(const SearchColumns umn, const MaxMatching::Matchings& match) {
-    SearchColumns start = umn;  // start at an unmateched node
+MinIndexSelection::Chain MinIndexSelection::getChain(
+        const SearchSignature umn, const MaxMatching::Matchings& match) {
+    SearchSignature start = umn;  // start at an unmateched node
     Chain chain;
+    // given an unmapped node from set A we follow it from set B until it cannot be matched from B
+    //  if not mateched from B then umn is a chain
+    //
     // Assume : no circular mappings, i.e. a in A -> b in B -> ........ -> a in A is not allowed.
     // Given this, the loop will terminate
     while (true) {
@@ -237,14 +222,13 @@ IndexSet::Chain IndexSet::getChain(const SearchColumns umn, const MaxMatching::M
             return chain;
         }
 
-        SearchColumns a = mit->second;
+        SearchSignature a = mit->second;
         chain.insert(a);
         start = a;
     }
 }
 
-/** get all chains from the matching */
-const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
+const MinIndexSelection::ChainOrderMap MinIndexSelection::getChainsFromMatching(
         const MaxMatching::Matchings& match, const SearchSet& nodes) {
     assert(!nodes.empty());
 
@@ -254,7 +238,7 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
     // Case: if no unmatched nodes then we have an anti-chain
     if (umKeys.empty()) {
         for (auto node : nodes) {
-            std::set<SearchColumns> a;
+            std::set<SearchSignature> a;
             a.insert(node);
             chainToOrder.push_back(a);
             return chainToOrder;
@@ -278,40 +262,45 @@ const IndexSet::ChainOrderMap IndexSet::getChainsFromMatching(
     return chainToOrder;
 }
 
-/** Compute indexes */
-void IndexSetAnalysis::run(const RamTranslationUnit& translationUnit) {
-    const auto* indexKeysAnalysis = translationUnit.getAnalysis<RamIndexKeysAnalysis>();
-    const auto* existCheckAnalysis = translationUnit.getAnalysis<RamExistenceCheckAnalysis>();
-    const auto* provExistCheckAnalysis = translationUnit.getAnalysis<RamProvenanceExistenceCheckAnalysis>();
-
+void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
-            IndexSet& indexes = getIndexes(indexSearch->getRelation());
-            indexes.addSearch(indexKeysAnalysis->getRangeQueryColumns(indexSearch));
+            MinIndexSelection& indexes = getIndexes(indexSearch->getRelation());
+            indexes.addSearch(getSearchSignature(indexSearch));
         } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
-            IndexSet& indexes = getIndexes(exists->getRelation());
-            indexes.addSearch(existCheckAnalysis->getKey(exists));
+            MinIndexSelection& indexes = getIndexes(exists->getRelation());
+            indexes.addSearch(getSearchSignature(exists));
         } else if (const auto* provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
-            IndexSet& indexes = getIndexes(provExists->getRelation());
-            indexes.addSearch(provExistCheckAnalysis->getKey(provExists));
+            MinIndexSelection& indexes = getIndexes(provExists->getRelation());
+            indexes.addSearch(getSearchSignature(provExists));
         }
     });
 
     // find optimal indexes for relations
-    for (auto& cur : data) {
-        IndexSet& indexes = cur.second;
+    for (auto& cur : minIndexCover) {
+        MinIndexSelection& indexes = cur.second;
         indexes.solve();
     }
 }
 
-/** Print indexes */
-void IndexSetAnalysis::print(std::ostream& os) const {
+MinIndexSelection& RamIndexAnalysis::getIndexes(const RamRelation& rel) {
+    auto pos = minIndexCover.find(&rel);
+    if (pos != minIndexCover.end()) {
+        return pos->second;
+    } else {
+        auto ret = minIndexCover.insert(std::make_pair(&rel, MinIndexSelection()));
+        assert(ret.second);
+        return ret.first->second;
+    }
+}
+
+void RamIndexAnalysis::print(std::ostream& os) const {
     os << "------ Auto-Index-Generation Report -------\n";
-    for (auto& cur : data) {
-        const std::string& relName = cur.first;
-        const IndexSet& indexes = cur.second;
-        const RamRelation& rel = indexes.getRelation();
+    for (auto& cur : minIndexCover) {
+        const RamRelation& rel = *cur.first;
+        const MinIndexSelection& indexes = cur.second;
+        const std::string& relName = rel.getName();
 
         /* Print searches */
         os << "Relation " << relName << "\n";
@@ -338,6 +327,50 @@ void IndexSetAnalysis::print(std::ostream& os) const {
         }
     }
     os << "------ End of Auto-Index-Generation Report -------\n";
+}
+
+SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexRelationSearch* search) const {
+    SearchSignature keys = 0;
+    std::vector<RamExpression*> rangePattern = search->getRangePattern();
+    for (int i = 0; i < (int)rangePattern.size(); i++) {
+        if (rangePattern[i] != nullptr) {
+            keys |= (1 << i);
+        }
+    }
+    return keys;
+}
+
+SearchSignature RamIndexAnalysis::getSearchSignature(
+        const RamProvenanceExistenceCheck* provExistCheck) const {
+    const auto values = provExistCheck->getValues();
+    SearchSignature res = 0;
+    // values.size() - 1 because we discard the height annotation
+    for (int i = 0; i < (int)values.size() - 1; i++) {
+        if (values[i] != nullptr) {
+            res |= (1 << i);
+        }
+    }
+    return res;
+}
+
+SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* existCheck) const {
+    const auto values = existCheck->getValues();
+    SearchSignature res = 0;
+    for (int i = 0; i < (int)values.size(); i++) {
+        if (values[i] != nullptr) {
+            res |= (1 << i);
+        }
+    }
+    return res;
+}
+
+bool RamIndexAnalysis::isTotalSignature(const RamAbstractExistenceCheck* existCheck) const {
+    for (const auto& cur : existCheck->getValues()) {
+        if (cur == nullptr) {
+            return false;
+        }
+    }
+    return true;
 }
 
 }  // end of namespace souffle

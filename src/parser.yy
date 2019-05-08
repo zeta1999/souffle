@@ -198,7 +198,7 @@
 %type <AstUnionType *>                      union_type_list
 
 /* -- Destructors -- */
-/* %destructor { delete $$; }                  atom */
+%destructor { delete $$; }                  atom
 /* %destructor { delete $$; }                  arg */
 /* %destructor { delete $$; }                  body */
 /* %destructor { delete $$; }                  comp_type */
@@ -218,7 +218,7 @@
 /* %destructor { for (auto* cur : $$) { delete cur; } }       io_directive_list */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       io_relation_list */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       load_head */
-/* %destructor { for (auto* cur : $$) { delete cur; } }       non_empty_arg_list */
+%destructor { for (auto* cur : $$) { delete cur; } }       non_empty_arg_list
 /* %destructor { for (auto* cur : $$) { delete cur; } }       non_empty_attributes */
 /* %destructor { delete $$; }       non_empty_exec_order_list */
 /* %destructor { }                             non_empty_functor_arg_type_list */
@@ -659,9 +659,12 @@ term
 atom
   : identifier LPAREN non_empty_arg_list RPAREN {
         $$ = new AstAtom();
+
         for (auto* arg : $non_empty_arg_list) {
             $$->addArgument(std::unique_ptr<AstArgument>(arg));
         }
+        $non_empty_arg_list.clear();
+
         $$->setName($identifier);
         $$->setSrcLoc(@$);
     }
@@ -731,6 +734,7 @@ non_empty_arg_list
         $$.push_back($arg);
     }
   | non_empty_arg_list[curr_arg_list] COMMA arg {
+        /* TODO: potential swap? */
         $$ = $curr_arg_list;
         $$.push_back($arg);
     }
@@ -780,9 +784,12 @@ arg
     }
   | LBRACKET non_empty_arg_list RBRACKET {
         auto record = new AstRecordInit();
+
         for (auto* arg : $non_empty_arg_list) {
             record->add(std::unique_ptr<AstArgument>(arg));
         }
+        $non_empty_arg_list.clear();
+
         $$ = record;
         $$->setSrcLoc(@$);
     }
@@ -797,9 +804,12 @@ arg
   | AT IDENT LPAREN non_empty_arg_list RPAREN {
         auto functor = new AstUserDefinedFunctor();
         functor->setName($IDENT);
+
         for (auto* arg : $non_empty_arg_list) {
             functor->add(std::unique_ptr<AstArgument>(arg));
         }
+        $non_empty_arg_list.clear();
+
         $$ = functor;
         $$->setSrcLoc(@$);
     }
@@ -919,27 +929,36 @@ arg
   | MAX LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
         std::vector<std::unique_ptr<AstArgument>> args;
         args.emplace_back($first);
+
         for (auto* arg : $rest) {
             args.emplace_back(arg);
         }
+        $rest.clear();
+
         $$ = new AstIntrinsicFunctor(FunctorOp::MAX, std::move(args));
         $$->setSrcLoc(@$);
     }
   | MIN LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
         std::vector<std::unique_ptr<AstArgument>> args;
         args.emplace_back($first);
+
         for (auto* arg : $rest) {
             args.emplace_back(arg);
         }
+        $rest.clear();
+
         $$ = new AstIntrinsicFunctor(FunctorOp::MIN, std::move(args));
         $$->setSrcLoc(@$);
     }
   | CAT LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
         std::vector<std::unique_ptr<AstArgument>> args;
         args.emplace_back($first);
+
         for (auto* arg : $rest) {
             args.emplace_back(arg);
         }
+        $rest.clear();
+
         $$ = new AstIntrinsicFunctor(FunctorOp::CAT, std::move(args));
         $$->setSrcLoc(@$);
     }

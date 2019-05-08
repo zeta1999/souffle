@@ -434,7 +434,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 };
 
                 // get index to be queried
-                auto keys = keysAnalysis->getRangeQueryColumns(outerIndexChoice);
+                auto keys = isa->getSearchSignature(outerIndexChoice);
 
                 out << "const Tuple<RamDomain," << arity << "> key({{";
                 printKeyTuple();

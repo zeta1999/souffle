@@ -865,7 +865,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
             // add an unpack level
             const Location& loc = valueIndex.getDefinitionPoint(*rec);
-            op = std::make_unique<RamUnpackRecord>(std::move(op), level, makeRamElementAccess(loc), rec->getArguments().size());
+            op = std::make_unique<RamUnpackRecord>(
+                    std::move(op), level, makeRamElementAccess(loc), rec->getArguments().size());
         } else {
             assert(false && "Unsupported AST node for creation of scan-level!");
         }

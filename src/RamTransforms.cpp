@@ -279,9 +279,9 @@ std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const Ra
     // check whether tuple is used in subsequent operations
     bool tupleNotUsed = true;
     visitDepthFirst(*indexScan, [&](const RamElementAccess& element) {
-            if (element.getTupleId() == indexScan->getTupleId()) {
-                tupleNotUsed = false;
-            }
+        if (element.getTupleId() == indexScan->getTupleId()) {
+            tupleNotUsed = false;
+        }
     });
 
     // if not used, transform the IndexScan operation to an existence check

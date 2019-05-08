@@ -663,14 +663,14 @@ protected:
  */
 class RamUnpackRecord : public RamSearch {
 public:
-    RamUnpackRecord(
-            std::unique_ptr<RamOperation> nested, int ident, std::unique_ptr<RamExpression> expr, size_t arity)
+    RamUnpackRecord(std::unique_ptr<RamOperation> nested, int ident, std::unique_ptr<RamExpression> expr,
+            size_t arity)
             : RamSearch(ident, std::move(nested)), expression(std::move(expr)), arity(arity) {}
 
     /** Get expression */
-    const RamExpression &getExpression() const { 
-	assert(expression != nullptr); 
-	return *expression.get(); 
+    const RamExpression& getExpression() const {
+        assert(expression != nullptr);
+        return *expression.get();
     }
 
     /** Get arity */
@@ -685,23 +685,19 @@ public:
     }
 
     void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos) << "UNPACK " << getExpression() << " INTO t" << getTupleId()
-           << std::endl;
+        os << times(" ", tabpos) << "UNPACK " << getExpression() << " INTO t" << getTupleId() << std::endl;
         RamSearch::print(os, tabpos + 1);
     }
 
     RamUnpackRecord* clone() const override {
-        RamUnpackRecord* res = new RamUnpackRecord(
-                std::unique_ptr<RamOperation>(getOperation().clone()), 
-		getTupleId(), 
-		std::unique_ptr<RamExpression>(getExpression().clone()), 
-		arity);
+        RamUnpackRecord* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()),
+                getTupleId(), std::unique_ptr<RamExpression>(getExpression().clone()), arity);
         return res;
     }
 
 protected:
     /** Expression for record reference */
-    std::unique_ptr<RamExpression> expression; 
+    std::unique_ptr<RamExpression> expression;
 
     /** Arity of the unpacked tuple */
     const size_t arity;

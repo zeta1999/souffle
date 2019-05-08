@@ -1156,8 +1156,9 @@ arg
         }
 
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
+        delete bodies[0];
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1187,8 +1188,9 @@ arg
         }
 
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
+        delete bodies[0];
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1221,8 +1223,9 @@ arg
         }
 
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
+        delete bodies[0];
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1254,8 +1257,9 @@ arg
         }
 
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur));
+            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
         }
+        delete bodies[0];
 
         $$ = aggr;
         $$->setSrcLoc(@$);

@@ -201,10 +201,10 @@
 %destructor { delete $$; }                  atom
 %destructor { delete $$; }                  arg
 %destructor { delete $$; }                  body
-/* %destructor { delete $$; }                  comp_type */
-/* %destructor { delete $$; }                  comp_init */
-/* %destructor { delete $$; }                  component_body */
-/* %destructor { delete $$; }                  component_head */
+%destructor { delete $$; }                  comp_type
+%destructor { delete $$; }                  comp_init
+%destructor { delete $$; }                  component_body
+%destructor { delete $$; }                  component_head
 %destructor { delete $$; }                  conjunction
 %destructor { delete $$; }                  constraint
 %destructor { delete $$; }                  disjunction
@@ -1284,14 +1284,22 @@ component_head
   : COMPONENT comp_type {
         $$ = new AstComponent();
         $$->setComponentType(std::unique_ptr<AstComponentType>($comp_type));
+
+        $comp_type = nullptr;
     }
   | component_head[comp] COLON comp_type {
         $$ = $comp;
         $$->addBaseComponent(std::unique_ptr<AstComponentType>($comp_type));
+
+        $comp = nullptr;
+        $comp_type = nullptr;
     }
   | component_head[comp] COMMA comp_type {
         $$ = $comp;
         $$->addBaseComponent(std::unique_ptr<AstComponentType>($comp_type));
+
+        $comp = nullptr;
+        $comp_type = nullptr;
     }
   ;
 
@@ -1334,46 +1342,72 @@ component_body
   : component_body[comp] type {
         $$ = $comp;
         $$->addType(std::unique_ptr<AstType>($type));
+
+        $comp = nullptr;
+        $type = nullptr;
     }
   | component_body[comp] relation_decl {
         $$ = $comp;
         for (auto* rel : $relation_decl) {
             $$->addRelation(std::unique_ptr<AstRelation>(rel));
         }
+
+        $comp = nullptr;
+        $relation_decl.clear();
     }
   | component_body[comp] load_head {
         $$ = $comp;
         for (auto* io : $load_head) {
             $$->addLoad(std::unique_ptr<AstLoad>(io));
         }
+
+        $comp = nullptr;
+        $load_head.clear();
     }
   | component_body[comp] store_head {
         $$ = $comp;
         for (auto* io : $store_head) {
             $$->addStore(std::unique_ptr<AstStore>(io));
         }
+
+        $comp = nullptr;
+        $store_head.clear();
     }
   | component_body[comp] fact {
         $$ = $comp;
         $$->addClause(std::unique_ptr<AstClause>($fact));
+
+        $comp = nullptr;
+        $fact = nullptr;
     }
   | component_body[comp] rule {
         $$ = $comp;
         for (auto* rule : $rule) {
             $$->addClause(std::unique_ptr<AstClause>(rule));
         }
+
+        $comp = nullptr;
+        $rule.clear();
     }
   | component_body[comp] OVERRIDE IDENT {
         $$ = $comp;
         $$->addOverride($IDENT);
+
+        $comp = nullptr;
     }
   | component_body[comp] comp_init {
         $$ = $comp;
         $$->addInstantiation(std::unique_ptr<AstComponentInit>($comp_init));
+
+        $comp = nullptr;
+        $comp_init = nullptr;
     }
   | component_body[comp] component {
         $$ = $comp;
         $$->addComponent(std::unique_ptr<AstComponent>($component));
+
+        $comp = nullptr;
+        $component = nullptr;
     }
   | %empty {
         $$ = new AstComponent();
@@ -1387,6 +1421,8 @@ comp_init
         $$->setInstanceName($IDENT);
         $$->setComponentType(std::unique_ptr<AstComponentType>($comp_type));
         $$->setSrcLoc(@$);
+
+        $comp_type = nullptr;
     }
   ;
 

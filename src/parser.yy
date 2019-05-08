@@ -497,7 +497,10 @@ qualifiers
 fact
   : atom DOT {
         $$ = new AstClause();
+
         $$->setHead(std::unique_ptr<AstAtom>($atom));
+        $atom = nullptr;
+
         $$->setSrcLoc(@$);
     }
   ;
@@ -555,10 +558,12 @@ rule_def
 head
   : atom {
         $$.push_back($atom);
+        $atom = nullptr;
     }
   | head[curr_head] COMMA atom {
         $$ = $curr_head;
         $$.push_back($atom);
+        $atom = nullptr;
     }
   ;
 
@@ -647,6 +652,7 @@ term
         $$ = new RuleBody(RuleBody::constraint($constraint));
     }
   | EXCLAMATION term[nested_term] {
+        /* TODO: should $nested_term = nullptr? */
         $$ = $nested_term;
         $$->negate();
     }
@@ -666,11 +672,16 @@ atom
         $non_empty_arg_list.clear();
 
         $$->setName($identifier);
+        $identifier.clear();
+
         $$->setSrcLoc(@$);
     }
   | identifier LPAREN RPAREN {
         $$ = new AstAtom();
+
         $$->setName($identifier);
+        $identifier.clear();
+
         $$->setSrcLoc(@$);
     }
   ;
@@ -975,7 +986,10 @@ arg
     /* -- aggregators -- */
   | COUNT COLON atom {
         auto aggr = new AstAggregator(AstAggregator::count);
+
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        $atom = nullptr;
+
         $$ = aggr;
         $$->setSrcLoc(@$);
     }
@@ -1000,8 +1014,11 @@ arg
 
   | SUM arg[target_expr] COLON atom {
         auto aggr = new AstAggregator(AstAggregator::sum);
+
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        $atom = nullptr;
+
         $$ = aggr;
         $$->setSrcLoc(@$);
     }
@@ -1027,8 +1044,11 @@ arg
 
   | MIN arg[target_expr] COLON atom {
         auto aggr = new AstAggregator(AstAggregator::min);
+
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        $atom = nullptr;
+
         $$ = aggr;
         $$->setSrcLoc(@$);
     }
@@ -1054,8 +1074,11 @@ arg
 
   | MAX arg[target_expr] COLON atom {
         auto aggr = new AstAggregator(AstAggregator::max);
+
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        $atom = nullptr;
+
         $$ = aggr;
         $$->setSrcLoc(@$);
     }

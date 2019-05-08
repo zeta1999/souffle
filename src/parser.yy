@@ -212,8 +212,8 @@
 %destructor { delete $$; }                  exec_plan
 %destructor { delete $$; }                  exec_plan_list
 %destructor { delete $$; }                  fact
-/* %destructor { delete $$; }                  functor_decl */
-/* %destructor { }                             functor_type */
+%destructor { delete $$; }                  functor_decl
+%destructor { }                             functor_type
 %destructor { for (auto* cur : $$) { delete cur; } }       head
 /* %destructor { for (auto* cur : $$) { delete cur; } }       io_directive_list */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       io_relation_list */
@@ -225,7 +225,7 @@
 %destructor { }                             non_empty_key_value_pairs
 %destructor { delete $$; }                  non_empty_record_type_list
 /* %destructor { delete $$; }                  pragma */
-/* %destructor { }                             qualifiers */
+%destructor { }                             qualifiers
 /* %destructor { for (auto* cur : $$) { delete cur; } }       relation_decl */
 /* %destructor { for (auto* cur : $$) { delete cur; } }       relation_list */
 %destructor { for (auto* cur : $$) { delete cur; } }       rule
@@ -233,8 +233,8 @@
 /* %destructor { for (auto* cur : $$) { delete cur; } }       store_head */
 /* %destructor { delete $$; }                  term */
 /* %destructor { delete $$; }                  type */
-/* %destructor { }                             type_params */
-/* %destructor { }                             type_param_list */
+%destructor { }                             type_params
+%destructor { }                             type_param_list
 /* %destructor { delete $$; }                  union_type_list */
 
 /* -- Operator precedence -- */
@@ -1300,6 +1300,8 @@ component_head
 comp_type
   : IDENT type_params {
         $$ = new AstComponentType($IDENT, $type_params);
+
+        $type_params.clear();
     }
   ;
 
@@ -1307,6 +1309,8 @@ comp_type
 type_params
   : LT type_param_list GT {
         $$ = $type_param_list;
+
+        $type_param_list.clear();
     }
   | %empty {
         $$ = std::vector<AstTypeIdentifier>();
@@ -1321,6 +1325,8 @@ type_param_list
   | type_param_list[curr_list] COMMA IDENT {
         $$ = $curr_list;
         $$.push_back($IDENT);
+
+        $curr_list.clear();
     }
   ;
 

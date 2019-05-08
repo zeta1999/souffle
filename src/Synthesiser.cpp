@@ -19,15 +19,12 @@
 #include "FunctorOps.h"
 #include "Global.h"
 #include "IODirectives.h"
-#include "IndexSetAnalysis.h"
 #include "RamCondition.h"
-#include "RamExistenceCheckAnalysis.h"
 #include "RamExpression.h"
-#include "RamIndexKeys.h"
+#include "RamIndexAnalysis.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
-#include "RamProvenanceExistenceCheckAnalysis.h"
 #include "RamRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
@@ -148,7 +145,7 @@ void Synthesiser::generateRelationTypeStruct(
 }
 
 /* Convert SearchColums to a template index */
-std::string Synthesiser::toIndex(SearchColumns key) {
+std::string Synthesiser::toIndex(SearchSignature key) {
     std::stringstream tmp;
     tmp << "<";
     int i = 0;
@@ -190,9 +187,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     class CodeEmitter : public RamVisitor<void, std::ostream&> {
     private:
         Synthesiser& synthesiser;
-        RamExistenceCheckAnalysis* existCheckAnalysis;
-        RamProvenanceExistenceCheckAnalysis* provExistCheckAnalysis;
-        RamIndexKeysAnalysis* keysAnalysis;
+        RamIndexAnalysis* isa;
 
 // macros to add comments to generated code for debugging
 #ifndef PRINT_BEGIN_COMMENT
@@ -211,11 +206,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
     public:
         CodeEmitter(Synthesiser& syn)
-                : synthesiser(syn),
-                  existCheckAnalysis(syn.getTranslationUnit().getAnalysis<RamExistenceCheckAnalysis>()),
-                  provExistCheckAnalysis(
-                          syn.getTranslationUnit().getAnalysis<RamProvenanceExistenceCheckAnalysis>()),
-                  keysAnalysis(syn.getTranslationUnit().getAnalysis<RamIndexKeysAnalysis>()) {
+                : synthesiser(syn), isa(syn.getTranslationUnit().getAnalysis<RamIndexAnalysis>()) {
             rec = [&](std::ostream& out, const RamNode* node) { this->visit(*node, out); };
         }
 
@@ -383,7 +374,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 };
 
                 // get index to be queried
-                auto keys = keysAnalysis->getRangeQueryColumns(outerIndexScan);
+                auto keys = isa->getSearchSignature(outerIndexScan);
 
                 out << "const Tuple<RamDomain," << arity << "> key({{";
                 printKeyTuple();
@@ -688,7 +679,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const auto& rangePattern = scan.getRangePattern();
 
             // get index to be queried
-            auto keys = keysAnalysis->getRangeQueryColumns(&scan);
+            auto keys = isa->getSearchSignature(&scan);
 
             // a lambda for printing boundary key values
             auto printKeyTuple = [&]() {
@@ -744,7 +735,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const auto& rangePattern = indexChoice.getRangePattern();
 
             // get index to be queried
-            auto keys = keysAnalysis->getRangeQueryColumns(&indexChoice);
+            auto keys = isa->getSearchSignature(&indexChoice);
 
             // a lambda for printing boundary key values
             auto printKeyTuple = [&]() {
@@ -832,7 +823,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // get range to aggregate
-            auto keys = keysAnalysis->getRangeQueryColumns(&aggregate);
+            auto keys = isa->getSearchSignature(&aggregate);
 
             // special case: counting number elements over an unrestricted predicate
             if (aggregate.getFunction() == souffle::COUNT && keys == 0 &&
@@ -1219,7 +1210,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // if it is total we use the contains function
-            if (existCheckAnalysis->isTotal(&exists)) {
+            if (isa->isTotalSignature(&exists)) {
                 out << relName << "->"
                     << "contains(Tuple<RamDomain," << arity << ">({{" << join(exists.getValues(), ",", rec)
                     << "}})," << ctxName << ")" << after;
@@ -1230,7 +1221,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // else we conduct a range query
             out << "!" << relName << "->"
                 << "equalRange";
-            out << "_" << existCheckAnalysis->getKey(&exists);
+            out << "_" << isa->getSearchSignature(&exists);
             out << "(Tuple<RamDomain," << arity << ">({{";
             out << join(exists.getValues(), ",", [&](std::ostream& out, RamExpression* value) {
                 if (!value) {
@@ -1256,8 +1247,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "[&]() -> bool {\n";
             out << "auto existenceCheck = " << relName << "->"
                 << "equalRange";
-            // out << synthesiser.toIndex(ne.getKey());
-            out << "_" << provExistCheckAnalysis->getKey(&provExists);
+            // out << synthesiser.toIndex(ne.getSearchSignature());
+            out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">({{";
             for (size_t i = 0; i < provExists.getValues().size() - 1; i++) {
                 RamExpression* val = provExists.getValues()[i];
@@ -1643,7 +1634,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // ---------------------------------------------------------------
     const SymbolTable& symTable = translationUnit.getSymbolTable();
     const RamProgram& prog = *translationUnit.getProgram();
-    auto* idxAnalysis = translationUnit.getAnalysis<IndexSetAnalysis>();
+    auto* idxAnalysis = translationUnit.getAnalysis<RamIndexAnalysis>();
 
     // ---------------------------------------------------------------
     //                      Code Generation

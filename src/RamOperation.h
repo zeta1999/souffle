@@ -669,12 +669,19 @@ public:
 
     /** Get expression */
     const RamExpression &getExpression() const { 
+	assert(expression != nullptr); 
 	return *expression.get(); 
     }
 
     /** Get arity */
     std::size_t getArity() const {
         return arity;
+    }
+
+    std::vector<const RamNode*> getChildNodes() const override {
+        auto res = RamSearch::getChildNodes();
+        res.push_back(expression.get());
+        return res;
     }
 
     void print(std::ostream& os, int tabpos) const override {

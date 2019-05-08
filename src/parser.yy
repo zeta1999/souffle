@@ -224,18 +224,18 @@
 %destructor { }                             non_empty_functor_arg_type_list
 %destructor { }                             non_empty_key_value_pairs
 %destructor { delete $$; }                  non_empty_record_type_list
-/* %destructor { delete $$; }                  pragma */
+%destructor { delete $$; }                  pragma
 %destructor { }                             qualifiers
-/* %destructor { for (auto* cur : $$) { delete cur; } }       relation_decl */
-/* %destructor { for (auto* cur : $$) { delete cur; } }       relation_list */
+%destructor { for (auto* cur : $$) { delete cur; } }       relation_decl
+%destructor { for (auto* cur : $$) { delete cur; } }       relation_list
 %destructor { for (auto* cur : $$) { delete cur; } }       rule
 %destructor { for (auto* cur : $$) { delete cur; } }       rule_def
-/* %destructor { for (auto* cur : $$) { delete cur; } }       store_head */
+%destructor { for (auto* cur : $$) { delete cur; } }       store_head
 %destructor { delete $$; }                  term
-/* %destructor { delete $$; }                  type */
+%destructor { delete $$; }                  type
 %destructor { }                             type_params
 %destructor { }                             type_param_list
-/* %destructor { delete $$; }                  union_type_list */
+%destructor { delete $$; }                  union_type_list
 
 /* -- Operator precedence -- */
 %left L_OR

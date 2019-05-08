@@ -489,6 +489,7 @@ rule_def
   : head IF body DOT {
         auto heads = $head;
         auto bodies = $body->toClauseBodies();
+        delete $body;
 
         bool generated = heads.size() != 1 || bodies.size() != 1;
 
@@ -879,7 +880,7 @@ arg
         std::vector<std::unique_ptr<AstArgument>> args;
         args.emplace_back($first);
         for (auto* arg : $rest) {
-            args.emplace_back(arg->clone());
+            args.emplace_back(arg);
         }
         $$ = new AstIntrinsicFunctor(FunctorOp::MAX, std::move(args));
         $$->setSrcLoc(@$);
@@ -888,7 +889,7 @@ arg
         std::vector<std::unique_ptr<AstArgument>> args;
         args.emplace_back($first);
         for (auto* arg : $rest) {
-            args.emplace_back(arg->clone());
+            args.emplace_back(arg);
         }
         $$ = new AstIntrinsicFunctor(FunctorOp::MIN, std::move(args));
         $$->setSrcLoc(@$);
@@ -897,7 +898,7 @@ arg
         std::vector<std::unique_ptr<AstArgument>> args;
         args.emplace_back($first);
         for (auto* arg : $rest) {
-            args.emplace_back(arg->clone());
+            args.emplace_back(arg);
         }
         $$ = new AstIntrinsicFunctor(FunctorOp::CAT, std::move(args));
         $$->setSrcLoc(@$);
@@ -923,6 +924,8 @@ arg
         auto aggr = new AstAggregator(AstAggregator::count);
 
         auto bodies = $body->toClauseBodies();
+        delete $body;
+
         if (bodies.size() != 1) {
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
@@ -948,6 +951,8 @@ arg
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
+        delete $body;
+
         if (bodies.size() != 1) {
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
@@ -973,6 +978,8 @@ arg
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
+        delete $body;
+
         if (bodies.size() != 1) {
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);
@@ -998,6 +1005,8 @@ arg
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
+        delete $body;
+
         if (bodies.size() != 1) {
             std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
             exit(1);

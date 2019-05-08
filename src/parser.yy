@@ -198,8 +198,8 @@
 %type <AstUnionType *>                      union_type_list
 
 /* -- Destructors -- */
-/* %destructor { delete $$; }                  atom */
-/* %destructor { delete $$; }                  arg */
+%destructor { delete $$; }                  atom
+%destructor { delete $$; }                  arg
 /* %destructor { delete $$; }                  body */
 /* %destructor { delete $$; }                  comp_type */
 /* %destructor { delete $$; }                  comp_init */
@@ -208,9 +208,9 @@
 /* %destructor { delete $$; }                  conjunction */
 /* %destructor { delete $$; }                  constraint */
 /* %destructor { delete $$; }                  disjunction */
-/* %destructor { delete $$; }                  exec_order_list */
-/* %destructor { delete $$; }                  exec_plan */
-/* %destructor { delete $$; }                  exec_plan_list */
+%destructor { delete $$; }                  exec_order_list
+%destructor { delete $$; }                  exec_plan
+%destructor { delete $$; }                  exec_plan_list
 /* %destructor { delete $$; }                  fact */
 /* %destructor { delete $$; }                  functor_decl */
 /* %destructor { }                             functor_type */
@@ -567,7 +567,6 @@ rule
         }
 
         $nested_rule.clear();
-        delete $exec_plan;
     }
   ;
 

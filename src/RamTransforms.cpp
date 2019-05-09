@@ -467,7 +467,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                 if (indexScan->getTupleId() == 0) {
                     changed = true;
                     const RamRelation& rel = indexScan->getRelation();
-                    std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
+                    std::vector<std::unique_ptr<RamExpression>> queryPattern;
                     for (const RamExpression* cur : indexScan->getRangePattern()) {
                         if (nullptr != cur) {
                             queryPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
@@ -485,7 +485,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                 if (indexChoice->getTupleId() == 0) {
                     changed = true;
                     const RamRelation& rel = indexChoice->getRelation();
-                    std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
+                    std::vector<std::unique_ptr<RamExpression>> queryPattern;
                     for (const RamExpression* cur : indexChoice->getRangePattern()) {
                         if (nullptr != cur) {
                             queryPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));

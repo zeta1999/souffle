@@ -2345,9 +2345,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
 
     if (Global::config().get("provenance") == "explain") {
-        os << "explain(obj, true, false);\n";
+        os << "explain(obj, false);\n";
     } else if (Global::config().get("provenance") == "explore") {
-        os << "explain(obj, true, true);\n";
+        os << "explain(obj, true);\n";
     }
     os << "return 0;\n";
     os << "} catch(std::exception &e) { souffle::SignalHandler::instance()->error(e.what());}\n";

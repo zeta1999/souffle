@@ -189,7 +189,7 @@ soufflepublic_HEADERS = \
                         EventProcessor.h        \
                         Explain.h               \
                         ExplainProvenance.h     \
-                        ExplainProvenanceSLD.h  \
+                        ExplainProvenanceImpl.h \
                         ExplainTree.h           \
                         EquivalenceRelation.h 	\
                         IODirectives.h          \

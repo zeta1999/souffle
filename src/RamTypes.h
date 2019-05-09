@@ -43,7 +43,9 @@ using RamDomain = int32_t;
 #define MIN_RAM_DOMAIN (std::numeric_limits<RamDomain>::min())
 #define MAX_RAM_DOMAIN (std::numeric_limits<RamDomain>::max())
 
-/** type of an index key; each bit represents a column of a table */
-using SearchColumns = uint64_t;
+/** search signature of a RAM operation; each bit represents an attribute of a relation.
+ * A one represents that the attribute has an assigned value; a zero represents that
+ * no value exists (i.e. attribute is unbounded) in the search. */
+using SearchSignature = uint64_t;
 
 }  // end of namespace souffle

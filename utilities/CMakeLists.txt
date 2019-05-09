@@ -9,7 +9,7 @@ ADD_EXECUTABLE(souffle
         ./src/AstAnalysis.h
         ./src/RamCondition.h
         ./src/AstComponentChecker.h
-        ./src/ExplainProvenanceSLD.h
+        ./src/ExplainProvenanceImpl.h
         ./src/BTree.h
         ./src/GraphUtils.h
         ./src/profile/html_string.h

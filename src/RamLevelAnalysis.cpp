@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file RamLevel.cpp
+ * @file RamLevelAnalysis.cpp
  *
  * Implementation of RAM Level Analysis
  *
  ***********************************************************************/
 
-#include "RamLevel.h"
+#include "RamLevelAnalysis.h"
 #include "RamVisitor.h"
 #include <algorithm>
 
@@ -120,7 +120,7 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
         }
 
         // default rule
-        int visitNode(const RamNode& node) {
+        int visitNode(const RamNode& node) override {
             assert(false && "RamNode not implemented!");
             return -1;
         }

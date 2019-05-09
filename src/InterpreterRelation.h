@@ -119,7 +119,7 @@ public:
 
     /** get index for a given set of keys using a cached index as a helper. Keys are encoded as bits for each
      * column */
-    InterpreterIndex* getIndex(const SearchColumns& key, InterpreterIndex* cachedIndex) const {
+    InterpreterIndex* getIndex(const SearchSignature& key, InterpreterIndex* cachedIndex) const {
         if (!cachedIndex) {
             return getIndex(key);
         }
@@ -127,7 +127,7 @@ public:
     }
 
     /** get index for a given set of keys. Keys are encoded as bits for each column */
-    InterpreterIndex* getIndex(const SearchColumns& key) const {
+    InterpreterIndex* getIndex(const SearchSignature& key) const {
         // suffix for order, if no matching prefix exists
         std::vector<unsigned char> suffix;
         suffix.reserve(getArity());
@@ -190,7 +190,7 @@ public:
     }
 
     /** Obtains a full index-key for this relation */
-    SearchColumns getTotalIndexKey() const {
+    SearchSignature getTotalIndexKey() const {
         return (1 << (getArity())) - 1;
     }
 

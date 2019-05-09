@@ -216,8 +216,8 @@ protected:
     }
 
     /** Obtain the search columns */
-    SearchColumns getSearchColumns(const std::string& patterns, size_t arity) {
-        SearchColumns res = 0;
+    SearchSignature getSearchSignature(const std::string& patterns, size_t arity) {
+        SearchSignature res = 0;
         for (size_t i = 0; i < arity; ++i) {
             if (patterns[i] == 'V') {
                 res |= (1 << i);

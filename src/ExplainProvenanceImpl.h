@@ -8,9 +8,9 @@
 
 /************************************************************************
  *
- * @file ExplainProvenanceSLD.h
+ * @file ExplainProvenanceImpl.h
  *
- * Implementation of abstract class in ExplainProvenance.h for guided SLD provenance
+ * Implementation of abstract class in ExplainProvenance.h for guided Impl provenance
  *
  ***********************************************************************/
 
@@ -30,9 +30,9 @@
 
 namespace souffle {
 
-class ExplainProvenanceSLD : public ExplainProvenance {
+class ExplainProvenanceImpl : public ExplainProvenance {
 public:
-    ExplainProvenanceSLD(SouffleProgram& prog) : ExplainProvenance(prog) {
+    ExplainProvenanceImpl(SouffleProgram& prog) : ExplainProvenance(prog) {
         setup();
     }
 

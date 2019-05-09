@@ -99,7 +99,7 @@ souffle_sources = \
               GraphUtils.h                              \
               IODirectives.h                            \
               IOSystem.h                                \
-              IndexSetAnalysis.cpp   IndexSetAnalysis.h \
+              RamIndexAnalysis.cpp   RamIndexAnalysis.h \
               InlineRelationsTransformer.cpp            \
               Interpreter.h       						\
               InterpreterContext.h                      \
@@ -118,11 +118,8 @@ souffle_sources = \
               ProfileEvent.h                            \
               ProvenanceTransformer.cpp                 \
               RamAnalysis.h                             \
-              RamExistenceCheckAnalysis.cpp RamExistenceCheckAnalysis.h \
-              RamProvenanceExistenceCheckAnalysis.cpp RamProvenanceExistenceCheckAnalysis.h \
-              RamIndexKeys.cpp  RamIndexKeys.h          \
 			  RAMI.cpp RAMI.h 							\
-              RamLevel.cpp RamLevel.h                   \
+              RamLevelAnalysis.cpp RamLevelAnalysis.h   \
               RamCondition.h                            \
               RamNode.h                                 \
               RamOperation.h                            \
@@ -192,7 +189,7 @@ soufflepublic_HEADERS = \
                         EventProcessor.h        \
                         Explain.h               \
                         ExplainProvenance.h     \
-                        ExplainProvenanceSLD.h  \
+                        ExplainProvenanceImpl.h \
                         ExplainTree.h           \
                         EquivalenceRelation.h 	\
                         IODirectives.h          \

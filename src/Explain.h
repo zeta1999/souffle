@@ -51,7 +51,7 @@ public:
     }
 
     /* Configuration variables */
-    std::ostream* outputStream = nullptr;
+    std::unique_ptr<std::ostream> outputStream = nullptr;
     bool json = false;
     int depthLimit = 4;
 
@@ -165,11 +165,9 @@ public:
             }
         } else if (command[0] == "output") {
             if (command.size() == 2) {
-                // close the previous file stream, safe even if outputStream is nullptr
-                delete ExplainConfig::getExplainConfig().outputStream;
-                ExplainConfig::getExplainConfig().outputStream = new std::ofstream(command[1]);
+                // assign a new filestream, the old one is deleted by unique_ptr
+                ExplainConfig::getExplainConfig().outputStream = std::make_unique<std::ofstream>(command[1]);
             } else if (command.size() == 1) {
-                delete ExplainConfig::getExplainConfig().outputStream;
                 ExplainConfig::getExplainConfig().outputStream = nullptr;
             } else {
                 printError("Usage: output  [<filename>]\n");
@@ -184,7 +182,6 @@ public:
             }
         } else if (command[0] == "exit" || command[0] == "q" || command[0] == "quit") {
             // close file stream so that output is actually written to file
-            delete ExplainConfig::getExplainConfig().outputStream;
             printPrompt("Exiting explain\n");
             return false;
         } else {
@@ -322,7 +319,7 @@ private:
         if (ExplainConfig::getExplainConfig().outputStream == nullptr) {
             output = &std::cout;
         } else {
-            output = ExplainConfig::getExplainConfig().outputStream;
+            output = ExplainConfig::getExplainConfig().outputStream.get();
         }
 
         if (!ExplainConfig::getExplainConfig().json) {
@@ -439,7 +436,7 @@ private:
 
                 wprintw(treePad, ss.str().c_str());
             } else {
-                std::ostream* output = ExplainConfig::getExplainConfig().outputStream;
+                std::ostream* output = ExplainConfig::getExplainConfig().outputStream.get();
                 *output << "{ \"proof\":\n";
                 tree->printJSON(*output, 1);
                 *output << ",";

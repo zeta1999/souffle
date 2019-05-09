@@ -433,4 +433,80 @@ bool ChoiceConversionTransformer::convertScans(RamProgram& program) {
     return changed;
 }
 
+bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
+    // flag to determine whether the RAM program has changed
+    bool changed = false;
+
+    // parallelize the most outer loop only
+    // most outer loops can be scan/choice/indexScan/indexChoice
+    //
+    // TODO (b-scholz): renumbering may be necessary since some operations
+    // may have reduced a loop to a filter operation.
+    visitDepthFirst(program, [&](const RamQuery& query) {
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> parallelRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            if (const RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
+                if (scan->getTupleId() == 0) {
+                    changed = true;
+                    return std::make_unique<RamParallelScan>(
+                            std::make_unique<RamRelationReference>(&scan->getRelation()), scan->getTupleId(),
+                            std::unique_ptr<RamOperation>(scan->getOperation().clone()),
+                            scan->getProfileText());
+                }
+            } else if (const RamChoice* choice = dynamic_cast<RamChoice*>(node.get())) {
+                if (choice->getTupleId() == 0) {
+                    changed = true;
+                    return std::make_unique<RamParallelChoice>(
+                            std::make_unique<RamRelationReference>(&choice->getRelation()),
+                            choice->getTupleId(),
+                            std::unique_ptr<RamCondition>(choice->getCondition().clone()),
+                            std::unique_ptr<RamOperation>(choice->getOperation().clone()),
+                            choice->getProfileText());
+                }
+            } else if (const RamIndexScan* indexScan = dynamic_cast<RamIndexScan*>(node.get())) {
+                if (indexScan->getTupleId() == 0) {
+                    changed = true;
+                    const RamRelation& rel = indexScan->getRelation();
+                    std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
+                    for (const RamExpression* cur : indexScan->getRangePattern()) {
+                        if (nullptr != cur) {
+                            queryPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
+                        } else {
+                            queryPattern.push_back(nullptr);
+                        }
+                    }
+                    return std::make_unique<RamParallelIndexScan>(
+                            std::make_unique<RamRelationReference>(&rel), indexScan->getTupleId(),
+                            std::move(queryPattern),
+                            std::unique_ptr<RamOperation>(indexScan->getOperation().clone()),
+                            indexScan->getProfileText());
+                }
+            } else if (const RamIndexChoice* indexChoice = dynamic_cast<RamIndexChoice*>(node.get())) {
+                if (indexChoice->getTupleId() == 0) {
+                    changed = true;
+                    const RamRelation& rel = indexChoice->getRelation();
+                    std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
+                    for (const RamExpression* cur : indexChoice->getRangePattern()) {
+                        if (nullptr != cur) {
+                            queryPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
+                        } else {
+                            queryPattern.push_back(nullptr);
+                        }
+                    }
+                    return std::make_unique<RamParallelIndexChoice>(
+                            std::make_unique<RamRelationReference>(&rel), indexChoice->getTupleId(),
+                            std::unique_ptr<RamCondition>(indexChoice->getCondition().clone()),
+                            std::move(queryPattern),
+                            std::unique_ptr<RamOperation>(indexChoice->getOperation().clone()),
+                            indexChoice->getProfileText());
+                }
+            }
+            node->apply(makeLambdaRamMapper(parallelRewriter));
+            return node;
+        };
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(parallelRewriter));
+    });
+    return changed;
+}
+
 }  // end of namespace souffle

@@ -356,4 +356,44 @@ protected:
     }
 };
 
+/**
+ * @class ParallelTransformer
+ * @brief Transforms Choice/IndexChoice/IndexScan/Scan into parallel versions.
+ *
+ * For example ..
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *    FOR t0 in A
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * will be rewritten to
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *    PARALLEL FOR t0 in A
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ */
+class ParallelTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "ParallelTransformer";
+    }
+
+    /**
+     * @brief Parallelize operations
+     * @param program Program that is transformed
+     * @return Flag showing whether the program has been changed by the transformation
+     */
+    bool parallelizeOperations(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return parallelizeOperations(*translationUnit.getProgram());
+    }
+};
+
 }  // end of namespace souffle

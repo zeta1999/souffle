@@ -205,7 +205,7 @@ private:
 };
 
 /**
- * Transformation pass to add provenance information via guided SLD
+ * Transformation pass to add provenance information
  */
 class ProvenanceTransformer : public AstTransformer {
 public:

@@ -505,10 +505,9 @@ protected:
         // (xiaowen): In the case where reference we want to look up is null, we should return.
         // This can be expressed by the LVM instructions or delegate to CPP code.
         // For now, it is done by passing the next IP (L0) and let CPP to handle the case.
+        visit(lookup.getExpression(), exitAddress);
         code->push_back(LVM_UnpackRecord);
         size_t L0 = getNewAddressLabel();
-        code->push_back(lookup.getReferenceLevel());
-        code->push_back(lookup.getReferencePosition());
         code->push_back(lookup.getArity());
         code->push_back(lookup.getTupleId());
         code->push_back(lookupAddress(L0));

@@ -166,13 +166,16 @@ DebugReportSection DebugReporter::getCodeSection(const std::string& id, std::str
 
 DebugReportSection DebugReporter::getDotGraphSection(
         const std::string& id, std::string title, const std::string& dotSpec) {
-    std::stringstream cmd;
-    cmd << "dot -Tsvg <<END_DOT_FILE\n";
-    cmd << dotSpec << "\n";
-    cmd << "END_DOT_FILE\n";
-    FILE* in = popen(cmd.str().c_str(), "r");
+    std::string tempFileName = tempFile();
+    {
+        std::ofstream dotFile(tempFileName);
+        dotFile << dotSpec;
+    }
+
+    std::string cmd = "dot -Tsvg < " + tempFileName;
+    FILE* in = popen(cmd.c_str(), "r");
     std::stringstream data;
-    while (true) {
+    while (in != nullptr) {
         char c = fgetc(in);
         if (feof(in)) {
             break;
@@ -180,6 +183,8 @@ DebugReportSection DebugReporter::getDotGraphSection(
         data << c;
     }
     pclose(in);
+    remove(tempFileName.c_str());
+
     std::stringstream graphHTML;
     if (data.str().find("<svg") != std::string::npos) {
         graphHTML << "<img alt='graph image' src='data:image/svg+xml;base64," << toBase64(data.str())

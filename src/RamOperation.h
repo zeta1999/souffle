@@ -57,7 +57,7 @@ protected:
 /**
  * Abstract class for parallel operation
  */
-struct RamAbstractParallel { };
+struct RamAbstractParallel {};
 
 /**
  * Abstract class for a nesting operations in a loop-nest

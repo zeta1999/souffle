@@ -482,7 +482,7 @@ int main(int argc, char** argv) {
     ramTransforms.push_back(std::make_unique<IfConversionTransformer>());
     ramTransforms.push_back(std::make_unique<ChoiceConversionTransformer>());
     if (std::stoi(Global::config().get("jobs")) > 1) {
-       ramTransforms.push_back(std::make_unique<ParallelTransformer>());
+        ramTransforms.push_back(std::make_unique<ParallelTransformer>());
     }
 
     for (const auto& transform : ramTransforms) {

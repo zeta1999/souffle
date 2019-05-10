@@ -326,9 +326,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // check whether loop nest can be parallelized
             bool isParallel = false;
-            visitDepthFirst(*next, [&](const RamAbstractParallel& node) {
-                    isParallel = true;
-            });
+            visitDepthFirst(*next, [&](const RamAbstractParallel& node) { isParallel = true; });
 
             // reset preamble
             preamble.str("");

@@ -326,10 +326,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // check whether loop nest can be parallelized
             bool isParallel = false;
-            visitDepthFirst(*next, [&](const RamNode& node) {
-                if (dynamic_cast<const RamAbstractParallel*>(&node) != nullptr) {
+            visitDepthFirst(*next, [&](const RamAbstractParallel& node) {
                     isParallel = true;
-                }
             });
 
             // reset preamble
@@ -1984,7 +1982,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "std::atomic<size_t> iter(0);\n\n";
 
     // set default threads (in embedded mode)
-    if (std::stoi(Global::config().get("jobs")) > 0) {
+    if (std::stoi(Global::config().get("jobs")) > 1) {
         os << "#if defined(__EMBEDDED_SOUFFLE__) && defined(_OPENMP)\n";
         os << "omp_set_num_threads(" << std::stoi(Global::config().get("jobs")) << ");\n";
         os << "#endif\n\n";

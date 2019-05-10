@@ -133,13 +133,14 @@ public:
 
 /* B-Tree indexes as default implementation for indexes */
 class InterpreterIndex {
+using LexOrder = std::vector<int>;
 public:
     /* lexicographical comparison operation on two tuple pointers */
     struct comparator {
-        const InterpreterIndexOrder& order;
+        const LexOrder& order;
 
         /* constructor to initialize state */
-        comparator(const InterpreterIndexOrder& order) : order(order) {}
+        comparator(const LexOrder& order) : order(order) {}
 
         /* comparison function */
         int operator()(const RamDomain* x, const RamDomain* y) const {
@@ -175,10 +176,10 @@ public:
 
     using iterator = index_set::iterator;
 
-    InterpreterIndex(InterpreterIndexOrder order)
+    InterpreterIndex(LexOrder order)
             : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
-    const InterpreterIndexOrder& order() const {
+    const LexOrder& order() const {
         return theOrder;
     }
 
@@ -230,7 +231,7 @@ public:
 
 private:
     // retain the index order used to construct an object of this class
-    const InterpreterIndexOrder theOrder;
+    const LexOrder theOrder;
     // set storing tuple pointers of table
     index_set set;
 };

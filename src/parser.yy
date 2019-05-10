@@ -398,14 +398,17 @@ non_empty_record_type_list
 
 /* Union type argument declarations */
 union_type_list
-  : IDENT {
+  : identifier {
         $$ = new AstUnionType();
-        $$->add($IDENT);
-    }
-  | union_type_list[curr_union] PIPE IDENT {
-        $$ = $curr_union;
-        $$->add($IDENT);
+        $$->add($identifier);
 
+        $identifier.clear();
+    }
+  | union_type_list[curr_union] PIPE identifier {
+        $$ = $curr_union;
+        $$->add($identifier);
+
+        $identifier.clear();
         $curr_union = nullptr;
     }
   ;

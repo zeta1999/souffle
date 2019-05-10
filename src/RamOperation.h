@@ -55,6 +55,11 @@ protected:
 };
 
 /**
+ * Abstract class for parallel operation
+ */
+struct RamAbstractParallel { };
+
+/**
  * Abstract class for a nesting operations in a loop-nest
  */
 class RamNestedOperation : public RamOperation {
@@ -198,7 +203,7 @@ public:
  *
  * Iterate all tuples of a relation in parallel
  */
-class RamParallelScan : public RamScan {
+class RamParallelScan : public RamScan, public RamAbstractParallel {
 public:
     RamParallelScan(std::unique_ptr<RamRelationReference> rel, int ident,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
@@ -331,7 +336,7 @@ public:
  *
  * Search for tuples of a relation matching a criteria
  */
-class RamParallelIndexScan : public RamIndexScan {
+class RamParallelIndexScan : public RamIndexScan, public RamAbstractParallel {
 public:
     RamParallelIndexScan(std::unique_ptr<RamRelationReference> r, int ident,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
@@ -431,7 +436,7 @@ protected:
 /**
  * Find a tuple in a relation such that a given condition holds.
  */
-class RamParallelChoice : public RamChoice {
+class RamParallelChoice : public RamChoice, public RamAbstractParallel {
 public:
     RamParallelChoice(std::unique_ptr<RamRelationReference> rel, size_t ident,
             std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
@@ -548,7 +553,7 @@ protected:
 /**
  * Use an index to find a tuple in a relation such that a given condition holds.
  */
-class RamParallelIndexChoice : public RamIndexChoice {
+class RamParallelIndexChoice : public RamIndexChoice, public RamAbstractParallel {
 public:
     RamParallelIndexChoice(std::unique_ptr<RamRelationReference> r, int ident,
             std::unique_ptr<RamCondition> cond, std::vector<std::unique_ptr<RamExpression>> queryPattern,

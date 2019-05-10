@@ -325,15 +325,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "{\n";
 
             // check whether loop nest can be parallelized
-            // TODO (b-scholz): introduce a parallel class/multiple inheritance to check more elegantly
-            //                  for parallel execution. The type can be used as a flag to check for
-            //                  this behaviour.
             bool isParallel = false;
             visitDepthFirst(*next, [&](const RamNode& node) {
-                if (dynamic_cast<const RamParallelScan*>(&node) != nullptr ||
-                        dynamic_cast<const RamParallelChoice*>(&node) != nullptr ||
-                        dynamic_cast<const RamParallelIndexScan*>(&node) != nullptr ||
-                        dynamic_cast<const RamParallelIndexChoice*>(&node) != nullptr) {
+                if (dynamic_cast<const RamAbstractParallel*>(&node) != nullptr) {
                     isParallel = true;
                 }
             });

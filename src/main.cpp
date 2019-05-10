@@ -481,7 +481,7 @@ int main(int argc, char** argv) {
     ramTransforms.push_back(std::make_unique<MakeIndexTransformer>());
     ramTransforms.push_back(std::make_unique<IfConversionTransformer>());
     ramTransforms.push_back(std::make_unique<ChoiceConversionTransformer>());
-    ramTransforms.push_back(std::make_unique<ParallelTransformer>());
+    // ramTransforms.push_back(std::make_unique<ParallelTransformer>());
 
     for (const auto& transform : ramTransforms) {
         /* If the ram transform changed the program, show this */

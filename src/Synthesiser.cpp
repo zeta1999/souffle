@@ -1,4 +1,4 @@
-/*
+/**
  * Souffle - A Datalog Compiler
  * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
  * Licensed under the Universal Permissive License v 1.0 as shown at:
@@ -203,7 +203,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 #endif
 
         std::function<void(std::ostream&, const RamNode*)> rec;
-        std::stringstream preamble;
+        std::ostringstream preamble;
         bool preambleIssued;
 
     public:
@@ -329,6 +329,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // TODO (b-scholz): introduce a parallel class/multiple inheritance to check more elegantly
             //                  for parallel execution. The type can be used as a flag to check for
             //                  this behaviour.
+#if 0
             bool isParallel = false;
             visitDepthFirst(*next, [&](const RamNode& node) {
                 if (dynamic_cast<const RamParallelScan*>(&node) != nullptr ||
@@ -338,6 +339,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     isParallel = true;
                 }
             });
+#endif
+
+            // reset preamble
+            preamble.str("");
+            preamble.clear(); 
 
             // create operation contexts for this operation
             for (const RamRelation* rel : synthesiser.getReferencedRelations(query.getOperation())) {
@@ -347,6 +353,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // discharge conditions that require a context
+#if 0
             if (isParallel) {
                 if (requireCtx.size() > 0) {
                     preamble << "if(";
@@ -358,6 +365,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(*next, preamble);
                 }
             } else {
+#endif
                 out << preamble.str();
                 if (requireCtx.size() > 0) {
                     out << "if(";
@@ -368,11 +376,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 } else {
                     visit(*next, out);
                 }
+
+#if 0
             }
 
             if (isParallel) {
                 out << "PARALLEL_END;\n";  // end parallel
             }
+#endif
 
             out << "}\n";
 #ifdef __clang__

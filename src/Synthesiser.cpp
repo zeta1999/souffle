@@ -208,8 +208,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
     public:
         CodeEmitter(Synthesiser& syn)
-                : synthesiser(syn), isa(syn.getTranslationUnit().getAnalysis<RamIndexAnalysis>()),
-                  preambleIssued(false) {
+                : synthesiser(syn), isa(syn.getTranslationUnit().getAnalysis<RamIndexAnalysis>()) {
             rec = [&](std::ostream& out, const RamNode* node) { this->visit(*node, out); };
         }
 
@@ -329,7 +328,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // TODO (b-scholz): introduce a parallel class/multiple inheritance to check more elegantly
             //                  for parallel execution. The type can be used as a flag to check for
             //                  this behaviour.
-#if 0
             bool isParallel = false;
             visitDepthFirst(*next, [&](const RamNode& node) {
                 if (dynamic_cast<const RamParallelScan*>(&node) != nullptr ||
@@ -339,11 +337,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     isParallel = true;
                 }
             });
-#endif
 
             // reset preamble
             preamble.str("");
-            preamble.clear(); 
+            preamble.clear();
+            preambleIssued = false;
 
             // create operation contexts for this operation
             for (const RamRelation* rel : synthesiser.getReferencedRelations(query.getOperation())) {
@@ -353,7 +351,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // discharge conditions that require a context
-#if 0
             if (isParallel) {
                 if (requireCtx.size() > 0) {
                     preamble << "if(";
@@ -362,10 +359,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(*next, out);
                     out << "}\n";
                 } else {
-                    visit(*next, preamble);
+                    visit(*next, out);
                 }
             } else {
-#endif
                 out << preamble.str();
                 if (requireCtx.size() > 0) {
                     out << "if(";
@@ -376,14 +372,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 } else {
                     visit(*next, out);
                 }
-
-#if 0
             }
 
             if (isParallel) {
                 out << "PARALLEL_END;\n";  // end parallel
             }
-#endif
 
             out << "}\n";
 #ifdef __clang__
@@ -566,6 +559,35 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
+        void visitParallelScan(const RamParallelScan& pscan, std::ostream& out) override {
+            const auto& rel = pscan.getRelation();
+            const auto& relName = synthesiser.getRelationName(rel);
+
+            assert(pscan.getTupleId() == 0 && "not outer-most loop");
+
+            assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
+
+            assert(!preambleIssued && "only first loop can be made parallel");
+            preambleIssued = true;
+
+            PRINT_BEGIN_COMMENT(out);
+
+            out << "auto part = " << relName << "->partition();\n";
+            out << "PARALLEL_START;\n";
+            out << preamble.str();
+            out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
+            out << "try{\n";
+            out << "for(const auto& env0 : *it) {\n";
+
+            visitSearch(pscan, out);
+
+            out << "}\n";
+            out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+            out << "}\n";
+
+            PRINT_END_COMMENT(out);
+        }
+
         void visitScan(const RamScan& scan, std::ostream& out) override {
             const auto& rel = scan.getRelation();
             auto relName = synthesiser.getRelationName(rel);
@@ -580,35 +602,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             visitSearch(scan, out);
 
-            out << "}\n";
-
-            PRINT_END_COMMENT(out);
-        }
-
-        void visitParallelScan(const RamParallelScan& pscan, std::ostream& out) override {
-            const auto& rel = pscan.getRelation();
-            const auto& relName = synthesiser.getRelationName(rel);
-
-            assert(pscan.getTupleId() == 0 && "not outer-most loop");
-
-            assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
-
-            assert(preambleIssued && "only first loop can be made parallel");
-            preambleIssued = true;
-
-            PRINT_BEGIN_COMMENT(out);
-
-            out << "auto part = " << relName << "->partition();\n";
-            out << "PARALLEL_START;\n";
-            out << preamble.str();
-            out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
-            out << "try{";
-            out << "for(const auto& env0 : *it) {\n";
-
-            visitSearch(pscan, out);
-
-            out << "}\n";
-            out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
             out << "}\n";
 
             PRINT_END_COMMENT(out);
@@ -648,7 +641,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             assert(rel.getArity() > 0 && "AstTranslator failed/no parallel choice for nullaries");
 
-            assert(preambleIssued && "only first loop can be made parallel");
+            assert(!preambleIssued && "only first loop can be made parallel");
             preambleIssued = true;
 
             PRINT_BEGIN_COMMENT(out);
@@ -724,7 +717,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             assert(arity > 0 && "AstTranslator failed/no parallel index scan for nullaries");
 
-            assert(preambleIssued && "only first loop can be made parallel");
+            assert(!preambleIssued && "only first loop can be made parallel");
             preambleIssued = true;
 
             PRINT_BEGIN_COMMENT(out);
@@ -818,7 +811,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             assert(arity > 0 && "AstTranslator failed");
 
-            assert(preambleIssued && "only first loop can be made parallel");
+            assert(!preambleIssued && "only first loop can be made parallel");
             preambleIssued = true;
 
             PRINT_BEGIN_COMMENT(out);

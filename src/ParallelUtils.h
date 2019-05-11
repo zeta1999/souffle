@@ -205,7 +205,7 @@ class Waiter {
     int i = 0;
 
 public:
-    Waiter() {}
+    Waiter() = default;
 
     /**
      * Conducts a wait operation.
@@ -225,10 +225,10 @@ public:
 
 /* compare: http://en.cppreference.com/w/cpp/atomic/atomic_flag */
 class SpinLock {
-    std::atomic<int> lck;
+    std::atomic<int> lck{0};
 
 public:
-    SpinLock() : lck(0) {}
+    SpinLock() = default;
 
     void lock() {
         detail::Waiter wait;
@@ -264,10 +264,10 @@ class ReadWriteLock {
      *      +-------------------------+--------------------+--------------------+
      */
 
-    std::atomic<int> lck;
+    std::atomic<int> lck{0};
 
 public:
-    ReadWriteLock() : lck(0) {}
+    ReadWriteLock() = default;
 
     void start_read() {
         // add reader
@@ -342,7 +342,7 @@ class OptimisticReadWriteLock {
      *      - even version numbers are stable versions, not being updated
      *      - odd version numbers are temporary versions, currently being updated
      */
-    std::atomic<int> version;
+    std::atomic<int> version{0};
 
 public:
     /**
@@ -362,7 +362,7 @@ public:
     /**
      * A default constructor initializing the lock.
      */
-    OptimisticReadWriteLock() : version(0) {}
+    OptimisticReadWriteLock() = default;
 
     /**
      * Starts a read phase, making sure that there is currently no

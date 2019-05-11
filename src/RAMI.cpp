@@ -873,7 +873,7 @@ void RAMI::evalStmt(const RamStatement& stmt) {
             // parallel execution
             bool cond = true;
 #pragma omp parallel for reduction(&& : cond)
-            for (size_t i = 0; i < stmts.size(); i++) {
+            for (size_t i = 0; i < stmts.size(); i++) {  // NOLINT (modernize-loop-convert)
                 cond = cond && visit(stmts[i]);
             }
             return cond;

@@ -167,7 +167,7 @@ public:
 
     /** Return code stream */
     std::vector<RamDomain> getCode() const {
-        return *this;
+        return std::vector<RamDomain>(begin(), end());
     }
 
     /** Return IODirectives pool */

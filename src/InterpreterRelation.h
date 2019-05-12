@@ -42,6 +42,12 @@ public:
             std::unique_ptr<InterpreterIndex> index = std::make_unique<InterpreterIndex>(order);
             indices.insert(std::make_pair(order, std::move(index)));
         }
+        // Create total Index.
+        LexOrder totalOrder;
+        for (int i = 0; i < getTotalIndexKey(); i++) {
+            totalOrder.push_back(i);
+        }
+        totalIndex = std::make_unique<InterpreterIndex>(totalOrder);
     }
 
     InterpreterRelation(const InterpreterRelation& other) = delete;
@@ -105,7 +111,7 @@ public:
         for (const auto& cur : indices) {
             cur.second->insert(newTuple);
         }
-
+        totalIndex->insert(newTuple);
         // increment relation size
         num_tuples++;
     }
@@ -138,14 +144,16 @@ public:
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
-        return getIndex(orderSet.getLexOrder(col));
+        auto a = getIndex(orderSet.getLexOrder(col));
+        return a;
     }
 
     /** get index for a given order. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const LexOrder& order) const {
         auto ret = indices.find(order);
         assert(ret != indices.end() && "getIndex should always find an exist index");
-        return ret->second.get();
+        auto a = ret->second.get();
+        return a;
     }
 
     /** Obtains a full index-key for this relation */
@@ -159,8 +167,8 @@ public:
         if (getArity() == 0) {
             return !empty();
         }
-        InterpreterIndex* totalIndex = getIndex(getTotalIndexKey());
-        return totalIndex->exists(tuple);
+        InterpreterIndex* index = totalIndex.get();
+        return index->exists(tuple);
     }
 
     void setLevel(size_t level) {
@@ -264,6 +272,9 @@ private:
 
     /** List of indices */
     mutable std::map<LexOrder, std::unique_ptr<InterpreterIndex>> indices;
+
+    /** Total Index */
+    std::unique_ptr<InterpreterIndex> totalIndex;
 
     /** IndexSet */
     MinIndexSelection orderSet;

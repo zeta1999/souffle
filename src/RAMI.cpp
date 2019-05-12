@@ -925,7 +925,8 @@ void RAMI::evalStmt(const RamStatement& stmt) {
         }
 
         bool visitCreate(const RamCreate& create) override {
-            interpreter.createRelation(create.getRelation(), interpreter.isa->getIndexes(create.getRelation()));
+            interpreter.createRelation(
+                    create.getRelation(), interpreter.isa->getIndexes(create.getRelation()));
             return true;
         }
 

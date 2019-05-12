@@ -133,7 +133,8 @@ public:
 
 /* B-Tree indexes as default implementation for indexes */
 class InterpreterIndex {
-using LexOrder = std::vector<int>;
+    using LexOrder = std::vector<int>;
+
 public:
     /* lexicographical comparison operation on two tuple pointers */
     struct comparator {

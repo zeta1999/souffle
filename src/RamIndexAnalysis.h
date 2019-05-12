@@ -231,7 +231,6 @@ protected:
 
     /** @Brief maps search columns to an lexicographical order (labeled by a number) */
     int map(SearchSignature cols) const {
-        printf("%ld vs %ld\n", orders.size(), chainToOrder.size());
         assert(orders.size() == chainToOrder.size() && "Order and Chain Sizes do not match!!");
         int i = 0;
         for (auto it = chainToOrder.begin(); it != chainToOrder.end(); ++it, ++i) {

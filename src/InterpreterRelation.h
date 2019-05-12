@@ -35,7 +35,7 @@ class InterpreterRelation {
     using LexOrder = std::vector<int>;
 
 public:
-    InterpreterRelation(size_t relArity, const MinIndexSelection orderSet)
+    InterpreterRelation(size_t relArity, const MinIndexSelection& orderSet)
             : arity(relArity), num_tuples(0), orderSet(orderSet) {
         // Create all necessary indices based on orderSet
         for (auto& order : orderSet.getAllOrders()) {
@@ -136,17 +136,16 @@ public:
         return getIndex(cachedIndex->order());
     }
 
+    /** get index for a given search signature. Order are encoded as bits for each column */
+    InterpreterIndex* getIndex(const SearchSignature& col) const {
+        return getIndex(orderSet.getLexOrder(col));
+    }
+
     /** get index for a given order. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const LexOrder& order) const {
         auto ret = indices.find(order);
         assert(ret != indices.end() && "getIndex should always find an exist index");
         return ret->second.get();
-    }
-
-    /** get index for a given search signature. Order are encoded as bits for each column */
-    InterpreterIndex* getIndex(const SearchSignature& col) const {
-       //TODO
-        return getIndex(orderSet.getLexOrder(col));
     }
 
     /** Obtains a full index-key for this relation */
@@ -285,7 +284,7 @@ private:
 
 class InterpreterEqRelation : public InterpreterRelation {
 public:
-    InterpreterEqRelation(size_t relArity, MinIndexSelection& orderSet)
+    InterpreterEqRelation(size_t relArity, const MinIndexSelection& orderSet)
             : InterpreterRelation(relArity, orderSet) {}
 
     /** Insert tuple */

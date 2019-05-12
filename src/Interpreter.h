@@ -47,7 +47,11 @@ class InterpreterProgInterface;
  */
 class Interpreter {
 public:
-    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
+    Interpreter(RamTranslationUnit& tUnit)
+            : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()) {
+        // Perform all index analysis during the construction.
+        isa->run(tUnit);
+    }
 
     virtual ~Interpreter() {
         for (auto& x : environment) {
@@ -88,6 +92,9 @@ protected:
 
     /** Relation Environment */
     relation_map environment;
+
+    /** IndexAnalysis */
+    RamIndexAnalysis* isa;
 };
 
 }  // end of namespace souffle

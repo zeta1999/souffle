@@ -31,6 +31,7 @@
 #include "RamOperation.h"
 #include "RamProgram.h"
 #include "RamVisitor.h"
+#include "RamIndexAnalysis.h"
 #include "ReadStream.h"
 #include "SignalHandler.h"
 #include "SymbolTable.h"
@@ -824,9 +825,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 auto arity = code[ip + 2];
                 assert(environment.find(relName) == environment.end());
                 if (code[ip + 3] == LVM_EQREL) {
-                    res = new InterpreterEqRelation(arity);
+             //TODO       res = new InterpreterEqRelation(arity);
                 } else {
-                    res = new InterpreterRelation(arity);
+              // TODO     res = new InterpreterRelation(arity);
                 }
                 std::vector<std::string> attributeTypes;
                 for (int i = 0; i < code[ip + 2]; ++i) {

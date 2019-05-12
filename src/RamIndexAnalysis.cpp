@@ -41,7 +41,7 @@ void MaxMatching::addEdge(SearchSignature u, SearchSignature v) {
 SearchSignature MaxMatching::getMatch(SearchSignature v) {
     auto it = match.find(v);
     if (it == match.end()) {
-        return NIL;
+        return NIL_;
     }
     return it->second;
 }
@@ -59,24 +59,24 @@ bool MaxMatching::bfSearch() {
     std::queue<SearchSignature> bfQueue;
     // Build layers
     for (auto& it : graph) {
-        if (getMatch(it.first) == NIL) {
+        if (getMatch(it.first) == NIL_) {
             distance[it.first] = 0;
             bfQueue.push(it.first);
         } else {
             distance[it.first] = INF;
         }
     }
-    distance[NIL] = INF;
+    distance[NIL_] = INF;
     while (!bfQueue.empty()) {
         u = bfQueue.front();
         bfQueue.pop();
-        assert(u != NIL);
+        assert(u != NIL_);
         const Edges& children = graph[u];
         for (auto it : children) {
             SearchSignature mv = getMatch(it);
             if (getDistance(mv) == INF) {
                 distance[mv] = getDistance(u) + 1;
-                if (mv != NIL) {
+                if (mv != NIL_) {
                     bfQueue.push(mv);
                 }
             }
@@ -107,7 +107,7 @@ bool MaxMatching::dfSearch(SearchSignature u) {
 const MaxMatching::Matchings& MaxMatching::solve() {
     while (bfSearch()) {
         for (auto& it : graph) {
-            if (getMatch(it.first) == NIL) {
+            if (getMatch(it.first) == NIL_) {
                 dfSearch(it.first);
             }
         }

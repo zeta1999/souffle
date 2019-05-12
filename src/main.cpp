@@ -517,15 +517,18 @@ int main(int argc, char** argv) {
 
         // configure interpreter
         std::unique_ptr<Interpreter> interpreter;
+        interpreter = std::make_unique<RAMI>(*ramTranslationUnit);
+        /*
         if (!Global::config().has("interpreter")) {
-            interpreter = std::make_unique<LVM>(*ramTranslationUnit);
+            //interpreter = std::make_unique<LVM>(*ramTranslationUnit);
         } else {
             if (Global::config().get("interpreter") == "RAMI") {
                 interpreter = std::make_unique<RAMI>(*ramTranslationUnit);
             } else {
-                interpreter = std::make_unique<LVM>(*ramTranslationUnit);
+                //interpreter = std::make_unique<LVM>(*ramTranslationUnit);
             }
         }
+        */
 
         std::thread profiler;
         // Start up profiler if needed

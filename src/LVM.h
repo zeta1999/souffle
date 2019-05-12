@@ -54,7 +54,11 @@ class LVM : public Interpreter {
 public:
     LVM(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
 
-    virtual ~LVM() {}
+    virtual ~LVM() {
+        for (auto* timer : timers) {
+            delete timer;
+        }
+    }
 
     /** Execute the main program */
     virtual void executeMain();
@@ -113,7 +117,8 @@ protected:
     /** Stop and destroy logger */
     void stopTimerAt(size_t index) {
         assert(index < timers.size());
-        timers[index]->~Logger();
+        delete timers[index];
+        timers[index] = nullptr;
     }
 
     /** Get symbol table */

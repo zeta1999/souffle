@@ -57,7 +57,7 @@ protected:
 /**
  * Abstract class for parallel operation
  */
-struct RamAbstractParallel {};
+class RamAbstractParallel {};
 
 /**
  * Abstract class for a nesting operations in a loop-nest
@@ -224,7 +224,7 @@ public:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamParallelScan*>(&node));
         const auto& other = static_cast<const RamParallelScan&>(node);
-        return RamRelationSearch::equal(other);
+        return RamScan::equal(other);
     }
 };
 
@@ -338,10 +338,10 @@ public:
  */
 class RamParallelIndexScan : public RamIndexScan, public RamAbstractParallel {
 public:
-    RamParallelIndexScan(std::unique_ptr<RamRelationReference> r, int ident,
+    RamParallelIndexScan(std::unique_ptr<RamRelationReference> rel, int ident,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamIndexScan(std::move(r), ident, std::move(queryPattern), std::move(nested), profileText) {}
+            : RamIndexScan(std::move(rel), ident, std::move(queryPattern), std::move(nested), profileText) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -380,7 +380,7 @@ public:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamParallelIndexScan*>(&node));
         const auto& other = static_cast<const RamParallelIndexScan&>(node);
-        return RamIndexRelationSearch::equal(other);
+        return RamIndexScan::equal(other);
     }
 };
 

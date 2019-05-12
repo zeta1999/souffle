@@ -41,6 +41,7 @@
 #include <typeinfo>
 #include <utility>
 #include <vector>
+#include <sstream>
 
 namespace souffle {
 

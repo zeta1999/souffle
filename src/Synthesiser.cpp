@@ -38,10 +38,10 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <typeinfo>
 #include <utility>
 #include <vector>
-#include <sstream>
 
 namespace souffle {
 

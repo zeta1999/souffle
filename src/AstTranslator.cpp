@@ -1243,35 +1243,77 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
     // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates
     // or anything else...)
+    
+    std::cout << "clause: ";
+    clause.print(std::cout);
+    std::cout << std::endl;
 
     // build a vector of unique variables
-    std::vector<AstVariable> uniqueVariables;
+    std::vector<const AstVariable*> uniqueVariables;
 
     visitDepthFirst(clause, [&](const AstVariable& var) {
         if (var.getName().find("@level_num") == std::string::npos) {
-            if (std::find(uniqueVariables.begin(), uniqueVariables.end(), var) == uniqueVariables.end()) {
-                uniqueVariables.push_back(var);
+            // use find_if since uniqueVariables stores pointers, and we need to dereference the pointer to check equality
+            if (std::find_if(uniqueVariables.begin(), uniqueVariables.end(), [&](const AstVariable* v){return *v == var;}) == uniqueVariables.end()) {
+                uniqueVariables.push_back(&var);
             }
+        }
+    });
+
+    std::cout << uniqueVariables << std::endl;
+
+    // build a vector of unique variables
+    std::vector<const AstAggregator*> uniqueAggregators;
+
+    visitDepthFirst(clause, [&](const AstAggregator& agg) {
+            // use find_if since uniqueAggregators stores pointers, and we need to dereference the pointer to check equality
+        if (std::find_if(uniqueAggregators.begin(), uniqueAggregators.end(), [&](const AstAggregator* a){return *a == agg;}) == uniqueAggregators.end()) {
+            uniqueAggregators.push_back(&agg);
         }
     });
 
     // a mapper to replace variables with subroutine arguments
     struct VariablesToArguments : public AstNodeMapper {
-        const std::vector<AstVariable>& uniqueVariables;
+        const std::vector<const AstVariable*>& uniqueVariables;
+        const std::vector<const AstAggregator*>& uniqueAggregators;
 
         VariablesToArguments() = default;
-        VariablesToArguments(const std::vector<AstVariable>& uniqueVariables)
-                : uniqueVariables(uniqueVariables) {}
+        VariablesToArguments(const std::vector<const AstVariable*>& uniqueVariables, const std::vector<const AstAggregator*>& uniqueAggregators)
+                : uniqueVariables(uniqueVariables), uniqueAggregators(uniqueAggregators) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // apply recursive
             node->apply(*this);
 
+            std::cout << "hello ";
+            node->print(std::cout);
+            std::cout << "\n";
+
             // replace unknown variables
-            if (auto varPtr = dynamic_cast<AstVariable*>(node.get())) {
-                auto var = *varPtr;
-                size_t argNum = std::find(uniqueVariables.begin(), uniqueVariables.end(), var) -
-                                uniqueVariables.begin();
+            if (auto varPtr = dynamic_cast<const AstVariable*>(node.get())) {
+                std::cout << varPtr << std::endl;
+                if (varPtr->getName().find("@level_num") == std::string::npos) {
+                    std::cout << "var: ";
+                    varPtr->print(std::cout);
+                    std::cout << "\n";
+
+                    size_t argNum = std::find_if(uniqueVariables.begin(), uniqueVariables.end(), [&](const AstVariable* v){
+                            std::cout << typeid(*varPtr).name() << " ";
+                            std::cout << typeid(*v).name() << std::endl;
+                            return equal_ptr<AstVariable>(v, varPtr);}) -
+                                    uniqueVariables.begin();
+
+                    return std::make_unique<AstSubroutineArgument>(argNum);
+                } else {
+                    return std::make_unique<AstUnnamedVariable>();
+                }
+            }
+
+            // replace unknown aggregator values - an aggregator makes no sense when checking for negation
+            if (auto aggPtr = dynamic_cast<const AstAggregator*>(node.get())) {
+                // add uniqueVariables.size() so that aggregate arguments always come after variables
+                size_t argNum = std::find_if(uniqueAggregators.begin(), uniqueAggregators.end(), [&](const AstAggregator* a){return *a == *aggPtr;}) -
+                                uniqueAggregators.begin() + uniqueVariables.size();
 
                 return std::make_unique<AstSubroutineArgument>(argNum);
             }
@@ -1295,8 +1337,12 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             // construct a query
             std::vector<std::unique_ptr<RamExpression>> query;
 
+            std::cout << "atom: ";
+            atom->print(std::cout);
+            std::cout << std::endl;
+
             // translate variables to subroutine arguments
-            VariablesToArguments varsToArgs(uniqueVariables);
+            VariablesToArguments varsToArgs(uniqueVariables, uniqueAggregators);
             atom->apply(varsToArgs);
 
             // add each value (subroutine argument) to the search query
@@ -1341,7 +1387,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             // append search to the sequence
             searchSequence->add(std::move(atomSequence));
         } else if (auto con = dynamic_cast<AstConstraint*>(lit)) {
-            VariablesToArguments varsToArgs(uniqueVariables);
+            VariablesToArguments varsToArgs(uniqueVariables, uniqueAggregators);
             con->apply(varsToArgs);
 
             // translate to a RamCondition

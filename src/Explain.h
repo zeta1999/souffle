@@ -131,6 +131,7 @@ public:
             std::string ruleNum = getInput();
             auto variables = prov.explainNegationGetVariables(query.first, query.second, std::stoi(ruleNum));
 
+            // @ and @non_matching are special sentinel values returned by ExplainProvenance
             if (variables.size() == 1 && variables[0] == "@") {
                 printInfo("The tuple exists, cannot explain negation of it!\n");
                 return true;

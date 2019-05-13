@@ -475,40 +475,19 @@ int main(int argc, char** argv) {
     std::unique_ptr<RamTranslationUnit> ramTranslationUnit =
             AstTranslator().translateUnit(*astTranslationUnit);
 
-    std::vector<std::unique_ptr<RamTransformer>> ramTransforms;
-    ramTransforms.push_back(std::make_unique<ExpandFilterTransformer>());
-    ramTransforms.push_back(std::make_unique<HoistConditionsTransformer>());
-    ramTransforms.push_back(std::make_unique<MakeIndexTransformer>());
-    ramTransforms.push_back(std::make_unique<IfConversionTransformer>());
-    ramTransforms.push_back(std::make_unique<ChoiceConversionTransformer>());
-    if (std::stoi(Global::config().get("jobs")) > 1) {
-        ramTransforms.push_back(std::make_unique<ParallelTransformer>());
-    }
 
-    for (const auto& transform : ramTransforms) {
-        /* If the ram transform changed the program, show this */
-        if (transform->apply(*ramTranslationUnit)) {
-            std::stringstream ramProgStr;
-            ramProgStr << *ramTranslationUnit->getProgram();
-            ramTranslationUnit->getDebugReport().addSection(DebugReporter::getCodeSection(
-                    transform->getName(), "RAM Program after " + transform->getName(), ramProgStr.str()));
+    std::unique_ptr<RamTransformer> ramTransform = 
+    std::make_unique<RamTransformerSequence>(
+		    std::make_unique<ExpandFilterTransformer>(),
+		    std::make_unique<HoistConditionsTransformer>(),
+		    std::make_unique<MakeIndexTransformer>(),
+		    std::make_unique<IfConversionTransformer>(),
+		    std::make_unique<ChoiceConversionTransformer>(),
+		    std::make_unique<RamConditionalTransformer>(
+			     []()->bool {return std::stoi(Global::config().get("jobs")) > 1;},
+			     std::make_unique<ParallelTransformer>())); 
 
-        } else {
-            ramTranslationUnit->getDebugReport().addSection(DebugReportSection(
-                    transform->getName(), "After " + transform->getName() + " " + " (unchanged)", {}, ""));
-        }
-        /* Abort evaluation of the program if errors were encountered */
-        if (ramTranslationUnit->getErrorReport().getNumErrors() != 0) {
-            std::cerr << ramTranslationUnit->getErrorReport();
-            std::cerr << std::to_string(ramTranslationUnit->getErrorReport().getNumErrors()) +
-                                 " errors generated, evaluation aborted"
-                      << std::endl;
-            exit(1);
-        }
-    }
-    if (ramTranslationUnit->getErrorReport().getNumIssues() != 0) {
-        std::cerr << ramTranslationUnit->getErrorReport();
-    }
+    ramTransform->apply(*ramTranslationUnit);
 
     if (!ramTranslationUnit->getProgram()->getMain()) {
         return 0;

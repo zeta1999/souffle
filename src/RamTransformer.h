@@ -19,6 +19,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cassert>
+#include <functional>
 
 namespace souffle {
 
@@ -30,6 +32,7 @@ class RamTranslationUnit;
 
 class RamTransformer {
 public:
+    RamTransformer() = default; 
     virtual ~RamTransformer() = default;
 
     /** Apply transformer */
@@ -48,17 +51,28 @@ protected:
  * does not change the translation unit.
  */
 
-class RamSequenceTransformer {
+class RamTransformerSequence : public RamTransformer  {
 public:
-   RamSequenceTransformer(std::vector<std::unique_ptr<RamTransformer>> tSeq) : transformerSequence(std::move(tSeq)){ }
+    template <typename... Tfs>
+    RamTransformerSequence(std::unique_ptr<Tfs>&&... tf) : RamTransformerSequence() {
+        std::unique_ptr<RamTransformer> tmp[] = {std::move(tf)...};
+        for (auto& cur : tmp) {
+            transformers.emplace_back(std::move(cur));
+        }
+        for (const auto& cur : transformers) {
+            (void)cur;
+            assert(cur);
+        }
+    }
+   RamTransformerSequence() = default; 
    
    std::string getName() const {
-       return "RamSequenceTransformer";
+       return "RamTransformerSequence";
    }
 
    bool transform(RamTranslationUnit& tU) {
        bool changed = false; 
-       for(auto const &cur: transformerSequence) {
+       for(auto const &cur: transformers) {
 	       if(cur->apply(tU)) { 
 		       changed = true; 
 	       }
@@ -67,25 +81,25 @@ public:
    }
 
 protected:
-   std::vector<std::unique_ptr<RamTransformer>> transformerSequence; 
+   std::vector<std::unique_ptr<RamTransformer>> transformers;
 };
 
-/**
- * Composite loop transformer checking for the change of a transformation.
+/*
+ * Check whether predicate transformer changes code; if not stop; otherwise perform the body. 
  */
 
-class RamIfTransformer {
+class RamIfTransformer : public RamTransformer  {
 public:
    RamIfTransformer(std::unique_ptr<RamTransformer> tPredicate, std::unique_ptr<RamTransformer> tBody) : 
-	       transformerPredicate(std::move(tPredicate)), transformerBody(std::move(tBody)) { }
+	       predicate(std::move(tPredicate)), body(std::move(tBody)) { }
    
    std::string getName() const {
        return "RamIfTransformer";
    }
 
    bool transform(RamTranslationUnit& tU) {
-       if(transformerPredicate->apply(tU)) {
-          transformerBody->apply(tU);  
+       if(predicate->apply(tU)) {
+          body->apply(tU);  
 	  return true; 
        } else {
 	  return false;
@@ -93,32 +107,56 @@ public:
    }
 
 protected:
-   std::unique_ptr<RamTransformer> transformerPredicate;
-   std::unique_ptr<RamTransformer> transformerBody;
+   std::unique_ptr<RamTransformer> predicate;
+   std::unique_ptr<RamTransformer> body;
 };
 
 
 /**
- * Composite sequence transformer that applies sequences of transformations 
+ * Composite loop transfomer; iterate until no change
  */
 
-class RamLoopTransformer {
+class RamLoopTransformer : public RamTransformer  {
 public:
-   RamLoopTransformer(std::unique_ptr<RamTransformer> tLoop) : transformerLoop(std::move(tLoop)){ }
+   RamLoopTransformer(std::unique_ptr<RamTransformer> tLoop) : loop(std::move(tLoop)){ }
 
    std::string getName() const {
        return "RamLoopTransformer";
    }
 
    bool transform(RamTranslationUnit& tU) {
-       while(transformerLoop->apply(tU));
+       while(loop->apply(tU));
        return false;
    }
 
 protected:
-   std::unique_ptr<RamTransformer> transformerLoop;
+   std::unique_ptr<RamTransformer> loop;
 };
 
+/**
+ * Composite conditional transfomer; checks the condition and depending on the condition the transformer is executed or not. 
+ */
+
+class RamConditionalTransformer : public RamTransformer  {
+public:
+   RamConditionalTransformer(std::function<bool()> fn, std::unique_ptr<RamTransformer> tb) : func(fn), body(std::move(tb)){ }
+
+   std::string getName() const {
+       return "RamConditionalTransformer";
+   }
+
+   bool transform(RamTranslationUnit& tU) {
+       if(func()) {
+           return body->apply(tU);
+       } else {
+           return false;
+       }
+   }
+
+protected:
+   std::function<bool()> func; 
+   std::unique_ptr<RamTransformer> body;
+};
 
 
 }  // end of namespace souffle

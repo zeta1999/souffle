@@ -20,27 +20,26 @@
 namespace souffle {
 
 bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
-
     bool changed = transform(translationUnit);
     if (changed) {
         translationUnit.invalidateAnalyses();
         std::stringstream ramProgStr;
         ramProgStr << *translationUnit.getProgram();
-        translationUnit.getDebugReport().addSection(DebugReporter::getCodeSection(
-                    getName(), "RAM Program after " + getName(), ramProgStr.str()));
+        translationUnit.getDebugReport().addSection(
+                DebugReporter::getCodeSection(getName(), "RAM Program after " + getName(), ramProgStr.str()));
 
     } else {
-            translationUnit.getDebugReport().addSection(DebugReportSection(
-                    getName(), "After " + getName() + " " + " (unchanged)", {}, ""));
+        translationUnit.getDebugReport().addSection(
+                DebugReportSection(getName(), "After " + getName() + " " + " (unchanged)", {}, ""));
     }
-        /* Abort evaluation of the program if errors were encountered */
-        if (translationUnit.getErrorReport().getNumErrors() != 0) {
-            std::cerr << translationUnit.getErrorReport();
-            std::cerr << std::to_string(translationUnit.getErrorReport().getNumErrors()) +
-                                 " errors generated, evaluation aborted"
-                      << std::endl;
-            exit(1);
-        }
+    /* Abort evaluation of the program if errors were encountered */
+    if (translationUnit.getErrorReport().getNumErrors() != 0) {
+        std::cerr << translationUnit.getErrorReport();
+        std::cerr << std::to_string(translationUnit.getErrorReport().getNumErrors()) +
+                             " errors generated, evaluation aborted"
+                  << std::endl;
+        exit(1);
+    }
     return changed;
 }
 

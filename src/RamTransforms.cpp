@@ -261,28 +261,28 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIn
                 queryPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
         if (indexable) {
             // Merge Index Pattern here
-	    const auto prevPattern = iscan->getRangePattern(); 
-             auto addCondition = [&](std::unique_ptr<RamCondition> c) {
+            const auto prevPattern = iscan->getRangePattern();
+            auto addCondition = [&](std::unique_ptr<RamCondition> c) {
                 if (condition != nullptr) {
-                  condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
+                    condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
                 } else {
-                  condition = std::move(c);
+                    condition = std::move(c);
                 }
-             };
-	    for(std::size_t i=0;i<rel.getArity();i++) {
-	       if(prevPattern[i] != nullptr) {
-		   if(queryPattern[i] == nullptr) { 
-			// found a new indexable attribute
-		        queryPattern[i] = std::unique_ptr<RamExpression>(prevPattern[i]->clone()); 
-		   } else { 
-			// found a new constraint that is not dependent on the current scan level 
-			// and can be hoisted in a later transformation. 
-			addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, 
-                                                          std::unique_ptr<RamExpression>(prevPattern[i]->clone()),
-                                                          std::unique_ptr<RamExpression>(queryPattern[i]->clone())));
-		   }
-	       }
-	    }
+            };
+            for (std::size_t i = 0; i < rel.getArity(); i++) {
+                if (prevPattern[i] != nullptr) {
+                    if (queryPattern[i] == nullptr) {
+                        // found a new indexable attribute
+                        queryPattern[i] = std::unique_ptr<RamExpression>(prevPattern[i]->clone());
+                    } else {
+                        // found a new constraint that is not dependent on the current scan level
+                        // and can be hoisted in a later transformation.
+                        addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                std::unique_ptr<RamExpression>(prevPattern[i]->clone()),
+                                std::unique_ptr<RamExpression>(queryPattern[i]->clone())));
+                    }
+                }
+            }
             return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
                     std::move(queryPattern),
                     condition == nullptr
@@ -305,7 +305,7 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
                     changed = true;
                     node = std::move(op);
                 }
-	    } else if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(node.get())) {
+            } else if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(node.get())) {
                 if (std::unique_ptr<RamOperation> op = rewriteIndexScan(iscan)) {
                     changed = true;
                     node = std::move(op);

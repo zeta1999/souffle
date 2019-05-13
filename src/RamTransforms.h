@@ -202,7 +202,7 @@ public:
 
     /**
      * @brief Rewrite an index scan operation to an amended index scan operation
-     * @param An IndexScan that can be amended with new index values 
+     * @param An IndexScan that can be amended with new index values
      * @result The result is null if the index scan cannot be amended;
      *         otherwise the new IndexScan operation is returned.
      */

@@ -45,10 +45,10 @@ public:
 
         // Create total Index.
         LexOrder totalOrder;
-        for (int i = 0; i < getTotalIndexKey(); i++) {
+        for (int i = 0; i < relArity; ++i) {
             totalOrder.push_back(i);
         }
-        totalIndex = std::make_unique<InterpreterIndex>(totalOrder);
+        this->totalIndex = std::make_unique<InterpreterIndex>(totalOrder);
     }
 
     InterpreterRelation(const InterpreterRelation& other) = delete;
@@ -131,6 +131,7 @@ public:
         for (const auto& cur : indices) {
             cur.second->purge();
         }
+        totalIndex.get()->purge();
         num_tuples = 0;
     }
 
@@ -145,6 +146,9 @@ public:
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
+        if (col == getTotalIndexKey()) {
+            return totalIndex.get();
+        }
         return getIndex(orderSet.getLexOrder(col));
     }
 
@@ -276,7 +280,7 @@ private:
     std::unique_ptr<InterpreterIndex> totalIndex;
 
     /** IndexSet */
-    MinIndexSelection orderSet;
+    const MinIndexSelection& orderSet;
 
     /** Lock for parallel execution */
     mutable Lock lock;

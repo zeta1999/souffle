@@ -48,12 +48,7 @@ class InterpreterProgInterface;
 class Interpreter {
 public:
     Interpreter(RamTranslationUnit& tUnit)
-            : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()) {
-        // Perform all index analysis during the construction.
-        isa->run(tUnit);
-        // TODO Testing
-        // printf("Analysis successfully done\n");
-    }
+            : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()) {}
 
     virtual ~Interpreter() {
         for (auto& x : environment) {

@@ -239,6 +239,11 @@ protected:
                 return i;
             }
         }
+        std::cerr << "Cannot find matching lexicaographical order" << std::endl;
+        for (int i = 0; i < 64; ++i) {
+            printf("%lld", (cols >> i) & 1);
+        }
+        printf("\n");
         abort();
     }
 

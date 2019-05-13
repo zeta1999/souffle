@@ -263,6 +263,7 @@ const MinIndexSelection::ChainOrderMap MinIndexSelection::getChainsFromMatching(
 }
 
 void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
+    //TODO Can we also analyze all creatRelation?
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {

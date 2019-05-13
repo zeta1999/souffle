@@ -42,6 +42,7 @@ public:
             std::unique_ptr<InterpreterIndex> index = std::make_unique<InterpreterIndex>(order);
             indices.insert(std::make_pair(order, std::move(index)));
         }
+
         // Create total Index.
         LexOrder totalOrder;
         for (int i = 0; i < getTotalIndexKey(); i++) {
@@ -144,16 +145,14 @@ public:
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
-        auto a = getIndex(orderSet.getLexOrder(col));
-        return a;
+        return getIndex(orderSet.getLexOrder(col));
     }
 
     /** get index for a given order. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const LexOrder& order) const {
         auto ret = indices.find(order);
-        assert(ret != indices.end() && "getIndex should always find an exist index");
-        auto a = ret->second.get();
-        return a;
+        assert(ret != indices.end() && "getIndex should always find an existing index");
+        return ret->second.get();
     }
 
     /** Obtains a full index-key for this relation */

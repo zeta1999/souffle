@@ -18,10 +18,10 @@
 
 #include <cassert>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-#include <iostream>
 
 namespace souffle {
 
@@ -49,8 +49,8 @@ protected:
 
 /**
  * Composite sequence transformer; a series of transformation is applied
- * sequentially. The last transformation decides the outcome whether 
- * the code has been changed. 
+ * sequentially. The last transformation decides the outcome whether
+ * the code has been changed.
  */
 
 class RamTransformerSequence : public RamTransformer {
@@ -100,7 +100,7 @@ public:
 
     bool transform(RamTranslationUnit& tU) {
         while (loop->apply(tU))
-		;
+            ;
         return false;
     }
 

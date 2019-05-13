@@ -316,7 +316,6 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
                 interpreter.reads[exists.getRelation().getName()]++;
             }
             // for total we use the exists test
-            // TODO move isTotal into RAMNode itself.
             if (interpreter.isa->isTotalSignature(&exists)) {
                 RamDomain tuple[arity];
                 for (size_t i = 0; i < arity; i++) {

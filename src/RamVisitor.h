@@ -64,6 +64,9 @@ struct RamVisitor : public ram_visitor_tag {
      * a visit to the various sub-types of RamNodes. Sub-classes may override
      * this implementation to conduct pre-visit operations.
      *
+     * Note that the order of this list is important. Sub-classes must be listed
+     * before their super-classes; otherwise sub-classes cannot be visited.
+     *
      * @param node the node to be visited
      * @param args a list of extra parameters to be forwarded
      */
@@ -99,9 +102,13 @@ struct RamVisitor : public ram_visitor_tag {
         FORWARD(Project);
         FORWARD(ReturnValue);
         FORWARD(UnpackRecord);
+        FORWARD(ParallelScan);
         FORWARD(Scan);
+        FORWARD(ParallelIndexScan);
         FORWARD(IndexScan);
+        FORWARD(ParallelChoice);
         FORWARD(Choice);
+        FORWARD(ParallelIndexChoice);
         FORWARD(IndexChoice);
         FORWARD(Aggregate);
         FORWARD(IndexAggregate);
@@ -186,9 +193,13 @@ protected:
     LINK(ReturnValue, Operation);
     LINK(UnpackRecord, Search);
     LINK(Scan, RelationSearch);
+    LINK(ParallelScan, Scan);
     LINK(IndexScan, IndexRelationSearch);
+    LINK(ParallelIndexScan, IndexScan);
     LINK(Choice, RelationSearch);
+    LINK(ParallelChoice, Choice);
     LINK(IndexChoice, IndexRelationSearch);
+    LINK(ParallelIndexChoice, IndexChoice);
     LINK(RelationSearch, Search);
     LINK(Aggregate, RelationSearch);
     LINK(IndexAggregate, IndexRelationSearch);

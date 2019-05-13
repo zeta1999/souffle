@@ -162,6 +162,18 @@ std::vector<T*> toPtrVector(const std::vector<std::unique_ptr<T>>& v) {
  * A utility function enabling the creation of a vector of pointers.
  */
 template <typename T>
+std::vector<const T*> toConstPtrVector(const std::vector<std::unique_ptr<T>>& v) {
+    std::vector<const T*> res;
+    for (auto& e : v) {
+        res.push_back(e.get());
+    }
+    return res;
+}
+
+/**
+ * A utility function enabling the creation of a vector of pointers.
+ */
+template <typename T>
 std::vector<T*> toPtrVector(const std::vector<std::shared_ptr<T>>& v) {
     std::vector<T*> res;
     for (auto& e : v) {
@@ -1025,8 +1037,12 @@ inline std::string which(const std::string& name) {
     if (::realpath(name.c_str(), buf) && isExecutable(buf)) {
         return std::string(buf);
     }
-    std::string syspath = ::getenv("PATH");
-    std::stringstream sstr(syspath);
+    const char* syspath = ::getenv("PATH");
+    if (syspath == nullptr) {
+        return "";
+    }
+    std::stringstream sstr;
+    sstr << syspath;
     std::string sub;
     while (std::getline(sstr, sub, ':')) {
         std::string path = sub + "/" + name;

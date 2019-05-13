@@ -23,10 +23,13 @@
 #include "ComponentModel.h"
 #include "DebugReport.h"
 #include "ErrorReport.h"
+#include "Explain.h"
 #include "Global.h"
 #include "Interpreter.h"
 #include "InterpreterInterface.h"
+#include "LVM.h"
 #include "ParserDriver.h"
+#include "RAMI.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
@@ -36,10 +39,6 @@
 #include "Util.h"
 #include "config.h"
 #include "profile/Tui.h"
-
-#ifdef USE_PROVENANCE
-#include "Explain.h"
-#endif
 
 #ifdef USE_MPI
 #include "Mpi.h"
@@ -183,17 +182,16 @@ int main(int argc, char** argv) {
                         "Use profile log-file <FILE> for profile-guided optimization."},
                 {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
                 {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
-#ifdef USE_PROVENANCE
                 {"provenance", 't', "[ none | explain | explore ]", "", false,
                         "Enable provenance instrumentation and interaction."},
-#endif
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
-                {"hostfile", '\1', "FILE", "", false,
+                {"interpreter", '\1', "[ RAMI | LVM ]", "", false, "Switch interpreter implementation."},
+                {"hostfile", '\2', "FILE", "", false,
                         "Specify --hostfile option for call to mpiexec when using mpi as "
                         "execution engine."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
-                {"version", '\2', "", "", false, "Version."},
+                {"version", '\3', "", "", false, "Version."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
@@ -418,18 +416,15 @@ int main(int argc, char** argv) {
                     std::make_unique<RemoveEmptyRelationsTransformer>(),
                     std::make_unique<RemoveRedundantRelationsTransformer>());
 
-#ifdef USE_PROVENANCE
     // Provenance pipeline
     auto provenancePipeline = std::make_unique<PipelineTransformer>(std::make_unique<ConditionalTransformer>(
             Global::config().has("provenance"), std::make_unique<ProvenanceTransformer>()));
-#else
-    auto provenancePipeline = std::make_unique<PipelineTransformer>();
-#endif
 
     // Main pipeline
     auto pipeline = std::make_unique<PipelineTransformer>(std::make_unique<AstComponentChecker>(),
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(), std::make_unique<AstSemanticChecker>(),
+            std::make_unique<RemoveTypecastsTransformer>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
             std::make_unique<ResolveAliasesTransformer>(), std::make_unique<MinimiseProgramTransformer>(),
             std::make_unique<InlineRelationsTransformer>(), std::make_unique<ResolveAliasesTransformer>(),
@@ -483,9 +478,14 @@ int main(int argc, char** argv) {
             AstTranslator().translateUnit(*astTranslationUnit);
 
     std::vector<std::unique_ptr<RamTransformer>> ramTransforms;
-    ramTransforms.push_back(std::make_unique<LevelConditionsTransformer>());
-    ramTransforms.push_back(std::make_unique<CreateIndicesTransformer>());
-    ramTransforms.push_back(std::make_unique<ConvertExistenceChecksTransformer>());
+    ramTransforms.push_back(std::make_unique<ExpandFilterTransformer>());
+    ramTransforms.push_back(std::make_unique<HoistConditionsTransformer>());
+    ramTransforms.push_back(std::make_unique<MakeIndexTransformer>());
+    ramTransforms.push_back(std::make_unique<IfConversionTransformer>());
+    ramTransforms.push_back(std::make_unique<ChoiceConversionTransformer>());
+    if (std::stoi(Global::config().get("jobs")) > 1) {
+        ramTransforms.push_back(std::make_unique<ParallelTransformer>());
+    }
 
     for (const auto& transform : ramTransforms) {
         /* If the ram transform changed the program, show this */
@@ -521,7 +521,16 @@ int main(int argc, char** argv) {
         // ------- interpreter -------------
 
         // configure interpreter
-        std::unique_ptr<Interpreter> interpreter = std::make_unique<Interpreter>(*ramTranslationUnit);
+        std::unique_ptr<Interpreter> interpreter;
+        if (!Global::config().has("interpreter")) {
+            interpreter = std::make_unique<LVM>(*ramTranslationUnit);
+        } else {
+            if (Global::config().get("interpreter") == "RAMI") {
+                interpreter = std::make_unique<RAMI>(*ramTranslationUnit);
+            } else {
+                interpreter = std::make_unique<LVM>(*ramTranslationUnit);
+            }
+        }
 
         std::thread profiler;
         // Start up profiler if needed
@@ -536,18 +545,16 @@ int main(int argc, char** argv) {
             profiler.join();
         }
 
-#ifdef USE_PROVENANCE
         // only run explain interface if interpreted
         if (Global::config().has("provenance")) {
             // construct SouffleProgram from env
             InterpreterProgInterface interface(*interpreter);
             if (Global::config().get("provenance") == "explain") {
-                explain(interface, true, false);
+                explain(interface, false);
             } else if (Global::config().get("provenance") == "explore") {
-                explain(interface, true, true);
+                explain(interface, true);
             }
         }
-#endif
 
     } else {
         // ------- compiler -------------

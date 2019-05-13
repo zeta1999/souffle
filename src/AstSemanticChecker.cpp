@@ -204,6 +204,13 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
     });
 
+    // type casts name a valid type
+    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
+        if (!typeEnv.isType(cast.getType())) {
+            report.addError("Type cast is to undeclared type " + toString(cast.getType()), cast.getSrcLoc());
+        }
+    });
+
     // - intrinsic functors -
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         // check type of result
@@ -216,6 +223,10 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
         }
 
         // check types of arguments
+        if (fun.getFunction() == FunctorOp::ORD) {
+            return;
+        }
+
         for (size_t i = 0; i < fun.getArity(); i++) {
             auto arg = fun.getArg(i);
             if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
@@ -351,6 +362,9 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (dynamic_cast<const AstCounter*>(arg)) {
         return false;
     }
+    if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {
+        return hasUnnamedVariable(cast->getValue());
+    }
     if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
         return any_of(inf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
     }
@@ -470,6 +484,8 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
         }
     } else if (dynamic_cast<const AstUserDefinedFunctor*>(&argument)) {
         report.addError("User-defined functor in fact", argument.getSrcLoc());
+    } else if (auto* cast = dynamic_cast<const AstTypeCast*>(&argument)) {
+        checkConstant(report, *cast->getValue());
     } else if (dynamic_cast<const AstCounter*>(&argument)) {
         report.addError("Counter in fact", argument.getSrcLoc());
     } else if (dynamic_cast<const AstConstant*>(&argument)) {
@@ -1167,6 +1183,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     // values X where it is true, while a2(X) does not. Then, the produced argument
     // `max( max X: a1(X),  max X: a2(X) )` will not return anything (as one of its arguments fails), while
     // `max X: a(X)` will.
+    // Can work around this with emptiness checks (e.g. `!a1(_), ... ; !a2(_), ... ; ...`)
 
     // This corner case prevents generalising aggregator inlining with the current set up.
 

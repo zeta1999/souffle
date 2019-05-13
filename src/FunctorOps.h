@@ -55,9 +55,9 @@ enum class FunctorOp {
 };
 
 /**
- * Gets expected arity of functor
+ * Checks whether a functor operation can have a given argument count.
  */
-inline size_t getFunctorOpArity(FunctorOp op) {
+inline bool isValidFunctorOpArity(FunctorOp op, size_t arity) {
     switch (op) {
         /** Unary Functor Operators */
         case FunctorOp::ORD:
@@ -67,7 +67,7 @@ inline size_t getFunctorOpArity(FunctorOp op) {
         case FunctorOp::LNOT:
         case FunctorOp::TONUMBER:
         case FunctorOp::TOSTRING:
-            return 1U;
+            return arity == 1;
 
         /** Binary Functor Operators */
         case FunctorOp::ADD:
@@ -81,14 +81,17 @@ inline size_t getFunctorOpArity(FunctorOp op) {
         case FunctorOp::BXOR:
         case FunctorOp::LAND:
         case FunctorOp::LOR:
-        case FunctorOp::MAX:
-        case FunctorOp::MIN:
-        case FunctorOp::CAT:
-            return 2U;
+            return arity == 2;
 
         /** Ternary Functor Operators */
         case FunctorOp::SUBSTR:
-            return 3U;
+            return arity == 3;
+
+        /** Non-fixed */
+        case FunctorOp::MAX:
+        case FunctorOp::MIN:
+        case FunctorOp::CAT:
+            return arity >= 2;
 
         /** Undefined */
         default:
@@ -96,7 +99,7 @@ inline size_t getFunctorOpArity(FunctorOp op) {
     }
 
     assert(false && "unsupported operator");
-    return 0U;
+    return false;
 }
 
 inline std::string getSymbolForFunctorOp(FunctorOp op) {
@@ -218,19 +221,18 @@ inline bool isSymbolicFunctorOp(const FunctorOp op) {
  * Determines whether an argument has a number value
  */
 inline bool functorOpAcceptsNumbers(size_t arg, const FunctorOp op) {
-    size_t expectedArity = getFunctorOpArity(op);
-    assert(arg >= 0 && arg < expectedArity && "argument out of range");
-
     switch (op) {
         /** Unary Functor Operators */
         case FunctorOp::NEG:
         case FunctorOp::BNOT:
         case FunctorOp::LNOT:
         case FunctorOp::TOSTRING:
+            assert(arg < 1 && "unary functor argument out of bounds");
             return true;
         case FunctorOp::ORD:
         case FunctorOp::STRLEN:
         case FunctorOp::TONUMBER:
+            assert(arg < 1 && "unary functor argument out of bounds");
             return false;
 
         /** Binary Functor Operators */
@@ -245,15 +247,20 @@ inline bool functorOpAcceptsNumbers(size_t arg, const FunctorOp op) {
         case FunctorOp::LAND:
         case FunctorOp::LOR:
         case FunctorOp::MOD:
+            assert(arg < 2 && "binary functor argument out of bounds");
+            return true;
+
+        /** Ternary Functor Operators */
+        case FunctorOp::SUBSTR:
+            assert(arg < 3 && "ternary functor argument out of bounds");
+            return arg == 1 || arg == 2;
+
+        /** Non-fixed Functor Operators */
         case FunctorOp::MAX:
         case FunctorOp::MIN:
             return true;
         case FunctorOp::CAT:
             return false;
-
-        /** Ternary Functor Operators */
-        case FunctorOp::SUBSTR:
-            return arg == 1 || arg == 2;
 
         /** Undefined */
         default:

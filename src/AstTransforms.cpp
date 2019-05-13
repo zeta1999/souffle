@@ -511,7 +511,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
     visitDepthFirst(program, [&](const AstBooleanConstraint& bc) { changed = true; });
 
     // Remove true and false constant literals from all aggregators
-    struct M : public AstNodeMapper {
+    struct removeBools : public AstNodeMapper {
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // Remove them from child nodes
             node->apply(*this);
@@ -567,7 +567,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
         }
     };
 
-    M update;
+    removeBools update;
     program.apply(update);
 
     // Remove true and false constant literals from all clauses
@@ -931,10 +931,10 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
 
     // Mapper that renames the occurrences of marked relations with their existential
     // counterparts
-    struct M : public AstNodeMapper {
+    struct renameExistentials : public AstNodeMapper {
         const std::set<AstRelationIdentifier>& relations;
 
-        M(std::set<AstRelationIdentifier>& relations) : relations(relations) {}
+        renameExistentials(std::set<AstRelationIdentifier>& relations) : relations(relations) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             if (auto* clause = dynamic_cast<AstClause*>(node.get())) {
@@ -955,7 +955,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
         }
     };
 
-    M update(existentialRelations);
+    renameExistentials update(existentialRelations);
     program.apply(update);
 
     bool changed = !existentialRelations.empty();
@@ -968,10 +968,10 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
     AstProgram& program = *translationUnit.getProgram();
 
     // Node-mapper to replace a set of singletons with unnamed variables
-    struct M : public AstNodeMapper {
+    struct replaceSingletons : public AstNodeMapper {
         std::set<std::string>& singletons;
 
-        M(std::set<std::string>& singletons) : singletons(singletons) {}
+        replaceSingletons(std::set<std::string>& singletons) : singletons(singletons) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             if (auto* var = dynamic_cast<AstVariable*>(node.get())) {
@@ -1024,7 +1024,7 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
             }
 
             // Replace the singletons found with underscores
-            M update(singletons);
+            replaceSingletons update(singletons);
             clause->apply(update);
         }
     }
@@ -1047,11 +1047,11 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
      * The mapper keeps track of constraints that should be added to the original
      * clause it is being applied on in a given constraint set.
      */
-    struct M : public AstNodeMapper {
+    struct constraintNormaliser : public AstNodeMapper {
         std::set<AstBinaryConstraint*>& constraints;
         mutable int changeCount;
 
-        M(std::set<AstBinaryConstraint*>& constraints, int changeCount)
+        constraintNormaliser(std::set<AstBinaryConstraint*>& constraints, int changeCount)
                 : constraints(constraints), changeCount(changeCount) {}
 
         bool hasChanged() const {
@@ -1123,7 +1123,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
             }
 
             std::set<AstBinaryConstraint*> constraints;
-            M update(constraints, changeCount);
+            constraintNormaliser update(constraints, changeCount);
             clause->apply(update);
 
             changeCount = update.getChangeCount();
@@ -1136,6 +1136,31 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
     }
 
     return changed;
+}
+
+bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) {
+    struct TypecastRemover : public AstNodeMapper {
+        mutable bool changed{false};
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // remove sub-typecasts first
+            node->apply(*this);
+
+            // if current node is a typecast, replace with the value directly
+            if (auto* cast = dynamic_cast<AstTypeCast*>(node.get())) {
+                changed = true;
+                return std::unique_ptr<AstArgument>(cast->getValue()->clone());
+            }
+
+            // otherwise, return the original node
+            return node;
+        }
+    };
+
+    TypecastRemover update;
+    translationUnit.getProgram()->apply(update);
+
+    return update.changed;
 }
 
 }  // end of namespace souffle

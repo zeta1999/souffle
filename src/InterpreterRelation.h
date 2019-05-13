@@ -38,6 +38,16 @@ public:
 
     virtual ~InterpreterRelation() = default;
 
+    /** Set AttributeType for the relation */
+    void setAttributes(const std::vector<std::string> attributeTypes) {
+        attributeTypeQualifiers = attributeTypes;
+    }
+
+    /** Get AttributeType for the relation */
+    std::vector<std::string>& getAttributeTypeQualifiers() {
+        return attributeTypeQualifiers;
+    }
+
     /** Get arity of relation */
     size_t getArity() const {
         return arity;
@@ -109,7 +119,7 @@ public:
 
     /** get index for a given set of keys using a cached index as a helper. Keys are encoded as bits for each
      * column */
-    InterpreterIndex* getIndex(const SearchColumns& key, InterpreterIndex* cachedIndex) const {
+    InterpreterIndex* getIndex(const SearchSignature& key, InterpreterIndex* cachedIndex) const {
         if (!cachedIndex) {
             return getIndex(key);
         }
@@ -117,7 +127,7 @@ public:
     }
 
     /** get index for a given set of keys. Keys are encoded as bits for each column */
-    InterpreterIndex* getIndex(const SearchColumns& key) const {
+    InterpreterIndex* getIndex(const SearchSignature& key) const {
         // suffix for order, if no matching prefix exists
         std::vector<unsigned char> suffix;
         suffix.reserve(getArity());
@@ -180,7 +190,7 @@ public:
     }
 
     /** Obtains a full index-key for this relation */
-    SearchColumns getTotalIndexKey() const {
+    SearchSignature getTotalIndexKey() const {
         return (1 << (getArity())) - 1;
     }
 
@@ -196,6 +206,14 @@ public:
             totalIndex = getIndex(getTotalIndexKey());
         }
         return totalIndex->exists(tuple);
+    }
+
+    void setLevel(size_t level) {
+        this->level = level;
+    }
+
+    size_t getLevel() {
+        return this->level;
     }
 
     // --- iterator ---
@@ -243,7 +261,8 @@ public:
         }
 
     private:
-        const InterpreterRelation* const relation = nullptr;
+        // TODO Unsafe! remove const-qualified so that I can copy a iter...
+        const InterpreterRelation* relation = nullptr;
         size_t index = 0;
         RamDomain* tuple = nullptr;
     };
@@ -296,6 +315,12 @@ private:
 
     /** Lock for parallel execution */
     mutable Lock lock;
+
+    /** Type of attributes */
+    std::vector<std::string> attributeTypeQualifiers;
+
+    /** Stratum level information */
+    size_t level;
 };
 
 /**

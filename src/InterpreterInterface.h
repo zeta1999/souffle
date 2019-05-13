@@ -167,7 +167,6 @@ private:
     std::vector<std::string> attrNames;
 
     /** Unique id for wrapper */
-    // TODO (#541): replace unique id by dynamic type checking for C++
     uint32_t id;
 };
 
@@ -177,7 +176,7 @@ private:
 class InterpreterProgInterface : public SouffleProgram {
 public:
     InterpreterProgInterface(Interpreter& interp)
-            : prog(interp.getTranslationUnit().getP()), exec(interp),
+            : prog(*interp.getTranslationUnit().getProgram()), exec(interp),
               symTable(interp.getTranslationUnit().getSymbolTable()) {
         uint32_t id = 0;
 
@@ -248,11 +247,11 @@ public:
     /** Run subroutine */
     void executeSubroutine(std::string name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret,
             std::vector<bool>& err) override {
-        exec.executeSubroutine(prog.getSubroutine(name), args, ret, err);
+        exec.executeSubroutine(name, args, ret, err);
     }
 
     /** Get symbol table */
-    const SymbolTable& getSymbolTable() const override {
+    SymbolTable& getSymbolTable() override {
         return symTable;
     }
 

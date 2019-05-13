@@ -25,6 +25,7 @@
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
+#include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "RelationRepresentation.h"
@@ -75,6 +76,22 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     infoRelation->addAttribute(std::make_unique<AstAttribute>("clause_num", AstTypeIdentifier("number")));
     infoClauseHead->addArgument(std::make_unique<AstNumberConstant>(originalClause.getClauseNum()));
 
+    // add head relation as meta info
+    std::vector<std::string> headVariables;
+    visitDepthFirst(*(originalClause.getHead()), [&](const AstVariable& var) {
+        std::stringstream varName;
+        var.print(varName);
+        headVariables.push_back(varName.str());
+    });
+
+    std::stringstream headVariableString;
+    headVariableString << join(headVariables, ",");
+
+    infoRelation->addAttribute(
+            std::make_unique<AstAttribute>(std::string("head_vars"), AstTypeIdentifier("symbol")));
+    infoClauseHead->addArgument(
+            std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), headVariableString.str()));
+
     // visit all body literals and add to info clause head
     for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {
         auto lit = originalClause.getBodyLiterals()[i];
@@ -90,8 +107,25 @@ std::unique_ptr<AstRelation> makeInfoRelation(
             std::string relName = identifierToString(atom->getName());
 
             if (dynamic_cast<AstAtom*>(lit) != nullptr) {
-                infoClauseHead->addArgument(
-                        std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), relName));
+                std::string atomDescription = relName;
+
+                // for each variable in the literal, add an extra field to the instrumented relation name
+                visitDepthFirst(*atom, [&](const AstVariable& var) {
+                    std::stringstream varName;
+                    var.print(varName);
+                    atomDescription.append("," + varName.str());
+                });
+
+                /*
+                for (auto& arg : atom->getArguments()) {
+                    std::stringstream argDescription;
+                    arg->print(argDescription);
+                    atomDescription.append("," + argDescription.str());
+                }
+                */
+
+                infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
+                        translationUnit.getSymbolTable(), atomDescription));
             } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
                 infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
                         translationUnit.getSymbolTable(), ("!" + relName)));

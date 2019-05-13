@@ -205,7 +205,7 @@ private:
 };
 
 /**
- * Transformation pass to add provenance information via guided SLD
+ * Transformation pass to add provenance information
  */
 class ProvenanceTransformer : public AstTransformer {
 public:
@@ -329,6 +329,19 @@ public:
 
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
+};
+
+/**
+ * Transformation to remove typecasts.
+ */
+class RemoveTypecastsTransformer : public AstTransformer {
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+
+public:
+    std::string getName() const override {
+        return "RemoveTypecastsTransformer";
+    }
 };
 
 /**

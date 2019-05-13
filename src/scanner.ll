@@ -104,6 +104,7 @@
 "btree"                               { return yy::parser::make_BTREE_QUALIFIER(yylloc); }
 "min"                                 { return yy::parser::make_MIN(yylloc); }
 "max"                                 { return yy::parser::make_MAX(yylloc); }
+"as"                                  { return yy::parser::make_AS(yylloc); }
 "nil"                                 { return yy::parser::make_NIL(yylloc); }
 "_"                                   { return yy::parser::make_UNDERSCORE(yylloc); }
 "count"                               { return yy::parser::make_COUNT(yylloc); }
@@ -187,20 +188,8 @@
 [\?a-zA-Z]|[_\?a-zA-Z][_\?a-zA-Z0-9]+ {
                                         return yy::parser::make_IDENT(SLOOKUP(yytext), yylloc);
                                       }
-\"([^\"]*|\\\")*\"                     {
+\"(\\.|[^"\\])*\"                     {
                                         yytext[strlen(yytext)-1]=0;
-                                        for(size_t i = 1; i <= strlen(&yytext[1]); i++) {
-                                          if(yytext[i] == '\t' || yytext[i] == '\n') {
-                                            driver.error(yylloc, "no tabs/newlines in string literals");
-                                            break;
-                                          }
-                                        }
-                                        for(size_t i = 1; i <= strlen(&yytext[1]); i++) {
-                                          if(!isascii(yytext[i])) {
-                                            driver.error(yylloc, "only ascii characters in string literals");
-                                            break;
-                                          }
-                                        }
                                         return yy::parser::make_STRING(SLOOKUP(&yytext[1]), yylloc);
                                       }
 \#.*$                                 {

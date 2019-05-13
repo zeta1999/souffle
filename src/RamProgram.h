@@ -21,19 +21,9 @@
 namespace souffle {
 
 class RamProgram : public RamNode {
-private:
-    /** Relations of RAM program */
-    std::map<std::string, std::unique_ptr<RamRelation>> relations;
-
-    /** Main program */
-    std::unique_ptr<RamStatement> main;
-
-    /** Subroutines for querying computed relations */
-    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
-
 public:
-    RamProgram() : RamNode(RN_Program) {}
-    RamProgram(std::unique_ptr<RamStatement> main) : RamNode(RN_Program), main(std::move(main)) {}
+    RamProgram() = default;
+    RamProgram(std::unique_ptr<RamStatement> main) : RamNode(), main(std::move(main)) {}
 
     /** Obtain child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
@@ -44,7 +34,6 @@ public:
         for (auto& r : relations) {
             children.push_back(r.second.get());
         }
-        children.push_back(main.get());
         for (auto& s : subroutines) {
             children.push_back(s.second.get());
         }
@@ -54,20 +43,21 @@ public:
     /** Print */
     void print(std::ostream& out) const override {
         out << "PROGRAM" << std::endl;
-        out << "DECLARATION" << std::endl;
+        out << " DECLARATION" << std::endl;
         for (const auto& rel : relations) {
-            out << "\t";
+            out << "  ";
             rel.second->print(out);
             out << std::endl;
         }
-        out << "END DECLARATION" << std::endl;
-        out << *main;
-        out << std::endl;
+        out << " END DECLARATION" << std::endl;
         for (const auto& subroutine : subroutines) {
-            out << std::endl << "SUBROUTINE " << subroutine.first << std::endl;
-            out << *subroutine.second << std::endl;
-            out << "END SUBROUTINE" << std::endl;
+            out << " SUBROUTINE " << subroutine.first << std::endl;
+            subroutine.second->print(out, 2);
+            out << " END SUBROUTINE" << std::endl;
         }
+        out << " BEGIN MAIN" << std::endl;
+        main->print(out, 2);
+        out << " END MAIN" << std::endl;
         out << "END PROGRAM" << std::endl;
     }
 
@@ -153,6 +143,15 @@ public:
     }
 
 protected:
+    /** Relations of RAM program */
+    std::map<std::string, std::unique_ptr<RamRelation>> relations;
+
+    /** Main program */
+    std::unique_ptr<RamStatement> main;
+
+    /** Subroutines for querying computed relations */
+    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProgram*>(&node));

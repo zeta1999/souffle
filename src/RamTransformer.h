@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace souffle {
 
@@ -47,8 +48,9 @@ protected:
 };
 
 /**
- * Composite loop transformer iterating until the encapsulated transformer
- * does not change the translation unit.
+ * Composite sequence transformer; a series of transformation is applied
+ * sequentially. The last transformation decides the outcome whether 
+ * the code has been changed. 
  */
 
 class RamTransformerSequence : public RamTransformer {
@@ -72,43 +74,16 @@ public:
 
     bool transform(RamTranslationUnit& tU) {
         bool changed = false;
+
+        // last transformer decides change flag
         for (auto const& cur : transformers) {
-            if (cur->apply(tU)) {
-                changed = true;
-            }
+            changed = cur->apply(tU);
         }
         return changed;
     }
 
 protected:
     std::vector<std::unique_ptr<RamTransformer>> transformers;
-};
-
-/*
- * Check whether predicate transformer changes code; if not stop; otherwise perform the body.
- */
-
-class RamChangedTransformer : public RamTransformer {
-public:
-    RamChangedTransformer(std::unique_ptr<RamTransformer> tPredicate, std::unique_ptr<RamTransformer> tBody)
-            : predicate(std::move(tPredicate)), body(std::move(tBody)) {}
-
-    std::string getName() const {
-        return "RamChangedTransformer";
-    }
-
-    bool transform(RamTranslationUnit& tU) {
-        if (predicate->apply(tU)) {
-            body->apply(tU);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-protected:
-    std::unique_ptr<RamTransformer> predicate;
-    std::unique_ptr<RamTransformer> body;
 };
 
 /**
@@ -125,7 +100,7 @@ public:
 
     bool transform(RamTranslationUnit& tU) {
         while (loop->apply(tU))
-            ;
+		;
         return false;
     }
 

@@ -88,13 +88,13 @@ protected:
  * Check whether predicate transformer changes code; if not stop; otherwise perform the body. 
  */
 
-class RamIfTransformer : public RamTransformer  {
+class RamChangedTransformer : public RamTransformer  {
 public:
-   RamIfTransformer(std::unique_ptr<RamTransformer> tPredicate, std::unique_ptr<RamTransformer> tBody) : 
+   RamChangedTransformer(std::unique_ptr<RamTransformer> tPredicate, std::unique_ptr<RamTransformer> tBody) : 
 	       predicate(std::move(tPredicate)), body(std::move(tBody)) { }
    
    std::string getName() const {
-       return "RamIfTransformer";
+       return "RamChangedTransformer";
    }
 
    bool transform(RamTranslationUnit& tU) {

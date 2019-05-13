@@ -76,7 +76,7 @@ public:
     }
 
     AstComponentType* clone() const override {
-        AstComponentType* res = new AstComponentType(name, typeParams);
+        auto* res = new AstComponentType(name, typeParams);
         res->setSrcLoc(getSrcLoc());
         return res;
     }

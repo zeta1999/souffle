@@ -56,7 +56,7 @@ public:
     int depthLimit = 4;
 
 private:
-    ExplainConfig() {}
+    ExplainConfig() = default;
 };
 
 class Explain {
@@ -64,7 +64,7 @@ public:
     ExplainProvenance& prov;
 
     Explain(ExplainProvenance& prov) : prov(prov) {}
-    ~Explain() {}
+    ~Explain() = default;
 
     /* Process a command, a return value of true indicates to continue, returning false indicates to break (if
      * the command is q/exit) */

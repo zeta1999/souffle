@@ -52,14 +52,14 @@ class SymbolTable;
 class RAMI : public Interpreter {
 public:
     RAMI(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
-    virtual ~RAMI() {}
+    ~RAMI() override = default;
 
     /** Execute main program */
-    void executeMain();
+    void executeMain() override;
 
     /* Execute subroutine */
     void executeSubroutine(const std::string& name, const std::vector<RamDomain>& arguments,
-            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors);
+            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) override;
 
 protected:
     /** Evaluate value */

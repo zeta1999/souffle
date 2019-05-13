@@ -32,7 +32,7 @@ namespace souffle {
  */
 class InterpreterRelation {
 public:
-    InterpreterRelation(size_t relArity) : arity(relArity), num_tuples(0), totalIndex(nullptr) {}
+    InterpreterRelation(size_t relArity) : arity(relArity), totalIndex(nullptr) {}
 
     InterpreterRelation(const InterpreterRelation& other) = delete;
 
@@ -303,7 +303,7 @@ private:
     static const int BLOCK_SIZE = 1024;
 
     /** Number of tuples in relation */
-    size_t num_tuples;
+    size_t num_tuples = 0;
 
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
 
@@ -320,7 +320,7 @@ private:
     std::vector<std::string> attributeTypeQualifiers;
 
     /** Stratum level information */
-    size_t level;
+    size_t level = 0;
 };
 
 /**

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RamStatement.h"
+#include <memory>
 
 namespace souffle {
 
@@ -109,7 +110,7 @@ public:
     /** Create clone */
     RamProgram* clone() const override {
         std::map<const RamRelation*, const RamRelation*> refMap;
-        RamProgram* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
+        auto* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
         for (auto& cur : relations) {
             RamRelation* newRel = cur.second->clone();
             refMap[cur.second.get()] = newRel;
@@ -123,7 +124,7 @@ public:
             if (const RamRelationReference* relRef = dynamic_cast<RamRelationReference*>(node.get())) {
                 const RamRelation* rel = refMap[relRef->get()];
                 assert(rel != nullptr && "dangling RAM relation reference");
-                return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
+                return std::make_unique<RamRelationReference>(rel);
             } else {
                 return node;
             }

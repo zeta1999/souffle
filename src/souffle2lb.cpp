@@ -76,7 +76,7 @@ public:
 class LogicbloxConverter : private AstVisitor<void, std::ostream&> {
     // literals aggregated to be added to the end of a rule while converting
     std::vector<std::string> extra_literals;
-    const IOType* ioTypes;
+    const IOType* ioTypes = nullptr;
 
     std::ostream& iout;
     std::ostream& eout;

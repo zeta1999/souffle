@@ -79,7 +79,7 @@ public:
 
     /** Create clone */
     RamConjunction* clone() const override {
-        RamConjunction* res = new RamConjunction(
+        auto* res = new RamConjunction(
                 std::unique_ptr<RamCondition>(lhs->clone()), std::unique_ptr<RamCondition>(rhs->clone()));
         return res;
     }
@@ -132,7 +132,7 @@ public:
 
     /** Create clone */
     RamNegation* clone() const override {
-        RamNegation* res = new RamNegation(std::unique_ptr<RamCondition>(operand->clone()));
+        auto* res = new RamNegation(std::unique_ptr<RamCondition>(operand->clone()));
         return res;
     }
 
@@ -192,7 +192,7 @@ public:
 
     /** Create clone */
     RamConstraint* clone() const override {
-        RamConstraint* res = new RamConstraint(op, std::unique_ptr<RamExpression>(lhs->clone()),
+        auto* res = new RamConstraint(op, std::unique_ptr<RamExpression>(lhs->clone()),
                 std::unique_ptr<RamExpression>(rhs->clone()));
         return res;
     }
@@ -308,7 +308,7 @@ public:
             }
             newValues.emplace_back(val);
         }
-        RamExistenceCheck* res = new RamExistenceCheck(
+        auto* res = new RamExistenceCheck(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
         return res;
     }
@@ -354,7 +354,7 @@ public:
             }
             newValues.emplace_back(val);
         }
-        RamProvenanceExistenceCheck* res = new RamProvenanceExistenceCheck(
+        auto* res = new RamProvenanceExistenceCheck(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
         return res;
     }
@@ -392,8 +392,7 @@ public:
 
     /** Create clone */
     RamEmptinessCheck* clone() const override {
-        RamEmptinessCheck* res =
-                new RamEmptinessCheck(std::unique_ptr<RamRelationReference>(relationRef->clone()));
+        auto* res = new RamEmptinessCheck(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
     }
 

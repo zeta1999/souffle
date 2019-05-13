@@ -165,8 +165,8 @@ bool isValidPermutation(
 
     // deduce the body atom permutation from the full clause permutation
     std::vector<unsigned int> bodyPermutation(permutation.begin() + 1, permutation.end());
-    for (size_t i = 0; i < bodyPermutation.size(); i++) {
-        bodyPermutation[i] -= 1;
+    for (unsigned int& i : bodyPermutation) {
+        i -= 1;
     }
 
     // currently, <permutation[i] == j> indicates that atom i should map to position j
@@ -290,8 +290,8 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
     // atoms in the clause, including the head atom
     size_t size = left->getBodyLiterals().size() + 1;
     auto permutationMatrix = std::vector<std::vector<unsigned int>>(size);
-    for (size_t i = 0; i < permutationMatrix.size(); i++) {
-        permutationMatrix[i] = std::vector<unsigned int>(size);
+    for (auto& i : permutationMatrix) {
+        i = std::vector<unsigned int>(size);
     }
 
     // create permutation matrix

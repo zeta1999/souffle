@@ -191,7 +191,7 @@ public:
 
     /** Create clone */
     RamUserDefinedOperator* clone() const override {
-        RamUserDefinedOperator* res = new RamUserDefinedOperator(name, type, {});
+        auto* res = new RamUserDefinedOperator(name, type, {});
         for (auto& cur : arguments) {
             RamExpression* arg = cur->clone();
             res->arguments.emplace_back(arg);
@@ -406,7 +406,7 @@ public:
 
     /** Create clone */
     RamPackRecord* clone() const override {
-        RamPackRecord* res = new RamPackRecord({});
+        auto* res = new RamPackRecord({});
         for (auto& cur : arguments) {
             RamExpression* arg = nullptr;
             if (cur != nullptr) {

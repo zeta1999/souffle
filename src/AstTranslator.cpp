@@ -1243,31 +1243,32 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
     // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates
     // or anything else...)
-    
-    std::cout << "clause: ";
-    clause.print(std::cout);
-    std::cout << std::endl;
+
+    // make a copy so that when we mutate clause, pointers to objects in newClause are not affected
+    auto newClause = std::unique_ptr<AstClause>(clause.clone());
 
     // build a vector of unique variables
     std::vector<const AstVariable*> uniqueVariables;
 
     visitDepthFirst(clause, [&](const AstVariable& var) {
         if (var.getName().find("@level_num") == std::string::npos) {
-            // use find_if since uniqueVariables stores pointers, and we need to dereference the pointer to check equality
-            if (std::find_if(uniqueVariables.begin(), uniqueVariables.end(), [&](const AstVariable* v){return *v == var;}) == uniqueVariables.end()) {
+            // use find_if since uniqueVariables stores pointers, and we need to dereference the pointer to
+            // check equality
+            if (std::find_if(uniqueVariables.begin(), uniqueVariables.end(),
+                        [&](const AstVariable* v) { return *v == var; }) == uniqueVariables.end()) {
                 uniqueVariables.push_back(&var);
             }
         }
     });
 
-    std::cout << uniqueVariables << std::endl;
-
     // build a vector of unique variables
     std::vector<const AstAggregator*> uniqueAggregators;
 
     visitDepthFirst(clause, [&](const AstAggregator& agg) {
-            // use find_if since uniqueAggregators stores pointers, and we need to dereference the pointer to check equality
-        if (std::find_if(uniqueAggregators.begin(), uniqueAggregators.end(), [&](const AstAggregator* a){return *a == agg;}) == uniqueAggregators.end()) {
+        // use find_if since uniqueAggregators stores pointers, and we need to dereference the pointer to
+        // check equality
+        if (std::find_if(uniqueAggregators.begin(), uniqueAggregators.end(),
+                    [&](const AstAggregator* a) { return *a == agg; }) == uniqueAggregators.end()) {
             uniqueAggregators.push_back(&agg);
         }
     });
@@ -1278,29 +1279,19 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
         const std::vector<const AstAggregator*>& uniqueAggregators;
 
         VariablesToArguments() = default;
-        VariablesToArguments(const std::vector<const AstVariable*>& uniqueVariables, const std::vector<const AstAggregator*>& uniqueAggregators)
+        VariablesToArguments(const std::vector<const AstVariable*>& uniqueVariables,
+                const std::vector<const AstAggregator*>& uniqueAggregators)
                 : uniqueVariables(uniqueVariables), uniqueAggregators(uniqueAggregators) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // apply recursive
             node->apply(*this);
 
-            std::cout << "hello ";
-            node->print(std::cout);
-            std::cout << "\n";
-
             // replace unknown variables
             if (auto varPtr = dynamic_cast<const AstVariable*>(node.get())) {
-                std::cout << varPtr << std::endl;
                 if (varPtr->getName().find("@level_num") == std::string::npos) {
-                    std::cout << "var: ";
-                    varPtr->print(std::cout);
-                    std::cout << "\n";
-
-                    size_t argNum = std::find_if(uniqueVariables.begin(), uniqueVariables.end(), [&](const AstVariable* v){
-                            std::cout << typeid(*varPtr).name() << " ";
-                            std::cout << typeid(*v).name() << std::endl;
-                            return equal_ptr<AstVariable>(v, varPtr);}) -
+                    size_t argNum = std::find_if(uniqueVariables.begin(), uniqueVariables.end(),
+                                            [&](const AstVariable* v) { return *v == *varPtr; }) -
                                     uniqueVariables.begin();
 
                     return std::make_unique<AstSubroutineArgument>(argNum);
@@ -1312,7 +1303,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             // replace unknown aggregator values - an aggregator makes no sense when checking for negation
             if (auto aggPtr = dynamic_cast<const AstAggregator*>(node.get())) {
                 // add uniqueVariables.size() so that aggregate arguments always come after variables
-                size_t argNum = std::find_if(uniqueAggregators.begin(), uniqueAggregators.end(), [&](const AstAggregator* a){return *a == *aggPtr;}) -
+                size_t argNum = std::find_if(uniqueAggregators.begin(), uniqueAggregators.end(),
+                                        [&](const AstAggregator* a) { return *a == *aggPtr; }) -
                                 uniqueAggregators.begin() + uniqueVariables.size();
 
                 return std::make_unique<AstSubroutineArgument>(argNum);
@@ -1329,17 +1321,13 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
     // go through each body atom and create a return
     size_t litNumber = 0;
-    for (const auto& lit : clause.getBodyLiterals()) {
+    for (const auto& lit : newClause->getBodyLiterals()) {
         if (auto atom = dynamic_cast<AstAtom*>(lit)) {
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
 
             // construct a query
             std::vector<std::unique_ptr<RamExpression>> query;
-
-            std::cout << "atom: ";
-            atom->print(std::cout);
-            std::cout << std::endl;
 
             // translate variables to subroutine arguments
             VariablesToArguments varsToArgs(uniqueVariables, uniqueAggregators);
@@ -1727,6 +1715,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             std::stringstream relName;
             relName << clause.getHead()->getName();
 
+            // do not add subroutines for info relations or facts
             if (relName.str().find("@info") != std::string::npos || clause.getBodyLiterals().empty()) {
                 return;
             }

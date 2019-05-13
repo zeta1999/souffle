@@ -118,6 +118,13 @@ public:
             // a counter for the rule numbers
             size_t i = 1;
             std::string rules;
+
+            // if there are no rules, then this must be an EDB relation
+            if (prov.getRules(query.first).size() == 0) {
+                printInfo("The tuple would be an input fact!\n");
+                return true;
+            }
+
             for (auto rule : prov.getRules(query.first)) {
                 rules += std::to_string(i) + ": ";
                 rules += rule;
@@ -137,6 +144,9 @@ public:
                 return true;
             } else if (variables.size() == 1 && variables[0] == "@non_matching") {
                 printInfo("The variable bindings don't match, cannot explain!\n");
+                return true;
+            } else if (variables.size() == 1 && variables[0] == "@fact") {
+                printInfo("The rule is a fact!\n");
                 return true;
             }
 

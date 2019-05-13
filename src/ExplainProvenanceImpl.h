@@ -235,6 +235,12 @@ public:
         // atom meta information stored for the current rule
         auto atoms = info[std::make_pair(relName, ruleNum)];
 
+        // the info stores the set of atoms, if there is only 1 atom, then it must be the head, so it must be
+        // a fact
+        if (atoms.size() <= 1) {
+            return std::vector<std::string>({"@fact"});
+        }
+
         // atoms[0] represents variables in the head atom
         auto headVariables = splitString(atoms[0], ',');
 

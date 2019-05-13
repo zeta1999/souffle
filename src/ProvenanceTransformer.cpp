@@ -78,11 +78,54 @@ std::unique_ptr<AstRelation> makeInfoRelation(
 
     // add head relation as meta info
     std::vector<std::string> headVariables;
-    visitDepthFirst(*(originalClause.getHead()), [&](const AstVariable& var) {
-        std::stringstream varName;
-        var.print(varName);
-        headVariables.push_back(varName.str());
+
+    // get all variables and aggregates in the head
+    struct HeadArgumentGetter : public AstNodeMapper {
+        std::vector<std::string>& headVariables;
+
+        HeadArgumentGetter(std::vector<std::string>& headVariables) : headVariables(headVariables) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            if (const auto* var = dynamic_cast<const AstVariable*>(node.get())) {
+                std::stringstream varName;
+                var->print(varName);
+                headVariables.push_back(varName.str());
+            } else if (const auto* agg = dynamic_cast<const AstAggregator*>(node.get())) {
+                std::stringstream aggStringRepresentation;
+                agg->print(aggStringRepresentation);
+                headVariables.push_back(aggStringRepresentation.str());
+            } else {
+                // apply mapper to children
+                node->apply(*this);
+            }
+
+            return node;
+        }
+    };
+
+    std::cout << "before: ";
+    originalClause.print(std::cout);
+    std::cout << std::endl;
+
+    HeadArgumentGetter headArgGet(headVariables);
+    originalClause.getHead()->apply(headArgGet);
+
+    std::cout << "after: ";
+    originalClause.print(std::cout);
+    std::cout << std::endl;
+    /*
+    visitDepthFirst(*(originalClause.getHead()), [&](const AstArgument& arg) {
+        if (const auto* var = dynamic_cast<const AstVariable*>(&arg) {
+            std::stringstream varName;
+            var->print(varName);
+            headVariables.push_back(varName.str());
+        } else if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg) {
+            std::stringStream aggStringRepresentation;
+            agg->print(aggStringRepresentation);
+            headVariables.push_back(aggStringRepresentation.str());
+        }
     });
+    */
 
     std::stringstream headVariableString;
     headVariableString << join(headVariables, ",");
@@ -115,6 +158,42 @@ std::unique_ptr<AstRelation> makeInfoRelation(
                     var.print(varName);
                     atomDescription.append("," + varName.str());
                 });
+
+                // for each variable in the literal, add an extra field to the instrumented relation name
+                visitDepthFirst(*atom, [&](const AstAggregator& agg) {
+                    std::stringstream aggRepresentation;
+                    agg.print(aggRepresentation);
+                    atomDescription.append("," + aggRepresentation.str());
+                });
+
+                /*
+                // get all variables and aggregates in the head
+                struct BodyArgumentGetter : public AstNodeMapper {
+                    std::string& atomDescription;
+
+                    BodyArgumentGetter(std::string& atomDescription) : atomDescription(atomDescription) {}
+
+                    std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+                        if (const auto* var = dynamic_cast<const AstVariable*>(node.get())) {
+                            std::stringstream varName;
+                            var->print(varName);
+                            atomDescription.append("," + varName.str());
+                        } else if (const auto* agg = dynamic_cast<const AstAggregator*>(node.get())) {
+                            std::stringstream aggStringRepresentation;
+                            agg->print(aggStringRepresentation);
+                            atomDescription.append("," + aggStringRepresentation.str());
+                        } else {
+                            // apply mapper to children
+                            node->apply(*this);
+                        }
+
+                        return node;
+                    }
+                };
+
+                BodyArgumentGetter bodyArgGet(atomDescription);
+                atom->apply(bodyArgGet);
+                */
 
                 /*
                 for (auto& arg : atom->getArguments()) {

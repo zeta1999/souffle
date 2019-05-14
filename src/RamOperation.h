@@ -55,6 +55,11 @@ protected:
 };
 
 /**
+ * Abstract class for parallel operation
+ */
+class RamAbstractParallel {};
+
+/**
  * Abstract class for a nesting operations in a loop-nest
  */
 class RamNestedOperation : public RamOperation {
@@ -186,8 +191,40 @@ public:
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        return RamRelationSearch::getChildNodes();
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamScan*>(&node));
+        const auto& other = static_cast<const RamScan&>(node);
+        return RamRelationSearch::equal(other);
+    }
+};
+
+/**
+ * Parallel Relation Scan
+ *
+ * Iterate all tuples of a relation in parallel
+ */
+class RamParallelScan : public RamScan, public RamAbstractParallel {
+public:
+    RamParallelScan(std::unique_ptr<RamRelationReference> rel, int ident,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamScan(std::move(rel), ident, std::move(nested), profileText) {}
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "PARALLEL FOR t" << getTupleId();
+        os << " IN " << getRelation().getName() << std::endl;
+        RamRelationSearch::print(os, tabpos + 1);
+    }
+
+    RamParallelScan* clone() const override {
+        return new RamParallelScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamParallelScan*>(&node));
+        const auto& other = static_cast<const RamParallelScan&>(node);
+        return RamScan::equal(other);
     }
 };
 
@@ -281,10 +318,69 @@ public:
                 resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
             }
         }
-        RamIndexScan* res = new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+        auto* res = new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
+    }
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamIndexScan*>(&node));
+        const auto& other = static_cast<const RamIndexScan&>(node);
+        return RamIndexRelationSearch::equal(other);
+    }
+};
+
+/**
+ * Parallel Relation Scan with Index
+ *
+ * Search for tuples of a relation matching a criteria
+ */
+class RamParallelIndexScan : public RamIndexScan, public RamAbstractParallel {
+public:
+    RamParallelIndexScan(std::unique_ptr<RamRelationReference> rel, int ident,
+            std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
+            : RamIndexScan(std::move(rel), ident, std::move(queryPattern), std::move(nested), profileText) {}
+
+    void print(std::ostream& os, int tabpos) const override {
+        const RamRelation& rel = getRelation();
+        os << times(" ", tabpos);
+        os << "PARALLEL SEARCH " << rel.getName() << " AS t" << getTupleId() << " ON INDEX ";
+        bool first = true;
+        for (unsigned int i = 0; i < rel.getArity(); ++i) {
+            if (queryPattern[i] != nullptr) {
+                if (first) {
+                    first = false;
+                } else {
+                    os << " and ";
+                }
+                os << "t" << getTupleId() << "." << rel.getArg(i) << "=";
+                queryPattern[i]->print(os);
+            }
+        }
+        os << std::endl;
+        RamIndexRelationSearch::print(os, tabpos + 1);
+    }
+
+    RamParallelIndexScan* clone() const override {
+        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
+        for (unsigned int i = 0; i < queryPattern.size(); ++i) {
+            if (nullptr != queryPattern[i]) {
+                resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
+            }
+        }
+        RamParallelIndexScan* res =
+                new RamParallelIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                        getTupleId(), std::move(resQueryPattern),
+                        std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return res;
+    }
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamParallelIndexScan*>(&node));
+        const auto& other = static_cast<const RamParallelIndexScan&>(node);
+        return RamIndexScan::equal(other);
     }
 };
 
@@ -335,6 +431,38 @@ public:
 
 protected:
     std::unique_ptr<RamCondition> condition;
+};
+
+/**
+ * Find a tuple in a relation such that a given condition holds.
+ */
+class RamParallelChoice : public RamChoice, public RamAbstractParallel {
+public:
+    RamParallelChoice(std::unique_ptr<RamRelationReference> rel, size_t ident,
+            std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
+            : RamChoice(std::move(rel), ident, std::move(cond), std::move(nested), profileText) {}
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "PARALLEL CHOICE t" << getTupleId();
+        os << " IN " << getRelation().getName();
+        os << " WHERE " << getCondition();
+        os << std::endl;
+        RamRelationSearch::print(os, tabpos + 1);
+    }
+
+    RamParallelChoice* clone() const override {
+        return new RamParallelChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                getTupleId(), std::unique_ptr<RamCondition>(condition->clone()),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamParallelChoice*>(&node));
+        const auto& other = static_cast<const RamParallelChoice&>(node);
+        return RamChoice::equal(other);
+    }
 };
 
 /**
@@ -419,6 +547,62 @@ protected:
         const auto& other = static_cast<const RamIndexChoice&>(node);
         return RamRelationSearch::equal(other) && equal_targets(queryPattern, other.queryPattern) &&
                getCondition() == other.getCondition();
+    }
+};
+
+/**
+ * Use an index to find a tuple in a relation such that a given condition holds.
+ */
+class RamParallelIndexChoice : public RamIndexChoice, public RamAbstractParallel {
+public:
+    RamParallelIndexChoice(std::unique_ptr<RamRelationReference> r, int ident,
+            std::unique_ptr<RamCondition> cond, std::vector<std::unique_ptr<RamExpression>> queryPattern,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamIndexChoice(std::move(r), ident, std::move(cond), std::move(queryPattern), std::move(nested),
+                      profileText) {}
+
+    /** Print */
+    void print(std::ostream& os, int tabpos) const override {
+        const RamRelation& rel = getRelation();
+        os << times(" ", tabpos);
+        os << "PARALLEL CHOICE " << rel.getName() << " AS t" << getTupleId() << " INDEX ";
+        bool first = true;
+        for (unsigned int i = 0; i < rel.getArity(); ++i) {
+            if (queryPattern[i] != nullptr) {
+                if (first) {
+                    first = false;
+                } else {
+                    os << " and ";
+                }
+                os << "t" << getTupleId() << "." << rel.getArg(i) << "=";
+                queryPattern[i]->print(os);
+            }
+        }
+        os << " WHERE " << getCondition();
+        os << std::endl;
+        RamIndexRelationSearch::print(os, tabpos + 1);
+    }
+
+    RamParallelIndexChoice* clone() const override {
+        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
+        for (size_t i = 0; i < queryPattern.size(); ++i) {
+            if (nullptr != queryPattern[i]) {
+                resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
+            }
+        }
+        RamParallelIndexChoice* res = new RamParallelIndexChoice(
+                std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
+                std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return res;
+    }
+
+protected:
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamParallelIndexChoice*>(&node));
+        const auto& other = static_cast<const RamParallelIndexChoice&>(node);
+        return RamIndexChoice::equal(other);
     }
 };
 
@@ -512,8 +696,8 @@ public:
         for (auto const& e : queryPattern) {
             pattern.push_back(std::unique_ptr<RamExpression>((e != nullptr) ? e->clone() : nullptr));
         }
-        RamIndexAggregate* res = new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()),
-                function, std::unique_ptr<RamRelationReference>(relationRef->clone()),
+        auto* res = new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
+                std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
                 std::move(pattern), getTupleId());
@@ -618,7 +802,7 @@ public:
     }
 
     RamAggregate* clone() const override {
-        RamAggregate* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
+        auto* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
@@ -690,8 +874,8 @@ public:
     }
 
     RamUnpackRecord* clone() const override {
-        RamUnpackRecord* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()),
-                getTupleId(), std::unique_ptr<RamExpression>(getExpression().clone()), arity);
+        auto* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(),
+                std::unique_ptr<RamExpression>(getExpression().clone()), arity);
         return res;
     }
 
@@ -849,7 +1033,7 @@ public:
         for (auto& cur : expressions) {
             newValues.emplace_back(cur->clone());
         }
-        RamProject* res = new RamProject(
+        auto* res = new RamProject(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
         return res;
     }

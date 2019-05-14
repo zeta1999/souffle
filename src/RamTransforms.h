@@ -201,6 +201,14 @@ public:
     std::unique_ptr<RamOperation> rewriteScan(const RamScan* scan);
 
     /**
+     * @brief Rewrite an index scan operation to an amended index scan operation
+     * @param An IndexScan that can be amended with new index values
+     * @result The result is null if the index scan cannot be amended;
+     *         otherwise the new IndexScan operation is returned.
+     */
+    std::unique_ptr<RamOperation> rewriteIndexScan(const RamIndexScan* iscan);
+
+    /**
      * @brief Rewrite an aggregate operation to an indexed aggregate operation
      * @param Aggregate operation that is potentially rewritten to an indexed version
      * @result The result is null if the aggregate could not be rewritten to an indexed version;
@@ -353,6 +361,46 @@ protected:
     bool transform(RamTranslationUnit& translationUnit) override {
         rla = translationUnit.getAnalysis<RamLevelAnalysis>();
         return convertScans(*translationUnit.getProgram());
+    }
+};
+
+/**
+ * @class ParallelTransformer
+ * @brief Transforms Choice/IndexChoice/IndexScan/Scan into parallel versions.
+ *
+ * For example ..
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *    FOR t0 in A
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * will be rewritten to
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *    PARALLEL FOR t0 in A
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ */
+class ParallelTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "ParallelTransformer";
+    }
+
+    /**
+     * @brief Parallelize operations
+     * @param program Program that is transformed
+     * @return Flag showing whether the program has been changed by the transformation
+     */
+    bool parallelizeOperations(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return parallelizeOperations(*translationUnit.getProgram());
     }
 };
 

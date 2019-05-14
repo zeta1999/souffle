@@ -73,7 +73,7 @@ public:
      * set signal handlers
      */
     void set() {
-        if (!isSet) {
+        if (!isSet && std::getenv("SOUFFLE_ALLOW_SIGNALS") == nullptr) {
             // register signals
             // floating point exception
             if ((prevFpeHandler = signal(SIGFPE, handler)) == SIG_ERR) {

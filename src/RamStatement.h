@@ -102,7 +102,7 @@ public:
 
     /** Create clone */
     RamCreate* clone() const override {
-        RamCreate* res = new RamCreate(std::unique_ptr<RamRelationReference>(relationRef->clone()));
+        auto* res = new RamCreate(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
     }
 };
@@ -132,7 +132,7 @@ public:
 
     /** Create clone */
     RamLoad* clone() const override {
-        RamLoad* res = new RamLoad(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
+        auto* res = new RamLoad(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
         return res;
     }
 
@@ -165,8 +165,7 @@ public:
 
     /** Create clone */
     RamStore* clone() const override {
-        RamStore* res =
-                new RamStore(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
+        auto* res = new RamStore(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
         return res;
     }
 
@@ -192,7 +191,7 @@ public:
 
     /** Create clone */
     RamClear* clone() const override {
-        RamClear* res = new RamClear(std::unique_ptr<RamRelationReference>(relationRef->clone()));
+        auto* res = new RamClear(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
     }
 };
@@ -213,7 +212,7 @@ public:
     }
     /** Create clone */
     RamDrop* clone() const override {
-        RamDrop* res = new RamDrop(std::unique_ptr<RamRelationReference>(relationRef->clone()));
+        auto* res = new RamDrop(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
     }
 };
@@ -258,7 +257,7 @@ public:
 
     /** Create clone */
     RamMerge* clone() const override {
-        RamMerge* res = new RamMerge(std::unique_ptr<RamRelationReference>(targetRef->clone()),
+        auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(targetRef->clone()),
                 std::unique_ptr<RamRelationReference>(sourceRef->clone()));
         return res;
     }
@@ -320,7 +319,7 @@ public:
 
     /** Create clone */
     RamSwap* clone() const override {
-        RamSwap* res = new RamSwap(std::unique_ptr<RamRelationReference>(first->clone()),
+        auto* res = new RamSwap(std::unique_ptr<RamRelationReference>(first->clone()),
                 std::unique_ptr<RamRelationReference>(second->clone()));
         return res;
     }
@@ -379,7 +378,7 @@ public:
 
     /** Create clone */
     RamFact* clone() const override {
-        RamFact* res = new RamFact(std::unique_ptr<RamRelationReference>(relationRef->clone()), {});
+        auto* res = new RamFact(std::unique_ptr<RamRelationReference>(relationRef->clone()), {});
         for (auto& cur : values) {
             res->values.emplace_back(cur->clone());
         }
@@ -635,7 +634,7 @@ public:
 
     /** Create clone */
     RamLoop* clone() const override {
-        RamLoop* res = new RamLoop(std::unique_ptr<RamStatement>(body->clone()));
+        auto* res = new RamLoop(std::unique_ptr<RamStatement>(body->clone()));
         return res;
     }
 
@@ -683,7 +682,7 @@ public:
 
     /** Create clone */
     RamExit* clone() const override {
-        RamExit* res = new RamExit(std::unique_ptr<RamCondition>(condition->clone()));
+        auto* res = new RamExit(std::unique_ptr<RamCondition>(condition->clone()));
         return res;
     }
 
@@ -756,7 +755,7 @@ public:
 
     /** Create clone */
     RamLogTimer* clone() const override {
-        RamLogTimer* res = new RamLogTimer(std::unique_ptr<RamStatement>(statement->clone()), message,
+        auto* res = new RamLogTimer(std::unique_ptr<RamStatement>(statement->clone()), message,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
     }
@@ -819,7 +818,7 @@ public:
 
     /** Create clone */
     RamDebugInfo* clone() const override {
-        RamDebugInfo* res = new RamDebugInfo(std::unique_ptr<RamStatement>(statement->clone()), message);
+        auto* res = new RamDebugInfo(std::unique_ptr<RamStatement>(statement->clone()), message);
         return res;
     }
 
@@ -878,7 +877,7 @@ public:
 
     /** Create clone */
     RamStratum* clone() const override {
-        RamStratum* res = new RamStratum(std::unique_ptr<RamStatement>(body->clone()), index);
+        auto* res = new RamStratum(std::unique_ptr<RamStatement>(body->clone()), index);
         return res;
     }
 
@@ -923,8 +922,7 @@ public:
 
     /** Create clone */
     RamLogSize* clone() const override {
-        RamLogSize* res =
-                new RamLogSize(std::unique_ptr<RamRelationReference>(relationRef->clone()), message);
+        auto* res = new RamLogSize(std::unique_ptr<RamRelationReference>(relationRef->clone()), message);
         return res;
     }
 

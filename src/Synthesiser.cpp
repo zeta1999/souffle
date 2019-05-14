@@ -1,4 +1,4 @@
-/*
+/**
  * Souffle - A Datalog Compiler
  * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
  * Licensed under the Universal Permissive License v 1.0 as shown at:
@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -203,6 +204,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 #endif
 
         std::function<void(std::ostream&, const RamNode*)> rec;
+        std::ostringstream preamble;
+        bool preambleIssued = false;
 
     public:
         CodeEmitter(Synthesiser& syn)
@@ -244,7 +247,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IOSystem::getInstance().getReader(";
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
-                out << ", " << Global::config().has("provenance");
+                out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
                 out << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -272,7 +275,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IOSystem::getInstance().getWriter(";
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
-                out << ", " << Global::config().has("provenance");
+                out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
             }
@@ -289,7 +292,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const RamOperation* next = &query.getOperation();
             std::vector<std::unique_ptr<RamCondition>> requireCtx;
             std::vector<std::unique_ptr<RamCondition>> freeOfCtx;
-            if (const RamFilter* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
+            if (const auto* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
                 next = &filter->getOperation();
                 // Check terms of outer filter operation whether they can be pushed before
                 // the context-generation for speed imrovements
@@ -323,151 +326,46 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "{\n";
 
             // check whether loop nest can be parallelized
-            bool parallel = false;
+            bool isParallel = false;
+            visitDepthFirst(*next, [&](const RamAbstractParallel& node) { isParallel = true; });
 
-            // check whether outer-most loop is a scan operation
-            const RamScan* outerScan = nullptr;
-            visitDepthFirst(*next, [&](const RamScan& scan) {
-                if (scan.getTupleId() == 0 && !scan.getRelation().isNullary()) {
-                    outerScan = &scan;
-                }
-            });
-            if (outerScan != nullptr) {
-                parallel = true;
-                const auto& rel = outerScan->getRelation();
-                const auto& relName = synthesiser.getRelationName(rel);
-                // partition outermost relation
-                out << "auto part = " << relName << "->partition();\n";
-
-                // build a parallel block around this loop nest
-                out << "PARALLEL_START;\n";
-            }
-            // check whether outer-most loop is a choice operation
-            const RamChoice* outerChoice = nullptr;
-            visitDepthFirst(*next, [&](const RamChoice& choice) {
-                if (choice.getTupleId() == 0 && !choice.getRelation().isNullary()) {
-                    outerChoice = &choice;
-                }
-            });
-            if (outerChoice != nullptr) {
-                parallel = true;
-                const auto& rel = outerChoice->getRelation();
-                const auto& relName = synthesiser.getRelationName(rel);
-                // partition outermost relation
-                out << "auto part = " << relName << "->partition();\n";
-
-                // build a parallel block around this loop nest
-                out << "PARALLEL_START;\n";
-            }
-
-            // check whether outer-most loop is an IndexScan
-            const RamIndexScan* outerIndexScan = nullptr;
-            visitDepthFirst(*next, [&](const RamIndexScan& indexScan) {
-                if (indexScan.getTupleId() == 0) {
-                    outerIndexScan = &indexScan;
-                }
-            });
-            if (outerIndexScan != nullptr) {
-                parallel = true;
-                const auto& rel = outerIndexScan->getRelation();
-                const auto& relName = synthesiser.getRelationName(rel);
-
-                // check list of keys
-                auto arity = rel.getArity();
-                const auto& rangePattern = outerIndexScan->getRangePattern();
-
-                // a lambda for printing boundary key values
-                auto printKeyTuple = [&]() {
-                    for (size_t i = 0; i < arity; i++) {
-                        if (rangePattern[i] != nullptr) {
-                            visit(rangePattern[i], out);
-                        } else {
-                            out << "0";
-                        }
-                        if (i + 1 < arity) {
-                            out << ",";
-                        }
-                    }
-                };
-
-                // get index to be queried
-                auto keys = isa->getSearchSignature(outerIndexScan);
-
-                out << "const Tuple<RamDomain," << arity << "> key({{";
-                printKeyTuple();
-                out << "}});\n";
-                out << "auto range = " << relName << "->"
-                    << "equalRange_" << keys << "(key);\n";
-                out << "auto part = range.partition();\n";
-
-                // build a parallel block around this loop nest
-                out << "PARALLEL_START;\n";
-            }
-            // check whether outer-most loop is an IndexScan
-            const RamIndexChoice* outerIndexChoice = nullptr;
-            visitDepthFirst(*next, [&](const RamIndexChoice& indexChoice) {
-                if (indexChoice.getTupleId() == 0) {
-                    outerIndexChoice = &indexChoice;
-                }
-            });
-            if (outerIndexChoice != nullptr) {
-                parallel = true;
-                const auto& rel = outerIndexChoice->getRelation();
-                const auto& relName = synthesiser.getRelationName(rel);
-
-                // check list of keys
-                auto arity = rel.getArity();
-                const auto& rangePattern = outerIndexChoice->getRangePattern();
-
-                // a lambda for printing boundary key values
-                auto printKeyTuple = [&]() {
-                    for (size_t i = 0; i < arity; i++) {
-                        if (rangePattern[i] != nullptr) {
-                            visit(rangePattern[i], out);
-                        } else {
-                            out << "0";
-                        }
-                        if (i + 1 < arity) {
-                            out << ",";
-                        }
-                    }
-                };
-
-                // get index to be queried
-                auto keys = isa->getSearchSignature(outerIndexChoice);
-
-                out << "const Tuple<RamDomain," << arity << "> key({{";
-                printKeyTuple();
-                out << "}});\n";
-                out << "auto range = " << relName << "->"
-                    << "equalRange_" << keys << "(key);\n";
-                out << "auto part = range.partition();\n";
-
-                // build a parallel block around this loop nest
-                out << "PARALLEL_START;\n";
-            }
+            // reset preamble
+            preamble.str("");
+            preamble.clear();
+            preambleIssued = false;
 
             // create operation contexts for this operation
             for (const RamRelation* rel : synthesiser.getReferencedRelations(query.getOperation())) {
-                // TODO (#467): this causes bugs for subprogram compilation for record types if artificial
-                // dependencies are introduces in the precedence graph
-                out << "CREATE_OP_CONTEXT(" << synthesiser.getOpContextName(*rel);
-                out << "," << synthesiser.getRelationName(*rel);
-                out << "->createContext());\n";
+                preamble << "CREATE_OP_CONTEXT(" << synthesiser.getOpContextName(*rel);
+                preamble << "," << synthesiser.getRelationName(*rel);
+                preamble << "->createContext());\n";
             }
 
             // discharge conditions that require a context
-            if (requireCtx.size() > 0) {
-                out << "if(";
-                visit(*toCondition(toConstPtrVector(requireCtx)), out);
-                out << ") {\n";
-                visit(*next, out);
-                out << "}\n";
+            if (isParallel) {
+                if (requireCtx.size() > 0) {
+                    preamble << "if(";
+                    visit(*toCondition(toConstPtrVector(requireCtx)), preamble);
+                    preamble << ") {\n";
+                    visit(*next, out);
+                    out << "}\n";
+                } else {
+                    visit(*next, out);
+                }
             } else {
-                visit(*next, out);
+                out << preamble.str();
+                if (requireCtx.size() > 0) {
+                    out << "if(";
+                    visit(*toCondition(toConstPtrVector(requireCtx)), out);
+                    out << ") {\n";
+                    visit(*next, out);
+                    out << "}\n";
+                } else {
+                    visit(*next, out);
+                }
             }
 
-            if (parallel) {
+            if (isParallel) {
                 out << "PARALLEL_END;\n";  // end parallel
             }
 
@@ -509,7 +407,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitDrop(const RamDrop& drop, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            out << "if (!isHintsProfilingEnabled() && (performIO || " << drop.getRelation().isTemp() << ")) ";
+            out << "if (!isHintsProfilingEnabled()"
+                << (drop.getRelation().isTemp() ? ") " : "&& performIO) ");
             out << synthesiser.getRelationName(drop.getRelation()) << "->"
                 << "purge();\n";
 
@@ -652,203 +551,299 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitScan(const RamScan& scan, std::ostream& out) override {
+        void visitParallelScan(const RamParallelScan& pscan, std::ostream& out) override {
+            const auto& rel = pscan.getRelation();
+            const auto& relName = synthesiser.getRelationName(rel);
+
+            assert(pscan.getTupleId() == 0 && "not outer-most loop");
+
+            assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
+
+            assert(!preambleIssued && "only first loop can be made parallel");
+            preambleIssued = true;
+
             PRINT_BEGIN_COMMENT(out);
-            auto identifier = scan.getTupleId();
 
-            const bool parallel = identifier == 0 && !scan.getRelation().isNullary();
+            out << "auto part = " << relName << "->partition();\n";
+            out << "PARALLEL_START;\n";
+            out << preamble.str();
+            out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
+            out << "try{\n";
+            out << "for(const auto& env0 : *it) {\n";
 
-            // get relation name
+            visitSearch(pscan, out);
+
+            out << "}\n";
+            out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+            out << "}\n";
+
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitScan(const RamScan& scan, std::ostream& out) override {
             const auto& rel = scan.getRelation();
-            assert(rel.getArity() > 0 && "AstTranslator failed");
             auto relName = synthesiser.getRelationName(rel);
-            auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
+            auto id = scan.getTupleId();
 
-            if (parallel) {
-                // make this loop parallel
-                // partition outermost relation
-                out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
-                out << "try{";
-                out << "for(const auto& env0 : *it) {\n";
-                visitSearch(scan, out);
-                out << "}\n";
-                out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
-                out << "}\n";
-            } else {
-                out << "for(const auto& env" << identifier << " : "
-                    << "*" << relName << ") {\n";
-                visitSearch(scan, out);
-                out << "}\n";
-            }
+            PRINT_BEGIN_COMMENT(out);
+
+            assert(rel.getArity() > 0 && "AstTranslator failed/no scans for nullaries");
+
+            out << "for(const auto& env" << id << " : "
+                << "*" << relName << ") {\n";
+
+            visitSearch(scan, out);
+
+            out << "}\n";
+
             PRINT_END_COMMENT(out);
         }
 
         void visitChoice(const RamChoice& choice, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
+            const auto& rel = choice.getRelation();
+            auto relName = synthesiser.getRelationName(rel);
             auto identifier = choice.getTupleId();
 
-            const bool parallel = identifier == 0 && !choice.getRelation().isNullary();
+            assert(rel.getArity() > 0 && "AstTranslator failed/no choice for nullaries");
 
-            // get relation name
-            const auto& rel = choice.getRelation();
-            assert(rel.getArity() > 0 && "AstTranslator failed");
-            auto relName = synthesiser.getRelationName(rel);
-            auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
+            PRINT_BEGIN_COMMENT(out);
 
-            if (parallel) {
-                // make this loop parallel
-                // partition outermost relation
-                out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
-                out << "try{";
-                out << "for(const auto& env0 : *it) {\n";
-                out << "if( ";
-                visit(choice.getCondition(), out);
-                out << ") {\n";
-                visitSearch(choice, out);
-                out << "break;\n";
-                out << "}\n";
-                out << "}\n";
-                out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
-                out << "}\n";
-            } else {
-                out << "for(const auto& env" << identifier << " : "
-                    << "*" << relName << ") {\n";
-                out << "if( ";
-                visit(choice.getCondition(), out);
-                out << ") {\n";
-                visitSearch(choice, out);
-                out << "break;\n";
-                out << "}\n";
-                out << "}\n";
-            }
+            out << "for(const auto& env" << identifier << " : "
+                << "*" << relName << ") {\n";
+            out << "if( ";
+
+            visit(choice.getCondition(), out);
+
+            out << ") {\n";
+
+            visitSearch(choice, out);
+
+            out << "break;\n";
+            out << "}\n";
+            out << "}\n";
+
             PRINT_END_COMMENT(out);
         }
 
-        void visitIndexScan(const RamIndexScan& scan, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            const auto& rel = scan.getRelation();
+        void visitParallelChoice(const RamParallelChoice& pchoice, std::ostream& out) override {
+            const auto& rel = pchoice.getRelation();
             auto relName = synthesiser.getRelationName(rel);
-            auto identifier = scan.getTupleId();
 
-            const bool parallel = identifier == 0;
+            assert(pchoice.getTupleId() == 0 && "not outer-most loop");
 
-            // check list of keys
+            assert(rel.getArity() > 0 && "AstTranslator failed/no parallel choice for nullaries");
+
+            assert(!preambleIssued && "only first loop can be made parallel");
+            preambleIssued = true;
+
+            PRINT_BEGIN_COMMENT(out);
+
+            out << "auto part = " << relName << "->partition();\n";
+            out << "PARALLEL_START;\n";
+            out << preamble.str();
+            out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
+            out << "try{\n";
+            out << "for(const auto& env0 : *it) {\n";
+            out << "if( ";
+
+            visit(pchoice.getCondition(), out);
+
+            out << ") {\n";
+
+            visitSearch(pchoice, out);
+
+            out << "break;\n";
+            out << "}\n";
+            out << "}\n";
+            out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+            out << "}\n";
+
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitIndexScan(const RamIndexScan& iscan, std::ostream& out) override {
+            const auto& rel = iscan.getRelation();
+            auto relName = synthesiser.getRelationName(rel);
+            auto identifier = iscan.getTupleId();
+            auto keys = isa->getSearchSignature(&iscan);
             auto arity = rel.getArity();
-            assert(arity > 0 && "AstTranslator failed");
-            const auto& rangePattern = scan.getRangePattern();
+            const auto& rangePattern = iscan.getRangePattern();
 
-            // get index to be queried
-            auto keys = isa->getSearchSignature(&scan);
+            assert(arity > 0 && "AstTranslator failed/no index scans for nullaries");
 
-            // a lambda for printing boundary key values
-            auto printKeyTuple = [&]() {
-                for (size_t i = 0; i < arity; i++) {
-                    if (rangePattern[i] != nullptr) {
-                        visit(rangePattern[i], out);
-                    } else {
-                        out << "0";
-                    }
-                    if (i + 1 < arity) {
-                        out << ",";
-                    }
+            PRINT_BEGIN_COMMENT(out);
+
+            out << "const Tuple<RamDomain," << arity << "> key({{";
+            for (size_t i = 0; i < arity; i++) {
+                if (rangePattern[i] != nullptr) {
+                    visit(rangePattern[i], out);
+                } else {
+                    out << "0";
                 }
-            };
+                if (i + 1 < arity) {
+                    out << ",";
+                }
+            }
+            out << "}});\n";
 
-            // get relation name
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
-            // if this is the parallel level
-            if (parallel) {
-                // make this loop parallel
-                out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
-                out << "try{";
-                out << "for(const auto& env0 : *it) {\n";
-                visitSearch(scan, out);
-                out << "}\n";
-                out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
-                out << "}\n";
-                PRINT_END_COMMENT(out);
-                return;
-            }
-
-            // if it is a equality-range query
-            out << "const Tuple<RamDomain," << arity << "> key({{";
-            printKeyTuple();
-            out << "}});\n";
             out << "auto range = " << relName << "->"
                 << "equalRange_" << keys << "(key," << ctxName << ");\n";
             out << "for(const auto& env" << identifier << " : range) {\n";
-            visitSearch(scan, out);
+
+            visitSearch(iscan, out);
+
             out << "}\n";
             PRINT_END_COMMENT(out);
         }
 
-        void visitIndexChoice(const RamIndexChoice& indexChoice, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            const auto& rel = indexChoice.getRelation();
+        void visitParallelIndexScan(const RamParallelIndexScan& piscan, std::ostream& out) override {
+            const auto& rel = piscan.getRelation();
             auto relName = synthesiser.getRelationName(rel);
-            auto identifier = indexChoice.getTupleId();
+            auto arity = rel.getArity();
+            auto keys = isa->getSearchSignature(&piscan);
+            const auto& rangePattern = piscan.getRangePattern();
 
-            const bool parallel = identifier == 0;
+            assert(piscan.getTupleId() == 0 && "not outer-most loop");
+
+            assert(arity > 0 && "AstTranslator failed/no parallel index scan for nullaries");
+
+            assert(!preambleIssued && "only first loop can be made parallel");
+            preambleIssued = true;
+
+            PRINT_BEGIN_COMMENT(out);
+
+            out << "const Tuple<RamDomain," << arity << "> key({{";
+            for (size_t i = 0; i < arity; i++) {
+                if (rangePattern[i] != nullptr) {
+                    visit(rangePattern[i], out);
+                } else {
+                    out << "0";
+                }
+                if (i + 1 < arity) {
+                    out << ",";
+                }
+            }
+            out << "}});\n";
+            out << "auto range = " << relName
+                << "->"
+                // TODO (b-scholz): context may be missing here?
+                << "equalRange_" << keys << "(key);\n";
+            out << "auto part = range.partition();\n";
+            out << "PARALLEL_START;\n";
+            out << preamble.str();
+            out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
+            out << "try{\n";
+            out << "for(const auto& env0 : *it) {\n";
+
+            visitSearch(piscan, out);
+
+            out << "}\n";
+            out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+            out << "}\n";
+
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitIndexChoice(const RamIndexChoice& ichoice, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            const auto& rel = ichoice.getRelation();
+            auto relName = synthesiser.getRelationName(rel);
+            auto identifier = ichoice.getTupleId();
+            auto arity = rel.getArity();
+            const auto& rangePattern = ichoice.getRangePattern();
+            auto keys = isa->getSearchSignature(&ichoice);
 
             // check list of keys
-            auto arity = rel.getArity();
             assert(arity > 0 && "AstTranslator failed");
-            const auto& rangePattern = indexChoice.getRangePattern();
 
-            // get index to be queried
-            auto keys = isa->getSearchSignature(&indexChoice);
-
-            // a lambda for printing boundary key values
-            auto printKeyTuple = [&]() {
-                for (size_t i = 0; i < arity; i++) {
-                    if (rangePattern[i] != nullptr) {
-                        visit(rangePattern[i], out);
-                    } else {
-                        out << "0";
-                    }
-                    if (i + 1 < arity) {
-                        out << ",";
-                    }
+            out << "const Tuple<RamDomain," << arity << "> key({{";
+            for (size_t i = 0; i < arity; i++) {
+                if (rangePattern[i] != nullptr) {
+                    visit(rangePattern[i], out);
+                } else {
+                    out << "0";
                 }
-            };
+                if (i + 1 < arity) {
+                    out << ",";
+                }
+            }
+            out << "}});\n";
 
-            // get relation name
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
-            // if this is the parallel level
-            if (parallel) {
-                // make this loop parallel
-                out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
-                out << "try{";
-                out << "for(const auto& env0 : *it) {\n";
-                out << "if( ";
-                visit(indexChoice.getCondition(), out);
-                out << ") {\n";
-                visitSearch(indexChoice, out);
-                out << "break;\n";
-                out << "}\n";
-                out << "}\n";
-                out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
-                out << "}\n";
-                PRINT_END_COMMENT(out);
-                return;
-            }
-
-            // if it is a equality-range query
-            out << "const Tuple<RamDomain," << arity << "> key({{";
-            printKeyTuple();
-            out << "}});\n";
             out << "auto range = " << relName << "->"
                 << "equalRange_" << keys << "(key," << ctxName << ");\n";
             out << "for(const auto& env" << identifier << " : range) {\n";
             out << "if( ";
-            visit(indexChoice.getCondition(), out);
+
+            visit(ichoice.getCondition(), out);
+
             out << ") {\n";
-            visitSearch(indexChoice, out);
+
+            visitSearch(ichoice, out);
+
             out << "break;\n";
             out << "}\n";
             out << "}\n";
+
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitParallelIndexChoice(const RamParallelIndexChoice& pichoice, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            const auto& rel = pichoice.getRelation();
+            auto relName = synthesiser.getRelationName(rel);
+            auto arity = rel.getArity();
+            const auto& rangePattern = pichoice.getRangePattern();
+            auto keys = isa->getSearchSignature(&pichoice);
+
+            assert(pichoice.getTupleId() == 0 && "not outer-most loop");
+
+            assert(arity > 0 && "AstTranslator failed");
+
+            assert(!preambleIssued && "only first loop can be made parallel");
+            preambleIssued = true;
+
+            PRINT_BEGIN_COMMENT(out);
+
+            out << "const Tuple<RamDomain," << arity << "> key({{";
+            for (size_t i = 0; i < arity; i++) {
+                if (rangePattern[i] != nullptr) {
+                    visit(rangePattern[i], out);
+                } else {
+                    out << "0";
+                }
+                if (i + 1 < arity) {
+                    out << ",";
+                }
+            }
+            out << "}});\n";
+            out << "auto range = " << relName
+                << "->"
+                // TODO (b-scholz): context may be missing here?
+                << "equalRange_" << keys << "(key);\n";
+            out << "auto part = range.partition();\n";
+            out << "PARALLEL_START;\n";
+            out << preamble.str();
+            out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
+            out << "try{";
+            out << "for(const auto& env0 : *it) {\n";
+            out << "if( ";
+
+            visit(pichoice.getCondition(), out);
+
+            out << ") {\n";
+
+            visitSearch(pichoice, out);
+
+            out << "break;\n";
+            out << "}\n";
+            out << "}\n";
+            out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
+            out << "}\n";
+
             PRINT_END_COMMENT(out);
         }
 
@@ -1987,7 +1982,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "std::atomic<size_t> iter(0);\n\n";
 
     // set default threads (in embedded mode)
-    if (std::stoi(Global::config().get("jobs")) > 0) {
+    if (std::stoi(Global::config().get("jobs")) > 1) {
         os << "#if defined(__EMBEDDED_SOUFFLE__) && defined(_OPENMP)\n";
         os << "omp_set_num_threads(" << std::stoi(Global::config().get("jobs")) << ");\n";
         os << "#endif\n\n";
@@ -2128,7 +2123,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
                 os << "std::vector<bool>({" << join(symbolMask) << "})";
-                os << ", symTable, ioDirectives, " << Global::config().has("provenance");
+                os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
                 os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2173,7 +2168,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "IOSystem::getInstance().getReader(";
             os << "std::vector<bool>({" << join(symbolMask) << "})";
             os << ", symTable, ioDirectives";
-            os << ", " << Global::config().has("provenance");
+            os << ", " << (Global::config().has("provenance") ? "true" : "false");
             os << ")->readAll(*" << getRelationName(load.getRelation());
             os << ");\n";
             os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -2196,7 +2191,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "std::vector<bool>({" << join(symbolMask) << "})";
-        os << ", symTable, ioDirectives, " << Global::config().has("provenance");
+        os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
     };
@@ -2224,7 +2219,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of dumpOutputs() method
 
     os << "public:\n";
-    os << "SymbolTable &getSymbolTable() override {\n";
+    os << "SymbolTable& getSymbolTable() override {\n";
     os << "return symTable;\n";
     os << "}\n";  // end of getSymbolTable() method
 

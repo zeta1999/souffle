@@ -167,7 +167,7 @@ public:
 
     /** Return code stream */
     std::vector<RamDomain> getCode() const {
-        return *this;
+        return std::vector<RamDomain>(begin(), end());
     }
 
     /** Return IODirectives pool */
@@ -188,7 +188,7 @@ public:
     /** Print out the code stream */
     virtual void print() const;
 
-    virtual ~LVMCode() {}
+    virtual ~LVMCode() = default;
 
 private:
     /** Store reference to IODirectives */

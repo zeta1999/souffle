@@ -53,6 +53,7 @@ public:
 private:
     // a struct to represent literals
     struct literal {
+        literal(bool negated, std::unique_ptr<AstLiteral> atom) : negated(negated), atom(std::move(atom)) {}
         // whether this literal is negated or not
         bool negated;
 
@@ -60,7 +61,7 @@ private:
         std::unique_ptr<AstLiteral> atom;
 
         literal clone() const {
-            return literal({negated, std::unique_ptr<AstLiteral>(atom->clone())});
+            return literal(negated, std::unique_ptr<AstLiteral>(atom->clone()));
         }
     };
 

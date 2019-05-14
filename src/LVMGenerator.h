@@ -199,8 +199,8 @@ protected:
 
     void visitPackRecord(const RamPackRecord& pack, size_t exitAddress) override {
         auto values = pack.getArguments();
-        for (size_t i = 0; i < values.size(); ++i) {
-            visit(values[i], exitAddress);
+        for (auto& value : values) {
+            visit(value, exitAddress);
         }
         code->push_back(LVM_PackRecord);
         code->push_back(values.size());
@@ -778,9 +778,9 @@ protected:
         size_t arity = project.getRelation().getArity();
         std::string relationName = project.getRelation().getName();
         auto values = project.getValues();
-        for (size_t i = 0; i < values.size(); ++i) {
-            assert(values[i]);
-            visit(values[i], exitAddress);
+        for (auto& value : values) {
+            assert(value);
+            visit(value, exitAddress);
         }
         code->push_back(LVM_Project);
         code->push_back(arity);

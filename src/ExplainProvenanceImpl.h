@@ -455,9 +455,9 @@ public:
     std::vector<std::string> getRules(std::string relName) override {
         std::vector<std::string> relRules;
         // go through all rules
-        for (auto it = rules.begin(); it != rules.end(); it++) {
-            if (it->first.first == relName) {
-                relRules.push_back(it->second);
+        for (auto& rule : rules) {
+            if (rule.first.first == relName) {
+                relRules.push_back(rule.second);
             }
         }
 

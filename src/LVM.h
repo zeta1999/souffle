@@ -37,8 +37,6 @@
 #include <vector>
 #include <dlfcn.h>
 
-#define SOUFFLE_DLL "libfunctors.so"
-
 namespace souffle {
 
 class InterpreterProgInterface;
@@ -171,20 +169,6 @@ protected:
         InterpreterRelation* rel2 = &getRelation(ramRel2);
         environment[ramRel1] = rel2;
         environment[ramRel2] = rel1;
-    }
-
-    /** load dll */
-    void* loadDLL() {
-        if (dll == nullptr) {
-            // check environment variable
-            std::string fname = SOUFFLE_DLL;
-            dll = dlopen(SOUFFLE_DLL, RTLD_LAZY);
-            if (dll == nullptr) {
-                std::cerr << "Cannot find Souffle's DLL" << std::endl;
-                exit(1);
-            }
-        }
-        return dll;
     }
 
     /** Lookup IndexScan iterator, resize the iterator pool if necessary */

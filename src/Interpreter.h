@@ -36,8 +36,6 @@
 #include <vector>
 #include <dlfcn.h>
 
-#define SOUFFLE_DLL "libfunctors.so"
-
 namespace souffle {
 
 class InterpreterProgInterface;
@@ -68,6 +66,62 @@ public:
             std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) = 0;
 
 protected:
+    /** Load dll */
+    const std::vector<void*>& loadDLL() {
+        if (!dll.empty()) {
+            return dll;
+        }
+
+        if (!Global::config().has("libraries")) {
+            Global::config().set("libraries", "functors");
+        }
+        if (!Global::config().has("library-dir")) {
+            Global::config().set("library-dir", ".");
+        }
+        for (const std::string& library : splitString(Global::config().get("libraries"), ' ')) {
+            // The library may be blank
+            if (library.empty()) {
+                continue;
+            }
+            auto paths = splitString(Global::config().get("library-dir"), ' ');
+            // Set up our paths to have a library appended
+            for (std::string& path : paths) {
+                if (path.back() != '/') {
+                    path += '/';
+                }
+            }
+
+            if (library.find('/') != std::string::npos) {
+                paths.clear();
+            }
+
+            paths.push_back("");
+
+            void* tmp = nullptr;
+            for (const std::string& path : paths) {
+                std::string fullpath = path + "lib" + library + ".so";
+                tmp = dlopen(fullpath.c_str(), RTLD_LAZY);
+                if (tmp != nullptr) {
+                    dll.push_back(tmp);
+                    break;
+                }
+            }
+        }
+
+        return dll;
+    }
+
+    void* getMethodHandle(const std::string& method) {
+        // load DLLs (if not done yet)
+        for (void* libHandle : loadDLL()) {
+            auto* methodHandle = dlsym(libHandle, method.c_str());
+            if (methodHandle != nullptr) {
+                return methodHandle;
+            }
+        }
+        return nullptr;
+    }
+
     friend InterpreterProgInterface;
 
     /** relation environment type */
@@ -88,6 +142,9 @@ protected:
 
     /** Relation Environment */
     relation_map environment;
+
+    /** Dynamic library for user-defined functors */
+    std::vector<void*> dll;
 };
 
 }  // end of namespace souffle

@@ -92,6 +92,14 @@ void executeBinary(const std::string& binaryFilename
     } else
 #endif
     {
+        std::string ldPath = "LD_LIBRARY_PATH=";
+        for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
+            ldPath += library + ':';
+        }
+        ldPath.back() = ' ';
+        std::vector<char> ldPathChars(ldPath.begin(), ldPath.end());
+        putenv(&ldPathChars[0]);
+
         exitCode = system(binaryFilename.c_str());
     }
 
@@ -111,6 +119,22 @@ void executeBinary(const std::string& binaryFilename
  */
 void compileToBinary(std::string compileCmd, const std::string& sourceFilename) {
     // add source code
+    compileCmd += ' ';
+    for (const std::string& path : splitString(Global::config().get("library-dir"), ' ')) {
+        // The first entry may be blank
+        if (path.empty()) {
+            continue;
+        }
+        compileCmd += "-L" + path + ' ';
+    }
+    for (const std::string& library : splitString(Global::config().get("libraries"), ' ')) {
+        // The first entry may be blank
+        if (library.empty()) {
+            continue;
+        }
+        compileCmd += "-l" + library + ' ';
+    }
+
     compileCmd += sourceFilename;
 
     // run executable
@@ -166,6 +190,8 @@ int main(int argc, char** argv) {
                 {"generate", 'g', "FILE", "", false,
                         "Generate C++ source code for the given Datalog program and write it to "
                         "<FILE>."},
+                {"library-dir", 'L', "DIR", "", true, "Specify directory for library files."},
+                {"libraries", 'l', "FILE", "", true, "Specify libraries."},
                 {"no-warn", 'w', "", "", false, "Disable warnings."},
                 {"magic-transform", 'm', "RELATIONS", "", false,
                         "Enable magic set transformation changes on the given relations, use '*' "
@@ -176,7 +202,7 @@ int main(int argc, char** argv) {
                 {"dl-program", 'o', "FILE", "", false,
                         "Generate C++ source code, written to <FILE>, and compile this to a "
                         "binary executable (without executing it)."},
-                {"live-profile", 'l', "", "", false, "Enable live profiling."},
+                {"live-profile", '\4', "", "", false, "Enable live profiling."},
                 {"profile", 'p', "FILE", "", false, "Enable profiling, and write profile data to <FILE>."},
                 {"profile-use", 'u', "FILE", "", false,
                         "Use profile log-file <FILE> for profile-guided optimization."},
@@ -573,7 +599,12 @@ int main(int argc, char** argv) {
             os.close();
 
             if (withSharedLibrary) {
-                compileCmd += "-s ";
+                if (!Global::config().has("libraries")) {
+                    Global::config().set("libraries", "functors");
+                }
+                if (!Global::config().has("library-dir")) {
+                    Global::config().set("library-dir", ".");
+                }
             }
 
             if (Global::config().has("compile")) {

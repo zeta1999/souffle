@@ -263,7 +263,6 @@ const MinIndexSelection::ChainOrderMap MinIndexSelection::getChainsFromMatching(
 }
 
 void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
-    //TODO Can we also analyze all creatRelation?
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
@@ -275,6 +274,9 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
         } else if (const auto* provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
             MinIndexSelection& indexes = getIndexes(provExists->getRelation());
             indexes.addSearch(getSearchSignature(provExists));
+        } else if (const auto* ramRel = dynamic_cast<const RamCreate*>(&node)) {
+            MinIndexSelection& indexes = getIndexes(ramRel->getRelation());
+            indexes.addSearch(getSearchSignature(ramRel));
         }
     });
 
@@ -294,6 +296,17 @@ MinIndexSelection& RamIndexAnalysis::getIndexes(const RamRelation& rel) {
         assert(ret.second);
         return ret.first->second;
     }
+}
+
+MinIndexSelection& RamIndexAnalysis::getIndexes(const std::string& relName) {
+    for (auto& cur : minIndexCover) {
+        if (cur.first->getName() == relName) {
+            return cur.second;
+        }
+    }
+    
+    // Indices should always be found.
+    abort();
 }
 
 void RamIndexAnalysis::print(std::ostream& os) const {
@@ -362,6 +375,11 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* ex
             res |= (1 << i);
         }
     }
+    return res;
+}
+
+SearchSignature RamIndexAnalysis::getSearchSignature(const RamCreate* ramRel) const {
+    SearchSignature res = (1 << ramRel->getRelation().getArity()) - 1;
     return res;
 }
 

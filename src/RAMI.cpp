@@ -306,6 +306,7 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
         }
 
         bool visitExistenceCheck(const RamExistenceCheck& exists) override {
+            printf("E1 at rel%s\n", exists.getRelation().getName().c_str());
             const InterpreterRelation& rel = interpreter.getRelation(exists.getRelation());
 
             // construct the pattern tuple
@@ -334,12 +335,20 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
             }
 
             // obtain index
+            printf("Arity size:%ld\n",arity);
+            auto col = interpreter.isa->getSearchSignature(&exists);
+            for (int i = 0; i < arity; ++i){
+                printf("%lu", (col >> i) & 1);
+            }
+            printf("\n");
             auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&exists));
             auto range = idx->lowerUpperBound(low, high);
+            printf("E2\n");
             return range.first != range.second;  // if there is something => done
         }
 
         bool visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
+            printf("P1\n");
             const InterpreterRelation& rel = interpreter.getRelation(provExists.getRelation());
 
             // construct the pattern tuple
@@ -362,6 +371,7 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
             // obtain index
             auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&provExists));
             auto range = idx->lowerUpperBound(low, high);
+            printf("P2\n");
             return range.first != range.second;  // if there is something => done
         }
 
@@ -499,7 +509,9 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             }
 
             // obtain index
+            printf("Indexing relation %s\n", scan.getRelation().getName().c_str());
             auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&scan), nullptr);
+            printf("Indexing relation done\n");
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
@@ -588,6 +600,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
         }
 
         bool visitAggregate(const RamAggregate& aggregate) override {
+            printf("Aggr\n");
             // get the targeted relation
             const InterpreterRelation& rel = interpreter.getRelation(aggregate.getRelation());
 
@@ -648,6 +661,8 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             tuple[0] = res;
             ctxt[aggregate.getTupleId()] = tuple;
 
+            printf("Aggre Done\n");
+
             if (aggregate.getFunction() == souffle::MAX && res == MIN_RAM_DOMAIN) {
                 // no maximum found
                 return true;
@@ -700,7 +715,9 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             }
 
             // obtain index
+            printf("index aggregate %s\n", aggregate.getRelation().getName().c_str());
             auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&aggregate));
+            printf("index aggregate done\n");
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
@@ -794,8 +811,10 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             }
 
             // insert in target relation
+            printf("projecting %s\n", project.getRelation().getName().c_str());
             InterpreterRelation& rel = interpreter.getRelation(project.getRelation());
             rel.insert(tuple);
+            printf("Done\n");
             return true;
         }
 
@@ -926,8 +945,17 @@ void RAMI::evalStmt(const RamStatement& stmt) {
             // Check if it is a temporary 'new' relation
             auto& rel = create.getRelation();
             const std::string& relName = rel.getName();
-
+            printf("Create rel: %s\n", relName.c_str());
             // Use the indices of delta relation for new relation
+            if (relName == "@new_B") {
+                auto& allSig = interpreter.isa->getIndexes(create.getRelation());
+                for (auto cols : allSig.getSearches()) {
+                    printf("Sig:");
+                    for (int i = 0; i < rel.getArity(); ++i) {
+                        printf("%lu", (cols >> i) & 1);
+                    }
+                }
+            }
             if (rel.isTemp() && relName.substr(0, 4) == "@new") {
                 std::string deltaRelName = "@delta" + relName.substr(4);
                 interpreter.createRelation(
@@ -1022,13 +1050,16 @@ void RAMI::evalStmt(const RamStatement& stmt) {
                 src.extend(trg);
             }
             // merge in all elements
+            printf("Merge %s %s \n", merge.getSourceRelation().getName().c_str(), merge.getTargetRelation().getName().c_str());
             trg.insert(src);
+            printf("Merge Finish\n");
 
             // done
             return true;
         }
 
         bool visitSwap(const RamSwap& swap) override {
+            printf("Swapping %s %s\n", swap.getFirstRelation().getName().c_str(), swap.getSecondRelation().getName().c_str());
             interpreter.swapRelation(swap.getFirstRelation(), swap.getSecondRelation());
             return true;
         }

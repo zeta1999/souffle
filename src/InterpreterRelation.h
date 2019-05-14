@@ -104,7 +104,7 @@ public:
         for (auto& cur : indices) {
             cur.second.insert(newTuple);
         }
-        //totalIndex->insert(newTuple);
+        // totalIndex->insert(newTuple);
         // increment relation size
         num_tuples++;
     }
@@ -137,6 +137,9 @@ public:
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
+        if (col == 0) {
+            return getIndex(getTotalIndexKey());
+        }
         return getIndex(orderSet->getLexOrder(col));
     }
 
@@ -154,11 +157,13 @@ public:
 
     /** check whether a tuple exists in the relation */
     bool exists(const RamDomain* tuple) const {
+       printf("Exist1\n");
         // handle arity 0
         if (getArity() == 0) {
             return !empty();
         }
         InterpreterIndex* index = getIndex(getTotalIndexKey());
+       printf("Exist2\n");
         return index->exists(tuple);
     }
 
@@ -265,7 +270,7 @@ private:
     mutable std::map<LexOrder, InterpreterIndex> indices;
 
     /** Total Index */
-    //std::unique_ptr<InterpreterIndex> totalIndex;
+    // std::unique_ptr<InterpreterIndex> totalIndex;
 
     /** IndexSet */
     const MinIndexSelection* orderSet;

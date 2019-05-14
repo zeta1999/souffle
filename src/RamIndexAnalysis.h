@@ -256,8 +256,9 @@ protected:
             }
         }
         std::cerr << "Cannot find matching lexicaographical order" << std::endl;
+        printf("Sig:%lu\n", cols);
         for (int i = 0; i < 64; ++i) {
-            printf("%lld", (cols >> i) & 1);
+            printf("%lu", (cols >> i) & 1);
         }
         printf("\n");
         abort();
@@ -364,7 +365,7 @@ public:
      * @param RamCreate node
      * @result total full-signature of the relation
      */
-    SearchSignature getSearchSignature(const RamCreate* ramRel) const;
+    SearchSignature getSearchSignature(const RamRelation* ramRel) const;
 
     /**
      * @Brief index signature of existence check resembles a total index

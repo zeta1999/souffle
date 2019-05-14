@@ -123,8 +123,9 @@ public:
             std::string bodyRel = splitString(bodyLiteral, ',')[0];
 
             // check whether the current atom is a constraint
-            bool isConstraint =
-                    std::find(constraintList.begin(), constraintList.end(), bodyRel) != constraintList.end();
+            assert(bodyRel.size() > 0 && "body of a relation should have positive length");
+            bool isConstraint = std::find(constraintList.begin(), constraintList.end(),
+                                        splitString(bodyRel, ',')[0]) != constraintList.end();
 
             // handle negated atom names
             auto bodyRelAtomName = bodyRel;
@@ -301,12 +302,16 @@ public:
                 if (!contains(uniqueVariables, *atomIt) && !contains(headVariables, *atomIt)) {
                     uniqueVariables.push_back(*atomIt);
 
-                    // store type of variable
-                    auto currentRel = prog.getRelation(atomRepresentation[0]);
-                    assert(currentRel != nullptr &&
-                            ("relation " + atomRepresentation[0] + " doesn't exist").c_str());
-                    variableTypes[*atomIt] =
-                            *currentRel->getAttrType(atomIt - atomRepresentation.begin() - 1);
+                    if (!contains(constraintList, atomRepresentation[0])) {
+                        // store type of variable
+                        auto currentRel = prog.getRelation(atomRepresentation[0]);
+                        assert(currentRel != nullptr &&
+                                ("relation " + atomRepresentation[0] + " doesn't exist").c_str());
+                        variableTypes[*atomIt] =
+                                *currentRel->getAttrType(atomIt - atomRepresentation.begin() - 1);
+                    } else if (atomIt->find("agg_") != std::string::npos) {
+                        variableTypes[*atomIt] = 'i';
+                    }
                 }
             }
         }

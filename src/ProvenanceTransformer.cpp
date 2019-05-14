@@ -103,37 +103,21 @@ std::unique_ptr<AstRelation> makeInfoRelation(
         }
     };
 
-    std::cout << "before: ";
-    originalClause.print(std::cout);
-    std::cout << std::endl;
-
     HeadArgumentGetter headArgGet(headVariables);
     originalClause.getHead()->apply(headArgGet);
 
-    std::cout << "after: ";
-    originalClause.print(std::cout);
-    std::cout << std::endl;
-    /*
-    visitDepthFirst(*(originalClause.getHead()), [&](const AstArgument& arg) {
-        if (const auto* var = dynamic_cast<const AstVariable*>(&arg) {
-            std::stringstream varName;
-            var->print(varName);
-            headVariables.push_back(varName.str());
-        } else if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg) {
-            std::stringStream aggStringRepresentation;
-            agg->print(aggStringRepresentation);
-            headVariables.push_back(aggStringRepresentation.str());
-        }
-    });
-    */
-
+    // join variables in the head with commas
     std::stringstream headVariableString;
     headVariableString << join(headVariables, ",");
 
+    // add an attribute to infoRelation for the head of clause
     infoRelation->addAttribute(
             std::make_unique<AstAttribute>(std::string("head_vars"), AstTypeIdentifier("symbol")));
     infoClauseHead->addArgument(
             std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), headVariableString.str()));
+
+    // add a counter marking aggregates
+    int aggregateNumber = 0;
 
     // visit all body literals and add to info clause head
     for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {
@@ -149,69 +133,49 @@ std::unique_ptr<AstRelation> makeInfoRelation(
         if (atom != nullptr) {
             std::string relName = identifierToString(atom->getName());
 
+            // for an atom, add its name and variables (converting aggregates to variables)
             if (dynamic_cast<AstAtom*>(lit) != nullptr) {
                 std::string atomDescription = relName;
 
-                // for each variable in the literal, add an extra field to the instrumented relation name
-                visitDepthFirst(*atom, [&](const AstVariable& var) {
-                    std::stringstream varName;
-                    var.print(varName);
-                    atomDescription.append("," + varName.str());
-                });
-
-                // for each variable in the literal, add an extra field to the instrumented relation name
-                visitDepthFirst(*atom, [&](const AstAggregator& agg) {
-                    std::stringstream aggRepresentation;
-                    agg.print(aggRepresentation);
-                    atomDescription.append("," + aggRepresentation.str());
-                });
-
-                /*
-                // get all variables and aggregates in the head
-                struct BodyArgumentGetter : public AstNodeMapper {
-                    std::string& atomDescription;
-
-                    BodyArgumentGetter(std::string& atomDescription) : atomDescription(atomDescription) {}
-
-                    std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
-                        if (const auto* var = dynamic_cast<const AstVariable*>(node.get())) {
-                            std::stringstream varName;
-                            var->print(varName);
-                            atomDescription.append("," + varName.str());
-                        } else if (const auto* agg = dynamic_cast<const AstAggregator*>(node.get())) {
-                            std::stringstream aggStringRepresentation;
-                            agg->print(aggStringRepresentation);
-                            atomDescription.append("," + aggStringRepresentation.str());
-                        } else {
-                            // apply mapper to children
-                            node->apply(*this);
-                        }
-
-                        return node;
-                    }
-                };
-
-                BodyArgumentGetter bodyArgGet(atomDescription);
-                atom->apply(bodyArgGet);
-                */
-
-                /*
                 for (auto& arg : atom->getArguments()) {
-                    std::stringstream argDescription;
-                    arg->print(argDescription);
-                    atomDescription.append("," + argDescription.str());
+                    if (dynamic_cast<AstVariable*>(arg)) {
+                        std::stringstream argDescription;
+                        arg->print(argDescription);
+                        atomDescription.append("," + argDescription.str());
+                    } else if (dynamic_cast<AstAggregator*>(arg)) {
+                        atomDescription.append(",agg_" + std::to_string(aggregateNumber++));
+                    }
                 }
-                */
 
                 infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
                         translationUnit.getSymbolTable(), atomDescription));
+                // for a negation, add a marker with the relation name
             } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
                 infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
                         translationUnit.getSymbolTable(), ("!" + relName)));
             }
+            // for a constraint, add the constraint symbol and LHS and RHS
         } else if (auto con = dynamic_cast<AstBinaryConstraint*>(lit)) {
+            std::string constraintDescription = toBinaryConstraintSymbol(con->getOperator());
+
+            if (auto var = dynamic_cast<AstVariable*>(con->getLHS())) {
+                std::stringstream argDescription;
+                var->print(argDescription);
+                constraintDescription.append("," + argDescription.str());
+            } else if (dynamic_cast<AstAggregator*>(con->getLHS())) {
+                constraintDescription.append(",agg_" + std::to_string(aggregateNumber++));
+            }
+
+            if (auto var = dynamic_cast<AstVariable*>(con->getRHS())) {
+                std::stringstream argDescription;
+                var->print(argDescription);
+                constraintDescription.append("," + argDescription.str());
+            } else if (dynamic_cast<AstAggregator*>(con->getRHS())) {
+                constraintDescription.append(",agg_" + std::to_string(aggregateNumber++));
+            }
+
             infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
-                    translationUnit.getSymbolTable(), (toBinaryConstraintSymbol(con->getOperator()))));
+                    translationUnit.getSymbolTable(), constraintDescription));
         }
     }
 

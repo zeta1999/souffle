@@ -796,7 +796,6 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // insert in target relation
             InterpreterRelation& rel = interpreter.getRelation(project.getRelation());
             rel.insert(tuple);
-
             return true;
         }
 
@@ -924,8 +923,19 @@ void RAMI::evalStmt(const RamStatement& stmt) {
         }
 
         bool visitCreate(const RamCreate& create) override {
-            interpreter.createRelation(
-                    create.getRelation(), interpreter.isa->getIndexes(create.getRelation()));
+            // Check if it is a temporary 'new' relation
+            auto& rel = create.getRelation();
+            const std::string& relName = rel.getName();
+
+            // Use the indices of delta relation for new relation
+            if (rel.isTemp() && relName.substr(0, 4) == "@new") {
+                std::string deltaRelName = "@delta" + relName.substr(4);
+                interpreter.createRelation(
+                        create.getRelation(), &(interpreter.isa->getIndexes(deltaRelName)));
+            } else {
+                interpreter.createRelation(
+                        create.getRelation(), &(interpreter.isa->getIndexes(create.getRelation())));
+            }
             return true;
         }
 

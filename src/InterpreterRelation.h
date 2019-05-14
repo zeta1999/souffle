@@ -35,20 +35,12 @@ class InterpreterRelation {
     using LexOrder = std::vector<int>;
 
 public:
-    InterpreterRelation(size_t relArity, const MinIndexSelection& orderSet)
+    InterpreterRelation(size_t relArity, const MinIndexSelection* orderSet)
             : arity(relArity), num_tuples(0), orderSet(orderSet) {
         // Create all necessary indices based on orderSet
-        for (auto& order : orderSet.getAllOrders()) {
-            std::unique_ptr<InterpreterIndex> index = std::make_unique<InterpreterIndex>(order);
-            indices.insert(std::make_pair(order, std::move(index)));
+        for (auto& order : orderSet->getAllOrders()) {
+            indices.emplace(std::make_pair(order, InterpreterIndex(order)));
         }
-
-        // Create total Index.
-        LexOrder totalOrder;
-        for (int i = 0; i < relArity; ++i) {
-            totalOrder.push_back(i);
-        }
-        this->totalIndex = std::make_unique<InterpreterIndex>(totalOrder);
     }
 
     InterpreterRelation(const InterpreterRelation& other) = delete;
@@ -109,10 +101,10 @@ public:
         }
 
         // update all indexes with new tuple
-        for (const auto& cur : indices) {
-            cur.second->insert(newTuple);
+        for (auto& cur : indices) {
+            cur.second.insert(newTuple);
         }
-        totalIndex->insert(newTuple);
+        //totalIndex->insert(newTuple);
         // increment relation size
         num_tuples++;
     }
@@ -128,10 +120,9 @@ public:
     /** Purge table */
     void purge() {
         blockList.clear();
-        for (const auto& cur : indices) {
-            cur.second->purge();
+        for (auto& cur : indices) {
+            cur.second.purge();
         }
-        totalIndex.get()->purge();
         num_tuples = 0;
     }
 
@@ -146,17 +137,14 @@ public:
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
-        if (col == getTotalIndexKey()) {
-            return totalIndex.get();
-        }
-        return getIndex(orderSet.getLexOrder(col));
+        return getIndex(orderSet->getLexOrder(col));
     }
 
     /** get index for a given order. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const LexOrder& order) const {
         auto ret = indices.find(order);
         assert(ret != indices.end() && "getIndex should always find an existing index");
-        return ret->second.get();
+        return &(ret->second);
     }
 
     /** Obtains a full index-key for this relation */
@@ -170,7 +158,7 @@ public:
         if (getArity() == 0) {
             return !empty();
         }
-        InterpreterIndex* index = totalIndex.get();
+        InterpreterIndex* index = getIndex(getTotalIndexKey());
         return index->exists(tuple);
     }
 
@@ -274,13 +262,13 @@ private:
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
 
     /** List of indices */
-    mutable std::map<LexOrder, std::unique_ptr<InterpreterIndex>> indices;
+    mutable std::map<LexOrder, InterpreterIndex> indices;
 
     /** Total Index */
-    std::unique_ptr<InterpreterIndex> totalIndex;
+    //std::unique_ptr<InterpreterIndex> totalIndex;
 
     /** IndexSet */
-    const MinIndexSelection& orderSet;
+    const MinIndexSelection* orderSet;
 
     /** Lock for parallel execution */
     mutable Lock lock;
@@ -298,7 +286,7 @@ private:
 
 class InterpreterEqRelation : public InterpreterRelation {
 public:
-    InterpreterEqRelation(size_t relArity, const MinIndexSelection& orderSet)
+    InterpreterEqRelation(size_t relArity, const MinIndexSelection* orderSet)
             : InterpreterRelation(relArity, orderSet) {}
 
     /** Insert tuple */

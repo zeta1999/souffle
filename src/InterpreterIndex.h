@@ -138,7 +138,8 @@ class InterpreterIndex {
 public:
     /* lexicographical comparison operation on two tuple pointers */
     struct comparator {
-        const LexOrder& order;
+        // TODO remove ref-qualifier. Which cause issue when moving or copying the index.
+        const LexOrder order;
 
         /* constructor to initialize state */
         comparator(const LexOrder& order) : order(order) {}

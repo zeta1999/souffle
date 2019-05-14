@@ -36,7 +36,7 @@ class InterpreterRelation {
 
 public:
     InterpreterRelation(size_t relArity, const MinIndexSelection* orderSet)
-            : arity(relArity), num_tuples(0), orderSet(orderSet) {
+            : arity(relArity), orderSet(orderSet) {
         // Create all necessary indices based on orderSet
         for (auto& order : orderSet->getAllOrders()) {
             indices.emplace(std::make_pair(order, InterpreterIndex(order)));
@@ -257,7 +257,7 @@ private:
     static const int BLOCK_SIZE = 1024;
 
     /** Number of tuples in relation */
-    size_t num_tuples;
+    size_t num_tuples = 0;
 
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
 
@@ -277,7 +277,7 @@ private:
     std::vector<std::string> attributeTypeQualifiers;
 
     /** Stratum level information */
-    size_t level;
+    size_t level = 0;
 };
 
 /**

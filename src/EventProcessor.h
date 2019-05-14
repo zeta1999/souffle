@@ -165,10 +165,10 @@ private:
             }
         }
         std::vector<std::string> result = split(str, ";");
-        for (size_t i = 0; i < result.size(); i++) {
-            for (size_t j = 0; j < result[i].size(); j++) {
-                if (result[i][j] == '\b') {
-                    result[i][j] = ';';
+        for (auto& i : result) {
+            for (char& j : i) {
+                if (j == '\b') {
+                    j = ';';
                 }
             }
         }

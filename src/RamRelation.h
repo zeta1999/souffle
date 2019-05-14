@@ -135,8 +135,7 @@ public:
 
     /** Create clone */
     RamRelation* clone() const override {
-        RamRelation* res =
-                new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, representation);
+        auto* res = new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, representation);
         return res;
     }
 

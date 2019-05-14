@@ -18,12 +18,12 @@
 
 #include "Util.h"
 #include <cassert>
+#include <cstring>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-#include <string.h>
 
 namespace souffle {
 

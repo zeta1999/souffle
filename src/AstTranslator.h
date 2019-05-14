@@ -73,8 +73,8 @@ private:
      * Concrete attribute
      */
     struct Location {
-        int identifier;
-        int element;
+        int identifier{};
+        int element{};
         std::unique_ptr<RamRelationReference> relation{nullptr};
 
         Location() = default;

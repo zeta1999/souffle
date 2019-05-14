@@ -32,7 +32,7 @@ namespace mpi {
 
 /* typedefs */
 namespace {
-typedef std::unique_ptr<MPI_Status> Status;
+using Status = std::unique_ptr<MPI_Status>;
 }
 
 /* datatype */

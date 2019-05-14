@@ -251,6 +251,50 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* s
     return nullptr;
 }
 
+std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIndexScan* iscan) {
+    if (const auto* filter = dynamic_cast<const RamFilter*>(&iscan->getOperation())) {
+        const RamRelation& rel = iscan->getRelation();
+        const int identifier = iscan->getTupleId();
+        std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
+        bool indexable = false;
+        std::unique_ptr<RamCondition> condition = constructPattern(
+                queryPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
+        if (indexable) {
+            // Merge Index Pattern here
+            const auto prevPattern = iscan->getRangePattern();
+            auto addCondition = [&](std::unique_ptr<RamCondition> c) {
+                if (condition != nullptr) {
+                    condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
+                } else {
+                    condition = std::move(c);
+                }
+            };
+            for (std::size_t i = 0; i < rel.getArity(); i++) {
+                if (prevPattern[i] != nullptr) {
+                    if (queryPattern[i] == nullptr) {
+                        // found a new indexable attribute
+                        queryPattern[i] = std::unique_ptr<RamExpression>(prevPattern[i]->clone());
+                    } else {
+                        // found a new constraint that is not dependent on the current scan level
+                        // and can be hoisted in a later transformation.
+                        addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                std::unique_ptr<RamExpression>(prevPattern[i]->clone()),
+                                std::unique_ptr<RamExpression>(queryPattern[i]->clone())));
+                    }
+                }
+            }
+            return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
+                    std::move(queryPattern),
+                    condition == nullptr
+                            ? std::unique_ptr<RamOperation>(filter->getOperation().clone())
+                            : std::make_unique<RamFilter>(std::move(condition),
+                                      std::unique_ptr<RamOperation>(filter->getOperation().clone())),
+                    iscan->getProfileText());
+        }
+    }
+    return nullptr;
+}
+
 bool MakeIndexTransformer::makeIndex(RamProgram& program) {
     bool changed = false;
     visitDepthFirst(program, [&](const RamQuery& query) {
@@ -258,6 +302,11 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
                 if (std::unique_ptr<RamOperation> op = rewriteScan(scan)) {
+                    changed = true;
+                    node = std::move(op);
+                }
+            } else if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(node.get())) {
+                if (std::unique_ptr<RamOperation> op = rewriteIndexScan(iscan)) {
                     changed = true;
                     node = std::move(op);
                 }
@@ -298,7 +347,7 @@ std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const Ra
 
         // check if there is a break statement nested in the Scan - if so, remove it
         RamOperation* newOp;
-        if (const RamBreak* breakOp = dynamic_cast<const RamBreak*>(&indexScan->getOperation())) {
+        if (const auto* breakOp = dynamic_cast<const RamBreak*>(&indexScan->getOperation())) {
             newOp = breakOp->getOperation().clone();
         } else {
             newOp = indexScan->getOperation().clone();

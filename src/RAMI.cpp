@@ -194,7 +194,7 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
 
             // load DLL (if not done yet)
             void* handle = interpreter.loadDLL();
-            void (*fn)() = (void (*)())dlsym(handle, name.c_str());
+            auto fn = reinterpret_cast<void (*)()>(dlsym(handle, name.c_str()));
             if (fn == nullptr) {
                 std::cerr << "Cannot find user-defined operator " << name << " in " << SOUFFLE_DLL
                           << std::endl;
@@ -865,7 +865,7 @@ void RAMI::evalStmt(const RamStatement& stmt) {
             // parallel execution
             bool cond = true;
 #pragma omp parallel for reduction(&& : cond)
-            for (size_t i = 0; i < stmts.size(); i++) {
+            for (size_t i = 0; i < stmts.size(); i++) {  // NOLINT (modernize-loop-convert)
                 cond = cond && visit(stmts[i]);
             }
             return cond;

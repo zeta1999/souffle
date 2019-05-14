@@ -318,7 +318,7 @@ public:
                 resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
             }
         }
-        RamIndexScan* res = new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+        auto* res = new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
@@ -696,8 +696,8 @@ public:
         for (auto const& e : queryPattern) {
             pattern.push_back(std::unique_ptr<RamExpression>((e != nullptr) ? e->clone() : nullptr));
         }
-        RamIndexAggregate* res = new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()),
-                function, std::unique_ptr<RamRelationReference>(relationRef->clone()),
+        auto* res = new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
+                std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
                 std::move(pattern), getTupleId());
@@ -802,7 +802,7 @@ public:
     }
 
     RamAggregate* clone() const override {
-        RamAggregate* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
+        auto* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
@@ -874,8 +874,8 @@ public:
     }
 
     RamUnpackRecord* clone() const override {
-        RamUnpackRecord* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()),
-                getTupleId(), std::unique_ptr<RamExpression>(getExpression().clone()), arity);
+        auto* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(),
+                std::unique_ptr<RamExpression>(getExpression().clone()), arity);
         return res;
     }
 
@@ -1033,7 +1033,7 @@ public:
         for (auto& cur : expressions) {
             newValues.emplace_back(cur->clone());
         }
-        RamProject* res = new RamProject(
+        auto* res = new RamProject(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
         return res;
     }

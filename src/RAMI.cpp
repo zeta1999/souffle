@@ -1103,7 +1103,6 @@ void RAMI::executeSubroutine(const std::string& name, const std::vector<RamDomai
 
     printf("\nCasting to RamQuery ------- \n\n");
     const RamQuery& q = static_cast<const RamQuery&>(stmt);
-    q.getOperation().RamNode::print();
     q.print(std::cout , 0);
     printf("\nPass! ------- \n\n");
 

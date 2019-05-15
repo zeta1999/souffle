@@ -33,8 +33,8 @@
 #include <utility>
 #include <vector>
 
-#define NIL_ 0
-#define INF -1
+#define RIA_NIL 0
+#define RIA_INF -1
 
 // define if enable unit tests
 #define M_UNIT_TEST

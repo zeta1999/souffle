@@ -157,13 +157,11 @@ public:
 
     /** check whether a tuple exists in the relation */
     bool exists(const RamDomain* tuple) const {
-       printf("Exist1\n");
         // handle arity 0
         if (getArity() == 0) {
             return !empty();
         }
         InterpreterIndex* index = getIndex(getTotalIndexKey());
-       printf("Exist2\n");
         return index->exists(tuple);
     }
 

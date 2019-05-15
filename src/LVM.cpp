@@ -462,17 +462,13 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 // get name and type
                 const std::string name = symbolTable.resolve(code[ip + 1]);
                 const std::string type = symbolTable.resolve(code[ip + 2]);
-
-                // load DLL (if not done yet)
-                void* handle = this->loadDLL();
-                auto fn = reinterpret_cast<void (*)()>(dlsym(handle, name.c_str()));
+                size_t arity = code[ip + 3];
+                auto fn = reinterpret_cast<void (*)()>(getMethodHandle(name));
                 if (fn == nullptr) {
-                    std::cerr << "Cannot find user-defined operator " << name << " in " << SOUFFLE_DLL
-                              << std::endl;
+                    std::cerr << "Cannot find user-defined operator " << name << std::endl;
                     exit(1);
                 }
 
-                size_t arity = type.length();
                 ffi_cif cif;
                 ffi_type* args[arity];
                 void* values[arity];
@@ -519,7 +515,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     result = symbolTable.lookup(((const char*)rc));
                 }
                 stack.push(result);
-                ip += 3;
+                ip += 4;
                 break;
             }
             case LVM_PackRecord: {

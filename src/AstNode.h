@@ -58,7 +58,13 @@ public:
 
     /** Equivalence check for two AST nodes */
     bool operator==(const AstNode& other) const {
-        return this == &other || (typeid(*this) == typeid(other) && equal(other));
+        if (this == &other) {
+            return true;
+        } else if (typeid(*this) == typeid(*&other)) {
+            return equal(other);
+        }
+        return false;
+        // return this == &other || (typeid(*this) == typeid(other) && equal(other));
     }
 
     /** Inequality check for two AST nodes */

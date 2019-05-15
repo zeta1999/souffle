@@ -1244,37 +1244,66 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates
     // or anything else...)
 
-    // build a vector of unique variables
-    std::vector<AstVariable> uniqueVariables;
+    // clone clause for mutation
+    auto clauseReplacedAggregates = std::unique_ptr<AstClause>(clause.clone());
 
-    visitDepthFirst(clause, [&](const AstVariable& var) {
+    int aggNumber = 0;
+    struct AggregatesToVariables : public AstNodeMapper {
+        int& aggNumber;
+
+        AggregatesToVariables(int& aggNumber) : aggNumber(aggNumber) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            if (dynamic_cast<AstAggregator*>(node.get())) {
+                return std::make_unique<AstVariable>("agg_" + std::to_string(aggNumber++));
+            }
+
+            node->apply(*this);
+            return node;
+        }
+    };
+
+    AggregatesToVariables aggToVar(aggNumber);
+    clauseReplacedAggregates->apply(aggToVar);
+
+    // build a vector of unique variables
+    std::vector<const AstVariable*> uniqueVariables;
+
+    visitDepthFirst(*clauseReplacedAggregates, [&](const AstVariable& var) {
         if (var.getName().find("@level_num") == std::string::npos) {
-            if (std::find(uniqueVariables.begin(), uniqueVariables.end(), var) == uniqueVariables.end()) {
-                uniqueVariables.push_back(var);
+            // use find_if since uniqueVariables stores pointers, and we need to dereference the pointer to
+            // check equality
+            if (std::find_if(uniqueVariables.begin(), uniqueVariables.end(),
+                        [&](const AstVariable* v) { return *v == var; }) == uniqueVariables.end()) {
+                uniqueVariables.push_back(&var);
             }
         }
     });
 
     // a mapper to replace variables with subroutine arguments
     struct VariablesToArguments : public AstNodeMapper {
-        const std::vector<AstVariable>& uniqueVariables;
+        const std::vector<const AstVariable*>& uniqueVariables;
 
         VariablesToArguments() = default;
-        VariablesToArguments(const std::vector<AstVariable>& uniqueVariables)
+        VariablesToArguments(const std::vector<const AstVariable*>& uniqueVariables)
                 : uniqueVariables(uniqueVariables) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // replace unknown variables
+            if (auto varPtr = dynamic_cast<const AstVariable*>(node.get())) {
+                if (varPtr->getName().find("@level_num") == std::string::npos) {
+                    size_t argNum = std::find_if(uniqueVariables.begin(), uniqueVariables.end(),
+                                            [&](const AstVariable* v) { return *v == *varPtr; }) -
+                                    uniqueVariables.begin();
+
+                    return std::make_unique<AstSubroutineArgument>(argNum);
+                } else {
+                    return std::make_unique<AstUnnamedVariable>();
+                }
+            }
+
             // apply recursive
             node->apply(*this);
-
-            // replace unknown variables
-            if (auto varPtr = dynamic_cast<AstVariable*>(node.get())) {
-                auto var = *varPtr;
-                size_t argNum = std::find(uniqueVariables.begin(), uniqueVariables.end(), var) -
-                                uniqueVariables.begin();
-
-                return std::make_unique<AstSubroutineArgument>(argNum);
-            }
 
             // otherwise nothing
             return node;
@@ -1285,9 +1314,12 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     // relation
     std::unique_ptr<RamSequence> searchSequence = std::make_unique<RamSequence>();
 
+    // make a copy so that when we mutate clause, pointers to objects in newClause are not affected
+    auto newClause = std::unique_ptr<AstClause>(clauseReplacedAggregates->clone());
+
     // go through each body atom and create a return
     size_t litNumber = 0;
-    for (const auto& lit : clause.getBodyLiterals()) {
+    for (const auto& lit : newClause->getBodyLiterals()) {
         if (auto atom = dynamic_cast<AstAtom*>(lit)) {
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
@@ -1681,6 +1713,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             std::stringstream relName;
             relName << clause.getHead()->getName();
 
+            // do not add subroutines for info relations or facts
             if (relName.str().find("@info") != std::string::npos || clause.getBodyLiterals().empty()) {
                 return;
             }

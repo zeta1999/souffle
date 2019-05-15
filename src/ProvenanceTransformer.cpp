@@ -200,7 +200,7 @@ void transformEqrelRelation(AstRelation& rel) {
             "attempting to transform non-eqrel relation");
     assert(rel.getArity() == 2 && "eqrel relation not binary");
 
-    rel.setQualifier(rel.getQualifier() - EQREL_RELATION);
+    rel.setQualifier(rel.getQualifier() - EQREL_RELATION + BTREE_RELATION);
 
     // transitivity
     // transitive clause: A(x, z) :- A(x, y), A(y, z).

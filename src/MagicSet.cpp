@@ -730,7 +730,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
         AstRelationIdentifier relName = rel->getName();
 
         // find computed relations for the topdown part
-        if (ioTypes->isOutput(rel) || ioTypes->isPrintSize(rel)) {
+        if (ioTypes->isOutput(rel)) {
             outputQueries.push_back(rel->getName());
             // add relation to adornment
             adornmentRelations.push_back(rel->getName());
@@ -957,8 +957,8 @@ void separateDBs(AstProgram* program) {
             newIdbClause->setSrcLoc(nextSrcLoc(relation->getSrcLoc()));
 
             // oldname(arg1...argn) :- newname(arg1...argn)
-            AstAtom* headAtom = new AstAtom(relName);
-            AstAtom* bodyAtom = new AstAtom(newEdbName);
+            auto* headAtom = new AstAtom(relName);
+            auto* bodyAtom = new AstAtom(newEdbName);
 
             size_t numargs = relation->getArity();
             for (size_t j = 0; j < numargs; j++) {
@@ -1258,7 +1258,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         magicClause->setSrcLoc(nextSrcLoc(atom->getSrcLoc()));
 
                         // create the head of the magic rule
-                        AstAtom* magicHead = new AstAtom(newAtomName);
+                        auto* magicHead = new AstAtom(newAtomName);
 
                         // copy over (bound) arguments from the original atom
                         int argCount = 0;
@@ -1276,7 +1276,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         // create the first body argument (mag(origClauseHead^adornment))
                         AstRelationIdentifier magPredName =
                                 createMagicIdentifier(newClause->getHead()->getName(), querynum);
-                        AstAtom* addedMagicPred = new AstAtom(magPredName);
+                        auto* addedMagicPred = new AstAtom(magPredName);
 
                         // create the relation if it does not exist
                         if (program->getRelation(magPredName) == nullptr) {
@@ -1365,7 +1365,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // create the first argument of this new clause
             const AstAtom* newClauseHead = newClause->getHead()->getAtom();
             AstRelationIdentifier newMag = createMagicIdentifier(newClauseHead->getName(), querynum);
-            AstAtom* newMagAtom = new AstAtom(newMag);
+            auto* newMagAtom = new AstAtom(newMag);
 
             // copy over the bound arguments from the head
             std::vector<AstArgument*> args = newClauseHead->getArguments();
@@ -1409,15 +1409,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 }
             });
             outputDirectives[relationName] = std::move(clonedDirectives);
-        } else if (ioTypes->isPrintSize(relation)) {
-            addAsPrintSize.insert(relationName);
-            std::vector<std::unique_ptr<AstPrintSize>> clonedDirectives;
-            visitDepthFirst(*program, [&](const AstPrintSize current) {
-                if (current.getName() == relationName) {
-                    clonedDirectives.emplace_back(current.clone());
-                }
-            });
-            printSizeDirectives[relationName] = std::move(clonedDirectives);
         }
 
         // do not delete negated atoms, ignored atoms, or atoms added by aggregate relations
@@ -1475,8 +1466,8 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         // rules need to be the same
         // easy fix:
         //    oldname(arg1...argn) :- newname(arg1...argn)
-        AstAtom* headatom = new AstAtom(oldName);
-        AstAtom* bodyatom = new AstAtom(newRelationName);
+        auto* headatom = new AstAtom(oldName);
+        auto* bodyatom = new AstAtom(newRelationName);
 
         for (size_t j = 0; j < adornedRelation->getArity(); j++) {
             std::stringstream argName;
@@ -1499,11 +1490,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
     for (auto& iopair : outputDirectives) {
         for (auto& iodir : iopair.second) {
             program->getRelation(iopair.first)->addStore(std::move(iodir));
-        }
-    }
-    for (auto& iopair : printSizeDirectives) {
-        for (auto& iodir : iopair.second) {
-            program->getRelation(iopair.first)->setPrintSize(std::move(iodir));
         }
     }
 

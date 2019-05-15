@@ -335,7 +335,7 @@ std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inline
  */
 AstLiteral* negateLiteral(AstLiteral* lit) {
     if (auto* atom = dynamic_cast<AstAtom*>(lit)) {
-        AstNegation* neg = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
+        auto* neg = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
         return neg;
     } else if (auto* neg = dynamic_cast<AstNegation*>(lit)) {
         AstAtom* atom = neg->getAtom()->clone();
@@ -493,7 +493,7 @@ void renameVariables(AstArgument* arg) {
 // E.g. ( <aggr1, aggr2, aggr3, ...>, o > = (aggr1 o (aggr2 o (agg3 o (...))))
 // TODO (azreika): remove aggregator support
 AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, FunctorOp fun) {
-    assert(getFunctorOpArity(fun) == 2 && "not a binary functor");
+    assert(isValidFunctorOpArity(fun, 2) && "not a binary functor");
 
     // Due to variable scoping issues with aggregators, we rename all variables uniquely in the
     // added aggregator

@@ -26,20 +26,6 @@
 namespace souffle {
 
 /**
- * Helper function to convert a tuple to a RamDomain pointer
- */
-// TODO (#541): Check whether this helper function causes a memory leak
-inline RamDomain* convertTupleToNums(const tuple& t) {
-    auto* newTuple = new RamDomain[t.size()];
-
-    for (size_t i = 0; i < t.size(); i++) {
-        newTuple[i] = t[i];
-    }
-
-    return newTuple;
-}
-
-/**
  * Wrapper class for interpreter relations
  */
 class InterpreterRelInterface : public Relation {
@@ -52,12 +38,12 @@ public:
 
     /** Insert tuple */
     void insert(const tuple& t) override {
-        relation.insert(convertTupleToNums(t));
+        relation.insert(t.data);
     }
 
     /** Check whether tuple exists */
     bool contains(const tuple& t) const override {
-        return relation.exists(convertTupleToNums(t));
+        return relation.exists(t.data);
     }
 
     /** Iterator to first tuple */
@@ -100,7 +86,7 @@ public:
     }
 
     /** Get number of tuples in relation */
-    std::size_t size() override {
+    std::size_t size() const override {
         return relation.size();
     }
 
@@ -180,14 +166,7 @@ private:
     /** Attribute Names */
     std::vector<std::string> attrNames;
 
-    /** Input relation flag */
-    bool relInput;
-
-    /** Output relation flag */
-    bool relOutput;
-
     /** Unique id for wrapper */
-    // TODO (#541): replace unique id by dynamic type checking for C++
     uint32_t id;
 };
 
@@ -197,7 +176,7 @@ private:
 class InterpreterProgInterface : public SouffleProgram {
 public:
     InterpreterProgInterface(Interpreter& interp)
-            : prog(interp.getTranslationUnit().getP()), exec(interp),
+            : prog(*interp.getTranslationUnit().getProgram()), exec(interp),
               symTable(interp.getTranslationUnit().getSymbolTable()) {
         uint32_t id = 0;
 
@@ -222,7 +201,7 @@ public:
                 std::string n = rel.getArg(i);
                 attrNames.push_back(n);
             }
-            InterpreterRelInterface* interface = new InterpreterRelInterface(
+            auto* interface = new InterpreterRelInterface(
                     interpreterRel, symTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);
             bool input;
@@ -268,11 +247,11 @@ public:
     /** Run subroutine */
     void executeSubroutine(std::string name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret,
             std::vector<bool>& err) override {
-        exec.executeSubroutine(prog.getSubroutine(name), args, ret, err);
+        exec.executeSubroutine(name, args, ret, err);
     }
 
     /** Get symbol table */
-    const SymbolTable& getSymbolTable() const override {
+    SymbolTable& getSymbolTable() override {
         return symTable;
     }
 

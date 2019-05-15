@@ -36,7 +36,6 @@ AstProgram::AstProgram(AstProgram&& other) noexcept {
     relations.swap(other.relations);
     clauses.swap(other.clauses);
     loads.swap(other.loads);
-    printSizes.swap(other.printSizes);
     stores.swap(other.stores);
     components.swap(other.components);
     instantiations.swap(other.instantiations);
@@ -132,11 +131,6 @@ void AstProgram::addLoad(std::unique_ptr<AstLoad> directive) {
     loads.push_back(std::move(directive));
 }
 
-void AstProgram::addPrintSize(std::unique_ptr<AstPrintSize> directive) {
-    assert(directive && "NULL IO directive");
-    printSizes.push_back(std::move(directive));
-}
-
 void AstProgram::addStore(std::unique_ptr<AstStore> directive) {
     assert(directive && "NULL IO directive");
     stores.push_back(std::move(directive));
@@ -167,12 +161,7 @@ const std::vector<std::unique_ptr<AstLoad>>& AstProgram::getLoads() const {
     return loads;
 }
 
-/* Put all loads of the program into a list */
-const std::vector<std::unique_ptr<AstPrintSize>>& AstProgram::getPrintSizes() const {
-    return printSizes;
-}
-
-/* Put all loads of the program into a list */
+/* Put all stores of the program into a list */
 const std::vector<std::unique_ptr<AstStore>>& AstProgram::getStores() const {
     return stores;
 }
@@ -225,9 +214,6 @@ void AstProgram::print(std::ostream& os) const {
         for (const auto ioDirective : rel->getStores()) {
             os << *ioDirective << "\n\n";
         }
-        for (const auto ioDirective : rel->getPrintSizes()) {
-            os << *ioDirective << "\n\n";
-        }
     }
 
     if (!clauses.empty()) {
@@ -238,10 +224,6 @@ void AstProgram::print(std::ostream& os) const {
     if (!loads.empty()) {
         os << "\n// ----- Orphan Load directives -----\n";
         os << join(loads, "\n\n", print_deref<std::unique_ptr<AstLoad>>()) << "\n";
-    }
-    if (!printSizes.empty()) {
-        os << "\n// ----- Orphan PrintSize directives -----\n";
-        os << join(printSizes, "\n\n", print_deref<std::unique_ptr<AstPrintSize>>()) << "\n";
     }
     if (!stores.empty()) {
         os << "\n// ----- Orphan Store directives -----\n";
@@ -284,9 +266,6 @@ AstProgram* AstProgram::clone() const {
     for (const auto& cur : loads) {
         res->loads.emplace_back(cur->clone());
     }
-    for (const auto& cur : printSizes) {
-        res->printSizes.emplace_back(cur->clone());
-    }
     for (const auto& cur : stores) {
         res->stores.emplace_back(cur->clone());
     }
@@ -319,9 +298,6 @@ void AstProgram::apply(const AstNodeMapper& map) {
     for (auto& cur : loads) {
         cur = map(std::move(cur));
     }
-    for (auto& cur : printSizes) {
-        cur = map(std::move(cur));
-    }
     for (auto& cur : stores) {
         cur = map(std::move(cur));
     }
@@ -346,7 +322,6 @@ void AstProgram::finishParsing() {
 
     // unbound directives with no relation defined
     std::vector<std::unique_ptr<AstLoad>> unboundLoads;
-    std::vector<std::unique_ptr<AstPrintSize>> unboundPrintSizes;
     std::vector<std::unique_ptr<AstStore>> unboundStores;
 
     // add IO directives
@@ -373,18 +348,6 @@ void AstProgram::finishParsing() {
     // remember the remaining orphan directives
     stores.clear();
     stores.swap(unboundStores);
-
-    for (auto& cur : printSizes) {
-        auto pos = relations.find(cur->getName());
-        if (pos != relations.end()) {
-            pos->second->setPrintSize(std::move(cur));
-        } else {
-            unboundPrintSizes.push_back(std::move(cur));
-        }
-    }
-    // remember the remaining orphan directives
-    printSizes.clear();
-    printSizes.swap(unboundPrintSizes);
 }
 
 }  // end of namespace souffle

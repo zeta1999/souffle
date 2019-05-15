@@ -9,7 +9,7 @@ ADD_EXECUTABLE(souffle
         ./src/AstAnalysis.h
         ./src/RamCondition.h
         ./src/AstComponentChecker.h
-        ./src/ExplainProvenanceSLD.h
+        ./src/ExplainProvenanceImpl.h
         ./src/BTree.h
         ./src/GraphUtils.h
         ./src/profile/html_string.h
@@ -106,7 +106,6 @@ ADD_EXECUTABLE(souffle
         ./src/MagicSet.h
         ./src/AstPragma.h
         ./src/RamNode.h
-        ./src/SymbolMask.h
         ./src/RamAnalysis.h
         ./src/AstSemanticChecker.h
         ./src/PrecedenceGraph.h

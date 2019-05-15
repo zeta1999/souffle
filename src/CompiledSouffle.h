@@ -30,7 +30,6 @@
 #include "souffle/RamTypes.h"
 #include "souffle/SignalHandler.h"
 #include "souffle/SouffleInterface.h"
-#include "souffle/SymbolMask.h"
 #include "souffle/SymbolTable.h"
 #include "souffle/Util.h"
 #include "souffle/WriteStream.h"
@@ -131,7 +130,7 @@ public:
         }
         return relation.contains(t);
     }
-    std::size_t size() override {
+    std::size_t size() const override {
         return relation.size();
     }
     std::string getName() const override {
@@ -161,7 +160,7 @@ public:
 /** Nullary relations */
 class t_nullaries {
 private:
-    bool data{false};
+    std::atomic<bool> data{false};
 
 public:
     t_nullaries() = default;

@@ -26,13 +26,6 @@
 #include <utility>
 
 namespace souffle {
-/**
- * Obtains a reference to the lock synchronizing output operations.
- */
-inline Lock& getOutputLock() {
-    static Lock outputLock;
-    return outputLock;
-}
 
 /**
  * The class utilized to times for the souffle profiling tool. This class
@@ -48,7 +41,7 @@ public:
 
     Logger(std::string label, size_t iteration, std::function<size_t()> size)
             : label(std::move(label)), start(now()), iteration(iteration), size(size), preSize(size()) {
-        struct rusage ru;
+        struct rusage ru {};
         getrusage(RUSAGE_SELF, &ru);
         startMaxRSS = ru.ru_maxrss;
         // Assume that if we are logging the progress of an event then we care about usage during that time.
@@ -56,7 +49,7 @@ public:
     }
 
     ~Logger() {
-        struct rusage ru;
+        struct rusage ru {};
         getrusage(RUSAGE_SELF, &ru);
         size_t endMaxRSS = ru.ru_maxrss;
         ProfileEventSingleton::instance().makeTimingEvent(

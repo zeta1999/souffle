@@ -43,6 +43,8 @@ public:
 
     AstTypeIdentifier(const char* name) : AstTypeIdentifier(std::string(name)) {}
 
+    AstTypeIdentifier(const std::vector<std::string> names) : names(names) {}
+
     AstTypeIdentifier(const AstTypeIdentifier&) = default;
     AstTypeIdentifier(AstTypeIdentifier&&) = default;
 
@@ -174,7 +176,9 @@ public:
 
     /** Creates a clone of this AST sub-structure */
     AstPrimitiveType* clone() const override {
-        return new AstPrimitiveType(getName(), num);
+        auto res = new AstPrimitiveType(getName(), num);
+        res->setSrcLoc(getSrcLoc());
+        return res;
     }
 
 protected:
@@ -223,6 +227,7 @@ public:
     /** Creates a clone of this AST sub-structure */
     AstUnionType* clone() const override {
         auto res = new AstUnionType();
+        res->setSrcLoc(getSrcLoc());
         res->setName(getName());
         res->types = types;
         return res;
@@ -295,6 +300,7 @@ public:
     /** Creates a clone of this AST sub-structure */
     AstRecordType* clone() const override {
         auto res = new AstRecordType();
+        res->setSrcLoc(getSrcLoc());
         res->setName(getName());
         res->fields = fields;
         return res;

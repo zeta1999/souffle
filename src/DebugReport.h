@@ -16,7 +16,9 @@
 #pragma once
 
 #include "AstTransformer.h"
+#include "Global.h"
 
+#include <fstream>
 #include <memory>
 #include <ostream>
 #include <set>
@@ -81,6 +83,12 @@ private:
  */
 class DebugReport {
 public:
+    ~DebugReport() {
+        if (!empty()) {
+            std::ofstream debugReportStream(Global::config().get("debug-report"));
+            debugReportStream << *this;
+        }
+    }
     bool empty() const {
         return sections.empty();
     }

@@ -18,13 +18,14 @@
 #pragma once
 
 #include "BinaryConstraintOps.h"
+#include "RamExpression.h"
 #include "RamNode.h"
 #include "RamRelation.h"
-#include "RamValue.h"
 #include "SymbolTable.h"
 
 #include <algorithm>
 #include <sstream>
+#include <stack>
 #include <string>
 
 #include <cstdlib>
@@ -36,7 +37,7 @@ namespace souffle {
  */
 class RamCondition : public RamNode {
 public:
-    RamCondition(RamNodeType type) : RamNode(type) {}
+    RamCondition() = default;
 
     /** Create clone */
     RamCondition* clone() const override = 0;
@@ -46,16 +47,9 @@ public:
  * Conjunction
  */
 class RamConjunction : public RamCondition {
-protected:
-    /** Left-hand side of conjunction */
-    std::unique_ptr<RamCondition> lhs;
-
-    /** Right-hand side of conjunction */
-    std::unique_ptr<RamCondition> rhs;
-
 public:
     RamConjunction(std::unique_ptr<RamCondition> l, std::unique_ptr<RamCondition> r)
-            : RamCondition(RN_Conjunction), lhs(std::move(l)), rhs(std::move(r)) {}
+            : RamCondition(), lhs(std::move(l)), rhs(std::move(r)) {}
 
     /** Get left-hand side of conjunction */
     const RamCondition& getLHS() const {
@@ -85,7 +79,7 @@ public:
 
     /** Create clone */
     RamConjunction* clone() const override {
-        RamConjunction* res = new RamConjunction(
+        auto* res = new RamConjunction(
                 std::unique_ptr<RamCondition>(lhs->clone()), std::unique_ptr<RamCondition>(rhs->clone()));
         return res;
     }
@@ -97,6 +91,12 @@ public:
     }
 
 protected:
+    /** Left-hand side of conjunction */
+    std::unique_ptr<RamCondition> lhs;
+
+    /** Right-hand side of conjunction */
+    std::unique_ptr<RamCondition> rhs;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamConjunction*>(&node));
@@ -109,13 +109,8 @@ protected:
  * Negation
  */
 class RamNegation : public RamCondition {
-protected:
-    /** Operand */
-    std::unique_ptr<RamCondition> operand;
-
 public:
-    RamNegation(std::unique_ptr<RamCondition> operand)
-            : RamCondition(RN_Negation), operand(std::move(operand)) {}
+    RamNegation(std::unique_ptr<RamCondition> operand) : RamCondition(), operand(std::move(operand)) {}
 
     /** Get operand of negation */
     const RamCondition& getOperand() const {
@@ -137,7 +132,7 @@ public:
 
     /** Create clone */
     RamNegation* clone() const override {
-        RamNegation* res = new RamNegation(std::unique_ptr<RamCondition>(operand->clone()));
+        auto* res = new RamNegation(std::unique_ptr<RamCondition>(operand->clone()));
         return res;
     }
 
@@ -147,6 +142,9 @@ public:
     }
 
 protected:
+    /** Operand */
+    std::unique_ptr<RamCondition> operand;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamNegation*>(&node));
@@ -159,19 +157,9 @@ protected:
  * Binary constraint
  */
 class RamConstraint : public RamCondition {
-private:
-    /** Operator */
-    BinaryConstraintOp op;
-
-    /** Left-hand side of constraint*/
-    std::unique_ptr<RamValue> lhs;
-
-    /** Right-hand side of constraint */
-    std::unique_ptr<RamValue> rhs;
-
 public:
-    RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamValue> l, std::unique_ptr<RamValue> r)
-            : RamCondition(RN_Constraint), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
+    RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamExpression> l, std::unique_ptr<RamExpression> r)
+            : RamCondition(), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
@@ -183,23 +171,13 @@ public:
     }
 
     /** Get left-hand side */
-    RamValue* getLHS() const {
+    RamExpression* getLHS() const {
         return lhs.get();
     }
 
     /** Get right-hand side */
-    RamValue* getRHS() const {
+    RamExpression* getRHS() const {
         return rhs.get();
-    }
-
-    /** Take left-hand side */
-    std::unique_ptr<RamValue> takeLHS() {
-        return std::move(lhs);
-    }
-
-    /** Take right-hand side */
-    std::unique_ptr<RamValue> takeRHS() {
-        return std::move(rhs);
     }
 
     /** Get operator symbol */
@@ -214,8 +192,8 @@ public:
 
     /** Create clone */
     RamConstraint* clone() const override {
-        RamConstraint* res = new RamConstraint(
-                op, std::unique_ptr<RamValue>(lhs->clone()), std::unique_ptr<RamValue>(rhs->clone()));
+        auto* res = new RamConstraint(op, std::unique_ptr<RamExpression>(lhs->clone()),
+                std::unique_ptr<RamExpression>(rhs->clone()));
         return res;
     }
 
@@ -226,6 +204,15 @@ public:
     }
 
 protected:
+    /** Operator */
+    BinaryConstraintOp op;
+
+    /** Left-hand side of constraint*/
+    std::unique_ptr<RamExpression> lhs;
+
+    /** Right-hand side of constraint */
+    std::unique_ptr<RamExpression> rhs;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamConstraint*>(&node));
@@ -236,264 +223,242 @@ protected:
 };
 
 /**
- * Existence check for a tuple(-pattern) in a relation
+ * Abstract existence check
  */
-class RamExistenceCheck : public RamCondition {
-protected:
-    /* Relation */
-    std::unique_ptr<RamRelationReference> relation;
-
-    /** Pattern -- nullptr if undefined */
-    std::vector<std::unique_ptr<RamValue>> arguments;
-
+class RamAbstractExistenceCheck : public RamCondition {
 public:
-    RamExistenceCheck(std::unique_ptr<RamRelationReference> rel)
-            : RamCondition(RN_ExistenceCheck), relation(std::move(rel)) {}
+    RamAbstractExistenceCheck(
+            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
+            : RamCondition(), relationRef(std::move(relRef)), values(std::move(vals)) {}
 
     /** Get relation */
-    const RamRelationReference& getRelation() const {
-        return *relation;
+    const RamRelation& getRelation() const {
+        return *relationRef->get();
     }
 
     /** Get arguments */
-    std::vector<RamValue*> getValues() const {
-        return toPtrVector(arguments);
-    }
-
-    /** Add argument */
-    void addArg(std::unique_ptr<RamValue> v) {
-        arguments.push_back(std::move(v));
-    }
-
-    /** Print */
-    void print(std::ostream& os) const override {
-        os << "("
-           << join(arguments, ",",
-                      [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
-                          if (!value) {
-                              out << "_";
-                          } else {
-                              out << *value;
-                          }
-                      })
-           << ") ∈ " << relation->getName();
-    }
-
-    /** Get key */
-    SearchColumns getKey() const {
-        SearchColumns res = 0;
-        for (unsigned i = 0; i < arguments.size(); i++) {
-            if (arguments[i]) {
-                res |= (1 << i);
-            }
-        }
-        return res;
-    }
-
-    /** Is key total */
-    bool isTotal() const {
-        for (const auto& cur : arguments) {
-            if (!cur) {
-                return false;
-            }
-        }
-        return true;
+    std::vector<RamExpression*> getValues() const {
+        return toPtrVector(values);
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res = {relation.get()};
-        for (const auto& cur : arguments) {
+        std::vector<const RamNode*> res = {relationRef.get()};
+        for (const auto& cur : values) {
             res.push_back(cur.get());
-        }
-        return res;
-    }
-
-    /** Create clone */
-    RamExistenceCheck* clone() const override {
-        RamExistenceCheck* res =
-                new RamExistenceCheck(std::unique_ptr<RamRelationReference>(relation->clone()));
-        for (auto& cur : arguments) {
-            RamValue* val = nullptr;
-            if (cur != nullptr) {
-                val = cur->clone();
-            }
-            res->arguments.emplace_back(val);
         }
         return res;
     }
 
     /** Apply */
     void apply(const RamNodeMapper& map) override {
-        relation = map(std::move(relation));
-        for (auto& val : arguments) {
+        relationRef = map(std::move(relationRef));
+        for (auto& val : values) {
             if (val != nullptr) {
                 val = map(std::move(val));
             }
         }
+    }
+
+protected:
+    /* Relation */
+    std::unique_ptr<RamRelationReference> relationRef;
+
+    /** Pattern -- nullptr if undefined */
+    std::vector<std::unique_ptr<RamExpression>> values;
+
+    /** Check equality */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamAbstractExistenceCheck*>(&node));
+        const auto& other = static_cast<const RamAbstractExistenceCheck&>(node);
+        return getRelation() == other.getRelation() && equal_targets(values, other.values);
+    }
+};
+
+/**
+ * Existence check for a tuple(-pattern) in a relation
+ */
+class RamExistenceCheck : public RamAbstractExistenceCheck {
+public:
+    RamExistenceCheck(
+            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
+            : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
+
+    /** Print */
+    void print(std::ostream& os) const override {
+        os << "("
+           << join(values, ",",
+                      [](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
+                          if (!value) {
+                              out << "_";
+                          } else {
+                              out << *value;
+                          }
+                      })
+           << ") ∈ " << getRelation().getName();
+    }
+
+    /** Create clone */
+    RamExistenceCheck* clone() const override {
+        std::vector<std::unique_ptr<RamExpression>> newValues;
+        for (auto& cur : values) {
+            RamExpression* val = nullptr;
+            if (cur != nullptr) {
+                val = cur->clone();
+            }
+            newValues.emplace_back(val);
+        }
+        auto* res = new RamExistenceCheck(
+                std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
+        return res;
     }
 
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamExistenceCheck*>(&node));
-        const auto& other = static_cast<const RamExistenceCheck&>(node);
-        return getRelation() == other.getRelation() && equal_targets(arguments, other.arguments);
+        return RamAbstractExistenceCheck::equal(node);
     }
 };
 
 /**
- * Existence check for provenance.
+ * Existence check for a relation for provenance existence check
  */
-class RamProvenanceExistenceCheck : public RamCondition {
-protected:
-    /* Relation */
-    std::unique_ptr<RamRelationReference> relation;
-
-    /** Pattern -- nullptr if undefined */
-    std::vector<std::unique_ptr<RamValue>> arguments;
-
+class RamProvenanceExistenceCheck : public RamAbstractExistenceCheck {
 public:
-    RamProvenanceExistenceCheck(std::unique_ptr<RamRelationReference> rel)
-            : RamCondition(RN_ProvenanceExistenceCheck), relation(std::move(rel)) {}
-
-    /** Get relation */
-    const RamRelationReference& getRelation() const {
-        return *relation;
-    }
-
-    /** Get arguments */
-    std::vector<RamValue*> getValues() const {
-        return toPtrVector(arguments);
-    }
-
-    /** Add argument */
-    void addArg(std::unique_ptr<RamValue> v) {
-        arguments.push_back(std::move(v));
-    }
+    RamProvenanceExistenceCheck(
+            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
+            : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
     /** Print */
     void print(std::ostream& os) const override {
         os << "("
-           << join(arguments, ",",
-                      [](std::ostream& out, const std::unique_ptr<RamValue>& value) {
+           << join(values, ",",
+                      [](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
                           if (!value) {
                               out << "_";
                           } else {
                               out << *value;
                           }
                       })
-           << ")_provenance ∈ " << relation->getName();
-    }
-
-    /** Get key */
-    SearchColumns getKey() const {
-        SearchColumns res = 0;
-        // arguments.size() - 1 because we discard the height annotation
-        for (unsigned i = 0; i < arguments.size() - 1; i++) {
-            if (arguments[i]) {
-                res |= (1 << i);
-            }
-        }
-        return res;
-    }
-
-    /** Is key total */
-    bool isTotal() const {
-        for (const auto& cur : arguments) {
-            if (!cur) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Obtain list of child nodes */
-    std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res = {relation.get()};
-        for (const auto& cur : arguments) {
-            res.push_back(cur.get());
-        }
-        return res;
+           << ") prov∈ " << getRelation().getName();
     }
 
     /** Create clone */
     RamProvenanceExistenceCheck* clone() const override {
-        RamProvenanceExistenceCheck* res =
-                new RamProvenanceExistenceCheck(std::unique_ptr<RamRelationReference>(relation->clone()));
-        for (auto& cur : arguments) {
-            RamValue* val = nullptr;
+        std::vector<std::unique_ptr<RamExpression>> newValues;
+        for (auto& cur : values) {
+            RamExpression* val = nullptr;
             if (cur != nullptr) {
                 val = cur->clone();
             }
-            res->arguments.emplace_back(val);
+            newValues.emplace_back(val);
         }
+        auto* res = new RamProvenanceExistenceCheck(
+                std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
         return res;
-    }
-
-    /** Apply */
-    void apply(const RamNodeMapper& map) override {
-        relation = map(std::move(relation));
-        for (auto& val : arguments) {
-            if (val != nullptr) {
-                val = map(std::move(val));
-            }
-        }
     }
 
 protected:
     /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(dynamic_cast<const RamProvenanceExistenceCheck*>(&node));
-        const auto& other = static_cast<const RamProvenanceExistenceCheck&>(node);
-        return getRelation() == other.getRelation() && equal_targets(arguments, other.arguments);
+        return RamAbstractExistenceCheck::equal(node);
     }
 };
 
 /**
  * Emptiness check for a relation
  */
-class RamEmptyCheck : public RamCondition {
-    /** Relation */
-    std::unique_ptr<RamRelationReference> relation;
-
+class RamEmptinessCheck : public RamCondition {
 public:
-    RamEmptyCheck(std::unique_ptr<RamRelationReference> rel)
-            : RamCondition(RN_EmptyCheck), relation(std::move(rel)) {}
+    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef)
+            : RamCondition(), relationRef(std::move(relRef)) {}
 
     /** Get relation */
-    const RamRelationReference& getRelation() const {
-        return *relation;
+    const RamRelation& getRelation() const {
+        return *relationRef->get();
     }
 
     /** Print */
     void print(std::ostream& os) const override {
-        os << "(" << relation->getName() << " = ∅)";
+        os << "(" << getRelation().getName() << " = ∅)";
     }
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>() = {relation.get()};
+        return {relationRef.get()};
     }
 
     /** Create clone */
-    RamEmptyCheck* clone() const override {
-        RamEmptyCheck* res = new RamEmptyCheck(std::unique_ptr<RamRelationReference>(relation->clone()));
+    RamEmptinessCheck* clone() const override {
+        auto* res = new RamEmptinessCheck(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
     }
 
     /** Apply */
     void apply(const RamNodeMapper& map) override {
-        relation = map(std::move(relation));
+        relationRef = map(std::move(relationRef));
     }
 
 protected:
+    /** Relation */
+    std::unique_ptr<RamRelationReference> relationRef;
+
     /** Check equality */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamEmptyCheck*>(&node));
-        const auto& other = static_cast<const RamEmptyCheck&>(node);
+        assert(nullptr != dynamic_cast<const RamEmptinessCheck*>(&node));
+        const auto& other = static_cast<const RamEmptinessCheck&>(node);
         return getRelation() == other.getRelation();
     }
 };
+
+/**
+ * @brief Convert terms of a conjunction to a list
+ * @param A RAM condition
+ * @param A list of RAM conditions
+ *
+ * Convert a condition of the format C1 /\ C2 /\ ... /\ Cn
+ * to a list {C1, C2, ..., Cn}.
+ */
+inline std::vector<std::unique_ptr<RamCondition>> toConjunctionList(const RamCondition* condition) {
+    std::vector<std::unique_ptr<RamCondition>> list;
+    std::stack<const RamCondition*> stack;
+    if (condition != nullptr) {
+        stack.push(condition);
+        while (!stack.empty()) {
+            condition = stack.top();
+            stack.pop();
+            if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
+                stack.push(&ramConj->getLHS());
+                stack.push(&ramConj->getRHS());
+            } else {
+                list.emplace_back(condition->clone());
+            }
+        }
+    }
+    return list;
+}
+
+/**
+ * @brief Convert list of conditions to a conjunction
+ * @param A list of RAM conditions
+ * @param A RAM condition
+ *
+ * Convert a list {C1, C2, ..., Cn} to a condition of
+ * the format C1 /\ C2 /\ ... /\ Cn.
+ */
+inline std::unique_ptr<RamCondition> toCondition(const std::vector<const RamCondition*>& list) {
+    std::unique_ptr<RamCondition> result;
+    for (const RamCondition* cur : list) {
+        if (result == nullptr) {
+            result = std::unique_ptr<RamCondition>(cur->clone());
+        } else {
+            result = std::make_unique<RamConjunction>(
+                    std::move(result), std::unique_ptr<RamCondition>(cur->clone()));
+        }
+    }
+    return result;
+}
 
 }  // end of namespace souffle

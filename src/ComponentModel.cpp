@@ -599,18 +599,6 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
     program.loads.clear();
     program.loads.swap(unboundLoads);
 
-    for (auto& cur : program.printSizes) {
-        auto pos = program.relations.find(cur->getName());
-        if (pos != program.relations.end()) {
-            pos->second->setPrintSize(std::move(cur));
-        } else {
-            unboundPrintSizes.push_back(std::move(cur));
-        }
-    }
-    // remember the remaining orphan directives
-    program.printSizes.clear();
-    program.printSizes.swap(unboundPrintSizes);
-
     for (auto& cur : program.stores) {
         auto pos = program.relations.find(cur->getName());
         if (pos != program.relations.end()) {

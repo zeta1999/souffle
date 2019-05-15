@@ -406,7 +406,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
                                     toString(attr->getTypeName()),
                             attr->getSrcLoc());
                 }
-                if (ioTypes.isOutput(&relation)) {
+                if (ioTypes.isOutput(&relation) && !ioTypes.isPrintSize(&relation)) {
                     report.addWarning(
                             "Record types in output relations are not printed verbatim: attribute " +
                                     attr->getAttributeName() + " has record type " +
@@ -597,9 +597,6 @@ void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram
     for (const auto& directive : program.getLoads()) {
         checkIODirective(directive.get());
     }
-    for (const auto& directive : program.getPrintSizes()) {
-        checkIODirective(directive.get());
-    }
     for (const auto& directive : program.getStores()) {
         checkIODirective(directive.get());
     }
@@ -740,7 +737,7 @@ void AstSemanticChecker::checkWitnessProblem(ErrorReport& report, const AstProgr
         visitDepthFirst(*clause.getHead(), [&](const AstVariable& var) {
             headVariables->addArgument(std::unique_ptr<AstVariable>(var.clone()));
         });
-        AstNegation* headNegation = new AstNegation(std::move(headVariables));
+        auto* headNegation = new AstNegation(std::move(headVariables));
         bodyLiterals.push_back(headNegation);
 
         // Perform the check
@@ -974,6 +971,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     // values X where it is true, while a2(X) does not. Then, the produced argument
     // `max( max X: a1(X),  max X: a2(X) )` will not return anything (as one of its arguments fails), while
     // `max X: a(X)` will.
+    // Can work around this with emptiness checks (e.g. `!a1(_), ... ; !a2(_), ... ; ...`)
 
     // This corner case prevents generalising aggregator inlining with the current set up.
 

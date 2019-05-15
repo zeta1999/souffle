@@ -50,8 +50,8 @@ public:
     std::string toString() {
         std::ostringstream output;
         output << "ProgramRun:" << getRuntime() << "\nRelations:\n";
-        for (auto r = relationMap.begin(); r != relationMap.end(); ++r) {
-            output << r->second->toString() << "\n";
+        for (auto& r : relationMap) {
+            output << r.second->toString() << "\n";
         }
         return output.str();
     }

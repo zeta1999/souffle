@@ -19,4 +19,7 @@ B(@hoo()) :- true.
 
 .output B
 
-
+// Test functor use within a subloop
+.decl C(x:number)
+C(r) :- r = @foo(x, y), A(x), B(y).
+.output C

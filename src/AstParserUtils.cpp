@@ -121,8 +121,7 @@ RuleBody RuleBody::atom(AstAtom* atom) {
     RuleBody body;
     body.dnf.push_back(clause());
     auto& clause = body.dnf.back();
-    clause.push_back(literal());
-    clause.back() = literal{false, std::unique_ptr<AstAtom>(atom)};
+    clause.emplace_back(false, std::unique_ptr<AstAtom>(atom));
     return body;
 }
 
@@ -130,8 +129,7 @@ RuleBody RuleBody::constraint(AstConstraint* constraint) {
     RuleBody body;
     body.dnf.push_back(clause());
     auto& clause = body.dnf.back();
-    clause.push_back(literal());
-    clause.back() = literal{false, std::unique_ptr<AstLiteral>(constraint)};
+    clause.emplace_back(false, std::unique_ptr<AstLiteral>(constraint));
     return body;
 }
 
@@ -206,11 +204,11 @@ void RuleBody::insert(std::vector<clause>& cnf, clause&& cls) {
     std::vector<clause> res;
     for (auto& cur : cnf) {
         if (!isSubsetOf(cls, cur)) {
-            res.emplace_back(std::move(cur));
+            res.push_back(std::move(cur));
         }
     }
     res.swap(cnf);
-    cnf.emplace_back(std::move(cls));
+    cnf.push_back(std::move(cls));
 }
 
 }  // end of namespace souffle

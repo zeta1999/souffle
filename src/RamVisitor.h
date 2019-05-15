@@ -18,12 +18,12 @@
 #pragma once
 
 #include "RamCondition.h"
+#include "RamExpression.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
-#include "RamValue.h"
 
 #include <functional>
 #include <typeinfo>
@@ -64,80 +64,87 @@ struct RamVisitor : public ram_visitor_tag {
      * a visit to the various sub-types of RamNodes. Sub-classes may override
      * this implementation to conduct pre-visit operations.
      *
+     * Note that the order of this list is important. Sub-classes must be listed
+     * before their super-classes; otherwise sub-classes cannot be visited.
+     *
      * @param node the node to be visited
      * @param args a list of extra parameters to be forwarded
      */
     virtual R visit(const RamNode& node, Params... args) {
         // dispatch node processing based on dynamic type
 
-        switch (node.getNodeType()) {
 #define FORWARD(Kind) \
-    case (RN_##Kind): \
-        return visit##Kind(static_cast<const Ram##Kind&>(node), args...);
-            // Relation
-            FORWARD(Relation);
-            FORWARD(RelationReference);
+    if (const auto* n = dynamic_cast<const Ram##Kind*>(&node)) return visit##Kind(*n, args...);
+        // Relation
+        FORWARD(Relation);
+        FORWARD(RelationReference);
 
-            // values
-            FORWARD(ElementAccess);
-            FORWARD(Number);
-            FORWARD(IntrinsicOperator);
-            FORWARD(UserDefinedOperator);
-            FORWARD(AutoIncrement);
-            FORWARD(Pack);
-            FORWARD(Argument);
+        // Expressions
+        FORWARD(ElementAccess);
+        FORWARD(Number);
+        FORWARD(IntrinsicOperator);
+        FORWARD(UserDefinedOperator);
+        FORWARD(AutoIncrement);
+        FORWARD(PackRecord);
+        FORWARD(Argument);
 
-            // conditions
-            FORWARD(EmptyCheck);
-            FORWARD(ExistenceCheck);
-            FORWARD(ProvenanceExistenceCheck);
-            FORWARD(Conjunction);
-            FORWARD(Negation);
-            FORWARD(Constraint);
+        // Conditions
+        FORWARD(EmptinessCheck);
+        FORWARD(ExistenceCheck);
+        FORWARD(ProvenanceExistenceCheck);
+        FORWARD(Conjunction);
+        FORWARD(Negation);
+        FORWARD(Constraint);
 
-            // operations
-            FORWARD(Filter);
-            FORWARD(Project);
-            FORWARD(Return);
-            FORWARD(Lookup);
-            FORWARD(Scan);
-            FORWARD(IndexScan);
-            FORWARD(Aggregate);
+        // Operations
+        FORWARD(Filter);
+        FORWARD(Break);
+        FORWARD(Project);
+        FORWARD(ReturnValue);
+        FORWARD(UnpackRecord);
+        FORWARD(ParallelScan);
+        FORWARD(Scan);
+        FORWARD(ParallelIndexScan);
+        FORWARD(IndexScan);
+        FORWARD(ParallelChoice);
+        FORWARD(Choice);
+        FORWARD(ParallelIndexChoice);
+        FORWARD(IndexChoice);
+        FORWARD(Aggregate);
+        FORWARD(IndexAggregate);
 
-            // statements
-            FORWARD(Create);
-            FORWARD(Fact);
-            FORWARD(Load);
-            FORWARD(Store);
-            FORWARD(Insert);
-            FORWARD(Clear);
-            FORWARD(Drop);
-            FORWARD(PrintSize);
-            FORWARD(LogSize);
+        // Statements
+        FORWARD(Create);
+        FORWARD(Fact);
+        FORWARD(Load);
+        FORWARD(Store);
+        FORWARD(Query);
+        FORWARD(Clear);
+        FORWARD(Drop);
+        FORWARD(LogSize);
 
-            FORWARD(Merge);
-            FORWARD(Swap);
+        FORWARD(Merge);
+        FORWARD(Swap);
 
-            // control flow
-            FORWARD(Program);
-            FORWARD(Sequence);
-            FORWARD(Loop);
-            FORWARD(Parallel);
-            FORWARD(Exit);
-            FORWARD(LogTimer);
-            FORWARD(DebugInfo);
-            FORWARD(Stratum);
+        // Control-flow
+        FORWARD(Program);
+        FORWARD(Sequence);
+        FORWARD(Loop);
+        FORWARD(Parallel);
+        FORWARD(Exit);
+        FORWARD(LogTimer);
+        FORWARD(DebugInfo);
+        FORWARD(Stratum);
 
 #ifdef USE_MPI
-            // mpi
-            FORWARD(Send);
-            FORWARD(Recv);
-            FORWARD(Notify);
-            FORWARD(Wait);
+        // mpi
+        FORWARD(Send);
+        FORWARD(Recv);
+        FORWARD(Notify);
+        FORWARD(Wait);
 #endif
 
 #undef FORWARD
-        }
 
         // did not work ...
 
@@ -161,10 +168,9 @@ protected:
     LINK(Fact, RelationStatement);
     LINK(Load, RelationStatement);
     LINK(Store, RelationStatement);
-    LINK(Insert, Statement);
+    LINK(Query, Statement);
     LINK(Clear, RelationStatement);
     LINK(Drop, RelationStatement);
-    LINK(PrintSize, RelationStatement);
     LINK(LogSize, RelationStatement);
 
     LINK(RelationStatement, Statement);
@@ -184,14 +190,23 @@ protected:
 
     // -- operations --
     LINK(Project, Operation);
-    LINK(Return, Operation);
-    LINK(Lookup, Search);
+    LINK(ReturnValue, Operation);
+    LINK(UnpackRecord, Search);
     LINK(Scan, RelationSearch);
-    LINK(IndexScan, RelationSearch);
+    LINK(ParallelScan, Scan);
+    LINK(IndexScan, IndexRelationSearch);
+    LINK(ParallelIndexScan, IndexScan);
+    LINK(Choice, RelationSearch);
+    LINK(ParallelChoice, Choice);
+    LINK(IndexChoice, IndexRelationSearch);
+    LINK(ParallelIndexChoice, IndexChoice);
     LINK(RelationSearch, Search);
-    LINK(Aggregate, Search);
+    LINK(Aggregate, RelationSearch);
+    LINK(IndexAggregate, IndexRelationSearch);
+    LINK(IndexRelationSearch, RelationSearch);
     LINK(Search, NestedOperation);
     LINK(Filter, NestedOperation);
+    LINK(Break, NestedOperation);
     LINK(NestedOperation, Operation);
 
     LINK(Operation, Node)
@@ -202,20 +217,20 @@ protected:
     LINK(Constraint, Condition)
     LINK(ExistenceCheck, Condition)
     LINK(ProvenanceExistenceCheck, Condition)
-    LINK(EmptyCheck, Condition)
+    LINK(EmptinessCheck, Condition)
 
     LINK(Condition, Node)
 
     // -- values --
-    LINK(Number, Value)
-    LINK(ElementAccess, Value)
-    LINK(IntrinsicOperator, Value)
-    LINK(UserDefinedOperator, Value)
-    LINK(AutoIncrement, Value)
-    LINK(Pack, Value)
-    LINK(Argument, Value)
+    LINK(Number, Expression)
+    LINK(ElementAccess, Expression)
+    LINK(IntrinsicOperator, Expression)
+    LINK(UserDefinedOperator, Expression)
+    LINK(AutoIncrement, Expression)
+    LINK(PackRecord, Expression)
+    LINK(Argument, Expression)
 
-    LINK(Value, Node)
+    LINK(Expression, Node)
 
     // -- program --
     LINK(Program, Node)
@@ -252,29 +267,10 @@ template <typename R, typename... Ps, typename... Args>
 void visitDepthFirstPreOrder(const RamNode& root, RamVisitor<R, Ps...>& visitor, Args&... args) {
     visitor(root, args...);
     for (const RamNode* cur : root.getChildNodes()) {
-        if (cur) {
+        if (cur != nullptr) {
             visitDepthFirstPreOrder(*cur, visitor, args...);
         }
     }
-}
-
-/**
- * A utility function visiting all nodes within the RAM fragment rooted by the given node
- * recursively in a depth-first post-order fashion applying the given visitor to each
- * encountered node.
- *
- * @param root the root of the RAM fragment to be visited
- * @param visitor the visitor to be applied on each node
- * @param args a list of extra parameters to be forwarded to the visitor
- */
-template <typename R, typename... Ps, typename... Args>
-void visitDepthFirstPostOrder(const RamNode& root, RamVisitor<R, Ps...>& visitor, Args&... args) {
-    for (const RamNode* cur : root.getChildNodes()) {
-        if (cur) {
-            visitDepthFirstPreOrder(*cur, visitor, args...);
-        }
-    }
-    visitor(root, args...);
 }
 
 /**

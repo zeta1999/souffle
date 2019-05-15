@@ -53,7 +53,7 @@ public:
         return inputReceived;
     }
 
-    void getch() {
+    void readchar() {
         char buf = 0;
         struct termios old = {};
         if (tcgetattr(0, &old) < 0) perror("tcsetattr()");
@@ -79,7 +79,7 @@ public:
         in_history = false;
 
         std::cout << this->prompt << std::flush;
-        getch();
+        readchar();
         inputReceived = true;
 
         bool escaped = false;
@@ -119,7 +119,7 @@ public:
                 }
             }
 
-            getch();
+            readchar();
         }
 
         if (in_history) {
@@ -304,8 +304,8 @@ public:
     }
     void showFullText(const std::string& text) {
         clearPrompt(text.size());
-        for (size_t i = 0; i < text.size(); i++) {
-            std::cout << text.at(i) << std::flush;
+        for (char i : text) {
+            std::cout << i << std::flush;
         }
 
         for (size_t i = cursor_pos; i < text.size(); i++) {

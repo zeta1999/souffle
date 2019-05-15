@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "../IndexSetAnalysis.h"
+#include "../RamIndexAnalysis.h"
 #include "../RamRelation.h"
 #include "test.h"
 
@@ -29,18 +29,16 @@
 using namespace std;
 using namespace souffle;
 
-RamRelation r("test", 0, {}, {}, SymbolMask(0), {});
-RamRelationReference rel(&r);
-class TestAutoIndex : public IndexSet {
+class TestAutoIndex : public MinIndexSelection {
 public:
-    TestAutoIndex() : IndexSet(rel) {}
+    TestAutoIndex() : MinIndexSelection() {}
     /** returns number of unique matchings */
     int getNumMatchings() {
         return matching.getNumMatchings();
     }
 };
 
-using Nodes = set<SearchColumns>;
+using Nodes = set<SearchSignature>;
 
 TEST(Matching, StaticTest_1) {
     TestAutoIndex order;

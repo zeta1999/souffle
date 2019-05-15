@@ -105,7 +105,6 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(Clause);
         FORWARD(Relation);
         FORWARD(Load);
-        FORWARD(PrintSize);
         FORWARD(Store);
         FORWARD(Program);
         FORWARD(Pragma);
@@ -172,7 +171,6 @@ protected:
     LINK(Attribute, Node);
     LINK(Clause, Node);
     LINK(Load, Node);
-    LINK(PrintSize, Node);
     LINK(Store, Node);
     LINK(Relation, Node);
     LINK(Pragma, Node);
@@ -198,7 +196,7 @@ template <typename R, typename... Ps, typename... Args>
 void visitDepthFirstPreOrder(const AstNode& root, AstVisitor<R, Ps...>& visitor, Args&... args) {
     visitor(root, args...);
     for (const AstNode* cur : root.getChildNodes()) {
-        if (cur) {
+        if (cur != nullptr) {
             visitDepthFirstPreOrder(*cur, visitor, args...);
         }
     }
@@ -216,8 +214,8 @@ void visitDepthFirstPreOrder(const AstNode& root, AstVisitor<R, Ps...>& visitor,
 template <typename R, typename... Ps, typename... Args>
 void visitDepthFirstPostOrder(const AstNode& root, AstVisitor<R, Ps...>& visitor, Args&... args) {
     for (const AstNode* cur : root.getChildNodes()) {
-        if (cur) {
-            visitDepthFirstPreOrder(*cur, visitor, args...);
+        if (cur != nullptr) {
+            visitDepthFirstPostOrder(*cur, visitor, args...);
         }
     }
     visitor(root, args...);

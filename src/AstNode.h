@@ -58,7 +58,13 @@ public:
 
     /** Equivalence check for two AST nodes */
     bool operator==(const AstNode& other) const {
-        return this == &other || (typeid(*this) == typeid(other) && equal(other));
+        if (this == &other) {
+            return true;
+        } else if (typeid(*this) == typeid(*&other)) {
+            return equal(other);
+        }
+        return false;
+        // return this == &other || (typeid(*this) == typeid(other) && equal(other));
     }
 
     /** Inequality check for two AST nodes */
@@ -143,7 +149,7 @@ public:
  * Creates a node mapper based on a corresponding lambda expression.
  */
 template <typename Lambda>
-detail::LambdaNodeMapper<Lambda> makeLambdaMapper(const Lambda& lambda) {
+detail::LambdaNodeMapper<Lambda> makeLambdaAstMapper(const Lambda& lambda) {
     return detail::LambdaNodeMapper<Lambda>(lambda);
 }
 

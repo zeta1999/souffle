@@ -162,6 +162,18 @@ std::vector<T*> toPtrVector(const std::vector<std::unique_ptr<T>>& v) {
  * A utility function enabling the creation of a vector of pointers.
  */
 template <typename T>
+std::vector<const T*> toConstPtrVector(const std::vector<std::unique_ptr<T>>& v) {
+    std::vector<const T*> res;
+    for (auto& e : v) {
+        res.push_back(e.get());
+    }
+    return res;
+}
+
+/**
+ * A utility function enabling the creation of a vector of pointers.
+ */
+template <typename T>
 std::vector<T*> toPtrVector(const std::vector<std::shared_ptr<T>>& v) {
     std::vector<T*> res;
     for (auto& e : v) {
@@ -1023,15 +1035,19 @@ inline bool isExecutable(const std::string& name) {
 inline std::string which(const std::string& name) {
     char buf[PATH_MAX];
     if (::realpath(name.c_str(), buf) && isExecutable(buf)) {
-        return std::string(buf);
+        return buf;
     }
-    std::string syspath = ::getenv("PATH");
-    std::stringstream sstr(syspath);
+    const char* syspath = ::getenv("PATH");
+    if (syspath == nullptr) {
+        return "";
+    }
+    std::stringstream sstr;
+    sstr << syspath;
     std::string sub;
     while (std::getline(sstr, sub, ':')) {
         std::string path = sub + "/" + name;
         if (isExecutable(path) && realpath(path.c_str(), buf)) {
-            return std::string(buf);
+            return buf;
         }
     }
     return "";
@@ -1124,7 +1140,7 @@ inline std::string baseName(const std::string& filename) {
  * File name, with extension removed.
  */
 inline std::string simpleName(const std::string& path) {
-    std::string name = path;
+    std::string name = baseName(path);
     const size_t lastDot = name.find_last_of('.');
     // file has no extension
     if (lastDot == std::string::npos) return name;

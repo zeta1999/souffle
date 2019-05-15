@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -38,6 +39,8 @@ public:
     AstRelationIdentifier(const std::string& name = "") : names(toVector(name)) {}
 
     AstRelationIdentifier(const char* name) : AstRelationIdentifier(std::string(name)) {}
+
+    AstRelationIdentifier(std::vector<std::string> names) : names(std::move(names)) {}
 
     AstRelationIdentifier(const AstRelationIdentifier&) = default;
     AstRelationIdentifier(AstRelationIdentifier&&) = default;

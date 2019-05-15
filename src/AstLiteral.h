@@ -191,7 +191,7 @@ public:
 
     /** Creates a clone of this AST sub-structure */
     AstNegation* clone() const override {
-        AstNegation* res = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
+        auto* res = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -248,7 +248,7 @@ public:
 
     /** Creates a clone if this AST sub-structure */
     AstProvenanceNegation* clone() const override {
-        AstProvenanceNegation* res = new AstProvenanceNegation(std::unique_ptr<AstAtom>(atom->clone()));
+        auto* res = new AstProvenanceNegation(std::unique_ptr<AstAtom>(atom->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -399,8 +399,8 @@ public:
 
     /** Creates a clone of this AST sub-structure */
     AstBinaryConstraint* clone() const override {
-        AstBinaryConstraint* res = new AstBinaryConstraint(operation,
-                std::unique_ptr<AstArgument>(lhs->clone()), std::unique_ptr<AstArgument>(rhs->clone()));
+        auto* res = new AstBinaryConstraint(operation, std::unique_ptr<AstArgument>(lhs->clone()),
+                std::unique_ptr<AstArgument>(rhs->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
     }

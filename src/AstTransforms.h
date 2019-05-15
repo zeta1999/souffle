@@ -205,7 +205,7 @@ private:
 };
 
 /**
- * Transformation pass to add provenance information via guided SLD
+ * Transformation pass to add provenance information
  */
 class ProvenanceTransformer : public AstTransformer {
 public:
@@ -332,7 +332,7 @@ private:
 };
 
 /**
- * Transformation to remove type casts.
+ * Transformation to remove typecasts.
  */
 class RemoveTypecastsTransformer : public AstTransformer {
 public:

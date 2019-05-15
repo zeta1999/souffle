@@ -6,7 +6,7 @@
 #$3 = Output filename
 #$4 = Repository type (debian/centos/fedora)
 print_json () {
-DATE=`date --iso-8601`
+DATE=`date -u +"%Y-%m-%d"`
 
 if [ "$4" = fedora ];
 then
@@ -37,8 +37,12 @@ then
   FILES="[{\"includePattern\": \"deploy/(.*\.rpm)\", \"uploadPattern\": \"$DIST/$RELEASE/$ARCH/\$1\"
     }],"
 
+elif [ "$4" = osx ];
+then
+  FILES="[{\"includePattern\": \"./(.*\.tar.gz)\", \"uploadPattern\": \"\$1\"}],"
+
 else
-  DIST=xenial,yakkety,zesty,artful,bionic
+  DIST=xenial,bionic,cosmic,disco
 
   FILES="[{\"includePattern\": \"deploy/(.*\.deb)\", \"uploadPattern\": \"pool/main/s/souffle/\$1\",
     \"matrixParams\": {
@@ -89,6 +93,9 @@ elif [ "$1" = centos ];
 then
   print_json "rpm"  "`git describe --tags --always`" "bintray-rpm-stable.json" "centos"
   print_json "rpm-unstable"  "`git describe --tags --always`" "bintray-rpm-unstable.json" "centos"
+elif [ "$1" = osx ];
+then
+  print_json "osx"  "`git describe --tags --always`" "bintray-osx.json" "osx"
 else
   exit 1
 fi

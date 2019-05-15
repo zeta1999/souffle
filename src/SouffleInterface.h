@@ -107,7 +107,7 @@ public:
     virtual iterator end() const = 0;
 
     // number of tuples in relation
-    virtual std::size_t size() = 0;
+    virtual std::size_t size() const = 0;
 
     // properties
     virtual std::string getName() const = 0;
@@ -311,7 +311,7 @@ public:
 
     virtual void executeSubroutine(std::string name, const std::vector<RamDomain>& args,
             std::vector<RamDomain>& ret, std::vector<bool>& retErr) {}
-    virtual const SymbolTable& getSymbolTable() const = 0;
+    virtual SymbolTable& getSymbolTable() = 0;
 
     // remove all the facts from the output relations
     void purgeOutputRelations() {

@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2019 The Souffle Developers. All Rights reserved
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -90,4 +90,6 @@ int main(int argc, char** argv){
     prog->run();
     std::cout<<"source2sink - run 3"<<std::endl;
     printSource2sink(prog);
+
+    delete prog;
 }

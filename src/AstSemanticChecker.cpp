@@ -56,6 +56,11 @@
 namespace souffle {
 
 bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
+    checkProgram(translationUnit); 
+    return false;
+}
+
+void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit){
     const TypeEnvironment& typeEnv =
             translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
     auto* typeAnalysis = translationUnit.getAnalysis<TypeAnalysis>();
@@ -63,15 +68,6 @@ bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
     auto* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
     auto* ioTypes = translationUnit.getAnalysis<IOType>();
 
-    checkProgram(translationUnit.getErrorReport(), *translationUnit.getProgram(), typeEnv, *typeAnalysis,
-            *precedenceGraph, *recursiveClauses, *ioTypes);
-    return false;
-}
-
-void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& program,
-        const TypeEnvironment& typeEnv, const TypeAnalysis& typeAnalysis,
-        const PrecedenceGraph& precedenceGraph, const RecursiveClauses& recursiveClauses,
-        const IOType& ioTypes) {
     // suppress warnings for given relations
     if (Global::config().has("suppress-warnings")) {
         std::vector<std::string> suppressedRelations =

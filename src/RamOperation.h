@@ -190,12 +190,6 @@ public:
         return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamScan*>(&node));
-        const auto& other = static_cast<const RamScan&>(node);
-        return RamRelationSearch::equal(other);
-    }
 };
 
 /**
@@ -219,12 +213,6 @@ public:
     RamParallelScan* clone() const override {
         return new RamParallelScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
-    }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelScan*>(&node));
-        const auto& other = static_cast<const RamParallelScan&>(node);
-        return RamScan::equal(other);
     }
 };
 
@@ -323,12 +311,6 @@ public:
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
     }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamIndexScan*>(&node));
-        const auto& other = static_cast<const RamIndexScan&>(node);
-        return RamIndexRelationSearch::equal(other);
-    }
 };
 
 /**
@@ -377,11 +359,6 @@ public:
         return res;
     }
 
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelIndexScan*>(&node));
-        const auto& other = static_cast<const RamParallelIndexScan&>(node);
-        return RamIndexScan::equal(other);
-    }
 };
 
 /**
@@ -423,14 +400,14 @@ public:
         return {nestedOperation.get(), relationRef.get(), condition.get()};
     }
 
+protected:
+    std::unique_ptr<RamCondition> condition;
+
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamChoice*>(&node));
         const auto& other = static_cast<const RamChoice&>(node);
         return RamRelationSearch::equal(other) && getCondition() == other.getCondition();
     }
-
-protected:
-    std::unique_ptr<RamCondition> condition;
 };
 
 /**
@@ -458,11 +435,6 @@ public:
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelChoice*>(&node));
-        const auto& other = static_cast<const RamParallelChoice&>(node);
-        return RamChoice::equal(other);
-    }
 };
 
 /**
@@ -541,7 +513,6 @@ public:
 protected:
     std::unique_ptr<RamCondition> condition;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIndexChoice*>(&node));
         const auto& other = static_cast<const RamIndexChoice&>(node);
@@ -595,14 +566,6 @@ public:
                 std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
-    }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelIndexChoice*>(&node));
-        const auto& other = static_cast<const RamParallelIndexChoice&>(node);
-        return RamIndexChoice::equal(other);
     }
 };
 

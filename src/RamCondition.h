@@ -39,7 +39,6 @@ class RamCondition : public RamNode {
 public:
     RamCondition() = default;
 
-    /** Create clone */
     RamCondition* clone() const override = 0;
 };
 
@@ -63,7 +62,6 @@ public:
         return *rhs;
     }
 
-    /** Print */
     void print(std::ostream& os) const override {
         os << "(";
         lhs->print(os);
@@ -72,19 +70,16 @@ public:
         os << ")";
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {lhs.get(), rhs.get()};
     }
 
-    /** Create clone */
     RamConjunction* clone() const override {
         auto* res = new RamConjunction(
                 std::unique_ptr<RamCondition>(lhs->clone()), std::unique_ptr<RamCondition>(rhs->clone()));
         return res;
     }
 
-    /** Apply */
     void apply(const RamNodeMapper& map) override {
         lhs = map(std::move(lhs));
         rhs = map(std::move(rhs));
@@ -97,7 +92,6 @@ protected:
     /** Right-hand side of conjunction */
     std::unique_ptr<RamCondition> rhs;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamConjunction*>(&node));
         const auto& other = static_cast<const RamConjunction&>(node);
@@ -118,25 +112,21 @@ public:
         return *operand;
     }
 
-    /** Print */
     void print(std::ostream& os) const override {
         os << "(not ";
         operand->print(os);
         os << ")";
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {operand.get()};
     }
 
-    /** Create clone */
     RamNegation* clone() const override {
         auto* res = new RamNegation(std::unique_ptr<RamCondition>(operand->clone()));
         return res;
     }
 
-    /** Apply */
     void apply(const RamNodeMapper& map) override {
         operand = map(std::move(operand));
     }
@@ -145,7 +135,6 @@ protected:
     /** Operand */
     std::unique_ptr<RamCondition> operand;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamNegation*>(&node));
         const auto& other = static_cast<const RamNegation&>(node);
@@ -161,7 +150,6 @@ public:
     RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamExpression> l, std::unique_ptr<RamExpression> r)
             : RamCondition(), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
 
-    /** Print */
     void print(std::ostream& os) const override {
         os << "(";
         lhs->print(os);
@@ -185,19 +173,16 @@ public:
         return op;
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {lhs.get(), rhs.get()};
     }
 
-    /** Create clone */
     RamConstraint* clone() const override {
         auto* res = new RamConstraint(op, std::unique_ptr<RamExpression>(lhs->clone()),
                 std::unique_ptr<RamExpression>(rhs->clone()));
         return res;
     }
 
-    /** Apply */
     void apply(const RamNodeMapper& map) override {
         lhs = map(std::move(lhs));
         rhs = map(std::move(rhs));
@@ -213,7 +198,6 @@ protected:
     /** Right-hand side of constraint */
     std::unique_ptr<RamExpression> rhs;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamConstraint*>(&node));
         const auto& other = static_cast<const RamConstraint&>(node);
@@ -241,7 +225,6 @@ public:
         return toPtrVector(values);
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res = {relationRef.get()};
         for (const auto& cur : values) {
@@ -250,7 +233,6 @@ public:
         return res;
     }
 
-    /** Apply */
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
         for (auto& val : values) {
@@ -267,7 +249,6 @@ protected:
     /** Pattern -- nullptr if undefined */
     std::vector<std::unique_ptr<RamExpression>> values;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAbstractExistenceCheck*>(&node));
         const auto& other = static_cast<const RamAbstractExistenceCheck&>(node);
@@ -284,7 +265,6 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
-    /** Print */
     void print(std::ostream& os) const override {
         os << "("
            << join(values, ",",
@@ -298,7 +278,6 @@ public:
            << ") ∈ " << getRelation().getName();
     }
 
-    /** Create clone */
     RamExistenceCheck* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : values) {
@@ -312,13 +291,6 @@ public:
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
         return res;
     }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamExistenceCheck*>(&node));
-        return RamAbstractExistenceCheck::equal(node);
-    }
 };
 
 /**
@@ -330,7 +302,6 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
-    /** Print */
     void print(std::ostream& os) const override {
         os << "("
            << join(values, ",",
@@ -344,7 +315,6 @@ public:
            << ") prov∈ " << getRelation().getName();
     }
 
-    /** Create clone */
     RamProvenanceExistenceCheck* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : values) {
@@ -359,12 +329,6 @@ public:
         return res;
     }
 
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(dynamic_cast<const RamProvenanceExistenceCheck*>(&node));
-        return RamAbstractExistenceCheck::equal(node);
-    }
 };
 
 /**
@@ -380,23 +344,19 @@ public:
         return *relationRef->get();
     }
 
-    /** Print */
     void print(std::ostream& os) const override {
         os << "(" << getRelation().getName() << " = ∅)";
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {relationRef.get()};
     }
 
-    /** Create clone */
     RamEmptinessCheck* clone() const override {
         auto* res = new RamEmptinessCheck(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
     }
 
-    /** Apply */
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
     }
@@ -405,7 +365,6 @@ protected:
     /** Relation */
     std::unique_ptr<RamRelationReference> relationRef;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamEmptinessCheck*>(&node));
         const auto& other = static_cast<const RamEmptinessCheck&>(node);

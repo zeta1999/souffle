@@ -1099,7 +1099,6 @@ void RAMI::executeSubroutine(const std::string& name, const std::vector<RamDomai
 
     // run subroutine
     const RamOperation& op = static_cast<const RamQuery&>(stmt).getOperation();
-    op.print(std::cout, 0);
     evalOp(op, ctxt);
 }
 

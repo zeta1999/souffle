@@ -285,8 +285,8 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
         // Note: this naive approach will not work if there exists chain or cyclic swapping.
         // e.g.  swap(relA, relB) swap(relB, relC) swap(relC, relA)
         // One need to keep merging the search set until a fixed point where no more index is introduced
-        // in any of the relation in a complete iteration. 
-        // 
+        // in any of the relation in a complete iteration.
+        //
         // Currently RAM does not have such situation.
         const RamRelation& relA = swap.getFirstRelation();
         const RamRelation& relB = swap.getSecondRelation();
@@ -320,17 +320,6 @@ MinIndexSelection& RamIndexAnalysis::getIndexes(const RamRelation& rel) {
         assert(ret.second);
         return ret.first->second;
     }
-}
-
-MinIndexSelection& RamIndexAnalysis::getIndexes(const std::string& relName) {
-    for (auto& cur : minIndexCover) {
-        if (cur.first->getName() == relName) {
-            return cur.second;
-        }
-    }
-
-    // Indices should always be found.
-    abort();
 }
 
 void RamIndexAnalysis::print(std::ostream& os) const {

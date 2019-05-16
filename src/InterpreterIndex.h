@@ -26,111 +26,6 @@
 
 namespace souffle {
 
-/**
- * A class describing the sorting order of tuples within an index.
- */
-class InterpreterIndexOrder {
-public:
-    // -- constructors --
-
-    InterpreterIndexOrder(std::vector<unsigned char> order = std::vector<unsigned char>())
-            : columns(std::move(order)) {}
-
-    InterpreterIndexOrder(const InterpreterIndexOrder&) = default;
-    InterpreterIndexOrder(InterpreterIndexOrder&&) = default;
-
-    // -- assignment operations --
-
-    InterpreterIndexOrder& operator=(const InterpreterIndexOrder&) = default;
-    InterpreterIndexOrder& operator=(InterpreterIndexOrder&&) = default;
-
-    // -- other operations --
-
-    /** Provides access to the order of columns */
-    unsigned char operator[](std::size_t pos) const {
-        return columns[pos];
-    }
-
-    /** Enables orders to be the key of a set or map */
-    bool operator<(const InterpreterIndexOrder& other) const {
-        return columns < other.columns;
-    }
-
-    // -- other members --
-
-    /** Append an additional column to the end of this order */
-    void append(unsigned char column) {
-        assert(!contains(columns, column));
-        columns.push_back(column);
-    }
-
-    /** Provides access to the size of this order */
-    std::size_t size() const {
-        return columns.size();
-    }
-
-    /** Determines whether the given column is covered or not */
-    bool covers(unsigned char column) const {
-        return contains(columns, column);
-    }
-
-    /** Tests whether the given order covers a complete list of columns */
-    bool isComplete() const {
-        // the columns must contain the values 0 ... |length|
-        for (unsigned i = 0; i < columns.size(); i++) {
-            if (!contains(columns, i)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Tests whether this order is a prefix of the given order. */
-    bool isPrefixOf(const InterpreterIndexOrder& other) const {
-        // this one must not be longer
-        if (columns.size() > other.columns.size()) {
-            return false;
-        }
-        for (unsigned i = 0; i < columns.size(); i++) {
-            if (columns[i] != other.columns[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Tests whether this order is compatible with the given order. A
-     * order A is compatible with an order B if the first |A| elements
-     * of B are a permutation of A.
-     */
-    bool isCompatible(const InterpreterIndexOrder& other) const {
-        // this one must be shorter
-        if (columns.size() > other.columns.size()) {
-            return false;
-        }
-        // check overlapping prefix
-        for (unsigned i = 0; i < columns.size(); ++i) {
-            if (!contains(columns, other.columns[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Enables the index order to be printed */
-    void print(std::ostream& out) const {
-        out << "[" << join(columns, ",", [](std::ostream& out, int i) { out << i; }) << "]";
-    }
-
-    friend std::ostream& operator<<(std::ostream& out, const InterpreterIndexOrder& order) {
-        order.print(out);
-        return out;
-    }
-    // the order of columns along which fields should be sorted by an index
-    std::vector<unsigned char> columns;
-};
-
 /* B-Tree indexes as default implementation for indexes */
 class InterpreterIndex {
     using LexOrder = std::vector<int>;
@@ -138,7 +33,6 @@ class InterpreterIndex {
 public:
     /* lexicographical comparison operation on two tuple pointers */
     struct comparator {
-        // TODO remove ref-qualifier. Which cause issue when moving or copying the index.
         const LexOrder order;
 
         /* constructor to initialize state */

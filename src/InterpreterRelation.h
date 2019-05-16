@@ -146,7 +146,6 @@ public:
     /** get index for a given order. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const LexOrder& order) const {
         auto ret = indices.find(order);
-        assert(ret != indices.end() && "getIndex should always find an existing index");
         return &(ret->second);
     }
 
@@ -218,7 +217,6 @@ public:
         }
 
     private:
-        // TODO Unsafe! remove const-qualified so that I can copy a iter...
         const InterpreterRelation* relation = nullptr;
         size_t index = 0;
         RamDomain* tuple = nullptr;

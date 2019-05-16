@@ -255,12 +255,7 @@ protected:
                 return i;
             }
         }
-        std::cerr << "Cannot find matching lexicaographical order" << std::endl;
-        printf("Sig:%lu\n", cols);
-        for (int i = 0; i < 64; ++i) {
-            printf("%lu", (cols >> i) & 1);
-        }
-        printf("\n");
+        std::cerr << "Cannot find matching lexicographical order" << std::endl;
         abort();
     }
 
@@ -310,7 +305,6 @@ protected:
         }
         return unmatched;
     }
-
 };
 
 /**

@@ -867,7 +867,6 @@ protected:
         RamRelationStatement::equal(other);
         return getMessage() == other.getMessage();
     }
-
 };
 
 #ifdef USE_MPI

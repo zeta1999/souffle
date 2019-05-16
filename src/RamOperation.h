@@ -358,7 +358,6 @@ public:
                         std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
     }
-
 };
 
 /**
@@ -434,7 +433,6 @@ public:
                 getTupleId(), std::unique_ptr<RamCondition>(condition->clone()),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
-
 };
 
 /**

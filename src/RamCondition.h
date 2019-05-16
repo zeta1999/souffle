@@ -328,7 +328,6 @@ public:
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
         return res;
     }
-
 };
 
 /**

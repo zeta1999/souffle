@@ -41,7 +41,7 @@ void MaxMatching::addEdge(SearchSignature u, SearchSignature v) {
 SearchSignature MaxMatching::getMatch(SearchSignature v) {
     auto it = match.find(v);
     if (it == match.end()) {
-        return NIL;
+        return RIA_NIL;
     }
     return it->second;
 }
@@ -49,7 +49,7 @@ SearchSignature MaxMatching::getMatch(SearchSignature v) {
 int MaxMatching::getDistance(SearchSignature v) {
     auto it = distance.find(v);
     if (it == distance.end()) {
-        return INF;
+        return RIA_INF;
     }
     return it->second;
 }
@@ -59,30 +59,30 @@ bool MaxMatching::bfSearch() {
     std::queue<SearchSignature> bfQueue;
     // Build layers
     for (auto& it : graph) {
-        if (getMatch(it.first) == NIL) {
+        if (getMatch(it.first) == RIA_NIL) {
             distance[it.first] = 0;
             bfQueue.push(it.first);
         } else {
-            distance[it.first] = INF;
+            distance[it.first] = RIA_INF;
         }
     }
-    distance[NIL] = INF;
+    distance[RIA_NIL] = RIA_INF;
     while (!bfQueue.empty()) {
         u = bfQueue.front();
         bfQueue.pop();
-        assert(u != NIL);
+        assert(u != RIA_NIL);
         const Edges& children = graph[u];
         for (auto it : children) {
             SearchSignature mv = getMatch(it);
-            if (getDistance(mv) == INF) {
+            if (getDistance(mv) == RIA_INF) {
                 distance[mv] = getDistance(u) + 1;
-                if (mv != NIL) {
+                if (mv != RIA_NIL) {
                     bfQueue.push(mv);
                 }
             }
         }
     }
-    return (getDistance(0) != INF);
+    return (getDistance(0) != RIA_INF);
 }
 
 bool MaxMatching::dfSearch(SearchSignature u) {
@@ -98,7 +98,7 @@ bool MaxMatching::dfSearch(SearchSignature u) {
             }
         }
 
-        distance[u] = INF;
+        distance[u] = RIA_INF;
         return false;
     }
     return true;
@@ -107,7 +107,7 @@ bool MaxMatching::dfSearch(SearchSignature u) {
 const MaxMatching::Matchings& MaxMatching::solve() {
     while (bfSearch()) {
         for (auto& it : graph) {
-            if (getMatch(it.first) == NIL) {
+            if (getMatch(it.first) == RIA_NIL) {
                 dfSearch(it.first);
             }
         }
@@ -274,6 +274,33 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
         } else if (const auto* provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
             MinIndexSelection& indexes = getIndexes(provExists->getRelation());
             indexes.addSearch(getSearchSignature(provExists));
+        } else if (const auto* ramRel = dynamic_cast<const RamRelation*>(&node)) {
+            MinIndexSelection& indexes = getIndexes(*ramRel);
+            indexes.addSearch(getSearchSignature(ramRel));
+        }
+    });
+
+    // A swap happen between rel A and rel B indicates A should include all indices of B, vice versa.
+    visitDepthFirst(*translationUnit.getProgram(), [&](const RamSwap& swap) {
+        // Note: this naive approach will not work if there exists chain or cyclic swapping.
+        // e.g.  swap(relA, relB) swap(relB, relC) swap(relC, relA)
+        // One need to keep merging the search set until a fixed point where no more index is introduced
+        // in any of the relation in a complete iteration.
+        //
+        // Currently RAM does not have such situation.
+        const RamRelation& relA = swap.getFirstRelation();
+        const RamRelation& relB = swap.getSecondRelation();
+
+        MinIndexSelection& indexesA = getIndexes(relA);
+        MinIndexSelection& indexesB = getIndexes(relB);
+        // Add all searchSignature of A into B
+        for (const auto& signature : indexesA.getSearches()) {
+            indexesB.addSearch(signature);
+        }
+
+        // Add all searchSignature of B into A
+        for (const auto& signature : indexesB.getSearches()) {
+            indexesA.addSearch(signature);
         }
     });
 
@@ -361,6 +388,11 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* ex
             res |= (1 << i);
         }
     }
+    return res;
+}
+
+SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) const {
+    SearchSignature res = (1 << ramRel->getArity()) - 1;
     return res;
 }
 

@@ -28,7 +28,6 @@
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
 #include "RamExpression.h"
-#include "RamIndexAnalysis.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
@@ -282,12 +281,9 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
     class ConditionEvaluator : public RamVisitor<bool> {
         RAMI& interpreter;
         const InterpreterContext& ctxt;
-        RamIndexAnalysis* isa;
 
     public:
-        ConditionEvaluator(RAMI& interp, const InterpreterContext& ctxt)
-                : interpreter(interp), ctxt(ctxt),
-                  isa(interp.getTranslationUnit().getAnalysis<RamIndexAnalysis>()) {}
+        ConditionEvaluator(RAMI& interp, const InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
 
         // -- connectors operators --
 
@@ -316,7 +312,7 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
                 interpreter.reads[exists.getRelation().getName()]++;
             }
             // for total we use the exists test
-            if (isa->isTotalSignature(&exists)) {
+            if (interpreter.isa->isTotalSignature(&exists)) {
                 RamDomain tuple[arity];
                 for (size_t i = 0; i < arity; i++) {
                     tuple[i] = (values[i]) ? interpreter.evalExpr(*values[i], ctxt) : MIN_RAM_DOMAIN;
@@ -334,7 +330,7 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
             }
 
             // obtain index
-            auto idx = rel.getIndex(isa->getSearchSignature(&exists));
+            auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&exists));
             auto range = idx->lowerUpperBound(low, high);
             return range.first != range.second;  // if there is something => done
         }
@@ -360,7 +356,7 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
             high[arity - 1] = MAX_RAM_DOMAIN;
 
             // obtain index
-            auto idx = rel.getIndex(isa->getSearchSignature(&provExists));
+            auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&provExists));
             auto range = idx->lowerUpperBound(low, high);
             return range.first != range.second;  // if there is something => done
         }
@@ -446,12 +442,9 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
     class OperationEvaluator : public RamVisitor<bool> {
         RAMI& interpreter;
         InterpreterContext& ctxt;
-        RamIndexAnalysis* isa;
 
     public:
-        OperationEvaluator(RAMI& interp, InterpreterContext& ctxt)
-                : interpreter(interp), ctxt(ctxt),
-                  isa(interp.getTranslationUnit().getAnalysis<RamIndexAnalysis>()) {}
+        OperationEvaluator(RAMI& interp, InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
 
         // -- Operations -----------------------------
 
@@ -502,7 +495,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             }
 
             // obtain index
-            auto idx = rel.getIndex(isa->getSearchSignature(&scan), nullptr);
+            auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&scan), nullptr);
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
@@ -553,7 +546,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             }
 
             // obtain index
-            auto idx = rel.getIndex(isa->getSearchSignature(&choice), nullptr);
+            auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&choice), nullptr);
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
@@ -703,7 +696,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             }
 
             // obtain index
-            auto idx = rel.getIndex(isa->getSearchSignature(&aggregate));
+            auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&aggregate));
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
@@ -799,7 +792,6 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             // insert in target relation
             InterpreterRelation& rel = interpreter.getRelation(project.getRelation());
             rel.insert(tuple);
-
             return true;
         }
 
@@ -927,7 +919,8 @@ void RAMI::evalStmt(const RamStatement& stmt) {
         }
 
         bool visitCreate(const RamCreate& create) override {
-            interpreter.createRelation(create.getRelation());
+            interpreter.createRelation(
+                    create.getRelation(), &(interpreter.isa->getIndexes(create.getRelation())));
             return true;
         }
 

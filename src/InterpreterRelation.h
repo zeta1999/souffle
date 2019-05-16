@@ -18,6 +18,7 @@
 
 #include "InterpreterIndex.h"
 #include "ParallelUtils.h"
+#include "RamIndexAnalysis.h"
 #include "RamTypes.h"
 
 #include <deque>
@@ -31,8 +32,16 @@ namespace souffle {
  * Interpreter Relation
  */
 class InterpreterRelation {
+    using LexOrder = std::vector<int>;
+
 public:
-    InterpreterRelation(size_t relArity) : arity(relArity), totalIndex(nullptr) {}
+    InterpreterRelation(size_t relArity, const MinIndexSelection* orderSet)
+            : arity(relArity), orderSet(orderSet) {
+        // Create all necessary indices based on orderSet
+        for (auto& order : orderSet->getAllOrders()) {
+            indices.emplace(std::make_pair(order, InterpreterIndex(order)));
+        }
+    }
 
     InterpreterRelation(const InterpreterRelation& other) = delete;
 
@@ -92,10 +101,10 @@ public:
         }
 
         // update all indexes with new tuple
-        for (const auto& cur : indices) {
-            cur.second->insert(newTuple);
+        for (auto& cur : indices) {
+            cur.second.insert(newTuple);
         }
-
+        // totalIndex->insert(newTuple);
         // increment relation size
         num_tuples++;
     }
@@ -111,8 +120,8 @@ public:
     /** Purge table */
     void purge() {
         blockList.clear();
-        for (const auto& cur : indices) {
-            cur.second->purge();
+        for (auto& cur : indices) {
+            cur.second.purge();
         }
         num_tuples = 0;
     }
@@ -126,67 +135,18 @@ public:
         return getIndex(cachedIndex->order());
     }
 
-    /** get index for a given set of keys. Keys are encoded as bits for each column */
-    InterpreterIndex* getIndex(const SearchSignature& key) const {
-        // suffix for order, if no matching prefix exists
-        std::vector<unsigned char> suffix;
-        suffix.reserve(getArity());
-
-        // convert to order
-        InterpreterIndexOrder order;
-        for (size_t k = 1, i = 0; i < getArity(); i++, k *= 2) {
-            if (key & k) {
-                order.append(i);
-            } else {
-                suffix.push_back(i);
-            }
+    /** get index for a given search signature. Order are encoded as bits for each column */
+    InterpreterIndex* getIndex(const SearchSignature& col) const {
+        if (col == 0) {
+            return getIndex(getTotalIndexKey());
         }
-
-        // see whether there is an order with a matching prefix
-        InterpreterIndex* res = nullptr;
-        {
-            auto lease = lock.acquire();
-            (void)lease;
-
-            for (auto it = indices.begin(); !res && it != indices.end(); ++it) {
-                if (order.isCompatible(it->first)) {
-                    res = it->second.get();
-                }
-            }
-        }
-        // if found, use compatible index
-        if (res) {
-            return res;
-        }
-
-        // extend index to full index
-        for (auto cur : suffix) {
-            order.append(cur);
-        }
-        assert(order.isComplete());
-
-        // get a new index
-        return getIndex(order);
+        return getIndex(orderSet->getLexOrder(col));
     }
 
-    /** get index for a given order. Keys are encoded as bits for each column */
-    InterpreterIndex* getIndex(const InterpreterIndexOrder& order) const {
-        // TODO: improve index usage by re-using indices with common prefix
-        InterpreterIndex* res = nullptr;
-        {
-            auto lease = lock.acquire();
-            (void)lease;
-            auto pos = indices.find(order);
-            if (pos == indices.end()) {
-                std::unique_ptr<InterpreterIndex>& newIndex = indices[order];
-                newIndex = std::make_unique<InterpreterIndex>(order);
-                newIndex->insert(this->begin(), this->end());
-                res = newIndex.get();
-            } else {
-                res = pos->second.get();
-            }
-        }
-        return res;
+    /** get index for a given order. Order are encoded as bits for each column */
+    InterpreterIndex* getIndex(const LexOrder& order) const {
+        auto ret = indices.find(order);
+        return &(ret->second);
     }
 
     /** Obtains a full index-key for this relation */
@@ -200,12 +160,8 @@ public:
         if (getArity() == 0) {
             return !empty();
         }
-
-        // handle all other arities
-        if (!totalIndex) {
-            totalIndex = getIndex(getTotalIndexKey());
-        }
-        return totalIndex->exists(tuple);
+        InterpreterIndex* index = getIndex(getTotalIndexKey());
+        return index->exists(tuple);
     }
 
     void setLevel(size_t level) {
@@ -261,7 +217,6 @@ public:
         }
 
     private:
-        // TODO Unsafe! remove const-qualified so that I can copy a iter...
         const InterpreterRelation* relation = nullptr;
         size_t index = 0;
         RamDomain* tuple = nullptr;
@@ -308,10 +263,13 @@ private:
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
 
     /** List of indices */
-    mutable std::map<InterpreterIndexOrder, std::unique_ptr<InterpreterIndex>> indices;
+    mutable std::map<LexOrder, InterpreterIndex> indices;
 
-    /** Total index for existence checks */
-    mutable InterpreterIndex* totalIndex;
+    /** Total Index */
+    // std::unique_ptr<InterpreterIndex> totalIndex;
+
+    /** IndexSet */
+    const MinIndexSelection* orderSet;
 
     /** Lock for parallel execution */
     mutable Lock lock;
@@ -329,7 +287,8 @@ private:
 
 class InterpreterEqRelation : public InterpreterRelation {
 public:
-    InterpreterEqRelation(size_t relArity) : InterpreterRelation(relArity) {}
+    InterpreterEqRelation(size_t relArity, const MinIndexSelection* orderSet)
+            : InterpreterRelation(relArity, orderSet) {}
 
     /** Insert tuple */
     void insert(const RamDomain* tuple) override {

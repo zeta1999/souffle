@@ -1097,17 +1097,20 @@ void RAMI::executeSubroutine(const std::string& name, const std::vector<RamDomai
     ctxt.setArguments(arguments);
     const RamStatement& stmt = translationUnit.getProgram()->getSubroutine(name);
 
+    if (dynamic_cast<const RamRelationStatement*>(&stmt) != nullptr) {
+        printf("RelationStmt\n");
+    } else if (dynamic_cast<const RamSequence*>(&stmt) != nullptr) {
+        printf("Sequence\n");
+    } else if (dynamic_cast<const RamLoop*>(&stmt) != nullptr) {
+        printf("RamLoop\n");
+    } else if (dynamic_cast<const RamQuery*>(&stmt) != nullptr) {
+        printf("RamQuery\n");
+    } else if (dynamic_cast<const RamCreate*>(&stmt) != nullptr) {
+        printf("RamCreate\n");
+    }
     printf("\nCasting to RamQuery ------- \n\n");
-    const RamQuery& q = static_cast<const RamQuery&>(stmt);
-    q.print(std::cout , 0);
+    assert(dynamic_cast<const RamQuery*>(&stmt) != nullptr);
     printf("\nPass! ------- \n\n");
-
-
-    printf("GetRamOperation ------- \n\n");
-    const RamOperation& o = q.getOperation();
-    printf("Try print\n");
-    o.print(std::cout, 0);
-    printf("Pass! ------ \n\n");
 
     // run subroutine
     const RamOperation& op = static_cast<const RamQuery&>(stmt).getOperation();

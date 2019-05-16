@@ -1097,21 +1097,6 @@ void RAMI::executeSubroutine(const std::string& name, const std::vector<RamDomai
     ctxt.setArguments(arguments);
     const RamStatement& stmt = translationUnit.getProgram()->getSubroutine(name);
 
-    if (dynamic_cast<const RamRelationStatement*>(&stmt) != nullptr) {
-        printf("RelationStmt\n");
-    } else if (dynamic_cast<const RamSequence*>(&stmt) != nullptr) {
-        printf("Sequence\n");
-    } else if (dynamic_cast<const RamLoop*>(&stmt) != nullptr) {
-        printf("RamLoop\n");
-    } else if (dynamic_cast<const RamQuery*>(&stmt) != nullptr) {
-        printf("RamQuery\n");
-    } else if (dynamic_cast<const RamCreate*>(&stmt) != nullptr) {
-        printf("RamCreate\n");
-    }
-    printf("\nCasting to RamQuery ------- \n\n");
-    assert(dynamic_cast<const RamQuery*>(&stmt) != nullptr);
-    printf("\nPass! ------- \n\n");
-
     // run subroutine
     const RamOperation& op = static_cast<const RamQuery&>(stmt).getOperation();
     op.print(std::cout, 0);

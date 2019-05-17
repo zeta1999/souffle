@@ -56,17 +56,20 @@
 namespace souffle {
 
 bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
-    checkProgram(translationUnit); 
+    checkProgram(translationUnit);
     return false;
 }
 
-void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit){
+void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     const TypeEnvironment& typeEnv =
             translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
-    auto* typeAnalysis = translationUnit.getAnalysis<TypeAnalysis>();
-    auto* precedenceGraph = translationUnit.getAnalysis<PrecedenceGraph>();
-    auto* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
-    auto* ioTypes = translationUnit.getAnalysis<IOType>();
+    const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
+    const PrecedenceGraph& precedenceGraph = *translationUnit.getAnalysis<PrecedenceGraph>();
+    const RecursiveClauses& recursiveClauses = *translationUnit.getAnalysis<RecursiveClauses>();
+    const IOType& ioTypes = *translationUnit.getAnalysis<IOType>();
+    const AstProgram& program = *translationUnit.getProgram();
+    ErrorReport& report = translationUnit.getErrorReport();
+    const SCCGraph &sccGraph = *translationUnit.getAnalysis<SCCGraph>();
 
     // suppress warnings for given relations
     if (Global::config().has("suppress-warnings")) {
@@ -298,17 +301,16 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit){
     // - stratification --
 
     // check for cyclic dependencies
-    const Graph<const AstRelation*, AstNameComparison>& depGraph = precedenceGraph.graph();
-    for (const AstRelation* cur : depGraph.vertices()) {
-        if (depGraph.reaches(cur, cur)) {
-            AstRelationSet clique = depGraph.clique(cur);
-            for (const AstRelation* cyclicRelation : clique) {
+    for (AstRelation* cur : program.getRelations()) {
+        size_t scc = sccGraph.getSCC(cur);
+        if (sccGraph.isRecursive(scc)) {
+            for (const AstRelation* cyclicRelation : sccGraph.getInternalRelations(scc)) {
                 // Negations and aggregations need to be stratified
                 const AstLiteral* foundLiteral = nullptr;
                 bool hasNegation = hasClauseWithNegatedRelation(cyclicRelation, cur, &program, foundLiteral);
                 if (hasNegation ||
                         hasClauseWithAggregatedRelation(cyclicRelation, cur, &program, foundLiteral)) {
-                    std::string relationsListStr = toString(join(clique, ",",
+                    std::string relationsListStr = toString(join(sccGraph.getInternalRelations(scc), ",",
                             [](std::ostream& out, const AstRelation* r) { out << r->getName(); }));
                     std::vector<DiagnosticMessage> messages;
                     messages.push_back(

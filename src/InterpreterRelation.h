@@ -126,12 +126,6 @@ public:
         num_tuples = 0;
     }
 
-    /** get index for a given set of keys using a cached index as a helper. Keys are encoded as bits for each
-     * column */
-    InterpreterIndex* getIndex(const SearchSignature& key, InterpreterIndex* cachedIndex) const {
-        return getIndex(key);
-    }
-
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
         if (col == 0) {

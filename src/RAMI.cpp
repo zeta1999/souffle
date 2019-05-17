@@ -495,7 +495,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             }
 
             // obtain index
-            auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&scan), nullptr);
+            auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&scan));
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);
@@ -546,7 +546,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             }
 
             // obtain index
-            auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&choice), nullptr);
+            auto idx = rel.getIndex(interpreter.isa->getSearchSignature(&choice));
 
             // get iterator range
             auto range = idx->lowerUpperBound(low, hig);

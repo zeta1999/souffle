@@ -610,6 +610,112 @@ protected:
 enum AggregateFunction { MAX, MIN, COUNT, SUM };
 
 /**
+ * Aggregation
+ */
+class RamAggregate : public RamRelationSearch {
+public:
+    RamAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
+            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
+            std::unique_ptr<RamCondition> condition, int ident)
+            : RamRelationSearch(std::move(relRef), ident, std::move(nested)), function(fun),
+              expression(std::move(expression)), condition(std::move(condition)) {}
+
+    /** Get condition */
+    const RamCondition* getCondition() const {
+        return condition.get();
+    }
+
+    /** Get aggregation function */
+    AggregateFunction getFunction() const {
+        return function;
+    }
+
+    /** Get target expression */
+    const RamExpression* getExpression() const {
+        return expression.get();
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "t" << getTupleId() << ".0=";
+        switch (function) {
+            case MIN:
+                os << "MIN ";
+                break;
+            case MAX:
+                os << "MAX ";
+                break;
+            case COUNT:
+                os << "COUNT ";
+                break;
+            case SUM:
+                os << "SUM ";
+                break;
+        }
+        if (function != COUNT) {
+            os << *expression << " ";
+        }
+        os << " FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
+        if (condition != nullptr) {
+            os << " WHERE " << *getCondition();
+        }
+        os << std::endl;
+        RamRelationSearch::print(os, tabpos + 1);
+    }
+
+    std::vector<const RamNode*> getChildNodes() const override {
+        auto res = RamRelationSearch::getChildNodes();
+        if (expression != nullptr) {
+            res.push_back(expression.get());
+        }
+        if (condition != nullptr) {
+            res.push_back(condition.get());
+        }
+        return res;
+    }
+
+    RamAggregate* clone() const override {
+        auto* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
+                std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
+                condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
+                getTupleId());
+        return res;
+    }
+
+    void apply(const RamNodeMapper& map) override {
+        RamRelationSearch::apply(map);
+        if (condition != nullptr) {
+            condition = map(std::move(condition));
+        }
+        if (expression != nullptr) {
+            expression = map(std::move(expression));
+        }
+    }
+
+protected:
+    /** Aggregation function */
+    AggregateFunction function;
+
+    /** Aggregation expression */
+    std::unique_ptr<RamExpression> expression;
+
+    /** Aggregation tuple condition */
+    std::unique_ptr<RamCondition> condition;
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamAggregate*>(&node));
+        const auto& other = static_cast<const RamAggregate&>(node);
+        if (getCondition() != nullptr && other.getCondition() != nullptr &&
+                *getCondition() != *other.getCondition()) {
+            return false;
+        }
+        return RamRelationSearch::equal(other) && getCondition() == other.getCondition() &&
+               getFunction() == other.getFunction() && getExpression() == other.getExpression();
+    }
+};
+
+/**
  * Index Aggregation
  */
 class RamIndexAggregate : public RamIndexRelationSearch {
@@ -618,7 +724,7 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition, std::vector<std::unique_ptr<RamExpression>> queryPattern,
             int ident)
-            : RamIndexRelationSearch(std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
+            : RamIndexRelationSearch(std::move(relRef), ident, std::move(queryPattern), std::move(nested), profileText),
               function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
     /** Get condition */
@@ -736,111 +842,6 @@ protected:
     }
 };
 
-/**
- * Aggregation
- */
-class RamAggregate : public RamRelationSearch {
-public:
-    RamAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
-            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
-            std::unique_ptr<RamCondition> condition, int ident)
-            : RamRelationSearch(std::move(relRef), ident, std::move(nested)), function(fun),
-              expression(std::move(expression)), condition(std::move(condition)) {}
-
-    /** Get condition */
-    const RamCondition* getCondition() const {
-        return condition.get();
-    }
-
-    /** Get aggregation function */
-    AggregateFunction getFunction() const {
-        return function;
-    }
-
-    /** Get target expression */
-    const RamExpression* getExpression() const {
-        return expression.get();
-    }
-
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "t" << getTupleId() << ".0=";
-        switch (function) {
-            case MIN:
-                os << "MIN ";
-                break;
-            case MAX:
-                os << "MAX ";
-                break;
-            case COUNT:
-                os << "COUNT ";
-                break;
-            case SUM:
-                os << "SUM ";
-                break;
-        }
-        if (function != COUNT) {
-            os << *expression << " ";
-        }
-        os << " FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
-        if (condition != nullptr) {
-            os << " WHERE " << *getCondition();
-        }
-        os << std::endl;
-        RamRelationSearch::print(os, tabpos + 1);
-    }
-
-    std::vector<const RamNode*> getChildNodes() const override {
-        auto res = RamRelationSearch::getChildNodes();
-        if (expression != nullptr) {
-            res.push_back(expression.get());
-        }
-        if (condition != nullptr) {
-            res.push_back(condition.get());
-        }
-        return res;
-    }
-
-    RamAggregate* clone() const override {
-        auto* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
-                std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
-                condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
-                getTupleId());
-        return res;
-    }
-
-    void apply(const RamNodeMapper& map) override {
-        RamRelationSearch::apply(map);
-        if (condition != nullptr) {
-            condition = map(std::move(condition));
-        }
-        if (expression != nullptr) {
-            expression = map(std::move(expression));
-        }
-    }
-
-protected:
-    /** Aggregation function */
-    AggregateFunction function;
-
-    /** Aggregation expression */
-    std::unique_ptr<RamExpression> expression;
-
-    /** Aggregation tuple condition */
-    std::unique_ptr<RamCondition> condition;
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamAggregate*>(&node));
-        const auto& other = static_cast<const RamAggregate&>(node);
-        if (getCondition() != nullptr && other.getCondition() != nullptr &&
-                *getCondition() != *other.getCondition()) {
-            return false;
-        }
-        return RamRelationSearch::equal(other) && getCondition() == other.getCondition() &&
-               getFunction() == other.getFunction() && getExpression() == other.getExpression();
-    }
-};
 
 /**
  * Record lookup

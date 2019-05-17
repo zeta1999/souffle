@@ -53,13 +53,13 @@ public:
 
     /** Get left-hand side of conjunction */
     const RamCondition& getLHS() const {
-        assert(lhs);
+        assert(lhs!=nullptr && "left-hand side of conjunction is a nullptr");
         return *lhs;
     }
 
     /** Get right-hand side of conjunction */
     const RamCondition& getRHS() const {
-        assert(rhs);
+        assert(rhs!=nullptr && "right-hand side of conjunction  is a nullptr");
         return *rhs;
     }
 
@@ -114,7 +114,7 @@ public:
 
     /** Get operand of negation */
     const RamCondition& getOperand() const {
-        assert(nullptr != operand);
+        assert(nullptr != operand && "operand of negation is a null-pointer");
         return *operand;
     }
 

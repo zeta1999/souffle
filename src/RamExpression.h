@@ -87,9 +87,9 @@ public:
     }
 
     /** Get i-th argument value */
-    const RamExpression* getArgument(size_t i) const {
+    const RamExpression& getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
-        return arguments[i].get();
+        return *arguments[i];
     }
 
     /** Get number of arguments */
@@ -160,9 +160,9 @@ public:
     }
 
     /** Get i-th argument value */
-    const RamExpression* getArgument(size_t i) const {
+    const RamExpression& getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
-        return arguments[i].get();
+        return *arguments[i];
     }
 
     /** Get number of arguments */
@@ -253,7 +253,11 @@ public:
 
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
-        return {relationRef.get()};
+        if(relationRef!=nullptr) {
+           return {relationRef.get()};
+        } else {
+           return {};
+        }
     }
 
     /** Create clone */

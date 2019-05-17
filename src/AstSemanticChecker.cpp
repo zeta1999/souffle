@@ -15,12 +15,14 @@
  ***********************************************************************/
 
 #include "AstSemanticChecker.h"
+#include "AnalysisType.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstFunctorDeclaration.h"
 #include "AstGroundAnalysis.h"
 #include "AstIO.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -46,6 +48,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>

@@ -15,10 +15,22 @@
  ***********************************************************************/
 
 #include "AstTypeAnalysis.h"
+#include "AstArgument.h"
+#include "AstAttribute.h"
+#include "AstClause.h"
+#include "AstFunctorDeclaration.h"
+#include "AstLiteral.h"
+#include "AstProgram.h"
+#include "AstRelation.h"
 #include "AstTranslationUnit.h"
+#include "AstType.h"
 #include "AstTypeEnvironmentAnalysis.h"
+#include "AstVisitor.h"
+#include "BinaryConstraintOps.h"
+#include "FunctorOps.h"
 #include "Global.h"
 #include "TypeConstraint.h"
+#include "TypeSystem.h"
 #include <ostream>
 
 namespace souffle {

@@ -18,9 +18,15 @@
 
 #include "AstType.h"
 #include "Util.h"
+#include <algorithm>
 #include <cassert>
+#include <memory>
+#include <set>
 #include <sstream>
+#include <string>
+#include <typeinfo>
 #include <utility>
+#include <vector>
 
 namespace souffle {
 

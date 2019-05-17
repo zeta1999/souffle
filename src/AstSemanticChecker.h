@@ -16,13 +16,12 @@
 
 #pragma once
 
+#include "AstArgument.h"
 #include "AstTransformer.h"
 #include <string>
 
 namespace souffle {
 
-class AstAggregator;
-class AstArgument;
 class AstAtom;
 class AstClause;
 class AstLiteral;

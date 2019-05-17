@@ -16,6 +16,7 @@
 
 #include "TypeSystem.h"
 #include "Util.h"
+#include <algorithm>
 #include <cassert>
 
 namespace souffle {

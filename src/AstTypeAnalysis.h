@@ -18,15 +18,25 @@
 
 #include "AnalysisType.h"
 #include "AstAnalysis.h"
+#include "AstArgument.h"
+#include "AstNode.h"
 #include "AstVisitor.h"
 #include "TypeConstraint.h"
 #include "TypeLattice.h"
-#include "TypeSystem.h"
+#include "Util.h"
+#include <cassert>
+#include <map>
+#include <memory>
 #include <ostream>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace souffle {
 
-class AstArgument;
+class AstClause;
+class AstProgram;
+class AstTranslationUnit;
 
 /**
  * A type solver that computes the type for each argument in a given clause.

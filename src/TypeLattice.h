@@ -17,7 +17,12 @@
 #pragma once
 
 #include "AnalysisType.h"
+#include "AstType.h"
 #include "TypeSystem.h"
+#include <cassert>
+#include <map>
+#include <memory>
+#include <set>
 
 namespace souffle {
 

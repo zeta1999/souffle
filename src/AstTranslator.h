@@ -28,6 +28,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace souffle {
 

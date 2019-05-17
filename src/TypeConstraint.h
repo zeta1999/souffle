@@ -18,10 +18,14 @@
 
 #include "AnalysisType.h"
 #include "AstArgument.h"
-#include "AstLiteral.h"
+#include "AstNode.h"
 #include "Util.h"
+#include <cassert>
+#include <memory>
 #include <ostream>
+#include <typeinfo>
 #include <utility>
+#include <vector>
 
 namespace souffle {
 
@@ -30,6 +34,7 @@ class TypeSolver;
 /** A type constraint imposed on an argument in a program */
 class TypeConstraint {
 public:
+    virtual ~TypeConstraint() = default;
     /** Updates the given type solution to satisfy the represented type constraint */
     virtual void resolve(TypeSolver*) const = 0;
 

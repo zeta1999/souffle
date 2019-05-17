@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "RamStatement.h"
 #include "RamTypes.h"
 #include <map>
 #include <memory>
@@ -27,6 +26,7 @@
 namespace souffle {
 
 class RamOperation;
+class RamStatement;
 class RamTranslationUnit;
 class SynthesiserRelation;
 class RamRelation;

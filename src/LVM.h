@@ -50,7 +50,14 @@ class InterpreterProgInterface;
  */
 class LVM : public Interpreter {
 public:
-    LVM(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
+    LVM(RamTranslationUnit& tUnit) : Interpreter(tUnit) {
+        // Construct mapping from relation Name to RamRelation node in RAM tree.
+        // This will later be used for fast lookup during RamRelationCreate in order to retrieve
+        // minIndexSet from a given relation.
+        visitDepthFirst(*translationUnit.getProgram(), [&](const RamRelation& node) {
+            relNameToNode.insert(std::make_pair(node.getName(), &node));
+        });
+    }
 
     virtual ~LVM() {
         for (auto* timer : timers) {
@@ -247,6 +254,9 @@ private:
 
     /** List of iters for Choice operation */
     std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> choiceIteratorPool;
+
+    /** Map from relationName to RamRelationNode in RAM */
+    std::map<std::string, const RamRelation*> relNameToNode;
 
     /** stratum */
     size_t level = 0;

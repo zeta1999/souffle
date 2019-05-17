@@ -102,13 +102,13 @@ protected:
         iteration = 0;
     }
 
-    void createRelation(const RamRelation& id) {
+    void createRelation(const RamRelation& id, const MinIndexSelection* orderSet) {
         InterpreterRelation* res = nullptr;
         assert(environment.find(id.getName()) == environment.end());
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = new InterpreterEqRelation(id.getArity());
+            res = new InterpreterEqRelation(id.getArity(), orderSet);
         } else {
-            res = new InterpreterRelation(id.getArity());
+            res = new InterpreterRelation(id.getArity(), orderSet);
         }
         environment[id.getName()] = res;
     }

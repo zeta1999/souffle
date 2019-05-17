@@ -27,6 +27,7 @@
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
 #include "RamExpression.h"
+#include "RamIndexAnalysis.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamProgram.h"
@@ -819,10 +820,14 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 std::string relName = symbolTable.resolve(code[ip + 1]);
                 auto arity = code[ip + 2];
                 assert(environment.find(relName) == environment.end());
+
+                // Obtain the orderSet for this relation
+                const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
+
                 if (code[ip + 3] == LVM_EQREL) {
-                    res = new InterpreterEqRelation(arity);
+                    res = new InterpreterEqRelation(arity, &orderSet);
                 } else {
-                    res = new InterpreterRelation(arity);
+                    res = new InterpreterRelation(arity, &orderSet);
                 }
                 std::vector<std::string> attributeTypes;
                 for (int i = 0; i < code[ip + 2]; ++i) {

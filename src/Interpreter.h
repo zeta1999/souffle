@@ -45,7 +45,8 @@ class InterpreterProgInterface;
  */
 class Interpreter {
 public:
-    Interpreter(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
+    Interpreter(RamTranslationUnit& tUnit)
+            : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()) {}
 
     virtual ~Interpreter() {
         for (auto& x : environment) {
@@ -142,6 +143,9 @@ protected:
 
     /** Relation Environment */
     relation_map environment;
+
+    /** IndexAnalysis */
+    RamIndexAnalysis* isa;
 
     /** Dynamic library for user-defined functors */
     std::vector<void*> dll;

@@ -69,7 +69,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     const IOType& ioTypes = *translationUnit.getAnalysis<IOType>();
     const AstProgram& program = *translationUnit.getProgram();
     ErrorReport& report = translationUnit.getErrorReport();
-    const SCCGraph &sccGraph = *translationUnit.getAnalysis<SCCGraph>();
+    const SCCGraph& sccGraph = *translationUnit.getAnalysis<SCCGraph>();
 
     // suppress warnings for given relations
     if (Global::config().has("suppress-warnings")) {

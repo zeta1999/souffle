@@ -50,9 +50,7 @@ public:
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 
-    static void checkProgram(ErrorReport& report, const AstProgram& program, const TypeEnvironment& typeEnv,
-            const TypeAnalysis& typeAnalysis, const PrecedenceGraph& precedenceGraph,
-            const RecursiveClauses& recursiveClauses, const IOType& ioTypes);
+    static void checkProgram(AstTranslationUnit& translationUnit);
 
     static void checkAtom(ErrorReport& report, const AstProgram& program, const AstAtom& atom);
     static void checkLiteral(ErrorReport& report, const AstProgram& program, const AstLiteral& literal);

@@ -21,6 +21,7 @@
 #include "AstLiteral.h"
 #include "Util.h"
 #include <ostream>
+#include <utility>
 
 namespace souffle {
 
@@ -143,7 +144,7 @@ private:
 class UnionConstraint : public TypeConstraint {
 public:
     UnionConstraint(const AstArgument* argument, std::vector<const AstArgument*> bounds)
-            : argument(argument), bounds(bounds) {}
+            : argument(argument), bounds(std::move(bounds)) {}
 
     template <typename... Args>
     UnionConstraint(const AstArgument* argument, Args... args) : argument(argument) {

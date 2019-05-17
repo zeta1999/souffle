@@ -20,6 +20,7 @@
 #include "Util.h"
 #include <cassert>
 #include <sstream>
+#include <utility>
 
 namespace souffle {
 
@@ -151,7 +152,7 @@ public:
     // each inner type belongs to a separate sublattice, depending on the kind
     virtual Kind getKind() const = 0;
 
-    virtual InnerAnalysisType* clone() const = 0;
+    InnerAnalysisType* clone() const override = 0;
 };
 
 /** A top primitive in a lattice, just below the top element */
@@ -289,7 +290,7 @@ private:
 /** A base type in the lattice, just above the bottom primitives */
 class BaseAnalysisType : public InnerAnalysisType {
 public:
-    BaseAnalysisType(Kind kind, AstTypeIdentifier name) : kind(kind), name(name) {}
+    BaseAnalysisType(Kind kind, AstTypeIdentifier name) : kind(kind), name(std::move(name)) {}
     BaseAnalysisType(const BaseAnalysisType&) = default;
     BaseAnalysisType(BaseAnalysisType&&) = default;
 

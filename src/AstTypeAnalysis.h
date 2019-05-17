@@ -121,7 +121,7 @@ public:
 
     void run(const AstTranslationUnit& translationUnit) override;
 
-    void print(std::ostream& out) const {
+    void print(std::ostream& out) const override {
         if (lattice->isValid()) {
             out << logStream.str();
         } else {

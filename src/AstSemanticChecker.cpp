@@ -310,7 +310,11 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                 bool hasNegation = hasClauseWithNegatedRelation(cyclicRelation, cur, &program, foundLiteral);
                 if (hasNegation ||
                         hasClauseWithAggregatedRelation(cyclicRelation, cur, &program, foundLiteral)) {
-                    std::string relationsListStr = toString(join(sccGraph.getInternalRelations(scc), ",",
+                    auto const& relSet = sccGraph.getInternalRelations(scc);
+                    std::set<const AstRelation*, AstNameComparison> sortedRelSet(
+                            relSet.begin(), relSet.end());
+                    // Negations and aggregations need to be stratified
+                    std::string relationsListStr = toString(join(sortedRelSet, ",",
                             [](std::ostream& out, const AstRelation* r) { out << r->getName(); }));
                     std::vector<DiagnosticMessage> messages;
                     messages.push_back(

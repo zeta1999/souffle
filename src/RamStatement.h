@@ -960,6 +960,11 @@ public:
     }
 
     void apply(const RamNodeMapper& map) override {}
+
+protected:
+    bool equal(const RamNode& node) const override {
+        return true;
+    }
 };
 
 class RamWait : public RamStatement {

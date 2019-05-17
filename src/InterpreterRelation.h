@@ -39,7 +39,7 @@ public:
             : arity(relArity), orderSet(orderSet) {
         // Create all necessary indices based on orderSet
         for (auto& order : orderSet->getAllOrders()) {
-            indices.emplace(std::make_pair(order, InterpreterIndex(order)));
+            indices.push_back(InterpreterIndex(order));
         }
     }
 
@@ -102,7 +102,7 @@ public:
 
         // update all indexes with new tuple
         for (auto& cur : indices) {
-            cur.second.insert(newTuple);
+            cur.insert(newTuple);
         }
         // totalIndex->insert(newTuple);
         // increment relation size
@@ -121,7 +121,7 @@ public:
     void purge() {
         blockList.clear();
         for (auto& cur : indices) {
-            cur.second.purge();
+            cur.purge();
         }
         num_tuples = 0;
     }
@@ -129,10 +129,7 @@ public:
     /** get index for a given set of keys using a cached index as a helper. Keys are encoded as bits for each
      * column */
     InterpreterIndex* getIndex(const SearchSignature& key, InterpreterIndex* cachedIndex) const {
-        if (!cachedIndex) {
-            return getIndex(key);
-        }
-        return getIndex(cachedIndex->order());
+        return getIndex(key);
     }
 
     /** get index for a given search signature. Order are encoded as bits for each column */
@@ -140,13 +137,12 @@ public:
         if (col == 0) {
             return getIndex(getTotalIndexKey());
         }
-        return getIndex(orderSet->getLexOrder(col));
+        return getIndexRel(orderSet->getLexOrderNum(col));
     }
 
     /** get index for a given order. Order are encoded as bits for each column */
-    InterpreterIndex* getIndex(const LexOrder& order) const {
-        auto ret = indices.find(order);
-        return &(ret->second);
+    InterpreterIndex* getIndexRel(int idx) const {
+        return &indices[idx];
     }
 
     /** Obtains a full index-key for this relation */
@@ -263,10 +259,7 @@ private:
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
 
     /** List of indices */
-    mutable std::map<LexOrder, InterpreterIndex> indices;
-
-    /** Total Index */
-    // std::unique_ptr<InterpreterIndex> totalIndex;
+    mutable std::vector<InterpreterIndex> indices;
 
     /** IndexSet */
     const MinIndexSelection* orderSet;

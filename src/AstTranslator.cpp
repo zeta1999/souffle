@@ -753,7 +753,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         // translate arguments's of atom (if exists) to conditions
         if (atom != nullptr) {
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
+            for (size_t pos = 0; pos < atom->getArguments().size(); ++pos) {
                 // variable bindings are issued differently since we don't want self
                 // referential variable bindings
                 if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {

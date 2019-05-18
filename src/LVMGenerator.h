@@ -258,6 +258,10 @@ protected:
         code->push_back(LVM_ProvenanceExistenceCheck);
         code->push_back(symbolTable.lookup(provExists.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
+        // Cache the indexPos
+        const MinIndexSelection& orderSet = isa.getIndexes(provExists.getRelation());
+        size_t indexPos = orderSet.getLexOrderNum(isa.getSearchSignature(&provExists));
+        code->push_back(indexPos);
     }
 
     void visitConstraint(const RamConstraint& relOp, size_t exitAddress) override {
@@ -318,11 +322,11 @@ protected:
     }
 
     void visitScan(const RamScan& scan, size_t exitAddress) override {
+        code->push_back(LVM_Scan);
         size_t counterLabel = getNewScanIterator();
         size_t L1 = getNewAddressLabel();
 
         // Init the Iterator
-        code->push_back(LVM_Scan);
         code->push_back(LVM_ITER_TypeScan);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(scan.getRelation().getName()));
@@ -418,10 +422,10 @@ protected:
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(scan.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
-        // Cache the indexId
+        // Cache the index position 
         const MinIndexSelection& orderSet = isa.getIndexes(scan.getRelation());
-        size_t indexNum = orderSet.getLexOrderNum(isa.getSearchSignature(&scan));
-        code->push_back(indexNum);
+        size_t indexPos = orderSet.getLexOrderNum(isa.getSearchSignature(&scan));
+        code->push_back(indexPos);
 
         // While iter is not at end
         size_t address_L0 = code->size();
@@ -471,6 +475,10 @@ protected:
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(indexChoice.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
+        // Cache the index position
+        const MinIndexSelection& orderSet = isa.getIndexes(indexChoice.getRelation());
+        size_t indexPos = orderSet.getLexOrderNum(isa.getSearchSignature(&indexChoice));
+        code->push_back(indexPos);
 
         // While iter is not at end.
         size_t address_L0 = code->size();
@@ -648,10 +656,10 @@ protected:
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
-        // Cache the indexId
+        // Cache the indexPos
         const MinIndexSelection& orderSet = isa.getIndexes(aggregate.getRelation());
-        size_t indexNum = orderSet.getLexOrderNum(isa.getSearchSignature(&aggregate));
-        code->push_back(indexNum);
+        size_t indexPos = orderSet.getLexOrderNum(isa.getSearchSignature(&aggregate));
+        code->push_back(indexPos);
 
         if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);

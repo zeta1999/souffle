@@ -605,6 +605,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             case LVM_ProvenanceExistenceCheck: {
                 std::string relName = symbolTable.resolve(code[ip + 1]);
                 std::string patterns = symbolTable.resolve(code[ip + 2]);
+                RamDomain indexPos = code[ip+3];
                 const InterpreterRelation& rel = getRelation(relName);
                 auto arity = rel.getArity();
 
@@ -627,19 +628,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 high[arity - 2] = MAX_RAM_DOMAIN;
                 high[arity - 1] = MAX_RAM_DOMAIN;
 
-                // obtain index
-                SearchSignature res = 0;
-                // values.size() - 1 because we discard the height annotation
-                for (std::size_t i = 0; i < arity - 1; i++) {
-                    if (patterns[i] == 'V') {
-                        res |= (1 << i);
-                    }
-                }
-
-                auto idx = rel.getIndex(res);
+                auto idx = rel.getIndexByPos(indexPos);
                 auto range = idx->lowerUpperBound(low, high);
                 stack.push(range.first != range.second);
-                ip += 3;
+                ip += 4;
                 break;
             }
             case LVM_Constraint:
@@ -1027,7 +1019,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 std::string relName = symbolTable.resolve(code[ip + 2]);
                 InterpreterRelation& rel = getRelation(relName);
                 std::string pattern = symbolTable.resolve(code[ip + 3]);
-                RamDomain orderId = code[ip + 4];
+                RamDomain indexPos = code[ip + 4];
 
                 // create pattern tuple for range query
                 auto arity = rel.getArity();
@@ -1044,7 +1036,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     }
                 }
 
-                auto index = rel.getIndexByOrderId(orderId);
+                auto index = rel.getIndexByPos(indexPos);
 
                 // get iterator range
                 lookUpIndexScanIterator(idx) = index->lowerUpperBound(low, hig);
@@ -1056,6 +1048,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 std::string relName = symbolTable.resolve(code[ip + 2]);
                 InterpreterRelation& rel = getRelation(relName);
                 std::string pattern = symbolTable.resolve(code[ip + 3]);
+                RamDomain indexPos = code[ip+4];
 
                 // create pattern tuple for range query
                 auto arity = rel.getArity();
@@ -1072,12 +1065,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     }
                 }
 
-                SearchSignature keys = getSearchSignature(pattern, arity);
-                auto index = rel.getIndex(keys);
+                auto index = rel.getIndexByPos(indexPos);
 
                 // get iterator range
                 lookUpIndexChoiceIterator(idx) = index->lowerUpperBound(low, hig);
-                ip += 4;
+                ip += 5;
                 break;
             }
             case LVM_ITER_NotAtEnd: {

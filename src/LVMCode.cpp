@@ -235,11 +235,11 @@ void LVMCode::print() const {
                 ip += 3;
                 break;
             }
-            case LVM_ProvenanceExistenceCheck: {  // TODO Later
+            case LVM_ProvenanceExistenceCheck: {
                 printf("%ld\tLVM_ProvenanceExitenceChekck\t\n", ip);
                 printf("\tTarget: %s\tTypes: %s\n", symbolTable.resolve(code[ip + 1]).c_str(),
                         symbolTable.resolve(code[ip + 2]).c_str());
-                ip += 3;
+                ip += 4;
                 break;
             }
             case LVM_Constraint: {
@@ -435,7 +435,7 @@ void LVMCode::print() const {
             case LVM_ITER_TypeIndexChoice:
                 printf("%ld\tLVM_ITER_TypeIndexChoice\t RelationName:%s\n", ip,
                         symbolTable.resolve(code[ip + 2]).c_str());
-                ip += 4;
+                ip += 5;
                 break;
             case LVM_ITER_TypeIndexScan:
                 printf("%ld\tLVM_ITER_TypeIndexScan\t RelationName:%s\n", ip,

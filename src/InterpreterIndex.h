@@ -125,6 +125,11 @@ public:
         return std::pair<iterator, iterator>(set.lower_bound(low), set.upper_bound(high));
     }
 
+    /** return start and end iterator of the index set */
+    inline std::pair<iterator, iterator> getIteratorPair() const {
+        return std::pair<iterator, iterator>(set.begin(), set.end());
+    }
+
 private:
     // retain the index order used to construct an object of this class
     const LexOrder theOrder;

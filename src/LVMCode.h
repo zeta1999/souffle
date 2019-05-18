@@ -134,11 +134,12 @@ enum LVM_Type {
     LVM_DEFAULT,
 
     // LVM iterator Type
-    LVM_ITER_TypeScan,
-    LVM_ITER_TypeChoice,
-    LVM_ITER_TypeIndexScan,
-    LVM_ITER_TypeIndexChoice,
-    LVM_ITER,
+    //LVM_ITER_TypeScan,
+    //LVM_ITER_TypeChoice,
+    //LVM_ITER_TypeIndexScan,
+    //LVM_ITER_TypeIndexChoice,
+    LVM_ITER_InitFullIndex,
+    LVM_ITER_InitRangeIndex,
     LVM_ITER_Select,
     LVM_ITER_Inc,
     LVM_ITER_NotAtEnd,

@@ -232,7 +232,7 @@ void LVMCode::print() const {
                 printf("%ld\tLVM_ExistenceCheck\t\n", ip);
                 printf("\tTarget: %s\tTypes: %s\n", symbolTable.resolve(code[ip + 1]).c_str(),
                         symbolTable.resolve(code[ip + 2]).c_str());
-                ip += 3;
+                ip += 4;
                 break;
             }
             case LVM_ProvenanceExistenceCheck: {
@@ -423,7 +423,7 @@ void LVMCode::print() const {
                 ip += 1;
                 break;
             case LVM_Aggregate_COUNT: {
-                printf("%ld\tLVM_Aggregate_COUNT\t IndexScanIterID:%d\n", ip, code[ip + 1]);
+                printf("%ld\tLVM_Aggregate_COUNT\t IterId:%d\n", ip, code[ip + 1]);
                 ip += 2;
                 break;
             };
@@ -432,72 +432,31 @@ void LVMCode::print() const {
                 ip += 2;
                 break;
             };
-            case LVM_ITER_TypeIndexChoice:
-                printf("%ld\tLVM_ITER_TypeIndexChoice\t RelationName:%s\n", ip,
-                        symbolTable.resolve(code[ip + 2]).c_str());
-                ip += 5;
-                break;
-            case LVM_ITER_TypeIndexScan:
-                printf("%ld\tLVM_ITER_TypeIndexScan\t RelationName:%s\n", ip,
-                        symbolTable.resolve(code[ip + 2]).c_str());
-                ip += 5;
-                break;
-            case LVM_ITER_TypeChoice:
-                printf("%ld\tLVM_ITER_TypeChoice\t RelationName:%s\n", ip,
-                        symbolTable.resolve(code[ip + 2]).c_str());
-                ip += 4;
-                break;
-            case LVM_ITER_TypeScan: {
-                printf("%ld\tLVM_ITER_TypeScan\t RelationName:%s\n", ip,
+            case LVM_ITER_InitFullIndex: {
+                printf("%ld\tLVM_ITER_InitFullIndex\t RelationName:%s\n", ip,
                         symbolTable.resolve(code[ip + 2]).c_str());
                 ip += 3;
                 break;
-            }
+            };
+            case LVM_ITER_InitRangeIndex: {
+                printf("%ld\tLVM_ITER_InitRangeIndex\t RelationName:%s\tPattern:%s\n", ip,
+                        symbolTable.resolve(code[ip + 2]).c_str(), symbolTable.resolve(code[ip + 3]).c_str());
+                ip += 5;
+                break;
+            };
             case LVM_ITER_NotAtEnd: {
-                std::string iterType;
-                if (code[ip + 2] == LVM_ITER_TypeScan) {
-                    iterType = "ScanIter";
-                } else if (code[ip + 2] == LVM_ITER_TypeIndexScan) {
-                    iterType = "IndexScanIter";
-                } else if (code[ip + 2] == LVM_ITER_TypeChoice) {
-                    iterType = "ChoiceIter";
-                } else {
-                    iterType = "IndexChoiceIter";
-                }
-                printf("%ld\tLVM_NotAtEnd\tIterID:%d\tType:%s\n", ip, code[ip + 1], iterType.c_str());
-                ip += 3;
+                printf("%ld\tLVM_NotAtEnd\tIterID:%d\\n", ip, code[ip + 1]);
+                ip += 2;
                 break;
             }
             case LVM_ITER_Select: {
-                std::string iterType;
-                if (code[ip + 2] == LVM_ITER_TypeScan) {
-                    iterType = "ScanIter";
-                } else if (code[ip + 2] == LVM_ITER_TypeIndexScan) {
-                    iterType = "IndexScanIter";
-                } else if (code[ip + 2] == LVM_ITER_TypeChoice) {
-                    iterType = "ChoiceIter";
-                } else {
-                    iterType = "IndexChoiceIter";
-                }
-                printf("%ld\tLVM_ITER_Select\t\n", ip);
-                printf("\tIterID:%d\tType:%s\tStore into CtxtId:%d\n", code[ip + 1], iterType.c_str(),
-                        code[ip + 3]);
-                ip += 4;
+                printf("%ld\tLVM_ITER_Select\t IterId:%d\n", ip, code[ip + 1]);
+                ip += 2;
                 break;
             }
             case LVM_ITER_Inc: {
-                std::string iterType;
-                if (code[ip + 2] == LVM_ITER_TypeScan) {
-                    iterType = "ScanIter";
-                } else if (code[ip + 2] == LVM_ITER_TypeIndexScan) {
-                    iterType = "IndexScanIter";
-                } else if (code[ip + 2] == LVM_ITER_TypeChoice) {
-                    iterType = "ChoiceIter";
-                } else {
-                    iterType = "IndexChoiceIter";
-                }
-                printf("%ld\tLVM_ITER_Inc\tIterID:%d\tType:%s\n", ip, code[ip + 1], iterType.c_str());
-                ip += 3;
+                printf("%ld\tLVM_ITER_Inc\tIterID:%d\t\n", ip, code[ip + 1]);
+                ip += 2;
                 break;
             }
             case LVM_NOP:

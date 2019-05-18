@@ -138,6 +138,7 @@ enum LVM_Type {
     LVM_ITER_TypeChoice,
     LVM_ITER_TypeIndexScan,
     LVM_ITER_TypeIndexChoice,
+    LVM_ITER,
     LVM_ITER_Select,
     LVM_ITER_Inc,
     LVM_ITER_NotAtEnd,

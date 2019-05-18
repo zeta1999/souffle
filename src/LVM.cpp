@@ -58,7 +58,7 @@ namespace souffle {
 void LVM::executeMain() {
     const RamStatement& main = *translationUnit.getProgram()->getMain();
     if (mainProgram.get() == nullptr) {
-        LVMGenerator generator(translationUnit.getSymbolTable(), main);
+        LVMGenerator generator(translationUnit.getSymbolTable(), main, *isa);
         mainProgram = generator.getCodeStream();
     }
     InterpreterContext ctxt;
@@ -1027,6 +1027,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 std::string relName = symbolTable.resolve(code[ip + 2]);
                 InterpreterRelation& rel = getRelation(relName);
                 std::string pattern = symbolTable.resolve(code[ip + 3]);
+                RamDomain orderId = code[ip + 4];
 
                 // create pattern tuple for range query
                 auto arity = rel.getArity();
@@ -1043,12 +1044,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     }
                 }
 
-                SearchSignature keys = getSearchSignature(pattern, arity);
-                auto index = rel.getIndex(keys);
+                auto index = rel.getIndexByOrderId(orderId);
 
                 // get iterator range
                 lookUpIndexScanIterator(idx) = index->lowerUpperBound(low, hig);
-                ip += 4;
+                ip += 5;
                 break;
             }
             case LVM_ITER_TypeIndexChoice: {

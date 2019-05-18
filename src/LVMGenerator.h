@@ -17,6 +17,7 @@
 
 #include "LVMCode.h"
 #include "RamVisitor.h"
+#include "RamIndexAnalysis.h"
 
 namespace souffle {
 
@@ -30,8 +31,8 @@ public:
      * This is done by traversing the tree twice, in order to find the necessary information (Jump
      * destination) for LVM branch operations.
      */
-    LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry)
-            : symbolTable(symbolTable), code(new LVMCode(symbolTable)) {
+    LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry, RamIndexAnalysis& isa)
+            : symbolTable(symbolTable), code(new LVMCode(symbolTable)), isa(isa) {
         (*this)(entry, 0);
         (*this).cleanUp();
         (*this)(entry, 0);
@@ -417,6 +418,10 @@ protected:
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(scan.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
+        // Cache the indexId
+        const MinIndexSelection& orderSet = isa.getIndexes(scan.getRelation());
+        size_t indexNum = orderSet.getLexOrderNum(isa.getSearchSignature(&scan));
+        code->push_back(indexNum);
 
         // While iter is not at end
         size_t address_L0 = code->size();
@@ -431,9 +436,6 @@ protected:
         code->push_back(counterLabel);
         code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(scan.getTupleId());
-
-        // Visit nested operation.
-        visitSearch(scan, exitAddress);
 
         // Increment the iter and jump to the start of while loop.
         visitSearch(scan, lookupAddress(L1));
@@ -646,6 +648,10 @@ protected:
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
+        // Cache the indexId
+        const MinIndexSelection& orderSet = isa.getIndexes(aggregate.getRelation());
+        size_t indexNum = orderSet.getLexOrderNum(isa.getSearchSignature(&aggregate));
+        code->push_back(indexNum);
 
         if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
@@ -1021,6 +1027,9 @@ private:
 
     /** Current timer index for logger */
     size_t timerIndex = 0;
+
+    /** RamIndexAnalysis */
+    RamIndexAnalysis& isa;
 
     /** Clean up all the content except for addressMap
      *  This is for the double traverse when transforming from RAM -> LVM Bytecode.

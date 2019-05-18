@@ -131,11 +131,11 @@ public:
         if (col == 0) {
             return getIndex(getTotalIndexKey());
         }
-        return getIndexRel(orderSet->getLexOrderNum(col));
+        return getIndexByOrderId(orderSet->getLexOrderNum(col));
     }
 
     /** get index for a given order. Order are encoded as bits for each column */
-    InterpreterIndex* getIndexRel(int idx) const {
+    InterpreterIndex* getIndexByOrderId(int idx) const {
         return &indices[idx];
     }
 

@@ -440,7 +440,7 @@ void LVMCode::print() const {
             case LVM_ITER_TypeIndexScan:
                 printf("%ld\tLVM_ITER_TypeIndexScan\t RelationName:%s\n", ip,
                         symbolTable.resolve(code[ip + 2]).c_str());
-                ip += 4;
+                ip += 5;
                 break;
             case LVM_ITER_TypeChoice:
                 printf("%ld\tLVM_ITER_TypeChoice\t RelationName:%s\n", ip,

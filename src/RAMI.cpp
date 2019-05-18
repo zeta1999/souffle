@@ -823,12 +823,13 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
 }
 
 /** Evaluate RAM statement */
-void RAMI::evalStmt(const RamStatement& stmt) {
+void RAMI::evalStmt(const RamStatement& stmt, const InterpreterContext& args) {
     class StatementEvaluator : public RamVisitor<bool> {
         RAMI& interpreter;
+        const InterpreterContext& ctxt;
 
     public:
-        StatementEvaluator(RAMI& interp) : interpreter(interp) {}
+        StatementEvaluator(RAMI& interp, const InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
 
         // -- Statements -----------------------------
 
@@ -877,7 +878,7 @@ void RAMI::evalStmt(const RamStatement& stmt) {
         }
 
         bool visitExit(const RamExit& exit) override {
-            return !interpreter.evalCond(exit.getCondition());
+            return !interpreter.evalCond(exit.getCondition(), ctxt);
         }
 
         bool visitLogTimer(const RamLogTimer& timer) override {
@@ -985,7 +986,7 @@ void RAMI::evalStmt(const RamStatement& stmt) {
             auto values = fact.getValues();
 
             for (size_t i = 0; i < arity; ++i) {
-                tuple[i] = interpreter.evalExpr(*values[i]);
+                tuple[i] = interpreter.evalExpr(*values[i], ctxt);
             }
 
             interpreter.getRelation(fact.getRelation()).insert(tuple);
@@ -993,7 +994,7 @@ void RAMI::evalStmt(const RamStatement& stmt) {
         }
 
         bool visitQuery(const RamQuery& query) override {
-            interpreter.evalOp(query.getOperation());
+            interpreter.evalOp(query.getOperation(), ctxt);
             return true;
         }
 
@@ -1029,8 +1030,15 @@ void RAMI::evalStmt(const RamStatement& stmt) {
         }
     };
 
+    // create and run interpreter for operations
+    InterpreterContext ctxt;
+    ctxt.setReturnValues(args.getReturnValues());
+    ctxt.setReturnErrors(args.getReturnErrors());
+    ctxt.setArguments(args.getArguments());
+    StatementEvaluator(*this, ctxt).visit(stmt);
+
     // create and run interpreter for statements
-    StatementEvaluator(*this).visit(stmt);
+    // StatementEvaluator(*this).visit(stmt);
 }
 
 /** Execute main program of a translation unit */
@@ -1098,8 +1106,8 @@ void RAMI::executeSubroutine(const std::string& name, const std::vector<RamDomai
     const RamStatement& stmt = translationUnit.getProgram()->getSubroutine(name);
 
     // run subroutine
-    const RamOperation& op = static_cast<const RamQuery&>(stmt).getOperation();
-    evalOp(op, ctxt);
+    // const RamOperation& op = static_cast<const RamQuery&>(stmt).getOperation();
+    evalStmt(stmt, ctxt);
 }
 
 }  // end of namespace souffle

@@ -107,7 +107,7 @@ public:
         for (auto& cur : indices) {
             cur.insert(newTuple);
         }
-        // totalIndex->insert(newTuple);
+
         // increment relation size
         num_tuples++;
     }
@@ -146,11 +146,13 @@ public:
 
     /** check whether a tuple exists in the relation */
     bool exists(const RamDomain* tuple) const {
-        //// handle arity 0
-        //if (getArity() == 0) {
-        //    return !empty();
-        //}
-        InterpreterIndex* index = getIndexByPos(0);
+        // handle arity 0
+        if (getArity() == 0) {
+            //return !empty();
+            InterpreterIndex* index = getIndexByPos(0);
+            return index->exists(tuple);
+        }
+        InterpreterIndex* index = getIndex(getTotalIndexKey());
         return index->exists(tuple);
     }
 

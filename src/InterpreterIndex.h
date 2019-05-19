@@ -75,6 +75,9 @@ public:
     InterpreterIndex(LexOrder order)
             : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
+    InterpreterIndex(const InterpreterIndex&& index)
+            : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
+
     const LexOrder& order() const {
         return theOrder;
     }

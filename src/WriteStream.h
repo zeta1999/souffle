@@ -38,7 +38,7 @@ public:
         auto lease = symbolTable.acquireLock();
         (void)lease;
         if (arity == 0) {
-            if (relation.begin() != relation.end()) {
+            if (relation.size() != 0){
                 writeNullary();
             }
             return;

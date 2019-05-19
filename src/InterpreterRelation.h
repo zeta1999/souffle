@@ -41,6 +41,9 @@ public:
         for (auto& order : orderSet->getAllOrders()) {
             indices.push_back(InterpreterIndex(order));
         }
+        if (orderSet->getAllOrders().size() == 0) {
+            indices.push_back(InterpreterIndex(LexOrder()));
+        }
     }
 
     InterpreterRelation(const InterpreterRelation& other) = delete;
@@ -74,18 +77,18 @@ public:
 
     /** Insert tuple */
     virtual void insert(const RamDomain* tuple) {
-        // check for null-arity
-        if (arity == 0) {
-            // set number of tuples to one -- that's it
-            num_tuples = 1;
-            return;
-        }
-
         assert(tuple);
 
         // make existence check
         if (exists(tuple)) {
             return;
+        }
+
+        // check for null-arity
+        if (arity == 0) {
+           indices[0].insert(tuple);
+           num_tuples = 1;
+           return;
         }
 
         int blockIndex = num_tuples / (BLOCK_SIZE / arity);
@@ -128,9 +131,6 @@ public:
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
-        if (col == 0) {
-            return getIndex(getTotalIndexKey());
-        }
         return getIndexByPos(orderSet->getLexOrderNum(col));
     }
 
@@ -146,11 +146,11 @@ public:
 
     /** check whether a tuple exists in the relation */
     bool exists(const RamDomain* tuple) const {
-        // handle arity 0
-        if (getArity() == 0) {
-            return !empty();
-        }
-        InterpreterIndex* index = getIndex(getTotalIndexKey());
+        //// handle arity 0
+        //if (getArity() == 0) {
+        //    return !empty();
+        //}
+        InterpreterIndex* index = getIndexByPos(0);
         return index->exists(tuple);
     }
 
@@ -239,6 +239,11 @@ public:
 
     /** Extend relation */
     virtual void extend(const InterpreterRelation& rel) {}
+
+    /** Index for zero-arity relation */
+   // using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator,
+   //         std::allocator<const RamDomain*>, 512>;
+   // static index_set set;
 
 private:
     /** Arity of relation */

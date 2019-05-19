@@ -445,7 +445,7 @@ void LVMCode::print() const {
                 break;
             };
             case LVM_ITER_NotAtEnd: {
-                printf("%ld\tLVM_NotAtEnd\tIterID:%d\\n", ip, code[ip + 1]);
+                printf("%ld\tLVM_NotAtEnd\tIterID:%d\n", ip, code[ip + 1]);
                 ip += 2;
                 break;
             }

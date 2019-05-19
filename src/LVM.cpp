@@ -559,7 +559,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             case LVM_ExistenceCheck: {
                 std::string relName = symbolTable.resolve(code[ip + 1]);
                 std::string patterns = symbolTable.resolve(code[ip + 2]);
-                RamDomain indexPos = code[ip+3];
+                RamDomain indexPos = code[ip + 3];
                 const InterpreterRelation& rel = getRelation(relName);
                 size_t arity = rel.getArity();
 
@@ -605,7 +605,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             case LVM_ProvenanceExistenceCheck: {
                 std::string relName = symbolTable.resolve(code[ip + 1]);
                 std::string patterns = symbolTable.resolve(code[ip + 2]);
-                RamDomain indexPos = code[ip+3];
+                RamDomain indexPos = code[ip + 3];
                 const InterpreterRelation& rel = getRelation(relName);
                 auto arity = rel.getArity();
 
@@ -981,9 +981,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 break;
             };
             case LVM_ITER_InitFullIndex: {
-                RamDomain dest = code[ip+ 1];
+                RamDomain dest = code[ip + 1];
                 std::string relName = symbolTable.resolve(code[ip + 2]);
-                auto index = getRelation(relName).getIndexByPos(0); // Use the first order in the relation.
+                auto index = getRelation(relName).getIndexByPos(0);  // Use the first order in the relation.
                 lookUpIterator(dest) = index->getIteratorPair();
                 ip += 3;
                 break;
@@ -1019,7 +1019,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             };
             case LVM_ITER_NotAtEnd: {
                 RamDomain idx = code[ip + 1];
-                auto iter = lookUpIterator(idx);
+                auto& iter = lookUpIterator(idx);
                 stack.push(iter.first != iter.second);
                 ip += 2;
                 break;
@@ -1027,7 +1027,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             case LVM_ITER_Select: {
                 RamDomain idx = code[ip + 1];
                 RamDomain tupleId = code[ip + 2];
-                auto iter = lookUpIterator(idx);
+                auto& iter = lookUpIterator(idx);
                 ctxt[tupleId] = *iter.first;
                 ip += 3;
                 break;

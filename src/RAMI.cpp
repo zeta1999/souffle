@@ -363,8 +363,8 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
 
         // -- comparison operators --
         bool visitConstraint(const RamConstraint& relOp) override {
-            RamDomain lhs = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-            RamDomain rhs = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+            RamDomain lhs = interpreter.evalExpr(relOp.getLHS(), ctxt);
+            RamDomain rhs = interpreter.evalExpr(relOp.getRHS(), ctxt);
             switch (relOp.getOperator()) {
                 case BinaryConstraintOp::EQ:
                     return lhs == rhs;
@@ -379,8 +379,8 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
                 case BinaryConstraintOp::GE:
                     return lhs >= rhs;
                 case BinaryConstraintOp::MATCH: {
-                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     bool result = false;
@@ -393,8 +393,8 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
                     return result;
                 }
                 case BinaryConstraintOp::NOT_MATCH: {
-                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     bool result = false;
@@ -407,15 +407,15 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
                     return result;
                 }
                 case BinaryConstraintOp::CONTAINS: {
-                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     return text.find(pattern) != std::string::npos;
                 }
                 case BinaryConstraintOp::NOT_CONTAINS: {
-                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     return text.find(pattern) == std::string::npos;

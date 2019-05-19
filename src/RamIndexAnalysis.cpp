@@ -267,15 +267,27 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
             MinIndexSelection& indexes = getIndexes(indexSearch->getRelation());
+            if (getSearchSignature(indexSearch) == 0) {
+                printf("indexSearch\n");
+            }
             indexes.addSearch(getSearchSignature(indexSearch));
         } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
             MinIndexSelection& indexes = getIndexes(exists->getRelation());
+            if (getSearchSignature(exists) == 0) {
+                printf("exists\n");
+            }
             indexes.addSearch(getSearchSignature(exists));
         } else if (const auto* provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
             MinIndexSelection& indexes = getIndexes(provExists->getRelation());
+            if (getSearchSignature(provExists) == 0) {
+                printf("indexSearch\n");
+            }
             indexes.addSearch(getSearchSignature(provExists));
         } else if (const auto* ramRel = dynamic_cast<const RamRelation*>(&node)) {
             MinIndexSelection& indexes = getIndexes(*ramRel);
+            if (getSearchSignature(ramRel) == 0) {
+                printf("index\n");
+            }
             indexes.addSearch(getSearchSignature(ramRel));
         }
     });
@@ -308,6 +320,14 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     for (auto& cur : minIndexCover) {
         MinIndexSelection& indexes = cur.second;
         indexes.solve();
+    }
+
+    // Only case where indexSet is still empty is when relation has arity == 0
+    for (auto& cur : minIndexCover) {
+        MinIndexSelection& indexes = cur.second;
+        if (indexes.getAllOrders().empty()) {
+            indexes.insertDefaultTotalIndex(0);
+        }
     }
 }
 
@@ -363,6 +383,9 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexRelationSearc
         if (rangePattern[i] != nullptr) {
             keys |= (1 << i);
         }
+    }
+    if (keys == 0) {
+        printf("IndexRelation\n");
     }
     return keys;
 }

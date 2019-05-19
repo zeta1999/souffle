@@ -16,8 +16,8 @@
 #pragma once
 
 #include "LVMCode.h"
-#include "RamVisitor.h"
 #include "RamIndexAnalysis.h"
+#include "RamVisitor.h"
 
 namespace souffle {
 
@@ -620,7 +620,7 @@ protected:
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
-    
+
         // Obtain the pattern for index
         auto patterns = aggregate.getRangePattern();
         std::string types;
@@ -631,7 +631,7 @@ protected:
             }
             types += (patterns[i] == nullptr ? "_" : "V");
         }
-    
+
         // Init range index based on pattern
         code->push_back(LVM_ITER_InitRangeIndex);
         code->push_back(counterLabel);
@@ -1047,12 +1047,18 @@ private:
         }
         addressMap[addressLabel] = value;
     }
-    
+
     /** Get the index position in a relation based on the SearchSignature */
     template <class RamNode>
-    size_t getIndexPos(RamNode& node){
+    size_t getIndexPos(RamNode& node) {
         const MinIndexSelection& orderSet = isa.getIndexes(node.getRelation());
-        return orderSet.getLexOrderNum(isa.getSearchSignature(&node));
+        SearchSignature signature = isa.getSearchSignature(&node);
+        // A zero signature is equivalent as a full order signature.
+        if (signature == 0) {
+            signature = (1 << node.getRelation().getArity()) - 1;
+        }
+        auto i = orderSet.getLexOrderNum(signature);
+        return i;
     };
 };
 

@@ -384,9 +384,6 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexRelationSearc
             keys |= (1 << i);
         }
     }
-    if (keys == 0) {
-        printf("IndexRelation\n");
-    }
     return keys;
 }
 

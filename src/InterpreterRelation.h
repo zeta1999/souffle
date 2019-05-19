@@ -30,6 +30,7 @@ namespace souffle {
 
 /**
  * Interpreter Relation
+ *
  */
 class InterpreterRelation {
     using LexOrder = std::vector<int>;
@@ -41,9 +42,6 @@ public:
         for (auto& order : orderSet->getAllOrders()) {
             indices.push_back(InterpreterIndex(order));
         }
-       // if (orderSet->getAllOrders().size() == 0) { TODO remove. handled in RIA
-       //     indices.push_back(InterpreterIndex(LexOrder()));
-       // }
     }
 
     InterpreterRelation(const InterpreterRelation& other) = delete;
@@ -131,7 +129,8 @@ public:
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
-        if (col == 0) {
+       // Handle Provenance program where a full index search perform on a 0-arity rleation
+        if (col == 0 && arity != 0) {
             return getIndex(getTotalIndexKey());
         }
         return getIndexByPos(orderSet->getLexOrderNum(col));
@@ -150,11 +149,11 @@ public:
     /** check whether a tuple exists in the relation */
     bool exists(const RamDomain* tuple) const {
         // handle arity 0
-        if (getArity() == 0) {
-            // return !empty();
-            InterpreterIndex* index = getIndexByPos(0);
-            return index->exists(tuple);
-        }
+       // if (getArity() == 0) {
+       //     // return !empty();
+       //     InterpreterIndex* index = getIndexByPos(0);
+       //     return index->exists(tuple);
+       // }
         InterpreterIndex* index = getIndex(getTotalIndexKey());
         return index->exists(tuple);
     }

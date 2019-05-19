@@ -159,13 +159,15 @@ public:
     }
 
     /** Get left-hand side */
-    RamExpression* getLHS() const {
-        return lhs.get();
+    const RamExpression& getLHS() const {
+        assert(lhs != nullptr && "left-hand side of constraint is a null-pointer");
+        return *lhs;
     }
 
     /** Get right-hand side */
-    RamExpression* getRHS() const {
-        return rhs.get();
+    const RamExpression& getRHS() const {
+        assert(rhs != nullptr && "right-hand side of constraint is a null-pointer");
+        return *rhs;
     }
 
     /** Get operator symbol */

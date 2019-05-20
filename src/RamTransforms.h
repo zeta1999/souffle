@@ -70,6 +70,49 @@ protected:
 };
 
 /**
+ * @class CollapseFiltersTransformer
+ * @brief Transforms consecutive filters into a RamConjunction
+ *
+ * For example ..
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    IF C1
+ *     IF C2
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * will be rewritten to
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    IF C1 /\ C2 then
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ */
+class CollapseFiltersTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "CollapseFiltersTransformer";
+    }
+
+    /**
+     * @brief Collapse consecutive filter operations
+     * @param program Program that is transformed
+     * @return Flag showing whether the program has been changed by the transformation
+     */
+    bool collapseFilters(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return collapseFilters(*translationUnit.getProgram());
+    }
+};
+
+/**
  * @class HoistConditionsTransformer
  * @brief Hosts conditions in a loop-nest to the most-outer/semantically-correct loop
  *

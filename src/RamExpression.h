@@ -251,6 +251,11 @@ public:
         return element;
     }
 
+    /** Get relation */
+    const RamRelation& getRelation() const {
+        return *relationRef->get();
+    }
+
     /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {relationRef.get()};

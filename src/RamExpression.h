@@ -347,8 +347,36 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamAutoIncrement*>(&node));
         return true;
+    }
+};
+
+/**
+ * Undefined Expression
+ */
+class RamUndefValue : public RamExpression {
+public:
+    RamUndefValue() : RamExpression() {}
+
+    void print(std::ostream& os) const override {
+        os << "⊥";
+    }
+
+    std::vector<const RamNode*> getChildNodes() const override {
+        return {};
+    }
+
+    /** Create clone */
+    RamUndefValue* clone() const override {
+        auto* res = new RamUndefValue();
+        return res;
+    }
+
+    void apply(const RamNodeMapper& map) override {}
+
+protected:
+    bool equal(const RamNode& node) const override {
+	return true; 
     }
 };
 

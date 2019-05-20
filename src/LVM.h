@@ -90,8 +90,8 @@ public:
             execute(subroutines.at(name), ctxt);
         } else {
             // Parse and cache the program
-            LVMGenerator generator(
-                    translationUnit.getSymbolTable(), translationUnit.getProgram()->getSubroutine(name), *isa);
+            LVMGenerator generator(translationUnit.getSymbolTable(),
+                    translationUnit.getProgram()->getSubroutine(name), *isa);
             subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
             execute(subroutines.at(name), ctxt);
         }

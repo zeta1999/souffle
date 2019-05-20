@@ -1020,7 +1020,7 @@ private:
         return currentAddressLabel++;
     }
 
-    /** Get new scan iterator */
+    /** Get new iterator */
     size_t getNewIterator() {
         return iteratorIndex++;
     }

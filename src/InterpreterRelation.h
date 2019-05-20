@@ -129,7 +129,7 @@ public:
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
-       // Handle Provenance program where a full index search perform on a 0-arity rleation
+        // Special case in provenance program, a 0 searchSignature is considered as a full search
         if (col == 0 && arity != 0) {
             return getIndex(getTotalIndexKey());
         }
@@ -148,12 +148,6 @@ public:
 
     /** check whether a tuple exists in the relation */
     bool exists(const RamDomain* tuple) const {
-        // handle arity 0
-       // if (getArity() == 0) {
-       //     // return !empty();
-       //     InterpreterIndex* index = getIndexByPos(0);
-       //     return index->exists(tuple);
-       // }
         InterpreterIndex* index = getIndex(getTotalIndexKey());
         return index->exists(tuple);
     }

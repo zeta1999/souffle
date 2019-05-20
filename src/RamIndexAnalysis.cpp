@@ -264,41 +264,28 @@ const MinIndexSelection::ChainOrderMap MinIndexSelection::getChainsFromMatching(
 
 void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     // After complete:
-    // 1. All relation should have at least one index (for full-order search).
-    // 2. Two relation involved in a swap operation will have same set of indices.
+    // 1. All relations should have at least one index (for full-order search).
+    // 2. Two relations involved in a swap operation will have same set of indices.
     // 3. A 0-arity relation will have only one index where LexOrder is defined as empty. A comparator using
     // an empty order should regard all elements as equal and therefore only allow one arbitrary tuple to be
     // inserted.
     //
-    // Note:
-    // 0-arity relation in a provenance program still need to be revisited. Currently, a full-index
-    // operation on a 0-arity relation in a provenance program will have a search col == 0.
+    // TODO:
+    // 0-arity relation in a provenance program still need to be revisited.
 
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
             MinIndexSelection& indexes = getIndexes(indexSearch->getRelation());
-            if (getSearchSignature(indexSearch) == 0) {
-                // printf("indexSearch\n");
-            }
             indexes.addSearch(getSearchSignature(indexSearch));
         } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
             MinIndexSelection& indexes = getIndexes(exists->getRelation());
-            if (getSearchSignature(exists) == 0) {
-                // printf("exists\n");
-            }
             indexes.addSearch(getSearchSignature(exists));
         } else if (const auto* provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(&node)) {
             MinIndexSelection& indexes = getIndexes(provExists->getRelation());
-            if (getSearchSignature(provExists) == 0) {
-                // printf("indexSearch\n");
-            }
             indexes.addSearch(getSearchSignature(provExists));
         } else if (const auto* ramRel = dynamic_cast<const RamRelation*>(&node)) {
             MinIndexSelection& indexes = getIndexes(*ramRel);
-            if (getSearchSignature(ramRel) == 0) {
-                // printf("index\n");
-            }
             indexes.addSearch(getSearchSignature(ramRel));
         }
     });

@@ -492,12 +492,13 @@ bool TupleIdTransformer::reorderOperations(RamProgram& program) {
         int ctr = 0;
 
         visitDepthFirst(query, [&](const RamSearch& search) {
-            //           RamSearch s = const_cast<RamSearch *>(&search);
+            auto* constSearch = const_cast<RamSearch*>(&search);
+            auto* tempSearch = dynamic_cast<RamSearch*>(constSearch);
             if (ctr != search.getTupleId()) {
                 changed = true;
             }
             reorder[search.getTupleId()] = ctr;
-            //           search.setTupleId(ctr);
+            tempSearch->setTupleId(ctr);
             ctr++;
         });
 

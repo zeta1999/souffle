@@ -75,6 +75,9 @@ public:
     InterpreterIndex(LexOrder order)
             : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
+    InterpreterIndex(const InterpreterIndex&& index)
+            : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
+
     const LexOrder& order() const {
         return theOrder;
     }
@@ -123,6 +126,11 @@ public:
     /** return start and end iterator of a range */
     inline std::pair<iterator, iterator> lowerUpperBound(const RamDomain* low, const RamDomain* high) const {
         return std::pair<iterator, iterator>(set.lower_bound(low), set.upper_bound(high));
+    }
+
+    /** return start and end iterator of the index set */
+    inline std::pair<iterator, iterator> getIteratorPair() const {
+        return std::pair<iterator, iterator>(set.begin(), set.end());
     }
 
 private:

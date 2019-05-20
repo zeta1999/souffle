@@ -30,6 +30,7 @@ namespace souffle {
 
 /**
  * Interpreter Relation
+ *
  */
 class InterpreterRelation {
     using LexOrder = std::vector<int>;
@@ -39,7 +40,7 @@ public:
             : arity(relArity), orderSet(orderSet) {
         // Create all necessary indices based on orderSet
         for (auto& order : orderSet->getAllOrders()) {
-            indices.emplace(std::make_pair(order, InterpreterIndex(order)));
+            indices.push_back(InterpreterIndex(order));
         }
     }
 
@@ -74,17 +75,17 @@ public:
 
     /** Insert tuple */
     virtual void insert(const RamDomain* tuple) {
-        // check for null-arity
-        if (arity == 0) {
-            // set number of tuples to one -- that's it
-            num_tuples = 1;
-            return;
-        }
-
         assert(tuple);
 
         // make existence check
         if (exists(tuple)) {
+            return;
+        }
+
+        // check for null-arity
+        if (arity == 0) {
+            indices[0].insert(tuple);
+            num_tuples = 1;
             return;
         }
 
@@ -102,9 +103,9 @@ public:
 
         // update all indexes with new tuple
         for (auto& cur : indices) {
-            cur.second.insert(newTuple);
+            cur.insert(newTuple);
         }
-        // totalIndex->insert(newTuple);
+
         // increment relation size
         num_tuples++;
     }
@@ -121,32 +122,23 @@ public:
     void purge() {
         blockList.clear();
         for (auto& cur : indices) {
-            cur.second.purge();
+            cur.purge();
         }
         num_tuples = 0;
     }
 
-    /** get index for a given set of keys using a cached index as a helper. Keys are encoded as bits for each
-     * column */
-    InterpreterIndex* getIndex(const SearchSignature& key, InterpreterIndex* cachedIndex) const {
-        if (!cachedIndex) {
-            return getIndex(key);
-        }
-        return getIndex(cachedIndex->order());
-    }
-
     /** get index for a given search signature. Order are encoded as bits for each column */
     InterpreterIndex* getIndex(const SearchSignature& col) const {
-        if (col == 0) {
+        // Special case in provenance program, a 0 searchSignature is considered as a full search
+        if (col == 0 && arity != 0) {
             return getIndex(getTotalIndexKey());
         }
-        return getIndex(orderSet->getLexOrder(col));
+        return getIndexByPos(orderSet->getLexOrderNum(col));
     }
 
     /** get index for a given order. Order are encoded as bits for each column */
-    InterpreterIndex* getIndex(const LexOrder& order) const {
-        auto ret = indices.find(order);
-        return &(ret->second);
+    InterpreterIndex* getIndexByPos(int idx) const {
+        return &indices[idx];
     }
 
     /** Obtains a full index-key for this relation */
@@ -156,10 +148,6 @@ public:
 
     /** check whether a tuple exists in the relation */
     bool exists(const RamDomain* tuple) const {
-        // handle arity 0
-        if (getArity() == 0) {
-            return !empty();
-        }
         InterpreterIndex* index = getIndex(getTotalIndexKey());
         return index->exists(tuple);
     }
@@ -263,10 +251,7 @@ private:
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
 
     /** List of indices */
-    mutable std::map<LexOrder, InterpreterIndex> indices;
-
-    /** Total Index */
-    // std::unique_ptr<InterpreterIndex> totalIndex;
+    mutable std::vector<InterpreterIndex> indices;
 
     /** IndexSet */
     const MinIndexSelection* orderSet;

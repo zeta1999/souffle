@@ -263,6 +263,16 @@ const MinIndexSelection::ChainOrderMap MinIndexSelection::getChainsFromMatching(
 }
 
 void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
+    // After complete:
+    // 1. All relations should have at least one index (for full-order search).
+    // 2. Two relations involved in a swap operation will have same set of indices.
+    // 3. A 0-arity relation will have only one index where LexOrder is defined as empty. A comparator using
+    // an empty order should regard all elements as equal and therefore only allow one arbitrary tuple to be
+    // inserted.
+    //
+    // TODO:
+    // 0-arity relation in a provenance program still need to be revisited.
+
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
@@ -308,6 +318,14 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     for (auto& cur : minIndexCover) {
         MinIndexSelection& indexes = cur.second;
         indexes.solve();
+    }
+
+    // Only case where indexSet is still empty is when relation has arity == 0
+    for (auto& cur : minIndexCover) {
+        MinIndexSelection& indexes = cur.second;
+        if (indexes.getAllOrders().empty()) {
+            indexes.insertDefaultTotalIndex(0);
+        }
     }
 }
 

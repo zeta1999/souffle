@@ -286,6 +286,13 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
         ConditionEvaluator(RAMI& interp, const InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
 
         // -- connectors operators --
+	bool visitTrue(const RamTrue &ltrue) override {
+	    return true;
+	}
+
+	bool visitFalse(const RamFalse &lfalse) override {
+	    return false;
+	}
 
         bool visitConjunction(const RamConjunction& conj) override {
             return visit(conj.getLHS()) && visit(conj.getRHS());

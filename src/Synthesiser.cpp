@@ -1147,6 +1147,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- conditions --
 
+        void visitTrue(const RamTrue &ltrue, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+	    out << "true";
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitFalse(const RamFalse &lfalse, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+	    out << "false";
+            PRINT_END_COMMENT(out);
+        }
+
         void visitConjunction(const RamConjunction& conj, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "((";

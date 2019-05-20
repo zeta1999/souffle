@@ -82,10 +82,10 @@ bool CollapseFiltersTransformer::collapseFilters(RamProgram& program) {
                 std::vector<const RamCondition*> conditions;
 
                 const RamFilter* prevFilter = filter;
-                conditions.emplace_back(filter->getCondition().clone());
+                conditions.emplace_back(&filter->getCondition());
                 while (auto* nextFilter = dynamic_cast<RamFilter*>(&prevFilter->getOperation())) {
                     canCollapse = true;
-                    conditions.emplace_back(nextFilter->getCondition().clone());
+                    conditions.emplace_back(&nextFilter->getCondition());
                     prevFilter = nextFilter;
                 }
 

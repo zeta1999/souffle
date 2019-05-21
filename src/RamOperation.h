@@ -884,6 +884,11 @@ public:
         return res;
     }
 
+    void apply(const RamNodeMapper& map) override {
+        RamSearch::apply(map);
+        expression = map(std::move(expression));
+    }
+
 protected:
     /** Expression for record reference */
     std::unique_ptr<RamExpression> expression;

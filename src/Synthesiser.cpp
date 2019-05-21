@@ -1694,6 +1694,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 #endif
         // -- safety net --
 
+        void visitUndefValue(const RamUndefValue &undef, std::ostream & /*out*/) override {
+            assert(false && "Compilation error"); 
+        }
+
         void visitNode(const RamNode& node, std::ostream& /*out*/) override {
             std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
             assert(false && "Unsupported Node Type!");

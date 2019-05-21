@@ -265,6 +265,11 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
 
         // -- safety net --
 
+        RamDomain visitUndefValue(const RamUndefValue& undef) override {
+            assert(false && "Compilation error");
+            return 0;
+        }
+
         RamDomain visitNode(const RamNode& node) override {
             std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
             assert(false && "Unsupported Node Type!");

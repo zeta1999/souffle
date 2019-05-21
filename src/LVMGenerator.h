@@ -989,6 +989,10 @@ protected:
         code->push_back(symbolTable.lookup(second));
     }
 
+    void visitUndefValue(const RamUndefValue &undef, size_t exitAddress) override {
+        assert(false && "Compilation error");
+    } 
+
     void visitNode(const RamNode& node, size_t exitAddress) override {
         assert(false && "Unknown Node type");
         /** Unknown Node */

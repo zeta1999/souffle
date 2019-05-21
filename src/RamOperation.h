@@ -573,8 +573,9 @@ public:
               expression(std::move(expression)), condition(std::move(condition)) {}
 
     /** Get condition */
-    const RamCondition* getCondition() const {
-        return condition.get();
+    const RamCondition& getCondition() const {
+        assert(condition != nullptr && "Condition of aggregate is a null-poionter"); 
+        return *condition;
     }
 
     /** Get aggregation function */
@@ -609,7 +610,7 @@ public:
         }
         os << " FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
         if (condition != nullptr) {
-            os << " WHERE " << *getCondition();
+            os << " WHERE " << getCondition();
         }
         os << std::endl;
         RamRelationSearch::print(os, tabpos + 1);
@@ -620,9 +621,7 @@ public:
         if (expression != nullptr) {
             res.push_back(expression.get());
         }
-        if (condition != nullptr) {
-            res.push_back(condition.get());
-        }
+        res.push_back(condition.get());
         return res;
     }
 
@@ -636,9 +635,7 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamRelationSearch::apply(map);
-        if (condition != nullptr) {
-            condition = map(std::move(condition));
-        }
+        condition = map(std::move(condition));
         if (expression != nullptr) {
             expression = map(std::move(expression));
         }
@@ -657,8 +654,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAggregate*>(&node));
         const auto& other = static_cast<const RamAggregate&>(node);
-        if (getCondition() != nullptr && other.getCondition() != nullptr &&
-                *getCondition() != *other.getCondition()) {
+        if (getCondition() != other.getCondition()) {
             return false;
         }
         return RamRelationSearch::equal(other) && getCondition() == other.getCondition() &&
@@ -679,8 +675,9 @@ public:
               function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
     /** Get condition */
-    const RamCondition* getCondition() const {
-        return condition.get();
+    const RamCondition& getCondition() const {
+        assert(condition != nullptr && "Condition of index-aggregate is a null-pointer");  
+        return *condition;
     }
 
     /** Get aggregation function */
@@ -731,7 +728,7 @@ public:
             os << "none";
         }
         if (condition != nullptr) {
-            os << " WHERE " << *getCondition();
+            os << " WHERE " << getCondition();
         }
         os << std::endl;
         RamIndexRelationSearch::print(os, tabpos + 1);
@@ -742,9 +739,7 @@ public:
         if (expression != nullptr) {
             res.push_back(expression.get());
         }
-        if (condition != nullptr) {
-            res.push_back(condition.get());
-        }
+        res.push_back(condition.get());
         return res;
     }
 

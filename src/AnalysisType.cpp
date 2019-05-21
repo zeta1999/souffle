@@ -16,6 +16,8 @@
 
 #include "AnalysisType.h"
 #include "Util.h"
+#include <cassert>
+#include <sstream>
 
 namespace souffle {
 

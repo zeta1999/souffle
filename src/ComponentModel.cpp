@@ -323,7 +323,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
                     const_cast<AstRecordInit&>(record).setType(newName);
                 }
             });
-            if (rel) {
+            if (rel != nullptr) {
                 rel->addClause(std::move(newClause));
             } else {
                 orphans.emplace_back(cur->clone());
@@ -335,7 +335,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
     for (auto iter = orphans.begin(); iter != orphans.end();) {
         auto& cur = *iter;
         AstRelation* rel = index[cur->getHead()->getName()];
-        if (rel) {
+        if (rel != nullptr) {
             // add orphan to current instance and delete from orphan list
             rel->addClause(std::unique_ptr<AstClause>(cur->clone()));
             iter = orphans.erase(iter);

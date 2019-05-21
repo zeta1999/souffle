@@ -959,12 +959,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     out << "res" << identifier << " = std::min (res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::MAX:
                     out << "res" << identifier << " = std::max (res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::COUNT:
@@ -973,7 +973,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 case souffle::SUM:
                     out << "res" << identifier << " += ";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ";\n";
                     break;
                 default:
@@ -1055,12 +1055,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     out << "res" << identifier << " = std::min(res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::MAX:
                     out << "res" << identifier << " = std::max(res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::COUNT:
@@ -1068,7 +1068,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 case souffle::SUM:
                     out << "res" << identifier << " += ";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ";\n";
                     break;
                 default:

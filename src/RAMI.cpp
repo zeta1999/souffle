@@ -632,7 +632,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                 // aggregation is a bit more difficult
 
                 // eval target expression
-                RamDomain cur = interpreter.evalExpr(*aggregate.getExpression(), ctxt);
+                RamDomain cur = interpreter.evalExpr(aggregate.getExpression(), ctxt);
 
                 switch (aggregate.getFunction()) {
                     case souffle::MIN:
@@ -731,7 +731,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                 // aggregation is a bit more difficult
 
                 // eval target expression
-                RamDomain cur = interpreter.evalExpr(*aggregate.getExpression(), ctxt);
+                RamDomain cur = interpreter.evalExpr(aggregate.getExpression(), ctxt);
 
                 switch (aggregate.getFunction()) {
                     case souffle::MIN:

@@ -584,8 +584,9 @@ public:
     }
 
     /** Get target expression */
-    const RamExpression* getExpression() const {
-        return expression.get();
+    const RamExpression& getExpression() const {
+	assert(expression != nullptr && "Expression of aggregate is a null-pointer");
+        return *expression;
     }
 
     void print(std::ostream& os, int tabpos) const override {
@@ -618,9 +619,7 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamRelationSearch::getChildNodes();
-        if (expression != nullptr) {
-            res.push_back(expression.get());
-        }
+        res.push_back(expression.get());
         res.push_back(condition.get());
         return res;
     }
@@ -628,17 +627,15 @@ public:
     RamAggregate* clone() const override {
         return new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
-                condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
+                std::unique_ptr<RamExpression>(expression->clone()),
+                std::unique_ptr<RamCondition>(condition->clone()),
                 getTupleId());
     }
 
     void apply(const RamNodeMapper& map) override {
         RamRelationSearch::apply(map);
         condition = map(std::move(condition));
-        if (expression != nullptr) {
-            expression = map(std::move(expression));
-        }
+        expression = map(std::move(expression));
     }
 
 protected:
@@ -683,8 +680,9 @@ public:
     }
 
     /** Get target expression */
-    const RamExpression* getExpression() const {
-        return expression.get();
+    const RamExpression& getExpression() const {
+	assert(expression != nullptr && "Expression of index-aggregate is a null-pointer"); 
+        return *expression;
     }
 
     void print(std::ostream& os, int tabpos) const override {
@@ -733,9 +731,7 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamIndexRelationSearch::getChildNodes();
-        if (expression != nullptr) {
-            res.push_back(expression.get());
-        }
+        res.push_back(expression.get());
         res.push_back(condition.get());
         return res;
     }
@@ -747,19 +743,15 @@ public:
         }
         return new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
-                condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
+                std::unique_ptr<RamExpression>(expression->clone()),
+                std::unique_ptr<RamCondition>(condition->clone()),
                 std::move(pattern), getTupleId());
     }
 
     void apply(const RamNodeMapper& map) override {
         RamIndexRelationSearch::apply(map);
-        if (condition != nullptr) {
-            condition = map(std::move(condition));
-        }
-        if (expression != nullptr) {
-            expression = map(std::move(expression));
-        }
+        condition = map(std::move(condition));
+        expression = map(std::move(expression));
     }
 
 protected:
@@ -791,8 +783,8 @@ public:
 
     /** Get expression */
     const RamExpression& getExpression() const {
-        assert(expression != nullptr);
-        return *expression.get();
+        assert(expression != nullptr && "Expression of unpack-record is a null-pointer");
+        return *expression;
     }
 
     /** Get arity */

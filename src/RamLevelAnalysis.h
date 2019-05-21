@@ -19,9 +19,11 @@
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamNode.h"
 
 namespace souffle {
+
+class RamNode;
+class RamTranslationUnit;
 
 /**
  * @class RamLevelAnalysis

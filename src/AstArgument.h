@@ -478,7 +478,7 @@ class AstRecordInit : public AstArgument {
 public:
     AstRecordInit() = default;
 
-    AstRecordInit(const AstTypeIdentifier& type) : type(type) {}
+    AstRecordInit(AstTypeIdentifier type) : type(std::move(type)) {}
 
     ~AstRecordInit() override = default;
 

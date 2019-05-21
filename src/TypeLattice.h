@@ -17,7 +17,12 @@
 #pragma once
 
 #include "AnalysisType.h"
+#include "AstType.h"
 #include "TypeSystem.h"
+#include <cassert>
+#include <map>
+#include <memory>
+#include <set>
 
 namespace souffle {
 
@@ -60,7 +65,7 @@ public:
     // TODO: make sure this is used everywhere it should be used
     template <typename T>
     T* getStoredType(const T& type) const {
-        const AnalysisType& at = static_cast<const AnalysisType&>(type);
+        const auto& at = static_cast<const AnalysisType&>(type);
         for (const auto& other : storedTypes) {
             if (*other == at) {
                 assert(dynamic_cast<T*>(other.get()) && "equivalent types should have equal types");

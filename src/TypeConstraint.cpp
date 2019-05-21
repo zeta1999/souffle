@@ -16,6 +16,7 @@
 
 #include "TypeConstraint.h"
 #include "AstTypeAnalysis.h"
+#include "TypeLattice.h"
 
 namespace souffle {
 

@@ -15,8 +15,13 @@
  ***********************************************************************/
 
 #include "RamLevelAnalysis.h"
+#include "RamCondition.h"
+#include "RamExpression.h"
+#include "RamNode.h"
 #include "RamVisitor.h"
 #include <algorithm>
+#include <cassert>
+#include <vector>
 
 namespace souffle {
 

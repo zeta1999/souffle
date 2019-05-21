@@ -17,6 +17,8 @@
 #include "TypeLattice.h"
 #include "AnalysisType.h"
 #include <cassert>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

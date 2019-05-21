@@ -15,23 +15,24 @@
  ***********************************************************************/
 
 #include "AstTransforms.h"
+#include "AnalysisType.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
 #include "AstRelationIdentifier.h"
+#include "AstTranslationUnit.h"
 #include "AstTypeAnalysis.h"
-#include "AstTypeEnvironmentAnalysis.h"
 #include "AstTypes.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
-#include "TypeLattice.h"
-#include "TypeSystem.h"
+#include <cassert>
 #include <cstddef>
 #include <functional>
 #include <map>
@@ -40,6 +41,8 @@
 #include <set>
 
 namespace souffle {
+
+class TypeLattice;
 
 bool NullTransformer::transform(AstTranslationUnit& translationUnit) {
     return false;

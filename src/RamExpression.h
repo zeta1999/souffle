@@ -37,8 +37,6 @@ namespace souffle {
  */
 class RamExpression : public RamNode {
 public:
-    RamExpression() = default;
-
     RamExpression* clone() const override = 0;
 };
 
@@ -50,7 +48,7 @@ public:
 class RamIntrinsicOperator : public RamExpression {
 public:
     template <typename... Args>
-    RamIntrinsicOperator(FunctorOp op, Args... args) : RamExpression(), operation(op) {
+    RamIntrinsicOperator(FunctorOp op, Args... args) : operation(op) {
         std::unique_ptr<RamExpression> tmp[] = {std::move(args)...};
         for (auto& cur : tmp) {
             arguments.push_back(std::move(cur));
@@ -58,7 +56,7 @@ public:
     }
 
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamExpression>> args)
-            : RamExpression(), operation(op), arguments(std::move(args)) {}
+            : operation(op), arguments(std::move(args)) {}
 
     void print(std::ostream& os) const override {
         if (isInfixFunctorOp(operation)) {
@@ -85,9 +83,9 @@ public:
     }
 
     /** Get i-th argument value */
-    const RamExpression* getArgument(size_t i) const {
+    const RamExpression& getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
-        return arguments[i].get();
+        return *arguments[i];
     }
 
     /** Get number of arguments */
@@ -108,8 +106,7 @@ public:
         for (auto& arg : arguments) {
             argsCopy.emplace_back(arg->clone());
         }
-        auto res = new RamIntrinsicOperator(operation, std::move(argsCopy));
-        return res;
+        return new RamIntrinsicOperator(operation, std::move(argsCopy));
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -138,7 +135,7 @@ protected:
 class RamUserDefinedOperator : public RamExpression {
 public:
     RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamExpression>> args)
-            : RamExpression(), arguments(std::move(args)), name(std::move(n)), type(std::move(t)) {}
+            : arguments(std::move(args)), name(std::move(n)), type(std::move(t)) {}
 
     void print(std::ostream& os) const override {
         os << "@" << name << "_" << type << "(";
@@ -153,9 +150,9 @@ public:
     }
 
     /** Get i-th argument value */
-    const RamExpression* getArgument(size_t i) const {
+    const RamExpression& getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
-        return arguments[i].get();
+        return *arguments[i];
     }
 
     /** Get number of arguments */
@@ -219,7 +216,7 @@ protected:
 class RamElementAccess : public RamExpression {
 public:
     RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
-            : RamExpression(), identifier(ident), element(elem), relationRef(std::move(relRef)) {}
+            : identifier(ident), element(elem), relationRef(std::move(relRef)) {}
 
     void print(std::ostream& os) const override {
         if (nullptr == relationRef) {
@@ -240,7 +237,11 @@ public:
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
-        return {relationRef.get()};
+        if (relationRef != nullptr) {
+            return {relationRef.get()};
+        } else {
+            return {};
+        }
     }
 
     RamElementAccess* clone() const override {
@@ -282,7 +283,7 @@ protected:
  */
 class RamNumber : public RamExpression {
 public:
-    RamNumber(RamDomain c) : RamExpression(), constant(c) {}
+    RamNumber(RamDomain c) : constant(c) {}
 
     /** Get constant */
     RamDomain getConstant() const {
@@ -293,17 +294,10 @@ public:
         os << "number(" << constant << ")";
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        return {};
-    }
-
     /** Create clone */
     RamNumber* clone() const override {
-        auto* res = new RamNumber(constant);
-        return res;
+        return new RamNumber(constant);
     }
-
-    void apply(const RamNodeMapper& map) override {}
 
 protected:
     /** Constant value */
@@ -330,21 +324,24 @@ public:
         os << "autoinc()";
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        return {};
-    }
-
     RamAutoIncrement* clone() const override {
-        auto* res = new RamAutoIncrement();
-        return res;
+        return new RamAutoIncrement();
+    }
+};
+
+/**
+ * Undefined Expression
+ */
+class RamUndefValue : public RamExpression {
+public:
+    RamUndefValue() = default;
+
+    void print(std::ostream& os) const override {
+        os << "⊥";
     }
 
-    void apply(const RamNodeMapper& map) override {}
-
-protected:
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamAutoIncrement*>(&node));
-        return true;
+    RamUndefValue* clone() const override {
+        return new RamUndefValue();
     }
 };
 
@@ -353,8 +350,7 @@ protected:
  */
 class RamPackRecord : public RamExpression {
 public:
-    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args)
-            : RamExpression(), arguments(std::move(args)) {}
+    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {}
 
     /** Get arguments */
     std::vector<RamExpression*> getArguments() const {
@@ -417,7 +413,7 @@ protected:
  */
 class RamArgument : public RamExpression {
 public:
-    RamArgument(size_t number) : RamExpression(), number(number) {}
+    RamArgument(size_t number) : number(number) {}
 
     /** Get argument */
     size_t getArgument() const {
@@ -428,16 +424,9 @@ public:
         os << "argument(" << number << ")";
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        return {};
-    }
-
     RamArgument* clone() const override {
-        auto* res = new RamArgument(number);
-        return res;
+        return new RamArgument(number);
     }
-
-    void apply(const RamNodeMapper& map) override {}
 
 protected:
     /** Argument number */

@@ -93,7 +93,8 @@ bool CollapseFiltersTransformer::collapseFilters(RamProgram& program) {
                     changed = true;
                     node = std::make_unique<RamFilter>(toCondition(conditions),
                             std::unique_ptr<RamOperation>(
-                                    dynamic_cast<RamOperation*>(prevFilter->getOperation().clone())));
+                                    dynamic_cast<RamOperation*>(prevFilter->getOperation().clone())),
+                            prevFilter->getProfileText());
                 }
             }
             node->apply(makeLambdaRamMapper(filterRewriter));

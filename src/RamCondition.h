@@ -52,7 +52,7 @@ public:
     }
 
     RamTrue* clone() const override {
-        return new RamTrue(); 
+        return new RamTrue();
     }
 };
 
@@ -68,7 +68,7 @@ public:
     }
 
     RamFalse* clone() const override {
-        return new RamFalse(); 
+        return new RamFalse();
     }
 };
 
@@ -78,7 +78,7 @@ public:
 class RamConjunction : public RamCondition {
 public:
     RamConjunction(std::unique_ptr<RamCondition> l, std::unique_ptr<RamCondition> r)
-            :  lhs(std::move(l)), rhs(std::move(r)) {}
+            : lhs(std::move(l)), rhs(std::move(r)) {}
 
     /** Get left-hand side of conjunction */
     const RamCondition& getLHS() const {
@@ -133,7 +133,7 @@ protected:
  */
 class RamNegation : public RamCondition {
 public:
-    RamNegation(std::unique_ptr<RamCondition> operand) :  operand(std::move(operand)) {}
+    RamNegation(std::unique_ptr<RamCondition> operand) : operand(std::move(operand)) {}
 
     /** Get operand of negation */
     const RamCondition& getOperand() const {
@@ -176,7 +176,7 @@ protected:
 class RamConstraint : public RamCondition {
 public:
     RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamExpression> l, std::unique_ptr<RamExpression> r)
-            :  op(op), lhs(std::move(l)), rhs(std::move(r)) {}
+            : op(op), lhs(std::move(l)), rhs(std::move(r)) {}
 
     void print(std::ostream& os) const override {
         os << "(";
@@ -242,7 +242,7 @@ class RamAbstractExistenceCheck : public RamCondition {
 public:
     RamAbstractExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            :  relationRef(std::move(relRef)), values(std::move(vals)) {}
+            : relationRef(std::move(relRef)), values(std::move(vals)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {
@@ -362,8 +362,7 @@ public:
  */
 class RamEmptinessCheck : public RamCondition {
 public:
-    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef)
-            :  relationRef(std::move(relRef)) {}
+    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {

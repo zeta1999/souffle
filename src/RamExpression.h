@@ -48,7 +48,7 @@ public:
 class RamIntrinsicOperator : public RamExpression {
 public:
     template <typename... Args>
-    RamIntrinsicOperator(FunctorOp op, Args... args) :  operation(op) {
+    RamIntrinsicOperator(FunctorOp op, Args... args) : operation(op) {
         std::unique_ptr<RamExpression> tmp[] = {std::move(args)...};
         for (auto& cur : tmp) {
             arguments.push_back(std::move(cur));
@@ -56,7 +56,7 @@ public:
     }
 
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamExpression>> args)
-            :  operation(op), arguments(std::move(args)) {}
+            : operation(op), arguments(std::move(args)) {}
 
     void print(std::ostream& os) const override {
         if (isInfixFunctorOp(operation)) {
@@ -135,7 +135,7 @@ protected:
 class RamUserDefinedOperator : public RamExpression {
 public:
     RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamExpression>> args)
-            :  arguments(std::move(args)), name(std::move(n)), type(std::move(t)) {}
+            : arguments(std::move(args)), name(std::move(n)), type(std::move(t)) {}
 
     void print(std::ostream& os) const override {
         os << "@" << name << "_" << type << "(";
@@ -216,7 +216,7 @@ protected:
 class RamElementAccess : public RamExpression {
 public:
     RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
-            :  identifier(ident), element(elem), relationRef(std::move(relRef)) {}
+            : identifier(ident), element(elem), relationRef(std::move(relRef)) {}
 
     void print(std::ostream& os) const override {
         if (nullptr == relationRef) {
@@ -283,7 +283,7 @@ protected:
  */
 class RamNumber : public RamExpression {
 public:
-    RamNumber(RamDomain c) :  constant(c) {}
+    RamNumber(RamDomain c) : constant(c) {}
 
     /** Get constant */
     RamDomain getConstant() const {
@@ -334,7 +334,7 @@ public:
  */
 class RamUndefValue : public RamExpression {
 public:
-    RamUndefValue() = default; 
+    RamUndefValue() = default;
 
     void print(std::ostream& os) const override {
         os << "⊥";
@@ -350,8 +350,7 @@ public:
  */
 class RamPackRecord : public RamExpression {
 public:
-    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args)
-            :  arguments(std::move(args)) {}
+    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {}
 
     /** Get arguments */
     std::vector<RamExpression*> getArguments() const {
@@ -414,7 +413,7 @@ protected:
  */
 class RamArgument : public RamExpression {
 public:
-    RamArgument(size_t number) :  number(number) {}
+    RamArgument(size_t number) : number(number) {}
 
     /** Get argument */
     size_t getArgument() const {

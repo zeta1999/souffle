@@ -209,13 +209,13 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
 }
 
 std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAggregate* agg) {
-    if (agg->getCondition() != nullptr) {
+    if (dynamic_cast<const RamTrue*>(&agg->getCondition()) == nullptr) {
         const RamRelation& rel = agg->getRelation();
         int identifier = agg->getTupleId();
         std::vector<std::unique_ptr<RamExpression>> queryPattern(rel.getArity());
         bool indexable = false;
-        std::unique_ptr<RamCondition> condition =
-                constructPattern(queryPattern, indexable, toConjunctionList(agg->getCondition()), identifier);
+        std::unique_ptr<RamCondition> condition = constructPattern(
+                queryPattern, indexable, toConjunctionList(&agg->getCondition()), identifier);
         if (indexable) {
             std::unique_ptr<RamExpression> expr;
             if (agg->getExpression() != nullptr) {
@@ -223,7 +223,8 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
             }
             return std::make_unique<RamIndexAggregate>(
                     std::unique_ptr<RamOperation>(agg->getOperation().clone()), agg->getFunction(),
-                    std::make_unique<RamRelationReference>(&rel), std::move(expr), std::move(condition),
+                    std::make_unique<RamRelationReference>(&rel), std::move(expr),
+                    (condition != nullptr) ? std::move(condition) : std::move(std::make_unique<RamTrue>()),
                     std::move(queryPattern), agg->getTupleId());
         }
     }

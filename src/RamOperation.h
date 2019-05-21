@@ -36,7 +36,7 @@ namespace souffle {
  */
 class RamOperation : public RamNode {
 public:
-    /** pretty print with intentation */ 
+    /** pretty print with intentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
     void print(std::ostream& os) const override {
@@ -298,9 +298,9 @@ public:
                 resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
             }
         }
-        return new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getTupleId(), std::move(resQueryPattern),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
+                std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
+                getProfileText());
     }
 };
 
@@ -344,8 +344,8 @@ public:
             }
         }
         return new RamParallelIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                        getTupleId(), std::move(resQueryPattern),
-                        std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+                getTupleId(), std::move(resQueryPattern),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 };
 
@@ -361,7 +361,7 @@ public:
 
     /** get condition */
     const RamCondition& getCondition() const {
-	assert(condition != nullptr && "condition of choice is a null-pointer"); 
+        assert(condition != nullptr && "condition of choice is a null-pointer");
         return *condition;
     }
 
@@ -441,7 +441,7 @@ public:
 
     /** get condition */
     const RamCondition& getCondition() const {
-	assert(condition != nullptr && "condition of index-choice is a null-pointer");
+        assert(condition != nullptr && "condition of index-choice is a null-pointer");
         return *condition;
     }
 
@@ -574,7 +574,7 @@ public:
 
     /** Get condition */
     const RamCondition& getCondition() const {
-        assert(condition != nullptr && "Condition of aggregate is a null-poionter"); 
+        assert(condition != nullptr && "Condition of aggregate is a null-poionter");
         return *condition;
     }
 
@@ -654,9 +654,6 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAggregate*>(&node));
         const auto& other = static_cast<const RamAggregate&>(node);
-        if (getCondition() != other.getCondition()) {
-            return false;
-        }
         return RamRelationSearch::equal(other) && getCondition() == other.getCondition() &&
                getFunction() == other.getFunction() && getExpression() == other.getExpression();
     }
@@ -676,7 +673,7 @@ public:
 
     /** Get condition */
     const RamCondition& getCondition() const {
-        assert(condition != nullptr && "Condition of index-aggregate is a null-pointer");  
+        assert(condition != nullptr && "Condition of index-aggregate is a null-pointer");
         return *condition;
     }
 
@@ -778,10 +775,6 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIndexAggregate*>(&node));
         const auto& other = static_cast<const RamIndexAggregate&>(node);
-        if (getCondition() != nullptr && other.getCondition() != nullptr &&
-                *getCondition() != *other.getCondition()) {
-            return false;
-        }
         return RamIndexRelationSearch::equal(other) && getCondition() == other.getCondition() &&
                getFunction() == other.getFunction() && getExpression() == other.getExpression();
     }
@@ -849,7 +842,7 @@ public:
 
     /** Get condition */
     const RamCondition& getCondition() const {
-	assert(condition != nullptr && "condition of filter operation is a null-pointer");
+        assert(condition != nullptr && "condition of filter operation is a null-pointer");
         return *condition;
     }
 
@@ -901,7 +894,7 @@ public:
 
     /** Get break condition */
     const RamCondition& getCondition() const {
-	assert(condition != nullptr && "condition of break operation is a null-pointer");
+        assert(condition != nullptr && "condition of break operation is a null-pointer");
         return *condition;
     }
 

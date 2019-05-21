@@ -291,13 +291,13 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
         ConditionEvaluator(RAMI& interp, const InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
 
         // -- connectors operators --
-	bool visitTrue(const RamTrue &ltrue) override {
-	    return true;
-	}
+        bool visitTrue(const RamTrue& ltrue) override {
+            return true;
+        }
 
-	bool visitFalse(const RamFalse &lfalse) override {
-	    return false;
-	}
+        bool visitFalse(const RamFalse& lfalse) override {
+            return false;
+        }
 
         bool visitConjunction(const RamConjunction& conj) override {
             return visit(conj.getLHS()) && visit(conj.getRHS());
@@ -619,8 +619,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             for (const RamDomain* data : rel) {
                 ctxt[aggregate.getTupleId()] = data;
 
-                if (aggregate.getCondition() != nullptr &&
-                        !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
+                if (!interpreter.evalCond(aggregate.getCondition(), ctxt)) {
                     continue;
                 }
 
@@ -719,8 +718,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                 const RamDomain* data = *(ip);
                 ctxt[aggregate.getTupleId()] = data;
 
-                if (aggregate.getCondition() != nullptr &&
-                        !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
+                if (!interpreter.evalCond(aggregate.getCondition(), ctxt)) {
                     continue;
                 }
 

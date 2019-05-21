@@ -90,8 +90,8 @@ struct RamVisitor : public ram_visitor_tag {
         FORWARD(UndefValue);
 
         // Conditions
-	FORWARD(True); 
-	FORWARD(False); 
+        FORWARD(True);
+        FORWARD(False);
         FORWARD(EmptinessCheck);
         FORWARD(ExistenceCheck);
         FORWARD(ProvenanceExistenceCheck);

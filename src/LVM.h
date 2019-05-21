@@ -90,8 +90,8 @@ public:
             execute(subroutines.at(name), ctxt);
         } else {
             // Parse and cache the program
-            LVMGenerator generator(
-                    translationUnit.getSymbolTable(), translationUnit.getProgram()->getSubroutine(name));
+            LVMGenerator generator(translationUnit.getSymbolTable(),
+                    translationUnit.getProgram()->getSubroutine(name), *isa);
             subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
             execute(subroutines.at(name), ctxt);
         }
@@ -101,7 +101,7 @@ public:
     void printMain() {
         if (mainProgram.get() == nullptr) {
             LVMGenerator generator(
-                    translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain());
+                    translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain(), *isa);
             mainProgram = generator.getCodeStream();
         }
         mainProgram->print();
@@ -178,37 +178,12 @@ protected:
         environment[ramRel2] = rel1;
     }
 
-    /** Lookup IndexScan iterator, resize the iterator pool if necessary */
-    std::pair<index_set::iterator, index_set::iterator>& lookUpIndexScanIterator(size_t idx) {
-        if (idx >= indexScanIteratorPool.size()) {
-            indexScanIteratorPool.resize(idx + 1);
+    /** Lookup iterator, resize the iterator pool if necessary */
+    std::pair<index_set::iterator, index_set::iterator>& lookUpIterator(size_t idx) {
+        if (idx >= iteratorPool.size()) {
+            iteratorPool.resize(idx + 1);
         }
-        return indexScanIteratorPool[idx];
-    }
-
-    /** Lookup Scan iterator, resize the iterator pool if necessary */
-    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
-        if (idx >= scanIteratorPool.size()) {
-            scanIteratorPool.resize(idx + 1);
-        }
-        return scanIteratorPool[idx];
-    }
-
-    /** Lookup Choice iterator, resize the iterator pool if necessary */
-    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpChoiceIterator(
-            size_t idx) {
-        if (idx >= choiceIteratorPool.size()) {
-            choiceIteratorPool.resize(idx + 1);
-        }
-        return choiceIteratorPool[idx];
-    }
-
-    /** Lookup IndexChoice iterator, resize the iterator pool if necessary */
-    std::pair<index_set::iterator, index_set::iterator>& lookUpIndexChoiceIterator(size_t idx) {
-        if (idx >= indexChoiceIteratorPool.size()) {
-            indexChoiceIteratorPool.resize(idx + 1);
-        }
-        return indexChoiceIteratorPool[idx];
+        return iteratorPool[idx];
     }
 
     /** Obtain the search columns */
@@ -244,16 +219,7 @@ private:
     std::map<std::string, std::atomic<size_t>> reads;
 
     /** List of iters for indexScan operation */
-    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
-
-    /** List of iters for Scan operation */
-    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;
-
-    /** List of iters for indexChoice operation */
-    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexChoiceIteratorPool;
-
-    /** List of iters for Choice operation */
-    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> choiceIteratorPool;
+    std::vector<std::pair<index_set::iterator, index_set::iterator>> iteratorPool;
 
     /** Map from relationName to RamRelationNode in RAM */
     std::map<std::string, const RamRelation*> relNameToNode;

@@ -178,6 +178,11 @@ public:
         return orders[idx];
     }
 
+    /** @Brief Get index for a search */
+    const int getLexOrderNum(SearchSignature cols) const {
+        return map(cols);
+    }
+
     /** @Brief Get all indexes */
     const OrderCollection getAllOrders() const {
         return orders;
@@ -224,7 +229,7 @@ public:
         for (size_t i = 0; i < arity; ++i) {
             totalOrder.push_back(i);
         }
-        orders.push_back(totalOrder);
+        orders.push_back(std::move(totalOrder));
     }
 
 protected:

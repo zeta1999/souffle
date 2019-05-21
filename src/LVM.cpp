@@ -58,7 +58,7 @@ namespace souffle {
 void LVM::executeMain() {
     const RamStatement& main = *translationUnit.getProgram()->getMain();
     if (mainProgram.get() == nullptr) {
-        LVMGenerator generator(translationUnit.getSymbolTable(), main);
+        LVMGenerator generator(translationUnit.getSymbolTable(), main, *isa);
         mainProgram = generator.getCodeStream();
     }
     InterpreterContext ctxt;
@@ -559,6 +559,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             case LVM_ExistenceCheck: {
                 std::string relName = symbolTable.resolve(code[ip + 1]);
                 std::string patterns = symbolTable.resolve(code[ip + 2]);
+                RamDomain indexPos = code[ip + 3];
                 const InterpreterRelation& rel = getRelation(relName);
                 size_t arity = rel.getArity();
 
@@ -574,7 +575,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                         stack.pop();
                     }
                     stack.push(rel.exists(tuple));
-                    ip += 3;
+                    ip += 4;
                     break;
                 } else {  // for partial we search for lower and upper boundaries
                     RamDomain low[arity];
@@ -591,12 +592,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                         }
                     }
 
-                    SearchSignature res = getSearchSignature(patterns, arity);
-                    auto idx = rel.getIndex(res);
+                    auto idx = rel.getIndexByPos(indexPos);
                     auto range = idx->lowerUpperBound(low, high);
 
                     stack.push(range.first != range.second);
-                    ip += 3;
+                    ip += 4;
                     break;
                 }
 
@@ -605,6 +605,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             case LVM_ProvenanceExistenceCheck: {
                 std::string relName = symbolTable.resolve(code[ip + 1]);
                 std::string patterns = symbolTable.resolve(code[ip + 2]);
+                RamDomain indexPos = code[ip + 3];
                 const InterpreterRelation& rel = getRelation(relName);
                 auto arity = rel.getArity();
 
@@ -627,19 +628,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 high[arity - 2] = MAX_RAM_DOMAIN;
                 high[arity - 1] = MAX_RAM_DOMAIN;
 
-                // obtain index
-                SearchSignature res = 0;
-                // values.size() - 1 because we discard the height annotation
-                for (std::size_t i = 0; i < arity - 1; i++) {
-                    if (patterns[i] == 'V') {
-                        res |= (1 << i);
-                    }
-                }
-
-                auto idx = rel.getIndex(res);
+                auto idx = rel.getIndexByPos(indexPos);
                 auto range = idx->lowerUpperBound(low, high);
                 stack.push(range.first != range.second);
-                ip += 3;
+                ip += 4;
                 break;
             }
             case LVM_Constraint:
@@ -969,21 +961,13 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             };
             case LVM_Aggregate_COUNT: {
                 RamDomain res = 0;
-                RamDomain idx = code[ip + 2];
-                if (code[ip + 1] == LVM_ITER_TypeScan) {
-                    auto& iters = scanIteratorPool[idx];
-                    for (auto i = iters.first; i != iters.second; ++i) {
-                        res++;
-                    }
-                    stack.push(res);
-                } else {
-                    auto& iters = indexScanIteratorPool[idx];
-                    for (auto i = iters.first; i != iters.second; ++i) {
-                        res++;
-                    }
-                    stack.push(res);
+                RamDomain idx = code[ip + 1];
+                auto& iter = iteratorPool[idx];
+                for (auto i = iter.first; i != iter.second; ++i) {
+                    res++;
                 }
-                ip += 3;
+                stack.push(res);
+                ip += 2;
                 break;
             };
             case LVM_Aggregate_Return: {
@@ -996,37 +980,20 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 ip += 2;
                 break;
             };
-            case LVM_ITER_TypeScan: {
-                RamDomain idx = code[ip + 1];
-
+            case LVM_ITER_InitFullIndex: {
+                RamDomain dest = code[ip + 1];
                 std::string relName = symbolTable.resolve(code[ip + 2]);
-                InterpreterRelation& rel = getRelation(relName);
-                lookUpScanIterator(idx) =
-                        std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>(
-                                rel.begin(), rel.end());
-                assert(rel.begin() != rel.end() || rel.empty());
-
+                auto index = getRelation(relName).getIndexByPos(0);  // Use the first order in the relation.
+                lookUpIterator(dest) = index->getIteratorPair();
                 ip += 3;
                 break;
-            }
-            case LVM_ITER_TypeChoice: {
-                RamDomain idx = code[ip + 1];
-
-                std::string relName = symbolTable.resolve(code[ip + 2]);
-                InterpreterRelation& rel = getRelation(relName);
-                lookUpChoiceIterator(idx) =
-                        std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>(
-                                rel.begin(), rel.end());
-                assert(rel.begin() != rel.end() || rel.empty());
-
-                ip += 3;
-                break;
-            }
-            case LVM_ITER_TypeIndexScan: {
-                RamDomain idx = code[ip + 1];
+            };
+            case LVM_ITER_InitRangeIndex: {
+                RamDomain dest = code[ip + 1];
                 std::string relName = symbolTable.resolve(code[ip + 2]);
                 InterpreterRelation& rel = getRelation(relName);
                 std::string pattern = symbolTable.resolve(code[ip + 3]);
+                RamDomain indexPos = code[ip + 4];
 
                 // create pattern tuple for range query
                 auto arity = rel.getArity();
@@ -1043,128 +1010,32 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     }
                 }
 
-                SearchSignature keys = getSearchSignature(pattern, arity);
-                auto index = rel.getIndex(keys);
+                auto index = rel.getIndexByPos(indexPos);
 
                 // get iterator range
-                lookUpIndexScanIterator(idx) = index->lowerUpperBound(low, hig);
-                ip += 4;
+                lookUpIterator(dest) = index->lowerUpperBound(low, hig);
+                ip += 5;
                 break;
-            }
-            case LVM_ITER_TypeIndexChoice: {
-                RamDomain idx = code[ip + 1];
-                std::string relName = symbolTable.resolve(code[ip + 2]);
-                InterpreterRelation& rel = getRelation(relName);
-                std::string pattern = symbolTable.resolve(code[ip + 3]);
-
-                // create pattern tuple for range query
-                auto arity = rel.getArity();
-                RamDomain low[arity];
-                RamDomain hig[arity];
-                for (size_t i = 0; i < arity; i++) {
-                    if (pattern[arity - i - 1] == 'V') {
-                        low[arity - i - 1] = stack.top();
-                        stack.pop();
-                        hig[arity - i - 1] = low[arity - i - 1];
-                    } else {
-                        low[arity - i - 1] = MIN_RAM_DOMAIN;
-                        hig[arity - i - 1] = MAX_RAM_DOMAIN;
-                    }
-                }
-
-                SearchSignature keys = getSearchSignature(pattern, arity);
-                auto index = rel.getIndex(keys);
-
-                // get iterator range
-                lookUpIndexChoiceIterator(idx) = index->lowerUpperBound(low, hig);
-                ip += 4;
-                break;
-            }
+            };
             case LVM_ITER_NotAtEnd: {
                 RamDomain idx = code[ip + 1];
-                switch (code[ip + 2]) {
-                    case LVM_ITER_TypeScan: {
-                        auto iter = scanIteratorPool[idx];
-                        stack.push(iter.first != iter.second);
-                        break;
-                    }
-                    case LVM_ITER_TypeIndexScan: {
-                        auto iter = indexScanIteratorPool[idx];
-                        stack.push(iter.first != iter.second);
-                        break;
-                    }
-                    case LVM_ITER_TypeChoice: {
-                        auto iter = choiceIteratorPool[idx];
-                        stack.push(iter.first != iter.second);
-                        break;
-                    }
-                    case LVM_ITER_TypeIndexChoice: {
-                        auto iter = indexChoiceIteratorPool[idx];
-                        stack.push(iter.first != iter.second);
-                        break;
-                    }
-                    default:
-                        printf("Unknown iter type at LVM_ITER_NotAtEnd\n");
-                        break;
-                }
-                ip += 3;
+                auto& iter = lookUpIterator(idx);
+                stack.push(iter.first != iter.second);
+                ip += 2;
                 break;
             }
             case LVM_ITER_Select: {
                 RamDomain idx = code[ip + 1];
-                RamDomain id = code[ip + 3];
-                switch (code[ip + 2]) {
-                    case LVM_ITER_TypeScan: {
-                        auto iter = scanIteratorPool[idx];
-                        ctxt[id] = *iter.first;
-                        break;
-                    }
-                    case LVM_ITER_TypeIndexScan: {
-                        auto iter = indexScanIteratorPool[idx];
-                        ctxt[id] = *iter.first;
-                        break;
-                    }
-                    case LVM_ITER_TypeChoice: {
-                        auto iter = choiceIteratorPool[idx];
-                        ctxt[id] = *iter.first;
-                        break;
-                    }
-                    case LVM_ITER_TypeIndexChoice: {
-                        auto iter = indexChoiceIteratorPool[idx];
-                        ctxt[id] = *iter.first;
-                        break;
-                    }
-                    default:
-                        printf("Unknown iter type at LVM_ITER_Select\n");
-                        break;
-                }
-                ip += 4;
+                RamDomain tupleId = code[ip + 2];
+                auto& iter = lookUpIterator(idx);
+                ctxt[tupleId] = *iter.first;
+                ip += 3;
                 break;
             }
             case LVM_ITER_Inc: {
                 RamDomain idx = code[ip + 1];
-                switch (code[ip + 2]) {
-                    case LVM_ITER_TypeScan: {
-                        ++scanIteratorPool[idx].first;
-                        break;
-                    }
-                    case LVM_ITER_TypeIndexScan: {
-                        ++indexScanIteratorPool[idx].first;
-                        break;
-                    }
-                    case LVM_ITER_TypeChoice: {
-                        ++choiceIteratorPool[idx].first;
-                        break;
-                    }
-                    case LVM_ITER_TypeIndexChoice: {
-                        ++indexChoiceIteratorPool[idx].first;
-                        break;
-                    }
-                    default:
-                        printf("Unknown iter\n");
-                        break;
-                }
-                ip += 3;
+                ++iteratorPool[idx].first;
+                ip += 2;
                 break;
             }
             case LVM_STOP:

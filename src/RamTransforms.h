@@ -71,7 +71,7 @@ protected:
 
 /**
  * @class CollapseFiltersTransformer
- * @brief Transforms consecutive filters into a RamConjunction
+ * @brief Transforms consecutive filters into a single filter containing a conjunction
  *
  * For example ..
  *

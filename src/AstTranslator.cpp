@@ -65,7 +65,7 @@ class ErrorReport;
 class SymbolTable;
 
 std::unique_ptr<RamElementAccess> AstTranslator::makeRamElementAccess(const Location& loc) {
-        return std::make_unique<RamElementAccess>(loc.identifier, loc.element);
+    return std::make_unique<RamElementAccess>(loc.identifier, loc.element);
 }
 
 void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation* rel,
@@ -685,9 +685,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             for (size_t pos = 0; pos < atom->argSize(); ++pos) {
                 if (auto* agg = dynamic_cast<AstAggregator*>(atom->getArgument(pos))) {
                     auto loc = valueIndex.getAggregatorLocation(*agg);
-                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                             std::make_unique<RamElementAccess>(curLevel, pos),
-                                                             makeRamElementAccess(loc)),
+                    op = std::make_unique<RamFilter>(
+                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                    std::make_unique<RamElementAccess>(curLevel, pos),
+                                    makeRamElementAccess(loc)),
                             std::move(op));
                 }
             }
@@ -756,8 +757,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                         if (level != loc.identifier || (int)pos != loc.element) {
                             std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
                                     BinaryConstraintOp::EQ, makeRamElementAccess(loc),
-                                    std::make_unique<RamElementAccess>(
-                                            level, pos));
+                                    std::make_unique<RamElementAccess>(level, pos));
                             addAggCondition(newCondition);
                             break;
                         }
@@ -768,9 +768,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                     if (value != nullptr) {
                         std::unique_ptr<RamCondition> newCondition =
                                 std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                        std::make_unique<RamElementAccess>(
-                                                level, pos),
-                                        std::move(value));
+                                        std::make_unique<RamElementAccess>(level, pos), std::move(value));
                         addAggCondition(newCondition);
                     }
                 }

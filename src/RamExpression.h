@@ -219,7 +219,7 @@ public:
             : identifier(ident), element(elem) {}
 
     void print(std::ostream& os) const override {
-            os << "t" << identifier << "." << element;
+        os << "t" << identifier << "." << element;
     }
 
     /** Get identifier */
@@ -233,7 +233,7 @@ public:
     }
 
     RamElementAccess* clone() const override {
-            return new RamElementAccess(identifier, element);
+        return new RamElementAccess(identifier, element);
     }
 
 protected:

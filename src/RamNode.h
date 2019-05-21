@@ -52,10 +52,12 @@ public:
     virtual RamNode* clone() const = 0;
 
     /** Apply the mapper to all child nodes */
-    virtual void apply(const RamNodeMapper& mapper) = 0;
+    virtual void apply(const RamNodeMapper& mapper) {}
 
     /** Obtain list of all embedded child nodes */
-    virtual std::vector<const RamNode*> getChildNodes() const = 0;
+    virtual std::vector<const RamNode*> getChildNodes() const {
+        return {};
+    }
 
     /** Print RAM node */
     virtual void print(std::ostream& out = std::cout) const = 0;
@@ -67,8 +69,10 @@ public:
     }
 
 protected:
-    /** Abstract equality check for two RAM nodes */
-    virtual bool equal(const RamNode& other) const = 0;
+    /** Equality check for two RAM nodes. Default action is that nothing needs to be checked. */
+    virtual bool equal(const RamNode& other) const {
+        return true;
+    }
 };
 
 /**

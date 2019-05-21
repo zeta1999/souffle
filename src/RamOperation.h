@@ -585,7 +585,7 @@ public:
 
     /** Get target expression */
     const RamExpression& getExpression() const {
-	assert(expression != nullptr && "Expression of aggregate is a null-pointer");
+        assert(expression != nullptr && "Expression of aggregate is a null-pointer");
         return *expression;
     }
 
@@ -628,8 +628,7 @@ public:
         return new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 std::unique_ptr<RamExpression>(expression->clone()),
-                std::unique_ptr<RamCondition>(condition->clone()),
-                getTupleId());
+                std::unique_ptr<RamCondition>(condition->clone()), getTupleId());
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -681,7 +680,7 @@ public:
 
     /** Get target expression */
     const RamExpression& getExpression() const {
-	assert(expression != nullptr && "Expression of index-aggregate is a null-pointer"); 
+        assert(expression != nullptr && "Expression of index-aggregate is a null-pointer");
         return *expression;
     }
 
@@ -744,8 +743,7 @@ public:
         return new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 std::unique_ptr<RamExpression>(expression->clone()),
-                std::unique_ptr<RamCondition>(condition->clone()),
-                std::move(pattern), getTupleId());
+                std::unique_ptr<RamCondition>(condition->clone()), std::move(pattern), getTupleId());
     }
 
     void apply(const RamNodeMapper& map) override {

@@ -219,8 +219,8 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
         if (indexable) {
             return std::make_unique<RamIndexAggregate>(
                     std::unique_ptr<RamOperation>(agg->getOperation().clone()), agg->getFunction(),
-                    std::make_unique<RamRelationReference>(&rel), 
-		    std::unique_ptr<RamExpression>(agg->getExpression().clone()),
+                    std::make_unique<RamRelationReference>(&rel),
+                    std::unique_ptr<RamExpression>(agg->getExpression().clone()),
                     (condition != nullptr) ? std::move(condition) : std::move(std::make_unique<RamTrue>()),
                     std::move(queryPattern), agg->getTupleId());
         }

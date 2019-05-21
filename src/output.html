@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Souffle Debug Report</title>
+<style>
+ul { list-style-type: none; }
+ul > li.leaf { display: inline-block; padding: 0em 1em; }
+ul > li.nonleaf { padding: 0em 1em; }
+* { font-family: sans-serif; }
+pre { white-space: pre-wrap; font-family: monospace; }
+a:link { text-decoration: none; color: blue; }
+a:visited { text-decoration: none; color: blue; }
+div.headerdiv { background-color:lightgrey; margin:10px; padding-left:10px; padding-right:10px; padding-top:3px; padding-bottom:3px; border-radius:5px }
+.headerdiv h1 { display:inline; }
+.headerdiv a { float:right; }
+</style>
+<script type="text/javascript">
+function toggleVisibility(id) {
+  var element = document.getElementById(id);
+  if (element.style.display == 'none') {
+    element.style.display = 'block';
+  } else {
+    element.style.display = 'none';
+  }
+}
+</script>
+</head>
+<body>
+<div class='headerdiv'><h1>Souffle Debug Report</h1></div>
+<a href="#Parsing6">After Parsing (0.006227s)</a>
+<ul>
+<li class='leaf'><a href="#Parsing-dl0">Datalog</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#Parsing-ta1">Type Analysis</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#Parsing-tea2">Type Environment Analysis</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#Parsing-prec-graph3">Precedence Graph</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#Parsing-scc-graph4">SCC Graph</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#Parsing-topsort-scc-graph5">SCC Topological Sort Order</a>
+<ul>
+</ul>
+</li></ul>
+<a href="#AstComponentChecker7">After AstComponentChecker (0.000035s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#ComponentInstantiationTransformer14">After ComponentInstantiationTransformer (0.000030s)</a>
+<ul>
+<li class='leaf'><a href="#ComponentInstantiationTransformer-dl8">Datalog</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ComponentInstantiationTransformer-ta9">Type Analysis</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ComponentInstantiationTransformer-tea10">Type Environment Analysis</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ComponentInstantiationTransformer-prec-graph11">Precedence Graph</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ComponentInstantiationTransformer-scc-graph12">SCC Graph</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ComponentInstantiationTransformer-topsort-scc-graph13">SCC Topological Sort Order</a>
+<ul>
+</ul>
+</li></ul>
+<a href="#UniqueAggregationVariablesTransformer15">After UniqueAggregationVariablesTransformer (0.000014s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#AstSemanticChecker16">After AstSemanticChecker (0.000601s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#RemoveBooleanConstraintsTransformer17">After RemoveBooleanConstraintsTransformer (0.000013s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#ResolveAliasesTransformer24">After ResolveAliasesTransformer (0.000114s)</a>
+<ul>
+<li class='leaf'><a href="#ResolveAliasesTransformer-dl18">Datalog</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ResolveAliasesTransformer-ta19">Type Analysis</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ResolveAliasesTransformer-tea20">Type Environment Analysis</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ResolveAliasesTransformer-prec-graph21">Precedence Graph</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ResolveAliasesTransformer-scc-graph22">SCC Graph</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#ResolveAliasesTransformer-topsort-scc-graph23">SCC Topological Sort Order</a>
+<ul>
+</ul>
+</li></ul>
+<a href="#MinimiseProgramTransformer25">After MinimiseProgramTransformer (0.000145s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#InlineRelationsTransformer26">After InlineRelationsTransformer (0.000023s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#ResolveAliasesTransformer27">After ResolveAliasesTransformer (0.000065s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#RemoveRedundantRelationsTransformer28">After RemoveRedundantRelationsTransformer (0.000045s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#RemoveRelationCopiesTransformer29">After RemoveRelationCopiesTransformer (0.000002s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#RemoveEmptyRelationsTransformer30">After RemoveEmptyRelationsTransformer (0.000001s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#ReplaceSingletonVariablesTransformer31">After ReplaceSingletonVariablesTransformer (0.000021s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#ReduceExistentialsTransformer32">After ReduceExistentialsTransformer (0.000032s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#RemoveRedundantRelationsTransformer33">After RemoveRedundantRelationsTransformer (0.000001s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#RemoveRelationCopiesTransformer34">After RemoveRelationCopiesTransformer (0.000002s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#PartitionBodyLiteralsTransformer35">After PartitionBodyLiteralsTransformer (0.000029s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#MinimiseProgramTransformer36">After MinimiseProgramTransformer (0.000040s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#RemoveRelationCopiesTransformer37">After RemoveRelationCopiesTransformer (0.000001s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#ReorderLiteralsTransformer38">After ReorderLiteralsTransformer (0.000009s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#ResolveAliasesTransformer39">After ResolveAliasesTransformer (0.000055s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#MaterializeAggregationQueriesTransformer46">After MaterializeAggregationQueriesTransformer (0.000218s)</a>
+<ul>
+<li class='leaf'><a href="#MaterializeAggregationQueriesTransformer-dl40">Datalog</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#MaterializeAggregationQueriesTransformer-ta41">Type Analysis</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#MaterializeAggregationQueriesTransformer-tea42">Type Environment Analysis</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#MaterializeAggregationQueriesTransformer-prec-graph43">Precedence Graph</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#MaterializeAggregationQueriesTransformer-scc-graph44">SCC Graph</a>
+<ul>
+</ul>
+</li><li class='leaf'><a href="#MaterializeAggregationQueriesTransformer-topsort-scc-graph45">SCC Topological Sort Order</a>
+<ul>
+</ul>
+</li></ul>
+<a href="#RemoveEmptyRelationsTransformer47">After RemoveEmptyRelationsTransformer (0.000039s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#ReorderLiteralsTransformer48">After ReorderLiteralsTransformer (0.000012s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#AstExecutionPlanChecker49">After AstExecutionPlanChecker (0.000052s) (unchanged)</a>
+<ul>
+</ul>
+<a href="#ram-program50">RAM Program (0.000297s)</a>
+<ul>
+</ul>
+<a href="#LevelConditionsTransformer51">RAM Program after LevelConditionsTransformer</a>
+<ul>
+</ul>
+<a href="#CreateIndicesTransformer52">After CreateIndicesTransformer  (unchanged)</a>
+<ul>
+</ul>
+<a href="#ConvertExistenceChecksTransformer53">After ConvertExistenceChecksTransformer  (unchanged)</a>
+<ul>
+</ul>
+<a id="Parsing6"></a>
+<div class='headerdiv'>
+<h1>After Parsing (0.006227s)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+<a id="Parsing-dl0"></a>
+<div class='headerdiv'>
+<h1>Datalog</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>// ----- Types -----
+
+// ----- Functors -----
+
+// ----- Relations -----
+
+
+// -- W --
+.decl W(x:number,y:number)  
+
+W(c,n) :- 
+   X(n),
+   c = count : { X(m), m &lt; n }.
+
+.output {W}(I0="stdout")
+
+
+
+// -- X --
+.decl X(n:number)  
+
+X(1).
+
+X(2).
+
+X(10).
+
+X(11).
+
+</pre>
+
+</div>
+<a id="Parsing-ta1"></a>
+<div class='headerdiv'>
+<h1>Type Analysis</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>-- Analysis logs --
+Clause: W(c,n) :- 
+   X(n),
+   c = count : { X(m), m &lt; n }.
+Problem:
+{
+	var(c) &lt;: number,
+	var(n) &lt;: number,
+	var(n) &lt;: number,
+	var(c) &lt;: var(count : { X(m), m &lt; n }),
+	var(count : { X(m), m &lt; n }) &lt;: var(c),
+	var(count : { X(m), m &lt; n }) &lt;: number,
+	var(m) &lt;: number,
+	var(m) &lt;: var(n),
+	var(n) &lt;: var(m)
+}
+Solution:
+{var(count : { X(m), m &lt; n })->{number},var(m)->{number},var(c)->{number},var(n)->{number}}
+Clause: X(1).
+Problem:
+{
+	var(1) &lt;: number,
+	var(1) &lt;: number
+}
+Solution:
+{var(1)->{number}}
+Clause: X(2).
+Problem:
+{
+	var(2) &lt;: number,
+	var(2) &lt;: number
+}
+Solution:
+{var(2)->{number}}
+Clause: X(10).
+Problem:
+{
+	var(10) &lt;: number,
+	var(10) &lt;: number
+}
+Solution:
+{var(10)->{number}}
+Clause: X(11).
+Problem:
+{
+	var(11) &lt;: number,
+	var(11) &lt;: number
+}
+Solution:
+{var(11)->{number}}
+
+-- Result --
+W(c&isin;{number},n&isin;{number}) :- 
+   X(n&isin;{number}),
+   c&isin;{number} = count : { X(m&isin;{number}), m&isin;{number} &lt; n&isin;{number} }.
+X(1).
+X(2).
+X(10).
+X(11).
+</pre>
+
+</div>
+<a id="Parsing-tea2"></a>
+<div class='headerdiv'>
+<h1>Type Environment Analysis</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>Types:
+	number
+	symbol
+</pre>
+
+</div>
+<a id="Parsing-prec-graph3"></a>
+<div class='headerdiv'>
+<h1>Precedence Graph</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<img alt='graph image' src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8IS0tIEdlbmVyYXRlZCBieSBncmFwaHZpeiB2ZXJzaW9uIDIuNDAuMSAoMjAxNjEyMjUuMDMwNCkKIC0tPgo8IS0tIFRpdGxlOiAlMyBQYWdlczogMSAtLT4KPHN2ZyB3aWR0aD0iNjJwdCIgaGVpZ2h0PSIxMTZwdCIKIHZpZXdCb3g9IjAuMDAgMC4wMCA2Mi4wMCAxMTYuMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPgo8ZyBpZD0iZ3JhcGgwIiBjbGFzcz0iZ3JhcGgiIHRyYW5zZm9ybT0ic2NhbGUoMSAxKSByb3RhdGUoMCkgdHJhbnNsYXRlKDQgMTEyKSI+Cjx0aXRsZT4lMzwvdGl0bGU+Cjxwb2x5Z29uIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0idHJhbnNwYXJlbnQiIHBvaW50cz0iLTQsNCAtNCwtMTEyIDU4LC0xMTIgNTgsNCAtNCw0Ii8+CjwhLS0gVyAtLT4KPGcgaWQ9Im5vZGUxIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5XPC90aXRsZT4KPGVsbGlwc2UgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBjeD0iMjciIGN5PSItMTgiIHJ4PSIyNyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjI3IiB5PSItMTMuOCIgZm9udC1mYW1pbHk9IlRpbWVzLHNlcmlmIiBmb250LXNpemU9IjE0LjAwIiBmaWxsPSIjMDAwMDAwIj5XPC90ZXh0Pgo8L2c+CjwhLS0gWCAtLT4KPGcgaWQ9Im5vZGUyIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5YPC90aXRsZT4KPGVsbGlwc2UgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBjeD0iMjciIGN5PSItOTAiIHJ4PSIyNyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjI3IiB5PSItODUuOCIgZm9udC1mYW1pbHk9IlRpbWVzLHNlcmlmIiBmb250LXNpemU9IjE0LjAwIiBmaWxsPSIjMDAwMDAwIj5YPC90ZXh0Pgo8L2c+CjwhLS0gWCYjNDU7Jmd0O1cgLS0+CjxnIGlkPSJlZGdlMSIgY2xhc3M9ImVkZ2UiPgo8dGl0bGU+WCYjNDU7Jmd0O1c8L3RpdGxlPgo8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGQ9Ik0yNywtNzEuODMxNEMyNywtNjQuMTMxIDI3LC01NC45NzQzIDI3LC00Ni40MTY2Ii8+Cjxwb2x5Z29uIGZpbGw9IiMwMDAwMDAiIHN0cm9rZT0iIzAwMDAwMCIgcG9pbnRzPSIzMC41MDAxLC00Ni40MTMyIDI3LC0zNi40MTMzIDIzLjUwMDEsLTQ2LjQxMzMgMzAuNTAwMSwtNDYuNDEzMiIvPgo8L2c+CjwvZz4KPC9zdmc+Cg=='><br/>
+<a href="javascript:toggleVisibility('Parsing-prec-graph-source')">(show dot source)</a>
+<div id='Parsing-prec-graph-source' style='display:none'>
+<pre>digraph {
+	"W" [label = "W"];
+	"X" [label = "X"];
+	"X" -> "W";
+}
+</pre>
+</div>
+
+</div>
+<a id="Parsing-scc-graph4"></a>
+<div class='headerdiv'>
+<h1>SCC Graph</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<img alt='graph image' src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8IS0tIEdlbmVyYXRlZCBieSBncmFwaHZpeiB2ZXJzaW9uIDIuNDAuMSAoMjAxNjEyMjUuMDMwNCkKIC0tPgo8IS0tIFRpdGxlOiAlMyBQYWdlczogMSAtLT4KPHN2ZyB3aWR0aD0iNjJwdCIgaGVpZ2h0PSIxMTZwdCIKIHZpZXdCb3g9IjAuMDAgMC4wMCA2Mi4wMCAxMTYuMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPgo8ZyBpZD0iZ3JhcGgwIiBjbGFzcz0iZ3JhcGgiIHRyYW5zZm9ybT0ic2NhbGUoMSAxKSByb3RhdGUoMCkgdHJhbnNsYXRlKDQgMTEyKSI+Cjx0aXRsZT4lMzwvdGl0bGU+Cjxwb2x5Z29uIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0idHJhbnNwYXJlbnQiIHBvaW50cz0iLTQsNCAtNCwtMTEyIDU4LC0xMTIgNTgsNCAtNCw0Ii8+CjwhLS0gXzAgLS0+CjxnIGlkPSJub2RlMSIgY2xhc3M9Im5vZGUiPgo8dGl0bGU+XzA8L3RpdGxlPgo8ZWxsaXBzZSBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGN4PSIyNyIgY3k9Ii05MCIgcng9IjI3IiByeT0iMTgiLz4KPHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMjciIHk9Ii04NS44IiBmb250LWZhbWlseT0iVGltZXMsc2VyaWYiIGZvbnQtc2l6ZT0iMTQuMDAiIGZpbGw9IiMwMDAwMDAiPlg8L3RleHQ+CjwvZz4KPCEtLSBfMSAtLT4KPGcgaWQ9Im5vZGUyIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5fMTwvdGl0bGU+CjxlbGxpcHNlIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgY3g9IjI3IiBjeT0iLTE4IiByeD0iMjciIHJ5PSIxOCIvPgo8dGV4dCB0ZXh0LWFuY2hvcj0ibWlkZGxlIiB4PSIyNyIgeT0iLTEzLjgiIGZvbnQtZmFtaWx5PSJUaW1lcyxzZXJpZiIgZm9udC1zaXplPSIxNC4wMCIgZmlsbD0iIzAwMDAwMCI+VzwvdGV4dD4KPC9nPgo8IS0tIF8wJiM0NTsmZ3Q7XzEgLS0+CjxnIGlkPSJlZGdlMSIgY2xhc3M9ImVkZ2UiPgo8dGl0bGU+XzAmIzQ1OyZndDtfMTwvdGl0bGU+CjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgZD0iTTI3LC03MS44MzE0QzI3LC02NC4xMzEgMjcsLTU0Ljk3NDMgMjcsLTQ2LjQxNjYiLz4KPHBvbHlnb24gZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSIjMDAwMDAwIiBwb2ludHM9IjMwLjUwMDEsLTQ2LjQxMzIgMjcsLTM2LjQxMzMgMjMuNTAwMSwtNDYuNDEzMyAzMC41MDAxLC00Ni40MTMyIi8+CjwvZz4KPC9nPgo8L3N2Zz4K'><br/>
+<a href="javascript:toggleVisibility('Parsing-scc-graph-source')">(show dot source)</a>
+<div id='Parsing-scc-graph-source' style='display:none'>
+<pre>digraph {
+	_0[label = "X" ];
+	_1[label = "W" ];
+	_0 -> _1;
+}</pre>
+</div>
+
+</div>
+<a id="Parsing-topsort-scc-graph5"></a>
+<div class='headerdiv'>
+<h1>SCC Topological Sort Order</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>--- partial order of strata as list of pairs ---
+0 1
+--- total order with relations of each strata ---
+0: [X]
+1: [W]
+
+--- statistics of topological order ---
+cost: 1
+</pre>
+
+</div>
+</div>
+<a id="AstComponentChecker7"></a>
+<div class='headerdiv'>
+<h1>After AstComponentChecker (0.000035s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ComponentInstantiationTransformer14"></a>
+<div class='headerdiv'>
+<h1>After ComponentInstantiationTransformer (0.000030s)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+<a id="ComponentInstantiationTransformer-dl8"></a>
+<div class='headerdiv'>
+<h1>Datalog</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>// ----- Types -----
+
+// ----- Functors -----
+
+// ----- Relations -----
+
+
+// -- W --
+.decl W(x:number,y:number)  
+
+W(c,n) :- 
+   X(n),
+   c = count : { X(m), m &lt; n }.
+
+.output {W}(I0="stdout")
+
+
+
+// -- X --
+.decl X(n:number)  
+
+X(1).
+
+X(2).
+
+X(10).
+
+X(11).
+
+</pre>
+
+</div>
+<a id="ComponentInstantiationTransformer-ta9"></a>
+<div class='headerdiv'>
+<h1>Type Analysis</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>-- Analysis logs --
+Clause: W(c,n) :- 
+   X(n),
+   c = count : { X(m), m &lt; n }.
+Problem:
+{
+	var(c) &lt;: number,
+	var(n) &lt;: number,
+	var(n) &lt;: number,
+	var(c) &lt;: var(count : { X(m), m &lt; n }),
+	var(count : { X(m), m &lt; n }) &lt;: var(c),
+	var(count : { X(m), m &lt; n }) &lt;: number,
+	var(m) &lt;: number,
+	var(m) &lt;: var(n),
+	var(n) &lt;: var(m)
+}
+Solution:
+{var(count : { X(m), m &lt; n })->{number},var(m)->{number},var(c)->{number},var(n)->{number}}
+Clause: X(1).
+Problem:
+{
+	var(1) &lt;: number,
+	var(1) &lt;: number
+}
+Solution:
+{var(1)->{number}}
+Clause: X(2).
+Problem:
+{
+	var(2) &lt;: number,
+	var(2) &lt;: number
+}
+Solution:
+{var(2)->{number}}
+Clause: X(10).
+Problem:
+{
+	var(10) &lt;: number,
+	var(10) &lt;: number
+}
+Solution:
+{var(10)->{number}}
+Clause: X(11).
+Problem:
+{
+	var(11) &lt;: number,
+	var(11) &lt;: number
+}
+Solution:
+{var(11)->{number}}
+
+-- Result --
+W(c&isin;{number},n&isin;{number}) :- 
+   X(n&isin;{number}),
+   c&isin;{number} = count : { X(m&isin;{number}), m&isin;{number} &lt; n&isin;{number} }.
+X(1).
+X(2).
+X(10).
+X(11).
+</pre>
+
+</div>
+<a id="ComponentInstantiationTransformer-tea10"></a>
+<div class='headerdiv'>
+<h1>Type Environment Analysis</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>Types:
+	number
+	symbol
+</pre>
+
+</div>
+<a id="ComponentInstantiationTransformer-prec-graph11"></a>
+<div class='headerdiv'>
+<h1>Precedence Graph</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<img alt='graph image' src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8IS0tIEdlbmVyYXRlZCBieSBncmFwaHZpeiB2ZXJzaW9uIDIuNDAuMSAoMjAxNjEyMjUuMDMwNCkKIC0tPgo8IS0tIFRpdGxlOiAlMyBQYWdlczogMSAtLT4KPHN2ZyB3aWR0aD0iNjJwdCIgaGVpZ2h0PSIxMTZwdCIKIHZpZXdCb3g9IjAuMDAgMC4wMCA2Mi4wMCAxMTYuMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPgo8ZyBpZD0iZ3JhcGgwIiBjbGFzcz0iZ3JhcGgiIHRyYW5zZm9ybT0ic2NhbGUoMSAxKSByb3RhdGUoMCkgdHJhbnNsYXRlKDQgMTEyKSI+Cjx0aXRsZT4lMzwvdGl0bGU+Cjxwb2x5Z29uIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0idHJhbnNwYXJlbnQiIHBvaW50cz0iLTQsNCAtNCwtMTEyIDU4LC0xMTIgNTgsNCAtNCw0Ii8+CjwhLS0gVyAtLT4KPGcgaWQ9Im5vZGUxIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5XPC90aXRsZT4KPGVsbGlwc2UgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBjeD0iMjciIGN5PSItMTgiIHJ4PSIyNyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjI3IiB5PSItMTMuOCIgZm9udC1mYW1pbHk9IlRpbWVzLHNlcmlmIiBmb250LXNpemU9IjE0LjAwIiBmaWxsPSIjMDAwMDAwIj5XPC90ZXh0Pgo8L2c+CjwhLS0gWCAtLT4KPGcgaWQ9Im5vZGUyIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5YPC90aXRsZT4KPGVsbGlwc2UgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBjeD0iMjciIGN5PSItOTAiIHJ4PSIyNyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjI3IiB5PSItODUuOCIgZm9udC1mYW1pbHk9IlRpbWVzLHNlcmlmIiBmb250LXNpemU9IjE0LjAwIiBmaWxsPSIjMDAwMDAwIj5YPC90ZXh0Pgo8L2c+CjwhLS0gWCYjNDU7Jmd0O1cgLS0+CjxnIGlkPSJlZGdlMSIgY2xhc3M9ImVkZ2UiPgo8dGl0bGU+WCYjNDU7Jmd0O1c8L3RpdGxlPgo8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGQ9Ik0yNywtNzEuODMxNEMyNywtNjQuMTMxIDI3LC01NC45NzQzIDI3LC00Ni40MTY2Ii8+Cjxwb2x5Z29uIGZpbGw9IiMwMDAwMDAiIHN0cm9rZT0iIzAwMDAwMCIgcG9pbnRzPSIzMC41MDAxLC00Ni40MTMyIDI3LC0zNi40MTMzIDIzLjUwMDEsLTQ2LjQxMzMgMzAuNTAwMSwtNDYuNDEzMiIvPgo8L2c+CjwvZz4KPC9zdmc+Cg=='><br/>
+<a href="javascript:toggleVisibility('ComponentInstantiationTransformer-prec-graph-source')">(show dot source)</a>
+<div id='ComponentInstantiationTransformer-prec-graph-source' style='display:none'>
+<pre>digraph {
+	"W" [label = "W"];
+	"X" [label = "X"];
+	"X" -> "W";
+}
+</pre>
+</div>
+
+</div>
+<a id="ComponentInstantiationTransformer-scc-graph12"></a>
+<div class='headerdiv'>
+<h1>SCC Graph</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<img alt='graph image' src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8IS0tIEdlbmVyYXRlZCBieSBncmFwaHZpeiB2ZXJzaW9uIDIuNDAuMSAoMjAxNjEyMjUuMDMwNCkKIC0tPgo8IS0tIFRpdGxlOiAlMyBQYWdlczogMSAtLT4KPHN2ZyB3aWR0aD0iNjJwdCIgaGVpZ2h0PSIxMTZwdCIKIHZpZXdCb3g9IjAuMDAgMC4wMCA2Mi4wMCAxMTYuMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPgo8ZyBpZD0iZ3JhcGgwIiBjbGFzcz0iZ3JhcGgiIHRyYW5zZm9ybT0ic2NhbGUoMSAxKSByb3RhdGUoMCkgdHJhbnNsYXRlKDQgMTEyKSI+Cjx0aXRsZT4lMzwvdGl0bGU+Cjxwb2x5Z29uIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0idHJhbnNwYXJlbnQiIHBvaW50cz0iLTQsNCAtNCwtMTEyIDU4LC0xMTIgNTgsNCAtNCw0Ii8+CjwhLS0gXzAgLS0+CjxnIGlkPSJub2RlMSIgY2xhc3M9Im5vZGUiPgo8dGl0bGU+XzA8L3RpdGxlPgo8ZWxsaXBzZSBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGN4PSIyNyIgY3k9Ii05MCIgcng9IjI3IiByeT0iMTgiLz4KPHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMjciIHk9Ii04NS44IiBmb250LWZhbWlseT0iVGltZXMsc2VyaWYiIGZvbnQtc2l6ZT0iMTQuMDAiIGZpbGw9IiMwMDAwMDAiPlg8L3RleHQ+CjwvZz4KPCEtLSBfMSAtLT4KPGcgaWQ9Im5vZGUyIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5fMTwvdGl0bGU+CjxlbGxpcHNlIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgY3g9IjI3IiBjeT0iLTE4IiByeD0iMjciIHJ5PSIxOCIvPgo8dGV4dCB0ZXh0LWFuY2hvcj0ibWlkZGxlIiB4PSIyNyIgeT0iLTEzLjgiIGZvbnQtZmFtaWx5PSJUaW1lcyxzZXJpZiIgZm9udC1zaXplPSIxNC4wMCIgZmlsbD0iIzAwMDAwMCI+VzwvdGV4dD4KPC9nPgo8IS0tIF8wJiM0NTsmZ3Q7XzEgLS0+CjxnIGlkPSJlZGdlMSIgY2xhc3M9ImVkZ2UiPgo8dGl0bGU+XzAmIzQ1OyZndDtfMTwvdGl0bGU+CjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgZD0iTTI3LC03MS44MzE0QzI3LC02NC4xMzEgMjcsLTU0Ljk3NDMgMjcsLTQ2LjQxNjYiLz4KPHBvbHlnb24gZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSIjMDAwMDAwIiBwb2ludHM9IjMwLjUwMDEsLTQ2LjQxMzIgMjcsLTM2LjQxMzMgMjMuNTAwMSwtNDYuNDEzMyAzMC41MDAxLC00Ni40MTMyIi8+CjwvZz4KPC9nPgo8L3N2Zz4K'><br/>
+<a href="javascript:toggleVisibility('ComponentInstantiationTransformer-scc-graph-source')">(show dot source)</a>
+<div id='ComponentInstantiationTransformer-scc-graph-source' style='display:none'>
+<pre>digraph {
+	_0[label = "X" ];
+	_1[label = "W" ];
+	_0 -> _1;
+}</pre>
+</div>
+
+</div>
+<a id="ComponentInstantiationTransformer-topsort-scc-graph13"></a>
+<div class='headerdiv'>
+<h1>SCC Topological Sort Order</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>--- partial order of strata as list of pairs ---
+0 1
+--- total order with relations of each strata ---
+0: [X]
+1: [W]
+
+--- statistics of topological order ---
+cost: 1
+</pre>
+
+</div>
+</div>
+<a id="UniqueAggregationVariablesTransformer15"></a>
+<div class='headerdiv'>
+<h1>After UniqueAggregationVariablesTransformer (0.000014s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="AstSemanticChecker16"></a>
+<div class='headerdiv'>
+<h1>After AstSemanticChecker (0.000601s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="RemoveBooleanConstraintsTransformer17"></a>
+<div class='headerdiv'>
+<h1>After RemoveBooleanConstraintsTransformer (0.000013s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ResolveAliasesTransformer24"></a>
+<div class='headerdiv'>
+<h1>After ResolveAliasesTransformer (0.000114s)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+<a id="ResolveAliasesTransformer-dl18"></a>
+<div class='headerdiv'>
+<h1>Datalog</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>// ----- Types -----
+
+// ----- Functors -----
+
+// ----- Relations -----
+
+
+// -- W --
+.decl W(x:number,y:number)  
+
+W(count : { X(m), m &lt; n },n) :- 
+   X(n).
+
+.output {W}(I0="stdout")
+
+
+
+// -- X --
+.decl X(n:number)  
+
+X(1).
+
+X(2).
+
+X(10).
+
+X(11).
+
+</pre>
+
+</div>
+<a id="ResolveAliasesTransformer-ta19"></a>
+<div class='headerdiv'>
+<h1>Type Analysis</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>-- Analysis logs --
+Clause: W(count : { X(m), m &lt; n },n) :- 
+   X(n).
+Problem:
+{
+	var(count : { X(m), m &lt; n }) &lt;: number,
+	var(n) &lt;: number,
+	var(count : { X(m), m &lt; n }) &lt;: number,
+	var(m) &lt;: number,
+	var(m) &lt;: var(n),
+	var(n) &lt;: var(m),
+	var(n) &lt;: number
+}
+Solution:
+{var(count : { X(m), m &lt; n })->{number},var(m)->{number},var(n)->{number}}
+Clause: X(1).
+Problem:
+{
+	var(1) &lt;: number,
+	var(1) &lt;: number
+}
+Solution:
+{var(1)->{number}}
+Clause: X(2).
+Problem:
+{
+	var(2) &lt;: number,
+	var(2) &lt;: number
+}
+Solution:
+{var(2)->{number}}
+Clause: X(10).
+Problem:
+{
+	var(10) &lt;: number,
+	var(10) &lt;: number
+}
+Solution:
+{var(10)->{number}}
+Clause: X(11).
+Problem:
+{
+	var(11) &lt;: number,
+	var(11) &lt;: number
+}
+Solution:
+{var(11)->{number}}
+
+-- Result --
+W(count : { X(m&isin;{number}), m&isin;{number} &lt; n&isin;{number} },n&isin;{number}) :- 
+   X(n&isin;{number}).
+X(1).
+X(2).
+X(10).
+X(11).
+</pre>
+
+</div>
+<a id="ResolveAliasesTransformer-tea20"></a>
+<div class='headerdiv'>
+<h1>Type Environment Analysis</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>Types:
+	number
+	symbol
+</pre>
+
+</div>
+<a id="ResolveAliasesTransformer-prec-graph21"></a>
+<div class='headerdiv'>
+<h1>Precedence Graph</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<img alt='graph image' src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8IS0tIEdlbmVyYXRlZCBieSBncmFwaHZpeiB2ZXJzaW9uIDIuNDAuMSAoMjAxNjEyMjUuMDMwNCkKIC0tPgo8IS0tIFRpdGxlOiAlMyBQYWdlczogMSAtLT4KPHN2ZyB3aWR0aD0iNjJwdCIgaGVpZ2h0PSIxMTZwdCIKIHZpZXdCb3g9IjAuMDAgMC4wMCA2Mi4wMCAxMTYuMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPgo8ZyBpZD0iZ3JhcGgwIiBjbGFzcz0iZ3JhcGgiIHRyYW5zZm9ybT0ic2NhbGUoMSAxKSByb3RhdGUoMCkgdHJhbnNsYXRlKDQgMTEyKSI+Cjx0aXRsZT4lMzwvdGl0bGU+Cjxwb2x5Z29uIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0idHJhbnNwYXJlbnQiIHBvaW50cz0iLTQsNCAtNCwtMTEyIDU4LC0xMTIgNTgsNCAtNCw0Ii8+CjwhLS0gVyAtLT4KPGcgaWQ9Im5vZGUxIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5XPC90aXRsZT4KPGVsbGlwc2UgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBjeD0iMjciIGN5PSItMTgiIHJ4PSIyNyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjI3IiB5PSItMTMuOCIgZm9udC1mYW1pbHk9IlRpbWVzLHNlcmlmIiBmb250LXNpemU9IjE0LjAwIiBmaWxsPSIjMDAwMDAwIj5XPC90ZXh0Pgo8L2c+CjwhLS0gWCAtLT4KPGcgaWQ9Im5vZGUyIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5YPC90aXRsZT4KPGVsbGlwc2UgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBjeD0iMjciIGN5PSItOTAiIHJ4PSIyNyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjI3IiB5PSItODUuOCIgZm9udC1mYW1pbHk9IlRpbWVzLHNlcmlmIiBmb250LXNpemU9IjE0LjAwIiBmaWxsPSIjMDAwMDAwIj5YPC90ZXh0Pgo8L2c+CjwhLS0gWCYjNDU7Jmd0O1cgLS0+CjxnIGlkPSJlZGdlMSIgY2xhc3M9ImVkZ2UiPgo8dGl0bGU+WCYjNDU7Jmd0O1c8L3RpdGxlPgo8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGQ9Ik0yNywtNzEuODMxNEMyNywtNjQuMTMxIDI3LC01NC45NzQzIDI3LC00Ni40MTY2Ii8+Cjxwb2x5Z29uIGZpbGw9IiMwMDAwMDAiIHN0cm9rZT0iIzAwMDAwMCIgcG9pbnRzPSIzMC41MDAxLC00Ni40MTMyIDI3LC0zNi40MTMzIDIzLjUwMDEsLTQ2LjQxMzMgMzAuNTAwMSwtNDYuNDEzMiIvPgo8L2c+CjwvZz4KPC9zdmc+Cg=='><br/>
+<a href="javascript:toggleVisibility('ResolveAliasesTransformer-prec-graph-source')">(show dot source)</a>
+<div id='ResolveAliasesTransformer-prec-graph-source' style='display:none'>
+<pre>digraph {
+	"W" [label = "W"];
+	"X" [label = "X"];
+	"X" -> "W";
+}
+</pre>
+</div>
+
+</div>
+<a id="ResolveAliasesTransformer-scc-graph22"></a>
+<div class='headerdiv'>
+<h1>SCC Graph</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<img alt='graph image' src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8IS0tIEdlbmVyYXRlZCBieSBncmFwaHZpeiB2ZXJzaW9uIDIuNDAuMSAoMjAxNjEyMjUuMDMwNCkKIC0tPgo8IS0tIFRpdGxlOiAlMyBQYWdlczogMSAtLT4KPHN2ZyB3aWR0aD0iNjJwdCIgaGVpZ2h0PSIxMTZwdCIKIHZpZXdCb3g9IjAuMDAgMC4wMCA2Mi4wMCAxMTYuMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPgo8ZyBpZD0iZ3JhcGgwIiBjbGFzcz0iZ3JhcGgiIHRyYW5zZm9ybT0ic2NhbGUoMSAxKSByb3RhdGUoMCkgdHJhbnNsYXRlKDQgMTEyKSI+Cjx0aXRsZT4lMzwvdGl0bGU+Cjxwb2x5Z29uIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0idHJhbnNwYXJlbnQiIHBvaW50cz0iLTQsNCAtNCwtMTEyIDU4LC0xMTIgNTgsNCAtNCw0Ii8+CjwhLS0gXzAgLS0+CjxnIGlkPSJub2RlMSIgY2xhc3M9Im5vZGUiPgo8dGl0bGU+XzA8L3RpdGxlPgo8ZWxsaXBzZSBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGN4PSIyNyIgY3k9Ii05MCIgcng9IjI3IiByeT0iMTgiLz4KPHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMjciIHk9Ii04NS44IiBmb250LWZhbWlseT0iVGltZXMsc2VyaWYiIGZvbnQtc2l6ZT0iMTQuMDAiIGZpbGw9IiMwMDAwMDAiPlg8L3RleHQ+CjwvZz4KPCEtLSBfMSAtLT4KPGcgaWQ9Im5vZGUyIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5fMTwvdGl0bGU+CjxlbGxpcHNlIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgY3g9IjI3IiBjeT0iLTE4IiByeD0iMjciIHJ5PSIxOCIvPgo8dGV4dCB0ZXh0LWFuY2hvcj0ibWlkZGxlIiB4PSIyNyIgeT0iLTEzLjgiIGZvbnQtZmFtaWx5PSJUaW1lcyxzZXJpZiIgZm9udC1zaXplPSIxNC4wMCIgZmlsbD0iIzAwMDAwMCI+VzwvdGV4dD4KPC9nPgo8IS0tIF8wJiM0NTsmZ3Q7XzEgLS0+CjxnIGlkPSJlZGdlMSIgY2xhc3M9ImVkZ2UiPgo8dGl0bGU+XzAmIzQ1OyZndDtfMTwvdGl0bGU+CjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgZD0iTTI3LC03MS44MzE0QzI3LC02NC4xMzEgMjcsLTU0Ljk3NDMgMjcsLTQ2LjQxNjYiLz4KPHBvbHlnb24gZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSIjMDAwMDAwIiBwb2ludHM9IjMwLjUwMDEsLTQ2LjQxMzIgMjcsLTM2LjQxMzMgMjMuNTAwMSwtNDYuNDEzMyAzMC41MDAxLC00Ni40MTMyIi8+CjwvZz4KPC9nPgo8L3N2Zz4K'><br/>
+<a href="javascript:toggleVisibility('ResolveAliasesTransformer-scc-graph-source')">(show dot source)</a>
+<div id='ResolveAliasesTransformer-scc-graph-source' style='display:none'>
+<pre>digraph {
+	_0[label = "X" ];
+	_1[label = "W" ];
+	_0 -> _1;
+}</pre>
+</div>
+
+</div>
+<a id="ResolveAliasesTransformer-topsort-scc-graph23"></a>
+<div class='headerdiv'>
+<h1>SCC Topological Sort Order</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>--- partial order of strata as list of pairs ---
+0 1
+--- total order with relations of each strata ---
+0: [X]
+1: [W]
+
+--- statistics of topological order ---
+cost: 1
+</pre>
+
+</div>
+</div>
+<a id="MinimiseProgramTransformer25"></a>
+<div class='headerdiv'>
+<h1>After MinimiseProgramTransformer (0.000145s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="InlineRelationsTransformer26"></a>
+<div class='headerdiv'>
+<h1>After InlineRelationsTransformer (0.000023s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ResolveAliasesTransformer27"></a>
+<div class='headerdiv'>
+<h1>After ResolveAliasesTransformer (0.000065s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="RemoveRedundantRelationsTransformer28"></a>
+<div class='headerdiv'>
+<h1>After RemoveRedundantRelationsTransformer (0.000045s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="RemoveRelationCopiesTransformer29"></a>
+<div class='headerdiv'>
+<h1>After RemoveRelationCopiesTransformer (0.000002s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="RemoveEmptyRelationsTransformer30"></a>
+<div class='headerdiv'>
+<h1>After RemoveEmptyRelationsTransformer (0.000001s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ReplaceSingletonVariablesTransformer31"></a>
+<div class='headerdiv'>
+<h1>After ReplaceSingletonVariablesTransformer (0.000021s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ReduceExistentialsTransformer32"></a>
+<div class='headerdiv'>
+<h1>After ReduceExistentialsTransformer (0.000032s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="RemoveRedundantRelationsTransformer33"></a>
+<div class='headerdiv'>
+<h1>After RemoveRedundantRelationsTransformer (0.000001s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="RemoveRelationCopiesTransformer34"></a>
+<div class='headerdiv'>
+<h1>After RemoveRelationCopiesTransformer (0.000002s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="PartitionBodyLiteralsTransformer35"></a>
+<div class='headerdiv'>
+<h1>After PartitionBodyLiteralsTransformer (0.000029s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="MinimiseProgramTransformer36"></a>
+<div class='headerdiv'>
+<h1>After MinimiseProgramTransformer (0.000040s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="RemoveRelationCopiesTransformer37"></a>
+<div class='headerdiv'>
+<h1>After RemoveRelationCopiesTransformer (0.000001s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ReorderLiteralsTransformer38"></a>
+<div class='headerdiv'>
+<h1>After ReorderLiteralsTransformer (0.000009s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ResolveAliasesTransformer39"></a>
+<div class='headerdiv'>
+<h1>After ResolveAliasesTransformer (0.000055s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="MaterializeAggregationQueriesTransformer46"></a>
+<div class='headerdiv'>
+<h1>After MaterializeAggregationQueriesTransformer (0.000218s)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+<a id="MaterializeAggregationQueriesTransformer-dl40"></a>
+<div class='headerdiv'>
+<h1>Datalog</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>// ----- Types -----
+
+// ----- Functors -----
+
+// ----- Relations -----
+
+
+// -- W --
+.decl W(x:number,y:number)  
+
+W(count : __agg_rel_0(_,n),n) :- 
+   X(n).
+
+.output {W}(I0="stdout")
+
+
+
+// -- X --
+.decl X(n:number)  
+
+X(1).
+
+X(2).
+
+X(10).
+
+X(11).
+
+
+
+// -- __agg_rel_0 --
+.decl __agg_rel_0(m:number,n:number)  
+
+__agg_rel_0(m,n) :- 
+   X(m),
+   X(n),
+   m &lt; n.
+
+</pre>
+
+</div>
+<a id="MaterializeAggregationQueriesTransformer-ta41"></a>
+<div class='headerdiv'>
+<h1>Type Analysis</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>-- Analysis logs --
+Clause: W(count : __agg_rel_0(_,n),n) :- 
+   X(n).
+Problem:
+{
+	var(count : __agg_rel_0(_,n)) &lt;: number,
+	var(n) &lt;: number,
+	var(count : __agg_rel_0(_,n)) &lt;: number,
+	var(_) &lt;: number,
+	var(n) &lt;: number,
+	var(n) &lt;: number
+}
+Solution:
+{var(_)->{number},var(count : __agg_rel_0(_,n))->{number},var(n)->{number}}
+Clause: X(1).
+Problem:
+{
+	var(1) &lt;: number,
+	var(1) &lt;: number
+}
+Solution:
+{var(1)->{number}}
+Clause: X(2).
+Problem:
+{
+	var(2) &lt;: number,
+	var(2) &lt;: number
+}
+Solution:
+{var(2)->{number}}
+Clause: X(10).
+Problem:
+{
+	var(10) &lt;: number,
+	var(10) &lt;: number
+}
+Solution:
+{var(10)->{number}}
+Clause: X(11).
+Problem:
+{
+	var(11) &lt;: number,
+	var(11) &lt;: number
+}
+Solution:
+{var(11)->{number}}
+Clause: __agg_rel_0(m,n) :- 
+   X(m),
+   X(n),
+   m &lt; n.
+Problem:
+{
+	var(m) &lt;: number,
+	var(n) &lt;: number,
+	var(m) &lt;: number,
+	var(n) &lt;: number,
+	var(m) &lt;: var(n),
+	var(n) &lt;: var(m)
+}
+Solution:
+{var(m)->{number},var(n)->{number}}
+
+-- Result --
+W(count : __agg_rel_0(_&isin;{number},n&isin;{number}),n&isin;{number}) :- 
+   X(n&isin;{number}).
+X(1).
+X(2).
+X(10).
+X(11).
+__agg_rel_0(m&isin;{number},n&isin;{number}) :- 
+   X(m&isin;{number}),
+   X(n&isin;{number}),
+   m&isin;{number} &lt; n&isin;{number}.
+</pre>
+
+</div>
+<a id="MaterializeAggregationQueriesTransformer-tea42"></a>
+<div class='headerdiv'>
+<h1>Type Environment Analysis</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>Types:
+	number
+	symbol
+</pre>
+
+</div>
+<a id="MaterializeAggregationQueriesTransformer-prec-graph43"></a>
+<div class='headerdiv'>
+<h1>Precedence Graph</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<img alt='graph image' src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8IS0tIEdlbmVyYXRlZCBieSBncmFwaHZpeiB2ZXJzaW9uIDIuNDAuMSAoMjAxNjEyMjUuMDMwNCkKIC0tPgo8IS0tIFRpdGxlOiAlMyBQYWdlczogMSAtLT4KPHN2ZyB3aWR0aD0iMTMwcHQiIGhlaWdodD0iMTg4cHQiCiB2aWV3Qm94PSIwLjAwIDAuMDAgMTMwLjMxIDE4OC4wMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CjxnIGlkPSJncmFwaDAiIGNsYXNzPSJncmFwaCIgdHJhbnNmb3JtPSJzY2FsZSgxIDEpIHJvdGF0ZSgwKSB0cmFuc2xhdGUoNCAxODQpIj4KPHRpdGxlPiUzPC90aXRsZT4KPHBvbHlnb24gZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSJ0cmFuc3BhcmVudCIgcG9pbnRzPSItNCw0IC00LC0xODQgMTI2LjMxMTIsLTE4NCAxMjYuMzExMiw0IC00LDQiLz4KPCEtLSBXIC0tPgo8ZyBpZD0ibm9kZTEiIGNsYXNzPSJub2RlIj4KPHRpdGxlPlc8L3RpdGxlPgo8ZWxsaXBzZSBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGN4PSIyNyIgY3k9Ii0xOCIgcng9IjI3IiByeT0iMTgiLz4KPHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMjciIHk9Ii0xMy44IiBmb250LWZhbWlseT0iVGltZXMsc2VyaWYiIGZvbnQtc2l6ZT0iMTQuMDAiIGZpbGw9IiMwMDAwMDAiPlc8L3RleHQ+CjwvZz4KPCEtLSBYIC0tPgo8ZyBpZD0ibm9kZTIiIGNsYXNzPSJub2RlIj4KPHRpdGxlPlg8L3RpdGxlPgo8ZWxsaXBzZSBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGN4PSIyNyIgY3k9Ii0xNjIiIHJ4PSIyNyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjI3IiB5PSItMTU3LjgiIGZvbnQtZmFtaWx5PSJUaW1lcyxzZXJpZiIgZm9udC1zaXplPSIxNC4wMCIgZmlsbD0iIzAwMDAwMCI+WDwvdGV4dD4KPC9nPgo8IS0tIFgmIzQ1OyZndDtXIC0tPgo8ZyBpZD0iZWRnZTEiIGNsYXNzPSJlZGdlIj4KPHRpdGxlPlgmIzQ1OyZndDtXPC90aXRsZT4KPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBkPSJNMTcuODY4MiwtMTQ0LjUzN0MxMi45OTA5LC0xMzQuMjE2IDcuNDkwOSwtMTIwLjcxNiA1LC0xMDggMS45MjQzLC05Mi4yOTg0IDEuOTI0MywtODcuNzAxNiA1LC03MiA2Ljc5MDMsLTYyLjg2MDQgMTAuMTM1MiwtNTMuMzE1NyAxMy42ODYsLTQ0LjgzNzYiLz4KPHBvbHlnb24gZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSIjMDAwMDAwIiBwb2ludHM9IjE2Ljk5MDMsLTQ2LjAyMTQgMTcuODY4MiwtMzUuNDYzIDEwLjU5NzYsLTQzLjE2OTUgMTYuOTkwMywtNDYuMDIxNCIvPgo8L2c+CjwhLS0gX19hZ2dfcmVsXzAgLS0+CjxnIGlkPSJub2RlMyIgY2xhc3M9Im5vZGUiPgo8dGl0bGU+X19hZ2dfcmVsXzA8L3RpdGxlPgo8ZWxsaXBzZSBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGN4PSI2OCIgY3k9Ii05MCIgcng9IjU0LjEyMyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjY4IiB5PSItODUuOCIgZm9udC1mYW1pbHk9IlRpbWVzLHNlcmlmIiBmb250LXNpemU9IjE0LjAwIiBmaWxsPSIjMDAwMDAwIj5fX2FnZ19yZWxfMDwvdGV4dD4KPC9nPgo8IS0tIFgmIzQ1OyZndDtfX2FnZ19yZWxfMCAtLT4KPGcgaWQ9ImVkZ2UyIiBjbGFzcz0iZWRnZSI+Cjx0aXRsZT5YJiM0NTsmZ3Q7X19hZ2dfcmVsXzA8L3RpdGxlPgo8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGQ9Ik0zNi43MTY0LC0xNDQuOTM3QzQxLjU2MTYsLTEzNi40Mjg0IDQ3LjUzMDMsLTEyNS45NDY4IDUyLjk1MDgsLTExNi40Mjc5Ii8+Cjxwb2x5Z29uIGZpbGw9IiMwMDAwMDAiIHN0cm9rZT0iIzAwMDAwMCIgcG9pbnRzPSI1Ni4wMTgyLC0xMTguMTE0MiA1Ny45MjUxLC0xMDcuNjkyNCA0OS45MzUzLC0xMTQuNjUwMyA1Ni4wMTgyLC0xMTguMTE0MiIvPgo8L2c+CjwhLS0gX19hZ2dfcmVsXzAmIzQ1OyZndDtXIC0tPgo8ZyBpZD0iZWRnZTMiIGNsYXNzPSJlZGdlIj4KPHRpdGxlPl9fYWdnX3JlbF8wJiM0NTsmZ3Q7VzwvdGl0bGU+CjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgZD0iTTU3Ljg2NTIsLTcyLjIwMjJDNTMuMDI3NiwtNjMuNzA3MSA0Ny4xNDUxLC01My4zNzY3IDQxLjgxODIsLTQ0LjAyMjMiLz4KPHBvbHlnb24gZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSIjMDAwMDAwIiBwb2ludHM9IjQ0LjcyNTgsLTQyLjA1NTEgMzYuNzM1OSwtMzUuMDk3MiAzOC42NDI5LC00NS41MTkgNDQuNzI1OCwtNDIuMDU1MSIvPgo8L2c+CjwvZz4KPC9zdmc+Cg=='><br/>
+<a href="javascript:toggleVisibility('MaterializeAggregationQueriesTransformer-prec-graph-source')">(show dot source)</a>
+<div id='MaterializeAggregationQueriesTransformer-prec-graph-source' style='display:none'>
+<pre>digraph {
+	"W" [label = "W"];
+	"X" [label = "X"];
+	"__agg_rel_0" [label = "__agg_rel_0"];
+	"X" -> "W";
+	"X" -> "__agg_rel_0";
+	"__agg_rel_0" -> "W";
+}
+</pre>
+</div>
+
+</div>
+<a id="MaterializeAggregationQueriesTransformer-scc-graph44"></a>
+<div class='headerdiv'>
+<h1>SCC Graph</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<img alt='graph image' src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8IS0tIEdlbmVyYXRlZCBieSBncmFwaHZpeiB2ZXJzaW9uIDIuNDAuMSAoMjAxNjEyMjUuMDMwNCkKIC0tPgo8IS0tIFRpdGxlOiAlMyBQYWdlczogMSAtLT4KPHN2ZyB3aWR0aD0iMTMwcHQiIGhlaWdodD0iMTg4cHQiCiB2aWV3Qm94PSIwLjAwIDAuMDAgMTMwLjMxIDE4OC4wMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CjxnIGlkPSJncmFwaDAiIGNsYXNzPSJncmFwaCIgdHJhbnNmb3JtPSJzY2FsZSgxIDEpIHJvdGF0ZSgwKSB0cmFuc2xhdGUoNCAxODQpIj4KPHRpdGxlPiUzPC90aXRsZT4KPHBvbHlnb24gZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSJ0cmFuc3BhcmVudCIgcG9pbnRzPSItNCw0IC00LC0xODQgMTI2LjMxMTIsLTE4NCAxMjYuMzExMiw0IC00LDQiLz4KPCEtLSBfMCAtLT4KPGcgaWQ9Im5vZGUxIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5fMDwvdGl0bGU+CjxlbGxpcHNlIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgY3g9Ijk1LjMxMTIiIGN5PSItMTYyIiByeD0iMjciIHJ5PSIxOCIvPgo8dGV4dCB0ZXh0LWFuY2hvcj0ibWlkZGxlIiB4PSI5NS4zMTEyIiB5PSItMTU3LjgiIGZvbnQtZmFtaWx5PSJUaW1lcyxzZXJpZiIgZm9udC1zaXplPSIxNC4wMCIgZmlsbD0iIzAwMDAwMCI+WDwvdGV4dD4KPC9nPgo8IS0tIF8xIC0tPgo8ZyBpZD0ibm9kZTIiIGNsYXNzPSJub2RlIj4KPHRpdGxlPl8xPC90aXRsZT4KPGVsbGlwc2UgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBjeD0iNTQuMzExMiIgY3k9Ii05MCIgcng9IjU0LjEyMyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjU0LjMxMTIiIHk9Ii04NS44IiBmb250LWZhbWlseT0iVGltZXMsc2VyaWYiIGZvbnQtc2l6ZT0iMTQuMDAiIGZpbGw9IiMwMDAwMDAiPl9fYWdnX3JlbF8wPC90ZXh0Pgo8L2c+CjwhLS0gXzAmIzQ1OyZndDtfMSAtLT4KPGcgaWQ9ImVkZ2UxIiBjbGFzcz0iZWRnZSI+Cjx0aXRsZT5fMCYjNDU7Jmd0O18xPC90aXRsZT4KPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBkPSJNODUuNTk0OCwtMTQ0LjkzN0M4MC43NDk2LC0xMzYuNDI4NCA3NC43ODA5LC0xMjUuOTQ2OCA2OS4zNjA0LC0xMTYuNDI3OSIvPgo8cG9seWdvbiBmaWxsPSIjMDAwMDAwIiBzdHJva2U9IiMwMDAwMDAiIHBvaW50cz0iNzIuMzc1OSwtMTE0LjY1MDMgNjQuMzg2LC0xMDcuNjkyNCA2Ni4yOTMsLTExOC4xMTQyIDcyLjM3NTksLTExNC42NTAzIi8+CjwvZz4KPCEtLSBfMiAtLT4KPGcgaWQ9Im5vZGUzIiBjbGFzcz0ibm9kZSI+Cjx0aXRsZT5fMjwvdGl0bGU+CjxlbGxpcHNlIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgY3g9Ijk1LjMxMTIiIGN5PSItMTgiIHJ4PSIyNyIgcnk9IjE4Ii8+Cjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9Ijk1LjMxMTIiIHk9Ii0xMy44IiBmb250LWZhbWlseT0iVGltZXMsc2VyaWYiIGZvbnQtc2l6ZT0iMTQuMDAiIGZpbGw9IiMwMDAwMDAiPlc8L3RleHQ+CjwvZz4KPCEtLSBfMCYjNDU7Jmd0O18yIC0tPgo8ZyBpZD0iZWRnZTIiIGNsYXNzPSJlZGdlIj4KPHRpdGxlPl8wJiM0NTsmZ3Q7XzI8L3RpdGxlPgo8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIGQ9Ik0xMDQuNDQzLC0xNDQuNTM3QzEwOS4zMjAzLC0xMzQuMjE2IDExNC44MjAzLC0xMjAuNzE2IDExNy4zMTEyLC0xMDggMTIwLjM4NjksLTkyLjI5ODQgMTIwLjM4NjksLTg3LjcwMTYgMTE3LjMxMTIsLTcyIDExNS41MjA5LC02Mi44NjA0IDExMi4xNzYsLTUzLjMxNTcgMTA4LjYyNTIsLTQ0LjgzNzYiLz4KPHBvbHlnb24gZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSIjMDAwMDAwIiBwb2ludHM9IjExMS43MTM2LC00My4xNjk1IDEwNC40NDMsLTM1LjQ2MyAxMDUuMzIwOSwtNDYuMDIxNCAxMTEuNzEzNiwtNDMuMTY5NSIvPgo8L2c+CjwhLS0gXzEmIzQ1OyZndDtfMiAtLT4KPGcgaWQ9ImVkZ2UzIiBjbGFzcz0iZWRnZSI+Cjx0aXRsZT5fMSYjNDU7Jmd0O18yPC90aXRsZT4KPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwMDAwIiBkPSJNNjQuNDQ2LC03Mi4yMDIyQzY5LjI4MzYsLTYzLjcwNzEgNzUuMTY2MSwtNTMuMzc2NyA4MC40OTMsLTQ0LjAyMjMiLz4KPHBvbHlnb24gZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSIjMDAwMDAwIiBwb2ludHM9IjgzLjY2ODMsLTQ1LjUxOSA4NS41NzUzLC0zNS4wOTcyIDc3LjU4NTQsLTQyLjA1NTEgODMuNjY4MywtNDUuNTE5Ii8+CjwvZz4KPC9nPgo8L3N2Zz4K'><br/>
+<a href="javascript:toggleVisibility('MaterializeAggregationQueriesTransformer-scc-graph-source')">(show dot source)</a>
+<div id='MaterializeAggregationQueriesTransformer-scc-graph-source' style='display:none'>
+<pre>digraph {
+	_0[label = "X" ];
+	_1[label = "__agg_rel_0" ];
+	_2[label = "W" ];
+	_0 -> _1;
+	_0 -> _2;
+	_1 -> _2;
+}</pre>
+</div>
+
+</div>
+<a id="MaterializeAggregationQueriesTransformer-topsort-scc-graph45"></a>
+<div class='headerdiv'>
+<h1>SCC Topological Sort Order</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>--- partial order of strata as list of pairs ---
+0 1
+0 2
+1 2
+--- total order with relations of each strata ---
+0: [X]
+1: [__agg_rel_0]
+2: [W]
+
+--- statistics of topological order ---
+cost: 2
+</pre>
+
+</div>
+</div>
+<a id="RemoveEmptyRelationsTransformer47"></a>
+<div class='headerdiv'>
+<h1>After RemoveEmptyRelationsTransformer (0.000039s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ReorderLiteralsTransformer48"></a>
+<div class='headerdiv'>
+<h1>After ReorderLiteralsTransformer (0.000012s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="AstExecutionPlanChecker49"></a>
+<div class='headerdiv'>
+<h1>After AstExecutionPlanChecker (0.000052s) (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ram-program50"></a>
+<div class='headerdiv'>
+<h1>RAM Program (0.000297s)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>PROGRAM
+DECLARATION
+	W(x:i:number,y:i:number) 
+	X(n:i:number) 
+	__agg_rel_0(m:i:number,n:i:number) 
+END DECLARATION
+BEGIN_STRATUM_0
+	CREATE X ;
+	BEGIN_DEBUG "X(1).\nin file /Users/racheldowavic/souffle_programs/test8.c [5:1-5:6]"
+		INSERT (number(1)) INTO X
+	END_DEBUG;
+	BEGIN_DEBUG "X(2).\nin file /Users/racheldowavic/souffle_programs/test8.c [5:7-5:12]"
+		INSERT (number(2)) INTO X
+	END_DEBUG;
+	BEGIN_DEBUG "X(10).\nin file /Users/racheldowavic/souffle_programs/test8.c [5:13-5:19]"
+		INSERT (number(10)) INTO X
+	END_DEBUG;
+	BEGIN_DEBUG "X(11).\nin file /Users/racheldowavic/souffle_programs/test8.c [5:20-5:26]"
+		INSERT (number(11)) INTO X
+	END_DEBUG
+END_STRATUM_0;
+BEGIN_STRATUM_1
+	CREATE __agg_rel_0 ;
+	BEGIN_DEBUG "__agg_rel_0(m,n) :- \n   X(m),\n   X(n),\n   m &lt; n.\nin file  [0:0-0:0]"
+		DO 
+      for t0 in X {
+          for t1 in X {
+              IF (t0.n &lt; t1.n) {
+									PROJECT (t0.n, t1.n) INTO __agg_rel_0              }
+          }
+      }
+
+	END_DEBUG
+END_STRATUM_1;
+BEGIN_STRATUM_2
+	CREATE W ;
+	BEGIN_DEBUG "W(count : __agg_rel_0(_,n),n) :- \n   X(n).\nin file /Users/racheldowavic/souffle_programs/test8.c [7:1-7:46]"
+		DO 
+      for t0 in X {
+          COUNT AS t1.0 IN t1 ∈ __agg_rel_0(_,t0.n) FOR 
+							PROJECT (env(t1, i0), t0.n) INTO W      }
+
+	END_DEBUG;
+	STORE DATA FOR W TO {{{"IO","stdout"},{"attributeNames","x\ty"},{"headers","true"},{"name","W"}}};
+		DROP X;
+		DROP __agg_rel_0
+END_STRATUM_2
+END PROGRAM
+</pre>
+
+</div>
+<a id="LevelConditionsTransformer51"></a>
+<div class='headerdiv'>
+<h1>RAM Program after LevelConditionsTransformer</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+<pre>PROGRAM
+DECLARATION
+	W(x:i:number,y:i:number) 
+	X(n:i:number) 
+	__agg_rel_0(m:i:number,n:i:number) 
+END DECLARATION
+BEGIN_STRATUM_0
+	CREATE X ;
+	BEGIN_DEBUG "X(1).\nin file /Users/racheldowavic/souffle_programs/test8.c [5:1-5:6]"
+		INSERT (number(1)) INTO X
+	END_DEBUG;
+	BEGIN_DEBUG "X(2).\nin file /Users/racheldowavic/souffle_programs/test8.c [5:7-5:12]"
+		INSERT (number(2)) INTO X
+	END_DEBUG;
+	BEGIN_DEBUG "X(10).\nin file /Users/racheldowavic/souffle_programs/test8.c [5:13-5:19]"
+		INSERT (number(10)) INTO X
+	END_DEBUG;
+	BEGIN_DEBUG "X(11).\nin file /Users/racheldowavic/souffle_programs/test8.c [5:20-5:26]"
+		INSERT (number(11)) INTO X
+	END_DEBUG
+END_STRATUM_0;
+BEGIN_STRATUM_1
+	CREATE __agg_rel_0 ;
+	BEGIN_DEBUG "__agg_rel_0(m,n) :- \n   X(m),\n   X(n),\n   m &lt; n.\nin file  [0:0-0:0]"
+		DO 
+      for t0 in X {
+          for t1 in X {
+              IF (t0.n &lt; t1.n) {
+									PROJECT (t0.n, t1.n) INTO __agg_rel_0              }
+          }
+      }
+
+	END_DEBUG
+END_STRATUM_1;
+BEGIN_STRATUM_2
+	CREATE W ;
+	BEGIN_DEBUG "W(count : __agg_rel_0(_,n),n) :- \n   X(n).\nin file /Users/racheldowavic/souffle_programs/test8.c [7:1-7:46]"
+		DO 
+      for t0 in X {
+          COUNT AS t1.0 IN t1 ∈ __agg_rel_0(_,t0.n) FOR 
+							PROJECT (env(t1, i0), t0.n) INTO W      }
+
+	END_DEBUG;
+	STORE DATA FOR W TO {{{"IO","stdout"},{"attributeNames","x\ty"},{"headers","true"},{"name","W"}}};
+		DROP X;
+		DROP __agg_rel_0
+END_STRATUM_2
+END PROGRAM
+</pre>
+
+</div>
+<a id="CreateIndicesTransformer52"></a>
+<div class='headerdiv'>
+<h1>After CreateIndicesTransformer  (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a id="ConvertExistenceChecksTransformer53"></a>
+<div class='headerdiv'>
+<h1>After ConvertExistenceChecksTransformer  (unchanged)</h1>
+<a href='#'>(return to top)</a>
+</div><div style='clear:both'></div>
+<div style='padding-left: 1em'>
+
+</div>
+<a href='#'>(return to top)</a>
+</body>
+</html>

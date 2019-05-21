@@ -220,17 +220,12 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
 
     // if an aggregator has a body consisting of more than an atom => create new relation
     int counter = 0;
-    int numAggregatesNeedingMaterialization = 0;
     visitDepthFirst(program, [&](const AstClause& clause) {
         visitDepthFirst(clause, [&](const AstAggregator& agg) {
             // check whether a materialization is required
             if (!needsMaterializedRelation(agg)) {
                 return;
             }
-            numAggregatesNeedingMaterialization++;
-            assert(numAggregatesNeedingMaterialization == 1
-              && "Unsupported nested aggregates with complex bodies encountered!");
-
             changed = true;
 
             // -- create a new clause --

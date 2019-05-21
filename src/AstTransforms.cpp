@@ -17,13 +17,13 @@
 #include "AstTransforms.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstGroundAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
 #include "AstRelationIdentifier.h"
 #include "AstTypeAnalysis.h"
-#include "AstGroundAnalysis.h"
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstTypes.h"
 #include "AstUtils.h"
@@ -242,25 +242,24 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             }
             // find stuff for which we need a grounding
             for (const auto& argPair : getGroundedTerms(*aggClause)) {
-              const AstVariable* variable = dynamic_cast<const AstVariable*>(argPair.first);
-              // if it's not even a variable type or the term is grounded
-              // then skip it
-              if (variable == nullptr || argPair.second)
-                continue;
+                const AstVariable* variable = dynamic_cast<const AstVariable*>(argPair.first);
+                // if it's not even a variable type or the term is grounded
+                // then skip it
+                if (variable == nullptr || argPair.second) continue;
 
-              for (const auto& lit : clause.getBodyLiterals()) {
-                const AstAtom* atom = dynamic_cast<const AstAtom*>(lit);
-                if (!atom) continue; // ignore these because they can't ground the variable
-                for (const auto& arg : atom->getArguments()) {
-                    const AstVariable* atomVariable = dynamic_cast<const AstVariable*>(arg);
-                    // if this atom contains the variable I need to ground, add it
-                    if (atomVariable && variable->getName() == atomVariable->getName()) {
-                      // expand the body with this one so that it will ground this variable
-                      aggClause->addToBody(std::unique_ptr<AstLiteral>(atom->clone()));
-                      break;
+                for (const auto& lit : clause.getBodyLiterals()) {
+                    const AstAtom* atom = dynamic_cast<const AstAtom*>(lit);
+                    if (!atom) continue;  // ignore these because they can't ground the variable
+                    for (const auto& arg : atom->getArguments()) {
+                        const AstVariable* atomVariable = dynamic_cast<const AstVariable*>(arg);
+                        // if this atom contains the variable I need to ground, add it
+                        if (atomVariable && variable->getName() == atomVariable->getName()) {
+                            // expand the body with this one so that it will ground this variable
+                            aggClause->addToBody(std::unique_ptr<AstLiteral>(atom->clone()));
+                            break;
+                        }
                     }
-                  }
-              }
+                }
             }
 
             // now all that's left to do is set the head with the
@@ -277,7 +276,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             // then just put all of those into the head. they are all completely
             // necessary
             for (const auto& var : variables) {
-              head->addArgument(std::make_unique<AstVariable>(var));
+                head->addArgument(std::make_unique<AstVariable>(var));
             }
 
             aggClause->setHead(std::unique_ptr<AstAtom>(head));

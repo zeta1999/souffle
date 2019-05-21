@@ -201,7 +201,7 @@ public:
                 std::string n = rel.getArg(i);
                 attrNames.push_back(n);
             }
-            InterpreterRelInterface* interface = new InterpreterRelInterface(
+            auto* interface = new InterpreterRelInterface(
                     interpreterRel, symTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);
             bool input;

@@ -112,7 +112,6 @@ public:
         return name < other.name;
     }
 
-    /* Print */
     void print(std::ostream& out) const override {
         out << name;
         if (arity > 0) {
@@ -128,23 +127,18 @@ public:
         }
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return std::vector<const RamNode*>();  // no child nodes
     }
 
-    /** Create clone */
     RamRelation* clone() const override {
-        RamRelation* res =
-                new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, representation);
+        auto* res = new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, representation);
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {}
 
 protected:
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRelation*>(&node));
         const auto& other = static_cast<const RamRelation&>(node);
@@ -169,30 +163,25 @@ public:
         return relation;
     }
 
-    /* Print */
     void print(std::ostream& out) const override {
         out << relation->getName();
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return std::vector<const RamNode*>();  // no child nodes
     }
 
-    /** Create clone */
     RamRelationReference* clone() const override {
         auto* res = new RamRelationReference(relation);
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {}
 
 protected:
     /** Name of relation */
     const RamRelation* relation;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRelationReference*>(&node));
         const auto& other = static_cast<const RamRelationReference&>(node);

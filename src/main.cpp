@@ -92,6 +92,14 @@ void executeBinary(const std::string& binaryFilename
     } else
 #endif
     {
+        std::string ldPath = "LD_LIBRARY_PATH=";
+        for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
+            ldPath += library + ':';
+        }
+        ldPath.back() = ' ';
+        std::vector<char> ldPathChars(ldPath.begin(), ldPath.end());
+        putenv(&ldPathChars[0]);
+
         exitCode = system(binaryFilename.c_str());
     }
 
@@ -111,6 +119,22 @@ void executeBinary(const std::string& binaryFilename
  */
 void compileToBinary(std::string compileCmd, const std::string& sourceFilename) {
     // add source code
+    compileCmd += ' ';
+    for (const std::string& path : splitString(Global::config().get("library-dir"), ' ')) {
+        // The first entry may be blank
+        if (path.empty()) {
+            continue;
+        }
+        compileCmd += "-L" + path + ' ';
+    }
+    for (const std::string& library : splitString(Global::config().get("libraries"), ' ')) {
+        // The first entry may be blank
+        if (library.empty()) {
+            continue;
+        }
+        compileCmd += "-l" + library + ' ';
+    }
+
     compileCmd += sourceFilename;
 
     // run executable
@@ -166,6 +190,8 @@ int main(int argc, char** argv) {
                 {"generate", 'g', "FILE", "", false,
                         "Generate C++ source code for the given Datalog program and write it to "
                         "<FILE>."},
+                {"library-dir", 'L', "DIR", "", true, "Specify directory for library files."},
+                {"libraries", 'l', "FILE", "", true, "Specify libraries."},
                 {"no-warn", 'w', "", "", false, "Disable warnings."},
                 {"magic-transform", 'm', "RELATIONS", "", false,
                         "Enable magic set transformation changes on the given relations, use '*' "
@@ -176,7 +202,7 @@ int main(int argc, char** argv) {
                 {"dl-program", 'o', "FILE", "", false,
                         "Generate C++ source code, written to <FILE>, and compile this to a "
                         "binary executable (without executing it)."},
-                {"live-profile", 'l', "", "", false, "Enable live profiling."},
+                {"live-profile", '\4', "", "", false, "Enable live profiling."},
                 {"profile", 'p', "FILE", "", false, "Enable profiling, and write profile data to <FILE>."},
                 {"profile-use", 'u', "FILE", "", false,
                         "Use profile log-file <FILE> for profile-guided optimization."},
@@ -477,37 +503,17 @@ int main(int argc, char** argv) {
     std::unique_ptr<RamTranslationUnit> ramTranslationUnit =
             AstTranslator().translateUnit(*astTranslationUnit);
 
-    std::vector<std::unique_ptr<RamTransformer>> ramTransforms;
-    ramTransforms.push_back(std::make_unique<ExpandFilterTransformer>());
-    ramTransforms.push_back(std::make_unique<HoistConditionsTransformer>());
-    ramTransforms.push_back(std::make_unique<MakeIndexTransformer>());
-    ramTransforms.push_back(std::make_unique<IfConversionTransformer>());
-    ramTransforms.push_back(std::make_unique<ChoiceConversionTransformer>());
-    if (std::stoi(Global::config().get("jobs")) > 1) {
-        ramTransforms.push_back(std::make_unique<ParallelTransformer>());
-    }
+    std::unique_ptr<RamTransformer> ramTransform = std::make_unique<RamTransformerSequence>(
+            std::make_unique<RamLoopTransformer>(
+                    std::make_unique<RamTransformerSequence>(std::make_unique<ExpandFilterTransformer>(),
+                            std::make_unique<HoistConditionsTransformer>(),
+                            std::make_unique<MakeIndexTransformer>())),
+            std::make_unique<IfConversionTransformer>(), std::make_unique<ChoiceConversionTransformer>(),
+            std::make_unique<RamConditionalTransformer>(
+                    []() -> bool { return std::stoi(Global::config().get("jobs")) > 1; },
+                    std::make_unique<ParallelTransformer>()));
 
-    for (const auto& transform : ramTransforms) {
-        /* If the ram transform changed the program, show this */
-        if (transform->apply(*ramTranslationUnit)) {
-            std::stringstream ramProgStr;
-            ramProgStr << *ramTranslationUnit->getProgram();
-            ramTranslationUnit->getDebugReport().addSection(DebugReporter::getCodeSection(
-                    transform->getName(), "RAM Program after " + transform->getName(), ramProgStr.str()));
-
-        } else {
-            ramTranslationUnit->getDebugReport().addSection(DebugReportSection(
-                    transform->getName(), "After " + transform->getName() + " " + " (unchanged)", {}, ""));
-        }
-        /* Abort evaluation of the program if errors were encountered */
-        if (ramTranslationUnit->getErrorReport().getNumErrors() != 0) {
-            std::cerr << ramTranslationUnit->getErrorReport();
-            std::cerr << std::to_string(ramTranslationUnit->getErrorReport().getNumErrors()) +
-                                 " errors generated, evaluation aborted"
-                      << std::endl;
-            exit(1);
-        }
-    }
+    ramTransform->apply(*ramTranslationUnit);
     if (ramTranslationUnit->getErrorReport().getNumIssues() != 0) {
         std::cerr << ramTranslationUnit->getErrorReport();
     }
@@ -595,7 +601,12 @@ int main(int argc, char** argv) {
             os.close();
 
             if (withSharedLibrary) {
-                compileCmd += "-s ";
+                if (!Global::config().has("libraries")) {
+                    Global::config().set("libraries", "functors");
+                }
+                if (!Global::config().has("library-dir")) {
+                    Global::config().set("library-dir", ".");
+                }
             }
 
             if (Global::config().has("compile")) {

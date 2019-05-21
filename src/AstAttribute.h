@@ -60,7 +60,7 @@ public:
 
     /** Creates a clone of this AST sub-structure */
     AstAttribute* clone() const override {
-        AstAttribute* res = new AstAttribute(name, typeName);
+        auto* res = new AstAttribute(name, typeName);
         res->setSrcLoc(getSrcLoc());
         return res;
     }

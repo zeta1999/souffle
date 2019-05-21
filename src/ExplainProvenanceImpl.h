@@ -123,8 +123,9 @@ public:
             std::string bodyRel = splitString(bodyLiteral, ',')[0];
 
             // check whether the current atom is a constraint
-            bool isConstraint =
-                    std::find(constraintList.begin(), constraintList.end(), bodyRel) != constraintList.end();
+            assert(bodyRel.size() > 0 && "body of a relation should have positive length");
+            bool isConstraint = std::find(constraintList.begin(), constraintList.end(),
+                                        splitString(bodyRel, ',')[0]) != constraintList.end();
 
             // handle negated atom names
             auto bodyRelAtomName = bodyRel;
@@ -235,6 +236,12 @@ public:
         // atom meta information stored for the current rule
         auto atoms = info[std::make_pair(relName, ruleNum)];
 
+        // the info stores the set of atoms, if there is only 1 atom, then it must be the head, so it must be
+        // a fact
+        if (atoms.size() <= 1) {
+            return std::vector<std::string>({"@fact"});
+        }
+
         // atoms[0] represents variables in the head atom
         auto headVariables = splitString(atoms[0], ',');
 
@@ -295,12 +302,16 @@ public:
                 if (!contains(uniqueVariables, *atomIt) && !contains(headVariables, *atomIt)) {
                     uniqueVariables.push_back(*atomIt);
 
-                    // store type of variable
-                    auto currentRel = prog.getRelation(atomRepresentation[0]);
-                    assert(currentRel != nullptr &&
-                            ("relation " + atomRepresentation[0] + " doesn't exist").c_str());
-                    variableTypes[*atomIt] =
-                            *currentRel->getAttrType(atomIt - atomRepresentation.begin() - 1);
+                    if (!contains(constraintList, atomRepresentation[0])) {
+                        // store type of variable
+                        auto currentRel = prog.getRelation(atomRepresentation[0]);
+                        assert(currentRel != nullptr &&
+                                ("relation " + atomRepresentation[0] + " doesn't exist").c_str());
+                        variableTypes[*atomIt] =
+                                *currentRel->getAttrType(atomIt - atomRepresentation.begin() - 1);
+                    } else if (atomIt->find("agg_") != std::string::npos) {
+                        variableTypes[*atomIt] = 'i';
+                    }
                 }
             }
         }
@@ -444,9 +455,9 @@ public:
     std::vector<std::string> getRules(std::string relName) override {
         std::vector<std::string> relRules;
         // go through all rules
-        for (auto it = rules.begin(); it != rules.end(); it++) {
-            if (it->first.first == relName) {
-                relRules.push_back(it->second);
+        for (auto& rule : rules) {
+            if (rule.first.first == relName) {
+                relRules.push_back(rule.second);
             }
         }
 

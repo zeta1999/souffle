@@ -85,7 +85,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
     // collect aliases
     alias_map isDirectAliasOf;
 
-    IOType* ioType = translationUnit.getAnalysis<IOType>();
+    auto* ioType = translationUnit.getAnalysis<IOType>();
 
     AstProgram& program = *translationUnit.getProgram();
 
@@ -266,7 +266,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             // now all that's left to do is set the head with the
             // appropriate parameters. (All of those that occur in the body
             // of the aggregate)
-            AstAtom* head = new AstAtom();
+            auto* head = new AstAtom();
             head->setName(relName);
             std::vector<bool> symbolArguments;
 
@@ -833,7 +833,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
     // Keep track of all relations that cannot be transformed
     std::set<AstRelationIdentifier> minimalIrreducibleRelations;
 
-    IOType* ioType = translationUnit.getAnalysis<IOType>();
+    auto* ioType = translationUnit.getAnalysis<IOType>();
 
     for (AstRelation* relation : program.getRelations()) {
         // No I/O relations can be transformed

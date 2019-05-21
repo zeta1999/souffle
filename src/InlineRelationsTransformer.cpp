@@ -335,7 +335,7 @@ std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inline
  */
 AstLiteral* negateLiteral(AstLiteral* lit) {
     if (auto* atom = dynamic_cast<AstAtom*>(lit)) {
-        AstNegation* neg = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
+        auto* neg = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
         return neg;
     } else if (auto* neg = dynamic_cast<AstNegation*>(lit)) {
         AstAtom* atom = neg->getAtom()->clone();

@@ -36,8 +36,6 @@
 #include <vector>
 #include <dlfcn.h>
 
-#define SOUFFLE_DLL "libfunctors.so"
-
 namespace souffle {
 
 class InterpreterProgInterface;
@@ -52,27 +50,27 @@ class SymbolTable;
 class RAMI : public Interpreter {
 public:
     RAMI(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
-    virtual ~RAMI() {}
+    ~RAMI() override = default;
 
     /** Execute main program */
-    void executeMain();
+    void executeMain() override;
 
     /* Execute subroutine */
     void executeSubroutine(const std::string& name, const std::vector<RamDomain>& arguments,
-            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors);
+            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) override;
 
 protected:
     /** Evaluate value */
     RamDomain evalExpr(const RamExpression& value, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate operation */
-    void evalOp(const RamOperation& op, const InterpreterContext& args = InterpreterContext());
+    void evalOp(const RamOperation& op, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate conditions */
     bool evalCond(const RamCondition& cond, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate statement */
-    void evalStmt(const RamStatement& stmt);
+    void evalStmt(const RamStatement& stmt, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
@@ -104,13 +102,13 @@ protected:
         iteration = 0;
     }
 
-    void createRelation(const RamRelation& id) {
+    void createRelation(const RamRelation& id, const MinIndexSelection* orderSet) {
         InterpreterRelation* res = nullptr;
         assert(environment.find(id.getName()) == environment.end());
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = new InterpreterEqRelation(id.getArity());
+            res = new InterpreterEqRelation(id.getArity(), orderSet);
         } else {
-            res = new InterpreterRelation(id.getArity());
+            res = new InterpreterRelation(id.getArity(), orderSet);
         }
         environment[id.getName()] = res;
     }
@@ -143,20 +141,6 @@ protected:
         environment[ramRel2.getName()] = rel1;
     }
 
-    /** Load dll */
-    void* loadDLL() {
-        if (dll == nullptr) {
-            // check environment variable
-            std::string fname = SOUFFLE_DLL;
-            dll = dlopen(SOUFFLE_DLL, RTLD_LAZY);
-            if (dll == nullptr) {
-                std::cerr << "Cannot find Souffle's DLL" << std::endl;
-                exit(1);
-            }
-        }
-        return dll;
-    }
-
 private:
     friend InterpreterProgInterface;
 
@@ -171,9 +155,6 @@ private:
 
     /** iteration number (in a fix-point calculation) */
     size_t iteration = 0;
-
-    /** Dynamic library for user-defined functors */
-    void* dll = nullptr;
 };
 
 }  // end of namespace souffle

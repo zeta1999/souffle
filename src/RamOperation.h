@@ -190,12 +190,6 @@ public:
         return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamScan*>(&node));
-        const auto& other = static_cast<const RamScan&>(node);
-        return RamRelationSearch::equal(other);
-    }
 };
 
 /**
@@ -219,12 +213,6 @@ public:
     RamParallelScan* clone() const override {
         return new RamParallelScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
-    }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelScan*>(&node));
-        const auto& other = static_cast<const RamParallelScan&>(node);
-        return RamScan::equal(other);
     }
 };
 
@@ -318,16 +306,10 @@ public:
                 resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
             }
         }
-        RamIndexScan* res = new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+        auto* res = new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
-    }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamIndexScan*>(&node));
-        const auto& other = static_cast<const RamIndexScan&>(node);
-        return RamIndexRelationSearch::equal(other);
     }
 };
 
@@ -376,12 +358,6 @@ public:
                         std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
     }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelIndexScan*>(&node));
-        const auto& other = static_cast<const RamParallelIndexScan&>(node);
-        return RamIndexScan::equal(other);
-    }
 };
 
 /**
@@ -423,14 +399,14 @@ public:
         return {nestedOperation.get(), relationRef.get(), condition.get()};
     }
 
+protected:
+    std::unique_ptr<RamCondition> condition;
+
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamChoice*>(&node));
         const auto& other = static_cast<const RamChoice&>(node);
         return RamRelationSearch::equal(other) && getCondition() == other.getCondition();
     }
-
-protected:
-    std::unique_ptr<RamCondition> condition;
 };
 
 /**
@@ -456,12 +432,6 @@ public:
         return new RamParallelChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::unique_ptr<RamCondition>(condition->clone()),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
-    }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelChoice*>(&node));
-        const auto& other = static_cast<const RamParallelChoice&>(node);
-        return RamChoice::equal(other);
     }
 };
 
@@ -541,7 +511,6 @@ public:
 protected:
     std::unique_ptr<RamCondition> condition;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIndexChoice*>(&node));
         const auto& other = static_cast<const RamIndexChoice&>(node);
@@ -595,14 +564,6 @@ public:
                 std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
-    }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelIndexChoice*>(&node));
-        const auto& other = static_cast<const RamParallelIndexChoice&>(node);
-        return RamIndexChoice::equal(other);
     }
 };
 
@@ -696,8 +657,8 @@ public:
         for (auto const& e : queryPattern) {
             pattern.push_back(std::unique_ptr<RamExpression>((e != nullptr) ? e->clone() : nullptr));
         }
-        RamIndexAggregate* res = new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()),
-                function, std::unique_ptr<RamRelationReference>(relationRef->clone()),
+        auto* res = new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
+                std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
                 std::move(pattern), getTupleId());
@@ -802,7 +763,7 @@ public:
     }
 
     RamAggregate* clone() const override {
-        RamAggregate* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
+        auto* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
                 condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
@@ -874,8 +835,8 @@ public:
     }
 
     RamUnpackRecord* clone() const override {
-        RamUnpackRecord* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()),
-                getTupleId(), std::unique_ptr<RamExpression>(getExpression().clone()), arity);
+        auto* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(),
+                std::unique_ptr<RamExpression>(getExpression().clone()), arity);
         return res;
     }
 
@@ -1033,7 +994,7 @@ public:
         for (auto& cur : expressions) {
             newValues.emplace_back(cur->clone());
         }
-        RamProject* res = new RamProject(
+        auto* res = new RamProject(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
         return res;
     }

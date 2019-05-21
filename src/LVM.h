@@ -37,8 +37,6 @@
 #include <vector>
 #include <dlfcn.h>
 
-#define SOUFFLE_DLL "libfunctors.so"
-
 namespace souffle {
 
 class InterpreterProgInterface;
@@ -52,7 +50,14 @@ class InterpreterProgInterface;
  */
 class LVM : public Interpreter {
 public:
-    LVM(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
+    LVM(RamTranslationUnit& tUnit) : Interpreter(tUnit) {
+        // Construct mapping from relation Name to RamRelation node in RAM tree.
+        // This will later be used for fast lookup during RamRelationCreate in order to retrieve
+        // minIndexSet from a given relation.
+        visitDepthFirst(*translationUnit.getProgram(), [&](const RamRelation& node) {
+            relNameToNode.insert(std::make_pair(node.getName(), &node));
+        });
+    }
 
     virtual ~LVM() {
         for (auto* timer : timers) {
@@ -61,7 +66,7 @@ public:
     }
 
     /** Execute the main program */
-    virtual void executeMain();
+    void executeMain() override;
 
     /** Clean the cache of main Program */
     void resetMainProgram() {
@@ -75,7 +80,7 @@ public:
 
     /** Execute the subroutine */
     void executeSubroutine(const std::string& name, const std::vector<RamDomain>& arguments,
-            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) {
+            std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) override {
         InterpreterContext ctxt;
         ctxt.setReturnValues(returnValues);
         ctxt.setReturnErrors(returnErrors);
@@ -85,8 +90,8 @@ public:
             execute(subroutines.at(name), ctxt);
         } else {
             // Parse and cache the program
-            LVMGenerator generator(
-                    translationUnit.getSymbolTable(), translationUnit.getProgram()->getSubroutine(name));
+            LVMGenerator generator(translationUnit.getSymbolTable(),
+                    translationUnit.getProgram()->getSubroutine(name), *isa);
             subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
             execute(subroutines.at(name), ctxt);
         }
@@ -96,7 +101,7 @@ public:
     void printMain() {
         if (mainProgram.get() == nullptr) {
             LVMGenerator generator(
-                    translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain());
+                    translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain(), *isa);
             mainProgram = generator.getCodeStream();
         }
         mainProgram->print();
@@ -173,51 +178,12 @@ protected:
         environment[ramRel2] = rel1;
     }
 
-    /** load dll */
-    void* loadDLL() {
-        if (dll == nullptr) {
-            // check environment variable
-            std::string fname = SOUFFLE_DLL;
-            dll = dlopen(SOUFFLE_DLL, RTLD_LAZY);
-            if (dll == nullptr) {
-                std::cerr << "Cannot find Souffle's DLL" << std::endl;
-                exit(1);
-            }
+    /** Lookup iterator, resize the iterator pool if necessary */
+    std::pair<index_set::iterator, index_set::iterator>& lookUpIterator(size_t idx) {
+        if (idx >= iteratorPool.size()) {
+            iteratorPool.resize(idx + 1);
         }
-        return dll;
-    }
-
-    /** Lookup IndexScan iterator, resize the iterator pool if necessary */
-    std::pair<index_set::iterator, index_set::iterator>& lookUpIndexScanIterator(size_t idx) {
-        if (idx >= indexScanIteratorPool.size()) {
-            indexScanIteratorPool.resize(idx + 1);
-        }
-        return indexScanIteratorPool[idx];
-    }
-
-    /** Lookup Scan iterator, resize the iterator pool if necessary */
-    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpScanIterator(size_t idx) {
-        if (idx >= scanIteratorPool.size()) {
-            scanIteratorPool.resize(idx + 1);
-        }
-        return scanIteratorPool[idx];
-    }
-
-    /** Lookup Choice iterator, resize the iterator pool if necessary */
-    std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>& lookUpChoiceIterator(
-            size_t idx) {
-        if (idx >= choiceIteratorPool.size()) {
-            choiceIteratorPool.resize(idx + 1);
-        }
-        return choiceIteratorPool[idx];
-    }
-
-    /** Lookup IndexChoice iterator, resize the iterator pool if necessary */
-    std::pair<index_set::iterator, index_set::iterator>& lookUpIndexChoiceIterator(size_t idx) {
-        if (idx >= indexChoiceIteratorPool.size()) {
-            indexChoiceIteratorPool.resize(idx + 1);
-        }
-        return indexChoiceIteratorPool[idx];
+        return iteratorPool[idx];
     }
 
     /** Obtain the search columns */
@@ -253,16 +219,10 @@ private:
     std::map<std::string, std::atomic<size_t>> reads;
 
     /** List of iters for indexScan operation */
-    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexScanIteratorPool;
+    std::vector<std::pair<index_set::iterator, index_set::iterator>> iteratorPool;
 
-    /** List of iters for Scan operation */
-    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> scanIteratorPool;
-
-    /** List of iters for indexChoice operation */
-    std::vector<std::pair<index_set::iterator, index_set::iterator>> indexChoiceIteratorPool;
-
-    /** List of iters for Choice operation */
-    std::vector<std::pair<InterpreterRelation::iterator, InterpreterRelation::iterator>> choiceIteratorPool;
+    /** Map from relationName to RamRelationNode in RAM */
+    std::map<std::string, const RamRelation*> relNameToNode;
 
     /** stratum */
     size_t level = 0;

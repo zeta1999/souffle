@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RamStatement.h"
+#include <memory>
 
 namespace souffle {
 
@@ -25,7 +26,6 @@ public:
     RamProgram() = default;
     RamProgram(std::unique_ptr<RamStatement> main) : RamNode(), main(std::move(main)) {}
 
-    /** Obtain child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> children;
         if (main != nullptr) {
@@ -40,7 +40,6 @@ public:
         return children;
     }
 
-    /** Print */
     void print(std::ostream& out) const override {
         out << "PROGRAM" << std::endl;
         out << " DECLARATION" << std::endl;
@@ -61,7 +60,6 @@ public:
         out << "END PROGRAM" << std::endl;
     }
 
-    /** Set main program */
     void setMain(std::unique_ptr<RamStatement> stmt) {
         main = std::move(stmt);
     }
@@ -106,10 +104,9 @@ public:
         return *subroutines.at(name);
     }
 
-    /** Create clone */
     RamProgram* clone() const override {
         std::map<const RamRelation*, const RamRelation*> refMap;
-        RamProgram* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
+        auto* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
         for (auto& cur : relations) {
             RamRelation* newRel = cur.second->clone();
             refMap[cur.second.get()] = newRel;
@@ -123,7 +120,7 @@ public:
             if (const RamRelationReference* relRef = dynamic_cast<RamRelationReference*>(node.get())) {
                 const RamRelation* rel = refMap[relRef->get()];
                 assert(rel != nullptr && "dangling RAM relation reference");
-                return std::unique_ptr<RamRelationReference>(new RamRelationReference(rel));
+                return std::make_unique<RamRelationReference>(rel);
             } else {
                 return node;
             }
@@ -131,7 +128,6 @@ public:
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         main = map(std::move(main));
         for (auto& cur : relations) {
@@ -152,7 +148,6 @@ protected:
     /** Subroutines for querying computed relations */
     std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProgram*>(&node));
         const auto& other = static_cast<const RamProgram&>(node);

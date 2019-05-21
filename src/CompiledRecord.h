@@ -151,6 +151,21 @@ public:
 };
 
 /**
+ * Specialisation for empty records
+ */
+template <>
+class RecordMap<ram::Tuple<RamDomain, 0>> {
+public:
+    RamDomain pack(const ram::Tuple<RamDomain, 0>& tuple) {
+        return 1;
+    }
+    const ram::Tuple<RamDomain, 0>& unpack(RamDomain index) {
+        static ram::Tuple<RamDomain, 0> empty;
+        return empty;
+    }
+};
+
+/**
  * The static access function for record of a certain type.
  */
 template <typename Tuple>

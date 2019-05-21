@@ -16,9 +16,8 @@
 #pragma once
 
 #include "LVMCode.h"
+#include "RamIndexAnalysis.h"
 #include "RamVisitor.h"
-
-#define SOUFFLE_DLL "libfunctors.so"
 
 namespace souffle {
 
@@ -32,8 +31,8 @@ public:
      * This is done by traversing the tree twice, in order to find the necessary information (Jump
      * destination) for LVM branch operations.
      */
-    LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry)
-            : symbolTable(symbolTable), code(new LVMCode(symbolTable)) {
+    LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry, RamIndexAnalysis& isa)
+            : symbolTable(symbolTable), code(new LVMCode(symbolTable)), isa(isa) {
         (*this)(entry, 0);
         (*this).cleanUp();
         (*this)(entry, 0);
@@ -195,12 +194,13 @@ protected:
         code->push_back(LVM_UserDefinedOperator);
         code->push_back(symbolTable.lookup(op.getName()));
         code->push_back(symbolTable.lookup(op.getType()));
+        code->push_back(op.getArgCount());
     }
 
     void visitPackRecord(const RamPackRecord& pack, size_t exitAddress) override {
         auto values = pack.getArguments();
-        for (size_t i = 0; i < values.size(); ++i) {
-            visit(values[i], exitAddress);
+        for (auto& value : values) {
+            visit(value, exitAddress);
         }
         code->push_back(LVM_PackRecord);
         code->push_back(values.size());
@@ -242,6 +242,7 @@ protected:
         code->push_back(LVM_ExistenceCheck);
         code->push_back(symbolTable.lookup(exists.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
+        code->push_back(getIndexPos(exists));
     }
 
     void visitProvenanceExistenceCheck(
@@ -258,6 +259,7 @@ protected:
         code->push_back(LVM_ProvenanceExistenceCheck);
         code->push_back(symbolTable.lookup(provExists.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
+        code->push_back(getIndexPos(provExists));
     }
 
     void visitConstraint(const RamConstraint& relOp, size_t exitAddress) override {
@@ -318,12 +320,12 @@ protected:
     }
 
     void visitScan(const RamScan& scan, size_t exitAddress) override {
-        size_t counterLabel = getNewScanIterator();
+        code->push_back(LVM_Scan);
+        size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
 
         // Init the Iterator
-        code->push_back(LVM_Scan);
-        code->push_back(LVM_ITER_TypeScan);
+        code->push_back(LVM_ITER_InitFullIndex);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(scan.getRelation().getName()));
 
@@ -332,14 +334,12 @@ protected:
 
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeScan);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L1));
 
         // Select the tuple pointed by iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeScan);
         code->push_back(scan.getTupleId());
 
         // Perform nested operation
@@ -348,7 +348,6 @@ protected:
         // Increment the Iter and jump to the start of the while loop
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeScan);
         code->push_back(LVM_Goto);
         code->push_back(address_L0);
 
@@ -356,13 +355,13 @@ protected:
     }
 
     void visitChoice(const RamChoice& choice, size_t exitAddress) override {
-        size_t counterLabel = getNewChoiceIterator();
+        code->push_back(LVM_Choice);
+        size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
 
         // Init the Iterator
-        code->push_back(LVM_Choice);
-        code->push_back(LVM_ITER_TypeChoice);
+        code->push_back(LVM_ITER_InitFullIndex);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(choice.getRelation().getName()));
 
@@ -370,14 +369,12 @@ protected:
         size_t address_L0 = code->size();
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeChoice);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L2));
 
         // Select the tuple pointed by iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeChoice);
         code->push_back(choice.getTupleId());
 
         // If condition is met, perform nested operation and exit.
@@ -388,7 +385,6 @@ protected:
         // Else increment the iter and jump to the start of the while loop.
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeChoice);
         code->push_back(LVM_Goto);
         code->push_back(address_L0);
 
@@ -399,7 +395,7 @@ protected:
 
     void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
         code->push_back(LVM_IndexScan);
-        size_t counterLabel = getNewIndexScanIterator();
+        size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
 
         // Obtain the pattern for index
@@ -413,35 +409,30 @@ protected:
             types += (patterns[i] == nullptr ? "_" : "V");
         }
 
-        // Init the iter
-        code->push_back(LVM_ITER_TypeIndexScan);
+        // Init range index based on pattern
+        code->push_back(LVM_ITER_InitRangeIndex);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(scan.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
+        code->push_back(getIndexPos(scan));
 
         // While iter is not at end
         size_t address_L0 = code->size();
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L1));
 
         // Select the tuple pointed by the iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(scan.getTupleId());
-
-        // Visit nested operation.
-        visitSearch(scan, exitAddress);
 
         // Increment the iter and jump to the start of while loop.
         visitSearch(scan, lookupAddress(L1));
 
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeIndexScan);
         code->push_back(LVM_Goto);
         code->push_back(address_L0);
         setAddress(L1, code->size());
@@ -449,10 +440,11 @@ protected:
 
     void visitIndexChoice(const RamIndexChoice& indexChoice, size_t exitAddress) override {
         code->push_back(LVM_IndexChoice);
-        size_t counterLabel = getNewIndexChoiceIterator();
+        size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
 
+        // Obtain the pattern for index
         auto patterns = indexChoice.getRangePattern();
         std::string types;
         auto arity = indexChoice.getRelation().getArity();
@@ -465,24 +457,23 @@ protected:
             }
         }
 
-        // Init the iter
-        code->push_back(LVM_ITER_TypeIndexChoice);
+        // Init range index based on pattern
+        code->push_back(LVM_ITER_InitRangeIndex);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(indexChoice.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
+        code->push_back(getIndexPos(indexChoice));
 
         // While iter is not at end.
         size_t address_L0 = code->size();
         code->push_back(LVM_ITER_NotAtEnd);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeIndexChoice);
         code->push_back(LVM_Jmpez);
         code->push_back(lookupAddress(L2));
 
         // Select the tuple pointed by iter
         code->push_back(LVM_ITER_Select);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeIndexChoice);
         code->push_back(indexChoice.getTupleId());
 
         visit(indexChoice.getCondition(), exitAddress);
@@ -493,7 +484,6 @@ protected:
         // Else increment the iter and continue
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
-        code->push_back(LVM_ITER_TypeIndexChoice);
         code->push_back(LVM_Goto);
         code->push_back(address_L0);
         setAddress(L1, code->size());
@@ -517,18 +507,18 @@ protected:
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
         code->push_back(LVM_Aggregate);
-        size_t counterLabel = getNewScanIterator();
+        size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
 
-        code->push_back(LVM_ITER_TypeScan);
+        // Init the Iterator
+        code->push_back(LVM_ITER_InitFullIndex);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
 
         // TODO (xiaowen/#992): Count -> Size for optimization
         if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
-            code->push_back(LVM_ITER_TypeScan);
             code->push_back(counterLabel);
         } else {
             // Init value
@@ -556,14 +546,12 @@ protected:
             // Start the aggregate for loop
             code->push_back(LVM_ITER_NotAtEnd);
             code->push_back(counterLabel);
-            code->push_back(LVM_ITER_TypeScan);
             code->push_back(LVM_Jmpez);
             code->push_back(lookupAddress(L1));
 
             // Select the element pointed by iter
             code->push_back(LVM_ITER_Select);
             code->push_back(counterLabel);
-            code->push_back(LVM_ITER_TypeScan);
             code->push_back(aggregate.getTupleId());
 
             // Produce condition inside the loop
@@ -599,7 +587,6 @@ protected:
             setAddress(endOfLoop, code->size());
             code->push_back(LVM_ITER_Inc);
             code->push_back(counterLabel);
-            code->push_back(LVM_ITER_TypeScan);
             code->push_back(LVM_Goto);
             code->push_back(address_L0);
         }
@@ -630,7 +617,11 @@ protected:
 
     void visitIndexAggregate(const RamIndexAggregate& aggregate, size_t exitAddress) override {
         code->push_back(LVM_IndexAggregate);
+        size_t counterLabel = getNewIterator();
+        size_t L1 = getNewAddressLabel();
+        size_t L2 = getNewAddressLabel();
 
+        // Obtain the pattern for index
         auto patterns = aggregate.getRangePattern();
         std::string types;
         auto arity = aggregate.getRelation().getArity();
@@ -640,17 +631,16 @@ protected:
             }
             types += (patterns[i] == nullptr ? "_" : "V");
         }
-        size_t counterLabel = getNewIndexScanIterator();
-        size_t L1 = getNewAddressLabel();
-        size_t L2 = getNewAddressLabel();
-        code->push_back(LVM_ITER_TypeIndexScan);
+
+        // Init range index based on pattern
+        code->push_back(LVM_ITER_InitRangeIndex);
         code->push_back(counterLabel);
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
+        code->push_back(getIndexPos(aggregate));
 
         if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
-            code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(counterLabel);
         } else {
             // Init value
@@ -678,13 +668,11 @@ protected:
             // Start the aggregate for loop
             code->push_back(LVM_ITER_NotAtEnd);
             code->push_back(counterLabel);
-            code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(LVM_Jmpez);
             code->push_back(lookupAddress(L1));
 
             code->push_back(LVM_ITER_Select);
             code->push_back(counterLabel);
-            code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(aggregate.getTupleId());
 
             // Produce condition inside the loop
@@ -720,7 +708,6 @@ protected:
             setAddress(endOfLoop, code->size());
             code->push_back(LVM_ITER_Inc);
             code->push_back(counterLabel);
-            code->push_back(LVM_ITER_TypeIndexScan);
             code->push_back(LVM_Goto);
             code->push_back(address_L0);
         }
@@ -778,9 +765,9 @@ protected:
         size_t arity = project.getRelation().getArity();
         std::string relationName = project.getRelation().getName();
         auto values = project.getValues();
-        for (size_t i = 0; i < values.size(); ++i) {
-            assert(values[i]);
-            visit(values[i], exitAddress);
+        for (auto& value : values) {
+            assert(value);
+            visit(value, exitAddress);
         }
         code->push_back(LVM_Project);
         code->push_back(arity);
@@ -1008,20 +995,14 @@ private:
     /** Address map */
     std::vector<size_t> addressMap;
 
-    /** Current scan iterator index */
-    size_t scanIteratorIndex = 0;
-
-    /** Current choice iterator index */
-    size_t choiceIteratorIndex = 0;
-
-    /** Current indexChoice iterator index */
-    size_t indexChoiceIteratorIndex = 0;
-
-    /** Current scan iterator index */
-    size_t indexScanIteratorIndex = 0;
+    /** Current iterator index */
+    size_t iteratorIndex = 0;
 
     /** Current timer index for logger */
     size_t timerIndex = 0;
+
+    /** RamIndexAnalysis */
+    RamIndexAnalysis& isa;
 
     /** Clean up all the content except for addressMap
      *  This is for the double traverse when transforming from RAM -> LVM Bytecode.
@@ -1030,10 +1011,7 @@ private:
         code->clear();
         code->getIODirectives().clear();
         currentAddressLabel = 0;
-        scanIteratorIndex = 0;
-        indexScanIteratorIndex = 0;
-        choiceIteratorIndex = 0;
-        indexChoiceIteratorIndex = 0;
+        iteratorIndex = 0;
         timerIndex = 0;
     }
 
@@ -1042,24 +1020,9 @@ private:
         return currentAddressLabel++;
     }
 
-    /** Get new scan iterator */
-    size_t getNewScanIterator() {
-        return scanIteratorIndex++;
-    }
-
-    /** Get new choice iterator */
-    size_t getNewChoiceIterator() {
-        return choiceIteratorIndex++;
-    }
-
-    /** Get new indexChoice iterator */
-    size_t getNewIndexChoiceIterator() {
-        return indexChoiceIteratorIndex++;
-    }
-
-    /** Get new indexScan iterator */
-    size_t getNewIndexScanIterator() {
-        return indexScanIteratorIndex++;
+    /** Get new iterator */
+    size_t getNewIterator() {
+        return iteratorIndex++;
     }
 
     /** Get new Timer */
@@ -1084,6 +1047,19 @@ private:
         }
         addressMap[addressLabel] = value;
     }
+
+    /** Get the index position in a relation based on the SearchSignature */
+    template <class RamNode>
+    size_t getIndexPos(RamNode& node) {
+        const MinIndexSelection& orderSet = isa.getIndexes(node.getRelation());
+        SearchSignature signature = isa.getSearchSignature(&node);
+        // A zero signature is equivalent as a full order signature.
+        if (signature == 0) {
+            signature = (1 << node.getRelation().getArity()) - 1;
+        }
+        auto i = orderSet.getLexOrderNum(signature);
+        return i;
+    };
 };
 
 }  // end of namespace souffle

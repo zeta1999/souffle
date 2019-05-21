@@ -121,8 +121,7 @@ RuleBody RuleBody::atom(AstAtom* atom) {
     RuleBody body;
     body.dnf.push_back(clause());
     auto& clause = body.dnf.back();
-    clause.push_back(literal());
-    clause.back() = literal{false, std::unique_ptr<AstAtom>(atom)};
+    clause.emplace_back(false, std::unique_ptr<AstAtom>(atom));
     return body;
 }
 
@@ -130,8 +129,7 @@ RuleBody RuleBody::constraint(AstConstraint* constraint) {
     RuleBody body;
     body.dnf.push_back(clause());
     auto& clause = body.dnf.back();
-    clause.push_back(literal());
-    clause.back() = literal{false, std::unique_ptr<AstLiteral>(constraint)};
+    clause.emplace_back(false, std::unique_ptr<AstLiteral>(constraint));
     return body;
 }
 

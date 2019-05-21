@@ -19,6 +19,7 @@
 #include "RamAnalysis.h"
 #include "RamOperation.h"
 #include "RamRelation.h"
+#include "RamStatement.h"
 #include "RamTypes.h"
 #include <cassert>
 #include <cstdlib>
@@ -32,8 +33,8 @@
 #include <utility>
 #include <vector>
 
-#define NIL 0
-#define INF -1
+#define RIA_NIL 0
+#define RIA_INF -1
 
 // define if enable unit tests
 #define M_UNIT_TEST
@@ -177,6 +178,11 @@ public:
         return orders[idx];
     }
 
+    /** @Brief Get index for a search */
+    const int getLexOrderNum(SearchSignature cols) const {
+        return map(cols);
+    }
+
     /** @Brief Get all indexes */
     const OrderCollection getAllOrders() const {
         return orders;
@@ -211,6 +217,21 @@ public:
         return (b xor msb);
     }
 
+    /** @Brief insert a total order index
+     *  @param size of the index
+     */
+    void insertDefaultTotalIndex(size_t arity) {
+        Chain chain = std::set<SearchSignature>();
+        SearchSignature fullIndexKey = (1 << arity) - 1;
+        chain.insert(fullIndexKey);
+        chainToOrder.push_back(std::move(chain));
+        LexOrder totalOrder;
+        for (size_t i = 0; i < arity; ++i) {
+            totalOrder.push_back(i);
+        }
+        orders.push_back(std::move(totalOrder));
+    }
+
 protected:
     SearchSet searches;          // set of search patterns on table
     OrderCollection orders;      // collection of lexicographical orders
@@ -239,6 +260,7 @@ protected:
                 return i;
             }
         }
+        std::cerr << "Cannot find matching lexicographical order" << std::endl;
         abort();
     }
 
@@ -310,6 +332,13 @@ public:
     MinIndexSelection& getIndexes(const RamRelation& rel);
 
     /**
+     * @Brief get the minimal index cover for a relation
+     * @param relation name
+     * @result set of indexes of the minimal index cover
+     */
+    MinIndexSelection& getIndexes(const std::string& relName);
+
+    /**
      * @Brief Get index signature for an Ram IndexRelationSearch operation
      * @param  Index-relation-search operation
      * @result Index signature of operation
@@ -329,6 +358,13 @@ public:
      * @result index signature of provenance-existence check
      */
     SearchSignature getSearchSignature(const RamProvenanceExistenceCheck* existCheck) const;
+
+    /**
+     * @Brief Get the default index signature for a relation (the total-order index)
+     * @param RamCreate node
+     * @result total full-signature of the relation
+     */
+    SearchSignature getSearchSignature(const RamRelation* ramRel) const;
 
     /**
      * @Brief index signature of existence check resembles a total index

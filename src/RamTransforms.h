@@ -21,10 +21,17 @@
 #include "RamTranslationUnit.h"
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace souffle {
 
+class RamAggregate;
+class RamCondition;
+class RamExpression;
+class RamIndexScan;
+class RamOperation;
 class RamProgram;
+class RamScan;
 
 /**
  * @class ExpandFilterTransformer

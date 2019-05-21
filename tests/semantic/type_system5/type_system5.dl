@@ -1,0 +1,115 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the type system on atoms
+
+.symbol_type S1
+.symbol_type S2
+.symbol_type S3
+.type U12 = S1 | S2
+.type U23 = S2 | S3
+
+.decl InS1(x : S1)
+.decl InS2(x : S2)
+.decl InS3(x : S3)
+.decl InU12(x : U12)
+.decl InU23(x : U23)
+.decl InSymbol(x : symbol)
+.decl InNumber(x : number)
+.decl OutS1(x : S1)
+.decl OutS2(x : S2)
+.decl OutS3(x : S3)
+.decl OutU12(x : U12)
+.decl OutU23(x : U23)
+.decl OutSymbol(x : symbol)
+
+// Check when copies are possible (some errors)
+OutS1(x) :- InS1(x).
+OutS1(x) :- InS2(x).                        // error
+OutS1(x) :- InS3(x).                        // error
+OutS1(x) :- InU12(x).                       // error
+OutS1(x) :- InU23(x).                       // error
+OutS1(x) :- InSymbol(x).                    // error
+OutS1(x) :- InNumber(x).                    // error
+OutU12(x) :- InS1(x).
+OutU12(x) :- InS2(x).
+OutU12(x) :- InS3(x).                       // error
+OutU12(x) :- InU12(x).
+OutU12(x) :- InU23(x).                      // error
+OutU12(x) :- InSymbol(x).                   // error
+OutU12(x) :- InNumber(x).                   // error
+OutSymbol(x) :- InS1(x).
+OutSymbol(x) :- InS2(x).
+OutSymbol(x) :- InS3(x).
+OutSymbol(x) :- InU12(x).
+OutSymbol(x) :- InU23(x).
+OutSymbol(x) :- InSymbol(x).
+OutSymbol(x) :- InNumber(x).                // error
+
+// Check when intersections are possible (some errors)
+OutS2(x) :- InS1(x), InS2(x).               // error
+OutS2(x) :- InS1(x), InU12(x).              // error
+OutS2(x) :- InS1(x), InU23(x).              // error
+OutS2(x) :- InS1(x), InSymbol(x).           // error
+OutS2(x) :- InS2(x), InU12(x).
+OutS2(x) :- InS2(x), InU23(x).
+OutS2(x) :- InS2(x), InSymbol(x).
+OutS2(x) :- InU12(x), InU23(x).
+OutS2(x) :- InU12(x), InSymbol(x).          // error
+OutS2(x) :- InS2(x), InNumber(x).           // error
+OutU23(x) :- InS1(x), InU12(x).             // error
+OutU23(x) :- InS2(x), InS3(x).              // error
+OutU23(x) :- InS2(x), InU12(x).
+OutU23(x) :- InS2(x), InU23(x).
+OutU23(x) :- InS3(x), InU12(x).             // error
+OutU23(x) :- InS3(x), InSymbol(x).
+OutU23(x) :- InU12(x), InU23(x).
+OutU23(x) :- InU12(x), InSymbol(x).         // error
+OutU23(x) :- InU23(x), InSymbol(x).
+OutU23(x) :- InU23(x), InNumber(x).         // error
+OutSymbol(x) :- InS2(x), InS3(x).           // error
+OutSymbol(x) :- InS2(x), InU12(x).
+OutSymbol(x) :- InS2(x), InSymbol(x).
+OutSymbol(x) :- InS3(x), InU12(x).          // error
+OutSymbol(x) :- InU12(x), InU23(x).
+OutSymbol(x) :- InU12(x), InSymbol(x).
+OutSymbol(x) :- InSymbol(x), InNumber(x).   // error
+
+// Check constraints (some errors)
+OutS3(x) :- InS3(x), !InS1(x).              // error
+OutS3(x) :- InS3(x), !InS3(x).
+OutS3(x) :- InS3(x), !InU12(x).             // error
+OutS3(x) :- InS3(x), !InU23(x).
+OutS3(x) :- InS3(x), !InSymbol(x).
+OutS3(x) :- InS1(x), !InU12(x).             // error
+OutS3(x) :- InU23(x), !InS3(x).             // error
+OutS3(x) :- InSymbol(x), !InU12(x).         // error
+OutS3(x) :- InS3(x), !InNumber(x).          // error
+OutU12(x) :- InS1(x), !InU12(x).
+OutU12(x) :- InS1(x), !InS2(x).             // error
+OutU12(x) :- InS3(x), !InU12(x).            // error
+OutU12(x) :- InU12(x), !InS1(x).            // error
+OutU12(x) :- InU12(x), !InS3(x).            // error
+OutU12(x) :- InU12(x), !InU12(x).
+OutU12(x) :- InU12(x), !InU23(x).           // error
+OutU12(x) :- InU12(x), !InSymbol(x).
+OutU12(x) :- InU23(x), !InS3(x).            // error
+OutU12(x) :- InSymbol(x), !InS3(x).         // error
+OutU12(x) :- InU12(x), !InNumber(x).        // error
+OutSymbol(x) :- InS3(x), !InS1(x).          // error
+OutSymbol(x) :- InS3(x), !InS3(x).
+OutSymbol(x) :- InS3(x), !InU12(x).         // error
+OutSymbol(x) :- InS3(x), !InU23(x).
+OutSymbol(x) :- InS3(x), !InSymbol(x).
+OutSymbol(x) :- InU23(x), !InS1(x).         // error
+OutSymbol(x) :- InU23(x), !InS3(x).         // error
+OutSymbol(x) :- InU23(x), !InU12(x).        // error
+OutSymbol(x) :- InU23(x), !InU23(x).
+OutSymbol(x) :- InU23(x), !InSymbol(x).
+OutSymbol(x) :- InSymbol(x), !InS2(x).      // error
+OutSymbol(x) :- InSymbol(x), !InU23(x).     // error
+OutSymbol(x) :- InSymbol(x), !InSymbol(x).
+OutSymbol(x) :- InSymbol(x), !InNumber(x).  // error

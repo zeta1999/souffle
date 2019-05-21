@@ -1,0 +1,9 @@
+Warning: Variable denominator only occurs once in file euclid.dl at line 61
+    head = *rational[0,denominator].
+-----------------------^-------------
+Warning: Variable denominator only occurs once in file euclid.dl at line 128
+    head = *rational[0,denominator].
+-----------------------^-------------
+Warning: Variable denominator only occurs once in file euclid.dl at line 132
+    head = *rational[numerator,denominator], numerator!=0.
+-------------------------------^---------------------------

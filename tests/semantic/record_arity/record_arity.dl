@@ -1,0 +1,54 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests mismatched record arity
+
+// This is seperated from the normal record typing tests so type checking is not
+// skipped on any clauses in that file
+
+.type R0 = []
+.type R1 = [x : number]
+.type R2 = [x : number, y : number, z : number]
+
+.decl InR0(x : R0)
+.decl InR1(x : R1)
+.decl InR2(x : R2)
+.decl OutR0(x : R0)
+.decl OutR1(x : R1)
+.decl OutR2(x : R2)
+
+// Wrong number of arguments to record in fact (errors)
+OutR0(*R0[3]).                      // error
+OutR0(*R0[2,2]).                    // error
+OutR0(*R0[1,1,1]).                  // error
+OutR1(*R1[]).                       // error
+OutR1(*R1[2,2]).                    // error
+OutR1(*R1[1,1,1]).                  // error
+OutR2(*R2[]).                       // error
+OutR2(*R2[2]).                      // error
+OutR2(*R2[1,1]).                    // error
+
+// Wrong number of arguments to record in head of clause (errors)
+OutR0(*R0[3]) :- InR0(*R0[]).       // error
+OutR0(*R0[2,2]) :- InR0(*R0[]).     // error
+OutR0(*R0[1,1,1]) :- InR0(*R0[]).   // error
+OutR1(*R1[]) :- InR0(*R0[]).        // error
+OutR1(*R1[2,2]) :- InR0(*R0[]).     // error
+OutR1(*R1[1,1,1]) :- InR0(*R0[]).   // error
+OutR2(*R2[]) :- InR0(*R0[]).        // error
+OutR2(*R2[2]) :- InR0(*R0[]).       // error
+OutR2(*R2[1,1]) :- InR0(*R0[]).     // error
+
+// Wrong number of arguments in record in body of clause (errors)
+OutR0(*R0[]) :- InR0(*R0[3]).       // error
+OutR0(*R0[]) :- InR0(*R0[2,2]).     // error
+OutR0(*R0[]) :- InR0(*R0[1,1,1]).   // error
+OutR0(*R0[]) :- InR1(*R1[]).        // error
+OutR0(*R0[]) :- InR1(*R1[2,2]).     // error
+OutR0(*R0[]) :- InR1(*R1[1,1,1]).   // error
+OutR0(*R0[]) :- InR2(*R2[]).        // error
+OutR0(*R0[]) :- InR2(*R2[2]).       // error
+OutR0(*R0[]) :- InR2(*R2[1,1]).     // error

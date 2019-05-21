@@ -3,9 +3,9 @@
 
 .decl p ( x : list )
 
-p([1,[2,nil]]).
-p([2,[3,nil]]).
+p(*list[1,*list[2,nil]]).
+p(*list[2,*list[3,nil]]).
 
 .decl r ( x : number )
 .output r ()
-r(a+b) :- p ([a,[b,nil]]).
+r(a+b) :- p (*list[a,*list[b,nil]]).

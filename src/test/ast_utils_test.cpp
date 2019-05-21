@@ -22,6 +22,7 @@
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "ParserDriver.h"
+#include "TypeLattice.h"
 #include "test.h"
 
 namespace souffle {
@@ -110,7 +111,7 @@ TEST(AstUtils, GroundedRecords) {
                  .decl r ( r : R )
                  .decl s ( r : N )
 
-                 s(x) :- r([x,y]).
+                 s(x) :- r(*R [x,y]).
 
             )",
             sym, e, d);
@@ -120,7 +121,7 @@ TEST(AstUtils, GroundedRecords) {
     auto clause = program.getRelation("s")->getClause(0);
 
     // check construction
-    EXPECT_EQ("s(x) :- \n   r([x,y]).", toString(*clause));
+    EXPECT_EQ("s(x) :- \n   r(*R[x,y]).", toString(*clause));
 
     // obtain groundness
     auto isGrounded = getGroundedTerms(*clause);
@@ -169,18 +170,19 @@ TEST(AstUtils, SimpleTypes) {
     AstClause* u = program.getRelation("u")->getClause(0);
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a))));
-    EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
-    EXPECT_EQ("{U}", toString(typeAnalysis->getTypes(getX(u))));
+    EXPECT_EQ("U", toString(*typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("U", toString(*typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("U", toString(*typeAnalysis->getType(getX(u))));
 
     AstClause* a1 = program.getRelation("a")->getClause(1);
-    EXPECT_EQ("{}", toString(typeAnalysis->getTypes(getX(a1))));
+    EXPECT_EQ("B", toString(*typeAnalysis->getType(getX(a1))));
 
     AstClause* a2 = program.getRelation("a")->getClause(2);
-    EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a2))));
+    EXPECT_EQ("top type", toString(*typeAnalysis->getType(getX(a2))));
 }
 
 TEST(AstUtils, NumericTypes) {
@@ -213,12 +215,13 @@ TEST(AstUtils, NumericTypes) {
     AstClause* u = program.getRelation("u")->getClause(0);
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("{}", toString(typeAnalysis->getTypes(getX(a))));
-    EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
-    EXPECT_EQ("{U}", toString(typeAnalysis->getTypes(getX(u))));
+    EXPECT_EQ("top type", toString(*typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("top type", toString(*typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("top type", toString(*typeAnalysis->getType(getX(u))));
 }
 
 TEST(AstUtils, SubtypeChain) {
@@ -248,21 +251,29 @@ TEST(AstUtils, SubtypeChain) {
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    // check proper type handling
-    auto& env = tu->getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
-    EXPECT_PRED2(isSubtypeOf, env.getType("B"), env.getType("A"));
-    EXPECT_PRED2(isSubtypeOf, env.getType("C"), env.getType("A"));
-    EXPECT_PRED2(isSubtypeOf, env.getType("D"), env.getType("A"));
-
-    EXPECT_PRED2(isSubtypeOf, env.getType("C"), env.getType("B"));
-    EXPECT_PRED2(isSubtypeOf, env.getType("D"), env.getType("B"));
-
-    EXPECT_PRED2(isSubtypeOf, env.getType("D"), env.getType("C"));
-
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
+
+    // check proper type handling
+    const TypeLattice& lattice = *typeAnalysis->getLattice();
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("B"), lattice.getAnalysisType("A"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("C"), lattice.getAnalysisType("A"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("D"), lattice.getAnalysisType("A"));
+
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("A"), lattice.getAnalysisType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("C"), lattice.getAnalysisType("B"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("D"), lattice.getAnalysisType("B"));
+
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("A"), lattice.getAnalysisType("C"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("B"), lattice.getAnalysisType("C"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("D"), lattice.getAnalysisType("C"));
+
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("A"), lattice.getAnalysisType("D"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("B"), lattice.getAnalysisType("D"));
+    EXPECT_PRED2(lattice.isSubtype, lattice.getAnalysisType("C"), lattice.getAnalysisType("D"));
 
     // check proper type deduction
-    EXPECT_EQ("{D}", toString(typeAnalysis->getTypes(getX(a))));
+    EXPECT_EQ("D", toString(*typeAnalysis->getType(getX(a))));
 }
 
 TEST(AstUtils, FactTypes) {
@@ -297,12 +308,13 @@ TEST(AstUtils, FactTypes) {
     AstClause* u = program.getRelation("u")->getClause(0);
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
-    EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a))));
-    EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
-    EXPECT_EQ("{U}", toString(typeAnalysis->getTypes(getX(u))));
+    EXPECT_EQ("symbol constant", toString(*typeAnalysis->getType(getX(a))));
+    EXPECT_EQ("number constant", toString(*typeAnalysis->getType(getX(b))));
+    EXPECT_EQ("symbol constant", toString(*typeAnalysis->getType(getX(u))));
 }
 
 TEST(AstUtils, NestedFunctions) {
@@ -323,11 +335,13 @@ TEST(AstUtils, NestedFunctions) {
 
     // check types in clauses
     AstClause* a = program.getRelation("r")->getClause(0);
+    auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
+    EXPECT_TRUE(typeAnalysis->getLattice()->isValid());
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
 
     // check proper type deduction
-    EXPECT_EQ("{D}", toString(tu->getAnalysis<TypeAnalysis>()->getTypes(getX(a))));
+    EXPECT_EQ("symbol", toString(*typeAnalysis->getType(getX(a))));
 }
 
 TEST(AstUtils, GroundTermPropagation) {
@@ -339,8 +353,9 @@ TEST(AstUtils, GroundTermPropagation) {
             R"(
                 .type D
                 .decl p(a:D,b:D)
+                .type R = [ x : D, y : D ]
 
-                p(a,b) :- p(x,y), r = [x,y], s = r, s = [w,v], [w,v] = [a,b].
+                p(a,b) :- p(x,y), r = *R [x,y], s = r, s = *R [w,v], *R [w,v] = *R [a,b].
             )",
             sym, e, d);
 
@@ -349,15 +364,15 @@ TEST(AstUtils, GroundTermPropagation) {
     // check types in clauses
     AstClause* a = program.getRelation("p")->getClause(0);
 
-    EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = [x,y],\n   s = r,\n   s = [w,v],\n   [w,v] = [a,b].",
+    EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = *R[x,y],\n   s = r,\n   s = *R[w,v],\n   *R[w,v] = *R[a,b].",
             toString(*a));
 
     std::unique_ptr<AstClause> res = ResolveAliasesTransformer::resolveAliases(*a);
     std::unique_ptr<AstClause> cleaned = ResolveAliasesTransformer::removeTrivialEquality(*res);
 
     EXPECT_EQ(
-            "p(x,y) :- \n   p(x,y),\n   [x,y] = [x,y],\n   [x,y] = [x,y],\n   [x,y] = [x,y],\n   [x,y] = "
-            "[x,y].",
+            "p(x,y) :- \n   p(x,y),\n   *R[x,y] = *R[x,y],\n   *R[x,y] = *R[x,y],\n   *R[x,y] = *R[x,y],\n   "
+            "*R[x,y] = *R[x,y].",
             toString(*res));
     EXPECT_EQ("p(x,y) :- \n   p(x,y).", toString(*cleaned));
 }
@@ -399,14 +414,15 @@ TEST(AstUtils, ResolveGroundedAliases) {
             R"(
                 .type D
                 .decl p(a:D,b:D)
+                .type R = [ x : D, y : D ]
 
-                p(a,b) :- p(x,y), r = [x,y], s = r, s = [w,v], [w,v] = [a,b].
+                p(a,b) :- p(x,y), r = *R [x,y], s = r, s = *R [w,v], *R [w,v] = *R [a,b].
             )",
             sym, e, d);
 
     AstProgram& program = *tu->getProgram();
 
-    EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = [x,y],\n   s = r,\n   s = [w,v],\n   [w,v] = [a,b].",
+    EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = *R[x,y],\n   s = r,\n   s = *R[w,v],\n   *R[w,v] = *R[a,b].",
             toString(*program.getRelation("p")->getClause(0)));
 
     std::make_unique<ResolveAliasesTransformer>()->apply(*tu);

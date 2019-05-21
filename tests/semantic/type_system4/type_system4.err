@@ -1,0 +1,17 @@
+Error: Union type number_symbol contains a mixture of symbol and number types in file type_system4.dl at line 31
+.type number_symbol = number | symbol // error
+^----------------------------------------------
+Error: Union type number_symbol_primi contains a mixture of symbol and number types in file type_system4.dl at line 33
+.type number_symbol_primi = number_primi_1 | symbol_primi_1 // error
+^--------------------------------------------------------------------
+Error: Union type number_symbol_primi_1_2 contains a mixture of symbol and number types in file type_system4.dl at line 34
+.type number_symbol_primi_1_2 = number_primi_1_2 | symbol_primi_1_2 // error
+^----------------------------------------------------------------------------
+Error: Union type number_symbol_union contains a mixture of symbol and number types in file type_system4.dl at line 36
+.type number_symbol_union = number_union_1 | symbol_union_1 // error
+^--------------------------------------------------------------------
+Error: Union type number_symbol_union_1_2 contains a mixture of symbol and number types in file type_system4.dl at line 37
+.type number_symbol_union_1_2 = number_union_1_2 | symbol_union_1_2 // error
+^----------------------------------------------------------------------------
+Error: No type checking could occur due to other errors present
+6 errors generated, evaluation aborted

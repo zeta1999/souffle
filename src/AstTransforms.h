@@ -18,7 +18,6 @@
 
 #include "AstArgument.h"
 #include "AstTransformer.h"
-#include "AstTranslationUnit.h"
 #include "DebugReport.h"
 #include "Util.h"
 #include <functional>
@@ -31,8 +30,8 @@
 namespace souffle {
 
 class AstClause;
-class AstProgram;
 class AstRelation;
+class AstTranslationUnit;
 
 /**
  * Transformation pass to eliminate grounded aliases.
@@ -335,13 +334,13 @@ private:
  * Transformation to remove typecasts.
  */
 class RemoveTypecastsTransformer : public AstTransformer {
-private:
-    bool transform(AstTranslationUnit& translationUnit) override;
-
 public:
     std::string getName() const override {
         return "RemoveTypecastsTransformer";
     }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
 };
 
 /**

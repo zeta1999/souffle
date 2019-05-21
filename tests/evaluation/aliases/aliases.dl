@@ -7,7 +7,7 @@
 // tests the proper handling of aliases
 
 .number_type N
-
+.type R = [x : N, y : N]
 
 .decl n ( a : N )
 
@@ -30,5 +30,4 @@ a(3,2).
 
 .decl r ( a : N )
 .output r ()
-r(z) :- a(x,y), r = [x,y], s = r, s = [v,w], w=z, z=v.
-
+r(z) :- a(x,y), r = *R[x,y], s = r, s = *R[v,w], w=z, z=v.

@@ -18,13 +18,18 @@
 #include "RamCondition.h"
 #include "RamNode.h"
 #include "RamOperation.h"
+#include "RamProgram.h"
+#include "RamRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <queue>
+#include <string>
+#include <utility>
 
 namespace souffle {
 

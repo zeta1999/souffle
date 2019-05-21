@@ -14,17 +14,17 @@
 ]
 
 .decl a(x:Conn, y:Conn) inline
-a(["Hello", "Goodbye"], ["temporary", "value"]).
-a(["temporary", "value"], ["NO", "NO"]).
-a(["can", "do"], ["my", "value"]).
+a(*Conn["Hello", "Goodbye"], *Conn["temporary", "value"]).
+a(*Conn["temporary", "value"], *Conn["NO", "NO"]).
+a(*Conn["can", "do"], *Conn["my", "value"]).
 
 .decl b(x:Conn, y:Conn) inline
-b(["good job", "bad job"], ["can", "do"]).
-b(x, y) :- a(x, y), x != ["temporary", "value"].
+b(*Conn["good job", "bad job"], *Conn["can", "do"]).
+b(x, y) :- a(x, y), x != *Conn["temporary", "value"].
 
 .decl c(x:Conn) inline
 c(x) :- a(z, y), b(x, z), x != y.
 
 .decl d(x:Thing)
-d(x) :- c([x, _]).
+d(x) :- c(*Conn[x, _]).
 .output d()

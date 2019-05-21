@@ -26,6 +26,7 @@
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "Util.h"
+#include <algorithm>
 #include <cassert>
 #include <map>
 #include <memory>

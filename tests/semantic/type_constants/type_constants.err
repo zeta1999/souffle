@@ -1,0 +1,61 @@
+Warning: No rules/facts defined for relation InS1 in file type_constants.dl at line 14
+.decl InS1(x : S1)
+------^------------
+Warning: No rules/facts defined for relation InU12 in file type_constants.dl at line 15
+.decl InU12(x : U12)
+------^--------------
+Warning: No rules/facts defined for relation InSymbol in file type_constants.dl at line 16
+.decl InSymbol(x : symbol)
+------^--------------------
+Warning: No rules/facts defined for relation InR in file type_constants.dl at line 17
+.decl InR(x : R)
+------^----------
+Warning: No rules/facts defined for relation InNumber in file type_constants.dl at line 18
+.decl InNumber(x : number)
+------^--------------------
+Error: Relation expects value of type U12 but got argument of type number constant in file type_constants.dl at line 33
+OutU12(1).                                              // error
+-------^---------------------------------------------------------
+Error: Relation expects value of type R but got argument of type symbol constant in file type_constants.dl at line 34
+OutR("a").                                              // error
+-----^-----------------------------------------------------------
+Error: Relation expects value of type number but got argument of type nil record in file type_constants.dl at line 35
+OutNumber(nil).                                         // error
+----------^------------------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_constants.dl at line 44
+Out() :- InS1(nil).                                     // error
+--------------^--------------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_constants.dl at line 45
+Out() :- InR(2).                                        // error
+-------------^---------------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_constants.dl at line 46
+Out() :- InNumber("x").                                 // error
+------------------^----------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_constants.dl at line 55
+Out() :- InR(x), x = "".                                // error
+-------------^---------------------------------------------------
+Error: Unable to deduce valid type for expression, as primitive types are disjoint in file type_constants.dl at line 55
+Out() :- InR(x), x = "".                                // error
+---------------------^-------------------------------------------
+Error: Non-numerical operand for comparison, instead right operand has type symbol constant in file type_constants.dl at line 56
+Out() :- InNumber(x), x < "bfs".                        // error
+--------------------------^--------------------------------------
+Error: Relation expects value of type U12 but got argument of type nil record in file type_constants.dl at line 57
+Out() :- !InU12(nil).                                   // error
+----------------^------------------------------------------------
+Error: Non-numeric argument for functor, instead argument has type symbol constant in file type_constants.dl at line 63
+OutNumber(y) :- y = "a"*1.                              // error
+--------------------^--------------------------------------------
+Error: Relation expects value of type S1 but got argument of type number constant in file type_constants.dl at line 71
+OutS1(y) :- y = max 4 : InNumber(3).                    // error
+------^----------------------------------------------------------
+Error: Relation expects value of type U12 but got argument of type number constant in file type_constants.dl at line 72
+OutU12(y) :- y = min 5 : InNumber(_).                   // error
+-------^---------------------------------------------------------
+Error: Relation expects value of type symbol but got argument of type number in file type_constants.dl at line 73
+OutSymbol(y) :- y = sum 0 : InNumber(_).                // error
+----------^------------------------------------------------------
+Error: Relation expects value of type S1 but got argument of type number in file type_constants.dl at line 74
+OutS1(y) :- y = count : InNumber(2).                    // error
+------^----------------------------------------------------------
+15 errors generated, evaluation aborted

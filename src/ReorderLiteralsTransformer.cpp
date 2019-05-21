@@ -26,6 +26,7 @@
 #include "AstVisitor.h"
 #include "Global.h"
 #include <cmath>
+#include <functional>
 #include <set>
 #include <string>
 #include <utility>

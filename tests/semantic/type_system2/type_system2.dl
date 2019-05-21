@@ -24,36 +24,36 @@
 
 // Single Number Relation
 
-SingleNumberRelation([1]).             // no error
-SingleNumberRelation([1, 1]).          // error
-SingleNumberRelation([1, 1, 1]).       // error
+SingleNumberRelation(*single_number[1]).                // no error
+SingleNumberRelation(*single_number[1, 1]).             // error
+SingleNumberRelation(*single_number[1, 1, 1]).          // error
 
 // Double Number Relation
 
-DoubleNumberRelation([1]).             // error
-DoubleNumberRelation([1, 1]).          // no error
-DoubleNumberRelation([1, 1, 1]).       // error
+DoubleNumberRelation(*double_number[1]).                // error
+DoubleNumberRelation(*double_number[1, 1]).             // no error
+DoubleNumberRelation(*double_number[1, 1, 1]).          // error
 
 // Triple Number Relation
 
-TripleNumberRelation([1]).             // error
-TripleNumberRelation([1, 1]).          // error
-TripleNumberRelation([1, 1, 1]).       // no error
+TripleNumberRelation(*triple_number[1]).                // error
+TripleNumberRelation(*triple_number[1, 1]).             // error
+TripleNumberRelation(*triple_number[1, 1, 1]).          // no error
 
 // Single Symbol Relation
 
-SingleSymbolRelation(["1"]).           // no error
-SingleSymbolRelation(["1", "1"]).      // error
-SingleSymbolRelation(["1", "1", "1"]). // error
+SingleSymbolRelation(*single_symbol["1"]).              // no error
+SingleSymbolRelation(*single_symbol["1", "1"]).         // error
+SingleSymbolRelation(*single_symbol["1", "1", "1"]).    // error
 
 // Double Symbol Relation
 
-DoubleSymbolRelation(["1"]).           // error
-DoubleSymbolRelation(["1", "1"]).      // no error
-DoubleSymbolRelation(["1", "1", "1"]). // error
+DoubleSymbolRelation(*double_symbol["1"]).              // error
+DoubleSymbolRelation(*double_symbol["1", "1"]).         // no error
+DoubleSymbolRelation(*double_symbol["1", "1", "1"]).    // error
 
 // Triple Symbol Relation
 
-TripleSymbolRelation(["1"]).           // error
-TripleSymbolRelation(["1", "1"]).      // error
-TripleSymbolRelation(["1", "1", "1"]). // no error
+TripleSymbolRelation(*triple_symbol["1"]).              // error
+TripleSymbolRelation(*triple_symbol["1", "1"]).         // error
+TripleSymbolRelation(*triple_symbol["1", "1", "1"]).    // no error

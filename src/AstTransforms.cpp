@@ -15,22 +15,24 @@
  ***********************************************************************/
 
 #include "AstTransforms.h"
+#include "AnalysisType.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
 #include "AstRelationIdentifier.h"
+#include "AstTranslationUnit.h"
 #include "AstTypeAnalysis.h"
-#include "AstTypeEnvironmentAnalysis.h"
 #include "AstTypes.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
-#include "TypeSystem.h"
+#include <cassert>
 #include <cstddef>
 #include <functional>
 #include <map>
@@ -39,6 +41,8 @@
 #include <set>
 
 namespace souffle {
+
+class TypeLattice;
 
 bool NullTransformer::transform(AstTranslationUnit& translationUnit) {
     return false;
@@ -215,7 +219,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
     bool changed = false;
 
     AstProgram& program = *translationUnit.getProgram();
-    const TypeEnvironment& env = translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
+    const TypeLattice* lattice = translationUnit.getAnalysis<TypeAnalysis>()->getLattice();
 
     // if an aggregator has a body consisting of more than an atom => create new relation
     int counter = 0;
@@ -281,12 +285,18 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
 
             auto* rel = new AstRelation();
             rel->setName(relName);
+
             // add attributes
-            std::map<const AstArgument*, TypeSet> argTypes =
-                    TypeAnalysis::analyseTypes(env, *aggClause, &program);
+            TypeSolver typeSolver(&program, lattice, aggClause);
             for (const auto& cur : head->getArguments()) {
-                rel->addAttribute(std::make_unique<AstAttribute>(
-                        toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));
+                // get the correct type for the attribute
+                assert(dynamic_cast<const InnerAnalysisType*>(typeSolver.getType(cur)) &&
+                        "argument has an invalid type");
+                const auto* argType = dynamic_cast<const InnerAnalysisType*>(typeSolver.getType(cur));
+                std::string type = (argType->getKind() == Kind::SYMBOL) ? "symbol" : "number";
+
+                // add the appropriate attribute
+                rel->addAttribute(std::make_unique<AstAttribute>(toString(*cur), type));
             }
 
             rel->addClause(std::unique_ptr<AstClause>(aggClause));

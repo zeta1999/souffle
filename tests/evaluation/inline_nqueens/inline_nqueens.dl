@@ -31,7 +31,7 @@ up_to_size(x + 1) :- up_to_size(x), !size(x).
 
 // This relation holds the position of each square of the board.
 .decl on_board( p : Position ) inline
-on_board([x, y]) :- up_to_size(x), up_to_size(y).
+on_board(*Position[x, y]) :- up_to_size(x), up_to_size(y).
 
 
 // Mutually-non-attacking list of queen positions.
@@ -40,16 +40,16 @@ on_board([x, y]) :- up_to_size(x), up_to_size(y).
 
 // Arguments are not on the same diagonal.
 .decl non_diagonals( p : Position, q : Position ) inline
-non_diagonals([px, py], [qx, qy]) :- px - qx != py - qy, qx - px != py - qy, on_board([px, py]), on_board([qx, qy]).
+non_diagonals(*Position[px, py], *Position[qx, qy]) :- px - qx != py - qy, qx - px != py - qy, on_board(*Position[px, py]), on_board(*Position[qx, qy]).
 
 
 // Holds if p and q do not attack each other.
 .decl sympathetic( p : Position, q : Position ) inline
-sympathetic(p, q) :- non_diagonals(p, q), px != qx, py != qy, p=[px, py], q=[qx,qy].
+sympathetic(p, q) :- non_diagonals(p, q), px != qx, py != qy, p=*Position[px, py], q=*Position[qx,qy].
 
 
 // Holds if the head of qs is mutually non-attacking with its tail, which should itself be compatible.
 // Generated column by column, left to right.
 .decl compatible( qs : QueenList, n : number )
-compatible([p, nil], 1) :- on_board(p). //, p = [1,y].
-compatible([p, [head, tail]], n+1) :- sympathetic(p, head), compatible([p, tail], n), compatible([head, tail], n), p = [px, py], head = [hx, hy], px > hx.
+compatible(*QueenList[p, nil], 1) :- on_board(p). //, p = *Position[1,y].
+compatible(*QueenList[p, *QueenList[head, tail]], n+1) :- sympathetic(p, head), compatible(*QueenList[p, tail], n), compatible(*QueenList[head, tail], n), p = *Position[px, py], head = *Position[hx, hy], px > hx.

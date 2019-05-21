@@ -61,9 +61,9 @@ StreetMap.e("B","C").
 
 .init SocialNet = Net<Person>
 
-#define Homer ["Homer","Evergreen Terrace 742"]
-#define Ned ["Ned","Evergreen Terrace 744"]
-#define Edna ["Ned","Evergreen Terrace 82"]
+#define Homer *Person["Homer","Evergreen Terrace 742"]
+#define Ned *Person["Ned","Evergreen Terrace 744"]
+#define Edna *Person["Ned","Evergreen Terrace 82"]
 
 SocialNet.e(Homer,Ned).
 SocialNet.e(Ned,Edna).
@@ -75,7 +75,3 @@ SocialNet.e(Ned,Edna).
 .output result()
 result("Map Works") :- StreetMap.r("C","A").
 result("Social Net Works") :- SocialNet.r(Edna,Homer).
-
-
-
-

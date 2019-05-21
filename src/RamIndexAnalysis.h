@@ -17,8 +17,6 @@
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamOperation.h"
-#include "RamRelation.h"
 #include "RamTypes.h"
 #include <cassert>
 #include <cstdlib>
@@ -28,8 +26,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <string>
-#include <utility>
 #include <vector>
 
 #define NIL 0
@@ -40,6 +36,11 @@
 
 namespace souffle {
 
+class RamAbstractExistenceCheck;
+class RamExistenceCheck;
+class RamIndexRelationSearch;
+class RamProvenanceExistenceCheck;
+class RamRelation;
 class RamTranslationUnit;
 
 /**

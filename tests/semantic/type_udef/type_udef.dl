@@ -1,8 +1,27 @@
-// Negative test case for a relation with undeclared type
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
 
-.type Type
+// Make sure souffle works well when undefined types are used
 
-.decl R(type1:Type, type2:XType)
-
-.type U = Type | B
-.type V = [ a:Type, b:B , a:A ]
+.type U = symbol | undef                    // error
+.type R = [ x : undef, y : number ]         // error
+.decl A(x : undef)                          // error
+.decl B(x : number)
+B(as(1,undef)).                             // error
+B(*undef[1]).                               // error
+.comp g<T> {
+    .type U1 = undef | symbol               // error
+    .type U2 = number | T                   // error
+    .type R1 = [ x : undef ]                // error
+    .type R2 = [ y : T ]                    // error
+    .decl A1(x : undef)                     // error
+    .decl A2(x : T)                         // error
+    B(as(2,undef)).                         // error
+    B(as(3,T)).                             // error
+    B(*undef[]).                            // error
+    B(*T[2]).                               // error
+}
+.init c = g<undef>

@@ -23,8 +23,9 @@
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
-#include "RamTypes.h"
 #include "RamVisitor.h"
+#include "Util.h"
+#include <functional>
 #include <utility>
 #include <vector>
 

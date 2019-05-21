@@ -16,13 +16,12 @@
 
 #pragma once
 
+#include "AstArgument.h"
 #include "AstTransformer.h"
 #include <string>
 
 namespace souffle {
 
-class AstAggregator;
-class AstArgument;
 class AstAtom;
 class AstClause;
 class AstLiteral;
@@ -80,6 +79,13 @@ private:
     static void checkWitnessProblem(ErrorReport& report, const AstProgram& program);
     static void checkInlining(ErrorReport& report, const AstProgram& program,
             const PrecedenceGraph& precedenceGraph, const IOType& ioTypes);
+    static void checkGroundedness(ErrorReport& report, const AstProgram& program);
+    static void checkTypeUsage(
+            ErrorReport& report, const TypeEnvironment& typeEnv, const AstProgram& program);
+    static void checkTypeCorrectness(
+            ErrorReport& report, const TypeAnalysis& typeAnalysis, const AstProgram& program);
+    static void checkStratification(
+            ErrorReport& report, const AstProgram& program, const PrecedenceGraph& precedenceGraph);
 };
 
 class AstExecutionPlanChecker : public AstTransformer {

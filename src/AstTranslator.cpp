@@ -49,13 +49,10 @@
 #include <cassert>
 #include <chrono>
 #include <cstddef>
-#include <fstream>
-#include <functional>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <set>
-#include <typeinfo>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -687,7 +684,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         if (const auto* atom = dynamic_cast<const AstAtom*>(cur)) {
             // add constraints
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
+            for (size_t pos = 0; pos < atom->getArity(); ++pos) {
                 if (auto* agg = dynamic_cast<AstAggregator*>(atom->getArgument(pos))) {
                     auto loc = valueIndex.getAggregatorLocation(*agg);
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
@@ -753,7 +750,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         // translate arguments's of atom (if exists) to conditions
         if (atom != nullptr) {
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
+            for (size_t pos = 0; pos < atom->getArguments().size(); ++pos) {
                 // variable bindings are issued differently since we don't want self
                 // referential variable bindings
                 if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {
@@ -804,7 +801,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         if (const auto* atom = dynamic_cast<const AstAtom*>(cur)) {
             // add constraints
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
+            for (size_t pos = 0; pos < atom->getArity(); ++pos) {
                 if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                                              std::make_unique<RamElementAccess>(level, pos,

@@ -310,8 +310,21 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
     for (const auto& cur : component.getClauses()) {
         if (overridden.count(cur->getHead()->getName().getNames()[0]) == 0) {
             AstRelation* rel = index[cur->getHead()->getName()];
-            if (rel) {
-                rel->addClause(std::unique_ptr<AstClause>(cur->clone()));
+            auto newClause = std::unique_ptr<AstClause>(cur->clone());
+            visitDepthFirst(*newClause, [&](const AstTypeCast& cast) {
+                AstTypeIdentifier newName = binding.find(cast.getType());
+                if (!newName.empty()) {
+                    const_cast<AstTypeCast&>(cast).setType(newName);
+                }
+            });
+            visitDepthFirst(*newClause, [&](const AstRecordInit& record) {
+                AstTypeIdentifier newName = binding.find(record.getType());
+                if (!newName.empty()) {
+                    const_cast<AstRecordInit&>(record).setType(newName);
+                }
+            });
+            if (rel != nullptr) {
+                rel->addClause(std::move(newClause));
             } else {
                 orphans.emplace_back(cur->clone());
             }
@@ -322,7 +335,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
     for (auto iter = orphans.begin(); iter != orphans.end();) {
         auto& cur = *iter;
         AstRelation* rel = index[cur->getHead()->getName()];
-        if (rel) {
+        if (rel != nullptr) {
             // add orphan to current instance and delete from orphan list
             rel->addClause(std::unique_ptr<AstClause>(cur->clone()));
             iter = orphans.erase(iter);
@@ -464,6 +477,14 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
                 if (pos != typeNameMapping.end()) {
                     const_cast<AstUnionType&>(unionType).setVariantType(i, pos->second);
                 }
+            }
+        });
+
+        // rename type information in record constructor
+        visitDepthFirst(node, [&](const AstRecordInit& record) {
+            auto pos = typeNameMapping.find(record.getType());
+            if (pos != typeNameMapping.end()) {
+                const_cast<AstRecordInit&>(record).setType(pos->second);
             }
         });
 

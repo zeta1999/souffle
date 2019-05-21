@@ -56,6 +56,7 @@ mpi_sources = Mpi.h
 endif
 
 souffle_sources = \
+              AnalysisType.cpp      AnalysisType.h      \
               AstAnalysis.h                             \
               AstArgument.cpp       AstArgument.h       \
               AstAttribute.h                            \
@@ -140,8 +141,9 @@ souffle_sources = \
               SrcLocation.cpp    SrcLocation.h          \
               StringPool.h                              \
               Synthesiser.cpp       Synthesiser.h       \
-              SynthesiserRelation.cpp                   \
-              SynthesiserRelation.h                     \
+              SynthesiserRelation.cpp SynthesiserRelation.h \
+              TypeConstraint.cpp    TypeConstraint.h    \
+              TypeLattice.cpp       TypeLattice.h       \
               TypeSystem.cpp        TypeSystem.h        \
               WriteStream.h                             \
               WriteStreamCSV.h                          \

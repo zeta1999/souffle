@@ -1,0 +1,61 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the type system on aggregates
+
+.number_type N
+
+.decl InN(x : N)
+.decl InNumber(x : number)
+.decl InSymbol(x : symbol)
+.decl OutN(x : N)
+.decl OutNumber(x : number)
+.decl OutSymbol(x : symbol)
+
+OutN(y) :- y = max x : InN(x).
+OutN(y) :- y = min x : InN(x).
+OutN(y) :- y = sum x : InN(x).              // error
+OutN(y) :- y = count : InN(_).              // error
+
+OutN(y) :- y = max x : InNumber(x).         // error
+OutN(y) :- y = min x : InNumber(x).         // error
+OutN(y) :- y = sum x : InNumber(x).         // error
+OutN(y) :- y = count : InNumber(_).         // error
+
+OutN(y) :- y = max x : InSymbol(x).         // error
+OutN(y) :- y = min x : InSymbol(x).         // error
+OutN(y) :- y = sum x : InSymbol(x).         // error
+OutN(y) :- y = count : InSymbol(_).         // error
+
+OutNumber(y) :- y = max x : InN(x).
+OutNumber(y) :- y = min x : InN(x).
+OutNumber(y) :- y = sum x : InN(x).
+OutNumber(y) :- y = count : InN(_).
+
+OutNumber(y) :- y = max x : InNumber(x).
+OutNumber(y) :- y = min x : InNumber(x).
+OutNumber(y) :- y = sum x : InNumber(x).
+OutNumber(y) :- y = count : InNumber(_).
+
+OutNumber(y) :- y = max x : InSymbol(x).    // error
+OutNumber(y) :- y = min x : InSymbol(x).    // error
+OutNumber(y) :- y = sum x : InSymbol(x).    // error
+OutNumber(y) :- y = count : InSymbol(_).
+
+OutSymbol(y) :- y = max x : InN(x).         // error
+OutSymbol(y) :- y = min x : InN(x).         // error
+OutSymbol(y) :- y = sum x : InN(x).         // error
+OutSymbol(y) :- y = count : InN(_).         // error
+
+OutSymbol(y) :- y = max x : InNumber(x).    // error
+OutSymbol(y) :- y = min x : InNumber(x).    // error
+OutSymbol(y) :- y = sum x : InNumber(x).    // error
+OutSymbol(y) :- y = count : InNumber(_).    // error
+
+OutSymbol(y) :- y = max x : InSymbol(x).    // error
+OutSymbol(y) :- y = min x : InSymbol(x).    // error
+OutSymbol(y) :- y = sum x : InSymbol(x).    // error
+OutSymbol(y) :- y = count : InSymbol(_).    // error

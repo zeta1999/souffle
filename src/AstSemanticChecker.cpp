@@ -15,12 +15,14 @@
  ***********************************************************************/
 
 #include "AstSemanticChecker.h"
+#include "AnalysisType.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstFunctorDeclaration.h"
 #include "AstGroundAnalysis.h"
 #include "AstIO.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -40,11 +42,13 @@
 #include "PrecedenceGraph.h"
 #include "RelationRepresentation.h"
 #include "SrcLocation.h"
+#include "TypeLattice.h"
 #include "TypeSystem.h"
 #include "Util.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -111,223 +115,10 @@ void AstSemanticChecker::checkProgram(ErrorReport& report, const AstProgram& pro
     checkIODirectives(report, program);
     checkWitnessProblem(report, program);
     checkInlining(report, program, precedenceGraph, ioTypes);
-
-    // get the list of components to be checked
-    std::vector<const AstNode*> nodes;
-    for (const auto& rel : program.getRelations()) {
-        for (const auto& cls : rel->getClauses()) {
-            nodes.push_back(cls);
-        }
-    }
-
-    // -- check grounded variables and records --
-    visitDepthFirst(nodes, [&](const AstClause& clause) {
-        // only interested in rules
-        if (clause.isFact()) {
-            return;
-        }
-
-        // compute all grounded terms
-        auto isGrounded = getGroundedTerms(clause);
-
-        // all terms in head need to be grounded
-        std::set<std::string> reportedVars;
-        for (const AstVariable* cur : getVariables(clause)) {
-            if (!isGrounded[cur] && reportedVars.insert(cur->getName()).second) {
-                report.addError("Ungrounded variable " + cur->getName(), cur->getSrcLoc());
-            }
-        }
-
-        // all records need to be grounded
-        for (const AstRecordInit* cur : getRecords(clause)) {
-            if (!isGrounded[cur]) {
-                report.addError("Ungrounded record", cur->getSrcLoc());
-            }
-        }
-    });
-
-    // -- type checks --
-
-    // - variables -
-    visitDepthFirst(nodes, [&](const AstVariable& var) {
-        if (typeAnalysis.getTypes(&var).empty()) {
-            report.addError("Unable to deduce type for variable " + var.getName(), var.getSrcLoc());
-        }
-    });
-
-    // - constants -
-
-    // all string constants are used as symbols
-    visitDepthFirst(nodes, [&](const AstStringConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
-        if (!isSymbolType(types)) {
-            report.addError("Symbol constant (type mismatch)", cnst.getSrcLoc());
-        }
-    });
-
-    // all number constants are used as numbers
-    visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
-        if (!isNumberType(types)) {
-            report.addError("Number constant (type mismatch)", cnst.getSrcLoc());
-        }
-        AstDomain idx = cnst.getIndex();
-        if (idx > MAX_AST_DOMAIN || idx < MIN_AST_DOMAIN) {
-            report.addError("Number constant not in range [" + std::to_string(MIN_AST_DOMAIN) + ", " +
-                                    std::to_string(MAX_AST_DOMAIN) + "]",
-                    cnst.getSrcLoc());
-        }
-    });
-
-    // all null constants are used as records
-    visitDepthFirst(nodes, [&](const AstNullConstant& cnst) {
-        // TODO (#467) remove the next line to enable subprogram compilation for record types
-        Global::config().unset("engine");
-        TypeSet types = typeAnalysis.getTypes(&cnst);
-        if (!isRecordType(types)) {
-            report.addError("Null constant used as a non-record", cnst.getSrcLoc());
-        }
-    });
-
-    // record initializations have the same size as their types
-    visitDepthFirst(nodes, [&](const AstRecordInit& cnst) {
-        // TODO (#467) remove the next line to enable subprogram compilation for record types
-        Global::config().unset("engine");
-        TypeSet types = typeAnalysis.getTypes(&cnst);
-        if (isRecordType(types)) {
-            for (const Type& type : types) {
-                if (cnst.getArguments().size() !=
-                        dynamic_cast<const RecordType*>(&type)->getFields().size()) {
-                    report.addError("Wrong number of arguments given to record", cnst.getSrcLoc());
-                }
-            }
-        }
-    });
-
-    // type casts name a valid type
-    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
-        if (!typeEnv.isType(cast.getType())) {
-            report.addError("Type cast is to undeclared type " + toString(cast.getType()), cast.getSrcLoc());
-        }
-    });
-
-    // - intrinsic functors -
-    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
-        // check type of result
-        if (fun.isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-        }
-
-        if (fun.isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-        }
-
-        // check types of arguments
-        if (fun.getFunction() == FunctorOp::ORD) {
-            return;
-        }
-
-        for (size_t i = 0; i < fun.getArity(); i++) {
-            auto arg = fun.getArg(i);
-            if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-            }
-            if (fun.acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
-            }
-        }
-    });
-
-    // - user-defined functors -
-    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
-        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-        if (funDecl == nullptr) {
-            report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
-        } else {
-            if (funDecl->getArgCount() != fun.getArgCount()) {
-                report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
-            }
-            // check return values of user-defined functor
-            if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-                report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-            }
-            if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-                report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-            }
-            for (size_t i = 0; i < fun.getArgCount(); i++) {
-                const AstArgument* arg = fun.getArg(i);
-                if (i < funDecl->getArgCount()) {
-                    if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                        report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-                    }
-                    if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                        report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
-                    }
-                }
-            }
-        }
-    });
-
-    // - binary relation -
-    visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
-        // only interested in non-equal constraints
-        auto op = constraint.getOperator();
-        if (op == BinaryConstraintOp::EQ || op == BinaryConstraintOp::NE) {
-            return;
-        }
-
-        // get left and right side
-        auto lhs = constraint.getLHS();
-        auto rhs = constraint.getRHS();
-
-        if (constraint.isNumerical()) {
-            // check numeric type
-            if (!isNumberType(typeAnalysis.getTypes(lhs))) {
-                report.addError("Non-numerical operand for comparison", lhs->getSrcLoc());
-            }
-            if (!isNumberType(typeAnalysis.getTypes(rhs))) {
-                report.addError("Non-numerical operand for comparison", rhs->getSrcLoc());
-            }
-        } else if (constraint.isSymbolic()) {
-            // check symbolic type
-            if (!isSymbolType(typeAnalysis.getTypes(lhs))) {
-                report.addError("Non-string operand for operation", lhs->getSrcLoc());
-            }
-            if (!isSymbolType(typeAnalysis.getTypes(rhs))) {
-                report.addError("Non-string operand for operation", rhs->getSrcLoc());
-            }
-        }
-    });
-
-    // - stratification --
-
-    // check for cyclic dependencies
-    const Graph<const AstRelation*, AstNameComparison>& depGraph = precedenceGraph.graph();
-    for (const AstRelation* cur : depGraph.vertices()) {
-        if (depGraph.reaches(cur, cur)) {
-            AstRelationSet clique = depGraph.clique(cur);
-            for (const AstRelation* cyclicRelation : clique) {
-                // Negations and aggregations need to be stratified
-                const AstLiteral* foundLiteral = nullptr;
-                bool hasNegation = hasClauseWithNegatedRelation(cyclicRelation, cur, &program, foundLiteral);
-                if (hasNegation ||
-                        hasClauseWithAggregatedRelation(cyclicRelation, cur, &program, foundLiteral)) {
-                    std::string relationsListStr = toString(join(clique, ",",
-                            [](std::ostream& out, const AstRelation* r) { out << r->getName(); }));
-                    std::vector<DiagnosticMessage> messages;
-                    messages.push_back(
-                            DiagnosticMessage("Relation " + toString(cur->getName()), cur->getSrcLoc()));
-                    std::string negOrAgg = hasNegation ? "negation" : "aggregation";
-                    messages.push_back(
-                            DiagnosticMessage("has cyclic " + negOrAgg, foundLiteral->getSrcLoc()));
-                    report.addDiagnostic(Diagnostic(Diagnostic::ERROR,
-                            DiagnosticMessage("Unable to stratify relation(s) {" + relationsListStr + "}"),
-                            messages));
-                    break;
-                }
-            }
-        }
-    }
+    checkGroundedness(report, program);
+    checkTypeUsage(report, typeEnv, program);
+    checkTypeCorrectness(report, typeAnalysis, program);
+    checkStratification(report, program, precedenceGraph);
 }
 
 void AstSemanticChecker::checkAtom(ErrorReport& report, const AstProgram& program, const AstAtom& atom) {
@@ -515,7 +306,7 @@ void AstSemanticChecker::checkFact(ErrorReport& report, const AstProgram& progra
     }
 
     // facts must only contain constants
-    for (size_t i = 0; i < head->argSize(); i++) {
+    for (size_t i = 0; i < head->getArity(); i++) {
         checkConstant(report, *head->getArgument(i));
     }
 }
@@ -1248,6 +1039,443 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
             }
         }
     });
+}
+
+// Perform the groundedness check
+void AstSemanticChecker::checkGroundedness(ErrorReport& report, const AstProgram& program) {
+    for (const auto& rel : program.getRelations()) {
+        for (const auto& clause : rel->getClauses()) {
+            // only interested in rules
+            if (clause->isFact()) {
+                continue;
+            }
+
+            // compute all grounded terms
+            auto isGrounded = getGroundedTerms(*clause);
+
+            // all variables must be grounded
+            std::set<std::string> reportedVars;  // only report a variable once
+            for (const AstVariable* cur : getVariables(clause)) {
+                if (!isGrounded[cur] && reportedVars.insert(cur->getName()).second) {
+                    report.addError("Ungrounded variable " + cur->getName(), cur->getSrcLoc());
+                }
+            }
+
+            // all records need to be grounded
+            for (const AstRecordInit* cur : getRecords(clause)) {
+                if (!isGrounded[cur]) {
+                    report.addError("Ungrounded record", cur->getSrcLoc());
+                }
+            }
+        }
+    }
+}
+
+// Check that types are used appropriately
+void AstSemanticChecker::checkTypeUsage(
+        ErrorReport& report, const TypeEnvironment& typeEnv, const AstProgram& program) {
+    // get list of nodes to check
+    std::vector<const AstClause*> nodes;
+    for (const auto& rel : program.getRelations()) {
+        for (const auto& cls : rel->getClauses()) {
+            nodes.push_back(cls);
+        }
+    }
+
+    // type casts name a valid type
+    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
+        if (!typeEnv.isType(cast.getType())) {
+            report.addError("Type cast is to undeclared type " + toString(cast.getType()), cast.getSrcLoc());
+        }
+    });
+
+    // record initialisations declare valid record types and have correct size
+    visitDepthFirst(nodes, [&](const AstRecordInit& record) {
+        // TODO (#467) remove the next line to enable subprogram compilation for record types
+        Global::config().unset("engine");
+
+        if (typeEnv.isType(record.getType())) {
+            const Type& type = typeEnv.getType(record.getType());
+            if (!isRecordType(type)) {
+                // type was declared, but isn't actually a record type
+                report.addError("Type " + toString(type) + " is not a record type", record.getSrcLoc());
+            } else if (record.getArguments().size() !=
+                       dynamic_cast<const RecordType*>(&type)->getFields().size()) {
+                // incorrect number of fields
+                report.addError("Wrong number of arguments given to record", record.getSrcLoc());
+            }
+        } else {
+            // record type is undeclared
+            report.addError(
+                    "Type " + toString(record.getType()) + " has not been declared", record.getSrcLoc());
+        }
+    });
+
+    // number constants are within the allowed domain
+    visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
+        AstDomain idx = cnst.getIndex();
+        if (idx > MAX_AST_DOMAIN || idx < MIN_AST_DOMAIN) {
+            report.addError("Number constant not in range [" + std::to_string(MIN_AST_DOMAIN) + ", " +
+                                    std::to_string(MAX_AST_DOMAIN) + "]",
+                    cnst.getSrcLoc());
+        }
+    });
+
+    // check the existence and arity of all user-defined functors
+    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
+        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+        if (funDecl == nullptr) {
+            report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
+        } else if (funDecl->getArgCount() != fun.getArgCount()) {
+            report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
+        }
+    });
+}
+
+// Perform the actual type-correctness check
+void AstSemanticChecker::checkTypeCorrectness(
+        ErrorReport& report, const TypeAnalysis& typeAnalysis, const AstProgram& program) {
+    const TypeLattice* lattice = typeAnalysis.getLattice();
+    if (!lattice->isValid()) {
+        report.addError("No type checking could occur due to other errors present");
+        return;
+    }
+
+    // get the list of nodes to check
+    std::vector<const AstClause*> nodes = typeAnalysis.getTypedClauses();
+    if (typeAnalysis.foundInvalidClauses()) {
+        report.addError("Not all clauses could be typechecked due to other errors present");
+    }
+
+    // -- check that all arguments have been declared a valid type --
+    for (const AstClause* clause : nodes) {
+        // ungrounded terms should be ignored, as they have already been reported
+        auto isGrounded = getGroundedTerms(*clause);
+
+        std::set<std::string> seenVariables;
+        visitDepthFirst(*clause, [&](const AstArgument& arg) {
+            // ignore (already reported) ungrounded terms
+            if (!isGrounded[&arg]) {
+                return;
+            }
+
+            // only check each variable once
+            if (auto* var = dynamic_cast<const AstVariable*>(&arg)) {
+                if (!seenVariables.insert(var->getName()).second) {
+                    // this variable's type has already been checked
+                    return;
+                }
+            }
+
+            // check that the type of the argument is valid
+            const AnalysisType* type = typeAnalysis.getType(&arg);
+            if (!type->isValidType()) {
+                if (dynamic_cast<const BottomPrimitiveAnalysisType*>(type) != nullptr) {
+                    report.addError("Unable to deduce valid type for expression, as base types are disjoint",
+                            arg.getSrcLoc());
+                } else if (dynamic_cast<const BottomAnalysisType*>(type) != nullptr) {
+                    report.addError(
+                            "Unable to deduce valid type for expression, as primitive types are disjoint",
+                            arg.getSrcLoc());
+                } else if (dynamic_cast<const TopAnalysisType*>(type) != nullptr) {
+                    /* This must be equal to a poorly typed but grounded record constructor,
+                     * which will produce an error later on
+                     * e.g. `A(x) :- x = R[y], B(y).` s.t. y has the wrong type for R
+                     *  - don't want to raise an error for the type of x and also R[y] */
+                } else {
+                    assert(false && "no other type should be invalid");
+                }
+            }
+        });
+    }
+
+    // -- check intrinsic functor inputs --
+    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& functor) {
+        for (size_t i = 0; i < functor.getArity(); i++) {
+            const AnalysisType* argType = typeAnalysis.getType(functor.getArg(i));
+
+            // invalid types have already been reported
+            if (argType->isValidType()) {
+                if (functor.acceptsSymbols(i)) {
+                    // argument must be a symbol type
+                    if (!lattice->isSubtype(*argType, TopPrimitiveAnalysisType(Kind::SYMBOL))) {
+                        report.addError("Non-symbolic argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                functor.getArg(i)->getSrcLoc());
+                    }
+                } else if (functor.acceptsNumbers(i)) {
+                    // argument must be a number type
+                    if (!lattice->isSubtype(*argType, TopPrimitiveAnalysisType(Kind::NUMBER))) {
+                        report.addError("Non-numeric argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                functor.getArg(i)->getSrcLoc());
+                    }
+                } else {
+                    assert(false && "unsupported functor input type");
+                }
+            }
+        }
+    });
+
+    // -- check user-defined functor inputs --
+    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& functor) {
+        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(functor.getName());
+        assert(funDecl != nullptr && "user-defined functor not declared");
+        assert(funDecl->getArgCount() == functor.getArgCount() && "functor arity must match declaration");
+
+        for (size_t i = 0; i < funDecl->getArgCount(); i++) {
+            const AnalysisType* argType = typeAnalysis.getType(functor.getArg(i));
+
+            // invalid types have already been reported
+            if (argType->isValidType()) {
+                if (funDecl->acceptsSymbols(i)) {
+                    // argument must be a symbol type
+                    if (!lattice->isSubtype(*argType, TopPrimitiveAnalysisType(Kind::SYMBOL))) {
+                        report.addError("Non-symbolic argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                functor.getArg(i)->getSrcLoc());
+                    }
+                } else if (funDecl->acceptsNumbers(i)) {
+                    // argument must be a number type
+                    if (!lattice->isSubtype(*argType, TopPrimitiveAnalysisType(Kind::NUMBER))) {
+                        report.addError("Non-numeric argument for functor, instead argument has type " +
+                                                toString(*argType),
+                                functor.getArg(i)->getSrcLoc());
+                    }
+                } else {
+                    assert(false && "unsupported functor input type");
+                }
+            }
+        }
+    });
+
+    // -- check records have been assigned the correct type --
+    for (const AstClause* clause : nodes) {
+        // compute all grounded terms
+        auto isGrounded = getGroundedTerms(*clause);
+
+        // check each record
+        visitDepthFirst(*clause, [&](const AstRecordInit& record) {
+            if (!isGrounded[&record]) {
+                // ignore (already reported) ungrounded terms
+                return;
+            }
+
+            auto* expectedType = dynamic_cast<const RecordType*>(
+                    &lattice->getTypeEnvironment()->getType(record.getType()));
+            assert(expectedType != nullptr && "type of record must be a record type");
+            assert(record.getArguments().size() == expectedType->getFields().size() &&
+                    "constructor has incorrect number of arguments");
+
+            // poorly typed but grounded record constructor
+            if (dynamic_cast<const TopAnalysisType*>(typeAnalysis.getType(&record)) != nullptr) {
+                report.addError("Unable to deduce type " + toString(record.getType()) +
+                                        " as record is not grounded as a record elsewhere, and at least one "
+                                        "of its elements has the wrong type",
+                        record.getSrcLoc());
+            }
+
+            // check all arguments have a valid type
+            const auto& args = record.getArguments();
+            const auto& fieldDecls = expectedType->getFields();
+            for (size_t i = 0; i < args.size(); i++) {
+                const AnalysisType* actualType = typeAnalysis.getType(args[i]);
+                const AnalysisType* fieldType = lattice->getAnalysisType(fieldDecls[i].type);
+
+                // invalid types have already been reported
+                if (actualType->isValidType()) {
+                    if (!lattice->isSubtype(actualType, fieldType)) {
+                        report.addError("Record constructor expects element to have type " +
+                                                toString(*fieldType) + " but instead it has type " +
+                                                toString(*actualType),
+                                args[i]->getSrcLoc());
+                    }
+                }
+            }
+        });
+    }
+
+    // -- check aggregates involving numbers --
+    visitDepthFirst(nodes, [&](const AstAggregator& aggr) {
+        if (aggr.getOperator() != AstAggregator::count) {
+            const AnalysisType* targetType = typeAnalysis.getType(aggr.getTargetExpression());
+
+            // invalid types have already been reported
+            if (targetType->isValidType()) {
+                if (!lattice->isSubtype(*targetType, TopPrimitiveAnalysisType(Kind::NUMBER))) {
+                    report.addError(
+                            "Aggregation variable is not a number, instead has type " + toString(*targetType),
+                            aggr.getTargetExpression()->getSrcLoc());
+                }
+            }
+        }
+    });
+
+    // -- check type cast has correct type --
+    visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
+        // invalid types have already been reported
+        if (!typeAnalysis.getType(&cast)->isValidType()) {
+            return;
+        }
+
+        // valid type, therefore is an inner type with a kind
+        const auto* actualType = dynamic_cast<const InnerAnalysisType*>(typeAnalysis.getType(&cast));
+        assert(actualType->isValidType() && "type should be valid");
+        assert(actualType != nullptr && "valid type should be an inner type with a kind");
+
+        const AnalysisType* expectedType = lattice->getAnalysisType(cast.getType());
+
+        // TODO: look into this - should be subtype maybe? or?
+        if (*actualType != *expectedType) {
+            report.addError("Typecast is to type " + toString(cast.getType()) +
+                                    " but is used where the type " + toString(*actualType) + " is expected",
+                    cast.getSrcLoc());
+        }
+
+        // invalid types have already been reported
+        if (!typeAnalysis.getType(cast.getValue())->isValidType()) {
+            return;
+        }
+
+        // throw warnings if input kind doesn't match output kind
+        const auto* inputType = dynamic_cast<const InnerAnalysisType*>(typeAnalysis.getType(cast.getValue()));
+        const InnerAnalysisType* outputType = lattice->getAnalysisType(cast.getType());
+
+        const auto outputPrimitive = TopPrimitiveAnalysisType(outputType->getKind());
+        if (!lattice->isSubtype(*inputType, outputPrimitive)) {
+            report.addWarning("Casts from " + toString(inputType->getKind()) + " values to " +
+                                      toString(outputType->getKind()) + " types may cause runtime errors",
+                    cast.getSrcLoc());
+        } else if (outputType->getKind() == Kind::RECORD && !lattice->isSubtype(inputType, outputType)) {
+            report.addWarning(
+                    "Casting a record to the wrong record type may cause runtime errors", cast.getSrcLoc());
+        }
+    });
+
+    // -- check all other atoms --
+    // negated and head atoms must be checked, but others hold trivially
+    visitDepthFirst(nodes, [&](const AstAtom& atom) {
+        AstRelation* rel = program.getRelation(atom.getName());
+        assert(rel != nullptr && "relation must have been declared");
+        const auto& args = atom.getArguments();
+        for (size_t i = 0; i < args.size(); i++) {
+            const AnalysisType* actualType = typeAnalysis.getType(args[i]);
+            if (!actualType->isValidType()) {
+                // invalid types have already been reported
+                continue;
+            }
+
+            auto attributeType = rel->getAttribute(i)->getTypeName();
+            const AnalysisType* expectedType = lattice->getAnalysisType(attributeType);
+            if (!lattice->isSubtype(actualType, expectedType)) {
+                report.addError("Relation expects value of type " + toString(attributeType) +
+                                        " but got argument of type " + toString(*actualType),
+                        args[i]->getSrcLoc());
+            }
+        }
+    });
+
+    // -- check binary constraint inputs --
+    visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
+        auto lhs = constraint.getLHS();
+        auto rhs = constraint.getRHS();
+        auto op = constraint.getOperator();
+
+        // equality constraint is trivial
+        if (op == BinaryConstraintOp::EQ) {
+            return;
+        }
+        // non-equality constraints must have the same kind
+        else if (op == BinaryConstraintOp::NE) {
+            // invalid types have already been reported
+            if (!typeAnalysis.getType(lhs)->isValidType() || !typeAnalysis.getType(rhs)->isValidType()) {
+                return;
+            }
+
+            const auto* lhsType = dynamic_cast<const InnerAnalysisType*>(typeAnalysis.getType(lhs));
+            const auto* rhsType = dynamic_cast<const InnerAnalysisType*>(typeAnalysis.getType(rhs));
+            assert(lhsType != nullptr && "lhs type must have a kind");
+            assert(rhsType != nullptr && "rhs type must have a kind");
+
+            if (lhsType->getKind() != rhsType->getKind()) {
+                report.addError("Cannot compare operands of different kinds, left operand is a " +
+                                        toString(lhsType->getKind()) + " and right operand is a " +
+                                        toString(rhsType->getKind()),
+                        constraint.getSrcLoc());
+            } else if (lhsType->getKind() == Kind::RECORD) {
+                // TODO (#380): Remove this once record unions are allowed
+                if (!(lattice->isSubtype(lhsType, rhsType) && lattice->isSubtype(rhsType, lhsType))) {
+                    report.addError("Cannot compare records of different types", constraint.getSrcLoc());
+                }
+            }
+        }
+        // other constraints must satisfy expected types
+        else {
+            const AnalysisType* lhsType = typeAnalysis.getType(lhs);
+            const AnalysisType* rhsType = typeAnalysis.getType(rhs);
+
+            if (constraint.isNumerical()) {
+                const auto expectedTop = TopPrimitiveAnalysisType(Kind::NUMBER);
+                if (lhsType->isValidType() && !lattice->isSubtype(lhsType, &expectedTop)) {
+                    report.addError("Non-numerical operand for comparison, instead left operand has type " +
+                                            toString(*lhsType),
+                            lhs->getSrcLoc());
+                }
+
+                if (rhsType->isValidType() && !lattice->isSubtype(rhsType, &expectedTop)) {
+                    report.addError("Non-numerical operand for comparison, instead right operand has type " +
+                                            toString(*rhsType),
+                            rhs->getSrcLoc());
+                }
+            } else if (constraint.isSymbolic()) {
+                const auto expectedTop = TopPrimitiveAnalysisType(Kind::SYMBOL);
+                if (lhsType->isValidType() && !lattice->isSubtype(lhsType, &expectedTop)) {
+                    report.addError("Non-symbolic operand for comparison, instead left operand has type " +
+                                            toString(*lhsType),
+                            lhs->getSrcLoc());
+                }
+
+                if (rhsType->isValidType() && !lattice->isSubtype(rhsType, &expectedTop)) {
+                    report.addError("Non-symbolic operand for comparison, instead right operand has type " +
+                                            toString(*rhsType),
+                            rhs->getSrcLoc());
+                }
+            } else {
+                assert(false && "unsupported constraint type");
+            }
+        }
+    });
+}
+
+void AstSemanticChecker::checkStratification(
+        ErrorReport& report, const AstProgram& program, const PrecedenceGraph& precedenceGraph) {
+    // check for cyclic dependencies
+    const Graph<const AstRelation*, AstNameComparison>& depGraph = precedenceGraph.graph();
+    for (const AstRelation* cur : depGraph.vertices()) {
+        if (depGraph.reaches(cur, cur)) {
+            AstRelationSet clique = depGraph.clique(cur);
+            for (const AstRelation* cyclicRelation : clique) {
+                // Negations and aggregations need to be stratified
+                const AstLiteral* foundLiteral = nullptr;
+                bool hasNegation = hasClauseWithNegatedRelation(cyclicRelation, cur, &program, foundLiteral);
+                if (hasNegation ||
+                        hasClauseWithAggregatedRelation(cyclicRelation, cur, &program, foundLiteral)) {
+                    std::string relationsListStr = toString(join(clique, ",",
+                            [](std::ostream& out, const AstRelation* r) { out << r->getName(); }));
+                    std::vector<DiagnosticMessage> messages;
+                    messages.push_back(
+                            DiagnosticMessage("Relation " + toString(cur->getName()), cur->getSrcLoc()));
+                    std::string negOrAgg = hasNegation ? "negation" : "aggregation";
+                    messages.push_back(
+                            DiagnosticMessage("has cyclic " + negOrAgg, foundLiteral->getSrcLoc()));
+                    report.addDiagnostic(Diagnostic(Diagnostic::ERROR,
+                            DiagnosticMessage("Unable to stratify relation(s) {" + relationsListStr + "}"),
+                            messages));
+                    break;
+                }
+            }
+        }
+    }
 }
 
 // Check that type and relation names are disjoint sets.

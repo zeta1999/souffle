@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "AstClause.h"
 #include "AstComponent.h"
 #include "AstFunctorDeclaration.h"
 #include "AstIO.h"
@@ -36,12 +37,6 @@
 #include <vector>
 
 namespace souffle {
-
-class AstClause;
-class AstLoad;
-class AstPrintSize;
-class AstStore;
-class AstRelation;
 
 /**
  *  Intermediate representation of a datalog program

@@ -36,18 +36,18 @@ number_primi_relation_1(2).
 number_primi_relation_2(2).
 number_primi_relation_2(3).
 
-number_primi_relation_1_2_B(X) :- number_relation(X).
-number_primi_relation_2_3(X) :- number_relation(X).
+number_primi_relation_1_2_B(X) :- number_relation(X). // error
+number_primi_relation_2_3(X) :- number_relation(X). // error
 
 number_primi_relation_1(X) :- number_primi_relation_2(X). // error
 
 number_primi_relation_1_2_A(X) :- number_primi_relation_1(X).
 number_primi_relation_1_2_A(X) :- number_primi_relation_2(X).
 number_primi_relation_1_2_A(X) :- number_primi_relation_1(X), number_primi_relation_2(X). // error
-number_primi_relation_1_2_A(X) :- number_relation(X), !number_primi_relation_1(X), !number_primi_relation_2(X).
-number_primi_relation_1_2_A(X) :- number_primi_relation_1_2_B(X), !number_primi_relation_1(X), !number_primi_relation_2(X).
+number_primi_relation_1_2_A(X) :- number_relation(X), !number_primi_relation_1(X), !number_primi_relation_2(X). // error
+number_primi_relation_1_2_A(X) :- number_primi_relation_1_2_B(X), !number_primi_relation_1(X), !number_primi_relation_2(X). // error
 
-number_primi_relation_3(X) :- number_primi_relation_2_3(X).
+number_primi_relation_3(X) :- number_primi_relation_2_3(X). // error
 
 // Union Types
 
@@ -114,18 +114,18 @@ symbol_primi_relation_1("2").
 symbol_primi_relation_2("2").
 symbol_primi_relation_2("3").
 
-symbol_primi_relation_1_2_B(X) :- symbol_relation(X).
-symbol_primi_relation_2_3(X) :- symbol_relation(X).
+symbol_primi_relation_1_2_B(X) :- symbol_relation(X). // error
+symbol_primi_relation_2_3(X) :- symbol_relation(X). // error
 
 symbol_primi_relation_1(X) :- symbol_primi_relation_2(X). // error
 
 symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1(X).
 symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_2(X).
 symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1(X), symbol_primi_relation_2(X). // error
-symbol_primi_relation_1_2_A(X) :- symbol_relation(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X).
-symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1_2_B(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X).
+symbol_primi_relation_1_2_A(X) :- symbol_relation(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X). // error
+symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1_2_B(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X). // error
 
-symbol_primi_relation_3(X) :- symbol_primi_relation_2_3(X).
+symbol_primi_relation_3(X) :- symbol_primi_relation_2_3(X). // error
 
 // Union Types
 
@@ -161,13 +161,3 @@ symbol_union_relation_1_2_A(X) :- symbol_relation(X), !symbol_union_relation_1(X
 symbol_union_relation_1_2_A(X) :- symbol_union_relation_1_2_B(X), !symbol_union_relation_1(X), !symbol_union_relation_2(X).
 
 symbol_union_relation_3(X) :- symbol_union_relation_2_3(X).
-
-// Numbers and Symbols
-
-.type number_symbol = number | symbol // error
-
-.type number_symbol_primi = number_primi_1 | symbol_primi_1 // error
-.type number_symbol_primi_1_2 = number_primi_1_2 | symbol_primi_1_2 // error
-
-.type number_symbol_union = number_union_1 | symbol_union_1 // error
-.type number_symbol_union_1_2 = number_union_1_2 | symbol_union_1_2 // error

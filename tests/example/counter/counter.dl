@@ -15,14 +15,14 @@
 
 .decl progress(i : index, c : counter, p : program)
 progress(0,0,p) :- torun(p).
-progress(i+1,c+1,p) :- progress(i,c,p), "+"=substr(p,i,1).
-progress(i+1,c-1,p) :- progress(i,c,p), "-"=substr(p,i,1).
-progress(i+1,c,p) :-
+progress(as(i+1,index),as(c+1,counter),p) :- progress(i,c,p), "+"=substr(p,i,1).
+progress(as(i+1,index),as(c-1,counter),p) :- progress(i,c,p), "-"=substr(p,i,1).
+progress(as(i+1,index),c,p) :-
     progress(i,c,p),
     i < strlen(p),
     "+" != substr(p,i,1),
     "-" != substr(p,i,1).
 
 .decl result(c : counter, p : program)
-result(c,p) :- progress(strlen(p),c,p).
+result(c,p) :- progress(as(strlen(p),index),c,p).
 .output result

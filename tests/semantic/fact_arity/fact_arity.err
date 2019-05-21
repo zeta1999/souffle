@@ -10,4 +10,5 @@ Error: Mismatching arity of relation B in file fact_arity.dl at line 11
 Error: Mismatching arity of relation B in file fact_arity.dl at line 12
         B("3","4","3").
 --------^---------------
-4 errors generated, evaluation aborted
+Error: Not all clauses could be typechecked due to other errors present
+5 errors generated, evaluation aborted

@@ -26,13 +26,13 @@
 #include "RamOperation.h"
 #include "RamProgram.h"
 #include "RamRelation.h"
+#include "RamStatement.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
 #include "RelationRepresentation.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
 #include "Util.h"
-#include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <cstdlib>

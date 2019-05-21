@@ -16,9 +16,12 @@
 
 #include "AstIOTypeAnalysis.h"
 #include "AstIO.h"
+#include "AstProgram.h"
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
 #include "AstVisitor.h"
+#include "Util.h"
+#include <ostream>
 
 namespace souffle {
 

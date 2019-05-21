@@ -20,12 +20,12 @@
 #include "SrcLocation.h"
 #include "Util.h"
 
+#include <cstddef>
+#include <cstring>
 #include <limits>
 #include <memory>
 #include <typeinfo>
 
-#include <cstddef>
-#include <cstring>
 #include <libgen.h>
 #include <unistd.h>
 

@@ -517,7 +517,8 @@ protected:
         code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
 
         // TODO (xiaowen/#992): Count -> Size for optimization
-        if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
+        if (aggregate.getFunction() == souffle::COUNT &&
+                dynamic_cast<const RamTrue*>(&aggregate.getCondition()) != nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(counterLabel);
         } else {
@@ -556,7 +557,7 @@ protected:
 
             // Produce condition inside the loop
             size_t endOfLoop = getNewAddressLabel();
-            if (aggregate.getCondition() != nullptr) {
+            if (dynamic_cast<const RamTrue*>(&aggregate.getCondition()) == nullptr) {
                 visit(aggregate.getCondition(), exitAddress);
                 code->push_back(LVM_Jmpez);  // Continue; if condition is not met
                 code->push_back(lookupAddress(endOfLoop));
@@ -639,7 +640,8 @@ protected:
         code->push_back(symbolTable.lookup(types));
         code->push_back(getIndexPos(aggregate));
 
-        if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
+        if (aggregate.getFunction() == souffle::COUNT &&
+                dynamic_cast<const RamTrue*>(&aggregate.getCondition()) != nullptr) {
             code->push_back(LVM_Aggregate_COUNT);
             code->push_back(counterLabel);
         } else {
@@ -677,7 +679,7 @@ protected:
 
             // Produce condition inside the loop
             size_t endOfLoop = getNewAddressLabel();
-            if (aggregate.getCondition() != nullptr) {
+            if (dynamic_cast<const RamTrue*>(&aggregate.getCondition()) == nullptr) {
                 visit(aggregate.getCondition(), exitAddress);
                 code->push_back(LVM_Jmpez);  // Continue; if condition is not met
                 code->push_back(lookupAddress(endOfLoop));
@@ -975,6 +977,10 @@ protected:
         code->push_back(LVM_Swap);
         code->push_back(symbolTable.lookup(first));
         code->push_back(symbolTable.lookup(second));
+    }
+
+    void visitUndefValue(const RamUndefValue& undef, size_t exitAddress) override {
+        assert(false && "Compilation error");
     }
 
     void visitNode(const RamNode& node, size_t exitAddress) override {

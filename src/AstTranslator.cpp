@@ -786,6 +786,13 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         // translate aggregate expression
         std::unique_ptr<RamExpression> expr =
                 translator.translateValue(cur->getTargetExpression(), valueIndex);
+        if (expr == nullptr) {
+            expr = std::make_unique<RamUndefValue>();
+        }
+
+        if (aggCondition == nullptr) {
+            aggCondition = std::make_unique<RamTrue>();
+        }
 
         // add Ram-Aggregation layer
         std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(std::move(op), fun,

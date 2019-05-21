@@ -37,12 +37,9 @@ namespace souffle {
  */
 class RamStatement : public RamNode {
 public:
-    RamStatement() = default;
-
     /** Pretty print with indentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
-    /** Print RAM statement */
     void print(std::ostream& os) const override {
         print(os, 0);
     }
@@ -60,6 +57,7 @@ public:
 
     /** Get RAM relation */
     const RamRelation& getRelation() const {
+        assert(relationRef != nullptr && "Relation reference is a null-pointer");
         return *relationRef->get();
     }
 
@@ -109,6 +107,7 @@ public:
     RamLoad(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
             : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
 
+    /** Get load directives */
     const std::vector<IODirectives>& getIODirectives() const {
         return ioDirectives;
     }
@@ -129,6 +128,7 @@ public:
     }
 
 protected:
+    /** load directives of a relation */
     const std::vector<IODirectives> ioDirectives;
 };
 
@@ -140,6 +140,7 @@ public:
     RamStore(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
             : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
 
+    /** Get store directives */
     const std::vector<IODirectives>& getIODirectives() const {
         return ioDirectives;
     }
@@ -160,6 +161,7 @@ public:
     }
 
 protected:
+    /** store directives of a relation */
     const std::vector<IODirectives> ioDirectives;
 };
 
@@ -197,6 +199,7 @@ public:
         os << "DROP " << rel.getName();
         os << std::endl;
     }
+
     RamDrop* clone() const override {
         auto* res = new RamDrop(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
@@ -221,11 +224,13 @@ public:
 
     /** Get source relation */
     const RamRelation& getSourceRelation() const {
+        assert(sourceRef != nullptr && "Source relation is a null-pointer");
         return *sourceRef->get();
     }
 
     /** Get target relation */
     const RamRelation& getTargetRelation() const {
+        assert(targetRef != nullptr && "Target relation is a null-pointer");
         return *targetRef->get();
     }
 
@@ -251,7 +256,10 @@ public:
     }
 
 protected:
+    /** source relation reference of merge statement */
     std::unique_ptr<RamRelationReference> targetRef;
+
+    /** target relation reference of merge statement */
     std::unique_ptr<RamRelationReference> sourceRef;
 
     bool equal(const RamNode& node) const override {
@@ -278,11 +286,13 @@ public:
 
     /** Get first relation */
     const RamRelation& getFirstRelation() const {
+        assert(first != nullptr && "Relation is a null-pointer");
         return *first->get();
     }
 
     /** Get second relation */
     const RamRelation& getSecondRelation() const {
+        assert(second != nullptr && "Relation is a null-pointer");
         return *second->get();
     }
 
@@ -384,7 +394,7 @@ public:
     RamQuery(std::unique_ptr<RamOperation> o) : RamStatement(), operation(std::move(o)) {}
 
     /** Get RAM operation */
-    RamOperation& getOperation() const {
+    const RamOperation& getOperation() const {
         assert(operation);
         return *operation;
     }

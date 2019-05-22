@@ -67,6 +67,44 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
     return changed;
 }
 
+bool CollapseFiltersTransformer::collapseFilters(RamProgram& program) {
+    // flag to determine whether the RAM program has changed
+    bool changed = false;
+
+    visitDepthFirst(program, [&](const RamQuery& query) {
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
+                // true if two consecutive filters in loop nest found
+                bool canCollapse = false;
+
+                // storing conditions for collapsing
+                std::vector<const RamCondition*> conditions;
+
+                const RamFilter* prevFilter = filter;
+                conditions.emplace_back(&filter->getCondition());
+                while (auto* nextFilter = dynamic_cast<RamFilter*>(&prevFilter->getOperation())) {
+                    canCollapse = true;
+                    conditions.emplace_back(&nextFilter->getCondition());
+                    prevFilter = nextFilter;
+                }
+
+                if (canCollapse) {
+                    changed = true;
+                    node = std::make_unique<RamFilter>(toCondition(conditions),
+                            std::unique_ptr<RamOperation>(
+                                    dynamic_cast<RamOperation*>(prevFilter->getOperation().clone())),
+                            prevFilter->getProfileText());
+                }
+            }
+            node->apply(makeLambdaRamMapper(filterRewriter));
+            return node;
+        };
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(filterRewriter));
+    });
+    return changed;
+}
+
 bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
     // flag to determine whether the RAM program has changed
     bool changed = false;

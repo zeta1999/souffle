@@ -891,7 +891,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // special case: counting number elements over an unrestricted predicate
             if (aggregate.getFunction() == souffle::COUNT && keys == 0 &&
-                    aggregate.getCondition() == nullptr) {
+                    dynamic_cast<const RamTrue*>(&aggregate.getCondition()) != nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -952,22 +952,19 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // produce condition inside the loop
-            auto condition = aggregate.getCondition();
-            if (condition != nullptr) {
-                out << "if( ";
-                visit(condition, out);
-                out << ") {\n";
-            }
+            out << "if( ";
+            visit(aggregate.getCondition(), out);
+            out << ") {\n";
 
             switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     out << "res" << identifier << " = std::min (res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::MAX:
                     out << "res" << identifier << " = std::max (res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::COUNT:
@@ -976,16 +973,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 case souffle::SUM:
                     out << "res" << identifier << " += ";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ";\n";
                     break;
                 default:
                     abort();
             }
 
-            if (condition != nullptr) {
-                out << "}\n";
-            }
+            out << "}\n";
 
             // end aggregator loop
             out << "}\n";
@@ -1017,7 +1012,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
+            if (aggregate.getFunction() == souffle::COUNT &&
+                    dynamic_cast<const RamTrue*>(&aggregate.getCondition()) != nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -1051,23 +1047,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 << "*" << relName << ") {\n";
 
             // produce condition inside the loop
-            auto condition = aggregate.getCondition();
-            if (condition != nullptr) {
-                out << "if( ";
-                visit(condition, out);
-                out << ") {\n";
-            }
+            out << "if( ";
+            visit(aggregate.getCondition(), out);
+            out << ") {\n";
 
             // pick function
             switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     out << "res" << identifier << " = std::min(res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::MAX:
                     out << "res" << identifier << " = std::max(res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::COUNT:
@@ -1075,16 +1068,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 case souffle::SUM:
                     out << "res" << identifier << " += ";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ";\n";
                     break;
                 default:
                     abort();
             }
 
-            if (condition != nullptr) {
-                out << "}\n";
-            }
+            out << "}\n";
 
             // end aggregator loop
             out << "}\n";
@@ -1146,6 +1137,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
         // -- conditions --
+
+        void visitTrue(const RamTrue& ltrue, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            out << "true";
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitFalse(const RamFalse& lfalse, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            out << "false";
+            PRINT_END_COMMENT(out);
+        }
 
         void visitConjunction(const RamConjunction& conj, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
@@ -1681,6 +1684,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
 #endif
         // -- safety net --
+
+        void visitUndefValue(const RamUndefValue& undef, std::ostream& /*out*/) override {
+            assert(false && "Compilation error");
+        }
 
         void visitNode(const RamNode& node, std::ostream& /*out*/) override {
             std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";

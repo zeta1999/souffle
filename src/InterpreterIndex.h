@@ -26,120 +26,17 @@
 
 namespace souffle {
 
-/**
- * A class describing the sorting order of tuples within an index.
- */
-class InterpreterIndexOrder {
-public:
-    // -- constructors --
-
-    InterpreterIndexOrder(std::vector<unsigned char> order = std::vector<unsigned char>())
-            : columns(std::move(order)) {}
-
-    InterpreterIndexOrder(const InterpreterIndexOrder&) = default;
-    InterpreterIndexOrder(InterpreterIndexOrder&&) = default;
-
-    // -- assignment operations --
-
-    InterpreterIndexOrder& operator=(const InterpreterIndexOrder&) = default;
-    InterpreterIndexOrder& operator=(InterpreterIndexOrder&&) = default;
-
-    // -- other operations --
-
-    /** Provides access to the order of columns */
-    unsigned char operator[](std::size_t pos) const {
-        return columns[pos];
-    }
-
-    /** Enables orders to be the key of a set or map */
-    bool operator<(const InterpreterIndexOrder& other) const {
-        return columns < other.columns;
-    }
-
-    // -- other members --
-
-    /** Append an additional column to the end of this order */
-    void append(unsigned char column) {
-        assert(!contains(columns, column));
-        columns.push_back(column);
-    }
-
-    /** Provides access to the size of this order */
-    std::size_t size() const {
-        return columns.size();
-    }
-
-    /** Determines whether the given column is covered or not */
-    bool covers(unsigned char column) const {
-        return contains(columns, column);
-    }
-
-    /** Tests whether the given order covers a complete list of columns */
-    bool isComplete() const {
-        // the columns must contain the values 0 ... |length|
-        for (unsigned i = 0; i < columns.size(); i++) {
-            if (!contains(columns, i)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Tests whether this order is a prefix of the given order. */
-    bool isPrefixOf(const InterpreterIndexOrder& other) const {
-        // this one must not be longer
-        if (columns.size() > other.columns.size()) {
-            return false;
-        }
-        for (unsigned i = 0; i < columns.size(); i++) {
-            if (columns[i] != other.columns[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Tests whether this order is compatible with the given order. A
-     * order A is compatible with an order B if the first |A| elements
-     * of B are a permutation of A.
-     */
-    bool isCompatible(const InterpreterIndexOrder& other) const {
-        // this one must be shorter
-        if (columns.size() > other.columns.size()) {
-            return false;
-        }
-        // check overlapping prefix
-        for (unsigned i = 0; i < columns.size(); ++i) {
-            if (!contains(columns, other.columns[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Enables the index order to be printed */
-    void print(std::ostream& out) const {
-        out << "[" << join(columns, ",", [](std::ostream& out, int i) { out << i; }) << "]";
-    }
-
-    friend std::ostream& operator<<(std::ostream& out, const InterpreterIndexOrder& order) {
-        order.print(out);
-        return out;
-    }
-    // the order of columns along which fields should be sorted by an index
-    std::vector<unsigned char> columns;
-};
-
 /* B-Tree indexes as default implementation for indexes */
 class InterpreterIndex {
+    using LexOrder = std::vector<int>;
+
 public:
     /* lexicographical comparison operation on two tuple pointers */
     struct comparator {
-        const InterpreterIndexOrder& order;
+        const LexOrder order;
 
         /* constructor to initialize state */
-        comparator(const InterpreterIndexOrder& order) : order(order) {}
+        comparator(const LexOrder& order) : order(order) {}
 
         /* comparison function */
         int operator()(const RamDomain* x, const RamDomain* y) const {
@@ -175,10 +72,13 @@ public:
 
     using iterator = index_set::iterator;
 
-    InterpreterIndex(InterpreterIndexOrder order)
+    InterpreterIndex(LexOrder order)
             : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
-    const InterpreterIndexOrder& order() const {
+    InterpreterIndex(const InterpreterIndex&& index)
+            : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
+
+    const LexOrder& order() const {
         return theOrder;
     }
 
@@ -188,7 +88,7 @@ public:
      * precondition: tuple does not exist in the index
      */
     void insert(const RamDomain* tuple) {
-        set.insert(tuple);
+        set.insert(tuple, operation_hints);
     }
 
     /**
@@ -203,12 +103,13 @@ public:
 
     /** check whether tuple exists in index */
     bool exists(const RamDomain* value) {
-        return set.find(value) != set.end();
+        return set.find(value, operation_hints) != set.end();
     }
 
     /** purge all hashes of index */
     void purge() {
         set.clear();
+        operation_hints.clear();
     }
 
     /** enables the index to be printed */
@@ -219,20 +120,30 @@ public:
     }
 
     /** return start and end iterator of an equal range */
-    inline std::pair<iterator, iterator> equalRange(const RamDomain* value) const {
+    inline std::pair<iterator, iterator> equalRange(const RamDomain* value) {
         return lowerUpperBound(value, value);
     }
 
     /** return start and end iterator of a range */
-    inline std::pair<iterator, iterator> lowerUpperBound(const RamDomain* low, const RamDomain* high) const {
-        return std::pair<iterator, iterator>(set.lower_bound(low), set.upper_bound(high));
+    inline std::pair<iterator, iterator> lowerUpperBound(const RamDomain* low, const RamDomain* high) {
+        return std::pair<iterator, iterator>(
+                set.lower_bound(low, operation_hints), set.upper_bound(high, operation_hints));
+    }
+
+    /** return start and end iterator of the index set */
+    inline std::pair<iterator, iterator> getIteratorPair() const {
+        return std::pair<iterator, iterator>(set.begin(), set.end());
     }
 
 private:
-    // retain the index order used to construct an object of this class
-    const InterpreterIndexOrder theOrder;
-    // set storing tuple pointers of table
+    /** retain the index order used to construct an object of this class */
+    const LexOrder theOrder;
+
+    /** set storing tuple pointers of table */
     index_set set;
+
+    /** Operation hints */
+    index_set::btree_operation_hints<1> operation_hints;
 };
 
 }  // end of namespace souffle

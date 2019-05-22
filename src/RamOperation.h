@@ -36,22 +36,14 @@ namespace souffle {
  */
 class RamOperation : public RamNode {
 public:
-    RamOperation() = default;
-
+    /** pretty print with intentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
     void print(std::ostream& os) const override {
         print(os, 0);
     }
 
-    std::vector<const RamNode*> getChildNodes() const override = 0;
-
-    void apply(const RamNodeMapper& map) override = 0;
-
     RamOperation* clone() const override = 0;
-
-protected:
-    bool equal(const RamNode& node) const override = 0;
 };
 
 /**
@@ -195,12 +187,6 @@ public:
         return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamScan*>(&node));
-        const auto& other = static_cast<const RamScan&>(node);
-        return RamRelationSearch::equal(other);
-    }
 };
 
 /**
@@ -224,12 +210,6 @@ public:
     RamParallelScan* clone() const override {
         return new RamParallelScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
-    }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelScan*>(&node));
-        const auto& other = static_cast<const RamParallelScan&>(node);
-        return RamScan::equal(other);
     }
 };
 
@@ -323,16 +303,9 @@ public:
                 resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
             }
         }
-        auto* res = new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getTupleId(), std::move(resQueryPattern),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
-        return res;
-    }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamIndexScan*>(&node));
-        const auto& other = static_cast<const RamIndexScan&>(node);
-        return RamIndexRelationSearch::equal(other);
+        return new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
+                std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
+                getProfileText());
     }
 };
 
@@ -375,17 +348,9 @@ public:
                 resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
             }
         }
-        RamParallelIndexScan* res =
-                new RamParallelIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                        getTupleId(), std::move(resQueryPattern),
-                        std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
-        return res;
-    }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelIndexScan*>(&node));
-        const auto& other = static_cast<const RamParallelIndexScan&>(node);
-        return RamIndexScan::equal(other);
+        return new RamParallelIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                getTupleId(), std::move(resQueryPattern),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 };
 
@@ -401,6 +366,7 @@ public:
 
     /** get condition */
     const RamCondition& getCondition() const {
+        assert(condition != nullptr && "condition of choice is a null-pointer");
         return *condition;
     }
 
@@ -428,14 +394,14 @@ public:
         return {nestedOperation.get(), relationRef.get(), condition.get()};
     }
 
+protected:
+    std::unique_ptr<RamCondition> condition;
+
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamChoice*>(&node));
         const auto& other = static_cast<const RamChoice&>(node);
         return RamRelationSearch::equal(other) && getCondition() == other.getCondition();
     }
-
-protected:
-    std::unique_ptr<RamCondition> condition;
 };
 
 /**
@@ -462,12 +428,6 @@ public:
                 getTupleId(), std::unique_ptr<RamCondition>(condition->clone()),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelChoice*>(&node));
-        const auto& other = static_cast<const RamParallelChoice&>(node);
-        return RamChoice::equal(other);
-    }
 };
 
 /**
@@ -486,6 +446,7 @@ public:
 
     /** get condition */
     const RamCondition& getCondition() const {
+        assert(condition != nullptr && "condition of index-choice is a null-pointer");
         return *condition;
     }
 
@@ -546,7 +507,6 @@ public:
 protected:
     std::unique_ptr<RamCondition> condition;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIndexChoice*>(&node));
         const auto& other = static_cast<const RamIndexChoice&>(node);
@@ -601,18 +561,104 @@ public:
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
     }
-
-protected:
-    /** Check equality */
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallelIndexChoice*>(&node));
-        const auto& other = static_cast<const RamParallelIndexChoice&>(node);
-        return RamIndexChoice::equal(other);
-    }
 };
 
 /** Types of aggregation functions */
 enum AggregateFunction { MAX, MIN, COUNT, SUM };
+
+/**
+ * Aggregation
+ */
+class RamAggregate : public RamRelationSearch {
+public:
+    RamAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
+            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
+            std::unique_ptr<RamCondition> condition, int ident)
+            : RamRelationSearch(std::move(relRef), ident, std::move(nested)), function(fun),
+              expression(std::move(expression)), condition(std::move(condition)) {}
+
+    /** Get condition */
+    const RamCondition& getCondition() const {
+        assert(condition != nullptr && "Condition of aggregate is a null-poionter");
+        return *condition;
+    }
+
+    /** Get aggregation function */
+    AggregateFunction getFunction() const {
+        return function;
+    }
+
+    /** Get target expression */
+    const RamExpression& getExpression() const {
+        assert(expression != nullptr && "Expression of aggregate is a null-pointer");
+        return *expression;
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "t" << getTupleId() << ".0=";
+        switch (function) {
+            case MIN:
+                os << "MIN ";
+                break;
+            case MAX:
+                os << "MAX ";
+                break;
+            case COUNT:
+                os << "COUNT ";
+                break;
+            case SUM:
+                os << "SUM ";
+                break;
+        }
+        if (function != COUNT) {
+            os << *expression << " ";
+        }
+        os << " FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
+        if (condition != nullptr) {
+            os << " WHERE " << getCondition();
+        }
+        os << std::endl;
+        RamRelationSearch::print(os, tabpos + 1);
+    }
+
+    std::vector<const RamNode*> getChildNodes() const override {
+        auto res = RamRelationSearch::getChildNodes();
+        res.push_back(expression.get());
+        res.push_back(condition.get());
+        return res;
+    }
+
+    RamAggregate* clone() const override {
+        return new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
+                std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                std::unique_ptr<RamExpression>(expression->clone()),
+                std::unique_ptr<RamCondition>(condition->clone()), getTupleId());
+    }
+
+    void apply(const RamNodeMapper& map) override {
+        RamRelationSearch::apply(map);
+        condition = map(std::move(condition));
+        expression = map(std::move(expression));
+    }
+
+protected:
+    /** Aggregation function */
+    AggregateFunction function;
+
+    /** Aggregation expression */
+    std::unique_ptr<RamExpression> expression;
+
+    /** Aggregation tuple condition */
+    std::unique_ptr<RamCondition> condition;
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamAggregate*>(&node));
+        const auto& other = static_cast<const RamAggregate&>(node);
+        return RamRelationSearch::equal(other) && getCondition() == other.getCondition() &&
+               getFunction() == other.getFunction() && getExpression() == other.getExpression();
+    }
+};
 
 /**
  * Index Aggregation
@@ -627,8 +673,9 @@ public:
               function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
     /** Get condition */
-    const RamCondition* getCondition() const {
-        return condition.get();
+    const RamCondition& getCondition() const {
+        assert(condition != nullptr && "Condition of index-aggregate is a null-pointer");
+        return *condition;
     }
 
     /** Get aggregation function */
@@ -637,8 +684,9 @@ public:
     }
 
     /** Get target expression */
-    const RamExpression* getExpression() const {
-        return expression.get();
+    const RamExpression& getExpression() const {
+        assert(expression != nullptr && "Expression of index-aggregate is a null-pointer");
+        return *expression;
     }
 
     void print(std::ostream& os, int tabpos) const override {
@@ -679,7 +727,7 @@ public:
             os << "none";
         }
         if (condition != nullptr) {
-            os << " WHERE " << *getCondition();
+            os << " WHERE " << getCondition();
         }
         os << std::endl;
         RamIndexRelationSearch::print(os, tabpos + 1);
@@ -687,12 +735,8 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamIndexRelationSearch::getChildNodes();
-        if (expression != nullptr) {
-            res.push_back(expression.get());
-        }
-        if (condition != nullptr) {
-            res.push_back(condition.get());
-        }
+        res.push_back(expression.get());
+        res.push_back(condition.get());
         return res;
     }
 
@@ -701,22 +745,16 @@ public:
         for (auto const& e : queryPattern) {
             pattern.push_back(std::unique_ptr<RamExpression>((e != nullptr) ? e->clone() : nullptr));
         }
-        auto* res = new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
+        return new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
-                condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
-                std::move(pattern), getTupleId());
-        return res;
+                std::unique_ptr<RamExpression>(expression->clone()),
+                std::unique_ptr<RamCondition>(condition->clone()), std::move(pattern), getTupleId());
     }
 
     void apply(const RamNodeMapper& map) override {
         RamIndexRelationSearch::apply(map);
-        if (condition != nullptr) {
-            condition = map(std::move(condition));
-        }
-        if (expression != nullptr) {
-            expression = map(std::move(expression));
-        }
+        condition = map(std::move(condition));
+        expression = map(std::move(expression));
     }
 
 protected:
@@ -732,117 +770,7 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIndexAggregate*>(&node));
         const auto& other = static_cast<const RamIndexAggregate&>(node);
-        if (getCondition() != nullptr && other.getCondition() != nullptr &&
-                *getCondition() != *other.getCondition()) {
-            return false;
-        }
         return RamIndexRelationSearch::equal(other) && getCondition() == other.getCondition() &&
-               getFunction() == other.getFunction() && getExpression() == other.getExpression();
-    }
-};
-
-/**
- * Aggregation
- */
-class RamAggregate : public RamRelationSearch {
-public:
-    RamAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
-            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
-            std::unique_ptr<RamCondition> condition, int ident)
-            : RamRelationSearch(std::move(relRef), ident, std::move(nested)), function(fun),
-              expression(std::move(expression)), condition(std::move(condition)) {}
-
-    /** Get condition */
-    const RamCondition* getCondition() const {
-        return condition.get();
-    }
-
-    /** Get aggregation function */
-    AggregateFunction getFunction() const {
-        return function;
-    }
-
-    /** Get target expression */
-    const RamExpression* getExpression() const {
-        return expression.get();
-    }
-
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "t" << getTupleId() << ".0=";
-        switch (function) {
-            case MIN:
-                os << "MIN ";
-                break;
-            case MAX:
-                os << "MAX ";
-                break;
-            case COUNT:
-                os << "COUNT ";
-                break;
-            case SUM:
-                os << "SUM ";
-                break;
-        }
-        if (function != COUNT) {
-            os << *expression << " ";
-        }
-        os << " FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
-        if (condition != nullptr) {
-            os << " WHERE " << *getCondition();
-        }
-        os << std::endl;
-        RamRelationSearch::print(os, tabpos + 1);
-    }
-
-    std::vector<const RamNode*> getChildNodes() const override {
-        auto res = RamRelationSearch::getChildNodes();
-        if (expression != nullptr) {
-            res.push_back(expression.get());
-        }
-        if (condition != nullptr) {
-            res.push_back(condition.get());
-        }
-        return res;
-    }
-
-    RamAggregate* clone() const override {
-        auto* res = new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
-                std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                expression == nullptr ? nullptr : std::unique_ptr<RamExpression>(expression->clone()),
-                condition == nullptr ? nullptr : std::unique_ptr<RamCondition>(condition->clone()),
-                getTupleId());
-        return res;
-    }
-
-    void apply(const RamNodeMapper& map) override {
-        RamRelationSearch::apply(map);
-        if (condition != nullptr) {
-            condition = map(std::move(condition));
-        }
-        if (expression != nullptr) {
-            expression = map(std::move(expression));
-        }
-    }
-
-protected:
-    /** Aggregation function */
-    AggregateFunction function;
-
-    /** Aggregation expression */
-    std::unique_ptr<RamExpression> expression;
-
-    /** Aggregation tuple condition */
-    std::unique_ptr<RamCondition> condition;
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamAggregate*>(&node));
-        const auto& other = static_cast<const RamAggregate&>(node);
-        if (getCondition() != nullptr && other.getCondition() != nullptr &&
-                *getCondition() != *other.getCondition()) {
-            return false;
-        }
-        return RamRelationSearch::equal(other) && getCondition() == other.getCondition() &&
                getFunction() == other.getFunction() && getExpression() == other.getExpression();
     }
 };
@@ -858,8 +786,8 @@ public:
 
     /** Get expression */
     const RamExpression& getExpression() const {
-        assert(expression != nullptr);
-        return *expression.get();
+        assert(expression != nullptr && "Expression of unpack-record is a null-pointer");
+        return *expression;
     }
 
     /** Get arity */
@@ -879,9 +807,8 @@ public:
     }
 
     RamUnpackRecord* clone() const override {
-        auto* res = new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(),
+        return new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(),
                 std::unique_ptr<RamExpression>(getExpression().clone()), arity);
-        return res;
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -915,6 +842,7 @@ public:
 
     /** Get condition */
     const RamCondition& getCondition() const {
+        assert(condition != nullptr && "condition of filter operation is a null-pointer");
         return *condition;
     }
 
@@ -966,6 +894,7 @@ public:
 
     /** Get break condition */
     const RamCondition& getCondition() const {
+        assert(condition != nullptr && "condition of break operation is a null-pointer");
         return *condition;
     }
 
@@ -1043,9 +972,8 @@ public:
         for (auto& cur : expressions) {
             newValues.emplace_back(cur->clone());
         }
-        auto* res = new RamProject(
+        return new RamProject(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
-        return res;
     }
 
     void apply(const RamNodeMapper& map) override {

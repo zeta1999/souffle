@@ -64,13 +64,13 @@ protected:
     RamDomain evalExpr(const RamExpression& value, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate operation */
-    void evalOp(const RamOperation& op, const InterpreterContext& args = InterpreterContext());
+    void evalOp(const RamOperation& op, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate conditions */
     bool evalCond(const RamCondition& cond, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate statement */
-    void evalStmt(const RamStatement& stmt);
+    void evalStmt(const RamStatement& stmt, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
@@ -102,13 +102,13 @@ protected:
         iteration = 0;
     }
 
-    void createRelation(const RamRelation& id) {
+    void createRelation(const RamRelation& id, const MinIndexSelection* orderSet) {
         InterpreterRelation* res = nullptr;
         assert(environment.find(id.getName()) == environment.end());
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = new InterpreterEqRelation(id.getArity());
+            res = new InterpreterEqRelation(id.getArity(), orderSet);
         } else {
-            res = new InterpreterRelation(id.getArity());
+            res = new InterpreterRelation(id.getArity(), orderSet);
         }
         environment[id.getName()] = res;
     }

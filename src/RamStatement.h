@@ -37,17 +37,13 @@ namespace souffle {
  */
 class RamStatement : public RamNode {
 public:
-    RamStatement() = default;
-
     /** Pretty print with indentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
-    /** Print RAM statement */
     void print(std::ostream& os) const override {
         print(os, 0);
     }
 
-    /** Create clone */
     RamStatement* clone() const override = 0;
 };
 
@@ -61,15 +57,14 @@ public:
 
     /** Get RAM relation */
     const RamRelation& getRelation() const {
+        assert(relationRef != nullptr && "Relation reference is a null-pointer");
         return *relationRef->get();
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {relationRef.get()};
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
     }
@@ -78,7 +73,6 @@ protected:
     /** Relation */
     std::unique_ptr<RamRelationReference> relationRef;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRelationStatement*>(&node));
         const auto& other = static_cast<const RamRelationStatement&>(node);
@@ -93,14 +87,12 @@ class RamCreate : public RamRelationStatement {
 public:
     RamCreate(std::unique_ptr<RamRelationReference> relRef) : RamRelationStatement(std::move(relRef)) {}
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
         os << "CREATE " << rel.getName() << " " << rel.getRepresentation() << std::endl;
     };
 
-    /** Create clone */
     RamCreate* clone() const override {
         auto* res = new RamCreate(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
@@ -115,11 +107,11 @@ public:
     RamLoad(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
             : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
 
+    /** Get load directives */
     const std::vector<IODirectives>& getIODirectives() const {
         return ioDirectives;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
@@ -130,13 +122,13 @@ public:
         os << std::endl;
     };
 
-    /** Create clone */
     RamLoad* clone() const override {
         auto* res = new RamLoad(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
         return res;
     }
 
 protected:
+    /** load directives of a relation */
     const std::vector<IODirectives> ioDirectives;
 };
 
@@ -148,11 +140,11 @@ public:
     RamStore(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
             : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
 
+    /** Get store directives */
     const std::vector<IODirectives>& getIODirectives() const {
         return ioDirectives;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
@@ -163,13 +155,13 @@ public:
         os << std::endl;
     };
 
-    /** Create clone */
     RamStore* clone() const override {
         auto* res = new RamStore(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
         return res;
     }
 
 protected:
+    /** store directives of a relation */
     const std::vector<IODirectives> ioDirectives;
 };
 
@@ -180,7 +172,6 @@ class RamClear : public RamRelationStatement {
 public:
     RamClear(std::unique_ptr<RamRelationReference> relRef) : RamRelationStatement(std::move(relRef)) {}
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
@@ -189,7 +180,6 @@ public:
         os << std::endl;
     }
 
-    /** Create clone */
     RamClear* clone() const override {
         auto* res = new RamClear(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
@@ -203,14 +193,13 @@ class RamDrop : public RamRelationStatement {
 public:
     RamDrop(std::unique_ptr<RamRelationReference> relRef) : RamRelationStatement(std::move(relRef)) {}
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
         os << "DROP " << rel.getName();
         os << std::endl;
     }
-    /** Create clone */
+
     RamDrop* clone() const override {
         auto* res = new RamDrop(std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
@@ -235,44 +224,44 @@ public:
 
     /** Get source relation */
     const RamRelation& getSourceRelation() const {
+        assert(sourceRef != nullptr && "Source relation is a null-pointer");
         return *sourceRef->get();
     }
 
     /** Get target relation */
     const RamRelation& getTargetRelation() const {
+        assert(targetRef != nullptr && "Target relation is a null-pointer");
         return *targetRef->get();
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "MERGE " << getTargetRelation().getName() << " WITH " << getSourceRelation().getName();
         os << std::endl;
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {sourceRef.get(), targetRef.get()};
     }
 
-    /** Create clone */
     RamMerge* clone() const override {
         auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(targetRef->clone()),
                 std::unique_ptr<RamRelationReference>(sourceRef->clone()));
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         sourceRef = map(std::move(sourceRef));
         targetRef = map(std::move(targetRef));
     }
 
 protected:
+    /** source relation reference of merge statement */
     std::unique_ptr<RamRelationReference> targetRef;
+
+    /** target relation reference of merge statement */
     std::unique_ptr<RamRelationReference> sourceRef;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamMerge*>(&node));
         const auto& other = static_cast<const RamMerge&>(node);
@@ -297,34 +286,32 @@ public:
 
     /** Get first relation */
     const RamRelation& getFirstRelation() const {
+        assert(first != nullptr && "Relation is a null-pointer");
         return *first->get();
     }
 
     /** Get second relation */
     const RamRelation& getSecondRelation() const {
+        assert(second != nullptr && "Relation is a null-pointer");
         return *second->get();
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "SWAP (" << getFirstRelation().getName() << ", " << getSecondRelation().getName() << ")";
         os << std::endl;
     };
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {first.get(), second.get()};
     }
 
-    /** Create clone */
     RamSwap* clone() const override {
         auto* res = new RamSwap(std::unique_ptr<RamRelationReference>(first->clone()),
                 std::unique_ptr<RamRelationReference>(second->clone()));
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         first = map(std::move(first));
         second = map(std::move(second));
@@ -337,7 +324,6 @@ protected:
     /** second argument of swap statement */
     std::unique_ptr<RamRelationReference> second;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSwap*>(&node));
         const auto& other = static_cast<const RamSwap&>(node);
@@ -359,7 +345,6 @@ public:
         return toPtrVector(values);
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "INSERT (" << join(values, ",", print_deref<std::unique_ptr<RamExpression>>()) << ") INTO "
@@ -367,7 +352,6 @@ public:
         os << std::endl;
     };
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res = RamRelationStatement::getChildNodes();
         for (const auto& cur : values) {
@@ -376,7 +360,6 @@ public:
         return res;
     }
 
-    /** Create clone */
     RamFact* clone() const override {
         auto* res = new RamFact(std::unique_ptr<RamRelationReference>(relationRef->clone()), {});
         for (auto& cur : values) {
@@ -385,7 +368,6 @@ public:
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         RamRelationStatement::apply(map);
         for (auto& val : values) {
@@ -397,7 +379,6 @@ protected:
     /** Arguments of fact */
     std::vector<std::unique_ptr<RamExpression>> values;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamFact*>(&node));
         const auto& other = static_cast<const RamFact&>(node);
@@ -413,30 +394,26 @@ public:
     RamQuery(std::unique_ptr<RamOperation> o) : RamStatement(), operation(std::move(o)) {}
 
     /** Get RAM operation */
-    RamOperation& getOperation() const {
+    const RamOperation& getOperation() const {
         assert(operation);
         return *operation;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "QUERY" << std::endl;
         operation->print(os, tabpos + 1);
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {operation.get()};
     }
 
-    /** Create clone */
     RamQuery* clone() const override {
         RamQuery* res;
         res = new RamQuery(std::unique_ptr<RamOperation>(operation->clone()));
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         operation = map(std::move(operation));
     }
@@ -445,7 +422,6 @@ protected:
     /** RAM operation */
     std::unique_ptr<RamOperation> operation;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamQuery*>(&node));
         const auto& other = static_cast<const RamQuery&>(node);
@@ -487,14 +463,12 @@ public:
         return toPtrVector(statements);
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         for (const auto& stmt : statements) {
             stmt->print(os, tabpos);
         }
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         for (const auto& cur : statements) {
@@ -503,7 +477,6 @@ public:
         return res;
     }
 
-    /** Create clone */
     RamSequence* clone() const override {
         auto* res = new RamSequence();
         for (auto& cur : statements) {
@@ -512,7 +485,6 @@ public:
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         for (auto& stmt : statements) {
             stmt = map(std::move(stmt));
@@ -523,7 +495,6 @@ protected:
     /** ordered list of RAM statements */
     std::vector<std::unique_ptr<RamStatement>> statements;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSequence*>(&node));
         const auto& other = static_cast<const RamSequence&>(node);
@@ -555,7 +526,6 @@ public:
         return toPtrVector(statements);
     }
 
-    /* Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "PARALLEL" << std::endl;
         for (auto const& stmt : statements) {
@@ -564,7 +534,6 @@ public:
         os << times(" ", tabpos) << "END PARALLEL" << std::endl;
     }
 
-    /** Obtains a list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         for (const auto& cur : statements) {
@@ -573,7 +542,6 @@ public:
         return res;
     }
 
-    /** Create clone */
     RamParallel* clone() const override {
         auto* res = new RamParallel();
         for (auto& cur : statements) {
@@ -582,7 +550,6 @@ public:
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         for (auto& stmt : statements) {
             stmt = map(std::move(stmt));
@@ -593,7 +560,6 @@ protected:
     /** list of statements executed in parallel */
     std::vector<std::unique_ptr<RamStatement>> statements;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamParallel*>(&node));
         const auto& other = static_cast<const RamParallel&>(node);
@@ -620,25 +586,21 @@ public:
         return *body;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "LOOP" << std::endl;
         body->print(os, tabpos + 1);
         os << times(" ", tabpos) << "END LOOP" << std::endl;
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {body.get()};
     }
 
-    /** Create clone */
     RamLoop* clone() const override {
         auto* res = new RamLoop(std::unique_ptr<RamStatement>(body->clone()));
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         body = map(std::move(body));
     }
@@ -647,7 +609,6 @@ protected:
     /** Body of loop */
     std::unique_ptr<RamStatement> body;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLoop*>(&node));
         const auto& other = static_cast<const RamLoop&>(node);
@@ -670,23 +631,19 @@ public:
         return *condition;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "EXIT " << getCondition() << std::endl;
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {condition.get()};
     }
 
-    /** Create clone */
     RamExit* clone() const override {
         auto* res = new RamExit(std::unique_ptr<RamCondition>(condition->clone()));
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         condition = map(std::move(condition));
     }
@@ -695,7 +652,6 @@ protected:
     /** exit condition */
     std::unique_ptr<RamCondition> condition;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamExit*>(&node));
         const auto& other = static_cast<const RamExit&>(node);
@@ -741,26 +697,22 @@ public:
         }
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "START_TIMER \"" << stringify(message) << "\"" << std::endl;
         statement->print(os, tabpos + 1);
         os << times(" ", tabpos) << "END_TIMER" << std::endl;
     }
 
-    /** Obtains a list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {statement.get()};
     }
 
-    /** Create clone */
     RamLogTimer* clone() const override {
         auto* res = new RamLogTimer(std::unique_ptr<RamStatement>(statement->clone()), message,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()));
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         statement = map(std::move(statement));
     }
@@ -775,7 +727,6 @@ protected:
     /** Relation */
     std::unique_ptr<RamRelationReference> relationRef;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogTimer*>(&node));
         const auto& other = static_cast<const RamLogTimer&>(node);
@@ -804,25 +755,21 @@ public:
         return *statement;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "BEGIN_DEBUG \"" << stringify(message) << "\"" << std::endl;
         statement->print(os, tabpos + 1);
         os << times(" ", tabpos) << "END_DEBUG" << std::endl;
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {statement.get()};
     }
 
-    /** Create clone */
     RamDebugInfo* clone() const override {
         auto* res = new RamDebugInfo(std::unique_ptr<RamStatement>(statement->clone()), message);
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         statement = map(std::move(statement));
     }
@@ -834,7 +781,6 @@ protected:
     /** debugging message */
     std::string message;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogTimer*>(&node));
         const auto& other = static_cast<const RamLogTimer&>(node);
@@ -861,7 +807,6 @@ public:
         return index;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "BEGIN_STRATUM " << index << std::endl;
@@ -870,18 +815,15 @@ public:
         os << "END_STRATUM " << index << std::endl;
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {body.get()};
     }
 
-    /** Create clone */
     RamStratum* clone() const override {
         auto* res = new RamStratum(std::unique_ptr<RamStatement>(body->clone()), index);
         return res;
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         body = map(std::move(body));
     }
@@ -889,9 +831,10 @@ public:
 protected:
     /** Body of stratum */
     std::unique_ptr<RamStatement> body;
+
+    /** Stratum number */
     const int index;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamStratum*>(&node));
         const auto& other = static_cast<const RamStratum&>(node);
@@ -912,7 +855,6 @@ public:
         return message;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "LOGSIZE " << getRelation().getName();
         os << " TEXT "
@@ -920,24 +862,21 @@ public:
         os << std::endl;
     }
 
-    /** Create clone */
     RamLogSize* clone() const override {
         auto* res = new RamLogSize(std::unique_ptr<RamRelationReference>(relationRef->clone()), message);
         return res;
     }
 
 protected:
-    /** Check equality */
+    /** logging message */
+    std::string message;
+
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogSize*>(&node));
         const auto& other = static_cast<const RamLogSize&>(node);
         RamRelationStatement::equal(other);
         return getMessage() == other.getMessage();
     }
-
-protected:
-    /** logging message */
-    std::string message;
 };
 
 #ifdef USE_MPI
@@ -951,13 +890,11 @@ public:
         return sourceStratum;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
         os << "RECV DATA FOR " << getRelation().getName() << " FROM STRATUM {" << sourceStratum << "}";
     };
 
-    /** Create clone */
     RamRecv* clone() const override {
         RamRecv* res =
                 new RamRecv(std::unique_ptr<RamRelationReference>(relationRef->clone()), sourceStratum);
@@ -965,9 +902,9 @@ public:
     }
 
 protected:
+    /** source stratum */
     const int sourceStratum;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRecv*>(&node));
         const auto& other = static_cast<const RamRecv&>(node);
@@ -985,7 +922,6 @@ public:
         return destinationStrata;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
         os << "SEND DATA FOR " << getRelation().getName() << " TO STRATUM {";
@@ -999,7 +935,6 @@ public:
         os << "}";
     };
 
-    /** Create clone */
     RamSend* clone() const override {
         RamSend* res =
                 new RamSend(std::unique_ptr<RamRelationReference>(relationRef->clone()), destinationStrata);
@@ -1007,9 +942,9 @@ public:
     }
 
 protected:
+    /** destination stratum */
     const std::set<size_t> destinationStrata;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSend*>(&node));
         const auto& other = static_cast<const RamSend&>(node);
@@ -1021,27 +956,22 @@ class RamNotify : public RamStatement {
 public:
     RamNotify() : RamStatement() {}
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
         os << "NOTIFY";
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {};
     }
 
-    /** Create clone */
     RamNotify* clone() const override {
         return new RamNotify();
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {}
 
 protected:
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         return true;
     }
@@ -1056,29 +986,25 @@ public:
         return count;
     }
 
-    /** Pretty print */
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
         os << "WAIT";
     }
 
-    /** Obtain list of child nodes */
     std::vector<const RamNode*> getChildNodes() const override {
         return {};
     }
 
-    /** Create clone */
     RamWait* clone() const override {
         return new RamWait(count);
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {}
 
 protected:
+    /** counter */
     const size_t count;
 
-    /** Check equality */
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamWait*>(&node));
         const auto& other = static_cast<const RamWait&>(node);

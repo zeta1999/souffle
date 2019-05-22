@@ -265,6 +265,11 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
 
         // -- safety net --
 
+        RamDomain visitUndefValue(const RamUndefValue& undef) override {
+            assert(false && "Compilation error");
+            return 0;
+        }
+
         RamDomain visitNode(const RamNode& node) override {
             std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
             assert(false && "Unsupported Node Type!");
@@ -286,6 +291,13 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
         ConditionEvaluator(RAMI& interp, const InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
 
         // -- connectors operators --
+        bool visitTrue(const RamTrue& ltrue) override {
+            return true;
+        }
+
+        bool visitFalse(const RamFalse& lfalse) override {
+            return false;
+        }
 
         bool visitConjunction(const RamConjunction& conj) override {
             return visit(conj.getLHS()) && visit(conj.getRHS());
@@ -363,8 +375,8 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
 
         // -- comparison operators --
         bool visitConstraint(const RamConstraint& relOp) override {
-            RamDomain lhs = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-            RamDomain rhs = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+            RamDomain lhs = interpreter.evalExpr(relOp.getLHS(), ctxt);
+            RamDomain rhs = interpreter.evalExpr(relOp.getRHS(), ctxt);
             switch (relOp.getOperator()) {
                 case BinaryConstraintOp::EQ:
                     return lhs == rhs;
@@ -379,8 +391,8 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
                 case BinaryConstraintOp::GE:
                     return lhs >= rhs;
                 case BinaryConstraintOp::MATCH: {
-                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     bool result = false;
@@ -393,8 +405,8 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
                     return result;
                 }
                 case BinaryConstraintOp::NOT_MATCH: {
-                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     bool result = false;
@@ -407,15 +419,15 @@ bool RAMI::evalCond(const RamCondition& cond, const InterpreterContext& ctxt) {
                     return result;
                 }
                 case BinaryConstraintOp::CONTAINS: {
-                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     return text.find(pattern) != std::string::npos;
                 }
                 case BinaryConstraintOp::NOT_CONTAINS: {
-                    RamDomain l = interpreter.evalExpr(*relOp.getLHS(), ctxt);
-                    RamDomain r = interpreter.evalExpr(*relOp.getRHS(), ctxt);
+                    RamDomain l = interpreter.evalExpr(relOp.getLHS(), ctxt);
+                    RamDomain r = interpreter.evalExpr(relOp.getRHS(), ctxt);
                     const std::string& pattern = interpreter.getSymbolTable().resolve(l);
                     const std::string& text = interpreter.getSymbolTable().resolve(r);
                     return text.find(pattern) == std::string::npos;
@@ -607,8 +619,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             for (const RamDomain* data : rel) {
                 ctxt[aggregate.getTupleId()] = data;
 
-                if (aggregate.getCondition() != nullptr &&
-                        !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
+                if (!interpreter.evalCond(aggregate.getCondition(), ctxt)) {
                     continue;
                 }
 
@@ -621,7 +632,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                 // aggregation is a bit more difficult
 
                 // eval target expression
-                RamDomain cur = interpreter.evalExpr(*aggregate.getExpression(), ctxt);
+                RamDomain cur = interpreter.evalExpr(aggregate.getExpression(), ctxt);
 
                 switch (aggregate.getFunction()) {
                     case souffle::MIN:
@@ -707,8 +718,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                 const RamDomain* data = *(ip);
                 ctxt[aggregate.getTupleId()] = data;
 
-                if (aggregate.getCondition() != nullptr &&
-                        !interpreter.evalCond(*aggregate.getCondition(), ctxt)) {
+                if (!interpreter.evalCond(aggregate.getCondition(), ctxt)) {
                     continue;
                 }
 
@@ -721,7 +731,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
                 // aggregation is a bit more difficult
 
                 // eval target expression
-                RamDomain cur = interpreter.evalExpr(*aggregate.getExpression(), ctxt);
+                RamDomain cur = interpreter.evalExpr(aggregate.getExpression(), ctxt);
 
                 switch (aggregate.getFunction()) {
                     case souffle::MIN:

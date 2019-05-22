@@ -544,8 +544,7 @@ bool TupleIdTransformer::reorderOperations(RamProgram& program) {
                 if (reorder[element->getTupleId()] != element->getTupleId()) {
                     changed = true;
                     node = std::make_unique<RamElementAccess>(reorder[element->getTupleId()],
-                            element->getElement(),
-                            std::make_unique<RamRelationReference>(&element->getRelation()));
+                            element->getElement());
                 }
             }
             node->apply(makeLambdaRamMapper(elementRewriter));

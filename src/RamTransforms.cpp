@@ -528,19 +528,17 @@ bool TupleIdTransformer::reorderOperations(RamProgram& program) {
         int ctr = 0;
 
         visitDepthFirst(query, [&](const RamSearch& search) {
-            auto* constSearch = const_cast<RamSearch*>(&search);
-            auto* tempSearch = dynamic_cast<RamSearch*>(constSearch);
             if (ctr != search.getTupleId()) {
                 changed = true;
             }
             reorder[search.getTupleId()] = ctr;
-            tempSearch->setTupleId(ctr);
+            const_cast<RamSearch*>(&search)->setTupleId(ctr);
             ctr++;
         });
 
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> elementRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
-            if (const RamElementAccess* element = dynamic_cast<RamElementAccess*>(node.get())) {
+            if (auto* element = dynamic_cast<RamElementAccess*>(node.get())) {
                 if (reorder[element->getTupleId()] != element->getTupleId()) {
                     changed = true;
                     node = std::make_unique<RamElementAccess>(

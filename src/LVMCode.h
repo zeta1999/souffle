@@ -143,14 +143,14 @@ enum LVM_Type {
 
 /** Encode relation into a index position for fast lookup */
 struct RelationEncoder {
-    std::map<std::string, size_t> relations;
-    std::vector<std::string> relationNames;
+    std::map<std::string, size_t> relations;   // String -> index mapping
+    std::vector<std::string> relationNames;    // Index -> stirng mapping
     size_t curRelationId = 0;
 
     size_t encodeRelation(std::string relationName) {
         auto iter = relations.find(relationName);
         // Give relation a new index if it is not in the environment yet
-        if (iter != relations.end()) {
+        if (iter == relations.end()) {
             relations.insert(std::make_pair(relationName, curRelationId));
             relationNames.push_back(relationName);
             return curRelationId++;
@@ -158,9 +158,13 @@ struct RelationEncoder {
             return iter->second;
         }
     }
-    
-    const std::string& getName(size_t index) const{
+
+    const std::string& getName(size_t index) const {
         return relationNames[index];
+    }
+
+    size_t getSize() const {
+        return relationNames.size();
     }
 };
 
@@ -214,10 +218,15 @@ public:
     size_t encodeRelation(std::string relationName) {
         return encoder.encodeRelation(relationName);
     }
-    
+
     /** Decode relation */
-    const std::string& decodeRelation(size_t id) const{
+    const std::string& decodeRelation(size_t id) const {
         return encoder.getName(id);
+    }
+
+    /** Return number of realtion in the program */
+    size_t getNumberOfRelation() const {
+        return encoder.getSize();
     }
 
     /** Print out the code stream */

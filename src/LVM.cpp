@@ -118,6 +118,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
     std::stack<RamDomain> stack;
     const LVMCode& code = *codeStream;
     auto& symbolTable = codeStream->getSymbolTable();
+    this->environment.resize(code.getNumberOfRelation());
     while (true) {
         switch (code[ip]) {
             case LVM_Number:
@@ -695,7 +696,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 RamDomain arity = code[ip + 1];
                 RamDomain relId = code[ip + 2];
                 InterpreterRelation& rel = *getRelation(relId);
-                const std::string& relName = rel.getName();
                 RamDomain tuple[arity];
                 for (auto i = 0; i < arity; ++i) {
                     tuple[arity - i - 1] = stack.top();
@@ -776,7 +776,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 } else {
                     RamDomain relId = code[ip+3];
                     const InterpreterRelation& rel = *getRelation(relId);
-                    const std::string& relName = rel.getName();
                     logger = new Logger(msg.c_str(), this->getIterationNumber(),
                             std::bind(&InterpreterRelation::size, &rel));
                 }
@@ -801,6 +800,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 // Record all the rleation that is created in the previous level
                 if (Global::config().has("profile") || this->level != 0) {
                     for (const auto& rel : environment) {
+                        if (rel == nullptr) {
+                            continue;
+                        }
                         const std::string& relName = rel->getName();
                         // Skip if it is a temp rel and select only the relation in the same level
                         if (relName[0] == '@' || rel->getLevel() != this->level - 1) continue;
@@ -830,10 +832,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 for (int i = 0; i < code[ip + 2]; ++i) {
                     attributeTypes.push_back(symbolTable.resolve(code[ip + 4 + i]));
                 }
-                attributeTypes.reserve(attributeTypes.size());
                 res->setAttributes(attributeTypes);
                 res->setLevel(level);
-                environment[relId].swap(res);
+                environment[relId] = std::move(res);
                 ip += 3 + code[ip + 2] + 1;
                 break;
             }

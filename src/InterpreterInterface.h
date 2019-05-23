@@ -186,6 +186,9 @@ public:
 
         // Build wrapper relations for Souffle's interface
         for (auto& relation : exec.getRelationMap()) {
+            if (relation == nullptr) {
+               continue;
+            }
             const auto& name = relation->getName();
             auto& interpreterRel = *relation;
             assert(map[name]);

@@ -13,7 +13,7 @@
 
 .decl A, B(x:empty)
 
-A([]).
-A([]).
+A(*empty[]).
+A(*empty[]).
 
 .printsize A, B

@@ -883,13 +883,12 @@ arg
         $$ = new AstNullConstant();
         $$->setSrcLoc(@$);
     }
-  /* TODO (azreika): in next version: prepend records with identifiers */
-  | LBRACKET RBRACKET {
-        $$ = new AstRecordInit();
+  | STAR identifier LBRACKET RBRACKET {
+        $$ = new AstRecordInit($identifier);
         $$->setSrcLoc(@$);
     }
-  | LBRACKET non_empty_arg_list RBRACKET {
-        auto record = new AstRecordInit();
+  | STAR identifier LBRACKET non_empty_arg_list RBRACKET {
+        auto record = new AstRecordInit($identifier);
 
         for (auto* arg : $non_empty_arg_list) {
             record->add(std::unique_ptr<AstArgument>(arg));

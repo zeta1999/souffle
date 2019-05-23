@@ -29,6 +29,14 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
             return -1;
         }
 
+        int visitTrue(const RamTrue& t) override {
+            return -1;
+        }
+
+        int visitFalse(const RamFalse& f) override {
+            return -1;
+        }
+
         // tuple element access
         int visitElementAccess(const RamElementAccess& elem) override {
             return elem.getTupleId();

@@ -572,6 +572,8 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         RamCondition* newCond;
         std::vector<RamExpression*> newPattern;
 
+        // Tracking aggregates seen to determine whether to
+        // hoist or not
         std::vector<int> aggIds;
 
         // Removing an aggregate that can be hoisted if it exists
@@ -596,7 +598,6 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                     if (!allAggragates) {
                         hoist = true;
                         changed = true;
-                        //                        currLevel = rla->getLevel(agg);
                         oldLevel = agg->getTupleId();
 
                         // Copying fields

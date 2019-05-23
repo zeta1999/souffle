@@ -330,8 +330,7 @@ identifier
   : IDENT {
         $$.push_back($IDENT);
     }
-    /* TODO (azreika): in next version: DOT -> DOUBLECOLON */
-  | identifier[curr_identifier] DOT IDENT {
+  | identifier[curr_identifier] DOUBLECOLON IDENT {
         $$ = $curr_identifier;
         $$.push_back($IDENT);
 

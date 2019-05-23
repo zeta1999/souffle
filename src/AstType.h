@@ -89,7 +89,7 @@ public:
     }
 
     void print(std::ostream& out) const {
-        out << join(names, ".");
+        out << join(names, "::");
     }
 
     friend std::ostream& operator<<(std::ostream& out, const AstTypeIdentifier& id) {

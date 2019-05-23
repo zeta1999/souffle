@@ -561,6 +561,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
     // hoist aggregate if doesn't depend on anything
     visitDepthFirst(program, [&](const RamQuery& query) {
         int currLevel = -1;
+        int oldLevel = -1;
         bool hoist = false;
         bool newIndex = false;
 
@@ -582,6 +583,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                     hoist = true;
                     changed = true;
                     currLevel = rla->getLevel(agg);
+                    oldLevel = agg->getTupleId();
 
                     // Copying fields
                     newFun = agg->getFunction();
@@ -598,6 +600,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                     changed = true;
                     newIndex = true;
                     currLevel = rla->getLevel(agg);
+                    oldLevel = agg->getTupleId();
 
                     // Copying fields
                     newFun = agg->getFunction();
@@ -617,7 +620,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggAdder =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (auto* search = dynamic_cast<RamSearch*>(node.get())) {
-                if (rla->getLevel(search) == currLevel - 1) {
+                if (search->getTupleId() == currLevel - 1) {
                     RamNestedOperation* op = dynamic_cast<RamNestedOperation*>(search);
                     // Finding the operation right before the RamSearch
                     // with tupleId = aggregate's tupleId - 1
@@ -642,8 +645,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                                 std::unique_ptr<RamOperation>(op->getOperation().clone()), newFun,
                                 std::make_unique<RamRelationReference>(newRef),
                                 std::unique_ptr<RamExpression>(newExp),
-                                std::unique_ptr<RamCondition>(newCond), std::move(queryPattern),
-                                currLevel + 1);
+                                std::unique_ptr<RamCondition>(newCond), std::move(queryPattern), oldLevel);
 
                     } else {
                         // RamAggregate
@@ -653,7 +655,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                                 std::unique_ptr<RamOperation>(op->getOperation().clone()), newFun,
                                 std::make_unique<RamRelationReference>(newRef),
                                 std::unique_ptr<RamExpression>(newExp),
-                                std::unique_ptr<RamCondition>(newCond), currLevel + 1);
+                                std::unique_ptr<RamCondition>(newCond), oldLevel);
                     }
                 }
             }

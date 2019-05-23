@@ -66,7 +66,7 @@ protected:
             return nullptr;
         }
         // Handle Windows line endings on non-Windows systems
-        if (line.back() == '\r') {
+        if (!line.empty() && line.back() == '\r') {
             line = line.substr(0, line.length() - 1);
         }
         ++lineNumber;

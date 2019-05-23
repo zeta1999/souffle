@@ -695,7 +695,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         };
 
         if (hoist) {
-            if (currLevel == 1) {
+            if (currLevel < 1) {
                 // insert at the top of the loop nest
                 const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(aggTopAdder));
             } else {

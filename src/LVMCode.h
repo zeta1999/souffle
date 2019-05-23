@@ -141,6 +141,29 @@ enum LVM_Type {
 
 };
 
+/** Encode relation into a index position for fast lookup */
+struct RelationEncoder {
+    std::map<std::string, size_t> relations;
+    std::vector<std::string> relationNames;
+    size_t curRelationId = 0;
+
+    size_t encodeRelation(std::string relationName) {
+        auto iter = relations.find(relationName);
+        // Give relation a new index if it is not in the environment yet
+        if (iter != relations.end()) {
+            relations.insert(std::make_pair(relationName, curRelationId));
+            relationNames.push_back(relationName);
+            return curRelationId++;
+        } else {
+            return iter->second;
+        }
+    }
+    
+    const std::string& getName(size_t index) const{
+        return relationNames[index];
+    }
+};
+
 /**
  * LVMCode is an array of LVM Opcode and operands.
  * It also contains information (e.g. IODirectives and SymbolTable) which is necessary for it to be executed
@@ -182,6 +205,21 @@ public:
         return symbolTable;
     }
 
+    /** Return RelationEncoder */
+    RelationEncoder& getRelationEncoder() {
+        return encoder;
+    }
+
+    /** Encode relation */
+    size_t encodeRelation(std::string relationName) {
+        return encoder.encodeRelation(relationName);
+    }
+    
+    /** Decode relation */
+    const std::string& decodeRelation(size_t id) const{
+        return encoder.getName(id);
+    }
+
     /** Print out the code stream */
     virtual void print() const;
 
@@ -193,6 +231,9 @@ private:
 
     /** Class for converting string to number and vice versa */
     SymbolTable& symbolTable;
+
+    /** Relation Encode */
+    RelationEncoder encoder;
 };
 
 }  // End of namespace souffle

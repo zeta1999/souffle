@@ -38,7 +38,6 @@
 #include <dlfcn.h>
 
 namespace souffle {
-
 class InterpreterProgInterface;
 
 /**
@@ -150,32 +149,25 @@ protected:
     size_t getIterationNumber() const {
         return iteration;
     }
+
     /** Reset iteration number */
     void resetIterationNumber() {
         iteration = 0;
     }
 
-    /** Get relation */
-    InterpreterRelation& getRelation(const std::string& name) {
-        // look up relation
-        auto pos = environment.find(name);
-        assert(pos != environment.end());
-        return *pos->second;
+    /** Get a relation */
+    InterpreterRelation* getRelation(size_t id) {
+        return environment[id].get();
     }
 
     /** Drop relation */
-    void dropRelation(const std::string& relName) {
-        InterpreterRelation& rel = getRelation(relName);
-        environment.erase(relName);
-        delete &rel;
+    void dropRelation(size_t id){
+        environment[id].reset(nullptr);
     }
 
     /** Swap relation */
-    void swapRelation(const std::string& ramRel1, const std::string& ramRel2) {
-        InterpreterRelation* rel1 = &getRelation(ramRel1);
-        InterpreterRelation* rel2 = &getRelation(ramRel2);
-        environment[ramRel1] = rel2;
-        environment[ramRel2] = rel1;
+    void swapRelation(size_t relAId, size_t relBId){
+        environment[relAId].swap(environment[relBId]);
     }
 
     /** Lookup iterator, resize the iterator pool if necessary */

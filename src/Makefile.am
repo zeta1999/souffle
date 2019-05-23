@@ -118,7 +118,6 @@ souffle_sources = \
               ProfileEvent.h                            \
               ProvenanceTransformer.cpp                 \
               RamAnalysis.h                             \
-			  RAMI.cpp RAMI.h 							\
               RamLevelAnalysis.cpp RamLevelAnalysis.h   \
               RamCondition.h                            \
               RamNode.h                                 \

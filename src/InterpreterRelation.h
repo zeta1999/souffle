@@ -36,8 +36,8 @@ class InterpreterRelation {
     using LexOrder = std::vector<int>;
 
 public:
-    InterpreterRelation(size_t relArity, const MinIndexSelection* orderSet)
-            : arity(relArity), orderSet(orderSet) {
+    InterpreterRelation(size_t relArity, const MinIndexSelection* orderSet, std::string& relName)
+            : relName(relName), arity(relArity), orderSet(orderSet) {
         // Create all necessary indices based on orderSet
         for (auto& order : orderSet->getAllOrders()) {
             indices.push_back(InterpreterIndex(order));
@@ -56,6 +56,14 @@ public:
     /** Get AttributeType for the relation */
     std::vector<std::string>& getAttributeTypeQualifiers() {
         return attributeTypeQualifiers;
+    }
+
+    const std::string& getName() const {
+        return relName;
+    }
+
+    std::string getName() {
+        return relName;
     }
 
     /** Get arity of relation */
@@ -264,6 +272,10 @@ private:
 
     /** Stratum level information */
     size_t level = 0;
+
+    /** Relation name */
+    const std::string relName;
+
 };
 
 /**
@@ -272,8 +284,8 @@ private:
 
 class InterpreterEqRelation : public InterpreterRelation {
 public:
-    InterpreterEqRelation(size_t relArity, const MinIndexSelection* orderSet)
-            : InterpreterRelation(relArity, orderSet) {}
+    InterpreterEqRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
+            : InterpreterRelation(relArity, orderSet, relName) {}
 
     /** Insert tuple */
     void insert(const RamDomain* tuple) override {

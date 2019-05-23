@@ -226,7 +226,7 @@ protected:
 
     void visitEmptinessCheck(const RamEmptinessCheck& emptiness, size_t exitAddress) override {
         code->push_back(LVM_EmptinessCheck);
-        code->push_back(symbolTable.lookup(emptiness.getRelation().getName()));
+        code->push_back(code->encodeRelation(emptiness.getRelation().getName()));
     }
 
     void visitExistenceCheck(const RamExistenceCheck& exists, size_t exitAddress) override {
@@ -240,7 +240,7 @@ protected:
             types += (values[i] == nullptr ? "_" : "V");
         }
         code->push_back(LVM_ExistenceCheck);
-        code->push_back(symbolTable.lookup(exists.getRelation().getName()));
+        code->push_back(code->encodeRelation(exists.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
         code->push_back(getIndexPos(exists));
     }
@@ -257,7 +257,7 @@ protected:
             types += (values[i] == nullptr ? "_" : "V");
         }
         code->push_back(LVM_ProvenanceExistenceCheck);
-        code->push_back(symbolTable.lookup(provExists.getRelation().getName()));
+        code->push_back(code->encodeRelation(provExists.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
         code->push_back(getIndexPos(provExists));
     }
@@ -327,7 +327,7 @@ protected:
         // Init the Iterator
         code->push_back(LVM_ITER_InitFullIndex);
         code->push_back(counterLabel);
-        code->push_back(symbolTable.lookup(scan.getRelation().getName()));
+        code->push_back(code->encodeRelation(scan.getRelation().getName()));
 
         // While iterator is not at end
         size_t address_L0 = code->size();
@@ -363,7 +363,7 @@ protected:
         // Init the Iterator
         code->push_back(LVM_ITER_InitFullIndex);
         code->push_back(counterLabel);
-        code->push_back(symbolTable.lookup(choice.getRelation().getName()));
+        code->push_back(code->encodeRelation(choice.getRelation().getName()));
 
         // While iterator is not at end
         size_t address_L0 = code->size();
@@ -412,7 +412,7 @@ protected:
         // Init range index based on pattern
         code->push_back(LVM_ITER_InitRangeIndex);
         code->push_back(counterLabel);
-        code->push_back(symbolTable.lookup(scan.getRelation().getName()));
+        code->push_back(code->encodeRelation(scan.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
         code->push_back(getIndexPos(scan));
 
@@ -460,7 +460,7 @@ protected:
         // Init range index based on pattern
         code->push_back(LVM_ITER_InitRangeIndex);
         code->push_back(counterLabel);
-        code->push_back(symbolTable.lookup(indexChoice.getRelation().getName()));
+        code->push_back(code->encodeRelation(indexChoice.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
         code->push_back(getIndexPos(indexChoice));
 
@@ -514,7 +514,7 @@ protected:
         // Init the Iterator
         code->push_back(LVM_ITER_InitFullIndex);
         code->push_back(counterLabel);
-        code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
+        code->push_back(code->encodeRelation(aggregate.getRelation().getName()));
 
         // TODO (xiaowen/#992): Count -> Size for optimization
         if (aggregate.getFunction() == souffle::COUNT &&
@@ -636,7 +636,7 @@ protected:
         // Init range index based on pattern
         code->push_back(LVM_ITER_InitRangeIndex);
         code->push_back(counterLabel);
-        code->push_back(symbolTable.lookup(aggregate.getRelation().getName()));
+        code->push_back(code->encodeRelation(aggregate.getRelation().getName()));
         code->push_back(symbolTable.lookup(types));
         code->push_back(getIndexPos(aggregate));
 
@@ -773,7 +773,7 @@ protected:
         }
         code->push_back(LVM_Project);
         code->push_back(arity);
-        code->push_back(symbolTable.lookup(relationName));
+        code->push_back(code->encodeRelation(relationName));
     }
     void visitReturnValue(const RamReturnValue& ret, size_t exitAddress) override {
         std::string types;
@@ -869,7 +869,7 @@ protected:
             code->push_back(timerIndex);
         } else {
             code->push_back(1);
-            code->push_back(symbolTable.lookup(timer.getRelation()->getName()));
+            code->push_back(code->encodeRelation(timer.getRelation()->getName()));
             code->push_back(timerIndex);
         }
         visit(timer.getStatement(), exitAddress);
@@ -890,7 +890,7 @@ protected:
 
     void visitCreate(const RamCreate& create, size_t exitAddress) override {
         code->push_back(LVM_Create);
-        code->push_back(symbolTable.lookup(create.getRelation().getName()));
+        code->push_back(code->encodeRelation(create.getRelation().getName()));
         code->push_back(create.getRelation().getArity());
         switch (create.getRelation().getRepresentation()) {
             case RelationRepresentation::BTREE:
@@ -916,23 +916,23 @@ protected:
 
     void visitClear(const RamClear& clear, size_t exitAddress) override {
         code->push_back(LVM_Clear);
-        code->push_back(symbolTable.lookup(clear.getRelation().getName()));
+        code->push_back(code->encodeRelation(clear.getRelation().getName()));
     }
 
     void visitDrop(const RamDrop& drop, size_t exitAddress) override {
         code->push_back(LVM_Drop);
-        code->push_back(symbolTable.lookup(drop.getRelation().getName()));
+        code->push_back(code->encodeRelation(drop.getRelation().getName()));
     }
 
     void visitLogSize(const RamLogSize& size, size_t exitAddress) override {
         code->push_back(LVM_LogSize);
-        code->push_back(symbolTable.lookup(size.getRelation().getName()));
+        code->push_back(code->encodeRelation(size.getRelation().getName()));
         code->push_back(symbolTable.lookup(size.getMessage()));
     }
 
     void visitLoad(const RamLoad& load, size_t exitAddress) override {
         code->push_back(LVM_Load);
-        code->push_back(symbolTable.lookup(load.getRelation().getName()));
+        code->push_back(code->encodeRelation(load.getRelation().getName()));
 
         code->getIODirectives().push_back(load.getIODirectives());
         code->push_back(code->getIODirectivesSize() - 1);
@@ -940,7 +940,7 @@ protected:
 
     void visitStore(const RamStore& store, size_t exitAddress) override {
         code->push_back(LVM_Store);
-        code->push_back(symbolTable.lookup(store.getRelation().getName()));
+        code->push_back(code->encodeRelation(store.getRelation().getName()));
 
         code->getIODirectives().push_back(store.getIODirectives());
         code->push_back(code->getIODirectivesSize() - 1);
@@ -954,7 +954,7 @@ protected:
         }
         std::string targertRelation = fact.getRelation().getName();
         code->push_back(LVM_Fact);
-        code->push_back(symbolTable.lookup(targertRelation));
+        code->push_back(code->encodeRelation(targertRelation));
         code->push_back(arity);
     }
 
@@ -967,16 +967,16 @@ protected:
         std::string source = merge.getSourceRelation().getName();
         std::string target = merge.getTargetRelation().getName();
         code->push_back(LVM_Merge);
-        code->push_back(symbolTable.lookup(source));
-        code->push_back(symbolTable.lookup(target));
+        code->push_back(code->encodeRelation(source));
+        code->push_back(code->encodeRelation(target));
     }
 
     void visitSwap(const RamSwap& swap, size_t exitAddress) override {
         std::string first = swap.getFirstRelation().getName();
         std::string second = swap.getSecondRelation().getName();
         code->push_back(LVM_Swap);
-        code->push_back(symbolTable.lookup(first));
-        code->push_back(symbolTable.lookup(second));
+        code->push_back(code->encodeRelation(first));
+        code->push_back(code->encodeRelation(second));
     }
 
     void visitUndefValue(const RamUndefValue& undef, size_t exitAddress) override {

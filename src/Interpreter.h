@@ -50,7 +50,7 @@ public:
 
     virtual ~Interpreter() {
         for (auto& x : environment) {
-            delete x.second;
+            x.reset(nullptr);
         }
     }
 
@@ -126,7 +126,7 @@ protected:
     friend InterpreterProgInterface;
 
     /** relation environment type */
-    using relation_map = std::map<std::string, InterpreterRelation*>;
+    using relation_map = std::vector<std::unique_ptr<InterpreterRelation>>;
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {

@@ -583,11 +583,12 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                 aggIds.push_back(agg->getTupleId());
                 // assuming that RamSearches have tupleIds 0, 1, 2, ...
                 if (!hoist && rla->getLevel(agg) < agg->getTupleId() - 1) {
-                    // If all searches above agg in the loop nest are also aggregates
-                    // then we do not transform
+                    // If all searches between the rla->getLevel(agg) and agg
+                    // are aggregates, then we do not transform
                     bool allAggragates = true;
-                    for (int i = 0; i < rla->getLevel(agg); i++) {
+                    for (int i = rla->getLevel(agg) + 1; i <= agg->getTupleId(); i++) {
                         if (!(std::find(aggIds.begin(), aggIds.end(), i) != aggIds.end())) {
+                            currLevel = i - 1;
                             allAggragates = false;
                             break;
                         }
@@ -595,7 +596,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                     if (!allAggragates) {
                         hoist = true;
                         changed = true;
-                        currLevel = rla->getLevel(agg);
+                        //                        currLevel = rla->getLevel(agg);
                         oldLevel = agg->getTupleId();
 
                         // Copying fields
@@ -614,8 +615,9 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                     // If all searches above agg in the loop nest are also aggregates
                     // then we do not transform
                     bool allAggragates = true;
-                    for (int i = 0; i < rla->getLevel(agg); i++) {
+                    for (int i = rla->getLevel(agg) + 1; i <= agg->getTupleId(); i++) {
                         if (!(std::find(aggIds.begin(), aggIds.end(), i) != aggIds.end())) {
+                            currLevel = i - 1;
                             allAggragates = false;
                             break;
                         }
@@ -624,7 +626,6 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                         hoist = true;
                         changed = true;
                         newIndex = true;
-                        currLevel = rla->getLevel(agg);
                         oldLevel = agg->getTupleId();
 
                         // Copying fields

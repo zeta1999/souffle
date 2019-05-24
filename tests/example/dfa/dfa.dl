@@ -135,15 +135,15 @@
 
       .init   gen_kill_union = Gen_Kill_Union<Node,InfoLattice>
 
-      gen_kill_union.start(n) :- start(n).
+      gen_kill_union::start(n) :- start(n).
 
-      gen_kill_union.edge(x,y) :- edge(x,y).
+      gen_kill_union::edge(x,y) :- edge(x,y).
 
-      gen_kill_union.gen(node,inf) :- kill(node,inf), !gen(node,inf).
+      gen_kill_union::gen(node,inf) :- kill(node,inf), !gen(node,inf).
 
-      gen_kill_union.kill(node,inf) :- gen(node,inf).
+      gen_kill_union::kill(node,inf) :- gen(node,inf).
 
-      gen_kill_union.startvalue(inf) :- startvalue(inf).
+      gen_kill_union::startvalue(inf) :- startvalue(inf).
 
 
       //
@@ -154,7 +154,7 @@
       //  out
       //
 
-      out(node,inf) :- node(node), universe(inf), !gen_kill_union.out(node,inf).
+      out(node,inf) :- node(node), universe(inf), !gen_kill_union::out(node,inf).
 }
 
 
@@ -172,15 +172,15 @@
 
       .init gen_kill_union = Gen_Kill_Union<Node,InfoLattice>
 
-      gen_kill_union.start(node) :- start(node).
+      gen_kill_union::start(node) :- start(node).
 
-      gen_kill_union.edge(src,des) :- edge(des,src).
+      gen_kill_union::edge(src,des) :- edge(des,src).
 
-      gen_kill_union.gen(node,inf) :- gen(node,inf).
+      gen_kill_union::gen(node,inf) :- gen(node,inf).
 
-      gen_kill_union.kill(node,inf) :- kill(node,inf).
+      gen_kill_union::kill(node,inf) :- kill(node,inf).
 
-      gen_kill_union.startvalue(inf) :- startvalue(inf).
+      gen_kill_union::startvalue(inf) :- startvalue(inf).
 
 
       //
@@ -191,7 +191,7 @@
       //  out
       //
 
-      out(node,inf) :- gen_kill_union.out(node,inf).
+      out(node,inf) :- gen_kill_union::out(node,inf).
 }
 
 .comp Gen_Kill_Intersection_Backward<Node,InfoLattice> : Gen_Kill<Node,InfoLattice>, Graph<Node>{

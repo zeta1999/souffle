@@ -22,7 +22,7 @@
 .comp NumSelector<T> {
     .init generator = T
     .decl Selected(n: number)
-    Selected(n) :- generator::R(n), generator.R(n*2).
+    Selected(n) :- generator::R(n), generator::R(n*2).
 }
 
 .comp GoodNumSelector<T> : NumSelector<T> {

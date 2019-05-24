@@ -119,23 +119,23 @@
 
 .init ImmDom = ImmediateDominance<number>
 
-ImmDom.edge(1, 2).
-ImmDom.edge(1, 3).
-ImmDom.edge(2, 3).
-ImmDom.edge(4, 3).
-ImmDom.edge(8, 3).
-ImmDom.edge(3, 4).
-ImmDom.edge(8, 4).
-ImmDom.edge(4, 5).
-ImmDom.edge(4, 6).
-ImmDom.edge(5, 7).
-ImmDom.edge(6, 7).
-ImmDom.edge(10, 7).
-ImmDom.edge(7, 8).
-ImmDom.edge(8, 9).
-ImmDom.edge(8, 10).
-ImmDom.edge(9, 1).
-ImmDom.start(1).
+ImmDom::edge(1, 2).
+ImmDom::edge(1, 3).
+ImmDom::edge(2, 3).
+ImmDom::edge(4, 3).
+ImmDom::edge(8, 3).
+ImmDom::edge(3, 4).
+ImmDom::edge(8, 4).
+ImmDom::edge(4, 5).
+ImmDom::edge(4, 6).
+ImmDom::edge(5, 7).
+ImmDom::edge(6, 7).
+ImmDom::edge(10, 7).
+ImmDom::edge(7, 8).
+ImmDom::edge(8, 9).
+ImmDom::edge(8, 10).
+ImmDom::edge(9, 1).
+ImmDom::start(1).
 
 
 //
@@ -144,7 +144,7 @@ ImmDom.start(1).
 
 .decl dominators(n:number,s:number)
 .output dominators()
-dominators(n,s) :- ImmDom.dom(n,s).
+dominators(n,s) :- ImmDom::dom(n,s).
 
 
 //
@@ -153,6 +153,6 @@ dominators(n,s) :- ImmDom.dom(n,s).
 
 .decl immediate_dom(n:number,s:number)
 .output immediate_dom()
-immediate_dom(n,s) :- ImmDom.imdom(n,s).
+immediate_dom(n,s) :- ImmDom::imdom(n,s).
 
 

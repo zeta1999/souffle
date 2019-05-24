@@ -18,8 +18,8 @@
 .comp C:B {
     .decl path(x:number, y:number)
 .output path()
-    path(x,y) :- a.edge(x,y).
-    path(x,y) :- a.edge(x,z), path(z,y).
+    path(x,y) :- a::edge(x,y).
+    path(x,y) :- a::edge(x,z), path(z,y).
 }
 
 .init c = C

@@ -34,10 +34,10 @@
     .init G = Graph<N>
 
     .decl e(a:N,b:N)
-    G.edge(X,Y) :- e(X,Y).
+    G::edge(X,Y) :- e(X,Y).
 
     .decl r(a:N,b:N)
-    r(X,Y) :- G.reach(X,Y).
+    r(X,Y) :- G::reach(X,Y).
 }
 
 
@@ -48,8 +48,8 @@
 .type city
 .init StreetMap = Net<city>
 
-StreetMap.e("A","B").
-StreetMap.e("B","C").
+StreetMap::e("A","B").
+StreetMap::e("B","C").
 
 
 // -- use a record as node type --
@@ -65,13 +65,13 @@ StreetMap.e("B","C").
 #define Ned *Person["Ned","Evergreen Terrace 744"]
 #define Edna *Person["Ned","Evergreen Terrace 82"]
 
-SocialNet.e(Homer,Ned).
-SocialNet.e(Ned,Edna).
+SocialNet::e(Homer,Ned).
+SocialNet::e(Ned,Edna).
 
 
 // -- print some results --
 
 .decl result(n:symbol)
 .output result()
-result("Map Works") :- StreetMap.r("C","A").
-result("Social Net Works") :- SocialNet.r(Edna,Homer).
+result("Map Works") :- StreetMap::r("C","A").
+result("Social Net Works") :- SocialNet::r(Edna,Homer).

@@ -22,7 +22,7 @@
 .comp NumSelector<T> {
     .init generator = T
     .decl Selected(n: number)
-    Selected(n) :- generator.R(n), generator.R(n*2).
+    Selected(n) :- generator::R(n), generator.R(n*2).
 }
 
 .comp GoodNumSelector<T> : NumSelector<T> {
@@ -33,7 +33,7 @@
     .init selector = TSelector<TGenerator>
     .decl Out(n:number)
 .output Out()
-    Out(x) :- selector.Selected(x).
+    Out(x) :- selector::Selected(x).
 }
 
 .init main1 = Main<NumSelector, LotsOfNumGenerator>

@@ -22,8 +22,8 @@
     .decl TwoWays(x: number, y: number)
 .output TwoWays()
     TwoWays(x, y) :-
-        cg.CallGraphEdge(x, y),
-        cg.CallGraphEdge(y, x).
+        cg::CallGraphEdge(x, y),
+        cg::CallGraphEdge(y, x).
 }
 
 .init cha_main = Main<CICallGraph>

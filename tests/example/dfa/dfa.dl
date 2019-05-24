@@ -209,15 +209,15 @@
       //  in
       //
 
-      gen_kill_intersection.start(node) :- start(node).
+      gen_kill_intersection::start(node) :- start(node).
 
-      gen_kill_intersection.edge(src,des) :- edge(des,src).
+      gen_kill_intersection::edge(src,des) :- edge(des,src).
 
-      gen_kill_intersection.gen(node,inf) :- gen(node,inf).
+      gen_kill_intersection::gen(node,inf) :- gen(node,inf).
 
-      gen_kill_intersection.kill(node,inf) :- kill(node,inf).
+      gen_kill_intersection::kill(node,inf) :- kill(node,inf).
 
-      gen_kill_intersection.startvalue(inf) :- startvalue(inf).
+      gen_kill_intersection::startvalue(inf) :- startvalue(inf).
 
 
       //
@@ -228,7 +228,7 @@
       //  out
       //
 
-      out(node,inf) :- gen_kill_intersection.out(node,inf).
+      out(node,inf) :- gen_kill_intersection::out(node,inf).
 
 }
 
@@ -280,32 +280,32 @@ universe(inf) :- kill(_,inf).
 
 .init Available_Expressions = Gen_Kill_Intersection<number,symbol>
 
-Available_Expressions.edge(x,y) :- edge(x,y).
-Available_Expressions.gen(x,i) :- gen(x,i).
-Available_Expressions.kill(x,i) :- kill(x,i).
-Available_Expressions.startvalue(inf) :-  universe(inf),!kill(1,inf).
-Available_Expressions.start(1).
+Available_Expressions::edge(x,y) :- edge(x,y).
+Available_Expressions::gen(x,i) :- gen(x,i).
+Available_Expressions::kill(x,i) :- kill(x,i).
+Available_Expressions::startvalue(inf) :-  universe(inf),!kill(1,inf).
+Available_Expressions::start(1).
 
 
 
 .init Reaching_Definitions = Gen_Kill_Union<number,symbol>
 
-Reaching_Definitions.edge(x,y) :- edge(x,y).
-Reaching_Definitions.gen(x,i) :- gen(x,i).
-Reaching_Definitions.kill(x,i) :- kill(x,i).
-Reaching_Definitions.startvalue(i) :- gen(1,i), !kill(1,i).
-Reaching_Definitions.start(1).
+Reaching_Definitions::edge(x,y) :- edge(x,y).
+Reaching_Definitions::gen(x,i) :- gen(x,i).
+Reaching_Definitions::kill(x,i) :- kill(x,i).
+Reaching_Definitions::startvalue(i) :- gen(1,i), !kill(1,i).
+Reaching_Definitions::start(1).
 
 
 
 
 .init Live_Variables = Gen_Kill_Union_Backward<number,symbol>
 
-Live_Variables.edge(x,y) :- edge(x,y).
-Live_Variables.gen(x,i) :- use(x,i).
-Live_Variables.kill(x,i) :- kill(x,i).
-Live_Variables.startvalue(i) :- use(8,i), !kill(8,i).
-Live_Variables.start(8).
+Live_Variables::edge(x,y) :- edge(x,y).
+Live_Variables::gen(x,i) :- use(x,i).
+Live_Variables::kill(x,i) :- kill(x,i).
+Live_Variables::startvalue(i) :- use(8,i), !kill(8,i).
+Live_Variables::start(8).
 
 
 //
@@ -314,17 +314,17 @@ Live_Variables.start(8).
 
 .decl available_expressions(n:number, i:symbol)
 .output available_expressions()
-available_expressions(x,i) :- Available_Expressions.out(x,i).
+available_expressions(x,i) :- Available_Expressions::out(x,i).
 
 
 .decl reaching_definitions(n:number, i:symbol)
 .output reaching_definitions()
-reaching_definitions(x,i) :- Reaching_Definitions.out(x,i).
+reaching_definitions(x,i) :- Reaching_Definitions::out(x,i).
 
 
 .decl live_variables(n:number, i:symbol)
 .output live_variables()
-live_variables(x,i) :- Live_Variables.out(x,i).
+live_variables(x,i) :- Live_Variables::out(x,i).
 
 
 

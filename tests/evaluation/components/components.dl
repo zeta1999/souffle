@@ -67,9 +67,9 @@
 
     // reachability is defined over all edges
     .decl reachable(a:node,b:node)
-    reachable(X,Y) :- train.reachable(X,Y).
-    reachable(X,Y) :- ship.reachable(X,Y).
-    reachable(X,Y) :- cap.reachable(X,Y).
+    reachable(X,Y) :- train::reachable(X,Y).
+    reachable(X,Y) :- ship::reachable(X,Y).
+    reachable(X,Y) :- cap::reachable(X,Y).
 
     reachable(X,Z) :- reachable(X,Y), reachable(Y,Z).
 
@@ -80,29 +80,29 @@
 
 .init SocialNet = DiGraph
 
-SocialNet.edge("luke","leia").
-SocialNet.edge("han","luke").
+SocialNet::edge("luke","leia").
+SocialNet::edge("han","luke").
 
 
 .init Equal = Graph
 
-Equal.edge("5","five").
-Equal.edge("5","V").
+Equal::edge("5","five").
+Equal::edge("5","V").
 
 
 // some output
 .decl result (x:symbol)
 .output result ()
-result("Star Wars IV-VI happened!") :- SocialNet.reachable("han","leia").
-result("Luke isn't a good buddy!") :- !SocialNet.reachable("leia","han").
+result("Star Wars IV-VI happened!") :- SocialNet::reachable("han","leia").
+result("Luke isn't a good buddy!") :- !SocialNet::reachable("leia","han").
 
-result("V is five") :- Equal.reachable("V","five").
-result("five is V") :- Equal.reachable("five","V").
+result("V is five") :- Equal::reachable("V","five").
+result("five is V") :- Equal::reachable("five","V").
 
 .init London = Traffic
 
-London.train.edge("Airport","Waterloo").
-London.ship.edge("Waterloo","London Bridge").
-London.cap.edge("London Bridge", "Big Ben").
+London::train::edge("Airport","Waterloo").
+London::ship::edge("Waterloo","London Bridge").
+London::cap::edge("London Bridge", "Big Ben").
 
-result("Connected") :- London.reachable("Airport","Big Ben").
+result("Connected") :- London::reachable("Airport","Big Ben").

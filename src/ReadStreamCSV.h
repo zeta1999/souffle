@@ -90,7 +90,7 @@ protected:
                 continue;
             }
             ++columnsFilled;
-            if (symbolMask.at(column)) {
+            if (symbolMask.at(inputMap[column])) {
                 tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
             } else {
                 try {

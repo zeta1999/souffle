@@ -16,9 +16,9 @@
 
 
 // this should be fine
-.decl relX( a : x.inner )
-.decl relY( a : y.inner )
-.decl relZ( a : z.inner )
+.decl relX( a : x::inner )
+.decl relY( a : y::inner )
+.decl relZ( a : z::inner )
 
 
 // all relations should have different types

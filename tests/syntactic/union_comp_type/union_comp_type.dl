@@ -22,5 +22,5 @@
 .init helloinit = hello
 .init byeinit = bye
 
-.type blah = helloinit.thing
-.type bleh = helloinit.thing | byeinit.thing1 | byeinit.thing2 | byeinit.subhello.thing | other_type
+.type blah = helloinit::thing
+.type bleh = helloinit::thing | byeinit::thing1 | byeinit::thing2 | byeinit::subhello::thing | other_type

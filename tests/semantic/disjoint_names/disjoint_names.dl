@@ -46,7 +46,7 @@ relinst(2).
 }
 
 .init nestedInst = nested
-typerel(X) :- nestedInst.nesteditem(X).
+typerel(X) :- nestedInst::nesteditem(X).
 
 .decl nesteditem(x:number)
 .output nesteditem()

@@ -41,9 +41,9 @@ less(5,6).
 .init C = QuadraticRecursive
 
 // wire in input data
-A.edge(X,Y) :- less(X,Y).
-B.edge(X,Y) :- less(X,Y).
-C.edge(X,Y) :- less(X,Y).
+A::edge(X,Y) :- less(X,Y).
+B::edge(X,Y) :- less(X,Y).
+C::edge(X,Y) :- less(X,Y).
 
 
 

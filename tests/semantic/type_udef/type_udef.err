@@ -16,10 +16,10 @@ B(as(1,undef)).                             // error
 Error: Type undef has not been declared in file type_udef.dl at line 14
 B(*undef[1]).                               // error
 --^--------------------------------------------------
-Error: Undefined type undef in definition of union type c.U1 in file type_udef.dl at line 16
+Error: Undefined type undef in definition of union type c::U1 in file type_udef.dl at line 16
     .type U1 = undef | symbol               // error
 ----^------------------------------------------------
-Error: Undefined type undef in definition of union type c.U2 in file type_udef.dl at line 17
+Error: Undefined type undef in definition of union type c::U2 in file type_udef.dl at line 17
     .type U2 = number | T                   // error
 ----^------------------------------------------------
 Error: Undefined type undef in definition of field x in file type_udef.dl at line 18
@@ -28,13 +28,13 @@ Error: Undefined type undef in definition of field x in file type_udef.dl at lin
 Error: Undefined type undef in definition of field y in file type_udef.dl at line 19
     .type R2 = [ y : T ]                    // error
 ----^------------------------------------------------
-Warning: No rules/facts defined for relation c.A1 in file type_udef.dl at line 20
+Warning: No rules/facts defined for relation c::A1 in file type_udef.dl at line 20
     .decl A1(x : undef)                     // error
 ----------^------------------------------------------
 Error: Undefined type in attribute x:undef in file type_udef.dl at line 20
     .decl A1(x : undef)                     // error
 -----------------^-----------------------------------
-Warning: No rules/facts defined for relation c.A2 in file type_udef.dl at line 21
+Warning: No rules/facts defined for relation c::A2 in file type_udef.dl at line 21
     .decl A2(x : T)                         // error
 ----------^------------------------------------------
 Error: Undefined type in attribute x:undef in file type_udef.dl at line 21

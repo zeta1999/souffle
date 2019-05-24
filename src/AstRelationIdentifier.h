@@ -68,7 +68,7 @@ public:
 
     std::string getName() const {
         std::stringstream ss;
-        ss << join(names, ".");
+        ss << join(names, "::");
         return ss.str();
     }
 
@@ -88,7 +88,7 @@ public:
     }
 
     void print(std::ostream& out) const {
-        out << join(names, ".");
+        out << getName();
     }
 
     friend std::ostream& operator<<(std::ostream& out, const AstRelationIdentifier& id) {

@@ -34,16 +34,16 @@
 .init comp = Component
 
 // depends on the inner component types
-.decl outer_rel1(x: comp.InnerRecord)
-outer_rel1(*comp.InnerRecord["x", 1]).
-.decl out1(x: comp.T1, y: comp.T2)
-out1(x,y) :- outer_rel1(*comp.InnerRecord[x,y]).
+.decl outer_rel1(x: comp::InnerRecord)
+outer_rel1(*comp::InnerRecord["x", 1]).
+.decl out1(x: comp::T1, y: comp::T2)
+out1(x,y) :- outer_rel1(*comp::InnerRecord[x,y]).
 .output out1()
 
 // depends on the inner component types
-.decl outer_rel2(x: comp.InnerUnion)
+.decl outer_rel2(x: comp::InnerUnion)
 outer_rel2(1).
-.decl out2(x: comp.InnerUnion)
+.decl out2(x: comp::InnerUnion)
 out2(x) :- outer_rel2(x).
 .output out2()
 

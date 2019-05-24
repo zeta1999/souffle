@@ -652,7 +652,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
             if (auto* search = dynamic_cast<RamSearch*>(node.get())) {
                 if (!added && search->getTupleId() == currLevel - 1) {
                     added = true;
-                    RamNestedOperation* op = dynamic_cast<RamNestedOperation*>(search);
+                    auto* op = dynamic_cast<RamNestedOperation*>(search);
                     // Finding the operation right before the RamSearch
                     // with tupleId = aggregate's tupleId - 1
                     while (dynamic_cast<RamSearch*>(&op->getOperation()) != nullptr) {

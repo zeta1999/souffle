@@ -88,7 +88,7 @@ public:
     }
 
     void print(std::ostream& out) const {
-        out << join(names, ".");
+        out << getName();
     }
 
     friend std::ostream& operator<<(std::ostream& out, const AstRelationIdentifier& id) {

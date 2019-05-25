@@ -382,6 +382,9 @@ private:
     /** translate RAM code for subroutine to get subproofs */
     std::unique_ptr<RamStatement> makeSubproofSubroutine(const AstClause& clause);
 
+    /** translate RAM code for subroutine to get subproofs */
+    std::unique_ptr<RamStatement> makeSubproofSubroutineOpt(const AstClause& clause);
+
     /** translate RAM code for subroutine to get subproofs for non-existence of a tuple */
     std::unique_ptr<RamStatement> makeNegationSubproofSubroutine(const AstClause& clause);
 

@@ -1239,6 +1239,61 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
     return ProvenanceClauseTranslator(*this).translateClause(*intermediateClause, clause);
 }
 
+/** make a subroutine to search for subproofs of path1 tuples*/
+std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutineOpt(const AstClause& clause) {
+    // make intermediate clause with constraints
+    std::unique_ptr<AstClause> intermediateClause(clause.clone());
+
+    // name unnamed variables
+    nameUnnamedVariables(intermediateClause.get());
+
+    // add constraint for each argument in head of atom
+    AstAtom* head = intermediateClause->getHead();
+    for (size_t i = 0; i < head->getArguments().size() - 2; i++) {
+        auto arg = head->getArgument(i);
+
+        if (auto var = dynamic_cast<AstVariable*>(arg)) {
+            intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                    std::unique_ptr<AstArgument>(var->clone()), std::make_unique<AstSubroutineArgument>(i)));
+        } else if (auto func = dynamic_cast<AstFunctor*>(arg)) {
+            intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                    std::unique_ptr<AstArgument>(func->clone()), std::make_unique<AstSubroutineArgument>(i)));
+        } else if (auto rec = dynamic_cast<AstRecordInit*>(arg)) {
+            intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                    std::unique_ptr<AstArgument>(rec->clone()), std::make_unique<AstSubroutineArgument>(i)));
+        }
+    }
+
+    // index of level argument in argument list
+    size_t levelIndex = head->getArguments().size() - 2;
+
+    // add level constraints
+    for (size_t i = 0; i < intermediateClause->getBodyLiterals().size(); i++) {
+        auto lit = intermediateClause->getBodyLiteral(i);
+
+        if (auto atom = dynamic_cast<AstAtom*>(lit)) {
+            auto arity = atom->getArity();
+
+            // add less than constraint in any case
+            intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::LT,
+                    std::unique_ptr<AstArgument>(atom->getArgument(arity - 1)->clone()),
+                    std::make_unique<AstSubroutineArgument>(levelIndex)));
+
+            // add additional = h - 1 constraint
+            if (atom->getName() == "path1") {
+                // arity - 1 is the level number in body atoms
+                intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                        std::unique_ptr<AstArgument>(atom->getArgument(arity - 1)->clone()),
+                        std::make_unique<AstIntrinsicFunctor>(FunctorOp::SUB,
+                                std::make_unique<AstSubroutineArgument>(levelIndex),
+                                std::make_unique<AstNumberConstant>(1))));
+            }
+        }
+    }
+
+    return ProvenanceClauseTranslator(*this).translateClause(*intermediateClause, clause);
+}
+
 /** make a subroutine to search for subproofs for the non-existence of a tuple */
 std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
     // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates
@@ -1720,7 +1775,12 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
             std::string subroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_subproof";
-            ramProg->addSubroutine(subroutineLabel, makeSubproofSubroutine(clause));
+
+            // modifiaction for h-1 optimization
+            if (clause.getHead()->getName() == "path1") {
+                ramProg->addSubroutine(subroutineLabel, makeSubproofSubroutineOpt(clause));
+            } else
+                ramProg->addSubroutine(subroutineLabel, makeSubproofSubroutine(clause));
 
             std::string negationSubroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_negation_subproof";

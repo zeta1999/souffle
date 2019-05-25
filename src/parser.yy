@@ -882,11 +882,11 @@ arg
         $$ = new AstNullConstant();
         $$->setSrcLoc(@$);
     }
-  | STAR identifier LBRACKET RBRACKET {
+  | identifier LBRACKET RBRACKET {
         $$ = new AstRecordInit($identifier);
         $$->setSrcLoc(@$);
     }
-  | STAR identifier LBRACKET non_empty_arg_list RBRACKET {
+  | identifier LBRACKET non_empty_arg_list RBRACKET {
         auto record = new AstRecordInit($identifier);
 
         for (auto* arg : $non_empty_arg_list) {

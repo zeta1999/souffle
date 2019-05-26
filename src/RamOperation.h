@@ -579,7 +579,7 @@ public:
 
     /** Get condition */
     const RamCondition& getCondition() const {
-        assert(condition != nullptr && "Condition of aggregate is a null-poionter");
+        assert(condition != nullptr && "Condition of aggregate is a null-pointer");
         return *condition;
     }
 

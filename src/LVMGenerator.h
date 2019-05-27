@@ -866,7 +866,7 @@ protected:
     }
 
     void visitLogRelationTimer(const RamLogRelationTimer& timer, size_t exitAddress) override {
-        code->push_back(LVM_LogTimer);
+        code->push_back(LVM_LogRelationTimer);
         size_t timerIndex = getNewTimer();
         code->push_back(symbolTable.lookup(timer.getMessage()));
         code->push_back(timerIndex);

@@ -786,9 +786,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 std::string msg = symbolTable.resolve(code[ip + 1]);
                 size_t timerIndex = code[ip + 2];
                 std::string relName = symbolTable.resolve(code[ip + 3]);
-                Logger* logger = new Logger(msg.c_str(), this->getIterationNumber());
                 const InterpreterRelation& rel = getRelation(relName);
-                logger = new Logger(
+                Logger* logger = new Logger(
                         msg.c_str(), this->getIterationNumber(), std::bind(&InterpreterRelation::size, &rel));
                 insertTimerAt(timerIndex, logger);
                 ip += 4;

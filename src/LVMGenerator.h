@@ -212,7 +212,7 @@ protected:
     }
 
     // Visit RAM Conditions
-    
+
     void visitTrue(const RamTrue& ltrue, size_t exitAddress) override {
         code->push_back(LVM_True);
     }

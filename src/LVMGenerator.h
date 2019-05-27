@@ -213,6 +213,14 @@ protected:
 
     // Visit RAM Conditions
 
+    void visitTrue(const RamTrue& ltrue, size_t exitAddress) override {
+        code->push_back(LVM_True);
+    }
+
+    void visitFalse(const RamFalse& lfalse, size_t exitAddress) override {
+        code->push_back(LVM_False);
+    }
+
     void visitConjunction(const RamConjunction& conj, size_t exitAddress) override {
         visit(conj.getLHS(), exitAddress);
         visit(conj.getRHS(), exitAddress);
@@ -858,12 +866,11 @@ protected:
     }
 
     void visitLogRelationTimer(const RamLogRelationTimer& timer, size_t exitAddress) override {
-        code->push_back(LVM_LogTimer);
+        code->push_back(LVM_LogRelationTimer);
         size_t timerIndex = getNewTimer();
         code->push_back(symbolTable.lookup(timer.getMessage()));
-        code->push_back(1);
-        code->push_back(symbolTable.lookup(timer.getRelation().getName()));
         code->push_back(timerIndex);
+        code->push_back(symbolTable.lookup(timer.getRelation().getName()));
         visit(timer.getStatement(), exitAddress);
         code->push_back(LVM_StopLogTimer);
         code->push_back(timerIndex);
@@ -873,8 +880,6 @@ protected:
         code->push_back(LVM_LogTimer);
         size_t timerIndex = getNewTimer();
         code->push_back(symbolTable.lookup(timer.getMessage()));
-        code->push_back(0);
-        code->push_back(LVM_NOP);  // Empty slot to make the number of operands consistent.
         code->push_back(timerIndex);
         visit(timer.getStatement(), exitAddress);
         code->push_back(LVM_StopLogTimer);

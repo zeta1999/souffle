@@ -59,6 +59,9 @@ public:
     }
 
     virtual ~LVM() {
+        for (auto& x : environment) {
+            x.reset(nullptr);
+        }
         for (auto* timer : timers) {
             delete timer;
         }
@@ -192,6 +195,26 @@ protected:
 private:
     friend InterpreterProgInterface;
 
+    /** relation environment type */
+    using relation_map = std::vector<std::unique_ptr<InterpreterRelation>>;
+
+    /** A string to relation map for InterpreterProgInterface */
+    std::map<std::string, InterpreterRelation*> stringToRel;
+
+    /** Get relation map */
+    virtual std::map<std::string, InterpreterRelation*>& getRelationMap() override {
+        // TODO(xiaowen): The transformation here is only needed in order to make RAMI and LVM share the same
+        // interface. Later when RAMI is removed, we can have a more elegant interface here.
+        for (auto& relPtr : environment) {
+            // Skip deleted relation
+            if (relPtr == nullptr) {
+                continue;
+            }
+            stringToRel[relPtr->getName()] = relPtr.get();
+        }
+        return stringToRel;
+    }
+
     /** Execute given program
      *
      * @param ip the instruction pointer start position, default is 0.
@@ -233,6 +256,9 @@ private:
 
     /** Relation Encode */
     RelationEncoder relationEncoder;
+
+    /** Relation Environment */
+    relation_map environment;
 };
 
 }  // end of namespace souffle

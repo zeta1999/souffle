@@ -1023,9 +1023,6 @@ private:
     /** Symbol table */
     SymbolTable& symbolTable;
 
-    /** Relation Encoder */
-    RelationEncoder& relationEncoder;
-
     /** code stream */
     std::unique_ptr<LVMCode> code;
 
@@ -1043,6 +1040,9 @@ private:
 
     /** RamIndexAnalysis */
     RamIndexAnalysis& isa;
+
+    /** Relation Encoder */
+    RelationEncoder& relationEncoder;
 
     /** Clean up all the content except for addressMap
      *  This is for the double traverse when transforming from RAM -> LVM Bytecode.

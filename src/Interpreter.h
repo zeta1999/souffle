@@ -48,11 +48,7 @@ public:
     Interpreter(RamTranslationUnit& tUnit)
             : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()) {}
 
-    virtual ~Interpreter() {
-        for (auto& x : environment) {
-            x.reset(nullptr);
-        }
-    }
+    virtual ~Interpreter() {}
 
     /** Get translation unit */
     RamTranslationUnit& getTranslationUnit() {
@@ -125,24 +121,16 @@ protected:
 
     friend InterpreterProgInterface;
 
-    /** relation environment type */
-    using relation_map = std::vector<std::unique_ptr<InterpreterRelation>>;
-
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
         return translationUnit.getSymbolTable();
     }
 
     /** Get relation map */
-    relation_map& getRelationMap() const {
-        return const_cast<relation_map&>(environment);
-    }
+    virtual std::map<std::string, InterpreterRelation*>& getRelationMap() = 0;
 
     /** RAM translation Unit */
     RamTranslationUnit& translationUnit;
-
-    /** Relation Environment */
-    relation_map environment;
 
     /** IndexAnalysis */
     RamIndexAnalysis* isa;

@@ -185,12 +185,9 @@ public:
         visitDepthFirst(prog, [&](const RamRelation& rel) { map[rel.getName()] = &rel; });
 
         // Build wrapper relations for Souffle's interface
-        for (auto& relation : exec.getRelationMap()) {
-            if (relation == nullptr) {
-               continue;
-            }
-            const auto& name = relation->getName();
-            auto& interpreterRel = *relation;
+        for (auto& rel_pair : exec.getRelationMap()) {
+            auto& name = rel_pair.first;
+            auto& interpreterRel = *rel_pair.second;
             assert(map[name]);
             const RamRelation& rel = *map[name];
 
@@ -266,3 +263,4 @@ private:
 };
 
 }  // end of namespace souffle
+

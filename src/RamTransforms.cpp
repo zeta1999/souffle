@@ -231,16 +231,22 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
                 indexable = true;
                 queryPattern[element] = std::move(value);
             } else {
-                // TODO: This case is a recursive case introducing a new filter operation
-                // at upper level, i.e., if queryPattern[element] == value ...
-                // and apply indexing recursively to the rewritten program.
-                // At the moment we just another local condition which is sub-optimal
-                // Note sure whether there are cases in practice that would improve the performance
                 addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, std::move(value),
                         std::unique_ptr<RamExpression>(queryPattern[element]->clone())));
             }
         } else {
             addCondition(std::move(cond));
+        }
+    }
+
+    // Avoid null-pointers for condition and query pattern
+    if (condition == nullptr) {
+        condition = std::make_unique<RamTrue>();
+    }
+
+    for (auto& p : queryPattern) {
+        if (p == nullptr) {
+            p = std::make_unique<RamUndefValue>();
         }
     }
     return condition;
@@ -258,8 +264,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
             return std::make_unique<RamIndexAggregate>(
                     std::unique_ptr<RamOperation>(agg->getOperation().clone()), agg->getFunction(),
                     std::make_unique<RamRelationReference>(&rel),
-                    std::unique_ptr<RamExpression>(agg->getExpression().clone()),
-                    (condition != nullptr) ? std::move(condition) : std::move(std::make_unique<RamTrue>()),
+                    std::unique_ptr<RamExpression>(agg->getExpression().clone()), std::move(condition),
                     std::move(queryPattern), agg->getTupleId());
         }
     }
@@ -275,13 +280,12 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* s
         std::unique_ptr<RamCondition> condition = constructPattern(
                 queryPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
         if (indexable) {
+            std::unique_ptr<RamOperation> op = std::unique_ptr<RamOperation>(filter->getOperation().clone());
+            if (!isRamTrue(condition.get())) {
+                op = std::make_unique<RamFilter>(std::move(condition), std::move(op));
+            }
             return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
-                    std::move(queryPattern),
-                    condition == nullptr
-                            ? std::unique_ptr<RamOperation>(filter->getOperation().clone())
-                            : std::make_unique<RamFilter>(std::move(condition),
-                                      std::unique_ptr<RamOperation>(filter->getOperation().clone())),
-                    scan->getProfileText());
+                    std::move(queryPattern), std::move(op), scan->getProfileText());
         }
     }
     return nullptr;
@@ -319,13 +323,12 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIn
                     }
                 }
             }
+            std::unique_ptr<RamOperation> op = std::unique_ptr<RamOperation>(filter->getOperation().clone());
+            if (!isRamTrue(condition.get())) {
+                op = std::make_unique<RamFilter>(std::move(condition), std::move(op));
+            }
             return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
-                    std::move(queryPattern),
-                    condition == nullptr
-                            ? std::unique_ptr<RamOperation>(filter->getOperation().clone())
-                            : std::make_unique<RamFilter>(std::move(condition),
-                                      std::unique_ptr<RamOperation>(filter->getOperation().clone())),
-                    iscan->getProfileText());
+                    std::move(queryPattern), std::move(op), iscan->getProfileText());
         }
     }
     return nullptr;

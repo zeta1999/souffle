@@ -234,10 +234,10 @@ protected:
         auto arity = exists.getRelation().getArity();
         std::string types;
         for (size_t i = 0; i < arity; ++i) {
-            if (values[i]) {
+            if (!isRamUndefValue(values[i])) {
                 visit(values[i], exitAddress);
             }
-            types += (values[i] == nullptr ? "_" : "V");
+            types += (isRamUndefValue(values[i]) ? "_" : "V");
         }
         code->push_back(LVM_ExistenceCheck);
         code->push_back(symbolTable.lookup(exists.getRelation().getName()));
@@ -251,10 +251,10 @@ protected:
         auto arity = provExists.getRelation().getArity();
         std::string types;
         for (size_t i = 0; i < arity - 2; ++i) {
-            if (values[i]) {
+            if (!isRamUndefValue(values[i])) {
                 visit(values[i], exitAddress);
             }
-            types += (values[i] == nullptr ? "_" : "V");
+            types += (isRamUndefValue(values[i]) ? "_" : "V");
         }
         code->push_back(LVM_ProvenanceExistenceCheck);
         code->push_back(symbolTable.lookup(provExists.getRelation().getName()));
@@ -403,10 +403,10 @@ protected:
         std::string types;
         auto arity = scan.getRelation().getArity();
         for (size_t i = 0; i < arity; i++) {
-            if (patterns[i]) {
+            if (!isRamUndefValue(patterns[i])) {
                 visit(patterns[i], exitAddress);
             }
-            types += (patterns[i] == nullptr ? "_" : "V");
+            types += (isRamUndefValue(patterns[i]) ? "_" : "V");
         }
 
         // Init range index based on pattern
@@ -449,12 +449,10 @@ protected:
         std::string types;
         auto arity = indexChoice.getRelation().getArity();
         for (size_t i = 0; i < arity; i++) {
-            if (patterns[i] != nullptr) {
+            if (!isRamUndefValue(patterns[i])) {
                 visit(patterns[i], exitAddress);
-                types += "V";
-            } else {
-                types += "_";
             }
+            types += (isRamUndefValue(patterns[i]) ? "_" : "V");
         }
 
         // Init range index based on pattern
@@ -627,10 +625,10 @@ protected:
         std::string types;
         auto arity = aggregate.getRelation().getArity();
         for (size_t i = 0; i < arity; i++) {
-            if (patterns[i]) {
+            if (!isRamUndefValue(patterns[i])) {
                 visit(patterns[i], exitAddress);
             }
-            types += (patterns[i] == nullptr ? "_" : "V");
+            types += (isRamUndefValue(patterns[i]) ? "_" : "V");
         }
 
         // Init range index based on pattern
@@ -780,7 +778,7 @@ protected:
         auto expressions = ret.getValues();
         size_t size = expressions.size();
         for (int i = size - 1; i >= 0; --i) {
-            if (expressions[i] == nullptr) {
+            if (isRamUndefValue(expressions[i])) {
                 types += '_';
             } else {
                 types += 'V';
@@ -859,19 +857,25 @@ protected:
         code->push_back(exitAddress);
     }
 
+    void visitLogRelationTimer(const RamLogRelationTimer& timer, size_t exitAddress) override {
+        code->push_back(LVM_LogTimer);
+        size_t timerIndex = getNewTimer();
+        code->push_back(symbolTable.lookup(timer.getMessage()));
+        code->push_back(1);
+        code->push_back(symbolTable.lookup(timer.getRelation().getName()));
+        code->push_back(timerIndex);
+        visit(timer.getStatement(), exitAddress);
+        code->push_back(LVM_StopLogTimer);
+        code->push_back(timerIndex);
+    }
+
     void visitLogTimer(const RamLogTimer& timer, size_t exitAddress) override {
         code->push_back(LVM_LogTimer);
         size_t timerIndex = getNewTimer();
         code->push_back(symbolTable.lookup(timer.getMessage()));
-        if (timer.getRelation() == nullptr) {
-            code->push_back(0);
-            code->push_back(LVM_NOP);  // Empty slot to make the number of operands consistent.
-            code->push_back(timerIndex);
-        } else {
-            code->push_back(1);
-            code->push_back(symbolTable.lookup(timer.getRelation()->getName()));
-            code->push_back(timerIndex);
-        }
+        code->push_back(0);
+        code->push_back(LVM_NOP);  // Empty slot to make the number of operands consistent.
+        code->push_back(timerIndex);
         visit(timer.getStatement(), exitAddress);
         code->push_back(LVM_StopLogTimer);
         code->push_back(timerIndex);

@@ -256,6 +256,23 @@ protected:
     /** Values of index per column of table (if indexable) */
     std::vector<std::unique_ptr<RamExpression>> queryPattern;
 
+    void printIndex(std::ostream& os) const {
+        bool first = true;
+        for (unsigned int i = 0; i < queryPattern.size(); ++i) {
+            if (nullptr == dynamic_cast<const RamUndefValue*>(queryPattern[i].get())) {
+                if (first) {
+                    os << " ON INDEX ";
+                    first = false;
+                } else {
+                    os << " AND ";
+                }
+                os << "t" << getTupleId() << ".";
+                os << getRelation().getArg(i) << " = ";
+                os << *queryPattern[i];
+            }
+        }
+    }
+
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIndexRelationSearch*>(&node));
         const auto& other = static_cast<const RamIndexRelationSearch&>(node);
@@ -279,19 +296,8 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "SEARCH " << rel.getName() << " AS t" << getTupleId() << " ON INDEX ";
-        bool first = true;
-        for (unsigned int i = 0; i < rel.getArity(); ++i) {
-            if (queryPattern[i] != nullptr) {
-                if (first) {
-                    first = false;
-                } else {
-                    os << " and ";
-                }
-                os << "t" << getTupleId() << "." << rel.getArg(i) << "=";
-                queryPattern[i]->print(os);
-            }
-        }
+        os << "SEARCH " << rel.getName() << " AS t" << getTupleId();
+        printIndex(os);
         os << std::endl;
         RamIndexRelationSearch::print(os, tabpos + 1);
     }
@@ -324,19 +330,8 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "PARALLEL SEARCH " << rel.getName() << " AS t" << getTupleId() << " ON INDEX ";
-        bool first = true;
-        for (unsigned int i = 0; i < rel.getArity(); ++i) {
-            if (queryPattern[i] != nullptr) {
-                if (first) {
-                    first = false;
-                } else {
-                    os << " and ";
-                }
-                os << "t" << getTupleId() << "." << rel.getArg(i) << "=";
-                queryPattern[i]->print(os);
-            }
-        }
+        os << "PARALLEL SEARCH " << rel.getName() << " AS t" << getTupleId();
+        printIndex(os);
         os << std::endl;
         RamIndexRelationSearch::print(os, tabpos + 1);
     }
@@ -454,19 +449,8 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "CHOICE " << rel.getName() << " AS t" << getTupleId() << " INDEX ";
-        bool first = true;
-        for (unsigned int i = 0; i < rel.getArity(); ++i) {
-            if (queryPattern[i] != nullptr) {
-                if (first) {
-                    first = false;
-                } else {
-                    os << " and ";
-                }
-                os << "t" << getTupleId() << "." << rel.getArg(i) << "=";
-                queryPattern[i]->print(os);
-            }
-        }
+        os << "CHOICE " << rel.getName() << " AS t" << getTupleId();
+        printIndex(os);
         os << " WHERE " << getCondition();
         os << std::endl;
         RamIndexRelationSearch::print(os, tabpos + 1);
@@ -530,19 +514,8 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "PARALLEL CHOICE " << rel.getName() << " AS t" << getTupleId() << " INDEX ";
-        bool first = true;
-        for (unsigned int i = 0; i < rel.getArity(); ++i) {
-            if (queryPattern[i] != nullptr) {
-                if (first) {
-                    first = false;
-                } else {
-                    os << " and ";
-                }
-                os << "t" << getTupleId() << "." << rel.getArg(i) << "=";
-                queryPattern[i]->print(os);
-            }
-        }
+        os << "PARALLEL CHOICE " << rel.getName() << " AS t" << getTupleId();
+        printIndex(os);
         os << " WHERE " << getCondition();
         os << std::endl;
         RamIndexRelationSearch::print(os, tabpos + 1);
@@ -579,7 +552,7 @@ public:
 
     /** Get condition */
     const RamCondition& getCondition() const {
-        assert(condition != nullptr && "Condition of aggregate is a null-poionter");
+        assert(condition != nullptr && "Condition of aggregate is a null-pointer");
         return *condition;
     }
 
@@ -690,7 +663,6 @@ public:
     }
 
     void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
         os << "t" << getTupleId() << ".0=";
         switch (function) {
@@ -711,21 +683,7 @@ public:
             os << *expression << " ";
         }
         os << " SEARCH t" << getTupleId() << " ∈ " << getRelation().getName();
-        bool first = true;
-        os << " INDEX ";
-        for (unsigned int i = 0; i < rel.getArity(); ++i) {
-            if (queryPattern[i] != nullptr) {
-                if (first) {
-                    first = false;
-                } else {
-                    os << " and ";
-                }
-                os << "t" << getTupleId() << "." << rel.getArg(i) << "=" << *queryPattern[i];
-            }
-        }
-        if (first) {
-            os << "none";
-        }
+        printIndex(os);
         if (condition != nullptr) {
             os << " WHERE " << getCondition();
         }

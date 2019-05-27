@@ -90,7 +90,7 @@ public:
         } else {
             // Parse and cache the program
             LVMGenerator generator(translationUnit.getSymbolTable(),
-                    translationUnit.getProgram()->getSubroutine(name), *isa);
+                    translationUnit.getProgram()->getSubroutine(name), *isa, relationEncoder);
             subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
             execute(subroutines.at(name), ctxt);
         }
@@ -99,8 +99,8 @@ public:
     /** Print out the instruction stream */
     void printMain() {
         if (mainProgram.get() == nullptr) {
-            LVMGenerator generator(
-                    translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain(), *isa);
+            LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain(),
+                    *isa, relationEncoder);
             mainProgram = generator.getCodeStream();
         }
         mainProgram->print();
@@ -161,12 +161,12 @@ protected:
     }
 
     /** Drop relation */
-    void dropRelation(size_t id){
+    void dropRelation(size_t id) {
         environment[id].reset(nullptr);
     }
 
     /** Swap relation */
-    void swapRelation(size_t relAId, size_t relBId){
+    void swapRelation(size_t relAId, size_t relBId) {
         environment[relAId].swap(environment[relBId]);
     }
 
@@ -230,6 +230,9 @@ private:
 
     /** Dynamic library for user-defined functors */
     void* dll = nullptr;
+
+    /** Relation Encode */
+    RelationEncoder relationEncoder;
 };
 
 }  // end of namespace souffle

@@ -118,7 +118,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
     std::stack<RamDomain> stack;
     const LVMCode& code = *codeStream;
     auto& symbolTable = codeStream->getSymbolTable();
-    this->environment.resize(code.getNumberOfRelation());
+    if (environment.size() < code.getNumberOfRelation()) {
+        this->environment.resize(code.getNumberOfRelation());
+    }
     while (true) {
         switch (code[ip]) {
             case LVM_Number:

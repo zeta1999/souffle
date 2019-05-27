@@ -263,4 +263,3 @@ private:
 };
 
 }  // end of namespace souffle
-

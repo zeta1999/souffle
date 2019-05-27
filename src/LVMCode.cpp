@@ -212,6 +212,14 @@ void LVMCode::print() const {
                 ip += 2;
                 break;
             }
+            case LVM_True: {
+                printf("%ld\tLVM_True\n", ip);
+                ip += 1;
+            };
+            case LVM_False: {
+                printf("%ld\tLVM_False\n", ip);
+                ip += 1;
+            };
             case LVM_Conjunction: {
                 printf("%ld\tLVM_Conjunction\n", ip);
                 ip += 1;
@@ -320,8 +328,13 @@ void LVMCode::print() const {
                 break;
             }
             case LVM_LogTimer: {
-                printf("%ld\tLVM_LogTimer\tTimerID:%d\n", ip, code[ip + 4]);
-                ip += 5;
+                printf("%ld\tLVM_LogTimer\tTimerID:%d\n", ip, code[ip + 2]);
+                ip += 3;
+                break;
+            }
+            case LVM_LogRelationTimer: {
+                printf("%ld\tLVM_LogRelationTimer\tTimerID:%d\n", ip, code[ip + 2]);
+                ip += 4;
                 break;
             }
             case LVM_StopLogTimer: {

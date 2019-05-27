@@ -48,7 +48,7 @@ public:
     Interpreter(RamTranslationUnit& tUnit)
             : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()) {}
 
-    virtual ~Interpreter() {}
+    virtual ~Interpreter() = default;
 
     /** Get translation unit */
     RamTranslationUnit& getTranslationUnit() {

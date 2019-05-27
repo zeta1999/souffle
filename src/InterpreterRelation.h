@@ -24,6 +24,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -37,7 +38,7 @@ class InterpreterRelation {
 
 public:
     InterpreterRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
-            : arity(relArity), orderSet(orderSet), relName(relName) {
+            : arity(relArity), orderSet(orderSet), relName(std::move(relName)) {
         // Create all necessary indices based on orderSet
         for (auto& order : orderSet->getAllOrders()) {
             indices.push_back(InterpreterIndex(order));

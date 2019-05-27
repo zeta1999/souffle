@@ -36,8 +36,8 @@ class InterpreterRelation {
     using LexOrder = std::vector<int>;
 
 public:
-    InterpreterRelation(size_t relArity, const MinIndexSelection* orderSet, std::string& relName)
-            : relName(relName), arity(relArity), orderSet(orderSet) {
+    InterpreterRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
+            : arity(relArity), orderSet(orderSet), relName(relName) {
         // Create all necessary indices based on orderSet
         for (auto& order : orderSet->getAllOrders()) {
             indices.push_back(InterpreterIndex(order));
@@ -275,7 +275,6 @@ private:
 
     /** Relation name */
     const std::string relName;
-
 };
 
 /**

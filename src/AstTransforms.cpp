@@ -256,7 +256,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                         continue;  // ignore these because they can't ground the variable
                     }
                     for (const auto& arg : atom->getArguments()) {
-                        const AstVariable* atomVariable = dynamic_cast<const AstVariable*>(arg);
+                        const auto* atomVariable = dynamic_cast<const AstVariable*>(arg);
                         // if this atom contains the variable I need to ground, add it
                         if (atomVariable && variable->getName() == atomVariable->getName()) {
                             // expand the body with this one so that it will ground this variable

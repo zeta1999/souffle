@@ -535,6 +535,16 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 ip += 2;
                 break;
             }
+            case LVM_True: {
+                stack.push(1);
+                ip += 1;
+                break;
+            };
+            case LVM_False: {
+                stack.push(0);
+                ip += 1;
+                break;
+            };
             case LVM_Conjunction: {
                 RamDomain rhs = stack.top();
                 stack.pop();
@@ -769,18 +779,21 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             }
             case LVM_LogTimer: {
                 std::string msg = symbolTable.resolve(code[ip + 1]);
-                size_t timerIndex = code[ip + 4];
-                Logger* logger;
-                if (code[ip + 2] == 0) {
-                    logger = new Logger(msg.c_str(), this->getIterationNumber());
-                } else {
-                    size_t relId = code[ip + 3];
-                    const InterpreterRelation& rel = *getRelation(relId);
-                    logger = new Logger(msg.c_str(), this->getIterationNumber(),
-                            std::bind(&InterpreterRelation::size, &rel));
-                }
+                size_t timerIndex = code[ip + 2];
+                Logger* logger = new Logger(msg.c_str(), this->getIterationNumber());
                 insertTimerAt(timerIndex, logger);
-                ip += 5;
+                ip += 3;
+                break;
+            }
+            case LVM_LogRelationTimer: {
+                std::string msg = symbolTable.resolve(code[ip + 1]);
+                size_t timerIndex = code[ip + 2];
+                size_t relId = code[ip + 3];
+                const InterpreterRelation& rel = *getRelation(relId);
+                Logger* logger = new Logger(
+                        msg.c_str(), this->getIterationNumber(), std::bind(&InterpreterRelation::size, &rel));
+                insertTimerAt(timerIndex, logger);
+                ip += 4;
                 break;
             }
             case LVM_StopLogTimer: {

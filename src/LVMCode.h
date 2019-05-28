@@ -83,6 +83,8 @@ enum LVM_Type {
     LVM_ExistenceCheck,
     LVM_ProvenanceExistenceCheck,
     LVM_Constraint,
+    LVM_True,
+    LVM_False,
 
     // LVM Operations;
     LVM_Scan,
@@ -106,6 +108,7 @@ enum LVM_Type {
     LVM_ResetIterationNumber,
     LVM_Exit,
     LVM_LogTimer,
+    LVM_LogRelationTimer,
     LVM_StopLogTimer,
     LVM_DebugInfo,
     LVM_Stratum,

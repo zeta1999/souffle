@@ -509,7 +509,6 @@ protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSequence*>(&node));
         const auto& other = static_cast<const RamSequence&>(node);
-
         return equal_targets(statements, other.statements);
     }
 };

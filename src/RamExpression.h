@@ -352,20 +352,14 @@ public:
     RamPackRecord* clone() const override {
         auto* res = new RamPackRecord({});
         for (auto& cur : arguments) {
-            RamExpression* arg = nullptr;
-            if (cur != nullptr) {
-                arg = cur->clone();
-            }
-            res->arguments.emplace_back(arg);
+            res->arguments.emplace_back(cur->clone());
         }
         return res;
     }
 
     void apply(const RamNodeMapper& map) override {
         for (auto& arg : arguments) {
-            if (arg != nullptr) {
-                arg = map(std::move(arg));
-            }
+            arg = map(std::move(arg));
         }
     }
 

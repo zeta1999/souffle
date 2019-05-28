@@ -22,15 +22,16 @@
 namespace souffle {
 
 /** RelationEncoder encode a relation into a index position for fast lookup */
-struct RelationEncoder {
+class RelationEncoder {
+public:
     /** Encode a relation into a index Id and return the encoding result.  */
     size_t encodeRelation(std::string relationName) {
         auto iter = relations.find(relationName);
         // Give relation a new index if it is not in the environment yet
         if (iter == relations.end()) {
-            relations.insert(std::make_pair(relationName, curRelationId));
+            relations.insert(std::make_pair(relationName, relations.size()));
             relationNames.push_back(relationName);
-            return curRelationId++;
+            return relations.size() - 1;
         } else {
             return iter->second;
         }
@@ -46,14 +47,12 @@ struct RelationEncoder {
         return relationNames.size();
     }
 
+private:
     /** RelName to index mapping */
     std::map<std::string, size_t> relations;
 
     /** Index to RelName mapping */
     std::vector<std::string> relationNames;
-
-    /** Current relation id */
-    size_t curRelationId = 0;
 };
 
 /**

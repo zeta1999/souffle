@@ -59,9 +59,6 @@ public:
     }
 
     virtual ~LVM() {
-        for (auto& x : environment) {
-            x.reset(nullptr);
-        }
         for (auto* timer : timers) {
             delete timer;
         }

@@ -292,7 +292,7 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "FOR t " << getTupleId();
+        os << "FOR t" << getTupleId() << " IN ";
         os << rel.getName();
         printIndex(os);
         os << std::endl;

@@ -264,16 +264,16 @@ protected:
 class RamMerge : public RamBinRelationStatement {
 public:
     RamMerge(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
-            : RamBinRelationStatement(std::move(tRef), std::move(sRef)) {}
+            : RamBinRelationStatement(std::move(sRef), std::move(tRef)) {}
 
     /** Get source relation */
     const RamRelation& getSourceRelation() const {
-        return RamBinRelationStatement::getFirstRelation();
+        return getFirstRelation();
     }
 
     /** Get target relation */
     const RamRelation& getTargetRelation() const {
-        return RamBinRelationStatement::getSecondRelation();
+        return getSecondRelation();
     }
 
     void print(std::ostream& os, int tabpos) const override {

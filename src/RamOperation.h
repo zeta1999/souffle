@@ -775,24 +775,18 @@ protected:
 };
 
 /**
- * Filter statement
+ * Abstract conditional statement
  */
-class RamFilter : public RamNestedOperation {
+class RamAbstractConditional : public RamNestedOperation {
 public:
-    RamFilter(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
+	RamAbstractConditional(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
+		: RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
 
     /** Get condition */
     const RamCondition& getCondition() const {
-        assert(condition != nullptr && "condition of filter operation is a null-pointer");
+        assert(condition != nullptr && "condition of conditional operation is a null-pointer");
         return *condition;
-    }
-
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "IF " << getCondition() << std::endl;
-        RamNestedOperation::print(os, tabpos + 1);
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
@@ -801,20 +795,37 @@ public:
         return res;
     }
 
-    RamFilter* clone() const override {
-        return new RamFilter(std::unique_ptr<RamCondition>(condition->clone()),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
-    }
-
     void apply(const RamNodeMapper& map) override {
         RamNestedOperation::apply(map);
         condition = map(std::move(condition));
     }
 
 protected:
-    /** Filter condition */
+    /** Condition */
     std::unique_ptr<RamCondition> condition;
+};
 
+/**
+ * Filter statement
+ */
+class RamFilter : public RamAbstractConditional {
+public:
+    RamFilter(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
+			: RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "IF " << getCondition() << std::endl;
+        RamNestedOperation::print(os, tabpos + 1);
+    }
+
+    RamFilter* clone() const override {
+        return new RamFilter(std::unique_ptr<RamCondition>(condition->clone()),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
+protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamFilter*>(&node));
         const auto& other = static_cast<const RamFilter&>(node);
@@ -825,17 +836,11 @@ protected:
 /**
  * Break statement
  */
-class RamBreak : public RamNestedOperation {
+class RamBreak : public RamAbstractConditional {
 public:
     RamBreak(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
-
-    /** Get break condition */
-    const RamCondition& getCondition() const {
-        assert(condition != nullptr && "condition of break operation is a null-pointer");
-        return *condition;
-    }
+			: RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -843,26 +848,12 @@ public:
         RamNestedOperation::print(os, tabpos);
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        auto res = RamNestedOperation::getChildNodes();
-        res.push_back(condition.get());
-        return res;
-    }
-
     RamBreak* clone() const override {
         return new RamBreak(std::unique_ptr<RamCondition>(condition->clone()),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 
-    void apply(const RamNodeMapper& map) override {
-        RamNestedOperation::apply(map);
-        condition = map(std::move(condition));
-    }
-
 protected:
-    /** Break condition */
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamBreak*>(&node));
         const auto& other = static_cast<const RamBreak&>(node);

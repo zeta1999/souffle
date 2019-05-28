@@ -215,33 +215,66 @@ public:
 };
 
 /**
- * Merge tuples from a source into target relation.
- * Note that semantically uniqueness of tuples is not checked.
- *
- * TODO (b-scholz): introduce an abstract class for Merge/Swap
+ * Binary relation
  */
-class RamMerge : public RamStatement {
+class RamBinRelationStatement : public RamStatement {
 public:
-    RamMerge(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
-            : targetRef(std::move(tRef)), sourceRef(std::move(sRef)) {
-        const RamRelation* source = sourceRef->get();
-        const RamRelation* target = targetRef->get();
-        assert(source->getArity() == target->getArity() && "mismatching relations");
-        for (size_t i = 0; i < source->getArity(); i++) {
-            assert(source->getArgTypeQualifier(i) == target->getArgTypeQualifier(i) && "mismatching type");
+    RamBinRelationStatement(std::unique_ptr<RamRelationReference> f, std::unique_ptr<RamRelationReference> s)
+            : first(std::move(f)), second(std::move(s)) {
+        assert(first->get()->getArity() == second->get()->getArity() && "mismatching relations");
+        for (size_t i = 0; i < first->get()->getArity(); i++) {
+            assert(first->get()->getArgTypeQualifier(i) == second->get()->getArgTypeQualifier(i) &&
+                    "mismatching type");
         }
     }
 
+    /** Get first relation */
+    const RamRelation& getFirstRelation() const {
+        assert(first != nullptr && "First relation is a null-pointer");
+        return *first->get();
+    }
+
+    /** Get second relation */
+    const RamRelation& getSecondRelation() const {
+        assert(second != nullptr && "Second relation is a null-pointer");
+        return *second->get();
+    }
+
+    std::vector<const RamNode*> getChildNodes() const override {
+        return {first.get(), second.get()};
+    }
+
+    void apply(const RamNodeMapper& map) override {
+        first = map(std::move(first));
+        second = map(std::move(second));
+    }
+
+
+protected:
+    /** first argument of swap statement */
+    std::unique_ptr<RamRelationReference> first;
+
+    /** second argument of swap statement */
+    std::unique_ptr<RamRelationReference> second;
+};
+
+/**
+ * Merge tuples from a source into target relation.
+ * Note that semantically uniqueness of tuples is not checked.
+ */
+class RamMerge : public RamBinRelationStatement {
+public:
+    RamMerge(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
+            : RamBinRelationStatement(std::move(tRef), std::move(sRef)) {}
+
     /** Get source relation */
     const RamRelation& getSourceRelation() const {
-        assert(sourceRef != nullptr && "Source relation is a null-pointer");
-        return *sourceRef->get();
+		return RamBinRelationStatement::getFirstRelation();
     }
 
     /** Get target relation */
     const RamRelation& getTargetRelation() const {
-        assert(targetRef != nullptr && "Target relation is a null-pointer");
-        return *targetRef->get();
+		return RamBinRelationStatement::getSecondRelation();
     }
 
     void print(std::ostream& os, int tabpos) const override {
@@ -250,28 +283,13 @@ public:
         os << std::endl;
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        return {sourceRef.get(), targetRef.get()};
-    }
-
     RamMerge* clone() const override {
-        auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(targetRef->clone()),
-                std::unique_ptr<RamRelationReference>(sourceRef->clone()));
+        auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(first->clone()),
+                std::unique_ptr<RamRelationReference>(second->clone()));
         return res;
     }
 
-    void apply(const RamNodeMapper& map) override {
-        sourceRef = map(std::move(sourceRef));
-        targetRef = map(std::move(targetRef));
-    }
-
 protected:
-    /** source relation reference of merge statement */
-    std::unique_ptr<RamRelationReference> targetRef;
-
-    /** target relation reference of merge statement */
-    std::unique_ptr<RamRelationReference> sourceRef;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamMerge*>(&node));
         const auto& other = static_cast<const RamMerge&>(node);
@@ -283,29 +301,10 @@ protected:
 /**
  * Swap operation two relations
  */
-class RamSwap : public RamStatement {
+class RamSwap : public RamBinRelationStatement {
 public:
     RamSwap(std::unique_ptr<RamRelationReference> f, std::unique_ptr<RamRelationReference> s)
-            : first(std::move(f)), second(std::move(s)) {
-        // check for type equivalence
-        assert(first->get()->getArity() == second->get()->getArity() && "mismatching relations");
-        for (size_t i = 0; i < first->get()->getArity(); i++) {
-            assert(first->get()->getArgTypeQualifier(i) == second->get()->getArgTypeQualifier(i) &&
-                    "mismatching type");
-        }
-    }
-
-    /** Get first relation */
-    const RamRelation& getFirstRelation() const {
-        assert(first != nullptr && "Relation is a null-pointer");
-        return *first->get();
-    }
-
-    /** Get second relation */
-    const RamRelation& getSecondRelation() const {
-        assert(second != nullptr && "Relation is a null-pointer");
-        return *second->get();
-    }
+            : RamBinRelationStatement(std::move(f), std::move(s)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -313,27 +312,12 @@ public:
         os << std::endl;
     };
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        return {first.get(), second.get()};
-    }
-
     RamSwap* clone() const override {
         return new RamSwap(std::unique_ptr<RamRelationReference>(first->clone()),
                 std::unique_ptr<RamRelationReference>(second->clone()));
     }
 
-    void apply(const RamNodeMapper& map) override {
-        first = map(std::move(first));
-        second = map(std::move(second));
-    }
-
 protected:
-    /** first argument of swap statement */
-    std::unique_ptr<RamRelationReference> first;
-
-    /** second argument of swap statement */
-    std::unique_ptr<RamRelationReference> second;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSwap*>(&node));
         const auto& other = static_cast<const RamSwap&>(node);

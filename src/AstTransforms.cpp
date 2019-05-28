@@ -242,14 +242,19 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             }
             // find stuff for which we need a grounding
             for (const auto& argPair : getGroundedTerms(*aggClause)) {
-                const AstVariable* variable = dynamic_cast<const AstVariable*>(argPair.first);
+                const auto* variable = dynamic_cast<const AstVariable*>(argPair.first);
+                bool variableIsGrounded = argPair.second;
                 // if it's not even a variable type or the term is grounded
                 // then skip it
-                if (variable == nullptr || argPair.second) continue;
+                if (variable == nullptr || variableIsGrounded) {
+                    continue;
+                }
 
                 for (const auto& lit : clause.getBodyLiterals()) {
-                    const AstAtom* atom = dynamic_cast<const AstAtom*>(lit);
-                    if (!atom) continue;  // ignore these because they can't ground the variable
+                    const auto* atom = dynamic_cast<const AstAtom*>(lit);
+                    if (atom == nullptr) {
+                        continue;  // ignore these because they can't ground the variable
+                    }
                     for (const auto& arg : atom->getArguments()) {
                         const AstVariable* atomVariable = dynamic_cast<const AstVariable*>(arg);
                         // if this atom contains the variable I need to ground, add it
@@ -262,19 +267,15 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                 }
             }
 
-            // now all that's left to do is set the head with the
-            // appropriate parameters. (All of those that occur in the body
-            // of the aggregate)
             auto* head = new AstAtom();
             head->setName(relName);
             std::vector<bool> symbolArguments;
 
-            // i just need to find a set of the variables so i don't add things twice
+            // Ensure each variable is only added once
             std::set<std::string> variables;
             visitDepthFirst(*aggClause, [&](const AstVariable& var) { variables.insert(var.getName()); });
 
-            // then just put all of those into the head. they are all completely
-            // necessary
+            // Insert all variables occurring in the body of the aggregate into the head
             for (const auto& var : variables) {
                 head->addArgument(std::make_unique<AstVariable>(var));
             }

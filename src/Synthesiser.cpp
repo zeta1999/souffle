@@ -495,6 +495,26 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
+        void visitLogRelationTimer(const RamLogRelationTimer& timer, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            // create local scope for name resolution
+            out << "{\n";
+
+            const std::string ext = fileExtension(Global::config().get("profile"));
+
+            const auto& rel = timer.getRelation();
+            auto relName = synthesiser.getRelationName(rel);
+
+            out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter, [&](){return " << relName
+                << "->size();});\n";
+            // insert statement to be measured
+            visit(timer.getStatement(), out);
+
+            // done
+            out << "}\n";
+            PRINT_END_COMMENT(out);
+        }
+
         void visitLogTimer(const RamLogTimer& timer, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // create local scope for name resolution
@@ -503,15 +523,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const std::string ext = fileExtension(Global::config().get("profile"));
 
             // create local timer
-            if (timer.getRelation() == nullptr) {
-                out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter);\n";
-            } else {
-                const auto& rel = *timer.getRelation();
-                auto relName = synthesiser.getRelationName(rel);
-
-                out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter, [&](){return " << relName
-                    << "->size();});\n";
-            }
+            out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter);\n";
             // insert statement to be measured
             visit(timer.getStatement(), out);
 
@@ -675,7 +687,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << "const Tuple<RamDomain," << arity << "> key({{";
             for (size_t i = 0; i < arity; i++) {
-                if (rangePattern[i] != nullptr) {
+                if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
                 } else {
                     out << "0";
@@ -716,7 +728,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << "const Tuple<RamDomain," << arity << "> key({{";
             for (size_t i = 0; i < arity; i++) {
-                if (rangePattern[i] != nullptr) {
+                if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
                 } else {
                     out << "0";
@@ -760,7 +772,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << "const Tuple<RamDomain," << arity << "> key({{";
             for (size_t i = 0; i < arity; i++) {
-                if (rangePattern[i] != nullptr) {
+                if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
                 } else {
                     out << "0";
@@ -810,7 +822,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << "const Tuple<RamDomain," << arity << "> key({{";
             for (size_t i = 0; i < arity; i++) {
-                if (rangePattern[i] != nullptr) {
+                if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
                 } else {
                     out << "0";
@@ -928,7 +940,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // a lambda for printing boundary key values
                 auto printKeyTuple = [&]() {
                     for (size_t i = 0; i < arity; i++) {
-                        if (aggregate.getRangePattern()[i] != nullptr) {
+                        if (!isRamUndefValue(aggregate.getRangePattern()[i])) {
                             visit(aggregate.getRangePattern()[i], out);
                         } else {
                             out << "0";
@@ -1291,10 +1303,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "_" << isa->getSearchSignature(&exists);
             out << "(Tuple<RamDomain," << arity << ">({{";
             out << join(exists.getValues(), ",", [&](std::ostream& out, RamExpression* value) {
-                if (!value) {
-                    out << "0";
-                } else {
+                if (!isRamUndefValue(value)) {
                     visit(*value, out);
+                } else {
+                    out << "0";
                 }
             });
             out << "}})," << ctxName << ").empty()" << after;
@@ -1319,10 +1331,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "(Tuple<RamDomain," << arity << ">({{";
             for (size_t i = 0; i < provExists.getValues().size() - 1; i++) {
                 RamExpression* val = provExists.getValues()[i];
-                if (!val) {
-                    out << "0";
-                } else {
+                if (!isRamUndefValue(val)) {
                     visit(*val, out);
+                } else {
+                    out << "0";
                 }
                 out << ",";
             }
@@ -1601,7 +1613,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitReturnValue(const RamReturnValue& ret, std::ostream& out) override {
             out << "std::lock_guard<std::mutex> guard(lock);\n";
             for (auto val : ret.getValues()) {
-                if (val == nullptr) {
+                if (isRamUndefValue(val)) {
                     out << "ret.push_back(0);\n";
                     out << "err.push_back(true);\n";
                 } else {

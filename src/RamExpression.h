@@ -40,12 +40,52 @@ public:
     RamExpression* clone() const override = 0;
 };
 
-// TODO (azreika): create a common abstract base class for RAM operators
+/**
+ * Abstract class for an operator/functor
+ */
+class RamAbstractOperator : public RamExpression {
+public:
+    RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {}
+
+    /** Get argument values */
+    std::vector<RamExpression*> getArguments() const {
+        return toPtrVector(arguments);
+    }
+
+    /** Get i-th argument value */
+    const RamExpression& getArgument(size_t i) const {
+        assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
+        return *arguments[i];
+    }
+
+    /** Get number of arguments */
+    size_t getArgCount() const {
+        return arguments.size();
+    }
+
+    std::vector<const RamNode*> getChildNodes() const override {
+        std::vector<const RamNode*> res;
+        for (const auto& cur : arguments) {
+            res.push_back(cur.get());
+        }
+        return res;
+    }
+
+    void apply(const RamNodeMapper& map) override {
+        for (auto& arg : arguments) {
+            arg = map(std::move(arg));
+        }
+    }
+
+protected:
+    /** Arguments of user defined operator */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
+};
 
 /**
  * Operator that represents an intrinsic (built-in) functor
  */
-class RamIntrinsicOperator : public RamExpression {
+class RamIntrinsicOperator : public RamAbstractOperator {
 public:
     template <typename... Args>
     RamIntrinsicOperator(FunctorOp op, Args... args) : operation(op) {
@@ -56,7 +96,7 @@ public:
     }
 
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamExpression>> args)
-            : operation(op), arguments(std::move(args)) {}
+            : RamAbstractOperator(std::move(args)), operation(op) {}
 
     void print(std::ostream& os) const override {
         if (isInfixFunctorOp(operation)) {
@@ -77,30 +117,6 @@ public:
         return operation;
     }
 
-    /** Get argument values */
-    std::vector<RamExpression*> getArguments() const {
-        return toPtrVector(arguments);
-    }
-
-    /** Get i-th argument value */
-    const RamExpression& getArgument(size_t i) const {
-        assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
-        return *arguments[i];
-    }
-
-    /** Get number of arguments */
-    size_t getArgCount() const {
-        return arguments.size();
-    }
-
-    std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res;
-        for (const auto& cur : arguments) {
-            res.push_back(cur.get());
-        }
-        return res;
-    }
-
     RamIntrinsicOperator* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> argsCopy;
         for (auto& arg : arguments) {
@@ -109,18 +125,9 @@ public:
         return new RamIntrinsicOperator(operation, std::move(argsCopy));
     }
 
-    void apply(const RamNodeMapper& map) override {
-        for (auto& arg : arguments) {
-            arg = map(std::move(arg));
-        }
-    }
-
 protected:
     /** Operation symbol */
     const FunctorOp operation;
-
-    /** Arguments of the function */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
 
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIntrinsicOperator*>(&node));
@@ -132,32 +139,16 @@ protected:
 /**
  * Operator that represents an extrinsic (user-defined) functor
  */
-class RamUserDefinedOperator : public RamExpression {
+class RamUserDefinedOperator : public RamAbstractOperator {
 public:
     RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamExpression>> args)
-            : arguments(std::move(args)), name(std::move(n)), type(std::move(t)) {}
+            : RamAbstractOperator(std::move(args)), name(std::move(n)), type(std::move(t)) {}
 
     void print(std::ostream& os) const override {
         os << "@" << name << "_" << type << "(";
         os << join(arguments, ",",
                 [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) { out << *arg; });
         os << ")";
-    }
-
-    /** Get argument values */
-    std::vector<RamExpression*> getArguments() const {
-        return toPtrVector(arguments);
-    }
-
-    /** Get i-th argument value */
-    const RamExpression& getArgument(size_t i) const {
-        assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
-        return *arguments[i];
-    }
-
-    /** Get number of arguments */
-    size_t getArgCount() const {
-        return arguments.size();
     }
 
     /** Get operator name */
@@ -170,14 +161,6 @@ public:
         return type;
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res;
-        for (const auto& cur : arguments) {
-            res.push_back(cur.get());
-        }
-        return res;
-    }
-
     RamUserDefinedOperator* clone() const override {
         auto* res = new RamUserDefinedOperator(name, type, {});
         for (auto& cur : arguments) {
@@ -187,16 +170,7 @@ public:
         return res;
     }
 
-    void apply(const RamNodeMapper& map) override {
-        for (auto& arg : arguments) {
-            arg = map(std::move(arg));
-        }
-    }
-
 protected:
-    /** Arguments of user defined operator */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
     /** Name of user-defined operator */
     const std::string name;
 

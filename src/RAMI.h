@@ -50,7 +50,11 @@ class SymbolTable;
 class RAMI : public Interpreter {
 public:
     RAMI(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
-    ~RAMI() override = default;
+    ~RAMI() {
+        for (auto& x : environment) {
+            delete x.second;
+        }
+    }
 
     /** Execute main program */
     void executeMain() override;
@@ -106,9 +110,9 @@ protected:
         InterpreterRelation* res = nullptr;
         assert(environment.find(id.getName()) == environment.end());
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = new InterpreterEqRelation(id.getArity(), orderSet);
+            res = new InterpreterEqRelation(id.getArity(), orderSet, id.getName());
         } else {
-            res = new InterpreterRelation(id.getArity(), orderSet);
+            res = new InterpreterRelation(id.getArity(), orderSet, id.getName());
         }
         environment[id.getName()] = res;
     }
@@ -144,6 +148,14 @@ protected:
 private:
     friend InterpreterProgInterface;
 
+    /** relation environment type */
+    using relation_map = std::map<std::string, InterpreterRelation*>;
+
+    /** Get relation map */
+    virtual std::map<std::string, InterpreterRelation*>& getRelationMap() override {
+        return environment;
+    }
+
     /** counters for atom profiling */
     std::map<std::string, std::map<size_t, size_t>> frequencies;
 
@@ -155,6 +167,9 @@ private:
 
     /** iteration number (in a fix-point calculation) */
     size_t iteration = 0;
+
+    /** Relation Environment */
+    relation_map environment;
 };
 
 }  // end of namespace souffle

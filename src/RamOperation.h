@@ -779,9 +779,9 @@ protected:
  */
 class RamAbstractConditional : public RamNestedOperation {
 public:
-	RamAbstractConditional(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
+    RamAbstractConditional(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-		: RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
+            : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
 
     /** Get condition */
     const RamCondition& getCondition() const {
@@ -812,7 +812,7 @@ class RamFilter : public RamAbstractConditional {
 public:
     RamFilter(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-			: RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
+            : RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -840,7 +840,7 @@ class RamBreak : public RamAbstractConditional {
 public:
     RamBreak(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-			: RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
+            : RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);

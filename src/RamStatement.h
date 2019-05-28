@@ -249,7 +249,6 @@ public:
         second = map(std::move(second));
     }
 
-
 protected:
     /** first argument of swap statement */
     std::unique_ptr<RamRelationReference> first;
@@ -269,12 +268,12 @@ public:
 
     /** Get source relation */
     const RamRelation& getSourceRelation() const {
-		return RamBinRelationStatement::getFirstRelation();
+        return RamBinRelationStatement::getFirstRelation();
     }
 
     /** Get target relation */
     const RamRelation& getTargetRelation() const {
-		return RamBinRelationStatement::getSecondRelation();
+        return RamBinRelationStatement::getSecondRelation();
     }
 
     void print(std::ostream& os, int tabpos) const override {

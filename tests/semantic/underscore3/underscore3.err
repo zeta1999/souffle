@@ -3,10 +3,10 @@ Warning: No rules/facts defined for relation In in file underscore3.dl at line 1
 ------^--------------
 Error: Ungrounded record in file underscore3.dl at line 23
 Out() :- !Record(R[_,R[1,nil]]).      // error
------------------^-------------------------------
+-----------------^-----------------------------
 Error: Ungrounded record in file underscore3.dl at line 24
 Out() :- !Record(R[1,_]).              // error
------------------^-------------------------------
+-----------------^------------------------------
 Error: Underscore in head of rule in file underscore3.dl at line 27
 Record(_) :- _ = nil.                   // error
 ^------------------------------------------------

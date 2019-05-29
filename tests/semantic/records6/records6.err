@@ -3,4 +3,4 @@ Warning: Record types in output relations are not printed verbatim: attribute ?a
 -------------------------------------^-------------------------------
 Warning: Variable ?lastFld only occurs once in file records6.dl at line 12
    AccessPathShouldBeRebased2(AccessPath[ ?from, AccessPathSuffix[ AccessPathSuffix[ ?rest, ?nextFld ], ?lastFld ] ], ?from, ?to),
------------------------------------------------------------------------------------------------------------^--------------------------
+--------------------------------------------------------------------------------------------------------^--------------------------

@@ -36,10 +36,10 @@ OutR1(x) :- InR1(x), !InR2(x).                      // error
 ---------------------------^---------------------------------
 Error: Unable to deduce valid type for expression, as base types are disjoint in file type_record.dl at line 47
 OutR3(x) :- InR3(x), x = R2[].                     // error
-------^------------------------------------------------------
+------^-----------------------------------------------------
 Error: Unable to deduce valid type for expression, as base types are disjoint in file type_record.dl at line 47
 OutR3(x) :- InR3(x), x = R2[].                     // error
--------------------------^-----------------------------------
+-------------------------^----------------------------------
 Error: Unable to deduce valid type for expression, as base types are disjoint in file type_record.dl at line 48
 OutR2(x) :- InR2(x), InR1(y), x = y.                // error
 ------^------------------------------------------------------
@@ -51,25 +51,25 @@ OutR1(x) :- InR2(x), InR3(x).                       // error
 ------^------------------------------------------------------
 Error: Unable to deduce type R1 as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_record.dl at line 58
 OutR1(R1[x]) :- InNumber(x).                       // error
-------^------------------------------------------------------
+------^-----------------------------------------------------
 Error: Record constructor expects element to have type N1 but instead it has type number in file type_record.dl at line 58
 OutR1(R1[x]) :- InNumber(x).                       // error
-----------^--------------------------------------------------
+---------^--------------------------------------------------
 Error: Unable to deduce type R1 as record is not grounded as a record elsewhere, and at least one of its elements has the wrong type in file type_record.dl at line 63
 OutR1(x) :- InNumber(y), x = R1 [y], !InR1(x).     // error
------------------------------^-------------------------------
+-----------------------------^------------------------------
 Error: Record constructor expects element to have type N1 but instead it has type number in file type_record.dl at line 63
 OutR1(x) :- InNumber(y), x = R1 [y], !InR1(x).     // error
-----------------------------------^--------------------------
+---------------------------------^--------------------------
 Error: Ungrounded variable x in file type_record.dl at line 65
 OutR1(x) :- !InNumber(y), x = R1 [y], !InR1(x).    // error
-------^------------------------------------------------------
+------^-----------------------------------------------------
 Error: Ungrounded variable y in file type_record.dl at line 65
 OutR1(x) :- !InNumber(y), x = R1 [y], !InR1(x).    // error
-----------------------^--------------------------------------
+----------------------^-------------------------------------
 Error: Ungrounded record in file type_record.dl at line 65
 OutR1(x) :- !InNumber(y), x = R1 [y], !InR1(x).    // error
-------------------------------^------------------------------
+------------------------------^-----------------------------
 Warning: No rules/facts defined for relation instance.InT1 in file type_record.dl at line 72
     .decl InT1(x : T1)
 ----------^------------

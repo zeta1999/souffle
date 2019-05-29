@@ -15,7 +15,7 @@ B(as(1,undef)).                             // error
 --^--------------------------------------------------
 Error: Type undef has not been declared in file type_udef.dl at line 14
 B(undef[1]).                               // error
---^--------------------------------------------------
+--^-------------------------------------------------
 Error: Undefined type undef in definition of union type c::U1 in file type_udef.dl at line 16
     .type U1 = undef | symbol               // error
 ----^------------------------------------------------
@@ -48,9 +48,9 @@ Error: Type cast is to undeclared type T in file type_udef.dl at line 23
 ------^----------------------------------------------
 Error: Type undef has not been declared in file type_udef.dl at line 24
     B(undef[]).                            // error
-------^----------------------------------------------
+------^---------------------------------------------
 Error: Type T has not been declared in file type_udef.dl at line 25
     B(T[2]).                               // error
-------^----------------------------------------------
+------^---------------------------------------------
 Error: Not all clauses could be typechecked due to other errors present
 16 errors generated, evaluation aborted

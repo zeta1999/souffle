@@ -98,19 +98,30 @@ public:
 };
 
 /**
- * Load data into a relation
- *
- * TODO (b-scholz): introduce an abstract class for load/store
+ * Abstract class for load/store for a relation
  */
-class RamLoad : public RamRelationStatement {
+class RamAbstractLoadStore : public RamRelationStatement {
 public:
-    RamLoad(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
+    RamAbstractLoadStore(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
             : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
 
     /** Get load directives */
     const std::vector<IODirectives>& getIODirectives() const {
         return ioDirectives;
     }
+
+protected:
+    /** load directives of a relation */
+    const std::vector<IODirectives> ioDirectives;
+};
+
+/**
+ * Load data into a relation
+ */
+class RamLoad : public RamAbstractLoadStore {
+public:
+    RamLoad(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
+            : RamAbstractLoadStore(std::move(relRef), std::move(ioDirectives)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -127,9 +138,6 @@ public:
     }
 
 protected:
-    /** load directives of a relation */
-    const std::vector<IODirectives> ioDirectives;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLoad*>(&node));
         const auto& other = static_cast<const RamLoad&>(node);
@@ -140,15 +148,10 @@ protected:
 /**
  * Store data of a relation
  */
-class RamStore : public RamRelationStatement {
+class RamStore : public RamAbstractLoadStore {
 public:
     RamStore(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
-            : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
-
-    /** Get store directives */
-    const std::vector<IODirectives>& getIODirectives() const {
-        return ioDirectives;
-    }
+            : RamAbstractLoadStore(std::move(relRef), std::move(ioDirectives)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -165,9 +168,6 @@ public:
     }
 
 protected:
-    /** store directives of a relation */
-    const std::vector<IODirectives> ioDirectives;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamStore*>(&node));
         const auto& other = static_cast<const RamStore&>(node);

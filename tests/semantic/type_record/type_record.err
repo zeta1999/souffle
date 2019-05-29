@@ -70,22 +70,22 @@ OutR1(x) :- !InNumber(y), x = R1 [y], !InR1(x).    // error
 Error: Ungrounded record in file type_record.dl at line 65
 OutR1(x) :- !InNumber(y), x = R1 [y], !InR1(x).    // error
 ------------------------------^-----------------------------
-Warning: No rules/facts defined for relation instance.InT1 in file type_record.dl at line 72
+Warning: No rules/facts defined for relation instance::InT1 in file type_record.dl at line 72
     .decl InT1(x : T1)
 ----------^------------
-Warning: No rules/facts defined for relation instance.InR2 in file type_record.dl at line 73
+Warning: No rules/facts defined for relation instance::InR2 in file type_record.dl at line 73
     .decl InR2(x : R2)
 ----------^------------
-Warning: No rules/facts defined for relation instance.InT3 in file type_record.dl at line 74
+Warning: No rules/facts defined for relation instance::InT3 in file type_record.dl at line 74
     .decl InT3(x : T3)
 ----------^------------
-Warning: No rules/facts defined for relation instance.InR4 in file type_record.dl at line 75
+Warning: No rules/facts defined for relation instance::InR4 in file type_record.dl at line 75
     .decl InR4(x : R4)
 ----------^------------
-Warning: No rules/facts defined for relation instance.InR5 in file type_record.dl at line 76
+Warning: No rules/facts defined for relation instance::InR5 in file type_record.dl at line 76
     .decl InR5(x : R5)
 ----------^------------
-Warning: No rules/facts defined for relation instance.InR6 in file type_record.dl at line 77
+Warning: No rules/facts defined for relation instance::InR6 in file type_record.dl at line 77
     .decl InR6(x : R6)
 ----------^------------
 19 errors generated, evaluation aborted

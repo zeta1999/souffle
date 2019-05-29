@@ -421,45 +421,21 @@ protected:
 };
 
 /**
- * Sequence of RAM statements
- *
- * Execute statement one by one from an ordered list of statements.
- *
- * TODO (b-scholz): introduce an abstract class for sequence/loop
- *
+ * List of RAM statements
  */
-class RamSequence : public RamStatement {
+class RamListStatement : public RamStatement {
 public:
-    RamSequence() : RamStatement() {}
+    RamListStatement() : RamStatement() {}
 
-    template <typename... Stmts>
-    RamSequence(std::unique_ptr<Stmts>&&... stmts) : RamStatement() {
-        // move all the given statements into the vector (not so simple)
-        std::unique_ptr<RamStatement> tmp[] = {std::move(stmts)...};
-        for (auto& cur : tmp) {
-            statements.emplace_back(std::move(cur));
-        }
-        for (const auto& cur : statements) {
-            (void)cur;
-            assert(cur);
-        }
-    }
-
-    /** Add new statement to the end of ordered list */
-    void add(std::unique_ptr<RamStatement> stmt) {
-        if (stmt) {
-            statements.push_back(std::move(stmt));
-        }
-    }
-
-    /** Get RAM statements from ordered list */
+    /** Get statements */
     std::vector<RamStatement*> getStatements() const {
         return toPtrVector(statements);
     }
 
-    void print(std::ostream& os, int tabpos) const override {
-        for (const auto& stmt : statements) {
-            stmt->print(os, tabpos);
+    /** Add new statement to block */
+    void add(std::unique_ptr<RamStatement> stmt) {
+        if (stmt) {
+            statements.push_back(std::move(stmt));
         }
     }
 
@@ -467,14 +443,6 @@ public:
         std::vector<const RamNode*> res;
         for (const auto& cur : statements) {
             res.push_back(cur.get());
-        }
-        return res;
-    }
-
-    RamSequence* clone() const override {
-        auto* res = new RamSequence();
-        for (auto& cur : statements) {
-            res->add(std::unique_ptr<RamStatement>(cur->clone()));
         }
         return res;
     }
@@ -488,7 +456,45 @@ public:
 protected:
     /** ordered list of RAM statements */
     std::vector<std::unique_ptr<RamStatement>> statements;
+};
 
+/**
+ * Sequence of RAM statements
+ *
+ * Execute statement one by one from an ordered list of statements.
+ */
+class RamSequence : public RamListStatement {
+public:
+    RamSequence() : RamListStatement() {}
+
+    template <typename... Stmts>
+    RamSequence(std::unique_ptr<Stmts>&&... stmts) : RamListStatement() {
+        // move all the given statements into the vector (not so simple)
+        std::unique_ptr<RamStatement> tmp[] = {std::move(stmts)...};
+        for (auto& cur : tmp) {
+            statements.emplace_back(std::move(cur));
+        }
+        for (const auto& cur : statements) {
+            (void)cur;
+            assert(cur);
+        }
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        for (const auto& stmt : statements) {
+            stmt->print(os, tabpos);
+        }
+    }
+
+    RamSequence* clone() const override {
+        auto* res = new RamSequence();
+        for (auto& cur : statements) {
+            res->add(std::unique_ptr<RamStatement>(cur->clone()));
+        }
+        return res;
+    }
+
+protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSequence*>(&node));
         const auto& other = static_cast<const RamSequence&>(node);
@@ -503,21 +509,9 @@ protected:
  * completed their execution before completing the execution of the
  * parallel block.
  */
-class RamParallel : public RamStatement {
+class RamParallel : public RamListStatement {
 public:
-    RamParallel() : RamStatement() {}
-
-    /** Add new statement to parallel block */
-    void add(std::unique_ptr<RamStatement> stmt) {
-        if (stmt) {
-            statements.push_back(std::move(stmt));
-        }
-    }
-
-    /** Get statements of parallel block */
-    std::vector<RamStatement*> getStatements() const {
-        return toPtrVector(statements);
-    }
+    RamParallel() : RamListStatement() {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "PARALLEL" << std::endl;
@@ -525,14 +519,6 @@ public:
             stmt->print(os, tabpos + 1);
         }
         os << times(" ", tabpos) << "END PARALLEL" << std::endl;
-    }
-
-    std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res;
-        for (const auto& cur : statements) {
-            res.push_back(cur.get());
-        }
-        return res;
     }
 
     RamParallel* clone() const override {
@@ -543,16 +529,7 @@ public:
         return res;
     }
 
-    void apply(const RamNodeMapper& map) override {
-        for (auto& stmt : statements) {
-            stmt = map(std::move(stmt));
-        }
-    }
-
 protected:
-    /** list of statements executed in parallel */
-    std::vector<std::unique_ptr<RamStatement>> statements;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamParallel*>(&node));
         const auto& other = static_cast<const RamParallel&>(node);

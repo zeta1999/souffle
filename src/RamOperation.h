@@ -583,6 +583,13 @@ protected:
 
     /** Aggregation tuple condition */
     std::unique_ptr<RamCondition> condition;
+
+    bool equal(const RamNode& node) const {
+        assert(nullptr != dynamic_cast<const RamAbstractAggregate*>(&node));
+        const auto& other = dynamic_cast<const RamAbstractAggregate*>(&node);
+        return getCondition() == other->getCondition() && getFunction() == other->getFunction() &&
+               getExpression() == other->getExpression();
+    }
 };
 
 /**
@@ -630,10 +637,8 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamAggregate*>(&node));
         const auto& other = static_cast<const RamAggregate&>(node);
-        return RamRelationSearch::equal(other) && getCondition() == other.getCondition() &&
-               getFunction() == other.getFunction() && getExpression() == other.getExpression();
+        return RamRelationSearch::equal(other) && RamAbstractAggregate::equal(node);
     }
 };
 
@@ -688,10 +693,8 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamIndexAggregate*>(&node));
-        const auto& other = static_cast<const RamIndexAggregate&>(node);
-        return RamIndexRelationSearch::equal(other) && getCondition() == other.getCondition() &&
-               getFunction() == other.getFunction() && getExpression() == other.getExpression();
+        const auto& other = static_cast<const RamAggregate&>(node);
+        return RamIndexRelationSearch::equal(other) && RamAbstractAggregate::equal(node);
     }
 };
 
@@ -780,6 +783,12 @@ public:
 protected:
     /** Condition */
     std::unique_ptr<RamCondition> condition;
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamAbstractConditional*>(&node));
+        const auto& other = static_cast<const RamAbstractConditional&>(node);
+        return RamNestedOperation::equal(node) && getCondition() == other.getCondition();
+    }
 };
 
 /**
@@ -804,9 +813,7 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamFilter*>(&node));
-        const auto& other = static_cast<const RamFilter&>(node);
-        return RamNestedOperation::equal(node) && getCondition() == other.getCondition();
+        return RamAbstractConditional::equal(node);
     }
 };
 
@@ -832,9 +839,7 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamBreak*>(&node));
-        const auto& other = static_cast<const RamBreak&>(node);
-        return RamNestedOperation::equal(node) && getCondition() == other.getCondition();
+        return RamAbstractConditional::equal(node);
     }
 };
 

@@ -80,6 +80,12 @@ public:
 protected:
     /** Arguments of user defined operator */
     std::vector<std::unique_ptr<RamExpression>> arguments;
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamAbstractOperator*>(&node));
+        const auto& other = static_cast<const RamAbstractOperator&>(node);
+        return equal_targets(arguments, other.arguments);
+    }
 };
 
 /**
@@ -130,9 +136,8 @@ protected:
     const FunctorOp operation;
 
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamIntrinsicOperator*>(&node));
         const auto& other = static_cast<const RamIntrinsicOperator&>(node);
-        return getOperator() == other.getOperator() && equal_targets(arguments, other.arguments);
+        return getOperator() == other.getOperator() && RamAbstractOperator::equal(node);
     }
 };
 
@@ -178,9 +183,8 @@ protected:
     const std::string type;
 
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamUserDefinedOperator*>(&node));
         const auto& other = static_cast<const RamUserDefinedOperator&>(node);
-        return name == other.name && type == other.type && equal_targets(arguments, other.arguments);
+        return name == other.name && type == other.type && RamAbstractOperator::equal(node);
     }
 };
 

@@ -113,6 +113,12 @@ public:
 protected:
     /** load directives of a relation */
     const std::vector<IODirectives> ioDirectives;
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamAbstractLoadStore*>(&node));
+        const auto& other = static_cast<const RamAbstractLoadStore&>(node);
+        return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
+    }
 };
 
 /**
@@ -139,9 +145,7 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamLoad*>(&node));
-        const auto& other = static_cast<const RamLoad&>(node);
-        return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
+        return RamAbstractLoadStore::equal(node);
     }
 };
 
@@ -169,9 +173,7 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamStore*>(&node));
-        const auto& other = static_cast<const RamStore&>(node);
-        return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
+        return RamAbstractLoadStore::equal(node);
     }
 };
 
@@ -255,6 +257,13 @@ protected:
 
     /** second argument of swap statement */
     std::unique_ptr<RamRelationReference> second;
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamBinRelationStatement*>(&node));
+        const auto& other = static_cast<const RamBinRelationStatement&>(node);
+        return getFirstRelation() == other.getFirstRelation() &&
+               getSecondRelation() == other.getSecondRelation();
+    }
 };
 
 /**
@@ -290,10 +299,7 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamMerge*>(&node));
-        const auto& other = static_cast<const RamMerge&>(node);
-        return getTargetRelation() == other.getTargetRelation() &&
-               getSourceRelation() == other.getSourceRelation();
+        return RamBinRelationStatement::equal(node);
     }
 };
 
@@ -318,10 +324,7 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamSwap*>(&node));
-        const auto& other = static_cast<const RamSwap&>(node);
-        return getFirstRelation() == other.getFirstRelation() &&
-               getSecondRelation() == other.getSecondRelation();
+        return RamBinRelationStatement::equal(node);
     }
 };
 
@@ -456,6 +459,12 @@ public:
 protected:
     /** ordered list of RAM statements */
     std::vector<std::unique_ptr<RamStatement>> statements;
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamListStatement*>(&node));
+        const auto& other = static_cast<const RamListStatement&>(node);
+        return equal_targets(statements, other.statements);
+    }
 };
 
 /**
@@ -496,9 +505,7 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamSequence*>(&node));
-        const auto& other = static_cast<const RamSequence&>(node);
-        return equal_targets(statements, other.statements);
+        return RamListStatement::equal(node);
     }
 };
 
@@ -531,9 +538,7 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallel*>(&node));
-        const auto& other = static_cast<const RamParallel&>(node);
-        return equal_targets(statements, other.statements);
+        return RamListStatement::equal(node);
     }
 };
 

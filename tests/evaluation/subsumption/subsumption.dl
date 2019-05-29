@@ -37,12 +37,12 @@ A(1209, 1222).
 // for two intervals (l1,u1) and (l2,u2)
 
 .decl less(x:Interval, y:Interval)
-less(*Interval[l1,u1],*Interval[l2,u2]) :-
+less(Interval[l1,u1],Interval[l2,u2]) :-
   A(l1,u1),
   A(l2,u2),
   l1 < l2.
 
-less(*Interval[l1,u1],*Interval[l2,u2]) :-
+less(Interval[l1,u1],Interval[l2,u2]) :-
   A(l1,u1),
   A(l2,u2),
   l1 = l2,
@@ -62,15 +62,15 @@ succ(x,y) :-
 
 // define first Interval in total order
 .decl first(x: Interval)
-first(*Interval[l,u]) :-
+first(Interval[l,u]) :-
   A(l,u),
-  !less(_,*Interval[l,u]).
+  !less(_,Interval[l,u]).
 
 // define last Interval in total order
 .decl last(x: Interval)
-last(*Interval[l,u]) :-
+last(Interval[l,u]) :-
   A(l,u),
-  !less(*Interval[l,u],_).
+  !less(Interval[l,u],_).
 
 // construct normalized interval list
 // assumption that that the tail is
@@ -81,27 +81,27 @@ last(*Interval[l,u]) :-
 .decl normalized(x:Interval, l:IntervalList)
 
 // base case
-normalized(x,*IntervalList[x,nil]) :-
+normalized(x,IntervalList[x,nil]) :-
    first(x).
 
 // previous and current interval are disjoint, i.e. no overlap
-normalized(y,*IntervalList[y,list]) :-
+normalized(y,IntervalList[y,list]) :-
    normalized(x,list),
    succ(x,y),
-   list = *IntervalList[i, tail],
-   i = *Interval[l1, u1],
-   y = *Interval[l2, u2],
+   list = IntervalList[i, tail],
+   i = Interval[l1, u1],
+   y = Interval[l2, u2],
    u1 + 1 < l2.
 
 // previous and current interval overlap
 // but previous interval does not subsume
 // the current one
-normalized(y,*IntervalList[*Interval[l1,u2],tail]) :-
+normalized(y,IntervalList[Interval[l1,u2],tail]) :-
    normalized(x,list),
    succ(x,y),
-   list = *IntervalList[i, tail],
-   i = *Interval[l1, u1],
-   y = *Interval[l2, u2],
+   list = IntervalList[i, tail],
+   i = Interval[l1, u1],
+   y = Interval[l2, u2],
    u1 + 1 >= l2,
    l1 < l2.
 
@@ -109,9 +109,9 @@ normalized(y,*IntervalList[*Interval[l1,u2],tail]) :-
 normalized(y,list) :-
    normalized(x,list),
    succ(x,y),
-   list = *IntervalList[i, tail],
-   i = *Interval[l1, u1],
-   y = *Interval[l2, u2],
+   list = IntervalList[i, tail],
+   i = Interval[l1, u1],
+   y = Interval[l2, u2],
    u1 + 1 >= l2,
    l1 >= l2.
 
@@ -121,13 +121,13 @@ normalized(y,list) :-
 B(l, u, list) :-
    last(x),
    normalized(x, list),
-   list = *IntervalList[i, tail],
-   i = *Interval[l, u].
+   list = IntervalList[i, tail],
+   i = Interval[l, u].
 
 B(l, u, tail) :-
    B(_, _, list),
-   list = *IntervalList[i, tail],
-   i = *Interval[l, u].
+   list = IntervalList[i, tail],
+   i = Interval[l, u].
 
 // projection of B
 .decl C(l:number, u:number)

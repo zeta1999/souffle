@@ -11,7 +11,7 @@
 .decl A(x : undef)                          // error
 .decl B(x : number)
 B(as(1,undef)).                             // error
-B(*undef[1]).                               // error
+B(undef[1]).                               // error
 .comp g<T> {
     .type U1 = undef | symbol               // error
     .type U2 = number | T                   // error
@@ -21,7 +21,7 @@ B(*undef[1]).                               // error
     .decl A2(x : T)                         // error
     B(as(2,undef)).                         // error
     B(as(3,T)).                             // error
-    B(*undef[]).                            // error
-    B(*T[2]).                               // error
+    B(undef[]).                            // error
+    B(T[2]).                               // error
 }
 .init c = g<undef>

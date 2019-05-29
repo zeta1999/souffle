@@ -3,7 +3,7 @@
 .comp A<Param> {
 	.type inner = [ x : Param ]
 	.decl rel ( a : inner )
-	rel(*inner["x"]).
+	rel(inner["x"]).
 }
 
 // instantiate the component several times

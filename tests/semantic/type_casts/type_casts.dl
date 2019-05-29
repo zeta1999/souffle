@@ -83,7 +83,7 @@ OutN3(as(1,N3)).
 OutNumber(as(1+1,number)).
 OutSymbol(as("cat",symbol)).
 OutR1(as(nil,R1)).
-OutR3(as(*R3[as(nil,R1),*R3[nil,nil]],R3)).
+OutR3(as(R3[as(nil,R1),R3[nil,nil]],R3)).
 
 // Casts and functors (no errors)
 OutN3(x) :- x = as(y+2,N3), InN1(y).

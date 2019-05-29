@@ -1,7 +1,7 @@
 .type R=[x:number, y:number]
 .decl A(x:R)
-A(*R[1,2]).
-A(*R[2,3]).
+A(R[1,2]).
+A(R[2,3]).
 
 .decl B(x:number)
 B(y) :- A(x), y=ord(x).

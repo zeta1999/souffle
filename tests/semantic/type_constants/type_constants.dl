@@ -28,7 +28,7 @@ OutS1("a").
 OutU12("").
 OutSymbol("   _n    ").
 OutR(nil).
-OutR(*R[1,nil]).
+OutR(R[1,nil]).
 OutNumber(2).
 OutU12(1).                                              // error
 OutR("a").                                              // error
@@ -39,7 +39,7 @@ Out() :- InS1("").
 Out() :- InU12("    {}    ").
 Out() :- InSymbol("b").
 Out() :- InR(nil).
-Out() :- InR(*R[3,nil]).
+Out() :- InR(R[3,nil]).
 Out() :- InNumber(1).
 Out() :- InS1(nil).                                     // error
 Out() :- InR(2).                                        // error
@@ -51,7 +51,7 @@ Out() :- !InNumber(2).
 Out() :- InNumber(x), x >= 2.
 Out() :- InSymbol(x), !match("a",x).
 Out() :- 1 = 2.
-Out() :- InR(x), x = *R[1,nil].
+Out() :- InR(x), x = R[1,nil].
 Out() :- InR(x), x = "".                                // error
 Out() :- InNumber(x), x < "bfs".                        // error
 Out() :- !InU12(nil).                                   // error

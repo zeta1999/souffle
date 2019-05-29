@@ -67,22 +67,22 @@ OutN2(as(x,number)) :- InN3(x).                             // error
 Error: Relation expects value of type R1 but got argument of type S3 in file type_casts.dl at line 108
 OutR1(as(x,S3)) :- InSymbol(x).                             // error
 ------^--------------------------------------------------------------
-Warning: No rules/facts defined for relation c1.InT in file type_casts.dl at line 113
+Warning: No rules/facts defined for relation c1::InT in file type_casts.dl at line 113
     .decl InT(x : T)
 ----------^----------
-Warning: No rules/facts defined for relation c2.InT in file type_casts.dl at line 113
+Warning: No rules/facts defined for relation c2::InT in file type_casts.dl at line 113
     .decl InT(x : T)
 ----------^----------
-Warning: No rules/facts defined for relation c1.InN4 in file type_casts.dl at line 114
+Warning: No rules/facts defined for relation c1::InN4 in file type_casts.dl at line 114
     .decl InN4(x : N4)
 ----------^------------
-Warning: No rules/facts defined for relation c2.InN4 in file type_casts.dl at line 114
+Warning: No rules/facts defined for relation c2::InN4 in file type_casts.dl at line 114
     .decl InN4(x : N4)
 ----------^------------
-Warning: No rules/facts defined for relation c1.InN1 in file type_casts.dl at line 115
+Warning: No rules/facts defined for relation c1::InN1 in file type_casts.dl at line 115
     .decl InN1(x : N1)
 ----------^------------
-Warning: No rules/facts defined for relation c2.InN1 in file type_casts.dl at line 115
+Warning: No rules/facts defined for relation c2::InN1 in file type_casts.dl at line 115
     .decl InN1(x : N1)
 ----------^------------
 Warning: Casts from number values to symbol types may cause runtime errors in file type_casts.dl at line 120

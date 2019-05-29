@@ -21,34 +21,34 @@
 .decl OutR2(x : R2)
 
 // Wrong number of arguments to record in fact (errors)
-OutR0(*R0[3]).                      // error
-OutR0(*R0[2,2]).                    // error
-OutR0(*R0[1,1,1]).                  // error
-OutR1(*R1[]).                       // error
-OutR1(*R1[2,2]).                    // error
-OutR1(*R1[1,1,1]).                  // error
-OutR2(*R2[]).                       // error
-OutR2(*R2[2]).                      // error
-OutR2(*R2[1,1]).                    // error
+OutR0(R0[3]).                      // error
+OutR0(R0[2,2]).                    // error
+OutR0(R0[1,1,1]).                  // error
+OutR1(R1[]).                       // error
+OutR1(R1[2,2]).                    // error
+OutR1(R1[1,1,1]).                  // error
+OutR2(R2[]).                       // error
+OutR2(R2[2]).                      // error
+OutR2(R2[1,1]).                    // error
 
 // Wrong number of arguments to record in head of clause (errors)
-OutR0(*R0[3]) :- InR0(*R0[]).       // error
-OutR0(*R0[2,2]) :- InR0(*R0[]).     // error
-OutR0(*R0[1,1,1]) :- InR0(*R0[]).   // error
-OutR1(*R1[]) :- InR0(*R0[]).        // error
-OutR1(*R1[2,2]) :- InR0(*R0[]).     // error
-OutR1(*R1[1,1,1]) :- InR0(*R0[]).   // error
-OutR2(*R2[]) :- InR0(*R0[]).        // error
-OutR2(*R2[2]) :- InR0(*R0[]).       // error
-OutR2(*R2[1,1]) :- InR0(*R0[]).     // error
+OutR0(R0[3]) :- InR0(R0[]).       // error
+OutR0(R0[2,2]) :- InR0(R0[]).     // error
+OutR0(R0[1,1,1]) :- InR0(R0[]).   // error
+OutR1(R1[]) :- InR0(R0[]).        // error
+OutR1(R1[2,2]) :- InR0(R0[]).     // error
+OutR1(R1[1,1,1]) :- InR0(R0[]).   // error
+OutR2(R2[]) :- InR0(R0[]).        // error
+OutR2(R2[2]) :- InR0(R0[]).       // error
+OutR2(R2[1,1]) :- InR0(R0[]).     // error
 
 // Wrong number of arguments in record in body of clause (errors)
-OutR0(*R0[]) :- InR0(*R0[3]).       // error
-OutR0(*R0[]) :- InR0(*R0[2,2]).     // error
-OutR0(*R0[]) :- InR0(*R0[1,1,1]).   // error
-OutR0(*R0[]) :- InR1(*R1[]).        // error
-OutR0(*R0[]) :- InR1(*R1[2,2]).     // error
-OutR0(*R0[]) :- InR1(*R1[1,1,1]).   // error
-OutR0(*R0[]) :- InR2(*R2[]).        // error
-OutR0(*R0[]) :- InR2(*R2[2]).       // error
-OutR0(*R0[]) :- InR2(*R2[1,1]).     // error
+OutR0(R0[]) :- InR0(R0[3]).       // error
+OutR0(R0[]) :- InR0(R0[2,2]).     // error
+OutR0(R0[]) :- InR0(R0[1,1,1]).   // error
+OutR0(R0[]) :- InR1(R1[]).        // error
+OutR0(R0[]) :- InR1(R1[2,2]).     // error
+OutR0(R0[]) :- InR1(R1[1,1,1]).   // error
+OutR0(R0[]) :- InR2(R2[]).        // error
+OutR0(R0[]) :- InR2(R2[2]).       // error
+OutR0(R0[]) :- InR2(R2[1,1]).     // error

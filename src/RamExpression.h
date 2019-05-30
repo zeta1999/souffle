@@ -137,7 +137,7 @@ protected:
 
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIntrinsicOperator&>(node);
-        return getOperator() == other.getOperator() && RamAbstractOperator::equal(node);
+        return RamAbstractOperator::equal(node) && getOperator() == other.getOperator();
     }
 };
 
@@ -184,7 +184,7 @@ protected:
 
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamUserDefinedOperator&>(node);
-        return name == other.name && type == other.type && RamAbstractOperator::equal(node);
+        return RamAbstractOperator::equal(node) && name == other.name && type == other.type;
     }
 };
 
@@ -320,9 +320,7 @@ public:
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         for (const auto& cur : arguments) {
-            if (cur) {
-                res.push_back(cur.get());
-            }
+            res.push_back(cur.get());
         }
         return res;
     }

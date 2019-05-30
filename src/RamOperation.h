@@ -325,7 +325,8 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "PARALLEL SEARCH " << rel.getName() << " AS t" << getTupleId();
+        os << "PARALLEL FOR t" << getTupleId() << " IN ";
+        os << rel.getName();
         printIndex(os);
         os << std::endl;
         RamIndexRelationSearch::print(os, tabpos + 1);
@@ -438,7 +439,6 @@ public:
         return *condition;
     }
 
-    /** Print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
@@ -449,7 +449,6 @@ public:
         RamIndexRelationSearch::print(os, tabpos + 1);
     }
 
-    /** Apply mapper */
     void apply(const RamNodeMapper& map) override {
         RamRelationSearch::apply(map);
         for (auto& cur : queryPattern) {
@@ -497,7 +496,6 @@ public:
             : RamIndexChoice(std::move(r), ident, std::move(cond), std::move(queryPattern), std::move(nested),
                       profileText) {}
 
-    /** Print */
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);

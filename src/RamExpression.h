@@ -320,7 +320,7 @@ public:
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         for (const auto& cur : arguments) {
-                res.push_back(cur.get());
+            res.push_back(cur.get());
         }
         return res;
     }

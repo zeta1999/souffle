@@ -525,15 +525,13 @@ public:
 enum AggregateFunction { MAX, MIN, COUNT, SUM };
 
 /**
- * Aggregation
+ * Abstract class for aggregation
  */
-class RamAggregate : public RamRelationSearch {
+class RamAbstractAggregate {
 public:
-    RamAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
-            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
-            std::unique_ptr<RamCondition> condition, int ident)
-            : RamRelationSearch(std::move(relRef), ident, std::move(nested)), function(fun),
-              expression(std::move(expression)), condition(std::move(condition)) {}
+    RamAbstractAggregate(AggregateFunction fun, std::unique_ptr<RamExpression> expression,
+            std::unique_ptr<RamCondition> condition)
+            : function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
     /** Get condition */
     const RamCondition& getCondition() const {
@@ -552,9 +550,11 @@ public:
         return *expression;
     }
 
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "t" << getTupleId() << ".0=";
+    std::vector<const RamNode*> getChildNodes() const {
+        return {expression.get(), condition.get()};
+    }
+
+    void print(std::ostream& os, int tabpos) const {
         switch (function) {
             case MIN:
                 os << "MIN ";
@@ -572,6 +572,41 @@ public:
         if (function != COUNT) {
             os << *expression << " ";
         }
+    }
+
+protected:
+    /** Aggregation function */
+    AggregateFunction function;
+
+    /** Aggregation expression */
+    std::unique_ptr<RamExpression> expression;
+
+    /** Aggregation tuple condition */
+    std::unique_ptr<RamCondition> condition;
+
+    bool equal(const RamNode& node) const {
+        assert(nullptr != dynamic_cast<const RamAbstractAggregate*>(&node));
+        const auto& other = dynamic_cast<const RamAbstractAggregate*>(&node);
+        return getCondition() == other->getCondition() && getFunction() == other->getFunction() &&
+               getExpression() == other->getExpression();
+    }
+};
+
+/**
+ * Aggregation
+ */
+class RamAggregate : public RamRelationSearch, public RamAbstractAggregate {
+public:
+    RamAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
+            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
+            std::unique_ptr<RamCondition> condition, int ident)
+            : RamRelationSearch(std::move(relRef), ident, std::move(nested)),
+              RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "t" << getTupleId() << ".0=";
+        RamAbstractAggregate::print(os, tabpos);
         os << " FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
         if (!isRamTrue(condition.get())) {
             os << " WHERE " << getCondition();
@@ -582,8 +617,8 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamRelationSearch::getChildNodes();
-        res.push_back(expression.get());
-        res.push_back(condition.get());
+        auto children = RamAbstractAggregate::getChildNodes();
+        res.insert(res.end(), children.begin(), children.end());
         return res;
     }
 
@@ -601,72 +636,28 @@ public:
     }
 
 protected:
-    /** Aggregation function */
-    AggregateFunction function;
-
-    /** Aggregation expression */
-    std::unique_ptr<RamExpression> expression;
-
-    /** Aggregation tuple condition */
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamAggregate*>(&node));
         const auto& other = static_cast<const RamAggregate&>(node);
-        return RamRelationSearch::equal(other) && getCondition() == other.getCondition() &&
-               getFunction() == other.getFunction() && getExpression() == other.getExpression();
+        return RamRelationSearch::equal(other) && RamAbstractAggregate::equal(node);
     }
 };
 
 /**
  * Index Aggregation
  */
-class RamIndexAggregate : public RamIndexRelationSearch {
+class RamIndexAggregate : public RamIndexRelationSearch, public RamAbstractAggregate {
 public:
     RamIndexAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition, std::vector<std::unique_ptr<RamExpression>> queryPattern,
             int ident)
             : RamIndexRelationSearch(std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
-              function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
-
-    /** Get condition */
-    const RamCondition& getCondition() const {
-        assert(condition != nullptr && "Condition of index-aggregate is a null-pointer");
-        return *condition;
-    }
-
-    /** Get aggregation function */
-    AggregateFunction getFunction() const {
-        return function;
-    }
-
-    /** Get target expression */
-    const RamExpression& getExpression() const {
-        assert(expression != nullptr && "Expression of index-aggregate is a null-pointer");
-        return *expression;
-    }
+              RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "t" << getTupleId() << ".0=";
-        switch (function) {
-            case MIN:
-                os << "MIN ";
-                break;
-            case MAX:
-                os << "MAX ";
-                break;
-            case COUNT:
-                os << "COUNT ";
-                break;
-            case SUM:
-                os << "SUM ";
-                break;
-        }
-        if (function != COUNT) {
-            os << *expression << " ";
-        }
+        RamAbstractAggregate::print(os, tabpos);
         os << " SEARCH t" << getTupleId() << " ∈ " << getRelation().getName();
         printIndex(os);
         if (!isRamTrue(condition.get())) {
@@ -678,8 +669,8 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamIndexRelationSearch::getChildNodes();
-        res.push_back(expression.get());
-        res.push_back(condition.get());
+        auto children = RamAbstractAggregate::getChildNodes();
+        res.insert(res.end(), children.begin(), children.end());
         return res;
     }
 
@@ -701,20 +692,9 @@ public:
     }
 
 protected:
-    /** Aggregation function */
-    AggregateFunction function;
-
-    /** Aggregation expression */
-    std::unique_ptr<RamExpression> expression;
-
-    /** Aggregation tuple condition */
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamIndexAggregate*>(&node));
-        const auto& other = static_cast<const RamIndexAggregate&>(node);
-        return RamIndexRelationSearch::equal(other) && getCondition() == other.getCondition() &&
-               getFunction() == other.getFunction() && getExpression() == other.getExpression();
+        const auto& other = static_cast<const RamAggregate&>(node);
+        return RamIndexRelationSearch::equal(other) && RamAbstractAggregate::equal(node);
     }
 };
 
@@ -775,19 +755,50 @@ protected:
 };
 
 /**
- * Filter statement
+ * Abstract conditional statement
  */
-class RamFilter : public RamNestedOperation {
+class RamAbstractConditional : public RamNestedOperation {
 public:
-    RamFilter(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
+    RamAbstractConditional(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
             : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
 
     /** Get condition */
     const RamCondition& getCondition() const {
-        assert(condition != nullptr && "condition of filter operation is a null-pointer");
+        assert(condition != nullptr && "condition of conditional operation is a null-pointer");
         return *condition;
     }
+
+    std::vector<const RamNode*> getChildNodes() const override {
+        auto res = RamNestedOperation::getChildNodes();
+        res.push_back(condition.get());
+        return res;
+    }
+
+    void apply(const RamNodeMapper& map) override {
+        RamNestedOperation::apply(map);
+        condition = map(std::move(condition));
+    }
+
+protected:
+    /** Condition */
+    std::unique_ptr<RamCondition> condition;
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamAbstractConditional*>(&node));
+        const auto& other = static_cast<const RamAbstractConditional&>(node);
+        return RamNestedOperation::equal(node) && getCondition() == other.getCondition();
+    }
+};
+
+/**
+ * Filter statement
+ */
+class RamFilter : public RamAbstractConditional {
+public:
+    RamFilter(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
+            : RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -795,47 +806,25 @@ public:
         RamNestedOperation::print(os, tabpos + 1);
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        auto res = RamNestedOperation::getChildNodes();
-        res.push_back(condition.get());
-        return res;
-    }
-
     RamFilter* clone() const override {
         return new RamFilter(std::unique_ptr<RamCondition>(condition->clone()),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 
-    void apply(const RamNodeMapper& map) override {
-        RamNestedOperation::apply(map);
-        condition = map(std::move(condition));
-    }
-
 protected:
-    /** Filter condition */
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamFilter*>(&node));
-        const auto& other = static_cast<const RamFilter&>(node);
-        return RamNestedOperation::equal(node) && getCondition() == other.getCondition();
+        return RamAbstractConditional::equal(node);
     }
 };
 
 /**
  * Break statement
  */
-class RamBreak : public RamNestedOperation {
+class RamBreak : public RamAbstractConditional {
 public:
     RamBreak(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
-
-    /** Get break condition */
-    const RamCondition& getCondition() const {
-        assert(condition != nullptr && "condition of break operation is a null-pointer");
-        return *condition;
-    }
+            : RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -843,30 +832,14 @@ public:
         RamNestedOperation::print(os, tabpos);
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        auto res = RamNestedOperation::getChildNodes();
-        res.push_back(condition.get());
-        return res;
-    }
-
     RamBreak* clone() const override {
         return new RamBreak(std::unique_ptr<RamCondition>(condition->clone()),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 
-    void apply(const RamNodeMapper& map) override {
-        RamNestedOperation::apply(map);
-        condition = map(std::move(condition));
-    }
-
 protected:
-    /** Break condition */
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamBreak*>(&node));
-        const auto& other = static_cast<const RamBreak&>(node);
-        return RamNestedOperation::equal(node) && getCondition() == other.getCondition();
+        return RamAbstractConditional::equal(node);
     }
 };
 

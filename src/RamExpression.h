@@ -359,7 +359,7 @@ protected:
  */
 class RamArgument : public RamExpression {
 public:
-    RamArgument(size_t arg_idx) : number(number) {}
+    RamArgument(size_t number) : number(number) {}
 
     /** Get argument */
     size_t getArgument() const {

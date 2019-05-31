@@ -678,6 +678,13 @@ void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& 
 
 // check if a union contains a number primitive
 static bool unionContainsNumber(const AstProgram& program, const AstUnionType& type) {
+    // avoid problems with union recursion
+    static std::set<AstTypeIdentifier> seen;
+    if (seen.find(type.getName()) != seen.end()) {
+        return false;
+    }
+    seen.insert(type.getName());
+
     // check if any of the elements of the union are or contain a number primitive
     for (const AstTypeIdentifier& elemTypeID : type.getTypes()) {
         if (elemTypeID == "number") {
@@ -703,6 +710,13 @@ static bool unionContainsNumber(const AstProgram& program, const AstUnionType& t
 
 // check if a union contains a symbol primitive
 static bool unionContainsSymbol(const AstProgram& program, const AstUnionType& type) {
+    // avoid problems with union recursion
+    static std::set<AstTypeIdentifier> seen;
+    if (seen.find(type.getName()) != seen.end()) {
+        return false;
+    }
+    seen.insert(type.getName());
+
     // check if any of the elements of the union are or contain a symbol primitive
     for (const AstTypeIdentifier& elemTypeID : type.getTypes()) {
         if (elemTypeID == "symbol") {

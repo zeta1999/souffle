@@ -25,10 +25,11 @@
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
-#include "InterpreterInterface.h"
 #include "LVMInterface.h"
+#include "LVMProgInterface.h"
 #include "ParserDriver.h"
 #include "RAMIInterface.h"
+#include "RAMIProgInterface.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
@@ -531,18 +532,19 @@ int main(int argc, char** argv) {
         // Start up profiler if needed
         if (Global::config().has("live-profile") && !Global::config().has("compile")) {
             profiler = std::thread([]() { profile::Tui().runProf(); });
-        
-        // configure interpreter
+        }
+
+        void* interpreter;
+        // configure and execute interpreter
         std::unique_ptr<Interpreter> interpreter;
         if (!Global::config().has("interpreter") || Global::config().get("Interpreter") == LVM) {
             std::unique_ptr<LVMInterface> LVM(std::make_unique<LVM>(*ramTranslationUnit));
-            // execute translation unit
             LVM->executeMain();
-            }
+            interpreter = LVM.get();
         } else {
             std::unique_ptr<RAMIInterface> RAMI(std::make_unique<RAMI>(*ramTranslationUnit));
-            // execute translation unit
             RAMI->executeMain();
+            interpreter = RAMI.get();
         }
 
         // If the profiler was started, join back here once it exits.
@@ -553,11 +555,20 @@ int main(int argc, char** argv) {
         // only run explain interface if interpreted
         if (Global::config().has("provenance")) {
             // construct SouffleProgram from env
-            InterpreterProgInterface interface(*interpreter);
-            if (Global::config().get("provenance") == "explain") {
-                explain(interface, false);
-            } else if (Global::config().get("provenance") == "explore") {
-                explain(interface, true);
+            if (auto lvmProg = dynamic_cast<LVMInterface*>(interpreter)) {
+                LVMProgInterface interface(*lvmProg);
+                if (Global::config().get("provenance") == "explain") {
+                    explain(interface, false);
+                } else if (Global::config().get("provenance") == "explore") {
+                    explain(interface, true);
+                }
+            } else if (auto ramiProg = dynamic_cast<RAMIInterface*>(interpreter)) {
+                RAMIProgInterface interface(*ramiProg);
+                if (Global::config().get("provenance") == "explain") {
+                    explain(interface, false);
+                } else if (Global::config().get("provenance") == "explore") {
+                    explain(interface, true);
+                }
             }
         }
 

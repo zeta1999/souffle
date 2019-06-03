@@ -37,8 +37,7 @@
 #include <dlfcn.h>
 
 namespace souffle {
-
-class InterpreterProgInterface;
+class LVMProgInterface;
 
 /**
  * Interpreter Interface
@@ -119,7 +118,7 @@ protected:
         return nullptr;
     }
 
-    friend InterpreterProgInterface;
+    friend LVMProgInterface;
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {

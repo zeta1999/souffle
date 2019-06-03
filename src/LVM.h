@@ -38,7 +38,7 @@
 #include <dlfcn.h>
 
 namespace souffle {
-class InterpreterProgInterface;
+class LVMProgInterface;
 
 /**
  * Bytecode Interpreter executing a RAM translation unit.
@@ -190,7 +190,7 @@ protected:
     }
 
 private:
-    friend InterpreterProgInterface;
+    friend LVMProgInterface;
 
     /** relation environment type */
     using relation_map = std::vector<std::unique_ptr<LVMRelation>>;

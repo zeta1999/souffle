@@ -37,7 +37,7 @@
 
 namespace souffle {
 
-class InterpreterProgInterface;
+class RAMIProgInterface;
 
 /**
  * Interpreter Interface
@@ -118,7 +118,7 @@ protected:
         return nullptr;
     }
 
-    friend InterpreterProgInterface;
+    friend RAMIProgInterface;
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {

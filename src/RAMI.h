@@ -38,7 +38,7 @@
 
 namespace souffle {
 
-class InterpreterProgInterface;
+class RMAIProgInterface;
 class RamOperation;
 class RamExpression;
 class SymbolTable;
@@ -146,7 +146,7 @@ protected:
     }
 
 private:
-    friend InterpreterProgInterface;
+    friend RAMIProgInterface;
 
     /** relation environment type */
     using relation_map = std::map<std::string, RAMIRelation*>;

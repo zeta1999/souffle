@@ -807,7 +807,11 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
         checkType(report, program, *cur);
     }
 
-    /* check that union types are not recursive */
+    /* check that union types are not used recursively */
+
+    // TODO: helper method to find cycles in graphs in graph utils
+    // TODO: method to get all things of a particular type into a std::set (or vector?)
+
     // create an edge from each union to its dependents
     Graph<AstTypeIdentifier> unionTypeGraph = Graph<AstTypeIdentifier>();
     visitDepthFirst(program, [&](const AstUnionType& ut) {
@@ -817,40 +821,50 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
     });
 
     // helper method to find cycle in the final graph
-    std::function<bool(const Graph<AstTypeIdentifier>&, const AstTypeIdentifier&,
-            std::set<AstTypeIdentifier>&, std::set<AstTypeIdentifier>&)>
-            findCycle = [&](const Graph<AstTypeIdentifier>& graph, const AstTypeIdentifier& root,
-                                std::set<AstTypeIdentifier>& seen, std::set<AstTypeIdentifier>& currCycle) {
-                assert(currCycle.find(root) == currCycle.end() && "root should not already be in cycle");
-                seen.insert(root);
+    std::set<AstTypeIdentifier> seenTypes;
+    std::function<bool(
+            const Graph<AstTypeIdentifier>&, const AstTypeIdentifier&, std::set<AstTypeIdentifier>&)>
+            findCycle;
 
-                currCycle.insert(root);
-                for (auto next : graph.successors(root)) {
-                    if (currCycle.find(next) != currCycle.end()) {
-                        return true;
-                    }
+    // @param   graph union-type dependency graph
+    // @param   root next node to explore
+    // @param   currPath current path being explored through the graph
+    // @return  true if a cycle exists, false otherwise
+    findCycle = [&](const Graph<AstTypeIdentifier>& graph, const AstTypeIdentifier& root,
+                        std::set<AstTypeIdentifier>& currPath) {
+        seenTypes.insert(root);
 
-                    if (findCycle(graph, next, seen, currCycle)) {
-                        return true;
-                    }
-                }
-                currCycle.erase(root);
+        // exploring paths through this node
+        currPath.insert(root);
+        for (auto next : graph.successors(root)) {
+            if (currPath.find(next) != currPath.end()) {
+                // cycle found!
+                return true;
+            }
 
-                return false;
-            };
+            // keep going down this path
+            if (findCycle(graph, next, currPath)) {
+                return true;
+            }
+        }
 
-    // check if a cycle exists
+        // done with this node, bounce back
+        currPath.erase(root);
+
+        return false;
+    };
+
+    // run the cycle check
     bool cycleFound = false;
-    std::set<AstTypeIdentifier> seen;
     for (const auto& node : unionTypeGraph.vertices()) {
-        if (seen.find(node) != seen.end()) {
-            // already checked
+        if (seenTypes.find(node) != seenTypes.end()) {
+            // already checked paths through this node
             continue;
         }
 
-        std::set<AstTypeIdentifier> cycle;
-        if (findCycle(unionTypeGraph, node, seen, cycle)) {
-            std::cout << "CYCLE FOUND! CYCLE: " << cycle << std::endl;
+        std::set<AstTypeIdentifier> path;
+        if (findCycle(unionTypeGraph, node, path)) {
+            std::cout << "CYCLE FOUND! CYCLE: " << path << std::endl;
             cycleFound = true;
             break;
         }

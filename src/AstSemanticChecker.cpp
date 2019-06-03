@@ -878,7 +878,7 @@ void AstSemanticChecker::checkRecursiveUnionTypes(ErrorReport& report, const Ast
             auto types = program.getTypes();
             const AstUnionType* typeDefinition = nullptr;
             for (const auto* cur : program.getTypes()) {
-                const AstUnionType* curUnion = dynamic_cast<const AstUnionType*>(cur);
+                const auto* curUnion = dynamic_cast<const AstUnionType*>(cur);
                 if (curUnion == nullptr) {
                     // only care about union types
                     continue;

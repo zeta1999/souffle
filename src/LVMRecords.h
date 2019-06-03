@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file InterpreterRecords.h
+ * @file LVMRecords.h
  *
  * Utilities for handling records in the interpreter
  *

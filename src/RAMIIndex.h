@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file InterpreterIndex.h
+ * @file RAMIIndex.h
  *
  * An index is implemented either as a hash-index, a double-hash, as a
  * red-black tree or as a b-tree. The choice of the implementation is
@@ -27,7 +27,7 @@
 namespace souffle {
 
 /* B-Tree indexes as default implementation for indexes */
-class InterpreterIndex {
+class RAMIIndex {
     using LexOrder = std::vector<int>;
 
 public:
@@ -72,10 +72,10 @@ public:
 
     using iterator = index_set::iterator;
 
-    InterpreterIndex(LexOrder order)
+    RAMIIndex(LexOrder order)
             : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
-    InterpreterIndex(const InterpreterIndex&& index)
+    RAMIIndex(const RAMIIndex&& index)
             : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
 
     const LexOrder& order() const {

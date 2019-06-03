@@ -21,8 +21,8 @@
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"
-#include "InterpreterIndex.h"
-#include "InterpreterRecords.h"
+#include "LVMIndex.h"
+#include "LVMRecords.h"
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
@@ -61,7 +61,7 @@ void LVM::executeMain() {
         LVMGenerator generator(translationUnit.getSymbolTable(), main, *isa, relationEncoder);
         mainProgram = generator.getCodeStream();
     }
-    InterpreterContext ctxt;
+    LVMContext ctxt;
     SignalHandler::instance()->set();
     if (Global::config().has("verbose")) {
         SignalHandler::instance()->enableLogging();

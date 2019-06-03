@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file Interpreter.h
+ * @file LVMInterface.h
  *
  * Declares the interpreter class for executing RAM programs.
  *
@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "InterpreterContext.h"
-#include "InterpreterRelation.h"
+#include "LVMContext.h"
+#include "LVMRelation.h"
 #include "LVMCode.h"
 #include "LVMGenerator.h"
 #include "Logger.h"
@@ -43,12 +43,12 @@ class InterpreterProgInterface;
 /**
  * Interpreter Interface
  */
-class Interpreter {
+class LVMInterface {
 public:
-    Interpreter(RamTranslationUnit& tUnit)
+    LVMInterface(RamTranslationUnit& tUnit)
             : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()) {}
 
-    virtual ~Interpreter() = default;
+    virtual ~LVMInterface() = default;
 
     /** Get translation unit */
     RamTranslationUnit& getTranslationUnit() {
@@ -127,7 +127,7 @@ protected:
     }
 
     /** Get relation map */
-    virtual std::map<std::string, InterpreterRelation*>& getRelationMap() = 0;
+    virtual std::map<std::string, LVMRelation*>& getRelationMap() = 0;
 
     /** RAM translation Unit */
     RamTranslationUnit& translationUnit;

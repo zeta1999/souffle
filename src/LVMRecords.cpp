@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "InterpreterRecords.h"
+#include "LVMRecords.h"
 #include <cassert>
 #include <limits>
 #include <map>
@@ -29,7 +29,7 @@ using namespace std;
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
-class RecordMap {
+class LVMRecordMap {
     /** The arity of the stored tuples */
     int arity;
 
@@ -40,7 +40,7 @@ class RecordMap {
     vector<vector<RamDomain>> i2r;
 
 public:
-    RecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    LVMRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -89,9 +89,9 @@ public:
 /**
  * The static access function for record maps of certain arities.
  */
-RecordMap& getForArity(int arity) {
+LVMRecordMap& getForArity(int arity) {
     // the static container -- filled on demand
-    static map<int, RecordMap> maps;
+    static map<int, LVMRecordMap> maps;
 
     // get container if present
     auto pos = maps.find(arity);

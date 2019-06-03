@@ -25,11 +25,10 @@
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
-#include "Interpreter.h"
 #include "InterpreterInterface.h"
-#include "LVM.h"
+#include "LVMInterface.h"
 #include "ParserDriver.h"
-#include "RAMI.h"
+#include "RAMIInterface.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
@@ -528,25 +527,23 @@ int main(int argc, char** argv) {
             !Global::config().has("generate")) {
         // ------- interpreter -------------
 
-        // configure interpreter
-        std::unique_ptr<Interpreter> interpreter;
-        if (!Global::config().has("interpreter")) {
-            interpreter = std::make_unique<LVM>(*ramTranslationUnit);
-        } else {
-            if (Global::config().get("interpreter") == "RAMI") {
-                interpreter = std::make_unique<RAMI>(*ramTranslationUnit);
-            } else {
-                interpreter = std::make_unique<LVM>(*ramTranslationUnit);
-            }
-        }
-
         std::thread profiler;
         // Start up profiler if needed
         if (Global::config().has("live-profile") && !Global::config().has("compile")) {
             profiler = std::thread([]() { profile::Tui().runProf(); });
+        
+        // configure interpreter
+        std::unique_ptr<Interpreter> interpreter;
+        if (!Global::config().has("interpreter") || Global::config().get("Interpreter") == LVM) {
+            std::unique_ptr<LVMInterface> LVM(std::make_unique<LVM>(*ramTranslationUnit));
+            // execute translation unit
+            LVM->executeMain();
+            }
+        } else {
+            std::unique_ptr<RAMIInterface> RAMI(std::make_unique<RAMI>(*ramTranslationUnit));
+            // execute translation unit
+            RAMI->executeMain();
         }
-        // execute translation unit
-        interpreter->executeMain();
 
         // If the profiler was started, join back here once it exits.
         if (profiler.joinable()) {

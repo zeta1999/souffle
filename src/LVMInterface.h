@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "LVMContext.h"
-#include "LVMRelation.h"
 #include "LVMCode.h"
+#include "LVMContext.h"
 #include "LVMGenerator.h"
+#include "LVMRelation.h"
 #include "Logger.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"

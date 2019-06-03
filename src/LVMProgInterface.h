@@ -48,14 +48,12 @@ public:
 
     /** Iterator to first tuple */
     iterator begin() const override {
-        return LVMRelInterface::iterator(
-                new LVMRelInterface::iterator_base(id, this, relation.begin()));
+        return LVMRelInterface::iterator(new LVMRelInterface::iterator_base(id, this, relation.begin()));
     }
 
     /** Iterator to last tuple */
     iterator end() const override {
-        return LVMRelInterface::iterator(
-                new LVMRelInterface::iterator_base(id, this, relation.end()));
+        return LVMRelInterface::iterator(new LVMRelInterface::iterator_base(id, this, relation.end()));
     }
 
     /** Get name */
@@ -201,8 +199,8 @@ public:
                 std::string n = rel.getArg(i);
                 attrNames.push_back(n);
             }
-            auto* interface = new LVMRelInterface(
-                    interpreterRel, symTable, rel.getName(), types, attrNames, id);
+            auto* interface =
+                    new LVMRelInterface(interpreterRel, symTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);
             bool input;
             bool output;

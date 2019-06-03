@@ -72,11 +72,9 @@ public:
 
     using iterator = index_set::iterator;
 
-    LVMIndex(LexOrder order)
-            : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
+    LVMIndex(LexOrder order) : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
-    LVMIndex(const LVMIndex&& index)
-            : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
+    LVMIndex(const LVMIndex&& index) : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
 
     const LexOrder& order() const {
         return theOrder;

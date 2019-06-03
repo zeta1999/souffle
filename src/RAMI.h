@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "RAMIInterface.h"
 #include "RAMIContext.h"
+#include "RAMIInterface.h"
 #include "RAMIRelation.h"
 #include "RamCondition.h"
 #include "RamRelation.h"

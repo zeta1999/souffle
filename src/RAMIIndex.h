@@ -72,11 +72,9 @@ public:
 
     using iterator = index_set::iterator;
 
-    RAMIIndex(LexOrder order)
-            : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
+    RAMIIndex(LexOrder order) : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
-    RAMIIndex(const RAMIIndex&& index)
-            : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
+    RAMIIndex(const RAMIIndex&& index) : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
 
     const LexOrder& order() const {
         return theOrder;

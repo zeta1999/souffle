@@ -17,9 +17,9 @@
 
 #pragma once
 
+#include "Logger.h"
 #include "RAMIContext.h"
 #include "RAMIRelation.h"
-#include "Logger.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"

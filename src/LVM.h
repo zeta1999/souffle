@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "LVMInterface.h"
-#include "LVMContext.h"
-#include "LVMRelation.h"
 #include "LVMCode.h"
+#include "LVMContext.h"
 #include "LVMGenerator.h"
+#include "LVMInterface.h"
+#include "LVMRelation.h"
 #include "Logger.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
@@ -107,8 +107,8 @@ public:
     }
 
 protected:
-    using index_set = btree_multiset<const RamDomain*, LVMIndex::comparator,
-            std::allocator<const RamDomain*>, 512>;
+    using index_set =
+            btree_multiset<const RamDomain*, LVMIndex::comparator, std::allocator<const RamDomain*>, 512>;
 
     /** Insert Logger */
     void insertTimerAt(size_t index, Logger* timer) {

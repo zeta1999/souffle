@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2014, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RAMIIndex.h
+ * @file LVMIndex.h
  *
  * An index is implemented either as a hash-index, a double-hash, as a
  * red-black tree or as a b-tree. The choice of the implementation is

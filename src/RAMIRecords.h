@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -10,7 +10,7 @@
  *
  * @file RAMIRecords.h
  *
- * Utilities for handling records in the interpreter
+ * Utilities for handling records in the RAMI
  *
  ***********************************************************************/
 

@@ -1,4 +1,3 @@
-
 /*
  * Souffle - A Datalog Compiler
  * Copyright (c) 2019, The Souffle Developers. All rights reserved.

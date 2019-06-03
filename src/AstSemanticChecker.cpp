@@ -801,14 +801,7 @@ void AstSemanticChecker::checkType(ErrorReport& report, const AstProgram& progra
     }
 }
 
-void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& program) {
-    /* check each type individually */
-    for (const auto& cur : program.getTypes()) {
-        checkType(report, program, *cur);
-    }
-
-    /* check that union types are not defined recursively */
-
+void AstSemanticChecker::checkRecursiveUnionTypes(ErrorReport& report, const AstProgram& program) {
     // TODO: helper method to find cycles in graphs in graph utils
     // TODO: method to get all things of a particular type into a std::set (or vector?)
 
@@ -901,11 +894,20 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
 
             // add the error
             std::string typeListStr = toString(join(path, ","));
-            std::cout << "{" << typeListStr << "}" << std::endl;
             report.addError(
                     "Cyclic definition of union type(s) {" + typeListStr + "}", typeDefinition->getSrcLoc());
         }
     }
+}
+
+void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& program) {
+    /* check each type individually */
+    for (const auto& cur : program.getTypes()) {
+        checkType(report, program, *cur);
+    }
+
+    /* check that union types are not defined recursively */
+    checkRecursiveUnionTypes(report, program);
 }
 
 void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram& program) {

@@ -275,7 +275,7 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
 
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
-        if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
+        if (const auto* indexSearch = dynamic_cast<const RamIndexOperation*>(&node)) {
             MinIndexSelection& indexes = getIndexes(indexSearch->getRelation());
             indexes.addSearch(getSearchSignature(indexSearch));
         } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
@@ -374,7 +374,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
     os << "------ End of Auto-Index-Generation Report -------\n";
 }
 
-SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexRelationSearch* search) const {
+SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* search) const {
     SearchSignature keys = 0;
     std::vector<RamExpression*> rangePattern = search->getRangePattern();
     for (int i = 0; i < (int)rangePattern.size(); i++) {

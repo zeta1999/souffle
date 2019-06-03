@@ -27,12 +27,12 @@ namespace souffle {
  * @class RamLevelAnalysis
  * @brief A Ram Analysis for determining the level of a expression/condition
  *
- * The expression is determined by the ElementAccess of an expression/condition
+ * The expression is determined by the TupleElement of an expression/condition
  * with the highest tuple-id number. Note in the implementation we assume that the
- * tuple-id of RamSearch operations are ordered, i.e., the most-outer loop has the
+ * tuple-id of RamTupleOperation operations are ordered, i.e., the most-outer loop has the
  * smallest tuple-id and the most inner-loop has the largest tuple-id number.
  *
- * If an expression/condition does not contain an ElementAccess accessing an element
+ * If an expression/condition does not contain an TupleElement accessing an element
  * of a tuple, the analysis yields -1 for denoting that the expression/condition
  * can be executed outside of the loop-nest, i.e., the expression/condition is
  * independent of data stemming from relations.

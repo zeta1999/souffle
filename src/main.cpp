@@ -25,10 +25,10 @@
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
-#include "LVMInterface.h"
+#include "LVM.h"
 #include "LVMProgInterface.h"
 #include "ParserDriver.h"
-#include "RAMIInterface.h"
+#include "RAMI.h"
 #include "RAMIProgInterface.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
@@ -60,7 +60,6 @@
 #include <vector>
 
 namespace souffle {
-
 /**
  * Executes a binary file.
  */
@@ -534,36 +533,33 @@ int main(int argc, char** argv) {
             profiler = std::thread([]() { profile::Tui().runProf(); });
         }
 
-        void* interpreter;
         // configure and execute interpreter
-        std::unique_ptr<Interpreter> interpreter;
-        if (!Global::config().has("interpreter") || Global::config().get("Interpreter") == LVM) {
-            std::unique_ptr<LVMInterface> LVM(std::make_unique<LVM>(*ramTranslationUnit));
-            LVM->executeMain();
-            interpreter = LVM.get();
-        } else {
-            std::unique_ptr<RAMIInterface> RAMI(std::make_unique<RAMI>(*ramTranslationUnit));
-            RAMI->executeMain();
-            interpreter = RAMI.get();
-        }
-
-        // If the profiler was started, join back here once it exits.
-        if (profiler.joinable()) {
-            profiler.join();
-        }
-
-        // only run explain interface if interpreted
-        if (Global::config().has("provenance")) {
-            // construct SouffleProgram from env
-            if (auto lvmProg = dynamic_cast<LVMInterface*>(interpreter)) {
-                LVMProgInterface interface(*lvmProg);
+        if (!Global::config().has("interpreter") || Global::config().get("Interpreter") == "LVM") {
+            std::unique_ptr<LVMInterface> lvm(std::make_unique<LVM>(*ramTranslationUnit));
+            lvm->executeMain();
+            // If the profiler was started, join back here once it exits.
+            if (profiler.joinable()) {
+                profiler.join();
+            }
+            // only run explain interface if interpreted
+            if (Global::config().has("provenance")) {
+                LVMProgInterface interface(*lvm);
                 if (Global::config().get("provenance") == "explain") {
                     explain(interface, false);
                 } else if (Global::config().get("provenance") == "explore") {
                     explain(interface, true);
                 }
-            } else if (auto ramiProg = dynamic_cast<RAMIInterface*>(interpreter)) {
-                RAMIProgInterface interface(*ramiProg);
+            }
+        } else {
+            std::unique_ptr<RAMIInterface> rami(std::make_unique<RAMI>(*ramTranslationUnit));
+            rami->executeMain();
+            // If the profiler was started, join back here once it exits.
+            if (profiler.joinable()) {
+                profiler.join();
+            }
+            // only run explain interface if interpreted
+            if (Global::config().has("provenance")) {
+                RAMIProgInterface interface(*rami);
                 if (Global::config().get("provenance") == "explain") {
                     explain(interface, false);
                 } else if (Global::config().get("provenance") == "explore") {
@@ -571,7 +567,6 @@ int main(int argc, char** argv) {
                 }
             }
         }
-
     } else {
         // ------- compiler -------------
 

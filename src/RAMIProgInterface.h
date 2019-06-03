@@ -30,7 +30,7 @@ namespace souffle {
  */
 class RAMIRelInterface : public Relation {
 public:
-    RAMIRelInterface(LVMRelation& r, SymbolTable& s, std::string n, std::vector<std::string> t,
+    RAMIRelInterface(RAMIRelation& r, SymbolTable& s, std::string n, std::vector<std::string> t,
             std::vector<std::string> an, uint32_t i)
             : relation(r), symTable(s), name(std::move(n)), types(std::move(t)), attrNames(std::move(an)),
               id(i) {}
@@ -101,7 +101,7 @@ protected:
      */
     class iterator_base : public Relation::iterator_base {
     public:
-        iterator_base(uint32_t arg_id, const RAMIRelInterface* r, LVMRelation::iterator i)
+        iterator_base(uint32_t arg_id, const RAMIRelInterface* r, RAMIRelation::iterator i)
                 : Relation::iterator_base(arg_id), ramRelationInterface(r), it(i), tup(r) {}
         ~iterator_base() override = default;
 
@@ -146,13 +146,13 @@ protected:
 
     private:
         const RAMIRelInterface* ramRelationInterface;
-        LVMRelation::iterator it;
+        RAMIRelation::iterator it;
         tuple tup;
     };
 
 private:
     /** Wrapped interpreter relation */
-    LVMRelation& relation;
+    RAMIRelation& relation;
 
     /** Symbol table */
     SymbolTable& symTable;
@@ -175,7 +175,7 @@ private:
  */
 class RAMIProgInterface : public SouffleProgram {
 public:
-    RAMIProgInterface(LVMInterface& interp)
+    RAMIProgInterface(RAMIInterface& interp)
             : prog(*interp.getTranslationUnit().getProgram()), exec(interp),
               symTable(interp.getTranslationUnit().getSymbolTable()) {
         uint32_t id = 0;
@@ -257,7 +257,7 @@ public:
 
 private:
     const RamProgram& prog;
-    LVMInterface& exec;
+    RAMIInterface& exec;
     SymbolTable& symTable;
     std::vector<RAMIRelInterface*> interfaces;
 };

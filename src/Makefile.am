@@ -121,7 +121,6 @@ souffle_sources = \
 			  RAMI.cpp 				RAMI.h 				\
 			  RAMIContext.h 							\
 			  RAMIIndex.h 								\
-			  RAMIInterface.h 							\
 			  RAMIProgInterface.cpp 					\
 			  RAMIRecords.h			RAMIRecords.cpp 	\
 			  RAMIRelation.h 							\

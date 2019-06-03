@@ -37,6 +37,7 @@
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "ErrorReport.h"
+#include "FunctorOps.h"
 #include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
@@ -1196,6 +1197,11 @@ void AstSemanticChecker::checkTypeCorrectness(
 
             // invalid types have already been reported
             if (argType->isValidType()) {
+                if (functor.getFunction() == FunctorOp::ORD) {
+                    // skip argument type-checking for ord
+                    continue;
+                }
+
                 if (functor.acceptsSymbols(i)) {
                     // argument must be a symbol type
                     if (!lattice->isSubtype(*argType, TopPrimitiveAnalysisType(Kind::SYMBOL))) {

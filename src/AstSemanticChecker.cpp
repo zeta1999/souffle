@@ -802,8 +802,7 @@ void AstSemanticChecker::checkType(ErrorReport& report, const AstProgram& progra
 }
 
 void AstSemanticChecker::checkRecursiveUnionTypes(ErrorReport& report, const AstProgram& program) {
-    // TODO: helper method to find cycles in graphs in graph utils
-    // TODO: method to get all things of a particular type into a std::set (or vector?)
+    /* Goal: throw an error when unions are cyclically defined */
 
     // create an edge from each union to its dependents
     Graph<AstTypeIdentifier> unionTypeGraph = Graph<AstTypeIdentifier>();

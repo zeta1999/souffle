@@ -32,11 +32,12 @@
 namespace souffle {
 
 /**
- * Abstract class for a relational algebra operation
+ * @class RamOperation
+ * @brief Abstract class for a relational algebra operation
  */
 class RamOperation : public RamNode {
 public:
-    /** pretty print with intentation */
+    /** @brief Pretty print with intentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
     void print(std::ostream& os) const override {
@@ -47,25 +48,37 @@ public:
 };
 
 /**
- * Abstract class for parallel operation
+ * @class RamAbstractParallel
+ * @brief Abstract class for parallel operation
  */
 class RamAbstractParallel {};
 
 /**
- * Abstract class for a nesting operations in a loop-nest
+ * @class RamNestedOperation
+ * @brief Abstract class for a nesting operations in a loop-nest
+ *
+ * In the following example, the nested operation
+ * of "IF C1" is "IF C2":
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    IF C1
+ *     IF C2
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamNestedOperation : public RamOperation {
 public:
     RamNestedOperation(std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamOperation(), nestedOperation(std::move(nested)), profileText(std::move(profileText)) {}
 
-    /** Get nested operation */
+    /** @brief Get nested operation */
     RamOperation& getOperation() const {
         assert(nullptr != nestedOperation);
         return *nestedOperation;
     }
 
-    /** Get profile text */
+    /** @brief Get profile text */
     const std::string& getProfileText() const {
         return profileText;
     }
@@ -86,7 +99,7 @@ protected:
     /** Nested operation */
     std::unique_ptr<RamOperation> nestedOperation;
 
-    /** Profile text */
+    /** Text used by the profiler */
     const std::string profileText;
 
     bool equal(const RamNode& node) const override {

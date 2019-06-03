@@ -238,7 +238,7 @@ protected:
     ChainOrderMap chainToOrder;  // maps order index to set of searches covered by chain
     MaxMatching matching;        // matching problem for finding minimal number of orders
 
-    /** count the number of bits in key */
+    /** @Brief count the number of bits in key */
     static size_t card(SearchSignature cols) {
         size_t sz = 0, idx = 1;
         for (size_t i = 0; i < sizeof(SearchSignature) * 8; i++) {

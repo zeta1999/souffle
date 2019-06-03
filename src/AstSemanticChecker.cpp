@@ -823,22 +823,24 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
     // helper method to find cycle in the final graph
     std::set<AstTypeIdentifier> seenTypes;
     std::function<bool(
-            const Graph<AstTypeIdentifier>&, const AstTypeIdentifier&, std::set<AstTypeIdentifier>&)>
+            const Graph<AstTypeIdentifier>&, const AstTypeIdentifier&, std::vector<AstTypeIdentifier>&)>
             findCycle;
 
     // @param   graph union-type dependency graph
     // @param   root next node to explore
     // @param   currPath current path being explored through the graph
     // @return  true if a cycle exists, false otherwise
-    findCycle = [&](const Graph<AstTypeIdentifier>& graph, const AstTypeIdentifier& root,
-                        std::set<AstTypeIdentifier>& currPath) {
+    findCycle = [&](const Graph<AstTypeIdentifier>& graph, AstTypeIdentifier root,
+                        std::vector<AstTypeIdentifier>& currPath) {
         seenTypes.insert(root);
 
         // exploring paths through this node
-        currPath.insert(root);
+        currPath.push_back(root);
         for (auto next : graph.successors(root)) {
-            if (currPath.find(next) != currPath.end()) {
+            auto pos = std::find(currPath.begin(), currPath.end(), next);
+            if (pos != currPath.end()) {
                 // cycle found!
+                currPath.push_back(next);
                 return true;
             }
 
@@ -848,8 +850,8 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
             }
         }
 
-        // done with this node, bounce back
-        currPath.erase(root);
+        // done with this node, no cycle found, bounce back
+        currPath.pop_back();
 
         return false;
     };
@@ -862,8 +864,18 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
             continue;
         }
 
-        std::set<AstTypeIdentifier> path;
+        std::vector<AstTypeIdentifier> path;
         if (findCycle(unionTypeGraph, node, path)) {
+            // pop out the last node of the cycle
+            AstTypeIdentifier cycleStart = path.back();
+            path.pop_back();
+
+            // last node is also the first node, so crop out irrelevant nodes from the start
+            auto pos = std::find(path.begin(), path.end(), cycleStart);
+            assert(pos != path.end() && "node should appear twice in cycle");
+            path.erase(path.begin(), pos);
+
+
             std::cout << "CYCLE FOUND! CYCLE: " << path << std::endl;
             cycleFound = true;
             break;

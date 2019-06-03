@@ -339,11 +339,11 @@ public:
     MinIndexSelection& getIndexes(const std::string& relName);
 
     /**
-     * @Brief Get index signature for an Ram IndexRelationSearch operation
+     * @Brief Get index signature for an Ram IndexOperation operation
      * @param  Index-relation-search operation
      * @result Index signature of operation
      */
-    SearchSignature getSearchSignature(const RamIndexRelationSearch* search) const;
+    SearchSignature getSearchSignature(const RamIndexOperation* search) const;
 
     /**
      * @Brief Get the index signature for an existence check

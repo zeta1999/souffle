@@ -191,9 +191,9 @@ protected:
 /**
  * Access element from the current tuple in a tuple environment
  */
-class RamElementAccess : public RamExpression {
+class RamTupleElement : public RamExpression {
 public:
-    RamElementAccess(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
+    RamTupleElement(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
             : identifier(ident), element(elem) {}
 
     void print(std::ostream& os) const override {
@@ -210,8 +210,8 @@ public:
         return element;
     }
 
-    RamElementAccess* clone() const override {
-        return new RamElementAccess(identifier, element);
+    RamTupleElement* clone() const override {
+        return new RamTupleElement(identifier, element);
     }
 
 protected:
@@ -222,8 +222,8 @@ protected:
     const size_t element;
 
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamElementAccess*>(&node));
-        const auto& other = static_cast<const RamElementAccess&>(node);
+        assert(nullptr != dynamic_cast<const RamTupleElement*>(&node));
+        const auto& other = static_cast<const RamTupleElement&>(node);
         return getTupleId() == other.getTupleId() && getElement() == other.getElement();
     }
 };
@@ -357,9 +357,9 @@ protected:
  * where n is the number of arguments of the
  * subroutine.
  */
-class RamArgument : public RamExpression {
+class RamSubroutineArgument : public RamExpression {
 public:
-    RamArgument(size_t number) : number(number) {}
+    RamSubroutineArgument(size_t number) : number(number) {}
 
     /** Get argument */
     size_t getArgument() const {
@@ -370,8 +370,8 @@ public:
         os << "argument(" << number << ")";
     }
 
-    RamArgument* clone() const override {
-        return new RamArgument(number);
+    RamSubroutineArgument* clone() const override {
+        return new RamSubroutineArgument(number);
     }
 
 protected:
@@ -379,8 +379,8 @@ protected:
     const size_t number;
 
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamArgument*>(&node));
-        const auto& other = static_cast<const RamArgument&>(node);
+        assert(nullptr != dynamic_cast<const RamSubroutineArgument*>(&node));
+        const auto& other = static_cast<const RamSubroutineArgument&>(node);
         return getArgument() == other.getArgument();
     }
 };

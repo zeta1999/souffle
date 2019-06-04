@@ -678,6 +678,13 @@ void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& 
 
 // check if a union contains a number primitive
 static bool unionContainsNumber(const AstProgram& program, const AstUnionType& type) {
+    // avoid problems with union recursion
+    static std::set<AstTypeIdentifier> seen;
+    if (seen.find(type.getName()) != seen.end()) {
+        return false;
+    }
+    seen.insert(type.getName());
+
     // check if any of the elements of the union are or contain a number primitive
     for (const AstTypeIdentifier& elemTypeID : type.getTypes()) {
         if (elemTypeID == "number") {
@@ -703,6 +710,13 @@ static bool unionContainsNumber(const AstProgram& program, const AstUnionType& t
 
 // check if a union contains a symbol primitive
 static bool unionContainsSymbol(const AstProgram& program, const AstUnionType& type) {
+    // avoid problems with union recursion
+    static std::set<AstTypeIdentifier> seen;
+    if (seen.find(type.getName()) != seen.end()) {
+        return false;
+    }
+    seen.insert(type.getName());
+
     // check if any of the elements of the union are or contain a symbol primitive
     for (const AstTypeIdentifier& elemTypeID : type.getTypes()) {
         if (elemTypeID == "symbol") {
@@ -787,11 +801,112 @@ void AstSemanticChecker::checkType(ErrorReport& report, const AstProgram& progra
     }
 }
 
+void AstSemanticChecker::checkRecursiveUnionTypes(ErrorReport& report, const AstProgram& program) {
+    /* Goal: throw an error when unions are cyclically defined */
+
+    // create an edge from each union to its dependents
+    Graph<AstTypeIdentifier> unionTypeGraph = Graph<AstTypeIdentifier>();
+    visitDepthFirst(program, [&](const AstUnionType& ut) {
+        for (auto subtype : ut.getTypes()) {
+            unionTypeGraph.insert(ut.getName(), subtype);
+        }
+    });
+
+    // helper method to find cycle in the final graph
+    std::set<AstTypeIdentifier> exploredNodes;
+    std::function<bool(
+            const Graph<AstTypeIdentifier>&, const AstTypeIdentifier&, std::vector<AstTypeIdentifier>&)>
+            findCycle;
+
+    // @param   graph union-type dependency graph
+    // @param   root next node to explore
+    // @param   currPath current path being explored through the graph
+    // @return  true if a cycle exists, false otherwise
+    findCycle = [&](const Graph<AstTypeIdentifier>& graph, AstTypeIdentifier root,
+                        std::vector<AstTypeIdentifier>& currPath) {
+        if (exploredNodes.find(root) != exploredNodes.end()) {
+            // already checked paths through this node
+            return false;
+        }
+
+        // exploring paths through this node
+        currPath.push_back(root);
+        bool cycleFound = false;
+        for (auto next : graph.successors(root)) {
+            auto pos = std::find(currPath.begin(), currPath.end(), next);
+            if (pos != currPath.end()) {
+                // cycle found!
+                // add to the end to close the cycle
+                currPath.push_back(next);
+                cycleFound = true;
+                break;
+            }
+
+            // keep going down this path
+            if (findCycle(graph, next, currPath)) {
+                cycleFound = true;
+                break;
+            }
+        }
+
+        // done with this node
+        exploredNodes.insert(root);
+
+        if (cycleFound) {
+            return true;
+        } else {
+            // no cycle found, bounce back
+            currPath.pop_back();
+            return false;
+        }
+    };
+
+    // run the cycle check
+    for (const auto& node : unionTypeGraph.vertices()) {
+        std::vector<AstTypeIdentifier> path;
+        if (findCycle(unionTypeGraph, node, path)) {
+            // pop out the last node of the cycle
+            AstTypeIdentifier cycleStart = path.back();
+            path.pop_back();
+
+            // last node is also the first node, so crop out irrelevant nodes from the start
+            auto startPos = std::find(path.begin(), path.end(), cycleStart);
+            assert(startPos != path.end() && "node should appear twice in cycle");
+            path.erase(path.begin(), startPos);
+
+            // get the associated type definition
+            auto types = program.getTypes();
+            const AstUnionType* typeDefinition = nullptr;
+            for (const auto* cur : program.getTypes()) {
+                const auto* curUnion = dynamic_cast<const AstUnionType*>(cur);
+                if (curUnion == nullptr) {
+                    // only care about union types
+                    continue;
+                }
+
+                // typename must match
+                if (curUnion->getName() == cycleStart) {
+                    typeDefinition = curUnion;
+                }
+            }
+            assert(typeDefinition != nullptr && "typename should have union type definition");
+
+            // add the error
+            std::string typeListStr = toString(join(path, ","));
+            report.addError(
+                    "Cyclic definition of union type(s) {" + typeListStr + "}", typeDefinition->getSrcLoc());
+        }
+    }
+}
+
 void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& program) {
-    // check each type individually
+    /* check each type individually */
     for (const auto& cur : program.getTypes()) {
         checkType(report, program, *cur);
     }
+
+    /* check that union types are not defined recursively */
+    checkRecursiveUnionTypes(report, program);
 }
 
 void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram& program) {

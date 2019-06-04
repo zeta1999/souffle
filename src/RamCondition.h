@@ -33,13 +33,47 @@
 namespace souffle {
 
 /**
- * Abstract Class for RAM condition
+ * Abstract Class for conditions and boolean values in RAM
  */
 class RamCondition : public RamNode {
 public:
-    RamCondition() = default;
-
     RamCondition* clone() const override = 0;
+};
+
+/**
+ * True Value
+ */
+class RamTrue : public RamCondition {
+public:
+    RamTrue() = default;
+
+    void print(std::ostream& os) const override {
+        os << "true";
+    }
+
+    RamTrue* clone() const override {
+        return new RamTrue();
+    }
+};
+
+inline bool isRamTrue(const RamCondition* cond) {
+    return nullptr != dynamic_cast<const RamTrue*>(cond);
+}
+
+/**
+ * False Value
+ */
+class RamFalse : public RamCondition {
+public:
+    RamFalse() = default;
+
+    void print(std::ostream& os) const override {
+        os << "false";
+    }
+
+    RamFalse* clone() const override {
+        return new RamFalse();
+    }
 };
 
 /**
@@ -48,17 +82,17 @@ public:
 class RamConjunction : public RamCondition {
 public:
     RamConjunction(std::unique_ptr<RamCondition> l, std::unique_ptr<RamCondition> r)
-            : RamCondition(), lhs(std::move(l)), rhs(std::move(r)) {}
+            : lhs(std::move(l)), rhs(std::move(r)) {}
 
     /** Get left-hand side of conjunction */
     const RamCondition& getLHS() const {
-        assert(lhs);
+        assert(lhs != nullptr && "left-hand side of conjunction is a nullptr");
         return *lhs;
     }
 
     /** Get right-hand side of conjunction */
     const RamCondition& getRHS() const {
-        assert(rhs);
+        assert(rhs != nullptr && "right-hand side of conjunction  is a nullptr");
         return *rhs;
     }
 
@@ -75,9 +109,8 @@ public:
     }
 
     RamConjunction* clone() const override {
-        auto* res = new RamConjunction(
+        return new RamConjunction(
                 std::unique_ptr<RamCondition>(lhs->clone()), std::unique_ptr<RamCondition>(rhs->clone()));
-        return res;
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -104,11 +137,11 @@ protected:
  */
 class RamNegation : public RamCondition {
 public:
-    RamNegation(std::unique_ptr<RamCondition> operand) : RamCondition(), operand(std::move(operand)) {}
+    RamNegation(std::unique_ptr<RamCondition> operand) : operand(std::move(operand)) {}
 
     /** Get operand of negation */
     const RamCondition& getOperand() const {
-        assert(nullptr != operand);
+        assert(nullptr != operand && "operand of negation is a null-pointer");
         return *operand;
     }
 
@@ -123,8 +156,7 @@ public:
     }
 
     RamNegation* clone() const override {
-        auto* res = new RamNegation(std::unique_ptr<RamCondition>(operand->clone()));
-        return res;
+        return new RamNegation(std::unique_ptr<RamCondition>(operand->clone()));
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -148,7 +180,7 @@ protected:
 class RamConstraint : public RamCondition {
 public:
     RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamExpression> l, std::unique_ptr<RamExpression> r)
-            : RamCondition(), op(op), lhs(std::move(l)), rhs(std::move(r)) {}
+            : op(op), lhs(std::move(l)), rhs(std::move(r)) {}
 
     void print(std::ostream& os) const override {
         os << "(";
@@ -159,13 +191,15 @@ public:
     }
 
     /** Get left-hand side */
-    RamExpression* getLHS() const {
-        return lhs.get();
+    const RamExpression& getLHS() const {
+        assert(lhs != nullptr && "left-hand side of constraint is a null-pointer");
+        return *lhs;
     }
 
     /** Get right-hand side */
-    RamExpression* getRHS() const {
-        return rhs.get();
+    const RamExpression& getRHS() const {
+        assert(rhs != nullptr && "right-hand side of constraint is a null-pointer");
+        return *rhs;
     }
 
     /** Get operator symbol */
@@ -178,9 +212,8 @@ public:
     }
 
     RamConstraint* clone() const override {
-        auto* res = new RamConstraint(op, std::unique_ptr<RamExpression>(lhs->clone()),
+        return new RamConstraint(op, std::unique_ptr<RamExpression>(lhs->clone()),
                 std::unique_ptr<RamExpression>(rhs->clone()));
-        return res;
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -213,7 +246,7 @@ class RamAbstractExistenceCheck : public RamCondition {
 public:
     RamAbstractExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamCondition(), relationRef(std::move(relRef)), values(std::move(vals)) {}
+            : relationRef(std::move(relRef)), values(std::move(vals)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {
@@ -236,9 +269,7 @@ public:
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
         for (auto& val : values) {
-            if (val != nullptr) {
-                val = map(std::move(val));
-            }
+            val = map(std::move(val));
         }
     }
 
@@ -281,15 +312,10 @@ public:
     RamExistenceCheck* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : values) {
-            RamExpression* val = nullptr;
-            if (cur != nullptr) {
-                val = cur->clone();
-            }
-            newValues.emplace_back(val);
+            newValues.emplace_back(cur->clone());
         }
-        auto* res = new RamExistenceCheck(
+        return new RamExistenceCheck(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
-        return res;
     }
 };
 
@@ -318,15 +344,10 @@ public:
     RamProvenanceExistenceCheck* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : values) {
-            RamExpression* val = nullptr;
-            if (cur != nullptr) {
-                val = cur->clone();
-            }
-            newValues.emplace_back(val);
+            newValues.emplace_back(cur->clone());
         }
-        auto* res = new RamProvenanceExistenceCheck(
+        return new RamProvenanceExistenceCheck(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
-        return res;
     }
 };
 
@@ -335,8 +356,7 @@ public:
  */
 class RamEmptinessCheck : public RamCondition {
 public:
-    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef)
-            : RamCondition(), relationRef(std::move(relRef)) {}
+    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {}
 
     /** Get relation */
     const RamRelation& getRelation() const {
@@ -352,8 +372,7 @@ public:
     }
 
     RamEmptinessCheck* clone() const override {
-        auto* res = new RamEmptinessCheck(std::unique_ptr<RamRelationReference>(relationRef->clone()));
-        return res;
+        return new RamEmptinessCheck(std::unique_ptr<RamRelationReference>(relationRef->clone()));
     }
 
     void apply(const RamNodeMapper& map) override {

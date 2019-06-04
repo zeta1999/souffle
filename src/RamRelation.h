@@ -127,16 +127,9 @@ public:
         }
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>();  // no child nodes
-    }
-
     RamRelation* clone() const override {
-        auto* res = new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, representation);
-        return res;
+        return new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, representation);
     }
-
-    void apply(const RamNodeMapper& map) override {}
 
 protected:
     bool equal(const RamNode& node) const override {
@@ -159,7 +152,7 @@ public:
 
     /** Get reference */
     const RamRelation* get() const {
-        assert(relation != nullptr && "null relation");
+        assert(relation != nullptr && "relation reference is a null-pointer");
         return relation;
     }
 
@@ -167,16 +160,9 @@ public:
         out << relation->getName();
     }
 
-    std::vector<const RamNode*> getChildNodes() const override {
-        return std::vector<const RamNode*>();  // no child nodes
-    }
-
     RamRelationReference* clone() const override {
-        auto* res = new RamRelationReference(relation);
-        return res;
+        return new RamRelationReference(relation);
     }
-
-    void apply(const RamNodeMapper& map) override {}
 
 protected:
     /** Name of relation */

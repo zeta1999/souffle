@@ -169,7 +169,7 @@ std::string Synthesiser::toIndex(SearchSignature key) {
 std::set<const RamRelation*> Synthesiser::getReferencedRelations(const RamOperation& op) {
     std::set<const RamRelation*> res;
     visitDepthFirst(op, [&](const RamNode& node) {
-        if (auto scan = dynamic_cast<const RamRelationSearch*>(&node)) {
+        if (auto scan = dynamic_cast<const RamRelationOperation*>(&node)) {
             res.insert(&scan->getRelation());
         } else if (auto agg = dynamic_cast<const RamAggregate*>(&node)) {
             res.insert(&agg->getRelation());
@@ -495,6 +495,26 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
+        void visitLogRelationTimer(const RamLogRelationTimer& timer, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            // create local scope for name resolution
+            out << "{\n";
+
+            const std::string ext = fileExtension(Global::config().get("profile"));
+
+            const auto& rel = timer.getRelation();
+            auto relName = synthesiser.getRelationName(rel);
+
+            out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter, [&](){return " << relName
+                << "->size();});\n";
+            // insert statement to be measured
+            visit(timer.getStatement(), out);
+
+            // done
+            out << "}\n";
+            PRINT_END_COMMENT(out);
+        }
+
         void visitLogTimer(const RamLogTimer& timer, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // create local scope for name resolution
@@ -503,15 +523,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const std::string ext = fileExtension(Global::config().get("profile"));
 
             // create local timer
-            if (timer.getRelation() == nullptr) {
-                out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter);\n";
-            } else {
-                const auto& rel = *timer.getRelation();
-                auto relName = synthesiser.getRelationName(rel);
-
-                out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter, [&](){return " << relName
-                    << "->size();});\n";
-            }
+            out << "\tLogger logger(R\"_(" << timer.getMessage() << ")_\",iter);\n";
             // insert statement to be measured
             visit(timer.getStatement(), out);
 
@@ -545,7 +557,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
         }
 
-        void visitSearch(const RamSearch& search, std::ostream& out) override {
+        void visitTupleOperation(const RamTupleOperation& search, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             visitNestedOperation(search, out);
             PRINT_END_COMMENT(out);
@@ -571,7 +583,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "try{\n";
             out << "for(const auto& env0 : *it) {\n";
 
-            visitSearch(pscan, out);
+            visitTupleOperation(pscan, out);
 
             out << "}\n";
             out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
@@ -592,7 +604,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "for(const auto& env" << id << " : "
                 << "*" << relName << ") {\n";
 
-            visitSearch(scan, out);
+            visitTupleOperation(scan, out);
 
             out << "}\n";
 
@@ -616,7 +628,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << ") {\n";
 
-            visitSearch(choice, out);
+            visitTupleOperation(choice, out);
 
             out << "break;\n";
             out << "}\n";
@@ -650,7 +662,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << ") {\n";
 
-            visitSearch(pchoice, out);
+            visitTupleOperation(pchoice, out);
 
             out << "break;\n";
             out << "}\n";
@@ -675,7 +687,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << "const Tuple<RamDomain," << arity << "> key({{";
             for (size_t i = 0; i < arity; i++) {
-                if (rangePattern[i] != nullptr) {
+                if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
                 } else {
                     out << "0";
@@ -692,7 +704,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 << "equalRange_" << keys << "(key," << ctxName << ");\n";
             out << "for(const auto& env" << identifier << " : range) {\n";
 
-            visitSearch(iscan, out);
+            visitTupleOperation(iscan, out);
 
             out << "}\n";
             PRINT_END_COMMENT(out);
@@ -716,7 +728,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << "const Tuple<RamDomain," << arity << "> key({{";
             for (size_t i = 0; i < arity; i++) {
-                if (rangePattern[i] != nullptr) {
+                if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
                 } else {
                     out << "0";
@@ -737,7 +749,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "try{\n";
             out << "for(const auto& env0 : *it) {\n";
 
-            visitSearch(piscan, out);
+            visitTupleOperation(piscan, out);
 
             out << "}\n";
             out << "} catch(std::exception &e) { SignalHandler::instance()->error(e.what());}\n";
@@ -760,7 +772,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << "const Tuple<RamDomain," << arity << "> key({{";
             for (size_t i = 0; i < arity; i++) {
-                if (rangePattern[i] != nullptr) {
+                if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
                 } else {
                     out << "0";
@@ -782,7 +794,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << ") {\n";
 
-            visitSearch(ichoice, out);
+            visitTupleOperation(ichoice, out);
 
             out << "break;\n";
             out << "}\n";
@@ -810,7 +822,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << "const Tuple<RamDomain," << arity << "> key({{";
             for (size_t i = 0; i < arity; i++) {
-                if (rangePattern[i] != nullptr) {
+                if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
                 } else {
                     out << "0";
@@ -836,7 +848,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             out << ") {\n";
 
-            visitSearch(pichoice, out);
+            visitTupleOperation(pichoice, out);
 
             out << "break;\n";
             out << "}\n";
@@ -865,7 +877,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "{\n";
 
             // continue with condition checks and nested body
-            visitSearch(lookup, out);
+            visitTupleOperation(lookup, out);
 
             out << "}\n";
             PRINT_END_COMMENT(out);
@@ -891,11 +903,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // special case: counting number elements over an unrestricted predicate
             if (aggregate.getFunction() == souffle::COUNT && keys == 0 &&
-                    aggregate.getCondition() == nullptr) {
+                    dynamic_cast<const RamTrue*>(&aggregate.getCondition()) != nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
-                visitSearch(aggregate, out);
+                visitTupleOperation(aggregate, out);
                 PRINT_END_COMMENT(out);
                 return;
             }
@@ -928,7 +940,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // a lambda for printing boundary key values
                 auto printKeyTuple = [&]() {
                     for (size_t i = 0; i < arity; i++) {
-                        if (aggregate.getRangePattern()[i] != nullptr) {
+                        if (!isRamUndefValue(aggregate.getRangePattern()[i])) {
                             visit(aggregate.getRangePattern()[i], out);
                         } else {
                             out << "0";
@@ -952,22 +964,19 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // produce condition inside the loop
-            auto condition = aggregate.getCondition();
-            if (condition != nullptr) {
-                out << "if( ";
-                visit(condition, out);
-                out << ") {\n";
-            }
+            out << "if( ";
+            visit(aggregate.getCondition(), out);
+            out << ") {\n";
 
             switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     out << "res" << identifier << " = std::min (res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::MAX:
                     out << "res" << identifier << " = std::max (res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::COUNT:
@@ -976,16 +985,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 case souffle::SUM:
                     out << "res" << identifier << " += ";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ";\n";
                     break;
                 default:
                     abort();
             }
 
-            if (condition != nullptr) {
-                out << "}\n";
-            }
+            out << "}\n";
 
             // end aggregator loop
             out << "}\n";
@@ -996,10 +1003,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
                 // check whether there exists a min/max first before next loop
                 out << "if(res" << identifier << " != " << init << "){\n";
-                visitSearch(aggregate, out);
+                visitTupleOperation(aggregate, out);
                 out << "}\n";
             } else {
-                visitSearch(aggregate, out);
+                visitTupleOperation(aggregate, out);
             }
 
             PRINT_END_COMMENT(out);
@@ -1017,11 +1024,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == souffle::COUNT && aggregate.getCondition() == nullptr) {
+            if (aggregate.getFunction() == souffle::COUNT &&
+                    dynamic_cast<const RamTrue*>(&aggregate.getCondition()) != nullptr) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
-                visitSearch(aggregate, out);
+                visitTupleOperation(aggregate, out);
                 PRINT_END_COMMENT(out);
                 return;
             }
@@ -1051,23 +1059,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 << "*" << relName << ") {\n";
 
             // produce condition inside the loop
-            auto condition = aggregate.getCondition();
-            if (condition != nullptr) {
-                out << "if( ";
-                visit(condition, out);
-                out << ") {\n";
-            }
+            out << "if( ";
+            visit(aggregate.getCondition(), out);
+            out << ") {\n";
 
             // pick function
             switch (aggregate.getFunction()) {
                 case souffle::MIN:
                     out << "res" << identifier << " = std::min(res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::MAX:
                     out << "res" << identifier << " = std::max(res" << identifier << ",";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
                 case souffle::COUNT:
@@ -1075,16 +1080,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 case souffle::SUM:
                     out << "res" << identifier << " += ";
-                    visit(*aggregate.getExpression(), out);
+                    visit(aggregate.getExpression(), out);
                     out << ";\n";
                     break;
                 default:
                     abort();
             }
 
-            if (condition != nullptr) {
-                out << "}\n";
-            }
+            out << "}\n";
 
             // end aggregator loop
             out << "}\n";
@@ -1095,10 +1098,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
                 // check whether there exists a min/max first before next loop
                 out << "if(res" << identifier << " != " << init << "){\n";
-                visitSearch(aggregate, out);
+                visitTupleOperation(aggregate, out);
                 out << "}\n";
             } else {
-                visitSearch(aggregate, out);
+                visitTupleOperation(aggregate, out);
             }
 
             PRINT_END_COMMENT(out);
@@ -1146,6 +1149,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
         // -- conditions --
+
+        void visitTrue(const RamTrue& ltrue, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            out << "true";
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitFalse(const RamFalse& lfalse, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            out << "false";
+            PRINT_END_COMMENT(out);
+        }
 
         void visitConjunction(const RamConjunction& conj, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
@@ -1288,10 +1303,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "_" << isa->getSearchSignature(&exists);
             out << "(Tuple<RamDomain," << arity << ">({{";
             out << join(exists.getValues(), ",", [&](std::ostream& out, RamExpression* value) {
-                if (!value) {
-                    out << "0";
-                } else {
+                if (!isRamUndefValue(value)) {
                     visit(*value, out);
+                } else {
+                    out << "0";
                 }
             });
             out << "}})," << ctxName << ").empty()" << after;
@@ -1316,10 +1331,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "(Tuple<RamDomain," << arity << ">({{";
             for (size_t i = 0; i < provExists.getValues().size() - 1; i++) {
                 RamExpression* val = provExists.getValues()[i];
-                if (!val) {
-                    out << "0";
-                } else {
+                if (!isRamUndefValue(val)) {
                     visit(*val, out);
+                } else {
+                    out << "0";
                 }
                 out << ",";
             }
@@ -1341,7 +1356,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitElementAccess(const RamElementAccess& access, std::ostream& out) override {
+        void visitTupleElement(const RamTupleElement& access, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "env" << access.getTupleId() << "[" << access.getElement() << "]";
             PRINT_END_COMMENT(out);
@@ -1589,16 +1604,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- subroutine argument --
 
-        void visitArgument(const RamArgument& arg, std::ostream& out) override {
+        void visitSubroutineArgument(const RamSubroutineArgument& arg, std::ostream& out) override {
             out << "(args)[" << arg.getArgument() << "]";
         }
 
         // -- subroutine return --
 
-        void visitReturnValue(const RamReturnValue& ret, std::ostream& out) override {
+        void visitSubroutineReturnValue(const RamSubroutineReturnValue& ret, std::ostream& out) override {
             out << "std::lock_guard<std::mutex> guard(lock);\n";
             for (auto val : ret.getValues()) {
-                if (val == nullptr) {
+                if (isRamUndefValue(val)) {
                     out << "ret.push_back(0);\n";
                     out << "err.push_back(true);\n";
                 } else {
@@ -1681,6 +1696,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
 #endif
         // -- safety net --
+
+        void visitUndefValue(const RamUndefValue& undef, std::ostream& /*out*/) override {
+            assert(false && "Compilation error");
+        }
 
         void visitNode(const RamNode& node, std::ostream& /*out*/) override {
             std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";

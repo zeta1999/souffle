@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2014, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file InterpreterIndex.h
+ * @file LVMIndex.h
  *
  * An index is implemented either as a hash-index, a double-hash, as a
  * red-black tree or as a b-tree. The choice of the implementation is
@@ -27,7 +27,7 @@
 namespace souffle {
 
 /* B-Tree indexes as default implementation for indexes */
-class InterpreterIndex {
+class LVMIndex {
     using LexOrder = std::vector<int>;
 
 public:
@@ -36,15 +36,15 @@ public:
         const LexOrder order;
 
         /* constructor to initialize state */
-        comparator(const LexOrder& order) : order(order) {}
+        comparator(LexOrder order) : order(std::move(order)) {}
 
         /* comparison function */
         int operator()(const RamDomain* x, const RamDomain* y) const {
-            for (size_t i = 0; i < order.size(); i++) {
-                if (x[order[i]] < y[order[i]]) {
+            for (int i : order) {
+                if (x[i] < y[i]) {
                     return -1;
                 }
-                if (x[order[i]] > y[order[i]]) {
+                if (x[i] > y[i]) {
                     return 1;
                 }
             }
@@ -58,8 +58,8 @@ public:
 
         /* equal comparison */
         bool equal(const RamDomain* x, const RamDomain* y) const {
-            for (size_t i = 0; i < order.size(); i++) {
-                if (x[order[i]] != y[order[i]]) {
+            for (int i : order) {
+                if (x[i] != y[i]) {
                     return false;
                 }
             }
@@ -72,11 +72,9 @@ public:
 
     using iterator = index_set::iterator;
 
-    InterpreterIndex(LexOrder order)
-            : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
+    LVMIndex(LexOrder order) : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
-    InterpreterIndex(const InterpreterIndex&& index)
-            : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
+    LVMIndex(const LVMIndex&& index) : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
 
     const LexOrder& order() const {
         return theOrder;
@@ -88,7 +86,7 @@ public:
      * precondition: tuple does not exist in the index
      */
     void insert(const RamDomain* tuple) {
-        set.insert(tuple);
+        set.insert(tuple, operation_hints);
     }
 
     /**
@@ -103,12 +101,13 @@ public:
 
     /** check whether tuple exists in index */
     bool exists(const RamDomain* value) {
-        return set.find(value) != set.end();
+        return set.find(value, operation_hints) != set.end();
     }
 
     /** purge all hashes of index */
     void purge() {
         set.clear();
+        operation_hints.clear();
     }
 
     /** enables the index to be printed */
@@ -119,13 +118,14 @@ public:
     }
 
     /** return start and end iterator of an equal range */
-    inline std::pair<iterator, iterator> equalRange(const RamDomain* value) const {
+    inline std::pair<iterator, iterator> equalRange(const RamDomain* value) {
         return lowerUpperBound(value, value);
     }
 
     /** return start and end iterator of a range */
-    inline std::pair<iterator, iterator> lowerUpperBound(const RamDomain* low, const RamDomain* high) const {
-        return std::pair<iterator, iterator>(set.lower_bound(low), set.upper_bound(high));
+    inline std::pair<iterator, iterator> lowerUpperBound(const RamDomain* low, const RamDomain* high) {
+        return std::pair<iterator, iterator>(
+                set.lower_bound(low, operation_hints), set.upper_bound(high, operation_hints));
     }
 
     /** return start and end iterator of the index set */
@@ -134,10 +134,14 @@ public:
     }
 
 private:
-    // retain the index order used to construct an object of this class
+    /** retain the index order used to construct an object of this class */
     const LexOrder theOrder;
-    // set storing tuple pointers of table
+
+    /** set storing tuple pointers of table */
     index_set set;
+
+    /** Operation hints */
+    index_set::btree_operation_hints<1> operation_hints;
 };
 
 }  // end of namespace souffle

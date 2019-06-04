@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2017, The Souffle Developers. All rights reserved.
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file InterpreterInterface.h
+ * @file LVMProgInterface.h
  *
  * Defines classes that implement the SouffleInterface abstract class
  *
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "Interpreter.h"
+#include "LVMInterface.h"
 #include "RamVisitor.h"
 #include "SouffleInterface.h"
 
@@ -28,13 +28,13 @@ namespace souffle {
 /**
  * Wrapper class for interpreter relations
  */
-class InterpreterRelInterface : public Relation {
+class LVMRelInterface : public Relation {
 public:
-    InterpreterRelInterface(InterpreterRelation& r, SymbolTable& s, std::string n, std::vector<std::string> t,
+    LVMRelInterface(LVMRelation& r, SymbolTable& s, std::string n, std::vector<std::string> t,
             std::vector<std::string> an, uint32_t i)
             : relation(r), symTable(s), name(std::move(n)), types(std::move(t)), attrNames(std::move(an)),
               id(i) {}
-    ~InterpreterRelInterface() override = default;
+    ~LVMRelInterface() override = default;
 
     /** Insert tuple */
     void insert(const tuple& t) override {
@@ -48,14 +48,12 @@ public:
 
     /** Iterator to first tuple */
     iterator begin() const override {
-        return InterpreterRelInterface::iterator(
-                new InterpreterRelInterface::iterator_base(id, this, relation.begin()));
+        return LVMRelInterface::iterator(new LVMRelInterface::iterator_base(id, this, relation.begin()));
     }
 
     /** Iterator to last tuple */
     iterator end() const override {
-        return InterpreterRelInterface::iterator(
-                new InterpreterRelInterface::iterator_base(id, this, relation.end()));
+        return LVMRelInterface::iterator(new LVMRelInterface::iterator_base(id, this, relation.end()));
     }
 
     /** Get name */
@@ -101,7 +99,7 @@ protected:
      */
     class iterator_base : public Relation::iterator_base {
     public:
-        iterator_base(uint32_t arg_id, const InterpreterRelInterface* r, InterpreterRelation::iterator i)
+        iterator_base(uint32_t arg_id, const LVMRelInterface* r, LVMRelation::iterator i)
                 : Relation::iterator_base(arg_id), ramRelationInterface(r), it(i), tup(r) {}
         ~iterator_base() override = default;
 
@@ -130,14 +128,14 @@ protected:
 
         /** Clone iterator */
         iterator_base* clone() const override {
-            return new InterpreterRelInterface::iterator_base(getId(), ramRelationInterface, it);
+            return new LVMRelInterface::iterator_base(getId(), ramRelationInterface, it);
         }
 
     protected:
         /** Check equivalence */
         bool equal(const Relation::iterator_base& o) const override {
             try {
-                auto iter = dynamic_cast<const InterpreterRelInterface::iterator_base&>(o);
+                auto iter = dynamic_cast<const LVMRelInterface::iterator_base&>(o);
                 return ramRelationInterface == iter.ramRelationInterface && it == iter.it;
             } catch (const std::bad_cast& e) {
                 return false;
@@ -145,14 +143,14 @@ protected:
         }
 
     private:
-        const InterpreterRelInterface* ramRelationInterface;
-        InterpreterRelation::iterator it;
+        const LVMRelInterface* ramRelationInterface;
+        LVMRelation::iterator it;
         tuple tup;
     };
 
 private:
     /** Wrapped interpreter relation */
-    InterpreterRelation& relation;
+    LVMRelation& relation;
 
     /** Symbol table */
     SymbolTable& symTable;
@@ -173,9 +171,9 @@ private:
 /**
  * Implementation of SouffleProgram interface for an interpreter instance
  */
-class InterpreterProgInterface : public SouffleProgram {
+class LVMProgInterface : public SouffleProgram {
 public:
-    InterpreterProgInterface(Interpreter& interp)
+    LVMProgInterface(LVMInterface& interp)
             : prog(*interp.getTranslationUnit().getProgram()), exec(interp),
               symTable(interp.getTranslationUnit().getSymbolTable()) {
         uint32_t id = 0;
@@ -201,8 +199,8 @@ public:
                 std::string n = rel.getArg(i);
                 attrNames.push_back(n);
             }
-            auto* interface = new InterpreterRelInterface(
-                    interpreterRel, symTable, rel.getName(), types, attrNames, id);
+            auto* interface =
+                    new LVMRelInterface(interpreterRel, symTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);
             bool input;
             bool output;
@@ -220,7 +218,7 @@ public:
             id++;
         }
     }
-    ~InterpreterProgInterface() override {
+    ~LVMProgInterface() override {
         for (auto* interface : interfaces) {
             delete interface;
         }
@@ -257,9 +255,9 @@ public:
 
 private:
     const RamProgram& prog;
-    Interpreter& exec;
+    LVMInterface& exec;
     SymbolTable& symTable;
-    std::vector<InterpreterRelInterface*> interfaces;
+    std::vector<LVMRelInterface*> interfaces;
 };
 
 }  // end of namespace souffle

@@ -8,19 +8,17 @@
 
 /************************************************************************
  *
- * @file Interpreter.h
+ * @file RAMIInterface.h
  *
- * Declares the interpreter class for executing RAM programs.
+ * Declares the interpreter for RAMI
  *
  ***********************************************************************/
 
 #pragma once
 
-#include "InterpreterContext.h"
-#include "InterpreterRelation.h"
-#include "LVMCode.h"
-#include "LVMGenerator.h"
 #include "Logger.h"
+#include "RAMIContext.h"
+#include "RAMIRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
@@ -38,21 +36,17 @@
 
 namespace souffle {
 
-class InterpreterProgInterface;
+class RAMIProgInterface;
 
 /**
  * Interpreter Interface
  */
-class Interpreter {
+class RAMIInterface {
 public:
-    Interpreter(RamTranslationUnit& tUnit)
+    RAMIInterface(RamTranslationUnit& tUnit)
             : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()) {}
 
-    virtual ~Interpreter() {
-        for (auto& x : environment) {
-            delete x.second;
-        }
-    }
+    virtual ~RAMIInterface() = default;
 
     /** Get translation unit */
     RamTranslationUnit& getTranslationUnit() {
@@ -123,10 +117,7 @@ protected:
         return nullptr;
     }
 
-    friend InterpreterProgInterface;
-
-    /** relation environment type */
-    using relation_map = std::map<std::string, InterpreterRelation*>;
+    friend RAMIProgInterface;
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
@@ -134,15 +125,10 @@ protected:
     }
 
     /** Get relation map */
-    relation_map& getRelationMap() const {
-        return const_cast<relation_map&>(environment);
-    }
+    virtual std::map<std::string, RAMIRelation*>& getRelationMap() = 0;
 
     /** RAM translation Unit */
     RamTranslationUnit& translationUnit;
-
-    /** Relation Environment */
-    relation_map environment;
 
     /** IndexAnalysis */
     RamIndexAnalysis* isa;

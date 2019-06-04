@@ -17,6 +17,7 @@
 #include "AstTransforms.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstGroundAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -220,17 +221,12 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
     // if an aggregator has a body consisting of more than an atom => create new relation
     int counter = 0;
     visitDepthFirst(program, [&](const AstClause& clause) {
-        visitDepthFirstPostOrder(clause, [&](const AstAggregator& agg) {
+        visitDepthFirst(clause, [&](const AstAggregator& agg) {
             // check whether a materialization is required
             if (!needsMaterializedRelation(agg)) {
                 return;
             }
-
             changed = true;
-
-            // for more body literals: create a new relation
-            std::set<std::string> vars;
-            visitDepthFirst(agg, [&](const AstVariable& var) { vars.insert(var.getName()); });
 
             // -- create a new clause --
 
@@ -238,19 +234,53 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             while (program.getRelation(relName) != nullptr) {
                 relName = "__agg_rel_" + toString(counter++);
             }
+            // create the new clause for the materialised thing
+            auto* aggClause = new AstClause();
+            // create the body of the new thing
+            for (const auto& cur : agg.getBodyLiterals()) {
+                aggClause->addToBody(std::unique_ptr<AstLiteral>(cur->clone()));
+            }
+            // find stuff for which we need a grounding
+            for (const auto& argPair : getGroundedTerms(*aggClause)) {
+                const auto* variable = dynamic_cast<const AstVariable*>(argPair.first);
+                bool variableIsGrounded = argPair.second;
+                // if it's not even a variable type or the term is grounded
+                // then skip it
+                if (variable == nullptr || variableIsGrounded) {
+                    continue;
+                }
+
+                for (const auto& lit : clause.getBodyLiterals()) {
+                    const auto* atom = dynamic_cast<const AstAtom*>(lit);
+                    if (atom == nullptr) {
+                        continue;  // ignore these because they can't ground the variable
+                    }
+                    for (const auto& arg : atom->getArguments()) {
+                        const auto* atomVariable = dynamic_cast<const AstVariable*>(arg);
+                        // if this atom contains the variable I need to ground, add it
+                        if (atomVariable && variable->getName() == atomVariable->getName()) {
+                            // expand the body with this one so that it will ground this variable
+                            aggClause->addToBody(std::unique_ptr<AstLiteral>(atom->clone()));
+                            break;
+                        }
+                    }
+                }
+            }
 
             auto* head = new AstAtom();
             head->setName(relName);
             std::vector<bool> symbolArguments;
-            for (const auto& cur : vars) {
-                head->addArgument(std::make_unique<AstVariable>(cur));
+
+            // Ensure each variable is only added once
+            std::set<std::string> variables;
+            visitDepthFirst(*aggClause, [&](const AstVariable& var) { variables.insert(var.getName()); });
+
+            // Insert all variables occurring in the body of the aggregate into the head
+            for (const auto& var : variables) {
+                head->addArgument(std::make_unique<AstVariable>(var));
             }
 
-            auto* aggClause = new AstClause();
             aggClause->setHead(std::unique_ptr<AstAtom>(head));
-            for (const auto& cur : agg.getBodyLiterals()) {
-                aggClause->addToBody(std::unique_ptr<AstLiteral>(cur->clone()));
-            }
 
             // instantiate unnamed variables in count operations
             if (agg.getOperator() == AstAggregator::count) {
@@ -326,7 +356,6 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             const_cast<AstAggregator&>(agg).addBodyLiteral(std::unique_ptr<AstLiteral>(aggAtom));
         });
     });
-
     return changed;
 }
 

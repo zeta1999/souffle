@@ -28,9 +28,7 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> children;
-        if (main != nullptr) {
-            children = main->getChildNodes();
-        }
+        children = main->getChildNodes();
         for (auto& r : relations) {
             children.push_back(r.second.get());
         }
@@ -66,7 +64,7 @@ public:
 
     /** Get main program */
     RamStatement* getMain() const {
-        assert(main);
+        assert(main && "Program has no main routine");
         return main.get();
     }
 

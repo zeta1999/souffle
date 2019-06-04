@@ -275,7 +275,7 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
 
     // visit all nodes to collect searches of each relation
     visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
-        if (const auto* indexSearch = dynamic_cast<const RamIndexRelationSearch*>(&node)) {
+        if (const auto* indexSearch = dynamic_cast<const RamIndexOperation*>(&node)) {
             MinIndexSelection& indexes = getIndexes(indexSearch->getRelation());
             indexes.addSearch(getSearchSignature(indexSearch));
         } else if (const auto* exists = dynamic_cast<const RamExistenceCheck*>(&node)) {
@@ -374,11 +374,11 @@ void RamIndexAnalysis::print(std::ostream& os) const {
     os << "------ End of Auto-Index-Generation Report -------\n";
 }
 
-SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexRelationSearch* search) const {
+SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* search) const {
     SearchSignature keys = 0;
     std::vector<RamExpression*> rangePattern = search->getRangePattern();
     for (int i = 0; i < (int)rangePattern.size(); i++) {
-        if (rangePattern[i] != nullptr) {
+        if (!isRamUndefValue(rangePattern[i])) {
             keys |= (1 << i);
         }
     }
@@ -391,7 +391,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
     SearchSignature res = 0;
     // values.size() - 1 because we discard the height annotation
     for (int i = 0; i < (int)values.size() - 1; i++) {
-        if (values[i] != nullptr) {
+        if (!isRamUndefValue(values[i])) {
             res |= (1 << i);
         }
     }
@@ -402,7 +402,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* ex
     const auto values = existCheck->getValues();
     SearchSignature res = 0;
     for (int i = 0; i < (int)values.size(); i++) {
-        if (values[i] != nullptr) {
+        if (!isRamUndefValue(values[i])) {
             res |= (1 << i);
         }
     }
@@ -416,7 +416,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) 
 
 bool RamIndexAnalysis::isTotalSignature(const RamAbstractExistenceCheck* existCheck) const {
     for (const auto& cur : existCheck->getValues()) {
-        if (cur == nullptr) {
+        if (isRamUndefValue(cur)) {
             return false;
         }
     }

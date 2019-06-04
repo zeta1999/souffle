@@ -64,13 +64,8 @@ namespace souffle {
 class ErrorReport;
 class SymbolTable;
 
-std::unique_ptr<RamElementAccess> AstTranslator::makeRamElementAccess(const Location& loc) {
-    if (loc.relation != nullptr) {
-        return std::make_unique<RamElementAccess>(
-                loc.identifier, loc.element, std::unique_ptr<RamRelationReference>(loc.relation->clone()));
-    } else {
-        return std::make_unique<RamElementAccess>(loc.identifier, loc.element);
-    }
+std::unique_ptr<RamTupleElement> AstTranslator::makeRamTupleElement(const Location& loc) {
+    return std::make_unique<RamTupleElement>(loc.identifier, loc.element);
 }
 
 void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation* rel,
@@ -253,7 +248,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateNewRelation(const 
 std::unique_ptr<RamExpression> AstTranslator::translateValue(
         const AstArgument* arg, const ValueIndex& index) {
     if (arg == nullptr) {
-        return std::unique_ptr<RamExpression>();
+        return nullptr;
     }
 
     class ValueTranslator : public AstVisitor<std::unique_ptr<RamExpression>> {
@@ -266,11 +261,11 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
 
         std::unique_ptr<RamExpression> visitVariable(const AstVariable& var) override {
             assert(index.isDefined(var) && "variable not grounded");
-            return makeRamElementAccess(index.getDefinitionPoint(var));
+            return makeRamTupleElement(index.getDefinitionPoint(var));
         }
 
         std::unique_ptr<RamExpression> visitUnnamedVariable(const AstUnnamedVariable& var) override {
-            return nullptr;  // utilised to identify _ values
+            return std::make_unique<RamUndefValue>();
         }
 
         std::unique_ptr<RamExpression> visitConstant(const AstConstant& c) override {
@@ -309,11 +304,11 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
 
         std::unique_ptr<RamExpression> visitAggregator(const AstAggregator& agg) override {
             // here we look up the location the aggregation result gets bound
-            return translator.makeRamElementAccess(index.getAggregatorLocation(agg));
+            return translator.makeRamTupleElement(index.getAggregatorLocation(agg));
         }
 
         std::unique_ptr<RamExpression> visitSubroutineArgument(const AstSubroutineArgument& subArg) override {
-            return std::make_unique<RamArgument>(subArg.getNumber());
+            return std::make_unique<RamSubroutineArgument>(subArg.getNumber());
         }
     };
 
@@ -363,8 +358,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
 
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
-                values.push_back(nullptr);
-                values.push_back(nullptr);
+                values.push_back(std::make_unique<RamUndefValue>());
+                values.push_back(std::make_unique<RamUndefValue>());
             }
 
             // add constraint
@@ -397,7 +392,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
 
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
-                values.push_back(nullptr);
+                values.push_back(std::make_unique<RamUndefValue>());
                 // add the height annotation for provenanceNotExists
                 values.push_back(translator.translateValue(atom->getArgument(arity + 1), index));
             }
@@ -564,8 +559,8 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
         }
 
         // add two unnamed args for provenance columns
-        values.push_back(nullptr);
-        values.push_back(nullptr);
+        values.push_back(std::make_unique<RamUndefValue>());
+        values.push_back(std::make_unique<RamUndefValue>());
 
         if (isVolatile) {
             return std::make_unique<RamFilter>(
@@ -606,7 +601,7 @@ std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createO
         }
     }
 
-    return std::make_unique<RamReturnValue>(std::move(values));
+    return std::make_unique<RamSubroutineReturnValue>(std::move(values));
 }
 
 std::unique_ptr<RamCondition> AstTranslator::ClauseTranslator::createCondition(
@@ -666,8 +661,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         for (const Location& loc : cur.second) {
             if (first != loc && !valueIndex.isAggregator(loc.identifier)) {
                 op = std::make_unique<RamFilter>(
-                        std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, makeRamElementAccess(first),
-                                makeRamElementAccess(loc)),
+                        std::make_unique<RamConstraint>(
+                                BinaryConstraintOp::EQ, makeRamTupleElement(first), makeRamTupleElement(loc)),
                         std::move(op));
             }
         }
@@ -691,9 +686,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 if (auto* agg = dynamic_cast<AstAggregator*>(atom->getArgument(pos))) {
                     auto loc = valueIndex.getAggregatorLocation(*agg);
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                             std::make_unique<RamElementAccess>(curLevel, pos,
-                                                                     translator.translateRelation(atom)),
-                                                             makeRamElementAccess(loc)),
+                                                             std::make_unique<RamTupleElement>(curLevel, pos),
+                                                             makeRamTupleElement(loc)),
                             std::move(op));
                 }
             }
@@ -761,9 +755,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                             valueIndex.getVariableReferences().find(var->getName())->second) {
                         if (level != loc.identifier || (int)pos != loc.element) {
                             std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
-                                    BinaryConstraintOp::EQ, makeRamElementAccess(loc),
-                                    std::make_unique<RamElementAccess>(
-                                            level, pos, translator.translateRelation(atom)));
+                                    BinaryConstraintOp::EQ, makeRamTupleElement(loc),
+                                    std::make_unique<RamTupleElement>(level, pos));
                             addAggCondition(newCondition);
                             break;
                         }
@@ -774,9 +767,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                     if (value != nullptr) {
                         std::unique_ptr<RamCondition> newCondition =
                                 std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                        std::make_unique<RamElementAccess>(
-                                                level, pos, translator.translateRelation(atom)),
-                                        std::move(value));
+                                        std::make_unique<RamTupleElement>(level, pos), std::move(value));
                         addAggCondition(newCondition);
                     }
                 }
@@ -786,6 +777,13 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         // translate aggregate expression
         std::unique_ptr<RamExpression> expr =
                 translator.translateValue(cur->getTargetExpression(), valueIndex);
+        if (expr == nullptr) {
+            expr = std::make_unique<RamUndefValue>();
+        }
+
+        if (aggCondition == nullptr) {
+            aggCondition = std::make_unique<RamTrue>();
+        }
 
         // add Ram-Aggregation layer
         std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(std::move(op), fun,
@@ -807,8 +805,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             for (size_t pos = 0; pos < atom->argSize(); ++pos) {
                 if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                             std::make_unique<RamElementAccess>(level, pos,
-                                                                     translator.translateRelation(atom)),
+                                                             std::make_unique<RamTupleElement>(level, pos),
                                                              std::make_unique<RamNumber>(c->getIndex())),
                             std::move(op));
                 }
@@ -852,12 +849,12 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             for (size_t pos = 0; pos < rec->getArguments().size(); ++pos) {
                 if (AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                             std::make_unique<RamElementAccess>(level, pos),
+                                                             std::make_unique<RamTupleElement>(level, pos),
                                                              std::make_unique<RamNumber>(c->getIndex())),
                             std::move(op));
                 } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                             std::make_unique<RamElementAccess>(level, pos),
+                                                             std::make_unique<RamTupleElement>(level, pos),
                                                              translator.translateValue(func, valueIndex)),
                             std::move(op));
                 }
@@ -866,7 +863,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add an unpack level
             const Location& loc = valueIndex.getDefinitionPoint(*rec);
             op = std::make_unique<RamUnpackRecord>(
-                    std::move(op), level, makeRamElementAccess(loc), rec->getArguments().size());
+                    std::move(op), level, makeRamTupleElement(loc), rec->getArguments().size());
         } else {
             assert(false && "Unsupported AST node for creation of scan-level!");
         }
@@ -925,7 +922,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(
                     LogStatement::tNonrecursiveRule(relationName, srcLocation, clauseText);
             const std::string logSizeStatement =
                     LogStatement::nNonrecursiveRule(relationName, srcLocation, clauseText);
-            rule = std::make_unique<RamSequence>(std::make_unique<RamLogTimer>(std::move(rule),
+            rule = std::make_unique<RamSequence>(std::make_unique<RamLogRelationTimer>(std::move(rule),
                     logTimerStatement, std::unique_ptr<RamRelationReference>(rrel->clone())));
         }
 
@@ -949,7 +946,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(
         if (res) {
             const std::string logTimerStatement =
                     LogStatement::tNonrecursiveRelation(relationName, srcLocation);
-            res = std::make_unique<RamLogTimer>(
+            res = std::make_unique<RamLogRelationTimer>(
                     std::move(res), logTimerStatement, std::unique_ptr<RamRelationReference>(rrel->clone()));
         } else {
             // add table size printer
@@ -1033,7 +1030,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
         /* measure update time for each relation */
         if (Global::config().has("profile")) {
-            updateRelTable = std::make_unique<RamLogTimer>(std::move(updateRelTable),
+            updateRelTable = std::make_unique<RamLogRelationTimer>(std::move(updateRelTable),
                     LogStatement::cRecursiveRelation(toString(rel->getName()), rel->getSrcLoc()),
                     std::unique_ptr<RamRelationReference>(relNew[rel]->clone()));
         }
@@ -1129,8 +1126,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                             LogStatement::tRecursiveRule(relationName, version, srcLocation, clauseText);
                     const std::string logSizeStatement =
                             LogStatement::nRecursiveRule(relationName, version, srcLocation, clauseText);
-                    rule = std::make_unique<RamSequence>(std::make_unique<RamLogTimer>(std::move(rule),
-                            logTimerStatement, std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
+                    rule = std::make_unique<RamSequence>(
+                            std::make_unique<RamLogRelationTimer>(std::move(rule), logTimerStatement,
+                                    std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
                 }
 
                 // add debug info
@@ -1159,7 +1157,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
             const SrcLocation& srcLocation = rel->getSrcLoc();
             const std::string logTimerStatement = LogStatement::tRecursiveRelation(relationName, srcLocation);
             const std::string logSizeStatement = LogStatement::nRecursiveRelation(relationName, srcLocation);
-            loopRelSeq = std::make_unique<RamLogTimer>(std::move(loopRelSeq), logTimerStatement,
+            loopRelSeq = std::make_unique<RamLogRelationTimer>(std::move(loopRelSeq), logTimerStatement,
                     std::unique_ptr<RamRelationReference>(relNew[rel]->clone()));
         }
 
@@ -1393,8 +1391,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             }
 
             // fill up query with nullptrs for the provenance columns
-            query.push_back(nullptr);
-            query.push_back(nullptr);
+            query.push_back(std::make_unique<RamUndefValue>());
+            query.push_back(std::make_unique<RamUndefValue>());
 
             // ensure the length of query tuple is correct
             assert(query.size() == atom->getArity() && "wrong query tuple size");
@@ -1408,12 +1406,12 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             auto searchFilter = std::make_unique<RamFilter>(
                     std::make_unique<RamExistenceCheck>(
                             std::unique_ptr<RamRelationReference>(relRef->clone()), std::move(query)),
-                    std::make_unique<RamReturnValue>(std::move(returnValue)));
+                    std::make_unique<RamSubroutineReturnValue>(std::move(returnValue)));
 
             // now, return the values of the atoms, with a separator
             // between atom number and atom
             std::vector<std::unique_ptr<RamExpression>> returnAtom;
-            returnAtom.push_back(nullptr);
+            returnAtom.push_back(std::make_unique<RamUndefValue>());
             // the actual atom
             for (size_t i = 0; i < atom->getArity() - 2; i++) {
                 returnAtom.push_back(translateValue(atom->getArgument(i), ValueIndex()));
@@ -1422,8 +1420,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             // chain the atom number and atom value together
             auto atomSequence = std::make_unique<RamSequence>();
             atomSequence->add(std::make_unique<RamQuery>(std::move(searchFilter)));
-            atomSequence->add(
-                    std::make_unique<RamQuery>(std::make_unique<RamReturnValue>(std::move(returnAtom))));
+            atomSequence->add(std::make_unique<RamQuery>(
+                    std::make_unique<RamSubroutineReturnValue>(std::move(returnAtom))));
 
             // append search to the sequence
             searchSequence->add(std::move(atomSequence));
@@ -1440,12 +1438,12 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
             // create a filter
             auto filter = std::make_unique<RamFilter>(
-                    std::move(condition), std::make_unique<RamReturnValue>(std::move(returnValue)));
+                    std::move(condition), std::make_unique<RamSubroutineReturnValue>(std::move(returnValue)));
 
             // now, return the values of the literal, with a separator
             // between atom number and atom
             std::vector<std::unique_ptr<RamExpression>> returnLit;
-            returnLit.push_back(nullptr);
+            returnLit.push_back(std::make_unique<RamUndefValue>());
             // add return values for binary constraints and negations
             if (auto binaryConstraint = dynamic_cast<AstBinaryConstraint*>(con)) {
                 returnLit.push_back(translateValue(binaryConstraint->getLHS(), ValueIndex()));
@@ -1460,8 +1458,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             // chain the atom number and atom value together
             auto litSequence = std::make_unique<RamSequence>();
             litSequence->add(std::make_unique<RamQuery>(std::move(filter)));
-            litSequence->add(
-                    std::make_unique<RamQuery>(std::make_unique<RamReturnValue>(std::move(returnLit))));
+            litSequence->add(std::make_unique<RamQuery>(
+                    std::make_unique<RamSubroutineReturnValue>(std::move(returnLit))));
 
             // append search to the sequence
             searchSequence->add(std::move(litSequence));
@@ -1508,7 +1506,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         if (Global::config().has("profile")) {
             const std::string logTimerStatement =
                     LogStatement::tRelationLoadTime(toString(relation->getName()), relation->getSrcLoc());
-            statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement,
+            statement = std::make_unique<RamLogRelationTimer>(std::move(statement), logTimerStatement,
                     std::unique_ptr<RamRelationReference>(translateRelation(relation)));
         }
         appendStmt(current, std::move(statement));
@@ -1523,7 +1521,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         if (Global::config().has("profile")) {
             const std::string logTimerStatement =
                     LogStatement::tRelationSaveTime(toString(relation->getName()), relation->getSrcLoc());
-            statement = std::make_unique<RamLogTimer>(std::move(statement), logTimerStatement,
+            statement = std::make_unique<RamLogRelationTimer>(std::move(statement), logTimerStatement,
                     std::unique_ptr<RamRelationReference>(translateRelation(relation)));
         }
         appendStmt(current, std::move(statement));
@@ -1756,7 +1754,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
     // add main timer if profiling
     if (res && Global::config().has("profile")) {
-        res = std::make_unique<RamLogTimer>(std::move(res), LogStatement::runtime(), nullptr);
+        res = std::make_unique<RamLogTimer>(std::move(res), LogStatement::runtime());
     }
 
     // done for main prog

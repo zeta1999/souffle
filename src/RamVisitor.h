@@ -75,20 +75,24 @@ struct RamVisitor : public ram_visitor_tag {
 
 #define FORWARD(Kind) \
     if (const auto* n = dynamic_cast<const Ram##Kind*>(&node)) return visit##Kind(*n, args...);
+
         // Relation
         FORWARD(Relation);
         FORWARD(RelationReference);
 
         // Expressions
-        FORWARD(ElementAccess);
+        FORWARD(TupleElement);
         FORWARD(Number);
         FORWARD(IntrinsicOperator);
         FORWARD(UserDefinedOperator);
         FORWARD(AutoIncrement);
         FORWARD(PackRecord);
-        FORWARD(Argument);
+        FORWARD(SubroutineArgument);
+        FORWARD(UndefValue);
 
         // Conditions
+        FORWARD(True);
+        FORWARD(False);
         FORWARD(EmptinessCheck);
         FORWARD(ExistenceCheck);
         FORWARD(ProvenanceExistenceCheck);
@@ -100,7 +104,7 @@ struct RamVisitor : public ram_visitor_tag {
         FORWARD(Filter);
         FORWARD(Break);
         FORWARD(Project);
-        FORWARD(ReturnValue);
+        FORWARD(SubroutineReturnValue);
         FORWARD(UnpackRecord);
         FORWARD(ParallelScan);
         FORWARD(Scan);
@@ -133,6 +137,7 @@ struct RamVisitor : public ram_visitor_tag {
         FORWARD(Parallel);
         FORWARD(Exit);
         FORWARD(LogTimer);
+        FORWARD(LogRelationTimer);
         FORWARD(DebugInfo);
         FORWARD(Stratum);
 
@@ -166,8 +171,9 @@ protected:
     // -- statements --
     LINK(Create, RelationStatement);
     LINK(Fact, RelationStatement);
-    LINK(Load, RelationStatement);
-    LINK(Store, RelationStatement);
+    LINK(Load, AbstractLoadStore);
+    LINK(Store, AbstractLoadStore);
+    LINK(AbstractLoadStore, RelationStatement);
     LINK(Query, Statement);
     LINK(Clear, RelationStatement);
     LINK(Drop, RelationStatement);
@@ -175,14 +181,17 @@ protected:
 
     LINK(RelationStatement, Statement);
 
-    LINK(Merge, Statement);
-    LINK(Swap, Statement);
+    LINK(Merge, BinRelationStatement);
+    LINK(Swap, BinRelationStatement);
+    LINK(BinRelationStatement, Statement);
 
-    LINK(Sequence, Statement);
+    LINK(Sequence, ListStatement);
     LINK(Loop, Statement);
-    LINK(Parallel, Statement);
+    LINK(Parallel, ListStatement);
+    LINK(ListStatement, Statement);
     LINK(Exit, Statement);
     LINK(LogTimer, Statement);
+    LINK(LogRelationTimer, Statement);
     LINK(DebugInfo, Statement);
     LINK(Stratum, Statement);
 
@@ -190,54 +199,60 @@ protected:
 
     // -- operations --
     LINK(Project, Operation);
-    LINK(ReturnValue, Operation);
-    LINK(UnpackRecord, Search);
-    LINK(Scan, RelationSearch);
+    LINK(SubroutineReturnValue, Operation);
+    LINK(UnpackRecord, TupleOperation);
+    LINK(Scan, RelationOperation);
     LINK(ParallelScan, Scan);
-    LINK(IndexScan, IndexRelationSearch);
+    LINK(IndexScan, IndexOperation);
     LINK(ParallelIndexScan, IndexScan);
-    LINK(Choice, RelationSearch);
+    LINK(Choice, RelationOperation);
     LINK(ParallelChoice, Choice);
-    LINK(IndexChoice, IndexRelationSearch);
+    LINK(IndexChoice, IndexOperation);
     LINK(ParallelIndexChoice, IndexChoice);
-    LINK(RelationSearch, Search);
-    LINK(Aggregate, RelationSearch);
-    LINK(IndexAggregate, IndexRelationSearch);
-    LINK(IndexRelationSearch, RelationSearch);
-    LINK(Search, NestedOperation);
-    LINK(Filter, NestedOperation);
-    LINK(Break, NestedOperation);
+    LINK(RelationOperation, TupleOperation);
+    LINK(Aggregate, RelationOperation);
+    LINK(IndexAggregate, IndexOperation);
+    LINK(IndexOperation, RelationOperation);
+    LINK(TupleOperation, NestedOperation);
+    LINK(Filter, AbstractConditional);
+    LINK(Break, AbstractConditional);
+    LINK(AbstractConditional, NestedOperation);
     LINK(NestedOperation, Operation);
 
-    LINK(Operation, Node)
+    LINK(Operation, Node);
 
     // -- conditions --
-    LINK(Conjunction, Condition)
-    LINK(Negation, Condition)
-    LINK(Constraint, Condition)
-    LINK(ExistenceCheck, Condition)
-    LINK(ProvenanceExistenceCheck, Condition)
-    LINK(EmptinessCheck, Condition)
+    LINK(True, Condition);
+    LINK(False, Condition);
+    LINK(Conjunction, Condition);
+    LINK(Negation, Condition);
+    LINK(Constraint, Condition);
+    LINK(ExistenceCheck, AbstractExistenceCheck);
+    LINK(ProvenanceExistenceCheck, AbstractExistenceCheck);
+    LINK(EmptinessCheck, Condition);
+    LINK(AbstractExistenceCheck, Condition);
 
-    LINK(Condition, Node)
+    LINK(Condition, Node);
 
     // -- values --
-    LINK(Number, Expression)
-    LINK(ElementAccess, Expression)
-    LINK(IntrinsicOperator, Expression)
-    LINK(UserDefinedOperator, Expression)
-    LINK(AutoIncrement, Expression)
-    LINK(PackRecord, Expression)
-    LINK(Argument, Expression)
+    LINK(Number, Expression);
+    LINK(UndefValue, Expression);
+    LINK(TupleElement, Expression);
+    LINK(IntrinsicOperator, AbstractOperator);
+    LINK(UserDefinedOperator, AbstractOperator);
+    LINK(AbstractOperator, Expression);
+    LINK(AutoIncrement, Expression);
+    LINK(PackRecord, Expression);
+    LINK(SubroutineArgument, Expression);
 
-    LINK(Expression, Node)
+    LINK(Expression, Node);
 
     // -- program --
-    LINK(Program, Node)
+    LINK(Program, Node);
 
     // -- relation
-    LINK(Relation, Node)
-    LINK(RelationReference, Node)
+    LINK(Relation, Node);
+    LINK(RelationReference, Node);
 
 #ifdef USE_MPI
     LINK(Send, RelationStatement);

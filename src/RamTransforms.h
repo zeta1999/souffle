@@ -70,6 +70,49 @@ protected:
 };
 
 /**
+ * @class CollapseFiltersTransformer
+ * @brief Transforms consecutive filters into a single filter containing a conjunction
+ *
+ * For example ..
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    IF C1
+ *     IF C2
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * will be rewritten to
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    IF C1 /\ C2 then
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ */
+class CollapseFiltersTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "CollapseFiltersTransformer";
+    }
+
+    /**
+     * @brief Collapse consecutive filter operations
+     * @param program Program that is transformed
+     * @return Flag showing whether the program has been changed by the transformation
+     */
+    bool collapseFilters(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return collapseFilters(*translationUnit.getProgram());
+    }
+};
+
+/**
  * @class HoistConditionsTransformer
  * @brief Hosts conditions in a loop-nest to the most-outer/semantically-correct loop
  *
@@ -121,7 +164,7 @@ public:
      *
      * There are two types of conditions in
      * filter operations. The first type depends on tuples of
-     * RamSearch operations. The second type are independent of
+     * RamTupleOperation operations. The second type are independent of
      * tuple access. Both types of conditions will be hoisted to
      * the most out-scope such that the program is still valid.
      */
@@ -361,6 +404,80 @@ protected:
     bool transform(RamTranslationUnit& translationUnit) override {
         rla = translationUnit.getAnalysis<RamLevelAnalysis>();
         return convertScans(*translationUnit.getProgram());
+    }
+};
+
+/**
+ * @class TupleIdTransformer
+ * @brief Ordering tupleIds in RamTupleOperation operations correctly
+ *
+ * Transformations, like MakeIndex and IfConversion do not
+ * ensure that RamTupleOperations maintain an appropriate order
+ * with respect to their tupleId's
+ *
+ * For example:
+ * SEARCH ... (tupleId = 2)
+ * ...
+ * 		SEARCH ... (tupleId = 1)
+ * 			...
+ *
+ * Will be converted to
+ * SEARCH ... (tupleId = 0)
+ * ...
+ * 		SEARCH ... (tupleId = 1)
+ * 			...
+ *
+ */
+class TupleIdTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "TupleIdTransformer";
+    }
+
+    /**
+     * @brief Apply tupleIdreordering to the whole program
+     * @param RAM program
+     * @result A flag indicating whether the RAM program has been changed.
+     *
+     * Search for RamTupleOperations and RamTupleElements and rewrite their tupleIds
+     */
+    bool reorderOperations(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return reorderOperations(*translationUnit.getProgram());
+    }
+};
+
+/**
+ * @class HoistAggregatesTransformer
+ * @brief Pushes one Aggregate as far up the loop nest as possible
+ *
+ * This transformer, if possible, pushes an aggregate up
+ * the loop nest to increase performance by performing less Aggregate
+ * operations
+ *
+ */
+class HoistAggregateTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "HoistAggregateTransformer";
+    }
+
+    /**
+     * @brief Apply hoistAggregate to the whole program
+     * @param RAM program
+     * @result A flag indicating whether the RAM program has been changed.
+     *
+     * Pushes an Aggregate up the loop nest if possible
+     */
+    bool hoistAggregate(RamProgram& program);
+
+protected:
+    RamLevelAnalysis* rla{nullptr};
+    bool transform(RamTranslationUnit& translationUnit) override {
+        rla = translationUnit.getAnalysis<RamLevelAnalysis>();
+        return hoistAggregate(*translationUnit.getProgram());
     }
 };
 

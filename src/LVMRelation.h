@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,15 +8,15 @@
 
 /************************************************************************
  *
- * @file InterpreterRelation.h
+ * @file LVMRelation.h
  *
- * Defines Interpreter Relations
+ * Defines LVM Relations
  *
  ***********************************************************************/
 
 #pragma once
 
-#include "InterpreterIndex.h"
+#include "LVMIndex.h"
 #include "ParallelUtils.h"
 #include "RamIndexAnalysis.h"
 #include "RamTypes.h"
@@ -24,6 +24,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -32,21 +33,21 @@ namespace souffle {
  * Interpreter Relation
  *
  */
-class InterpreterRelation {
+class LVMRelation {
     using LexOrder = std::vector<int>;
 
 public:
-    InterpreterRelation(size_t relArity, const MinIndexSelection* orderSet)
-            : arity(relArity), orderSet(orderSet) {
+    LVMRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
+            : arity(relArity), orderSet(orderSet), relName(std::move(relName)) {
         // Create all necessary indices based on orderSet
         for (auto& order : orderSet->getAllOrders()) {
-            indices.push_back(InterpreterIndex(order));
+            indices.push_back(LVMIndex(order));
         }
     }
 
-    InterpreterRelation(const InterpreterRelation& other) = delete;
+    LVMRelation(const LVMRelation& other) = delete;
 
-    virtual ~InterpreterRelation() = default;
+    virtual ~LVMRelation() = default;
 
     /** Set AttributeType for the relation */
     void setAttributes(const std::vector<std::string> attributeTypes) {
@@ -56,6 +57,14 @@ public:
     /** Get AttributeType for the relation */
     std::vector<std::string>& getAttributeTypeQualifiers() {
         return attributeTypeQualifiers;
+    }
+
+    const std::string& getName() const {
+        return relName;
+    }
+
+    std::string getName() {
+        return relName;
     }
 
     /** Get arity of relation */
@@ -111,7 +120,7 @@ public:
     }
 
     /** Merge another relation into this relation */
-    void insert(const InterpreterRelation& other) {
+    void insert(const LVMRelation& other) {
         assert(getArity() == other.getArity());
         for (const auto& cur : other) {
             insert(cur);
@@ -128,7 +137,7 @@ public:
     }
 
     /** get index for a given search signature. Order are encoded as bits for each column */
-    InterpreterIndex* getIndex(const SearchSignature& col) const {
+    LVMIndex* getIndex(const SearchSignature& col) const {
         // Special case in provenance program, a 0 searchSignature is considered as a full search
         if (col == 0 && arity != 0) {
             return getIndex(getTotalIndexKey());
@@ -137,7 +146,7 @@ public:
     }
 
     /** get index for a given order. Order are encoded as bits for each column */
-    InterpreterIndex* getIndexByPos(int idx) const {
+    LVMIndex* getIndexByPos(int idx) const {
         return &indices[idx];
     }
 
@@ -148,7 +157,7 @@ public:
 
     /** check whether a tuple exists in the relation */
     bool exists(const RamDomain* tuple) const {
-        InterpreterIndex* index = getIndex(getTotalIndexKey());
+        LVMIndex* index = getIndex(getTotalIndexKey());
         return index->exists(tuple);
     }
 
@@ -167,7 +176,7 @@ public:
     public:
         iterator() = default;
 
-        iterator(const InterpreterRelation* const relation)
+        iterator(const LVMRelation* const relation)
                 : relation(relation), tuple(relation->arity == 0 ? reinterpret_cast<RamDomain*>(this)
                                                                  : &relation->blockList[0][0]) {}
 
@@ -205,7 +214,7 @@ public:
         }
 
     private:
-        const InterpreterRelation* relation = nullptr;
+        const LVMRelation* relation = nullptr;
         size_t index = 0;
         RamDomain* tuple = nullptr;
     };
@@ -236,7 +245,7 @@ public:
     }
 
     /** Extend relation */
-    virtual void extend(const InterpreterRelation& rel) {}
+    virtual void extend(const LVMRelation& rel) {}
 
 private:
     /** Arity of relation */
@@ -251,7 +260,7 @@ private:
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
 
     /** List of indices */
-    mutable std::vector<InterpreterIndex> indices;
+    mutable std::vector<LVMIndex> indices;
 
     /** IndexSet */
     const MinIndexSelection* orderSet;
@@ -264,16 +273,19 @@ private:
 
     /** Stratum level information */
     size_t level = 0;
+
+    /** Relation name */
+    const std::string relName;
 };
 
 /**
  * Interpreter Equivalence Relation
  */
 
-class InterpreterEqRelation : public InterpreterRelation {
+class LVMEqRelation : public LVMRelation {
 public:
-    InterpreterEqRelation(size_t relArity, const MinIndexSelection* orderSet)
-            : InterpreterRelation(relArity, orderSet) {}
+    LVMEqRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
+            : LVMRelation(relArity, orderSet, relName) {}
 
     /** Insert tuple */
     void insert(const RamDomain* tuple) override {
@@ -290,7 +302,7 @@ public:
         // ):
 
         for (auto* newTuple : extend(tuple)) {
-            InterpreterRelation::insert(newTuple);
+            LVMRelation::insert(newTuple);
             delete[] newTuple;
         }
     }
@@ -325,7 +337,7 @@ public:
         return newTuples;
     }
     /** Extend this relation with new knowledge generated by inserting all tuples from a relation */
-    void extend(const InterpreterRelation& rel) override {
+    void extend(const LVMRelation& rel) override {
         std::vector<RamDomain*> newTuples;
         // store all values that will be implicitly relevant to the those that we will insert
         for (const auto* tuple : rel) {
@@ -334,7 +346,7 @@ public:
             }
         }
         for (const auto* newTuple : newTuples) {
-            InterpreterRelation::insert(newTuple);
+            LVMRelation::insert(newTuple);
             delete[] newTuple;
         }
     }

@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "Interpreter.h"
-#include "InterpreterContext.h"
-#include "InterpreterRelation.h"
+#include "RAMIContext.h"
+#include "RAMIInterface.h"
+#include "RAMIRelation.h"
 #include "RamCondition.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
@@ -38,7 +38,7 @@
 
 namespace souffle {
 
-class InterpreterProgInterface;
+class RMAIProgInterface;
 class RamOperation;
 class RamExpression;
 class SymbolTable;
@@ -47,10 +47,14 @@ class SymbolTable;
  * Interpreter executing a RAM translation unit
  */
 
-class RAMI : public Interpreter {
+class RAMI : public RAMIInterface {
 public:
-    RAMI(RamTranslationUnit& tUnit) : Interpreter(tUnit) {}
-    ~RAMI() override = default;
+    RAMI(RamTranslationUnit& tUnit) : RAMIInterface(tUnit) {}
+    ~RAMI() {
+        for (auto& x : environment) {
+            delete x.second;
+        }
+    }
 
     /** Execute main program */
     void executeMain() override;
@@ -61,16 +65,16 @@ public:
 
 protected:
     /** Evaluate value */
-    RamDomain evalExpr(const RamExpression& value, const InterpreterContext& ctxt = InterpreterContext());
+    RamDomain evalExpr(const RamExpression& value, const RAMIContext& ctxt = RAMIContext());
 
     /** Evaluate operation */
-    void evalOp(const RamOperation& op, const InterpreterContext& ctxt = InterpreterContext());
+    void evalOp(const RamOperation& op, const RAMIContext& ctxt = RAMIContext());
 
     /** Evaluate conditions */
-    bool evalCond(const RamCondition& cond, const InterpreterContext& ctxt = InterpreterContext());
+    bool evalCond(const RamCondition& cond, const RAMIContext& ctxt = RAMIContext());
 
     /** Evaluate statement */
-    void evalStmt(const RamStatement& stmt, const InterpreterContext& ctxt = InterpreterContext());
+    void evalStmt(const RamStatement& stmt, const RAMIContext& ctxt = RAMIContext());
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
@@ -103,18 +107,18 @@ protected:
     }
 
     void createRelation(const RamRelation& id, const MinIndexSelection* orderSet) {
-        InterpreterRelation* res = nullptr;
+        RAMIRelation* res = nullptr;
         assert(environment.find(id.getName()) == environment.end());
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = new InterpreterEqRelation(id.getArity(), orderSet);
+            res = new RAMIEqRelation(id.getArity(), orderSet, id.getName());
         } else {
-            res = new InterpreterRelation(id.getArity(), orderSet);
+            res = new RAMIRelation(id.getArity(), orderSet, id.getName());
         }
         environment[id.getName()] = res;
     }
 
     /** Get relation */
-    InterpreterRelation& getRelation(const std::string& name) {
+    RAMIRelation& getRelation(const std::string& name) {
         // look up relation
         auto pos = environment.find(name);
         assert(pos != environment.end());
@@ -122,27 +126,35 @@ protected:
     }
 
     /** Get relation */
-    inline InterpreterRelation& getRelation(const RamRelation& id) {
+    inline RAMIRelation& getRelation(const RamRelation& id) {
         return getRelation(id.getName());
     }
 
     /** Drop relation */
     void dropRelation(const RamRelation& id) {
-        InterpreterRelation& rel = getRelation(id);
+        RAMIRelation& rel = getRelation(id);
         environment.erase(id.getName());
         delete &rel;
     }
 
     /** Swap relation */
     void swapRelation(const RamRelation& ramRel1, const RamRelation& ramRel2) {
-        InterpreterRelation* rel1 = &getRelation(ramRel1);
-        InterpreterRelation* rel2 = &getRelation(ramRel2);
+        RAMIRelation* rel1 = &getRelation(ramRel1);
+        RAMIRelation* rel2 = &getRelation(ramRel2);
         environment[ramRel1.getName()] = rel2;
         environment[ramRel2.getName()] = rel1;
     }
 
 private:
-    friend InterpreterProgInterface;
+    friend RAMIProgInterface;
+
+    /** relation environment type */
+    using relation_map = std::map<std::string, RAMIRelation*>;
+
+    /** Get relation map */
+    virtual std::map<std::string, RAMIRelation*>& getRelationMap() override {
+        return environment;
+    }
 
     /** counters for atom profiling */
     std::map<std::string, std::map<size_t, size_t>> frequencies;
@@ -155,6 +167,9 @@ private:
 
     /** iteration number (in a fix-point calculation) */
     size_t iteration = 0;
+
+    /** Relation Environment */
+    relation_map environment;
 };
 
 }  // end of namespace souffle

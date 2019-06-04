@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "Interpreter.h"
-#include "InterpreterContext.h"
-#include "InterpreterRelation.h"
 #include "LVMCode.h"
+#include "LVMContext.h"
 #include "LVMGenerator.h"
+#include "LVMInterface.h"
+#include "LVMRelation.h"
 #include "Logger.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
@@ -38,8 +38,7 @@
 #include <dlfcn.h>
 
 namespace souffle {
-
-class InterpreterProgInterface;
+class LVMProgInterface;
 
 /**
  * Bytecode Interpreter executing a RAM translation unit.
@@ -48,9 +47,9 @@ class InterpreterProgInterface;
  * LVM then directly execute the program by interpreting the LVMCode.
  * The LVMCode will be cached in the memory to save time when repeatedly execution is needed.
  */
-class LVM : public Interpreter {
+class LVM : public LVMInterface {
 public:
-    LVM(RamTranslationUnit& tUnit) : Interpreter(tUnit) {
+    LVM(RamTranslationUnit& tUnit) : LVMInterface(tUnit) {
         // Construct mapping from relation Name to RamRelation node in RAM tree.
         // This will later be used for fast lookup during RamRelationCreate in order to retrieve
         // minIndexSet from a given relation.
@@ -81,7 +80,7 @@ public:
     /** Execute the subroutine */
     void executeSubroutine(const std::string& name, const std::vector<RamDomain>& arguments,
             std::vector<RamDomain>& returnValues, std::vector<bool>& returnErrors) override {
-        InterpreterContext ctxt;
+        LVMContext ctxt;
         ctxt.setReturnValues(returnValues);
         ctxt.setReturnErrors(returnErrors);
         ctxt.setArguments(arguments);
@@ -91,7 +90,7 @@ public:
         } else {
             // Parse and cache the program
             LVMGenerator generator(translationUnit.getSymbolTable(),
-                    translationUnit.getProgram()->getSubroutine(name), *isa);
+                    translationUnit.getProgram()->getSubroutine(name), *isa, relationEncoder);
             subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
             execute(subroutines.at(name), ctxt);
         }
@@ -100,16 +99,16 @@ public:
     /** Print out the instruction stream */
     void printMain() {
         if (mainProgram.get() == nullptr) {
-            LVMGenerator generator(
-                    translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain(), *isa);
+            LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain(),
+                    *isa, relationEncoder);
             mainProgram = generator.getCodeStream();
         }
         mainProgram->print();
     }
 
 protected:
-    using index_set = btree_multiset<const RamDomain*, InterpreterIndex::comparator,
-            std::allocator<const RamDomain*>, 512>;
+    using index_set =
+            btree_multiset<const RamDomain*, LVMIndex::comparator, std::allocator<const RamDomain*>, 512>;
 
     /** Insert Logger */
     void insertTimerAt(size_t index, Logger* timer) {
@@ -150,32 +149,25 @@ protected:
     size_t getIterationNumber() const {
         return iteration;
     }
+
     /** Reset iteration number */
     void resetIterationNumber() {
         iteration = 0;
     }
 
-    /** Get relation */
-    InterpreterRelation& getRelation(const std::string& name) {
-        // look up relation
-        auto pos = environment.find(name);
-        assert(pos != environment.end());
-        return *pos->second;
+    /** Get a relation */
+    LVMRelation* getRelation(size_t id) {
+        return environment[id].get();
     }
 
     /** Drop relation */
-    void dropRelation(const std::string& relName) {
-        InterpreterRelation& rel = getRelation(relName);
-        environment.erase(relName);
-        delete &rel;
+    void dropRelation(size_t id) {
+        environment[id].reset(nullptr);
     }
 
     /** Swap relation */
-    void swapRelation(const std::string& ramRel1, const std::string& ramRel2) {
-        InterpreterRelation* rel1 = &getRelation(ramRel1);
-        InterpreterRelation* rel2 = &getRelation(ramRel2);
-        environment[ramRel1] = rel2;
-        environment[ramRel2] = rel1;
+    void swapRelation(size_t relAId, size_t relBId) {
+        environment[relAId].swap(environment[relBId]);
     }
 
     /** Lookup iterator, resize the iterator pool if necessary */
@@ -198,13 +190,33 @@ protected:
     }
 
 private:
-    friend InterpreterProgInterface;
+    friend LVMProgInterface;
+
+    /** relation environment type */
+    using relation_map = std::vector<std::unique_ptr<LVMRelation>>;
+
+    /** A string to relation map for InterpreterProgInterface */
+    std::map<std::string, LVMRelation*> stringToRel;
+
+    /** Get relation map */
+    virtual std::map<std::string, LVMRelation*>& getRelationMap() override {
+        // TODO(xiaowen): The transformation here is only needed in order to make RAMI and LVM share the same
+        // interface. Later when RAMI is removed, we can have a more elegant interface here.
+        for (auto& relPtr : environment) {
+            // Skip deleted relation
+            if (relPtr == nullptr) {
+                continue;
+            }
+            stringToRel[relPtr->getName()] = relPtr.get();
+        }
+        return stringToRel;
+    }
 
     /** Execute given program
      *
      * @param ip the instruction pointer start position, default is 0.
      * */
-    void execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip = 0);
+    void execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t ip = 0);
 
     /** subroutines */
     std::map<std::string, std::unique_ptr<LVMCode>> subroutines;
@@ -238,6 +250,12 @@ private:
 
     /** Dynamic library for user-defined functors */
     void* dll = nullptr;
+
+    /** Relation Encode */
+    RelationEncoder relationEncoder;
+
+    /** Relation Environment */
+    relation_map environment;
 };
 
 }  // end of namespace souffle

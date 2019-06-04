@@ -25,11 +25,11 @@
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
-#include "Interpreter.h"
-#include "InterpreterInterface.h"
 #include "LVM.h"
+#include "LVMProgInterface.h"
 #include "ParserDriver.h"
 #include "RAMI.h"
+#include "RAMIProgInterface.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
@@ -60,7 +60,6 @@
 #include <vector>
 
 namespace souffle {
-
 /**
  * Executes a binary file.
  */
@@ -466,7 +465,8 @@ int main(int argc, char** argv) {
             std::make_unique<MinimiseProgramTransformer>(),
             std::make_unique<RemoveRelationCopiesTransformer>(),
             std::make_unique<ReorderLiteralsTransformer>(),
-            std::make_unique<MaterializeAggregationQueriesTransformer>(),
+            std::make_unique<PipelineTransformer>(std::make_unique<ResolveAliasesTransformer>(),
+                    std::make_unique<MaterializeAggregationQueriesTransformer>()),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<ReorderLiteralsTransformer>(), std::move(magicPipeline),
             std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
@@ -507,6 +507,9 @@ int main(int argc, char** argv) {
                             std::make_unique<HoistConditionsTransformer>(),
                             std::make_unique<MakeIndexTransformer>())),
             std::make_unique<IfConversionTransformer>(), std::make_unique<ChoiceConversionTransformer>(),
+            std::make_unique<CollapseFiltersTransformer>(), std::make_unique<TupleIdTransformer>(),
+            std::make_unique<RamLoopTransformer>(std::make_unique<RamTransformerSequence>(
+                    std::make_unique<HoistAggregateTransformer>(), std::make_unique<TupleIdTransformer>())),
             std::make_unique<RamConditionalTransformer>(
                     []() -> bool { return std::stoi(Global::config().get("jobs")) > 1; },
                     std::make_unique<ParallelTransformer>()));
@@ -524,42 +527,46 @@ int main(int argc, char** argv) {
             !Global::config().has("generate")) {
         // ------- interpreter -------------
 
-        // configure interpreter
-        std::unique_ptr<Interpreter> interpreter;
-        if (!Global::config().has("interpreter")) {
-            interpreter = std::make_unique<LVM>(*ramTranslationUnit);
-        } else {
-            if (Global::config().get("interpreter") == "RAMI") {
-                interpreter = std::make_unique<RAMI>(*ramTranslationUnit);
-            } else {
-                interpreter = std::make_unique<LVM>(*ramTranslationUnit);
-            }
-        }
-
         std::thread profiler;
         // Start up profiler if needed
         if (Global::config().has("live-profile") && !Global::config().has("compile")) {
             profiler = std::thread([]() { profile::Tui().runProf(); });
         }
-        // execute translation unit
-        interpreter->executeMain();
 
-        // If the profiler was started, join back here once it exits.
-        if (profiler.joinable()) {
-            profiler.join();
-        }
-
-        // only run explain interface if interpreted
-        if (Global::config().has("provenance")) {
-            // construct SouffleProgram from env
-            InterpreterProgInterface interface(*interpreter);
-            if (Global::config().get("provenance") == "explain") {
-                explain(interface, false);
-            } else if (Global::config().get("provenance") == "explore") {
-                explain(interface, true);
+        // configure and execute interpreter
+        if (!Global::config().has("interpreter") || Global::config().get("Interpreter") == "LVM") {
+            std::unique_ptr<LVMInterface> lvm(std::make_unique<LVM>(*ramTranslationUnit));
+            lvm->executeMain();
+            // If the profiler was started, join back here once it exits.
+            if (profiler.joinable()) {
+                profiler.join();
+            }
+            // only run explain interface if interpreted
+            if (Global::config().has("provenance")) {
+                LVMProgInterface interface(*lvm);
+                if (Global::config().get("provenance") == "explain") {
+                    explain(interface, false);
+                } else if (Global::config().get("provenance") == "explore") {
+                    explain(interface, true);
+                }
+            }
+        } else {
+            std::unique_ptr<RAMIInterface> rami(std::make_unique<RAMI>(*ramTranslationUnit));
+            rami->executeMain();
+            // If the profiler was started, join back here once it exits.
+            if (profiler.joinable()) {
+                profiler.join();
+            }
+            // only run explain interface if interpreted
+            if (Global::config().has("provenance")) {
+                RAMIProgInterface interface(*rami);
+                if (Global::config().get("provenance") == "explain") {
+                    explain(interface, false);
+                } else if (Global::config().get("provenance") == "explore") {
+                    explain(interface, true);
+                }
             }
         }
-
     } else {
         // ------- compiler -------------
 

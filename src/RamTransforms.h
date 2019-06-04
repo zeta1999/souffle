@@ -412,7 +412,7 @@ protected:
  * @brief Ordering tupleIds in RamTupleOperation operations correctly
  *
  * Transformations, like MakeIndex and IfConversion do not
- * ensure that RamTupleOperationes maintain an appropriate order
+ * ensure that RamTupleOperations maintain an appropriate order
  * with respect to their tupleId's
  *
  * For example:
@@ -439,7 +439,7 @@ public:
      * @param RAM program
      * @result A flag indicating whether the RAM program has been changed.
      *
-     * Search for RamTupleOperationes and RamTupleElementes and rewrite their tupleIds
+     * Search for RamTupleOperations and RamTupleElements and rewrite their tupleIds
      */
     bool reorderOperations(RamProgram& program);
 

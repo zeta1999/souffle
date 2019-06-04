@@ -110,19 +110,20 @@ protected:
 };
 
 /**
- * Abstract class for relation searches and lookups
+ * @class RamTupleOperation
+ * @brief Abstract class for relation searches and lookups
  */
 class RamTupleOperation : public RamNestedOperation {
 public:
     RamTupleOperation(int ident, std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamNestedOperation(std::move(nested), std::move(profileText)), identifier(ident) {}
 
-    /** Get identifier */
+    /** @brief Get identifier */
     int getTupleId() const {
         return identifier;
     }
 
-    /** Set identifier */
+    /** @brief Set identifier */
     void setTupleId(int id) {
         identifier = id;
     }
@@ -132,7 +133,10 @@ public:
     }
 
 protected:
-    /** Identifier for the tuple */
+    /**
+     * Identifier for the tuple, corresponding to
+     * its position in the loop nest
+     */
     int identifier;
 
     bool equal(const RamNode& node) const override {
@@ -143,7 +147,8 @@ protected:
 };
 
 /**
- * Abstract class for relation searches
+ * @class RamRelationOperation
+ * @brief Abstract class for relation searches
  */
 class RamRelationOperation : public RamTupleOperation {
 public:
@@ -152,7 +157,7 @@ public:
             : RamTupleOperation(ident, std::move(nested), std::move(profileText)),
               relationRef(std::move(relRef)) {}
 
-    /** Get search relation */
+    /** @brief Get search relation */
     const RamRelation& getRelation() const {
         return *relationRef->get();
     }
@@ -180,9 +185,17 @@ protected:
 };
 
 /**
- * Relation Scan
+ * @class RamScan
+ * @brief Iterate all tuples of a relation
  *
- * Iterate all tuples of a relation
+ * The following example iterates over all tuples
+ * in the set A:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *   FOR t0 in A
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamScan : public RamRelationOperation {
 public:
@@ -204,9 +217,16 @@ public:
 };
 
 /**
- * Parallel Relation Scan
+ * @class RamParallelScan
+ * @brief Iterate all tuples of a relation in parallel
  *
- * Iterate all tuples of a relation in parallel
+ * An example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *   PARALLEL FOR t0 in A
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallelScan : public RamScan, public RamAbstractParallel {
 public:
@@ -228,9 +248,8 @@ public:
 };
 
 /**
- * Relation Scan with Index
- *
- * Search for tuples of a relation matching a criteria
+ * @class Relation Scan with Index
+ * @brief An abstract class for performing indexed operations
  */
 class RamIndexOperation : public RamRelationOperation {
 public:
@@ -242,7 +261,9 @@ public:
         assert(getRangePattern().size() == getRelation().getArity());
     }
 
-    /** Get range pattern */
+    /**
+     * @brief Get range pattern
+     * @return A std::vector of pointers to RamExpression objects */
     std::vector<RamExpression*> getRangePattern() const {
         return toPtrVector(queryPattern);
     }
@@ -266,6 +287,7 @@ protected:
     /** Values of index per column of table (if indexable) */
     std::vector<std::unique_ptr<RamExpression>> queryPattern;
 
+    /** @brief Helper method for printing */
     void printIndex(std::ostream& os) const {
         bool first = true;
         for (unsigned int i = 0; i < queryPattern.size(); ++i) {
@@ -291,9 +313,16 @@ protected:
 };
 
 /**
- * Relation Scan with Index
+ * @class RamIndexScan
+ * @brief Search for tuples of a relation matching a criteria
  *
- * Search for tuples of a relation matching a criteria
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *	 FOR t1 IN X ON INDEX t1.c = t0.0
+ *	 ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamIndexScan : public RamIndexOperation {
 public:
@@ -325,9 +354,16 @@ public:
 };
 
 /**
- * Parallel Relation Scan with Index
+ * @class RamParallelIndexScan
+ * @brief Search for tuples of a relation matching a criteria
  *
- * Search for tuples of a relation matching a criteria
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *	 PARALLEL FOR t1 IN X ON INDEX t1.c = t0.0
+ *	 ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallelIndexScan : public RamIndexScan, public RamAbstractParallel {
 public:
@@ -358,7 +394,16 @@ public:
 };
 
 /**
- * Find a tuple in a relation such that a given condition holds.
+ * @class RamChoice
+ * @brief Find a tuple in a relation such that a given condition holds.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    CHOICE t1 IN A WHERE (t1.x, t1.y) NOT IN A
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamChoice : public RamRelationOperation {
 public:
@@ -435,6 +480,15 @@ public:
 
 /**
  * Use an index to find a tuple in a relation such that a given condition holds.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    CHOICE A AS t1 ON INDEX t1.x=10 AND t1.y = 20
+ *    WHERE (t1.x, t1.y) NOT IN A
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamIndexChoice : public RamIndexOperation {
 public:

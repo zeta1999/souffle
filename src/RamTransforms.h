@@ -287,8 +287,8 @@ protected:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
- *    SEARCH t1 IN A INDEX t1.x=10 AND t1.y = 20
- *      ... // no occurrence of t1
+ *	 FOR t1 IN X ON INDEX t1.x = 10 and t1.y = 20
+ *     ... // no occurrence of t1
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * will be rewritten to
@@ -348,7 +348,7 @@ protected:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
- *    SEARCH t1 IN A INDEX t1.x=10 AND t1.y = 20
+ *    FOR t1 IN A ON INDEX t1.x=10 AND t1.y = 20
  *    	IF (t1.x, t1.y) NOT IN A
  *          ... // no occurrence of t1
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -358,7 +358,7 @@ protected:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
- *    INDEXCHOICE AS t1 ON INDEX t1.x=10 AND t1.y = 20
+ *    CHOICE A AS t1 ON INDEX t1.x=10 AND t1.y = 20
  *    WHERE (t1.x, t1.y) NOT IN A
  *      ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~

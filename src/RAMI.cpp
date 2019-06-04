@@ -68,7 +68,7 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const RAMIContext& ctxt) {
             return num.getConstant();
         }
 
-        RamDomain visitElementAccess(const RamElementAccess& access) override {
+        RamDomain visitTupleElement(const RamTupleElement& access) override {
             return ctxt[access.getTupleId()][access.getElement()];
         }
 
@@ -259,7 +259,7 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const RAMIContext& ctxt) {
         }
 
         // -- subroutine argument
-        RamDomain visitArgument(const RamArgument& arg) override {
+        RamDomain visitSubroutineArgument(const RamSubroutineArgument& arg) override {
             return ctxt.getArgument(arg.getArgument());
         }
 
@@ -466,7 +466,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
             return visit(nested.getOperation());
         }
 
-        bool visitSearch(const RamSearch& search) override {
+        bool visitTupleOperation(const RamTupleOperation& search) override {
             bool result = visitNestedOperation(search);
 
             if (Global::config().has("profile") && !search.getProfileText().empty()) {
@@ -482,7 +482,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
             // use simple iterator
             for (const RamDomain* cur : rel) {
                 ctxt[scan.getTupleId()] = cur;
-                if (!visitSearch(scan)) {
+                if (!visitTupleOperation(scan)) {
                     break;
                 }
             }
@@ -518,7 +518,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
             for (auto ip = range.first; ip != range.second; ++ip) {
                 const RamDomain* data = *(ip);
                 ctxt[scan.getTupleId()] = data;
-                if (!visitSearch(scan)) {
+                if (!visitTupleOperation(scan)) {
                     break;
                 }
             }
@@ -533,7 +533,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
             for (const RamDomain* cur : rel) {
                 ctxt[choice.getTupleId()] = cur;
                 if (interpreter.evalCond(choice.getCondition(), ctxt)) {
-                    visitSearch(choice);
+                    visitTupleOperation(choice);
                     break;
                 }
             }
@@ -570,7 +570,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
                 const RamDomain* data = *(ip);
                 ctxt[choice.getTupleId()] = data;
                 if (interpreter.evalCond(choice.getCondition(), ctxt)) {
-                    visitSearch(choice);
+                    visitTupleOperation(choice);
                     break;
                 }
             }
@@ -594,7 +594,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
             ctxt[lookup.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
-            return visitSearch(lookup);
+            return visitTupleOperation(lookup);
         }
 
         bool visitAggregate(const RamAggregate& aggregate) override {
@@ -665,7 +665,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
                 return true;
             } else {
                 // run nested part - using base class visitor
-                return visitSearch(aggregate);
+                return visitTupleOperation(aggregate);
             }
         }
 
@@ -765,7 +765,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
                 return true;
             } else {
                 // run nested part - using base class visitor
-                return visitSearch(aggregate);
+                return visitTupleOperation(aggregate);
             }
         }
 
@@ -808,7 +808,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
         }
 
         // -- return from subroutine --
-        bool visitReturnValue(const RamReturnValue& ret) override {
+        bool visitSubroutineReturnValue(const RamSubroutineReturnValue& ret) override {
             for (auto val : ret.getValues()) {
                 if (isRamUndefValue(val)) {
                     ctxt.addReturnValue(0, true);
@@ -1066,7 +1066,7 @@ void RAMI::executeMain() {
     } else {
         ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
         // Prepare the frequency table for threaded use
-        visitDepthFirst(main, [&](const RamSearch& node) {
+        visitDepthFirst(main, [&](const RamTupleOperation& node) {
             if (!node.getProfileText().empty()) {
                 frequencies.emplace(node.getProfileText(), std::map<size_t, size_t>());
             }

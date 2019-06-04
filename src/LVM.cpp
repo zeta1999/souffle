@@ -72,7 +72,7 @@ void LVM::executeMain() {
     } else {
         ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
         // Prepare the frequency table for threaded use
-        visitDepthFirst(main, [&](const RamSearch& node) {
+        visitDepthFirst(main, [&](const RamTupleOperation& node) {
             if (!node.getProfileText().empty()) {
                 frequencies.emplace(node.getProfileText(), std::map<size_t, size_t>());
             }
@@ -125,7 +125,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 stack.push(code[ip + 1]);
                 ip += 2;
                 break;
-            case LVM_ElementAccess:
+            case LVM_TupleElement:
                 stack.push(ctxt[code[ip + 1]][code[ip + 2]]);
                 ip += 3;
                 break;

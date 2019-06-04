@@ -81,13 +81,13 @@ struct RamVisitor : public ram_visitor_tag {
         FORWARD(RelationReference);
 
         // Expressions
-        FORWARD(ElementAccess);
+        FORWARD(TupleElement);
         FORWARD(Number);
         FORWARD(IntrinsicOperator);
         FORWARD(UserDefinedOperator);
         FORWARD(AutoIncrement);
         FORWARD(PackRecord);
-        FORWARD(Argument);
+        FORWARD(SubroutineArgument);
         FORWARD(UndefValue);
 
         // Conditions
@@ -104,7 +104,7 @@ struct RamVisitor : public ram_visitor_tag {
         FORWARD(Filter);
         FORWARD(Break);
         FORWARD(Project);
-        FORWARD(ReturnValue);
+        FORWARD(SubroutineReturnValue);
         FORWARD(UnpackRecord);
         FORWARD(ParallelScan);
         FORWARD(Scan);
@@ -199,21 +199,21 @@ protected:
 
     // -- operations --
     LINK(Project, Operation);
-    LINK(ReturnValue, Operation);
-    LINK(UnpackRecord, Search);
-    LINK(Scan, RelationSearch);
+    LINK(SubroutineReturnValue, Operation);
+    LINK(UnpackRecord, TupleOperation);
+    LINK(Scan, RelationOperation);
     LINK(ParallelScan, Scan);
-    LINK(IndexScan, IndexRelationSearch);
+    LINK(IndexScan, IndexOperation);
     LINK(ParallelIndexScan, IndexScan);
-    LINK(Choice, RelationSearch);
+    LINK(Choice, RelationOperation);
     LINK(ParallelChoice, Choice);
-    LINK(IndexChoice, IndexRelationSearch);
+    LINK(IndexChoice, IndexOperation);
     LINK(ParallelIndexChoice, IndexChoice);
-    LINK(RelationSearch, Search);
-    LINK(Aggregate, RelationSearch);
-    LINK(IndexAggregate, IndexRelationSearch);
-    LINK(IndexRelationSearch, RelationSearch);
-    LINK(Search, NestedOperation);
+    LINK(RelationOperation, TupleOperation);
+    LINK(Aggregate, RelationOperation);
+    LINK(IndexAggregate, IndexOperation);
+    LINK(IndexOperation, RelationOperation);
+    LINK(TupleOperation, NestedOperation);
     LINK(Filter, AbstractConditional);
     LINK(Break, AbstractConditional);
     LINK(AbstractConditional, NestedOperation);
@@ -237,13 +237,13 @@ protected:
     // -- values --
     LINK(Number, Expression);
     LINK(UndefValue, Expression);
-    LINK(ElementAccess, Expression);
+    LINK(TupleElement, Expression);
     LINK(IntrinsicOperator, AbstractOperator);
     LINK(UserDefinedOperator, AbstractOperator);
     LINK(AbstractOperator, Expression);
     LINK(AutoIncrement, Expression);
     LINK(PackRecord, Expression);
-    LINK(Argument, Expression);
+    LINK(SubroutineArgument, Expression);
 
     LINK(Expression, Node);
 

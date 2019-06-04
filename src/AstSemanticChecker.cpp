@@ -1410,7 +1410,7 @@ void AstSemanticChecker::checkTypeCorrectness(
                         constraint.getSrcLoc());
             } else if (lhsType->getKind() == Kind::RECORD) {
                 // TODO (#380): Remove this once record unions are allowed
-                if (!(lattice->isSubtype(lhsType, rhsType) && lattice->isSubtype(rhsType, lhsType))) {
+                if (!(lattice->isSubtype(lhsType, rhsType) || lattice->isSubtype(rhsType, lhsType))) {
                     report.addError("Cannot compare records of different types", constraint.getSrcLoc());
                 }
             }

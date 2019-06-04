@@ -1272,12 +1272,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutineOpt(const Ast
         if (auto atom = dynamic_cast<AstAtom*>(lit)) {
             auto arity = atom->getArity();
 
-            // add less than constraint in any case
-            intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::LT,
-                    std::unique_ptr<AstArgument>(atom->getArgument(arity - 1)->clone()),
-                    std::make_unique<AstSubroutineArgument>(levelIndex)));
-
-            // add additional = h - 1 constraint
+            // add = h - 1 constraint
             if (atom->getName() == "path1") {
                 // arity - 1 is the level number in body atoms
                 intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
@@ -1285,6 +1280,10 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutineOpt(const Ast
                         std::make_unique<AstIntrinsicFunctor>(FunctorOp::SUB,
                                 std::make_unique<AstSubroutineArgument>(levelIndex),
                                 std::make_unique<AstNumberConstant>(1))));
+            } else {
+                intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::LT,
+                        std::unique_ptr<AstArgument>(atom->getArgument(arity - 1)->clone()),
+                        std::make_unique<AstSubroutineArgument>(levelIndex)));
             }
         }
     }

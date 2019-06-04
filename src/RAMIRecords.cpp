@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file InterpreterRecords.cpp
+ * @file RAMIRecords.cpp
  *
- * Utilities for handling records in the interpreter
+ * Utilities for handling records in RAMI
  *
  ***********************************************************************/
 
-#include "InterpreterRecords.h"
+#include "RAMIRecords.h"
 #include <cassert>
 #include <limits>
 #include <map>
@@ -29,7 +29,7 @@ using namespace std;
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
-class RecordMap {
+class RAMIRecordMap {
     /** The arity of the stored tuples */
     int arity;
 
@@ -40,7 +40,7 @@ class RecordMap {
     vector<vector<RamDomain>> i2r;
 
 public:
-    RecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    RAMIRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -89,9 +89,9 @@ public:
 /**
  * The static access function for record maps of certain arities.
  */
-RecordMap& getForArity(int arity) {
+RAMIRecordMap& getForArity(int arity) {
     // the static container -- filled on demand
-    static map<int, RecordMap> maps;
+    static map<int, RAMIRecordMap> maps;
 
     // get container if present
     auto pos = maps.find(arity);

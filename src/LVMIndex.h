@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2014, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file InterpreterIndex.h
+ * @file LVMIndex.h
  *
  * An index is implemented either as a hash-index, a double-hash, as a
  * red-black tree or as a b-tree. The choice of the implementation is
@@ -27,7 +27,7 @@
 namespace souffle {
 
 /* B-Tree indexes as default implementation for indexes */
-class InterpreterIndex {
+class LVMIndex {
     using LexOrder = std::vector<int>;
 
 public:
@@ -72,11 +72,9 @@ public:
 
     using iterator = index_set::iterator;
 
-    InterpreterIndex(LexOrder order)
-            : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
+    LVMIndex(LexOrder order) : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)) {}
 
-    InterpreterIndex(const InterpreterIndex&& index)
-            : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
+    LVMIndex(const LVMIndex&& index) : theOrder(std::move(index.theOrder)), set(std::move(index.set)) {}
 
     const LexOrder& order() const {
         return theOrder;

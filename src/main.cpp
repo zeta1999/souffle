@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
                         "Enable provenance instrumentation and interaction."},
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
-                {"interpreter", '\1', "[ RAMI | LVM ]", "", false, "Switch interpreter implementation."},
+                {"interpreter", '\1', "[ RAMI | LVM ]", "LVM", false, "Switch interpreter implementation."},
                 {"hostfile", '\2', "FILE", "", false,
                         "Specify --hostfile option for call to mpiexec when using mpi as "
                         "execution engine."},
@@ -534,7 +534,7 @@ int main(int argc, char** argv) {
         }
 
         // configure and execute interpreter
-        if (!Global::config().has("interpreter") || Global::config().get("Interpreter") == "LVM") {
+        if (Global::config().get("Interpreter") == "LVM") {
             std::unique_ptr<LVMInterface> lvm(std::make_unique<LVM>(*ramTranslationUnit));
             lvm->executeMain();
             // If the profiler was started, join back here once it exits.

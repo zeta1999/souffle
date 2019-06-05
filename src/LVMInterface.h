@@ -129,7 +129,7 @@ protected:
     using relation_map = std::vector<std::unique_ptr<LVMRelation>>;
 
     /** Get relation map */
-    relation_map& getRelationMap(){
+    relation_map& getRelationMap() {
         return environment;
     }
 

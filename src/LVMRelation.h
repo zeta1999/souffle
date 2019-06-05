@@ -178,7 +178,7 @@ public:
     iterator end() const {
         return indices[0].end();
     }
-    
+
     /** Extend tuple */
     virtual std::vector<RamDomain*> extend(const RamDomain* tuple) {
         std::vector<RamDomain*> newTuples;

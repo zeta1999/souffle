@@ -233,9 +233,6 @@ private:
 
     /** Relation Encode */
     RelationEncoder relationEncoder;
-
-    /** Relation Environment */
-    relation_map environment;
 };
 
 }  // end of namespace souffle

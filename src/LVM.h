@@ -213,8 +213,8 @@ private:
     /** List of iters for indexScan operation */
     std::vector<std::pair<index_set::iterator, index_set::iterator>> iteratorPool;
 
-    /** Map from relationName to RamRelationNode in RAM */
-    std::map<std::string, const RamRelation*> relNameToNode;
+    /** Hash map from relationName to RamRelationNode in RAM */
+    std::unordered_map<std::string, const RamRelation*> relNameToNode;
 
     /** stratum */
     size_t level = 0;

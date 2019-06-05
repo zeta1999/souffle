@@ -125,8 +125,13 @@ protected:
         return translationUnit.getSymbolTable();
     }
 
+    /** relation environment type */
+    using relation_map = std::vector<std::unique_ptr<LVMRelation>>;
+
     /** Get relation map */
-    virtual std::map<std::string, LVMRelation*>& getRelationMap() = 0;
+    relation_map& getRelationMap() {
+        return environment;
+    }
 
     /** RAM translation Unit */
     RamTranslationUnit& translationUnit;
@@ -136,6 +141,9 @@ protected:
 
     /** Dynamic library for user-defined functors */
     std::vector<void*> dll;
+
+    /** Relation Environment */
+    relation_map environment;
 };
 
 }  // end of namespace souffle

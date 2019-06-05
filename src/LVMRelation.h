@@ -31,7 +31,6 @@ namespace souffle {
 
 /**
  * Interpreter Relation
- *
  */
 class LVMRelation {
     using LexOrder = std::vector<int>;
@@ -169,69 +168,15 @@ public:
         return this->level;
     }
 
-    // --- iterator ---
+    using iterator = LVMIndex::iterator;
 
-    /** Iterator for relation */
-    class iterator : public std::iterator<std::forward_iterator_tag, RamDomain*> {
-    public:
-        iterator() = default;
-
-        iterator(const LVMRelation* const relation)
-                : relation(relation), tuple(relation->arity == 0 ? reinterpret_cast<RamDomain*>(this)
-                                                                 : &relation->blockList[0][0]) {}
-
-        const RamDomain* operator*() {
-            return tuple;
-        }
-
-        bool operator==(const iterator& other) const {
-            return tuple == other.tuple;
-        }
-
-        bool operator!=(const iterator& other) const {
-            return (tuple != other.tuple);
-        }
-
-        iterator& operator++() {
-            // support 0-arity
-            if (relation->arity == 0) {
-                tuple = nullptr;
-                return *this;
-            }
-
-            // support all other arities
-            ++index;
-            if (index == relation->num_tuples) {
-                tuple = nullptr;
-                return *this;
-            }
-
-            int blockIndex = index / (BLOCK_SIZE / relation->arity);
-            int tupleIndex = (index % (BLOCK_SIZE / relation->arity)) * relation->arity;
-
-            tuple = &relation->blockList[blockIndex][tupleIndex];
-            return *this;
-        }
-
-    private:
-        const LVMRelation* relation = nullptr;
-        size_t index = 0;
-        RamDomain* tuple = nullptr;
-    };
-
-    /** get iterator begin of relation */
-    inline iterator begin() const {
-        // check for emptiness
-        if (empty()) {
-            return end();
-        }
-
-        return iterator(this);
+    /** Iterator for relation, uses full-order index as default */
+    iterator begin() const {
+        return indices[0].begin();
     }
 
-    /** get iterator begin of relation */
-    inline iterator end() const {
-        return iterator();
+    iterator end() const {
+        return indices[0].end();
     }
 
     /** Extend tuple */

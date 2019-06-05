@@ -10,10 +10,7 @@
  *
  * @file LVMIndex.h
  *
- * An index is implemented either as a hash-index, a double-hash, as a
- * red-black tree or as a b-tree. The choice of the implementation is
- * set by preprocessor defines.
- *
+ * A b-tree implementation of an index
  ***********************************************************************/
 
 #pragma once
@@ -131,6 +128,14 @@ public:
     /** return start and end iterator of the index set */
     inline std::pair<iterator, iterator> getIteratorPair() const {
         return std::pair<iterator, iterator>(set.begin(), set.end());
+    }
+
+    inline iterator begin() const {
+        return set.begin();
+    }
+
+    inline iterator end() const {
+        return set.end();
     }
 
 private:

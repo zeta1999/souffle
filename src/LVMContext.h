@@ -49,7 +49,7 @@ public:
     }
 
     /** Allocate a tuple.
-     *  allocatedDataContainer has the ownership of those tuples. */
+     *  LVMContext has ownership of allocated tuples. */
     RamDomain* allocateNewTuple(size_t size) {
         std::unique_ptr<RamDomain[]> newTuple(new RamDomain[size]);
         allocatedDataContainer.push_back(std::move(newTuple));

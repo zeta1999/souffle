@@ -2244,6 +2244,25 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // TODO: generate code for subroutines
     if (Global::config().has("provenance")) {
+        // method that populates provenance indices
+        os << "void copyIndex() {\n";
+        visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+            // get some table details
+            const auto& rel = create.getRelation();
+            size_t arity = rel.getArity();
+            const std::string& name = getRelationName(rel);
+            const std::string& raw_name = rel.getName();
+
+            bool isProvInfo = raw_name.find("@info") != std::string::npos;
+            auto relationType = SynthesiserRelation::getSynthesiserRelation(
+                    rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+
+            if (!relationType->getProvenenceIndexNumbers().empty()) {
+                os << name << "->copyIndex();\n";
+            }
+        });
+        os << "}\n";
+
         // generate subroutine adapter
         os << "void executeSubroutine(std::string name, const std::vector<RamDomain>& args, "
               "std::vector<RamDomain>& ret, std::vector<bool>& err) override {\n";
@@ -2359,8 +2378,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
 
     if (Global::config().get("provenance") == "explain") {
+        os << "obj.copyIndex();\n";
         os << "explain(obj, false);\n";
     } else if (Global::config().get("provenance") == "explore") {
+        os << "obj.copyIndex();\n";
         os << "explain(obj, true);\n";
     }
     os << "return 0;\n";

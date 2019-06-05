@@ -81,48 +81,61 @@ void SynthesiserDirectRelation::computeIndices() {
         inds.push_back(fullInd);
     }
 
+    size_t index_nr = 0;
     // expand all search orders to be full
     for (auto& ind : inds) {
-        if (ind.size() < getArity()) {
-            // use a set as a cache for fast lookup
-            std::set<int> curIndexElems(ind.begin(), ind.end());
+        // use a set as a cache for fast lookup
+        std::set<int> curIndexElems(ind.begin(), ind.end());
 
-            // If this relation is used with provenance,
-            // we must expand all search orders to be full indices,
-            // since weak/strong comparators and updaters need this,
-            // and also add provenance annotations to the indices
-            if (isProvenance) {
-                // expand index to be full
-                for (size_t i = 0; i < getArity() - 2; i++) {
-                    if (curIndexElems.find(i) == curIndexElems.end()) {
-                        ind.push_back(i);
-                    }
+        // If this relation is used with provenance,
+        // we must expand all search orders to be full indices,
+        // since weak/strong comparators and updaters need this,
+        // and also add provenance annotations to the indices
+        if (isProvenance) {
+            // expand index to be full
+            for (size_t i = 0; i < getArity() - 2; i++) {
+                if (curIndexElems.find(i) == curIndexElems.end()) {
+                    ind.push_back(i);
                 }
+            }
 
-                // remove any provenance annotations already in the index order
-                if (curIndexElems.find(getArity() - 1) != curIndexElems.end()) {
-                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - 1));
-                }
-
-                if (curIndexElems.find(getArity() - 2) != curIndexElems.end()) {
-                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - 2));
-                }
-
-                // add provenance annotations to the index, but in reverse order
-                ind.push_back(getArity() - 1);
-                ind.push_back(getArity() - 2);
+            // index refers to height parameter before last position and therefore was added for provenance
+            // computation
+            if (curIndexElems.find(getArity() - 1) != curIndexElems.end() &&
+                    ind[ind.size() - 1] != (getArity() - 1)) {
+                provenanceIndexNumbers.insert(index_nr);
             } else {
-                // expand index to be full
-                for (size_t i = 0; i < getArity(); i++) {
-                    if (curIndexElems.find(i) == curIndexElems.end()) {
-                        ind.push_back(i);
-                    }
+                // index was not added for provenance and can therefore be used as master index
+                masterIndex = index_nr;
+            }
+
+            // add provenance annotations to the index but in reverse order
+            // add height if not already contained
+            if (curIndexElems.find(getArity() - 1) == curIndexElems.end()) ind.push_back(getArity() - 1);
+            // remove rule annotation if already in the index order
+            if (curIndexElems.find(getArity() - 2) != curIndexElems.end()) {
+                ind.erase(std::find(ind.begin(), ind.end(), getArity() - 2));
+            }
+            // add rule as last parameter
+            ind.push_back(getArity() - 2);
+
+        } else if (ind.size() < getArity()) {
+            // expand index to be full
+            for (size_t i = 0; i < getArity(); i++) {
+                if (curIndexElems.find(i) == curIndexElems.end()) {
+                    ind.push_back(i);
                 }
             }
         }
+
+        index_nr++;
     }
 
-    masterIndex = 0;
+    if (!isProvenance) {
+        masterIndex = 0;
+    }
+
+    assert(masterIndex >= 0 && masterIndex < inds.size());
 
     computedIndices = inds;
 }
@@ -177,11 +190,18 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
         // for provenance, all indices must be full so we use btree_set
         // also strong/weak comparators and updater methods
         if (isProvenance) {
-            out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);
-            out << ">, std::allocator<t_tuple>, 256, typename "
-                   "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
-            out << join(ind.begin(), ind.end() - 2) << ">, updater_" << getTypeName() << ">;\n";
-
+            if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end()) {  // index for bottom up
+                                                                                   // phase
+                out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);
+                out << ">, std::allocator<t_tuple>, 256, typename "
+                       "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
+                out << join(ind.begin(), ind.end() - 2) << ">, updater_" << getTypeName() << ">;\n";
+            } else {  // index for top down phase
+                out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);
+                out << ">, std::allocator<t_tuple>, 256, typename "
+                       "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
+                out << join(ind.begin(), ind.end()) << ">, updater_" << getTypeName() << ">;\n";
+            }
             // without provenance, some indices may be not full, so we use btree_multiset for those
         } else {
             if (ind.size() == arity) {
@@ -215,7 +235,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "bool insert(const t_tuple& t, context& h) {\n";
     out << "if (ind_" << masterIndex << ".insert(t, h.hints_" << masterIndex << ")) {\n";
     for (size_t i = 0; i < numIndexes; i++) {
-        if (i != masterIndex) {
+        if (i != masterIndex && provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end()) {
             out << "ind_" << i << ".insert(t, h.hints_" << i << ");\n";
         }
     }
@@ -251,7 +271,8 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
     out << "void insertAll(" << getTypeName() << "& other) {\n";
     for (size_t i = 0; i < numIndexes; i++) {
-        out << "ind_" << i << ".insertAll(other.ind_" << i << ");\n";
+        if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end())
+            out << "ind_" << i << ".insertAll(other.ind_" << i << ");\n";
     }
     out << "}\n";  // end of insertAll(relationType& other)
 
@@ -359,6 +380,17 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "iterator end() const {\n";
     out << "return ind_" << masterIndex << ".end();\n";
     out << "}\n";
+
+    // copyIndex method
+    if (!provenanceIndexNumbers.empty()) {
+        out << "void copyIndex() {\n";
+        out << "for (auto const &cur : ind_" << masterIndex << ") {\n";
+        for (auto const i : provenanceIndexNumbers) {
+            out << "ind_" << i << ".insert(cur);\n";
+        }
+        out << "}\n";
+        out << "}\n";
+    }
 
     // printHintStatistics method
     out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";

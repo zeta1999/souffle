@@ -192,26 +192,6 @@ protected:
 private:
     friend LVMProgInterface;
 
-    /** relation environment type */
-    using relation_map = std::vector<std::unique_ptr<LVMRelation>>;
-
-    /** A string to relation map for InterpreterProgInterface */
-    std::map<std::string, LVMRelation*> stringToRel;
-
-    /** Get relation map */
-    virtual std::map<std::string, LVMRelation*>& getRelationMap() override {
-        // TODO(xiaowen): The transformation here is only needed in order to make RAMI and LVM share the same
-        // interface. Later when RAMI is removed, we can have a more elegant interface here.
-        for (auto& relPtr : environment) {
-            // Skip deleted relation
-            if (relPtr == nullptr) {
-                continue;
-            }
-            stringToRel[relPtr->getName()] = relPtr.get();
-        }
-        return stringToRel;
-    }
-
     /** Execute given program
      *
      * @param ip the instruction pointer start position, default is 0.
@@ -233,8 +213,8 @@ private:
     /** List of iters for indexScan operation */
     std::vector<std::pair<index_set::iterator, index_set::iterator>> iteratorPool;
 
-    /** Map from relationName to RamRelationNode in RAM */
-    std::map<std::string, const RamRelation*> relNameToNode;
+    /** Hash map from relationName to RamRelationNode in RAM */
+    std::unordered_map<std::string, const RamRelation*> relNameToNode;
 
     /** stratum */
     size_t level = 0;

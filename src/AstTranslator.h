@@ -280,7 +280,7 @@ private:
 
     /** converts the given relation identifier into a relation name */
     std::string getRelationName(const AstRelationIdentifier& id) {
-        return toString(join(id.getNames(), "."));
+        return id.getName();
     }
 
     void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,

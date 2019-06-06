@@ -22,8 +22,8 @@
 
 .decl Test(x:number)
 .output Test
-Test(x) :- myCompInstance1.TheAnswer(x).
+Test(x) :- myCompInstance1::TheAnswer(x).
 
 .decl Test2(x:number)
 .output Test2
-Test2(x) :- myCompInstance1.TheAnswer2(x).
+Test2(x) :- myCompInstance1::TheAnswer2(x).

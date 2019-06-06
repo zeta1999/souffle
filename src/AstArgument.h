@@ -499,7 +499,7 @@ public:
     }
 
     void print(std::ostream& os) const override {
-        os << "*" << type << "[" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << "]";
+        os << type << "[" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << "]";
     }
 
     /** Creates a clone of this AST sub-structure */

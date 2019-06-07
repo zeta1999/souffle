@@ -30,10 +30,10 @@ class RamAnalysis {
 public:
     virtual ~RamAnalysis() = default;
 
-    /** @brief run analysis for a RAM translation unit */
+    /** @brief Run analysis for a RAM translation unit */
     virtual void run(const RamTranslationUnit& translationUnit) = 0;
 
-    /** @brief print the analysis result in HTML format */
+    /** @brief Print the analysis result in HTML format */
     virtual void print(std::ostream& os) const {}
 
     /** define output stream operator */

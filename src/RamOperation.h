@@ -148,7 +148,9 @@ protected:
 
 /**
  * @class RamRelationOperation
- * @brief Abstract class for relation searches
+ * @brief Abstract class for operations on relations
+ *
+ * One such operation is a for loop
  */
 class RamRelationOperation : public RamTupleOperation {
 public:
@@ -413,7 +415,7 @@ public:
             : RamRelationOperation(std::move(rel), ident, std::move(nested), std::move(profileText)),
               condition(std::move(cond)) {}
 
-    /** Getter for the condition */
+    /** @brief Getter for the condition */
     const RamCondition& getCondition() const {
         assert(condition != nullptr && "condition of choice is a null-pointer");
         return *condition;
@@ -513,7 +515,7 @@ public:
         assert(getRangePattern().size() == getRelation().getArity());
     }
 
-    /** Getter for condition */
+    /** @brief Getter for condition */
     const RamCondition& getCondition() const {
         assert(condition != nullptr && "condition of index-choice is a null-pointer");
         return *condition;
@@ -555,6 +557,7 @@ public:
     }
 
 protected:
+    /** Condition for which a tuple in the relation may hold */
     std::unique_ptr<RamCondition> condition;
 
     bool equal(const RamNode& node) const override {
@@ -566,7 +569,7 @@ protected:
 };
 
 /**
- * @class RamIndexChoice
+ * @class RamParallelIndexChoice
  * @brief Use an index to find a tuple in a relation such that a given condition holds in parallel.
  *
  * For example:
@@ -622,18 +625,18 @@ public:
             std::unique_ptr<RamCondition> condition)
             : function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
-    /** Get condition */
+    /** @brief Get condition */
     const RamCondition& getCondition() const {
         assert(condition != nullptr && "Condition of aggregate is a null-pointer");
         return *condition;
     }
 
-    /** Get aggregation function */
+    /** @brief Get aggregation function */
     AggregateFunction getFunction() const {
         return function;
     }
 
-    /** Get target expression */
+    /** @brief Get target expression */
     const RamExpression& getExpression() const {
         assert(expression != nullptr && "Expression of aggregate is a null-pointer");
         return *expression;

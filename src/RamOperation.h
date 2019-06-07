@@ -195,7 +195,7 @@ protected:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
- *   FOR t0 in A
+ *   FOR t0 IN A
  *     ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -812,7 +812,7 @@ protected:
  * @class RamUnpackRecord
  * @brief Record lookup
  *
- * Looks up a record which can be queried for its arity and elements
+ * Looks up a record with respect to an expression
  *
  * For example:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -33,11 +33,12 @@
 namespace souffle {
 
 /**
- * Abstract class for RAM statements
+ * @class RamStatement
+ * @brief Abstract class for RAM statements
  */
 class RamStatement : public RamNode {
 public:
-    /** Pretty print with indentation */
+    /** @brief Pretty print with indentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
     void print(std::ostream& os) const override {
@@ -48,13 +49,14 @@ public:
 };
 
 /**
- * RAM Statements with a single relation
+ * @class RamRelationStatement
+ * @brief RAM Statements with a single relation
  */
 class RamRelationStatement : public RamStatement {
 public:
     RamRelationStatement(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {}
 
-    /** Get RAM relation */
+    /** @brief Get RAM relation */
     const RamRelation& getRelation() const {
         assert(relationRef != nullptr && "Relation reference is a null-pointer");
         return *relationRef->get();
@@ -80,7 +82,13 @@ protected:
 };
 
 /**
- * Create new RAM relation
+ * @class RamCreate
+ * @brief Create new RAM relation
+ *
+ * The following example creates the relation A:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * CREATE A
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamCreate : public RamRelationStatement {
 public:
@@ -98,20 +106,23 @@ public:
 };
 
 /**
- * Abstract class for load/store for a relation
+ * @class RamAbstractLoadStore
+ * @brief Abstract class for load/store for a relation
+ *
+ * This class represents read/write actions on IO directives
  */
 class RamAbstractLoadStore : public RamRelationStatement {
 public:
     RamAbstractLoadStore(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
             : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
 
-    /** Get load directives */
+    /** @brief Get load directives */
     const std::vector<IODirectives>& getIODirectives() const {
         return ioDirectives;
     }
 
 protected:
-    /** load directives of a relation */
+    /** Load directives of a relation */
     const std::vector<IODirectives> ioDirectives;
 
     bool equal(const RamNode& node) const override {
@@ -122,7 +133,11 @@ protected:
 };
 
 /**
- * Load data into a relation
+ * @class RamLoad
+ * @brief Load data into a relation
+ *
+ * Reads the contents of a relation and stores in a
+ * target relation reference
  */
 class RamLoad : public RamAbstractLoadStore {
 public:
@@ -150,7 +165,10 @@ protected:
 };
 
 /**
- * Store data of a relation
+ * @class RamStore
+ * @brief Store data of a relation
+ *
+ * Outputs the content of a relation reference
  */
 class RamStore : public RamAbstractLoadStore {
 public:

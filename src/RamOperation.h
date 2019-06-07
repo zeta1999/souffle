@@ -263,7 +263,8 @@ public:
 
     /**
      * @brief Get range pattern
-     * @return A std::vector of pointers to RamExpression objects */
+     * @return A std::vector of pointers to RamExpression objects
+     */
     std::vector<RamExpression*> getRangePattern() const {
         return toPtrVector(queryPattern);
     }
@@ -412,7 +413,7 @@ public:
             : RamRelationOperation(std::move(rel), ident, std::move(nested), std::move(profileText)),
               condition(std::move(cond)) {}
 
-    /** get condition */
+    /** Getter for the condition */
     const RamCondition& getCondition() const {
         assert(condition != nullptr && "condition of choice is a null-pointer");
         return *condition;
@@ -443,6 +444,7 @@ public:
     }
 
 protected:
+    /** Condition for which a tuple in the relation may hold */
     std::unique_ptr<RamCondition> condition;
 
     bool equal(const RamNode& node) const override {
@@ -453,7 +455,16 @@ protected:
 };
 
 /**
- * Find a tuple in a relation such that a given condition holds.
+ * @class ParallelRamChoice
+ * @brief Find a tuple in a relation such that a given condition holds in parallel.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    PARALLEL CHOICE t1 IN A WHERE (t1.x, t1.y) NOT IN A
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallelChoice : public RamChoice, public RamAbstractParallel {
 public:
@@ -479,7 +490,8 @@ public:
 };
 
 /**
- * Use an index to find a tuple in a relation such that a given condition holds.
+ * @class RamIndexChoice
+ * @brief Use an index to find a tuple in a relation such that a given condition holds.
  *
  * For example:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -501,7 +513,7 @@ public:
         assert(getRangePattern().size() == getRelation().getArity());
     }
 
-    /** get condition */
+    /** Getter for condition */
     const RamCondition& getCondition() const {
         assert(condition != nullptr && "condition of index-choice is a null-pointer");
         return *condition;
@@ -554,7 +566,17 @@ protected:
 };
 
 /**
- * Use an index to find a tuple in a relation such that a given condition holds.
+ * @class RamIndexChoice
+ * @brief Use an index to find a tuple in a relation such that a given condition holds in parallel.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    PARALLEL CHOICE A AS t1 ON INDEX t1.x=10 AND t1.y = 20
+ *    WHERE (t1.x, t1.y) NOT IN A
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallelIndexChoice : public RamIndexChoice, public RamAbstractParallel {
 public:
@@ -591,7 +613,8 @@ public:
 enum AggregateFunction { MAX, MIN, COUNT, SUM };
 
 /**
- * Abstract class for aggregation
+ * @class RamAbstractAggregate
+ * @brief Abstract class for aggregation
  */
 class RamAbstractAggregate {
 public:

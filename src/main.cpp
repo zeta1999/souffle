@@ -534,7 +534,7 @@ int main(int argc, char** argv) {
         }
 
         // configure and execute interpreter
-        if (Global::config().get("Interpreter") == "LVM") {
+        if (Global::config().get("interpreter") == "LVM") {
             std::unique_ptr<LVMInterface> lvm(std::make_unique<LVM>(*ramTranslationUnit));
             lvm->executeMain();
             // If the profiler was started, join back here once it exits.

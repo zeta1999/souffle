@@ -32,9 +32,9 @@ namespace souffle {
 class LVMRelation {
     using LexOrder = std::vector<int>;
 
+public:
     using iterator = LVMIndex::iterator;
 
-public:
     LVMRelation(size_t relArity, const MinIndexSelection* orderSet, std::string& relName,
             std::vector<std::string>& attributeTypes)
             : arity(relArity), orderSet(orderSet), relName(relName), attributeTypeQualifiers(attributeTypes) {
@@ -119,11 +119,11 @@ protected:
     /** IndexSet */
     const MinIndexSelection* orderSet;
 
-    /** Type of attributes */
-    std::vector<std::string> attributeTypeQualifiers;
-
     /** Relation name */
     const std::string relName;
+
+    /** Type of attributes */
+    std::vector<std::string> attributeTypeQualifiers;
 };
 
 /**

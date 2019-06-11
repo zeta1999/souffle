@@ -334,7 +334,7 @@ public:
             }
         }
         for (const auto* newTuple : newTuples) {
-            LVMRelation::insert(newTuple);
+            LVMIndirectRelation::insert(newTuple);
             delete[] newTuple;
         }
     }

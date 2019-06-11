@@ -65,7 +65,7 @@ public:
     }
 
     /** Get arity of relation */
-    virtual size_t getArity() const {
+    size_t getArity() const {
         return arity;
     }
 
@@ -263,6 +263,106 @@ private:
 
     /** List of indices */
     mutable std::vector<LVMIndex> indices;
+};
+
+/**
+ * Interpreter Nullary relation
+ */
+
+class LVMNullaryRelation : LVMRelation {
+public:
+    LVMNullaryRelation(std::string relName, std::vector<std::string>& attributeTypes)
+            : LVMRelation(0, nullptr, relName, attributeTypes) {}
+
+    /** Insert tuple into nullary relation */
+    void insert(const RamDomain* tuple) override {
+        inserted = true;
+    }
+
+    /** Merge another relation into this relation */
+    void insert(const LVMRelation& other) override {
+        if (!other.empty()) {
+            inserted = true;
+        }
+    }
+
+    /** Size of nullary is either 0 or 1 */
+    size_t size() {
+        return inserted == true ? 1 : 0;
+    }
+
+    bool empty() {
+        return !inserted;
+    }
+
+    /** Purge table */
+    void purge() override {
+        inserted = false;
+    }
+
+    /** check whether a tuple exists in the relation */
+    virtual bool exists(const RamDomain* tuple) const override {
+        return inserted;
+    }
+
+    /** Special iterator type for nullary relation */
+    class nullaryIterator : public iterator {
+    public:
+        /** Create default end iterator */
+        nullaryIterator() : iterator() {}
+
+        nullaryIterator(const LVMNullaryRelation* const rel)
+                : tuple(rel->inserted == true ? reinterpret_cast<RamDomain*>(this) : nullptr) {}
+
+        bool operator==(const nullaryIterator& other) {
+            return tuple == other.tuple;
+        }
+
+        bool operator!=(const nullaryIterator& other) {
+            return tuple != other.tuple;
+        }
+
+        nullaryIterator& operator++() {
+            tuple = nullptr;
+            return *this;
+        }
+
+    private:
+        RamDomain* tuple = nullptr;
+    };
+
+    /** Iterator for relation, uses full-order index as default */
+    iterator begin() const override {
+        return nullaryIterator(this);
+    }
+
+    iterator end() const override {
+        return nullaryIterator();
+    }
+
+    /** Return range iterator */
+    std::pair<iterator, iterator> lowerUpperBound(
+            const RamDomain* low, const RamDomain* high, size_t indexPosition) const override {
+        assert("No suppose to call lowerUpperBound on nullary relation\n");
+        return std::make_pair(begin(), end());
+    }
+
+    /** Extend tuple */
+    std::vector<RamDomain*> extend(const RamDomain* tuple) override {
+        std::vector<RamDomain*> newTuples;
+
+        // A standard relation does not generate extra new knowledge on insertion.
+        newTuples.push_back(new RamDomain[2]{tuple[0], tuple[1]});
+
+        return newTuples;
+    }
+
+    /** Extend relation */
+    void extend(const LVMRelation& rel) override {}
+
+private:
+    /** Nullary can hold only one tuple */
+    bool inserted = false;
 };
 
 /**

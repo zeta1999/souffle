@@ -152,13 +152,6 @@ public:
             return;
         }
 
-        // check for null-arity
-        if (arity == 0) {
-            indices[0].insert(tuple);
-            num_tuples = 1;
-            return;
-        }
-
         int blockIndex = num_tuples / (BLOCK_SIZE / arity);
         int tupleIndex = (num_tuples % (BLOCK_SIZE / arity)) * arity;
 
@@ -235,7 +228,7 @@ public:
     /** get index for a given search signature. Order are encoded as bits for each column */
     LVMIndex* getIndex(const SearchSignature& col) const {
         // Special case in provenance program, a 0 searchSignature is considered as a full search
-        if (col == 0 && arity != 0) {
+        if (col == 0) {
             return getIndex(getTotalIndexKey());
         }
         return getIndexByPos(orderSet->getLexOrderNum(col));

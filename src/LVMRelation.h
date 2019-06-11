@@ -29,60 +29,116 @@
 
 namespace souffle {
 
-/**
- * Interpreter Relation
- */
 class LVMRelation {
     using LexOrder = std::vector<int>;
 
+    using iterator = LVMIndex::iterator;
+
 public:
-    LVMRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
-            : arity(relArity), orderSet(orderSet), relName(std::move(relName)) {
-        // Create all necessary indices based on orderSet
-        for (auto& order : orderSet->getAllOrders()) {
-            indices.push_back(LVMIndex(order));
-        }
+    LVMRelation(size_t relArity, const MinIndexSelection* orderSet, std::string& relName,
+            std::vector<std::string>& attributeTypes)
+            : arity(relArity), orderSet(orderSet), relName(relName), attributeTypeQualifiers(attributeTypes) {
     }
 
     LVMRelation(const LVMRelation& other) = delete;
 
     virtual ~LVMRelation() = default;
 
-    /** Set AttributeType for the relation */
-    void setAttributes(const std::vector<std::string> attributeTypes) {
-        attributeTypeQualifiers = attributeTypes;
-    }
-
     /** Get AttributeType for the relation */
     std::vector<std::string>& getAttributeTypeQualifiers() {
         return attributeTypeQualifiers;
     }
 
+    /** Return relation name */
     const std::string& getName() const {
         return relName;
     }
 
-    std::string getName() {
-        return relName;
-    }
-
     /** Get arity of relation */
-    size_t getArity() const {
+    virtual size_t getArity() const {
         return arity;
     }
 
-    /** Check whether relation is empty */
-    bool empty() const {
-        return num_tuples == 0;
-    }
-
     /** Gets the number of contained tuples */
-    size_t size() const {
+    virtual size_t size() const {
         return num_tuples;
     }
 
+    /** Check whether relation is empty */
+    virtual bool empty() const {
+        return num_tuples == 0;
+    }
+
     /** Insert tuple */
-    virtual void insert(const RamDomain* tuple) {
+    virtual void insert(const RamDomain* tuple) = 0;
+
+    /** Merge another relation into this relation */
+    virtual void insert(const LVMRelation& other) = 0;
+
+    /** Purge table */
+    virtual void purge() = 0;
+
+    /** check whether a tuple exists in the relation */
+    virtual bool exists(const RamDomain* tuple) const = 0;
+
+    /** Iterator for relation, uses full-order index as default */
+    virtual iterator begin() const = 0;
+
+    virtual iterator end() const = 0;
+
+    /** Return range iterator */
+    virtual std::pair<iterator, iterator> lowerUpperBound(
+            const RamDomain* low, const RamDomain* high, size_t indexPosition) = 0;
+
+    /** Extend tuple */
+    virtual std::vector<RamDomain*> extend(const RamDomain* tuple) = 0;
+
+    /** Extend relation */
+    virtual void extend(const LVMRelation& rel) = 0;
+
+protected:
+    /** Arity of relation */
+    const size_t arity;
+
+    /** Number of tuples in relation */
+    size_t num_tuples = 0;
+
+    /** List of indices */
+    mutable std::vector<LVMIndex> indices;
+
+    /** IndexSet */
+    const MinIndexSelection* orderSet;
+
+    /** Type of attributes */
+    std::vector<std::string> attributeTypeQualifiers;
+
+    /** Relation name */
+    const std::string relName;
+};
+
+/**
+ * Interpreter Relation
+ */
+class LVMIndirectRelation : public LVMRelation {
+    using LexOrder = std::vector<int>;
+
+    using iterator = LVMIndex::iterator;
+
+public:
+    LVMIndirectRelation(size_t relArity, const MinIndexSelection* orderSet, std::string& relName,
+            std::vector<std::string>& attributeTypes)
+            : LVMRelation(relArity, orderSet, relName, attributeTypes) {
+        for (auto& order : orderSet->getAllOrders()) {
+            indices.push_back(LVMIndex(order));
+        }
+    }
+
+    LVMIndirectRelation(const LVMRelation& other) = delete;
+
+    virtual ~LVMIndirectRelation() = default;
+
+    /** Insert tuple */
+    virtual void insert(const RamDomain* tuple) override {
         assert(tuple);
 
         // make existence check
@@ -119,7 +175,7 @@ public:
     }
 
     /** Merge another relation into this relation */
-    void insert(const LVMRelation& other) {
+    virtual void insert(const LVMRelation& other) override {
         assert(getArity() == other.getArity());
         for (const auto& cur : other) {
             insert(cur);
@@ -127,13 +183,48 @@ public:
     }
 
     /** Purge table */
-    void purge() {
+    virtual void purge() override {
         blockList.clear();
         for (auto& cur : indices) {
             cur.purge();
         }
         num_tuples = 0;
     }
+
+    /** check whether a tuple exists in the relation */
+    virtual bool exists(const RamDomain* tuple) const override {
+        LVMIndex* index = getIndex(getTotalIndexKey());
+        return index->exists(tuple);
+    }
+
+    /** Iterator for relation, uses full-order index as default */
+    virtual iterator begin() const override {
+        return indices[0].begin();
+    }
+
+    virtual iterator end() const override {
+        return indices[0].end();
+    }
+
+    /** Return range iterator */
+    virtual std::pair<iterator, iterator> lowerUpperBound(
+            const RamDomain* low, const RamDomain* high, size_t indexPosition) override {
+        auto idx = this->getIndexByPos(indexPosition);
+        return idx->lowerUpperBound(low, high);
+    }
+
+    /** Extend tuple */
+    virtual std::vector<RamDomain*> extend(const RamDomain* tuple) override {
+        std::vector<RamDomain*> newTuples;
+
+        // A standard relation does not generate extra new knowledge on insertion.
+        newTuples.push_back(new RamDomain[2]{tuple[0], tuple[1]});
+
+        return newTuples;
+    }
+
+    /** Extend relation */
+    virtual void extend(const LVMRelation& rel) override {}
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     LVMIndex* getIndex(const SearchSignature& col) const {
@@ -154,83 +245,21 @@ public:
         return (1 << (getArity())) - 1;
     }
 
-    /** check whether a tuple exists in the relation */
-    bool exists(const RamDomain* tuple) const {
-        LVMIndex* index = getIndex(getTotalIndexKey());
-        return index->exists(tuple);
-    }
-
-    void setLevel(size_t level) {
-        this->level = level;
-    }
-
-    size_t getLevel() {
-        return this->level;
-    }
-
-    using iterator = LVMIndex::iterator;
-
-    /** Iterator for relation, uses full-order index as default */
-    iterator begin() const {
-        return indices[0].begin();
-    }
-
-    iterator end() const {
-        return indices[0].end();
-    }
-
-    /** Extend tuple */
-    virtual std::vector<RamDomain*> extend(const RamDomain* tuple) {
-        std::vector<RamDomain*> newTuples;
-
-        // A standard relation does not generate extra new knowledge on insertion.
-        newTuples.push_back(new RamDomain[2]{tuple[0], tuple[1]});
-
-        return newTuples;
-    }
-
-    /** Extend relation */
-    virtual void extend(const LVMRelation& rel) {}
-
 private:
-    /** Arity of relation */
-    const size_t arity;
-
     /** Size of blocks containing tuples */
     static const int BLOCK_SIZE = 1024;
 
-    /** Number of tuples in relation */
-    size_t num_tuples = 0;
-
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
-
-    /** List of indices */
-    mutable std::vector<LVMIndex> indices;
-
-    /** IndexSet */
-    const MinIndexSelection* orderSet;
-
-    /** Lock for parallel execution */
-    mutable Lock lock;
-
-    /** Type of attributes */
-    std::vector<std::string> attributeTypeQualifiers;
-
-    /** Stratum level information */
-    size_t level = 0;
-
-    /** Relation name */
-    const std::string relName;
 };
 
 /**
  * Interpreter Equivalence Relation
  */
 
-class LVMEqRelation : public LVMRelation {
+class LVMEqRelation : public LVMIndirectRelation {
 public:
-    LVMEqRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
-            : LVMRelation(relArity, orderSet, relName) {}
+    LVMEqRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName, std::vector<std::string>& attributeTypes)
+            : LVMIndirectRelation(relArity, orderSet, relName, attributeTypes) {}
 
     /** Insert tuple */
     void insert(const RamDomain* tuple) override {

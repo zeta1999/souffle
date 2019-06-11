@@ -57,7 +57,7 @@ public:
     /** Set relation level */
     void setLevel(size_t level) {
         this->level = level;
-    } 
+    }
 
     /** Get relation level */
     size_t getLevel() {
@@ -98,7 +98,7 @@ public:
 
     /** Return range iterator */
     virtual std::pair<iterator, iterator> lowerUpperBound(
-            const RamDomain* low, const RamDomain* high, size_t indexPosition) = 0;
+            const RamDomain* low, const RamDomain* high, size_t indexPosition) const = 0;
 
     /** Extend tuple */
     virtual std::vector<RamDomain*> extend(const RamDomain* tuple) = 0;
@@ -109,14 +109,12 @@ public:
 protected:
     /** Relation level */
     size_t level;
+
     /** Arity of relation */
     const size_t arity;
 
     /** Number of tuples in relation */
     size_t num_tuples = 0;
-
-    /** List of indices */
-    mutable std::vector<LVMIndex> indices;
 
     /** IndexSet */
     const MinIndexSelection* orderSet;
@@ -220,7 +218,7 @@ public:
 
     /** Return range iterator */
     virtual std::pair<iterator, iterator> lowerUpperBound(
-            const RamDomain* low, const RamDomain* high, size_t indexPosition) override {
+            const RamDomain* low, const RamDomain* high, size_t indexPosition) const override {
         auto idx = this->getIndexByPos(indexPosition);
         return idx->lowerUpperBound(low, high);
     }
@@ -262,6 +260,9 @@ private:
     static const int BLOCK_SIZE = 1024;
 
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
+
+    /** List of indices */
+    mutable std::vector<LVMIndex> indices;
 };
 
 /**
@@ -270,7 +271,8 @@ private:
 
 class LVMEqRelation : public LVMIndirectRelation {
 public:
-    LVMEqRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName, std::vector<std::string>& attributeTypes)
+    LVMEqRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName,
+            std::vector<std::string>& attributeTypes)
             : LVMIndirectRelation(relArity, orderSet, relName, attributeTypes) {}
 
     /** Insert tuple */

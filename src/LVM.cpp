@@ -604,8 +604,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                     }
 
-                    auto idx = rel.getIndexByPos(indexPos);
-                    auto range = idx->lowerUpperBound(low, high);
+                    auto range = rel.lowerUpperBound(low, high, indexPos);
 
                     stack.push(range.first != range.second);
                     ip += 4;
@@ -641,8 +640,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 high[arity - 2] = MAX_RAM_DOMAIN;
                 high[arity - 1] = MAX_RAM_DOMAIN;
 
-                auto idx = rel.getIndexByPos(indexPos);
-                auto range = idx->lowerUpperBound(low, high);
+                auto range = rel.lowerUpperBound(low, high, indexPos);
                 stack.push(range.first != range.second);
                 ip += 4;
                 break;
@@ -844,7 +842,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 if (code[ip + 3] == LVM_EQREL) {
                     res = std::make_unique<LVMEqRelation>(arity, &orderSet, relName, attributeTypes);
                 } else {
-                    res = std::make_unique<LVMRelation>(arity, &orderSet, relName, attributeTypes);
+                    res = std::make_unique<LVMIndirectRelation>(arity, &orderSet, relName, attributeTypes);
                 }
 
                 res->setLevel(level);
@@ -1003,8 +1001,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             case LVM_ITER_InitFullIndex: {
                 RamDomain dest = code[ip + 1];
                 size_t relId = code[ip + 2];
-                auto index = getRelation(relId)->getIndexByPos(0);  // Use the first order in the relation.
-                lookUpIterator(dest) = index->getIteratorPair();
+                const auto& relPtr = getRelation(relId);
+                auto iterPairs = std::make_pair(relPtr->begin(), relPtr->end());
+                lookUpIterator(dest) = iterPairs;
                 ip += 3;
                 break;
             };
@@ -1030,10 +1029,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     }
                 }
 
-                auto index = relPtr->getIndexByPos(indexPos);
-
                 // get iterator range
-                lookUpIterator(dest) = index->lowerUpperBound(low, hig);
+                lookUpIterator(dest) = relPtr->lowerUpperBound(low, hig, indexPos);
                 ip += 5;
                 break;
             };

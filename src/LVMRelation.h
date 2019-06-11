@@ -108,7 +108,7 @@ public:
 
 protected:
     /** Relation level */
-    size_t level;
+    size_t level = 0;
 
     /** Arity of relation */
     const size_t arity;
@@ -140,7 +140,7 @@ public:
     }
 
     /** Insert tuple */
-    virtual void insert(const RamDomain* tuple) override {
+    void insert(const RamDomain* tuple) override {
         assert(tuple);
 
         // make existence check
@@ -170,7 +170,7 @@ public:
     }
 
     /** Merge another relation into this relation */
-    virtual void insert(const LVMRelation& other) override {
+    void insert(const LVMRelation& other) override {
         assert(getArity() == other.getArity());
         for (const auto& cur : other) {
             insert(cur);
@@ -178,7 +178,7 @@ public:
     }
 
     /** Purge table */
-    virtual void purge() override {
+    void purge() override {
         blockList.clear();
         for (auto& cur : indices) {
             cur.purge();
@@ -187,29 +187,29 @@ public:
     }
 
     /** check whether a tuple exists in the relation */
-    virtual bool exists(const RamDomain* tuple) const override {
+    bool exists(const RamDomain* tuple) const override {
         LVMIndex* index = getIndex(getTotalIndexKey());
         return index->exists(tuple);
     }
 
     /** Iterator for relation, uses full-order index as default */
-    virtual iterator begin() const override {
+    iterator begin() const override {
         return indices[0].begin();
     }
 
-    virtual iterator end() const override {
+    iterator end() const override {
         return indices[0].end();
     }
 
     /** Return range iterator */
-    virtual std::pair<iterator, iterator> lowerUpperBound(
+    std::pair<iterator, iterator> lowerUpperBound(
             const RamDomain* low, const RamDomain* high, size_t indexPosition) const override {
         auto idx = this->getIndexByPos(indexPosition);
         return idx->lowerUpperBound(low, high);
     }
 
     /** Extend tuple */
-    virtual std::vector<RamDomain*> extend(const RamDomain* tuple) override {
+    std::vector<RamDomain*> extend(const RamDomain* tuple) override {
         std::vector<RamDomain*> newTuples;
 
         // A standard relation does not generate extra new knowledge on insertion.
@@ -219,7 +219,7 @@ public:
     }
 
     /** Extend relation */
-    virtual void extend(const LVMRelation& rel) override {}
+    void extend(const LVMRelation& rel) override {}
 
     /** get index for a given search signature. Order are encoded as bits for each column */
     LVMIndex* getIndex(const SearchSignature& col) const {

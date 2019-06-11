@@ -139,10 +139,6 @@ public:
         }
     }
 
-    LVMIndirectRelation(const LVMRelation& other) = delete;
-
-    virtual ~LVMIndirectRelation() = default;
-
     /** Insert tuple */
     virtual void insert(const RamDomain* tuple) override {
         assert(tuple);
@@ -309,7 +305,6 @@ public:
     /** Return range iterator */
     std::pair<iterator, iterator> lowerUpperBound(
             const RamDomain* low, const RamDomain* high, size_t indexPosition) const override {
-        assert("No suppose to call lowerUpperBound on nullary relation\n");
         return std::make_pair(begin(), end());
     }
 

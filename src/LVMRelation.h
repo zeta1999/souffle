@@ -290,7 +290,7 @@ public:
         // ):
 
         for (auto* newTuple : extend(tuple)) {
-            LVMRelation::insert(newTuple);
+            LVMIndirectRelation::insert(newTuple);
             delete[] newTuple;
         }
     }

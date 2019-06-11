@@ -178,6 +178,16 @@ public:
         return false;
     }
 
+    /** Get number of height parameters, i.e. maximum number of premises */
+    size_t numberOfHeightParameters() const {
+		size_t maxNrOfPremises = 0;
+		for (auto& cur : clauses) {
+			if(cur->getBodySize() > maxNrOfPremises)
+				maxNrOfPremises = cur->getBodySize();
+		}
+		return maxNrOfPremises;
+	}
+
     /** Operator overload, calls print if reference is given */
     friend std::ostream& operator<<(std::ostream& os, const AstRelation& rel) {
         rel.print(os);

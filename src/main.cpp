@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
                         "Use profile log-file <FILE> for profile-guided optimization."},
                 {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
                 {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
-                {"provenance", 't', "[ none | explain | explore ]", "", false,
+                {"provenance", 't', "[ none | explain | explore | subtreeHeights ]", "", false,
                         "Enable provenance instrumentation and interaction."},
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
@@ -544,7 +544,7 @@ int main(int argc, char** argv) {
             // only run explain interface if interpreted
             if (Global::config().has("provenance")) {
                 LVMProgInterface interface(*lvm);
-                if (Global::config().get("provenance") == "explain") {
+                if (Global::config().get("provenance") == "explain" || Global::config().get("provenance") == "subtreeHeights") {
                     explain(interface, false);
                 } else if (Global::config().get("provenance") == "explore") {
                     explain(interface, true);
@@ -560,7 +560,7 @@ int main(int argc, char** argv) {
             // only run explain interface if interpreted
             if (Global::config().has("provenance")) {
                 RAMIProgInterface interface(*rami);
-                if (Global::config().get("provenance") == "explain") {
+                if (Global::config().get("provenance") == "explain"|| Global::config().get("provenance") == "subtreeHeights") {
                     explain(interface, false);
                 } else if (Global::config().get("provenance") == "explore") {
                     explain(interface, true);

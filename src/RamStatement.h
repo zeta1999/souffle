@@ -196,7 +196,15 @@ protected:
 };
 
 /**
- * Delete tuples of a relation
+ * @class RamClear
+ * @brief Delete tuples of a relation
+ *
+ * This retains the target relation, but cleans its content
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * CLEAR A
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamClear : public RamRelationStatement {
 public:
@@ -216,7 +224,13 @@ public:
 };
 
 /**
- * Drop relation, i.e., delete it from memory
+ * @class RamDrop
+ * @brief Drop relation, i.e., delete it from memory
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * DROP A
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamDrop : public RamRelationStatement {
 public:
@@ -235,7 +249,10 @@ public:
 };
 
 /**
- * Binary relation
+ * @class RamBinRelationStatement
+ * @brief Abstract class for a binary relation
+ *
+ * Comprises two RamRelations
  */
 class RamBinRelationStatement : public RamStatement {
 public:
@@ -248,13 +265,13 @@ public:
         }
     }
 
-    /** Get first relation */
+    /** @brief Get first relation */
     const RamRelation& getFirstRelation() const {
         assert(first != nullptr && "First relation is a null-pointer");
         return *first->get();
     }
 
-    /** Get second relation */
+    /** @brief Get second relation */
     const RamRelation& getSecondRelation() const {
         assert(second != nullptr && "Second relation is a null-pointer");
         return *second->get();
@@ -270,10 +287,10 @@ public:
     }
 
 protected:
-    /** first argument of swap statement */
+    /** first argument of binary statement */
     std::unique_ptr<RamRelationReference> first;
 
-    /** second argument of swap statement */
+    /** second argument of binary statement */
     std::unique_ptr<RamRelationReference> second;
 
     bool equal(const RamNode& node) const override {
@@ -285,8 +302,15 @@ protected:
 };
 
 /**
- * Merge tuples from a source into target relation.
+ * @class RamMerge
+ * @brief Merge tuples from a source into target relation.
+ *
  * Note that semantically uniqueness of tuples is not checked.
+ *
+ * The following example merges A into B:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MERGE B WITH A
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamMerge : public RamBinRelationStatement {
 public:
@@ -322,7 +346,15 @@ protected:
 };
 
 /**
- * Swap operation two relations
+ * @class RamSwap
+ * @brief Swap operation with respect to two relations
+ *
+ * Swaps the contents of the two relations
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * SWAP(A, B)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamSwap : public RamBinRelationStatement {
 public:
@@ -347,14 +379,21 @@ protected:
 };
 
 /**
- * Insert a fact into a relation
+ * @class RamFact
+ * @brief Insert a fact into a relation
+ *
+ * For example, inserting the number 100 into the
+ * relation lim:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * INSERT (number(100)) INTO lim
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamFact : public RamRelationStatement {
 public:
     RamFact(std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>>&& v)
             : RamRelationStatement(std::move(relRef)), values(std::move(v)) {}
 
-    /** Get arguments of fact */
+    /** @brief Get arguments of fact */
     std::vector<RamExpression*> getValues() const {
         return toPtrVector(values);
     }
@@ -401,13 +440,24 @@ protected:
 };
 
 /**
- * A relational algebra query
+ * @class RamQuery
+ * @brief A relational algebra query
+ *
+ * Corresponds to the core machinery of semi-naive evaluation
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * QUERY
+ *   FOR t0 in A
+ *     FOR t1 in B
+ *       ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamQuery : public RamStatement {
 public:
     RamQuery(std::unique_ptr<RamOperation> o) : operation(std::move(o)) {}
 
-    /** Get RAM operation */
+    /** @brief Get RAM operation */
     const RamOperation& getOperation() const {
         assert(operation);
         return *operation;
@@ -442,18 +492,19 @@ protected:
 };
 
 /**
- * List of RAM statements
+ * @class RamListStatement
+ * @brief Abstract class for a list of RAM statements
  */
 class RamListStatement : public RamStatement {
 public:
     RamListStatement() : RamStatement() {}
 
-    /** Get statements */
+    /** @brief Get statements */
     std::vector<RamStatement*> getStatements() const {
         return toPtrVector(statements);
     }
 
-    /** Add new statement to block */
+    /** @brief Add new statement to the block */
     void add(std::unique_ptr<RamStatement> stmt) {
         if (stmt) {
             statements.push_back(std::move(stmt));
@@ -486,7 +537,8 @@ protected:
 };
 
 /**
- * Sequence of RAM statements
+ * @class RamSequence
+ * @brief Sequence of RAM statements
  *
  * Execute statement one by one from an ordered list of statements.
  */
@@ -528,11 +580,21 @@ protected:
 };
 
 /**
- * Parallel block
+ * @class RamParallel
+ * @brief Parallel block of statements
  *
  * Execute statements in parallel and wait until all statements have
  * completed their execution before completing the execution of the
  * parallel block.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * PARALLEL
+ *   BEGIN DEBUG...
+ *     QUERY
+ *       ...
+ * END PARALLEL
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallel : public RamListStatement {
 public:
@@ -561,9 +623,17 @@ protected:
 };
 
 /**
- * Statement loop
+ * @class RamLoop
+ * @brief Execute statement until statement terminates loop via an exit statement
  *
- * Execute the statement repeatedly until statement terminates loop via an exit statement
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * LOOP
+ *   PARALLEL
+ *     ...
+ *   END PARALLEL
+ * END LOOP
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamLoop : public RamStatement {
 public:
@@ -573,7 +643,7 @@ public:
     RamLoop(std::unique_ptr<RamStatement> f, std::unique_ptr<RamStatement> s, std::unique_ptr<Stmts>... rest)
             : body(std::make_unique<RamSequence>(std::move(f), std::move(s), std::move(rest)...)) {}
 
-    /** Get loop body */
+    /** @brief Get loop body */
     const RamStatement& getBody() const {
         assert(body != nullptr && "Loop body is a null-pointer");
         return *body;
@@ -609,15 +679,22 @@ protected:
 };
 
 /**
- * Exit statement for a loop
+ * @class RamExit
+ * @brief Exit statement for a loop
  *
  * Exits a loop if exit condition holds.
+ *
+ * The following example will exit the loop given
+ * that A is the empty set:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * EXIT (A = ∅)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamExit : public RamStatement {
 public:
     RamExit(std::unique_ptr<RamCondition> c) : condition(std::move(c)) {}
 
-    /** Get exit condition */
+    /** @brief Get exit condition */
     const RamCondition& getCondition() const {
         assert(condition);
         return *condition;
@@ -651,13 +728,21 @@ protected:
 };
 
 /**
- * Execution time logger for a statement
+ * @class RamLogRelationTimer
+ * @brief Execution time logger for a statement
  *
  * Logs the execution time of a statement. Before and after
  * the execution of the logging statement the wall-clock time
  * is taken to compute the time duration for the statement.
  * Duration and logging message is printed after the execution
  * of the statement.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * START_TIMER ON A "file.dl [8:1-8:8]\;"
+ *   ...
+ * END_TIMER
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamLogRelationTimer : public RamRelationStatement {
 public:
@@ -665,12 +750,12 @@ public:
             std::unique_ptr<RamStatement> stmt, std::string msg, std::unique_ptr<RamRelationReference> relRef)
             : RamRelationStatement(std::move(relRef)), statement(std::move(stmt)), message(std::move(msg)) {}
 
-    /** get logging message */
+    /** @brief Get logging message */
     const std::string& getMessage() const {
         return message;
     }
 
-    /** get logging statement */
+    /** @brief Get logging statement */
     const RamStatement& getStatement() const {
         assert(statement);
         return *statement;
@@ -715,13 +800,23 @@ protected:
 };
 
 /**
- * Execution time logger for a statement
+ * @class RamLogTimer
+ * @brief Execution time logger for a statement
  *
  * Logs the execution time of a statement. Before and after
  * the execution of the logging statement the wall-clock time
  * is taken to compute the time duration for the statement.
  * Duration and logging message is printed after the execution
  * of the statement.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * START_TIMER "@runtime\;"
+ *   BEGIN_STRATUM 0
+ *     ...
+ *   ...
+ * END_TIMER
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamLogTimer : public RamStatement {
 public:
@@ -730,12 +825,12 @@ public:
         assert(statement);
     }
 
-    /** get logging message */
+    /** @brief Get logging message */
     const std::string& getMessage() const {
         return message;
     }
 
-    /** get logging statement */
+    /** @brief Get logging statement */
     const RamStatement& getStatement() const {
         assert(statement);
         return *statement;
@@ -777,7 +872,15 @@ protected:
 };
 
 /**
- * Debug statement
+ * @class RamDebugInfo
+ * @brief Debug statement
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * BEGIN_DEBUG "gen(1) \nin file /file.dl [7:7-7:10]\;"
+ *   ...
+ * END_DEBUG
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamDebugInfo : public RamStatement {
 public:
@@ -786,12 +889,12 @@ public:
         assert(statement);
     }
 
-    /** Get debugging message */
+    /** @brief Get debugging message */
     const std::string& getMessage() const {
         return message;
     }
 
-    /** Get debugging statement */
+    /** @brief Get debugging statement */
     const RamStatement& getStatement() const {
         assert(statement);
         return *statement;
@@ -830,21 +933,31 @@ protected:
 };
 
 /**
- * Stratum statement
+ * @class RamStratum
+ * @brief Stratum statement
  *
- * Wrap strata of program
+ * Wrap strata of program, corresponding to
+ * an iteration in the semi-naive evaluation
+ *
+ * The following example denotes the
+ * execution of stratum 0:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * BEGIN_STRATUM 0
+ *   ...
+ * END_STRATUM 0
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamStratum : public RamStatement {
 public:
     RamStratum(std::unique_ptr<RamStatement> b, const int i) : body(std::move(b)), index(i) {}
 
-    /** Get stratum body */
+    /** @brief Get stratum body */
     const RamStatement& getBody() const {
         assert(body != nullptr && "Body of stratum is a null-pointer");
         return *body;
     }
 
-    /** Get stratum index */
+    /** @brief Get stratum index */
     const int getIndex() const {
         return index;
     }
@@ -884,14 +997,15 @@ protected:
 };
 
 /**
- *  Log relation size and a logging message.
+ * @class RamLogSize
+ * @brief Log relation size and a logging message.
  */
 class RamLogSize : public RamRelationStatement {
 public:
     RamLogSize(std::unique_ptr<RamRelationReference> relRef, std::string message)
             : RamRelationStatement(std::move(relRef)), message(std::move(message)) {}
 
-    /** Get logging message */
+    /** @brief Get logging message */
     const std::string& getMessage() const {
         return message;
     }

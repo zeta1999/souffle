@@ -54,6 +54,16 @@ public:
         return relName;
     }
 
+    /** Set relation level */
+    void setLevel(size_t level) {
+        this->level = level;
+    } 
+
+    /** Get relation level */
+    size_t getLevel() {
+        return level;
+    }
+
     /** Get arity of relation */
     virtual size_t getArity() const {
         return arity;
@@ -97,6 +107,8 @@ public:
     virtual void extend(const LVMRelation& rel) = 0;
 
 protected:
+    /** Relation level */
+    size_t level;
     /** Arity of relation */
     const size_t arity;
 

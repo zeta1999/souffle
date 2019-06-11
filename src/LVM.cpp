@@ -833,19 +833,20 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 std::string relName = relationEncoder.decodeRelation(relId);
                 auto arity = code[ip + 2];
 
-                // Obtain the orderSet for this relation
-                const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
-
-                if (code[ip + 3] == LVM_EQREL) {
-                    res = std::make_unique<LVMEqRelation>(arity, &orderSet, relName);
-                } else {
-                    res = std::make_unique<LVMRelation>(arity, &orderSet, relName);
-                }
                 std::vector<std::string> attributeTypes;
                 for (int i = 0; i < code[ip + 2]; ++i) {
                     attributeTypes.push_back(symbolTable.resolve(code[ip + 4 + i]));
                 }
-                res->setAttributes(attributeTypes);
+
+                // Obtain the orderSet for this relation
+                const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
+
+                if (code[ip + 3] == LVM_EQREL) {
+                    res = std::make_unique<LVMEqRelation>(arity, &orderSet, relName, attributeTypes);
+                } else {
+                    res = std::make_unique<LVMRelation>(arity, &orderSet, relName, attributeTypes);
+                }
+
                 res->setLevel(level);
                 environment[relId] = std::move(res);
                 ip += 3 + code[ip + 2] + 1;

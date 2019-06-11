@@ -839,7 +839,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 // Obtain the orderSet for this relation
                 const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
 
-                if (code[ip + 3] == LVM_EQREL) {
+                if (arity == 0) {
+                    res = std::make_unique<LVMNullaryRelation>(relName, attributeTypes);
+                } else if (code[ip + 3] == LVM_EQREL) {
                     res = std::make_unique<LVMEqRelation>(arity, &orderSet, relName, attributeTypes);
                 } else {
                     res = std::make_unique<LVMIndirectRelation>(arity, &orderSet, relName, attributeTypes);

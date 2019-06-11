@@ -130,10 +130,6 @@ protected:
  * Interpreter Relation
  */
 class LVMIndirectRelation : public LVMRelation {
-    using LexOrder = std::vector<int>;
-
-    using iterator = LVMIndex::iterator;
-
 public:
     LVMIndirectRelation(size_t relArity, const MinIndexSelection* orderSet, std::string& relName,
             std::vector<std::string>& attributeTypes)
@@ -269,29 +265,32 @@ private:
  * Interpreter Nullary relation
  */
 
-class LVMNullaryRelation : LVMRelation {
+class LVMNullaryRelation : public LVMRelation {
 public:
     LVMNullaryRelation(std::string relName, std::vector<std::string>& attributeTypes)
-            : LVMRelation(0, nullptr, relName, attributeTypes) {}
+            : LVMRelation(0, nullptr, relName, attributeTypes), nullaryIndex(std::vector<int>()) {}
 
     /** Insert tuple into nullary relation */
     void insert(const RamDomain* tuple) override {
+        if (!inserted) {
+            nullaryIndex.insert(tuple);
+        }
         inserted = true;
     }
 
     /** Merge another relation into this relation */
     void insert(const LVMRelation& other) override {
-        if (!other.empty()) {
-            inserted = true;
+        if (!other.empty() && !inserted) {
+            insert(nullptr);
         }
     }
 
     /** Size of nullary is either 0 or 1 */
-    size_t size() {
+    size_t size() const override {
         return inserted == true ? 1 : 0;
     }
 
-    bool empty() {
+    bool empty() const override {
         return !inserted;
     }
 
@@ -301,43 +300,17 @@ public:
     }
 
     /** check whether a tuple exists in the relation */
-    virtual bool exists(const RamDomain* tuple) const override {
+    bool exists(const RamDomain* tuple) const override {
         return inserted;
     }
 
-    /** Special iterator type for nullary relation */
-    class nullaryIterator : public iterator {
-    public:
-        /** Create default end iterator */
-        nullaryIterator() : iterator() {}
-
-        nullaryIterator(const LVMNullaryRelation* const rel)
-                : tuple(rel->inserted == true ? reinterpret_cast<RamDomain*>(this) : nullptr) {}
-
-        bool operator==(const nullaryIterator& other) {
-            return tuple == other.tuple;
-        }
-
-        bool operator!=(const nullaryIterator& other) {
-            return tuple != other.tuple;
-        }
-
-        nullaryIterator& operator++() {
-            tuple = nullptr;
-            return *this;
-        }
-
-    private:
-        RamDomain* tuple = nullptr;
-    };
-
     /** Iterator for relation, uses full-order index as default */
     iterator begin() const override {
-        return nullaryIterator(this);
+        return nullaryIndex.begin();
     }
 
     iterator end() const override {
-        return nullaryIterator();
+        return nullaryIndex.end();
     }
 
     /** Return range iterator */
@@ -363,6 +336,9 @@ public:
 private:
     /** Nullary can hold only one tuple */
     bool inserted = false;
+
+    /** Nullary index with empty search signature */
+    LVMIndex nullaryIndex;
 };
 
 /**

@@ -25,11 +25,11 @@
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
-#include "Interpreter.h"
-#include "InterpreterInterface.h"
 #include "LVM.h"
+#include "LVMProgInterface.h"
 #include "ParserDriver.h"
 #include "RAMI.h"
+#include "RAMIProgInterface.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
@@ -60,7 +60,6 @@
 #include <vector>
 
 namespace souffle {
-
 /**
  * Executes a binary file.
  */
@@ -212,7 +211,7 @@ int main(int argc, char** argv) {
                         "Enable provenance instrumentation and interaction."},
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
-                {"interpreter", '\1', "[ RAMI | LVM ]", "", false, "Switch interpreter implementation."},
+                {"interpreter", '\1', "[ RAMI | LVM ]", "LVM", false, "Switch interpreter implementation."},
                 {"hostfile", '\2', "FILE", "", false,
                         "Specify --hostfile option for call to mpiexec when using mpi as "
                         "execution engine."},
@@ -528,42 +527,46 @@ int main(int argc, char** argv) {
             !Global::config().has("generate")) {
         // ------- interpreter -------------
 
-        // configure interpreter
-        std::unique_ptr<Interpreter> interpreter;
-        if (!Global::config().has("interpreter")) {
-            interpreter = std::make_unique<LVM>(*ramTranslationUnit);
-        } else {
-            if (Global::config().get("interpreter") == "RAMI") {
-                interpreter = std::make_unique<RAMI>(*ramTranslationUnit);
-            } else {
-                interpreter = std::make_unique<LVM>(*ramTranslationUnit);
-            }
-        }
-
         std::thread profiler;
         // Start up profiler if needed
         if (Global::config().has("live-profile") && !Global::config().has("compile")) {
             profiler = std::thread([]() { profile::Tui().runProf(); });
         }
-        // execute translation unit
-        interpreter->executeMain();
 
-        // If the profiler was started, join back here once it exits.
-        if (profiler.joinable()) {
-            profiler.join();
-        }
-
-        // only run explain interface if interpreted
-        if (Global::config().has("provenance")) {
-            // construct SouffleProgram from env
-            InterpreterProgInterface interface(*interpreter);
-            if (Global::config().get("provenance") == "explain") {
-                explain(interface, false);
-            } else if (Global::config().get("provenance") == "explore") {
-                explain(interface, true);
+        // configure and execute interpreter
+        if (Global::config().get("interpreter") == "LVM") {
+            std::unique_ptr<LVMInterface> lvm(std::make_unique<LVM>(*ramTranslationUnit));
+            lvm->executeMain();
+            // If the profiler was started, join back here once it exits.
+            if (profiler.joinable()) {
+                profiler.join();
+            }
+            // only run explain interface if interpreted
+            if (Global::config().has("provenance")) {
+                LVMProgInterface interface(*lvm);
+                if (Global::config().get("provenance") == "explain") {
+                    explain(interface, false);
+                } else if (Global::config().get("provenance") == "explore") {
+                    explain(interface, true);
+                }
+            }
+        } else {
+            std::unique_ptr<RAMIInterface> rami(std::make_unique<RAMI>(*ramTranslationUnit));
+            rami->executeMain();
+            // If the profiler was started, join back here once it exits.
+            if (profiler.joinable()) {
+                profiler.join();
+            }
+            // only run explain interface if interpreted
+            if (Global::config().has("provenance")) {
+                RAMIProgInterface interface(*rami);
+                if (Global::config().get("provenance") == "explain") {
+                    explain(interface, false);
+                } else if (Global::config().get("provenance") == "explore") {
+                    explain(interface, true);
+                }
             }
         }
-
     } else {
         // ------- compiler -------------
 

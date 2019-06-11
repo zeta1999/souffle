@@ -28,8 +28,8 @@ void LVMCode::print() const {
                 printf("%ld\tLVM_Number\t%d\n", ip, code[ip + 1]);
                 ip += 2;
                 break;
-            case LVM_ElementAccess:
-                printf("%ld\tLVM_ElementAccess\tId:%d\tPos:%d\n", ip, code[ip + 1], code[ip + 2]);
+            case LVM_TupleElement:
+                printf("%ld\tLVM_TupleElement\tId:%d\tPos:%d\n", ip, code[ip + 1], code[ip + 2]);
                 ip += 3;
                 break;
             case LVM_AutoIncrement:

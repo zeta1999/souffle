@@ -45,7 +45,7 @@ public:
  */
 class RamTrue : public RamCondition {
 public:
-    RamTrue() : RamCondition() {}
+    RamTrue() = default;
 
     void print(std::ostream& os) const override {
         os << "true";
@@ -65,7 +65,7 @@ inline bool isRamTrue(const RamCondition* cond) {
  */
 class RamFalse : public RamCondition {
 public:
-    RamFalse() : RamCondition() {}
+    RamFalse() = default;
 
     void print(std::ostream& os) const override {
         os << "false";

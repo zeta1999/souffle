@@ -87,8 +87,8 @@ protected:
         code->push_back(num.getConstant());
     }
 
-    void visitElementAccess(const RamElementAccess& access, size_t exitAddress) override {
-        code->push_back(LVM_ElementAccess);
+    void visitTupleElement(const RamTupleElement& access, size_t exitAddress) override {
+        code->push_back(LVM_TupleElement);
         code->push_back(access.getTupleId());
         code->push_back(access.getElement());
     }
@@ -242,7 +242,7 @@ protected:
         code->push_back(values.size());
     }
 
-    void visitArgument(const RamArgument& arg, size_t exitAddress) override {
+    void visitSubroutineArgument(const RamSubroutineArgument& arg, size_t exitAddress) override {
         code->push_back(LVM_Argument);
         code->push_back(arg.getArgument());
     }
@@ -352,7 +352,7 @@ protected:
         visit(nested.getOperation(), exitAddress);
     }
 
-    void visitSearch(const RamSearch& search, size_t exitAddress) override {
+    void visitTupleOperation(const RamTupleOperation& search, size_t exitAddress) override {
         code->push_back(LVM_Search);
         if (search.getProfileText().empty()) {
             code->push_back(0);
@@ -387,7 +387,7 @@ protected:
         code->push_back(scan.getTupleId());
 
         // Perform nested operation
-        visitSearch(scan, lookupAddress(L1));
+        visitTupleOperation(scan, lookupAddress(L1));
 
         // Increment the Iter and jump to the start of the while loop
         code->push_back(LVM_ITER_Inc);
@@ -433,7 +433,7 @@ protected:
         code->push_back(address_L0);
 
         setAddress(L1, code->size());
-        visitSearch(choice, exitAddress);
+        visitTupleOperation(choice, exitAddress);
         setAddress(L2, code->size());
     }
 
@@ -473,7 +473,7 @@ protected:
         code->push_back(scan.getTupleId());
 
         // Increment the iter and jump to the start of while loop.
-        visitSearch(scan, lookupAddress(L1));
+        visitTupleOperation(scan, lookupAddress(L1));
 
         code->push_back(LVM_ITER_Inc);
         code->push_back(counterLabel);
@@ -529,7 +529,7 @@ protected:
         code->push_back(LVM_Goto);
         code->push_back(address_L0);
         setAddress(L1, code->size());
-        visitSearch(indexChoice, exitAddress);
+        visitTupleOperation(indexChoice, exitAddress);
         setAddress(L2, code->size());
     }
 
@@ -543,7 +543,7 @@ protected:
         code->push_back(lookup.getArity());
         code->push_back(lookup.getTupleId());
         code->push_back(lookupAddress(L0));
-        visitSearch(lookup, exitAddress);
+        visitTupleOperation(lookup, exitAddress);
         setAddress(L0, code->size());
     }
 
@@ -644,7 +644,7 @@ protected:
             // check whether there exists a min/max first before next loop
 
             // Retrieve the result we just saved.
-            code->push_back(LVM_ElementAccess);
+            code->push_back(LVM_TupleElement);
             code->push_back(aggregate.getTupleId());
             code->push_back(0);
             code->push_back(LVM_Number);
@@ -654,7 +654,7 @@ protected:
             code->push_back(LVM_Jmpnz);  // If init == result, does not visit nested search
             code->push_back(lookupAddress(L2));
         }
-        visitSearch(aggregate, exitAddress);
+        visitTupleOperation(aggregate, exitAddress);
         setAddress(L2, code->size());
     }
 
@@ -766,7 +766,7 @@ protected:
             // check whether there exists a min/max first before next loop
 
             // Retrieve the result we just saved.
-            code->push_back(LVM_ElementAccess);
+            code->push_back(LVM_TupleElement);
             code->push_back(aggregate.getTupleId());
             code->push_back(0);
             code->push_back(LVM_Number);
@@ -776,7 +776,7 @@ protected:
             code->push_back(LVM_Jmpnz);  // If init == result, does not visit nested search
             code->push_back(lookupAddress(L2));
         }
-        visitSearch(aggregate, exitAddress);
+        visitTupleOperation(aggregate, exitAddress);
         setAddress(L2, code->size());
     }
 
@@ -817,7 +817,7 @@ protected:
         code->push_back(arity);
         code->push_back(relationEncoder.encodeRelation(relationName));
     }
-    void visitReturnValue(const RamReturnValue& ret, size_t exitAddress) override {
+    void visitSubroutineReturnValue(const RamSubroutineReturnValue& ret, size_t exitAddress) override {
         std::string types;
         auto expressions = ret.getValues();
         size_t size = expressions.size();

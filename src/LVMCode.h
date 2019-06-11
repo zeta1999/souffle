@@ -27,7 +27,7 @@ namespace souffle {
 enum LVM_Type {
     // Expressions
     LVM_Number,
-    LVM_ElementAccess,
+    LVM_TupleElement,
     LVM_AutoIncrement,
 
     // Unary Functor Operations

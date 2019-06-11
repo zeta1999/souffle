@@ -8,9 +8,9 @@
 
 /************************************************************************
  *
- * @file InterpreterContext.h
+ * @file RAMIContext.h
  *
- * Defines interpreter context
+ * Defines RAMI interpreter context
  *
  ***********************************************************************/
 
@@ -26,7 +26,7 @@ namespace souffle {
 /**
  * Evaluation context for Interpreter operations
  */
-class InterpreterContext {
+class RAMIContext {
     std::vector<const RamDomain*> data;
     std::vector<RamDomain>* returnValues = nullptr;
     std::vector<bool>* returnErrors = nullptr;
@@ -34,8 +34,8 @@ class InterpreterContext {
     std::vector<std::unique_ptr<RamDomain[]>> allocatedDataContainer;
 
 public:
-    InterpreterContext(size_t size = 0) : data(size) {}
-    virtual ~InterpreterContext() = default;
+    RAMIContext(size_t size = 0) : data(size) {}
+    virtual ~RAMIContext() = default;
 
     const RamDomain*& operator[](size_t index) {
         if (index >= data.size()) {

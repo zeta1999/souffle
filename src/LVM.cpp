@@ -21,8 +21,8 @@
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"
-#include "InterpreterIndex.h"
-#include "InterpreterRecords.h"
+#include "LVMIndex.h"
+#include "LVMRecords.h"
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
@@ -61,7 +61,7 @@ void LVM::executeMain() {
         LVMGenerator generator(translationUnit.getSymbolTable(), main, *isa, relationEncoder);
         mainProgram = generator.getCodeStream();
     }
-    InterpreterContext ctxt;
+    LVMContext ctxt;
     SignalHandler::instance()->set();
     if (Global::config().has("verbose")) {
         SignalHandler::instance()->enableLogging();
@@ -72,7 +72,7 @@ void LVM::executeMain() {
     } else {
         ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
         // Prepare the frequency table for threaded use
-        visitDepthFirst(main, [&](const RamSearch& node) {
+        visitDepthFirst(main, [&](const RamTupleOperation& node) {
             if (!node.getProfileText().empty()) {
                 frequencies.emplace(node.getProfileText(), std::map<size_t, size_t>());
             }
@@ -114,7 +114,7 @@ void LVM::executeMain() {
     SignalHandler::instance()->reset();
 }
 
-void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt, size_t ip) {
+void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t ip) {
     std::stack<RamDomain> stack;
     const LVMCode& code = *codeStream;
     auto& symbolTable = codeStream->getSymbolTable();
@@ -125,7 +125,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 stack.push(code[ip + 1]);
                 ip += 2;
                 break;
-            case LVM_ElementAccess:
+            case LVM_TupleElement:
                 stack.push(ctxt[code[ip + 1]][code[ip + 2]]);
                 ip += 3;
                 break;
@@ -571,7 +571,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 size_t relId = code[ip + 1];
                 const std::string& patterns = symbolTable.resolve(code[ip + 2]);
                 RamDomain indexPos = code[ip + 3];
-                const InterpreterRelation& rel = *getRelation(relId);
+                const LVMRelation& rel = *getRelation(relId);
                 const std::string& relName = rel.getName();
                 size_t arity = rel.getArity();
 
@@ -619,7 +619,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 std::string relationName = relationEncoder.decodeRelation(relId);
                 std::string patterns = symbolTable.resolve(code[ip + 2]);
                 RamDomain indexPos = code[ip + 3];
-                const InterpreterRelation& rel = *getRelation(relId);
+                const LVMRelation& rel = *getRelation(relId);
                 auto arity = rel.getArity();
 
                 RamDomain low[arity];
@@ -705,7 +705,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             case LVM_Project: {
                 RamDomain arity = code[ip + 1];
                 size_t relId = code[ip + 2];
-                InterpreterRelation& rel = *getRelation(relId);
+                LVMRelation& rel = *getRelation(relId);
                 RamDomain tuple[arity];
                 for (auto i = 0; i < arity; ++i) {
                     tuple[arity - i - 1] = stack.top();
@@ -789,9 +789,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 std::string msg = symbolTable.resolve(code[ip + 1]);
                 size_t timerIndex = code[ip + 2];
                 size_t relId = code[ip + 3];
-                const InterpreterRelation& rel = *getRelation(relId);
+                const LVMRelation& rel = *getRelation(relId);
                 Logger* logger = new Logger(
-                        msg.c_str(), this->getIterationNumber(), std::bind(&InterpreterRelation::size, &rel));
+                        msg.c_str(), this->getIterationNumber(), std::bind(&LVMRelation::size, &rel));
                 insertTimerAt(timerIndex, logger);
                 ip += 4;
                 break;
@@ -828,7 +828,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 break;
             }
             case LVM_Create: {
-                std::unique_ptr<InterpreterRelation> res = nullptr;
+                std::unique_ptr<LVMRelation> res = nullptr;
                 size_t relId = code[ip + 1];
                 std::string relName = relationEncoder.decodeRelation(relId);
                 auto arity = code[ip + 2];
@@ -837,9 +837,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
 
                 if (code[ip + 3] == LVM_EQREL) {
-                    res = std::make_unique<InterpreterEqRelation>(arity, &orderSet, relName);
+                    res = std::make_unique<LVMEqRelation>(arity, &orderSet, relName);
                 } else {
-                    res = std::make_unique<InterpreterRelation>(arity, &orderSet, relName);
+                    res = std::make_unique<LVMRelation>(arity, &orderSet, relName);
                 }
                 std::vector<std::string> attributeTypes;
                 for (int i = 0; i < code[ip + 2]; ++i) {
@@ -934,7 +934,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 auto srcPtr = getRelation(sourceId);
                 auto trgPtr = getRelation(targetId);
 
-                if (dynamic_cast<InterpreterEqRelation*>(trgPtr) != nullptr) {
+                if (dynamic_cast<LVMEqRelation*>(trgPtr) != nullptr) {
                     // expand src with the new knowledge generated by insertion.
                     srcPtr->extend(*trgPtr);
                 }

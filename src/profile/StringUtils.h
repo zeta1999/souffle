@@ -24,6 +24,8 @@
 #include <vector>
 #include <unistd.h>
 
+#include <sys/stat.h>
+
 namespace souffle {
 namespace profile {
 
@@ -32,8 +34,8 @@ namespace profile {
  * Mostly string manipulation
  */
 namespace Tools {
-static const std::string arr[] = {"K", "M", "B", "t", "q", "Q", "s", "S", "o", "n", "d", "U"};
-static const std::vector<std::string> abbreviations(arr, arr + sizeof(arr) / sizeof(arr[0]));
+static const std::vector<std::string> abbreviations{
+        "K", "M", "B", "t", "q", "Q", "s", "S", "o", "n", "d", "U"};
 
 inline std::string formatNum(double amount) {
     std::stringstream ss;
@@ -224,32 +226,6 @@ inline std::vector<std::string> split(std::string str, std::string split_str) {
 
     return elems;
 }
-
-inline std::vector<std::string> splitAtSemiColon(std::string str) {
-    for (size_t i = 0; i < str.size(); i++) {
-        if (i > 0 && str[i] == ';' && str[i - 1] == '\\') {
-            // I'm assuming this isn't a thing that will be naturally found in souffle profiler files
-            str[i - 1] = '\b';
-            str.erase(i--, 1);
-        }
-    }
-    bool changed = false;
-    std::vector<std::string> result = split(str, ";");
-    for (auto& i : result) {
-        for (char& j : i) {
-            if (j == '\b') {
-                j = ';';
-                changed = true;
-            }
-        }
-        if (changed) {
-            changed = false;
-        }
-    }
-
-    return result;
-}
-
 inline std::string trimWhitespace(std::string str) {
     std::string whitespace = " \t";
     size_t first = str.find_first_not_of(whitespace);
@@ -265,8 +241,13 @@ inline std::string trimWhitespace(std::string str) {
 }
 
 inline bool file_exists(const std::string& name) {
-    std::ifstream f(name.c_str());
-    return f.good();
+    struct stat buffer = {};
+    if (stat(name.c_str(), &buffer) == 0) {
+        if ((buffer.st_mode & S_IFMT) != 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 inline std::string cleanString(std::string val) {
@@ -314,22 +295,7 @@ inline std::string cleanJsonOut(std::string val) {
     }
     return val;
 }
-inline std::string escapeQuotes(std::string val) {
-    if (val.size() < 2) {
-        return val;
-    }
 
-    if (val.at(0) == '"' && val.at(val.size() - 1) == '"') {
-        val = val.substr(1, val.size() - 2);
-    }
-
-    size_t start_pos = 0;
-    while ((start_pos = val.find('"', start_pos)) != std::string::npos) {
-        val.replace(start_pos, 1, "\\\"");
-        start_pos += 2;
-    }
-    return val;
-}
 inline std::string cleanJsonOut(double val) {
     if (std::isnan(val)) {
         return "NaN";
@@ -337,13 +303,6 @@ inline std::string cleanJsonOut(double val) {
     std::ostringstream ss;
     ss << std::scientific << std::setprecision(6) << val;
     return ss.str();
-}
-
-inline std::string stripWhitespace(std::string val) {
-    size_t first = val.find_first_not_of(' ');
-    if (first == std::string::npos) return "";
-    size_t last = val.find_last_not_of(' ');
-    return val.substr(first, (last - first + 1));
 }
 }  // namespace Tools
 

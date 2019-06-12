@@ -397,6 +397,41 @@ public:
 };
 
 /**
+ * @class RamAbstractChoice
+ * @brief Abstract class for a choice operation
+ *
+ * Finding a single tuple, if it exists, such that a condition holds.
+ */
+class RamAbstractChoice {
+public:
+    RamAbstractChoice(std::unique_ptr<RamCondition> cond) : condition(std::move(cond)) {}
+
+    /** @brief Getter for the condition */
+    const RamCondition& getCondition() const {
+        assert(condition != nullptr && "condition of choice is a null-pointer");
+        return *condition;
+    }
+
+    void apply(const RamNodeMapper& map) {
+        condition = map(std::move(condition));
+    }
+
+    std::vector<const RamNode*> getChildNodes() const {
+        return {condition.get()};
+    }
+
+protected:
+    /** Condition for which a tuple in the relation may hold */
+    std::unique_ptr<RamCondition> condition;
+
+    bool equal(const RamNode& node) const {
+        assert(nullptr != dynamic_cast<const RamAbstractChoice*>(&node));
+        const auto& other = dynamic_cast<const RamAbstractChoice*>(&node);
+        return getCondition() == other->getCondition();
+    }
+};
+
+/**
  * @class RamChoice
  * @brief Find a tuple in a relation such that a given condition holds.
  *
@@ -411,18 +446,12 @@ public:
  *      ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamChoice : public RamRelationOperation {
+class RamChoice : public RamRelationOperation, public RamAbstractChoice {
 public:
     RamChoice(std::unique_ptr<RamRelationReference> rel, size_t ident, std::unique_ptr<RamCondition> cond,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamRelationOperation(std::move(rel), ident, std::move(nested), std::move(profileText)),
-              condition(std::move(cond)) {}
-
-    /** @brief Getter for the condition */
-    const RamCondition& getCondition() const {
-        assert(condition != nullptr && "condition of choice is a null-pointer");
-        return *condition;
-    }
+              RamAbstractChoice(std::move(cond)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -435,7 +464,7 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
-        condition = map(std::move(condition));
+        RamAbstractChoice::apply(map);
     }
 
     RamChoice* clone() const override {
@@ -445,13 +474,10 @@ public:
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
-        return {nestedOperation.get(), relationRef.get(), condition.get()};
+        return {nestedOperation.get(), relationRef.get(), RamAbstractChoice::getChildNodes().at(0)};
     }
 
 protected:
-    /** Condition for which a tuple in the relation may hold */
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamChoice*>(&node));
         const auto& other = static_cast<const RamChoice&>(node);
@@ -510,21 +536,15 @@ public:
  *      ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamIndexChoice : public RamIndexOperation {
+class RamIndexChoice : public RamIndexOperation, public RamAbstractChoice {
 public:
     RamIndexChoice(std::unique_ptr<RamRelationReference> r, int ident, std::unique_ptr<RamCondition> cond,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
             : RamIndexOperation(std::move(r), ident, std::move(queryPattern), std::move(nested),
                       std::move(profileText)),
-              condition(std::move(cond)) {
+              RamAbstractChoice(std::move(cond)) {
         assert(getRangePattern().size() == getRelation().getArity());
-    }
-
-    /** @brief Getter for condition */
-    const RamCondition& getCondition() const {
-        assert(condition != nullptr && "condition of index-choice is a null-pointer");
-        return *condition;
     }
 
     void print(std::ostream& os, int tabpos) const override {
@@ -542,12 +562,12 @@ public:
         for (auto& cur : queryPattern) {
             cur = map(std::move(cur));
         }
-        condition = map(std::move(condition));
+        RamAbstractChoice::apply(map);
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamIndexOperation::getChildNodes();
-        res.push_back(condition.get());
+        res.push_back(RamAbstractChoice::getChildNodes().at(0));
         return res;
     }
 
@@ -563,9 +583,6 @@ public:
     }
 
 protected:
-    /** Condition for which a tuple in the relation may hold */
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIndexChoice*>(&node));
         const auto& other = static_cast<const RamIndexChoice&>(node);

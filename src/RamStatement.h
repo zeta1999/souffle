@@ -728,6 +728,52 @@ protected:
 };
 
 /**
+ * @class RamAbstractLog
+ * @brief Abstract class for logging
+ *
+ * Comprises a RamStatement and the message (string) to be logged
+ */
+class RamAbstractLog {
+public:
+    RamAbstractLog(std::unique_ptr<RamStatement> stmt, std::string msg)
+            : statement(std::move(stmt)), message(std::move(msg)) {
+        assert(statement);
+    }
+
+    std::vector<const RamNode*> getChildNodes() const {
+        return {statement.get()};
+    }
+
+    /** @brief Get logging message */
+    const std::string& getMessage() const {
+        return message;
+    }
+
+    /** @brief Get logging statement */
+    const RamStatement& getStatement() const {
+        assert(statement);
+        return *statement;
+    }
+
+    void apply(const RamNodeMapper& map) {
+        statement = map(std::move(statement));
+    }
+
+protected:
+    /** logging statement */
+    std::unique_ptr<RamStatement> statement;
+
+    /** logging message */
+    std::string message;
+
+    bool equal(const RamNode& node) const {
+        assert(nullptr != dynamic_cast<const RamAbstractLog*>(&node));
+        const auto& other = dynamic_cast<const RamAbstractLog*>(&node);
+        return getStatement() == other->getStatement() && getMessage() == other->getMessage();
+    }
+};
+
+/**
  * @class RamLogRelationTimer
  * @brief Execution time logger for a statement
  *
@@ -744,22 +790,11 @@ protected:
  * END_TIMER
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamLogRelationTimer : public RamRelationStatement {
+class RamLogRelationTimer : public RamRelationStatement, public RamAbstractLog {
 public:
     RamLogRelationTimer(
             std::unique_ptr<RamStatement> stmt, std::string msg, std::unique_ptr<RamRelationReference> relRef)
-            : RamRelationStatement(std::move(relRef)), statement(std::move(stmt)), message(std::move(msg)) {}
-
-    /** @brief Get logging message */
-    const std::string& getMessage() const {
-        return message;
-    }
-
-    /** @brief Get logging statement */
-    const RamStatement& getStatement() const {
-        assert(statement);
-        return *statement;
-    }
+            : RamRelationStatement(std::move(relRef)), RamAbstractLog(std::move(stmt), std::move(msg)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "START_TIMER ON " << getRelation().getName() << " \""
@@ -770,7 +805,7 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res = RamRelationStatement::getChildNodes();
-        res.push_back(statement.get());
+        res.push_back(RamAbstractLog::getChildNodes().at(0));
         return res;
     }
 
@@ -781,21 +816,14 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamRelationStatement::apply(map);
-        statement = map(std::move(statement));
+        RamAbstractLog::apply(map);
     }
 
 protected:
-    /** logging statement */
-    std::unique_ptr<RamStatement> statement;
-
-    /** logging message */
-    std::string message;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogRelationTimer*>(&node));
         const auto& other = static_cast<const RamLogRelationTimer&>(node);
-        return RamRelationStatement::equal(other) && getStatement() == other.getStatement() &&
-               getMessage() == other.getMessage();
+        return RamRelationStatement::equal(other) && RamAbstractLog::equal(other);
     }
 };
 
@@ -818,23 +846,10 @@ protected:
  * END_TIMER
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamLogTimer : public RamStatement {
+class RamLogTimer : public RamStatement, public RamAbstractLog {
 public:
     RamLogTimer(std::unique_ptr<RamStatement> stmt, std::string msg)
-            : statement(std::move(stmt)), message(std::move(msg)) {
-        assert(statement);
-    }
-
-    /** @brief Get logging message */
-    const std::string& getMessage() const {
-        return message;
-    }
-
-    /** @brief Get logging statement */
-    const RamStatement& getStatement() const {
-        assert(statement);
-        return *statement;
-    }
+            : RamAbstractLog(std::move(stmt), std::move(msg)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "START_TIMER \"" << stringify(message) << "\"" << std::endl;
@@ -843,7 +858,7 @@ public:
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
-        return {statement.get()};
+        return RamAbstractLog::getChildNodes();
     }
 
     RamLogTimer* clone() const override {
@@ -851,23 +866,17 @@ public:
     }
 
     void apply(const RamNodeMapper& map) override {
-        statement = map(std::move(statement));
+        RamAbstractLog::apply(map);
     }
 
 protected:
-    /** logging statement */
-    std::unique_ptr<RamStatement> statement;
-
-    /** logging message */
-    std::string message;
-
     /** Relation */
     std::unique_ptr<RamRelationReference> relationRef;
 
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogTimer*>(&node));
         const auto& other = static_cast<const RamLogTimer&>(node);
-        return getStatement() == other.getStatement() && getMessage() == other.getMessage();
+        return RamAbstractLog::equal(other);
     }
 };
 
@@ -882,23 +891,10 @@ protected:
  * END_DEBUG
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamDebugInfo : public RamStatement {
+class RamDebugInfo : public RamStatement, public RamAbstractLog {
 public:
     RamDebugInfo(std::unique_ptr<RamStatement> stmt, std::string msg)
-            : statement(std::move(stmt)), message(std::move(msg)) {
-        assert(statement);
-    }
-
-    /** @brief Get debugging message */
-    const std::string& getMessage() const {
-        return message;
-    }
-
-    /** @brief Get debugging statement */
-    const RamStatement& getStatement() const {
-        assert(statement);
-        return *statement;
-    }
+            : RamAbstractLog(std::move(stmt), std::move(msg)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "BEGIN_DEBUG \"" << stringify(message) << "\"" << std::endl;
@@ -907,7 +903,7 @@ public:
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
-        return {statement.get()};
+        return RamAbstractLog::getChildNodes();
     }
 
     RamDebugInfo* clone() const override {
@@ -915,20 +911,14 @@ public:
     }
 
     void apply(const RamNodeMapper& map) override {
-        statement = map(std::move(statement));
+        RamAbstractLog::apply(map);
     }
 
 protected:
-    /** debugging statement */
-    std::unique_ptr<RamStatement> statement;
-
-    /** debugging message */
-    std::string message;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogTimer*>(&node));
         const auto& other = static_cast<const RamLogTimer&>(node);
-        return getStatement() == other.getStatement() && getMessage() == other.getMessage();
+        return RamAbstractLog::equal(other);
     }
 };
 

@@ -226,7 +226,7 @@ public:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
- *   PARALLEL FOR t0 in A
+ *   PARALLEL FOR t0 IN A
  *     ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -716,7 +716,7 @@ protected:
  *
  * For example:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * t0.0 = COUNT FOR ALL t0 in A
+ * t0.0 = COUNT FOR ALL t0 IN A
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Applies the function COUNT to determine the number
  * of elements in A.
@@ -833,7 +833,7 @@ protected:
  *
  * For example:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * UNPACK t0.0 into t1
+ * UNPACK t0.0 INTO t1
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamUnpackRecord : public RamTupleOperation {
@@ -936,7 +936,7 @@ protected:
  * The following example checks that both C1 and C2 hold
  * before proceeding deeper in the loop nest:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * IF C1 and C2
+ * IF C1 AND C2
  *  ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -1005,7 +1005,7 @@ protected:
  *
  * For example:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * FOR t0 in A
+ * FOR t0 IN A
  *   ...
  *     PROJECT (t0.a, t0.b, t0.c) INTO @new_X
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~

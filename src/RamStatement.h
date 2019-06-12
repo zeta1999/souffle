@@ -138,6 +138,12 @@ protected:
  *
  * Reads the contents of a relation and stores in a
  * target relation reference
+ *
+ * For example, loading with respect to some IO directives
+ * into relation A:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * LOAD DATA FOR A FROM {...}
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamLoad : public RamAbstractLoadStore {
 public:
@@ -169,6 +175,12 @@ protected:
  * @brief Store data of a relation
  *
  * Outputs the content of a relation reference
+ *
+ * For example, storing data from relation B with respect
+ * to some IO directives:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * STORE DATA FOR B TO {...}
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamStore : public RamAbstractLoadStore {
 public:
@@ -317,12 +329,12 @@ public:
     RamMerge(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
             : RamBinRelationStatement(std::move(sRef), std::move(tRef)) {}
 
-    /** Get source relation */
+    /** @brief Get source relation */
     const RamRelation& getSourceRelation() const {
         return getFirstRelation();
     }
 
-    /** Get target relation */
+    /** @brief Get target relation */
     const RamRelation& getTargetRelation() const {
         return getSecondRelation();
     }

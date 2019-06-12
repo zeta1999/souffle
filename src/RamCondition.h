@@ -92,10 +92,10 @@ public:
  *
  * For example:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * C1 and C2 and C3
+ * C1 AND C2 AND C3
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Is a RamConjunction, which may have LHS "C1"
- * and RHS "C2 and C3"
+ * and RHS "C2 AND C3"
  */
 class RamConjunction : public RamCondition {
 public:
@@ -117,7 +117,7 @@ public:
     void print(std::ostream& os) const override {
         os << "(";
         lhs->print(os);
-        os << " and ";
+        os << " AND ";
         rhs->print(os);
         os << ")";
     }
@@ -156,7 +156,7 @@ protected:
  *
  * For example:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * (not t0 in A)
+ * (NOT t0 IN A)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamNegation : public RamCondition {
@@ -170,7 +170,7 @@ public:
     }
 
     void print(std::ostream& os) const override {
-        os << "(not ";
+        os << "(NOT ";
         operand->print(os);
         os << ")";
     }
@@ -331,7 +331,7 @@ protected:
  * The following condition is evaluated to true if the
  * tuple element t0.1 is in the relation A:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * t0.1 in A
+ * t0.1 IN A
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamExistenceCheck : public RamAbstractExistenceCheck {

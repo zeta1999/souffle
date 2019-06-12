@@ -37,7 +37,7 @@ namespace souffle {
  */
 class RamOperation : public RamNode {
 public:
-    /** @brief Pretty print with intentation */
+    /** @brief Pretty print with indentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
     void print(std::ostream& os) const override {

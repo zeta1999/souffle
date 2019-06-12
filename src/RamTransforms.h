@@ -185,12 +185,12 @@ protected:
  *
  * The transformer assumes that the RAM has been levelled before.
  * The conditions that could be used for an index must be located
- * immediately after the scan or aggregrate operation.
+ * immediately after the scan or aggregate operation.
  *
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
- *   FOR t1 in A
+ *   FOR t1 IN A
  *    IF t1.x = 10 /\ t1.y = 20 /\ C
  *     ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -200,7 +200,7 @@ protected:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
- *    SEARCH t1 in A INDEX t1.x=10 and t1.y = 20
+ *    SEARCH t1 IN A INDEX t1.x=10 AND t1.y = 20
  *     IF C
  *      ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -287,7 +287,7 @@ protected:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
- *	 FOR t1 IN X ON INDEX t1.x = 10 and t1.y = 20
+ *	 FOR t1 IN X ON INDEX t1.x = 10 AND t1.y = 20
  *     ... // no occurrence of t1
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
@@ -435,7 +435,7 @@ public:
     }
 
     /**
-     * @brief Apply tupleIdreordering to the whole program
+     * @brief Apply tupleId reordering to the whole program
      * @param RAM program
      * @result A flag indicating whether the RAM program has been changed.
      *

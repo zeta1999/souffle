@@ -102,7 +102,7 @@ void SynthesiserDirectRelation::computeIndices() {
             // index refers to height parameter before last position and therefore was added for provenance
             // computation
             if (curIndexElems.find(getArity() - 1) != curIndexElems.end() &&
-                    ind[ind.size() - 1] != (getArity() - 1)) {
+                    (size_t) ind[ind.size() - 1] != (getArity() - 1)) {
                 provenanceIndexNumbers.insert(index_nr);
             } else {
                 // index was not added for provenance and can therefore be used as master index

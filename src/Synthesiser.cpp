@@ -2249,7 +2249,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
             // get some table details
             const auto& rel = create.getRelation();
-            size_t arity = rel.getArity();
             const std::string& name = getRelationName(rel);
             const std::string& raw_name = rel.getName();
 

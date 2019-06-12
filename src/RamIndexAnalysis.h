@@ -203,14 +203,14 @@ public:
     /** @Brief map the keys in the key set to lexicographical order */
     void solve();
 
-    /** @Brief convert from a representation of A verticies to B verticies */
+    /** @Brief convert from a representation of A vertices to B vertices */
     static SearchSignature toB(SearchSignature a) {
         SearchSignature msb = 1;
         msb <<= (4 * 8 - 1);
         return (a | msb);
     }
 
-    /** @Brief convert from a representation of B verticies to A verticies */
+    /** @Brief convert from a representation of B vertices to A vertices */
     static SearchSignature toA(SearchSignature b) {
         SearchSignature msb = 1;
         msb <<= (4 * 8 - 1);
@@ -238,7 +238,7 @@ protected:
     ChainOrderMap chainToOrder;  // maps order index to set of searches covered by chain
     MaxMatching matching;        // matching problem for finding minimal number of orders
 
-    /** count the number of bits in key */
+    /** @Brief count the number of bits in key */
     static size_t card(SearchSignature cols) {
         size_t sz = 0, idx = 1;
         for (size_t i = 0; i < sizeof(SearchSignature) * 8; i++) {
@@ -298,7 +298,7 @@ protected:
     /** @Brief get all chains from the matching */
     const ChainOrderMap getChainsFromMatching(const MaxMatching::Matchings& match, const SearchSet& nodes);
 
-    /** @Brief get all nodes which are unmated from A-> B */
+    /** @Brief get all nodes which are unmatched from A-> B */
     const SearchSet getUnmatchedKeys(const MaxMatching::Matchings& match, const SearchSet& nodes) {
         SearchSet unmatched;
 

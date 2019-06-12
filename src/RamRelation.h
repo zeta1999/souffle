@@ -33,7 +33,8 @@
 namespace souffle {
 
 /**
- * A RAM Relation in the RAM intermediate representation.
+ * @class RamRelation
+ * @brief A RAM Relation in the RAM intermediate representation.
  */
 class RamRelation : public RamNode {
 protected:
@@ -62,12 +63,12 @@ public:
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
     }
 
-    /** Get name */
+    /** @brief Get name */
     const std::string& getName() const {
         return name;
     }
 
-    /** Get argument */
+    /** @brief Get argument */
     const std::string getArg(uint32_t i) const {
         if (!attributeNames.empty()) {
             return attributeNames[i];
@@ -78,7 +79,7 @@ public:
         return "c" + std::to_string(i);
     }
 
-    /** Get Argument Type Qualifier */
+    /** @brief Get Argument Type Qualifier */
     const std::string getArgTypeQualifier(uint32_t i) const {
         return (i < attributeTypeQualifiers.size()) ? attributeTypeQualifiers[i] : "";
     }
@@ -87,27 +88,27 @@ public:
         return attributeTypeQualifiers;
     }
 
-    /** Is nullary relation */
+    /** @brief Is nullary relation */
     const bool isNullary() const {
         return arity == 0;
     }
 
-    /** Relation representation type */
+    /** @brief Relation representation type */
     const RelationRepresentation getRepresentation() const {
         return representation;
     }
 
-    /** Is temporary relation (for semi-naive evaluation) */
+    /** @brief Is temporary relation (for semi-naive evaluation) */
     const bool isTemp() const {
         return name.at(0) == '@';
     }
 
-    /* Get arity of relation */
+    /* @brief Get arity of relation */
     unsigned getArity() const {
         return arity;
     }
 
-    /* Compare two relations via their name */
+    /* @brief Compare two relations via their name */
     bool operator<(const RamRelation& other) const {
         return name < other.name;
     }
@@ -142,7 +143,8 @@ protected:
 };
 
 /**
- * A RAM Relation in the RAM intermediate representation.
+ * @class RamRelationReference
+ * @brief A RAM Relation in the RAM intermediate representation.
  */
 class RamRelationReference : public RamNode {
 public:
@@ -150,7 +152,7 @@ public:
         assert(relation != nullptr && "null relation");
     }
 
-    /** Get reference */
+    /** @brief Get reference */
     const RamRelation* get() const {
         assert(relation != nullptr && "relation reference is a null-pointer");
         return relation;

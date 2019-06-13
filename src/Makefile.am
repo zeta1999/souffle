@@ -139,6 +139,8 @@ souffle_sources = \
               RamVisitor.h                              \
               ReadStream.h                              \
               ReadStreamCSV.h                           \
+              Relation.h                                \
+              Relation.cpp                              \
               RelationRepresentation.h                  \
               ReorderLiteralsTransformer.cpp            \
               ResolveAliasesTransformer.cpp             \
@@ -365,6 +367,12 @@ check_PROGRAMS += test/parallel_utils_test
 test_parallel_utils_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
 test_parallel_utils_test_SOURCES = test/parallel_utils_test.cpp
 test_parallel_utils_test_LDADD = libsouffle.la
+
+# binary relation tests
+check_PROGRAMS += test/relation_test
+test_relation_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
+test_relation_test_SOURCES = test/relation_test.cpp
+test_relation_test_LDADD = libsouffle.la
 
 if MPI
 # mpi interface

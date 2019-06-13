@@ -2059,6 +2059,7 @@ class Trie : public detail::TrieBase<Dim, Trie<Dim>> {
 
 public:
     using entry_type = typename ram::Tuple<RamDomain, Dim>;
+    using element_type = entry_type;
 
     // ---------------------------------------------------------------------
     //                           Iterator
@@ -2532,6 +2533,7 @@ class Trie<0u> : public detail::TrieBase<0u, Trie<0u>> {
     bool present = false;
 
 public:
+    using element_type = entry_type;
     struct op_context {};
 
     using base::contains;
@@ -2759,6 +2761,7 @@ class Trie<1u> : public detail::TrieBase<1u, Trie<1u>> {
     map_type map;
 
 public:
+    using element_type = entry_type;
     using op_context = typename map_type::op_context;
 
     using base::contains;

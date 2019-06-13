@@ -19,7 +19,6 @@
 #include "RamTypes.h"
 
 #include <cassert>
-#include <iostream>
 #include <map>
 #include <vector>
 

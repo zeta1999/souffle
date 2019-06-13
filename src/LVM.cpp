@@ -890,7 +890,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                             symbolMask.push_back(cur[0] == 's');
                         }
                         IOSystem::getInstance()
-                                .getWriter(symbolMask, symbolTable, io, Global::config().has("provenance"))
+                                .getWriter(symbolMask, symbolTable, createInterpreterRecordTable(), io, Global::config().has("provenance"))
                                 ->writeAll(relation);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";

@@ -130,6 +130,10 @@ public:
             std::cout << "\n" << ioDirectives.get("attributeNames");
         }
         std::cout << "\n===============\n";
+        for (int i = 0; i < 3; i++) {
+            recordMask.push_back(false);
+        }
+        recordMask[0] = true;
     }
 
     ~WriteCoutCSV() override {
@@ -144,6 +148,8 @@ protected:
     void writeNextTuple(const RamDomain* tuple) override {
         if (symbolMask.at(0)) {
             std::cout << symbolTable.unsafeResolve(tuple[0]);
+        } else if (recordMask.at(0)) {
+            std::cout << "RECORD<" << tuple[0] << ">";
         } else {
             std::cout << tuple[0];
         }
@@ -151,6 +157,8 @@ protected:
             std::cout << delimiter;
             if (symbolMask.at(col)) {
                 std::cout << symbolTable.unsafeResolve(tuple[col]);
+            } else if (recordMask.at(col)) {
+                std::cout << "RECORD<" << tuple[col] << ">";
             } else {
                 std::cout << tuple[col];
             }
@@ -159,6 +167,7 @@ protected:
     }
 
     const std::string delimiter;
+    std::vector<bool> recordMask{};
 };
 
 class WriteCoutPrintSize : public WriteStream {

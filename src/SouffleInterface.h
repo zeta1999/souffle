@@ -242,22 +242,22 @@ class SouffleProgram {
 private:
     // define a relation map for external access
     std::map<std::string, Relation*> relationMap;
-    std::vector<Relation*> inputRelations;
-    std::vector<Relation*> outputRelations;
-    std::vector<Relation*> internalRelations;
+    std::set<Relation*> inputRelations;
+    std::set<Relation*> outputRelations;
+    std::set<Relation*> internalRelations;
 
 protected:
     // add relation to relation map
     void addRelation(const std::string& name, Relation* rel, bool isInput, bool isOutput) {
         relationMap[name] = rel;
         if (isInput) {
-            inputRelations.push_back(rel);
+            inputRelations.insert(rel);
         }
         if (isOutput) {
-            outputRelations.push_back(rel);
+            outputRelations.insert(rel);
         }
         if (!isInput && !isOutput) {
-            internalRelations.push_back(rel);
+            internalRelations.insert(rel);
         }
     }
 
@@ -293,23 +293,23 @@ public:
         }
     };
 
-    std::vector<Relation*> getOutputRelations() const {
+    std::set<Relation*> getOutputRelations() const {
         return outputRelations;
     }
 
-    std::vector<Relation*> getInputRelations() const {
+    std::set<Relation*> getInputRelations() const {
         return inputRelations;
     }
 
-    std::vector<Relation*> getInternalRelations() const {
+    std::set<Relation*> getInternalRelations() const {
         return internalRelations;
     }
 
-    std::vector<Relation*> getAllRelations() const {
-        std::vector<Relation*> allRelations;
-        allRelations.insert(allRelations.end(), inputRelations.begin(), inputRelations.end());
-        allRelations.insert(allRelations.end(), internalRelations.begin(), internalRelations.end());
-        allRelations.insert(allRelations.end(), outputRelations.begin(), outputRelations.end());
+    std::set<Relation*> getAllRelations() const {
+        std::set<Relation*> allRelations;
+        allRelations.insert(inputRelations.begin(), inputRelations.end());
+        allRelations.insert(internalRelations.begin(), internalRelations.end());
+        allRelations.insert(outputRelations.begin(), outputRelations.end());
         return allRelations;
     }
 

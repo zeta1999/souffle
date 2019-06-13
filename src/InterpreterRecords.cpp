@@ -29,42 +29,39 @@ using namespace std;
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
+template <typename Tuple>
 class RecordMap {
-    /** The arity of the stored tuples */
-    int arity;
-
     /** The mapping from tuples to references/indices */
-    map<vector<RamDomain>, RamDomain> r2i;
+    map<vector<Tuple>, RamDomain> r2i;
 
     /** The mapping from indices to tuples */
-    vector<vector<RamDomain>> i2r;
+    vector<vector<Tuple>> i2r;
 
 public:
-    RecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    RecordMap() = default;
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
      */
-    RamDomain pack(const RamDomain* tuple) {
-        vector<RamDomain> tmp(arity);
-        for (int i = 0; i < arity; i++) {
-            tmp[i] = tuple[i];
-        }
-
+    RamDomain pack(const Tuple& tuple) {
         RamDomain index;
+
+        // try lookup
 #pragma omp critical(record_pack)
         {
-            auto pos = r2i.find(tmp);
+            auto pos = r2i.find(tuple);
             if (pos != r2i.end()) {
+                // take the previously assigned value
                 index = pos->second;
             } else {
+                // add tuple to index
 #pragma omp critical(record_unpack)
                 {
-                    i2r.push_back(tmp);
+                    i2r.push_back(tuple);
                     index = i2r.size() - 1;
-                    r2i[tmp] = index;
+                    r2i[tuple] = index;
 
-                    // assert that new index is smaller than the range
+                    // assert that the new index is smaller than the range
                     assert(index != std::numeric_limits<RamDomain>::max());
                 }
             }
@@ -86,39 +83,33 @@ public:
     }
 };
 
-/**
- * The static access function for record maps of certain arities.
- */
-RecordMap& getForArity(int arity) {
-    // the static container -- filled on demand
-    static map<int, RecordMap> maps;
-
-    // get container if present
-    auto pos = maps.find(arity);
-    if (pos != maps.end()) {
-        return pos->second;
-    }
-
-    // create new container if required
-    maps.emplace(arity, arity);
-    return getForArity(arity);
-}
 }  // namespace
 
-RamDomain pack(RamDomain* tuple, int arity) {
-    // conduct the packing
-    return getForArity(arity).pack(tuple);
+/**
+ * The static access function for record maps of certain types.
+ */
+template <typename Tuple>
+RecordMap<Tuple>& getRecordMap() {
+    static RecordMap<Tuple> map;
+    return map;
 }
 
-RamDomain* unpack(RamDomain ref, int arity) {
-    // conduct the unpacking
-    return getForArity(arity).unpack(ref);
+template <typename Tuple>
+RamDomain pack(const Tuple& tuple) {
+    return getRecordMap<Tuple>().pack(tuple);
 }
 
+template <typename Tuple>
+RamDomain* unpack(RamDomain ref) {
+    return getRecordMap<Tuple>().unpack(ref);
+}
+
+template <typename TupleType>
 RamDomain getNull() {
     return 0;
 }
 
+template <typename TupleType>
 bool isNull(RamDomain ref) {
     return ref == 0;
 }

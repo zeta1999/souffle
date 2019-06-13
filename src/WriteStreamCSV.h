@@ -142,6 +142,7 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
+        std::cout << "YEAHHHH" << std::endl;
         if (symbolMask.at(0)) {
             std::cout << symbolTable.unsafeResolve(tuple[0]);
         } else {

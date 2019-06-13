@@ -134,6 +134,7 @@ souffle_sources = \
               RamVisitor.h                              \
               ReadStream.h                              \
               ReadStreamCSV.h                           \
+              RecordTable.cpp       RecordTable.h       \
               RelationRepresentation.h                  \
               ReorderLiteralsTransformer.cpp            \
               ResolveAliasesTransformer.cpp             \
@@ -206,6 +207,7 @@ soufflepublic_HEADERS = \
                         RamTypes.h              \
                         ReadStream.h            \
                         ReadStreamCSV.h         \
+                        RecordTable.h           \
                         SignalHandler.h         \
                         SouffleInterface.h      \
                         SymbolTable.h           \

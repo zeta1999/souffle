@@ -56,7 +56,7 @@ public:
         if (outputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested output type <" + ioType + "> is not supported.");
         }
-        return outputFactories.at(ioType)->getWriter(symbolMask, symbolTable, ioDirectives, provenance);
+        return outputFactories.at(ioType)->getWriter(symbolMask, symbolTable, {}, ioDirectives, provenance);
     }
     /**
      * Return a new ReadStream

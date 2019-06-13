@@ -599,7 +599,8 @@ private:
 
     void printRelationOutput(
             const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) override {
-        WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), ioDir, true)->writeAll(rel);
+        // TODO: WHAT to do about record map here?
+        WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), {}, ioDir, true)->writeAll(rel);
     }
 };
 

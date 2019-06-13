@@ -130,10 +130,12 @@ bool isNull(RamDomain ref) {
 RecordTable* createInterpreterRecordTable() {
     RecordTable* recordTable = new RecordTable();
     for (const auto& map : maps) {
-        for (const auto& record : map.second.getRecordValues()) {
-            recordTable->addRecord(map.first, record);
+        const auto& records = map.second.getRecordValues();
+        for (size_t i = 0; i < records.size(); i++) {
+            recordTable->addRecord(i, records[i]);
         }
     }
+    return recordTable;
 }
 
 }  // end of namespace souffle

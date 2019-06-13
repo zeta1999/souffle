@@ -151,11 +151,15 @@ protected:
     void writeRecordTuple(const RamDomain ref) {
         std::cout << "RECORD<" << ref << ">: ";
         const auto& record = recordTable->getRecord(ref);
-        std::cout << "[" << record[0];
-        for (size_t i = 0; i < record.size(); i++) {
-            std::cout << ", " << record[i];
+        if (record.size() == 0) {
+            std::cout << "[]" << std::endl;
+        } else {
+            std::cout << "[" << record[0];
+            for (size_t i = 1; i < record.size(); i++) {
+                std::cout << ", " << record[i];
+            }
+            std::cout << "]";
         }
-        std::cout << "]";
     }
 
     void writeNextTuple(const RamDomain* tuple) override {

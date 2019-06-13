@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include "CompiledRecord.h"
 #include "IODirectives.h"
 #include "InterpreterRecords.h"
 #include "ParallelUtils.h"
+#include "RecordTable.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
 #ifdef USE_LIBZ
@@ -136,6 +136,7 @@ public:
             recordMask.push_back(false);
         }
         recordMask[0] = true;
+        recordTable = createInterpreterRecordTable();
     }
 
     ~WriteCoutCSV() override {
@@ -149,10 +150,10 @@ protected:
 
     void writeRecordTuple(const RamDomain ref) {
         std::cout << "RECORD<" << ref << ">: ";
-        RamDomain* x = unpack(ref, 3);
-        std::cout << "[" << x[0];
-        for (size_t i = 1; i < 3; i++) {
-            std::cout << ", " << x[i];
+        const auto& record = recordTable->getRecord(ref);
+        std::cout << "[" << record[0];
+        for (size_t i = 0; i < record.size(); i++) {
+            std::cout << ", " << record[i];
         }
         std::cout << "]";
     }
@@ -180,6 +181,7 @@ protected:
 
     const std::string delimiter;
     std::vector<bool> recordMask{};
+    const RecordTable* recordTable;
 };
 
 class WriteCoutPrintSize : public WriteStream {

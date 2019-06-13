@@ -84,15 +84,19 @@ public:
 
         return res;
     }
+
+    const vector<vector<RamDomain>>& getRecordValues() const {
+        return i2r;
+    }
 };
+
+// the static container -- filled on demand
+static map<int, RecordMap> maps;
 
 /**
  * The static access function for record maps of certain arities.
  */
 RecordMap& getForArity(int arity) {
-    // the static container -- filled on demand
-    static map<int, RecordMap> maps;
-
     // get container if present
     auto pos = maps.find(arity);
     if (pos != maps.end()) {
@@ -121,6 +125,15 @@ RamDomain getNull() {
 
 bool isNull(RamDomain ref) {
     return ref == 0;
+}
+
+RecordTable* createInterpreterRecordTable() {
+    RecordTable* recordTable = new RecordTable();
+    for (const auto& map : maps) {
+        for (const auto& record : map.second.getRecordValues()) {
+            recordTable->addRecord(map.first, record);
+        }
+    }
 }
 
 }  // end of namespace souffle

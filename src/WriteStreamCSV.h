@@ -14,8 +14,8 @@
 
 #pragma once
 
+#include "CompiledRecord.h"
 #include "IODirectives.h"
-#include "InterpreterRecords.h"
 #include "ParallelUtils.h"
 #include "RecordTable.h"
 #include "SymbolTable.h"
@@ -136,7 +136,7 @@ public:
             recordMask.push_back(false);
         }
         recordMask[0] = true;
-        recordTable = createInterpreterRecordTable();
+        recordTable = new RecordTable();
     }
 
     ~WriteCoutCSV() override {

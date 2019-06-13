@@ -72,11 +72,23 @@ bool isNull(RamDomain ref) {
 
 namespace detail {
 
+class GeneralRecordMap {
+    GeneralRecordMap() {
+        createdMaps.insert(this);
+    }
+
+    static std::set<GeneralRecordMap*> createdMaps;
+
+    static std::set<GeneralRecordMap*>& getCreatedMaps() {
+        return createdMaps;
+    }
+};
+
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
 template <typename Tuple>
-class RecordMap {
+class RecordMap : public GeneralRecordMap {
     // create blocks of a million entries
     static const std::size_t BLOCK_SIZE = 1 << 20;
 
@@ -99,7 +111,7 @@ class RecordMap {
     Lock pack_lock;
 
 public:
-    RecordMap() = default;
+    RecordMap() : GeneralRecordMap() {}
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -147,6 +159,10 @@ public:
     const tuple_type& unpack(RamDomain index) {
         // just look up the right spot
         return (*(i2r[index / BLOCK_SIZE]))[index % BLOCK_SIZE];
+    }
+
+    static const std::set<RecordMap>& getCreatedMaps() {
+        return createdMaps;
     }
 };
 

@@ -17,7 +17,6 @@
 #include "LVM.h"
 #include "BTree.h"
 #include "BinaryConstraintOps.h"
-#include "CompiledTuple.h"
 #include "FunctorOps.h"
 #include "Global.h"
 #include "IODirectives.h"
@@ -525,7 +524,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     data[arity - i - 1] = stack.top();
                     stack.pop();
                 }
-                stack.push(pack(ram::Tuple<RamDomain, arity>(data));
+                stack.push(pack(data, arity));
                 ip += 2;
                 break;
             }

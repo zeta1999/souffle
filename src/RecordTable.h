@@ -19,6 +19,7 @@
 #include "RamTypes.h"
 
 #include <cassert>
+#include <iostream>
 #include <map>
 #include <vector>
 
@@ -34,11 +35,6 @@ public:
             tupleCopy.push_back(tuple[i]);
         }
         recordMap[ref] = tupleCopy;
-    }
-
-    template <typename Tuple>
-    void addRecord(RamDomain ref, const Tuple& tuple) {
-        assert(false && "compiler records not handled");
     }
 
     const std::vector<RamDomain>& getRecord(RamDomain ref) const {

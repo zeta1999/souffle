@@ -72,16 +72,17 @@ bool isNull(RamDomain ref) {
 
 namespace detail {
 
+class GeneralRecordMap;
+
+static std::set<GeneralRecordMap*> createdMaps;
+
 class GeneralRecordMap {
+public:
     GeneralRecordMap() {
         createdMaps.insert(this);
     }
 
-    static std::set<GeneralRecordMap*> createdMaps;
-
-    static std::set<GeneralRecordMap*>& getCreatedMaps() {
-        return createdMaps;
-    }
+    virtual std::map<RamDomain, std::vector<RamDomain>> getRecordReferences() const = 0;
 };
 
 /**
@@ -161,8 +162,16 @@ public:
         return (*(i2r[index / BLOCK_SIZE]))[index % BLOCK_SIZE];
     }
 
-    static const std::set<RecordMap>& getCreatedMaps() {
-        return createdMaps;
+    std::map<int, std::vector<RamDomain>> getRecordReferences() const override {
+        std::map<int, std::vector<RamDomain>> recordValues;
+        for (const auto& pair : r2i) {
+            std::vector<RamDomain> value;
+            for (size_t i = 0; i < pair.first.arity; i++) {
+                value.push_back(pair.first[i]);
+            }
+            recordValues[pair.second] = value;
+        }
+        return recordValues;
     }
 };
 
@@ -170,7 +179,7 @@ public:
  * Specialisation for empty records
  */
 template <>
-class RecordMap<ram::Tuple<RamDomain, 0>> {
+class RecordMap<ram::Tuple<RamDomain, 0>> : public GeneralRecordMap {
 public:
     RamDomain pack(const ram::Tuple<RamDomain, 0>& tuple) {
         return 1;
@@ -178,6 +187,10 @@ public:
     const ram::Tuple<RamDomain, 0>& unpack(RamDomain index) {
         static ram::Tuple<RamDomain, 0> empty;
         return empty;
+    }
+
+    std::map<int, std::vector<RamDomain>> getRecordReferences() const override {
+        return std::map<int, std::vector<RamDomain>>();
     }
 };
 

@@ -965,7 +965,8 @@ void RAMI::evalStmt(const RamStatement& stmt, const RAMIContext& args) {
                     }
                     IOSystem::getInstance()
                             .getReader(symbolMask, interpreter.getSymbolTable(), ioDirectives,
-                                    Global::config().has("provenance"))
+                                    Global::config().has("provenance"),
+                                    load.getRelation().getNumberOfHeights())
                             ->readAll(relation);
                 } catch (std::exception& e) {
                     std::cerr << "Error loading data: " << e.what() << "\n";
@@ -982,7 +983,8 @@ void RAMI::evalStmt(const RamStatement& stmt, const RAMIContext& args) {
                     }
                     IOSystem::getInstance()
                             .getWriter(symbolMask, interpreter.getSymbolTable(), ioDirectives,
-                                    Global::config().has("provenance"))
+                                    Global::config().has("provenance"),
+                                    store.getRelation().getNumberOfHeights())
                             ->writeAll(interpreter.getRelation(store.getRelation()));
                 } catch (std::exception& e) {
                     std::cerr << e.what();

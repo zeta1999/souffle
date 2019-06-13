@@ -885,7 +885,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                             symbolMask.push_back(cur[0] == 's');
                         }
                         IOSystem::getInstance()
-                                .getReader(symbolMask, symbolTable, io, Global::config().has("provenance"))
+                                // TODO (sarah) fix for extended instrumentation
+                                .getReader(symbolMask, symbolTable, io, Global::config().has("provenance"), 1)
                                 ->readAll(*relPtr);
                     } catch (std::exception& e) {
                         std::cerr << "Error loading data: " << e.what() << "\n";
@@ -906,7 +907,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                             symbolMask.push_back(cur[0] == 's');
                         }
                         IOSystem::getInstance()
-                                .getWriter(symbolMask, symbolTable, io, Global::config().has("provenance"))
+                                // TODO (sarah) fix for extended instrumentation
+                                .getWriter(symbolMask, symbolTable, io, Global::config().has("provenance"), 1)
                                 ->writeAll(*relPtr);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";

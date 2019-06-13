@@ -248,6 +248,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
+                out << ", " << load.getRelation().getNumberOfHeights();
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
                 out << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -276,6 +277,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
+                out << ", " << store.getRelation().getNumberOfHeights();
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
             }
@@ -2143,6 +2145,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "IOSystem::getInstance().getWriter(";
                 os << "std::vector<bool>({" << join(symbolMask) << "})";
                 os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
+                os << ", " << store->getRelation().getNumberOfHeights();
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
                 os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2188,6 +2191,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "std::vector<bool>({" << join(symbolMask) << "})";
             os << ", symTable, ioDirectives";
             os << ", " << (Global::config().has("provenance") ? "true" : "false");
+            os << ", " << load.getRelation().getNumberOfHeights();
             os << ")->readAll(*" << getRelationName(load.getRelation());
             os << ");\n";
             os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -2197,7 +2201,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of loadAll() method
 
     // issue dump methods
-    auto dumpRelation = [&](const std::string& name, const std::vector<std::string>& mask, size_t arity) {
+    auto dumpRelation = [&](const std::string& name, const std::vector<std::string>& mask, size_t arity,
+                                size_t numberOfHeights) {
         auto relName = name;
         std::vector<bool> symbolMask;
         for (auto& cur : mask) {
@@ -2211,6 +2216,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "IOSystem::getInstance().getWriter(";
         os << "std::vector<bool>({" << join(symbolMask) << "})";
         os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
+        os << ", " << numberOfHeights;
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
     };
@@ -2222,7 +2228,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         auto& name = getRelationName(load.getRelation());
         auto& mask = load.getRelation().getAttributeTypeQualifiers();
         size_t arity = load.getRelation().getArity();
-        dumpRelation(name, mask, arity);
+        dumpRelation(name, mask, arity, load.getRelation().getNumberOfHeights());
     });
     os << "}\n";  // end of dumpInputs() method
 
@@ -2233,7 +2239,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         auto& name = getRelationName(store.getRelation());
         auto& mask = store.getRelation().getAttributeTypeQualifiers();
         size_t arity = store.getRelation().getArity();
-        dumpRelation(name, mask, arity);
+        dumpRelation(name, mask, arity, store.getRelation().getNumberOfHeights());
     });
     os << "}\n";  // end of dumpOutputs() method
 

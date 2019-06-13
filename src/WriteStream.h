@@ -27,9 +27,9 @@ namespace souffle {
 class WriteStream {
 public:
     WriteStream(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable, const bool prov,
-            bool summary = false)
+            const size_t numberOfHeights, bool summary = false)
             : symbolMask(symbolMask), symbolTable(symbolTable), isProvenance(prov), summary(summary),
-              arity(symbolMask.size() - (prov ? 2 : 0)) {}
+              arity(symbolMask.size() - (prov ? (numberOfHeights + 1) : 0)) {}
     template <typename T>
     void writeAll(const T& relation) {
         if (summary) {
@@ -75,7 +75,8 @@ protected:
 class WriteStreamFactory {
 public:
     virtual std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& symbolMask,
-            const SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance) = 0;
+            const SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
+            const size_t numberOfHeights) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
 };

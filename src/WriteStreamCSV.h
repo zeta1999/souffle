@@ -43,8 +43,9 @@ protected:
 class WriteFileCSV : public WriteStreamCSV, public WriteStream {
 public:
     WriteFileCSV(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const bool provenance = false)
-            : WriteStream(symbolMask, symbolTable, provenance), delimiter(getDelimiter(ioDirectives)),
+            const IODirectives& ioDirectives, const size_t numberOfHeights = 0, const bool provenance = false)
+            : WriteStream(symbolMask, symbolTable, provenance, numberOfHeights),
+              delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
@@ -83,8 +84,9 @@ protected:
 class WriteGZipFileCSV : public WriteStreamCSV, public WriteStream {
 public:
     WriteGZipFileCSV(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const bool provenance = false)
-            : WriteStream(symbolMask, symbolTable, provenance), delimiter(getDelimiter(ioDirectives)),
+            const IODirectives& ioDirectives, const size_t numberOfHeights = 0, const bool provenance = false)
+            : WriteStream(symbolMask, symbolTable, provenance, numberOfHeights),
+              delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
@@ -123,8 +125,9 @@ protected:
 class WriteCoutCSV : public WriteStreamCSV, public WriteStream {
 public:
     WriteCoutCSV(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const bool provenance = false)
-            : WriteStream(symbolMask, symbolTable, provenance), delimiter(getDelimiter(ioDirectives)) {
+            const IODirectives& ioDirectives, const size_t numberOfHeights = 0, const bool provenance = false)
+            : WriteStream(symbolMask, symbolTable, provenance, numberOfHeights),
+              delimiter(getDelimiter(ioDirectives)) {
         std::cout << "---------------\n" << ioDirectives.getRelationName();
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             std::cout << "\n" << ioDirectives.get("attributeNames");
@@ -189,14 +192,16 @@ protected:
 class WriteFileCSVFactory : public WriteStreamFactory {
 public:
     std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& symbolMask,
-            const SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const bool provenance) override {
+            const SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
+            const size_t numberOfHeights) override {
 #ifdef USE_LIBZ
         if (ioDirectives.has("compress")) {
-            return std::make_unique<WriteGZipFileCSV>(symbolMask, symbolTable, ioDirectives, provenance);
+            return std::make_unique<WriteGZipFileCSV>(
+                    symbolMask, symbolTable, ioDirectives, numberOfHeights, provenance);
         }
 #endif
-        return std::make_unique<WriteFileCSV>(symbolMask, symbolTable, ioDirectives, provenance);
+        return std::make_unique<WriteFileCSV>(
+                symbolMask, symbolTable, ioDirectives, numberOfHeights, provenance);
     }
     const std::string& getName() const override {
         static const std::string name = "file";
@@ -208,9 +213,10 @@ public:
 class WriteCoutCSVFactory : public WriteStreamFactory {
 public:
     std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& symbolMask,
-            const SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const bool provenance) override {
-        return std::make_unique<WriteCoutCSV>(symbolMask, symbolTable, ioDirectives, provenance);
+            const SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
+            const size_t numberOfHeights) override {
+        return std::make_unique<WriteCoutCSV>(
+                symbolMask, symbolTable, ioDirectives, numberOfHeights, provenance);
     }
     const std::string& getName() const override {
         static const std::string name = "stdout";
@@ -223,7 +229,7 @@ class WriteCoutPrintSizeFactory : public WriteStreamFactory {
 public:
     std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& /* symbolMask */,
             const SymbolTable& /* symbolTable */, const IODirectives& ioDirectives,
-            const bool /* provenance */) override {
+            const bool /* provenance */, const size_t /* numberOfHeights */) override {
         return std::make_unique<WriteCoutPrintSize>(ioDirectives);
     }
     const std::string& getName() const override {

@@ -544,7 +544,8 @@ int main(int argc, char** argv) {
             // only run explain interface if interpreted
             if (Global::config().has("provenance")) {
                 LVMProgInterface interface(*lvm);
-                if (Global::config().get("provenance") == "explain" || Global::config().get("provenance") == "subtreeHeights") {
+                if (Global::config().get("provenance") == "explain" ||
+                        Global::config().get("provenance") == "subtreeHeights") {
                     explain(interface, false);
                 } else if (Global::config().get("provenance") == "explore") {
                     explain(interface, true);
@@ -560,7 +561,8 @@ int main(int argc, char** argv) {
             // only run explain interface if interpreted
             if (Global::config().has("provenance")) {
                 RAMIProgInterface interface(*rami);
-                if (Global::config().get("provenance") == "explain"|| Global::config().get("provenance") == "subtreeHeights") {
+                if (Global::config().get("provenance") == "explain" ||
+                        Global::config().get("provenance") == "subtreeHeights") {
                     explain(interface, false);
                 } else if (Global::config().get("provenance") == "explore") {
                     explain(interface, true);

@@ -601,10 +601,11 @@ private:
         return std::make_pair(-1, -1);
     }
 
-    void printRelationOutput(
+    // TODO (sarah) adapt for extended provenance
+    /*void printRelationOutput(
             const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) override {
-        WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), ioDir, true)->writeAll(rel);
-    }
+        WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), ioDir, true, )->writeAll(rel);
+    }*/
 };
 
 }  // end of namespace souffle

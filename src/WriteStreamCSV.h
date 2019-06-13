@@ -14,7 +14,9 @@
 
 #pragma once
 
+#include "CompiledRecord.h"
 #include "IODirectives.h"
+#include "InterpreterRecords.h"
 #include "ParallelUtils.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
@@ -149,7 +151,13 @@ protected:
         if (symbolMask.at(0)) {
             std::cout << symbolTable.unsafeResolve(tuple[0]);
         } else if (recordMask.at(0)) {
-            std::cout << "RECORD<" << tuple[0] << ">";
+            std::cout << "RECORD<" << tuple[0] << ">: ";
+            RamDomain* x = unpack(tuple[0], 3);
+            std::cout << "[" << x[0];
+            for (size_t i = 1; i < 3; i++) {
+                std::cout << ", " << x[i];
+            }
+            std::cout << "]";
         } else {
             std::cout << tuple[0];
         }
@@ -158,7 +166,13 @@ protected:
             if (symbolMask.at(col)) {
                 std::cout << symbolTable.unsafeResolve(tuple[col]);
             } else if (recordMask.at(col)) {
-                std::cout << "RECORD<" << tuple[col] << ">";
+                std::cout << "RECORD<" << tuple[col] << ">: ";
+                RamDomain* tuple = unpack(tuple[col], 3);
+                std::cout << "[" << tuple[0];
+                for (size_t i = 1; i < 3; i++) {
+                    std::cout << ", " << tuple[i];
+                }
+                std::cout << "]";
             } else {
                 std::cout << tuple[col];
             }

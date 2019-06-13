@@ -147,17 +147,21 @@ protected:
         std::cout << "()\n";
     }
 
+    void writeRecordTuple(const RamDomain ref) {
+        std::cout << "RECORD<" << ref << ">: ";
+        RamDomain* x = unpack(ref, 3);
+        std::cout << "[" << x[0];
+        for (size_t i = 1; i < 3; i++) {
+            std::cout << ", " << x[i];
+        }
+        std::cout << "]";
+    }
+
     void writeNextTuple(const RamDomain* tuple) override {
         if (symbolMask.at(0)) {
             std::cout << symbolTable.unsafeResolve(tuple[0]);
         } else if (recordMask.at(0)) {
-            std::cout << "RECORD<" << tuple[0] << ">: ";
-            RamDomain* x = unpack(tuple[0], 3);
-            std::cout << "[" << x[0];
-            for (size_t i = 1; i < 3; i++) {
-                std::cout << ", " << x[i];
-            }
-            std::cout << "]";
+            writeRecordTuple(tuple[0]);
         } else {
             std::cout << tuple[0];
         }
@@ -166,13 +170,7 @@ protected:
             if (symbolMask.at(col)) {
                 std::cout << symbolTable.unsafeResolve(tuple[col]);
             } else if (recordMask.at(col)) {
-                std::cout << "RECORD<" << tuple[col] << ">: ";
-                RamDomain* tuple = unpack(tuple[col], 3);
-                std::cout << "[" << tuple[0];
-                for (size_t i = 1; i < 3; i++) {
-                    std::cout << ", " << tuple[i];
-                }
-                std::cout << "]";
+                writeRecordTuple(tuple[col]);
             } else {
                 std::cout << tuple[col];
             }

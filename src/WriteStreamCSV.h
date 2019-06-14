@@ -159,23 +159,20 @@ protected:
         }
     }
 
-    void writeNextTuple(const RamDomain* tuple) override {
-        if (kindMask.at(0) == 's') {
-            std::cout << symbolTable.unsafeResolve(tuple[0]);
-        } else if (kindMask.at(0) == 'r') {
-            writeRecordTuple(tuple[0]);
-        } else {
-            std::cout << tuple[0];
+    void writeValue(char kind, RamDomain ref) {
+        switch (kind) {
+            case 'i': std::cout << ref; break;
+            case 's': std::cout << symbolTable.unsafeResolve(ref); break;
+            case 'r': writeRecordTuple(ref); break;
+            default: assert(false && "unimplemented");
         }
+    }
+
+    void writeNextTuple(const RamDomain* tuple) override {
+        writeValue(kindMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             std::cout << delimiter;
-            if (kindMask.at(col) == 's') {
-                std::cout << symbolTable.unsafeResolve(tuple[col]);
-            } else if (kindMask.at(col) == 'r') {
-                writeRecordTuple(tuple[col]);
-            } else {
-                std::cout << tuple[col];
-            }
+            writeValue(kindMask.at(col), tuple[col]);
         }
         std::cout << "\n";
     }

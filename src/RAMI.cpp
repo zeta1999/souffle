@@ -971,9 +971,8 @@ void RAMI::evalStmt(const RamStatement& stmt) {
                         kindMask.push_back(cur[0]);
                     }
                     IOSystem::getInstance()
-                            .getWriter(kindMask, interpreter.getSymbolTable(),
-                                    createInterpreterRecordTable(), ioDirectives,
-                                    Global::config().has("provenance"))
+                            .getWriter(kindMask, interpreter.getSymbolTable(), createInterpreterRecordTable(),
+                                    ioDirectives, Global::config().has("provenance"))
                             ->writeAll(interpreter.getRelation(store.getRelation()));
                 } catch (std::exception& e) {
                     std::cerr << e.what();

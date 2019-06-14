@@ -44,9 +44,10 @@ protected:
 
 class WriteFileCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteFileCSV(const std::vector<char>& kindMask, const SymbolTable& symbolTable, const RecordTable* recordTable,
-            const IODirectives& ioDirectives, const bool provenance = false)
-            : WriteStream(kindMask, symbolTable, recordTable, provenance), delimiter(getDelimiter(ioDirectives)),
+    WriteFileCSV(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
+            const RecordTable* recordTable, const IODirectives& ioDirectives, const bool provenance = false)
+            : WriteStream(kindMask, symbolTable, recordTable, provenance),
+              delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
@@ -86,7 +87,8 @@ class WriteGZipFileCSV : public WriteStreamCSV, public WriteStream {
 public:
     WriteGZipFileCSV(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
             const RecordTable* recordTable, const IODirectives& ioDirectives, const bool provenance = false)
-            : WriteStream(kindMask, symbolTable, recordTable, provenance), delimiter(getDelimiter(ioDirectives)),
+            : WriteStream(kindMask, symbolTable, recordTable, provenance),
+              delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
@@ -125,9 +127,9 @@ protected:
 class WriteCoutCSV : public WriteStreamCSV, public WriteStream {
 public:
     WriteCoutCSV(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const RecordTable* recordTable,
-            const IODirectives& ioDirectives, const bool provenance = false)
-            : WriteStream(kindMask, symbolTable, recordTable, provenance), delimiter(getDelimiter(ioDirectives)) {
+            const RecordTable* recordTable, const IODirectives& ioDirectives, const bool provenance = false)
+            : WriteStream(kindMask, symbolTable, recordTable, provenance),
+              delimiter(getDelimiter(ioDirectives)) {
         std::cout << "---------------\n" << ioDirectives.getRelationName();
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             std::cout << "\n" << ioDirectives.get("attributeNames");
@@ -161,10 +163,17 @@ protected:
 
     void writeValue(char kind, RamDomain ref) {
         switch (kind) {
-            case 'i': std::cout << ref; break;
-            case 's': std::cout << symbolTable.unsafeResolve(ref); break;
-            case 'r': writeRecordTuple(ref); break;
-            default: assert(false && "unimplemented");
+            case 'i':
+                std::cout << ref;
+                break;
+            case 's':
+                std::cout << symbolTable.unsafeResolve(ref);
+                break;
+            case 'r':
+                writeRecordTuple(ref);
+                break;
+            default:
+                assert(false && "unimplemented");
         }
     }
 
@@ -208,12 +217,13 @@ protected:
 
 class WriteFileCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask,
-            const SymbolTable& symbolTable, const RecordTable* recordTable, const IODirectives& ioDirectives,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
+            const RecordTable* recordTable, const IODirectives& ioDirectives,
             const bool provenance) override {
 #ifdef USE_LIBZ
         if (ioDirectives.has("compress")) {
-            return std::make_unique<WriteGZipFileCSV>(kindMask, symbolTable, recordTable, ioDirectives, provenance);
+            return std::make_unique<WriteGZipFileCSV>(
+                    kindMask, symbolTable, recordTable, ioDirectives, provenance);
         }
 #endif
         return std::make_unique<WriteFileCSV>(kindMask, symbolTable, recordTable, ioDirectives, provenance);
@@ -227,8 +237,8 @@ public:
 
 class WriteCoutCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask,
-            const SymbolTable& symbolTable, const RecordTable* recordTable, const IODirectives& ioDirectives,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
+            const RecordTable* recordTable, const IODirectives& ioDirectives,
             const bool provenance) override {
         return std::make_unique<WriteCoutCSV>(kindMask, symbolTable, recordTable, ioDirectives, provenance);
     }
@@ -244,8 +254,8 @@ public:
 class WriteCoutPrintSizeFactory : public WriteStreamFactory {
 public:
     std::unique_ptr<WriteStream> getWriter(const std::vector<char>& /* kindMask */,
-            const SymbolTable& /* symbolTable */, const RecordTable* /* recordTable */, const IODirectives& ioDirectives,
-            const bool /* provenance */) override {
+            const SymbolTable& /* symbolTable */, const RecordTable* /* recordTable */,
+            const IODirectives& ioDirectives, const bool /* provenance */) override {
         return std::make_unique<WriteCoutPrintSize>(ioDirectives);
     }
     const std::string& getName() const override {

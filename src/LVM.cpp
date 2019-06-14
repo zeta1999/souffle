@@ -885,12 +885,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 for (auto& io : IOs) {
                     try {
                         InterpreterRelation& relation = getRelation(relName);
-                        std::vector<bool> symbolMask;
+                        std::vector<char> kindMask;
                         for (auto& cur : relation.getAttributeTypeQualifiers()) {
-                            symbolMask.push_back(cur[0] == 's');
+                            kindMask.push_back(cur[0]);
                         }
                         IOSystem::getInstance()
-                                .getWriter(symbolMask, symbolTable, createInterpreterRecordTable(), io, Global::config().has("provenance"))
+                                .getWriter(kindMask, symbolTable, createInterpreterRecordTable(), io, Global::config().has("provenance"))
                                 ->writeAll(relation);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";

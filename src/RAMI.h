@@ -110,9 +110,9 @@ protected:
         RAMIRelation* res = nullptr;
         assert(environment.find(id.getName()) == environment.end());
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = new RAMIEqRelation(id.getArity(), orderSet, id.getName());
+            res = new RAMIEqRelation(id.getArity(), id.getNumberOfHeights(), orderSet, id.getName());
         } else {
-            res = new RAMIRelation(id.getArity(), orderSet, id.getName());
+            res = new RAMIRelation(id.getArity(), id.getNumberOfHeights(), orderSet, id.getName());
         }
         environment[id.getName()] = res;
     }

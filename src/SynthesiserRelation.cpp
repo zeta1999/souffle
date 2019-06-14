@@ -101,7 +101,7 @@ void SynthesiserDirectRelation::computeIndices() {
 
             // TODO (sarah): assumption index is used exclusively for provenance in case a height parameter
             // occurs in order of columns before regular columns (at least only in this case it needs to be
-            //copied) -- verify this!!
+            // copied) -- verify this!!
 
             auto firstProvenanceColumn = (getArity() - relation.getNumberOfHeights() - 1);
 

@@ -37,8 +37,10 @@ class RAMIRelation {
     using LexOrder = std::vector<int>;
 
 public:
-    RAMIRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
-            : arity(relArity), orderSet(orderSet), relName(std::move(relName)) {
+    RAMIRelation(size_t relArity, size_t relNumberOfHeights, const MinIndexSelection* orderSet,
+            std::string relName)
+            : arity(relArity), numberOfHeights(relNumberOfHeights), orderSet(orderSet),
+              relName(std::move(relName)) {
         // Create all necessary indices based on orderSet
         for (auto& order : orderSet->getAllOrders()) {
             indices.push_back(RAMIIndex(order));
@@ -70,6 +72,11 @@ public:
     /** Get arity of relation */
     size_t getArity() const {
         return arity;
+    }
+
+    /** Get number of heights of relation */
+    size_t getNumberOfHeights() const {
+        return numberOfHeights;
     }
 
     /** Check whether relation is empty */
@@ -251,6 +258,9 @@ private:
     /** Arity of relation */
     const size_t arity;
 
+    /** Number of height parameters of relation */
+    const size_t numberOfHeights;
+
     /** Size of blocks containing tuples */
     static const int BLOCK_SIZE = 1024;
 
@@ -284,8 +294,9 @@ private:
 
 class RAMIEqRelation : public RAMIRelation {
 public:
-    RAMIEqRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
-            : RAMIRelation(relArity, orderSet, relName) {}
+    RAMIEqRelation(size_t relArity, size_t relNumberOfHeights, const MinIndexSelection* orderSet,
+            std::string relName)
+            : RAMIRelation(relArity, relNumberOfHeights, orderSet, relName) {}
 
     /** Insert tuple */
     void insert(const RamDomain* tuple) override {

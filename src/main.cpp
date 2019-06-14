@@ -327,6 +327,15 @@ int main(int argc, char** argv) {
             }
         }
 
+        /* disable LVM interpreter with subtree height provenance implementation */
+        if (Global::config().get("interpreter") == "LVM") {
+            if (Global::config().get("provenance") == "subtreeHeights") {
+                throw std::runtime_error(
+                        "provenance instrumentation with subtree heights is currently not supported in LVM "
+                        "interpreter");
+            }
+        }
+
         /* ensure that souffle has been compiled with support for the execution engine, if specified */
         if (Global::config().has("engine")) {
             if (!(Global::config().has("compile") || Global::config().has("dl-program") ||
@@ -534,7 +543,7 @@ int main(int argc, char** argv) {
         }
 
         // configure and execute interpreter
-        if (Global::config().get("Interpreter") == "LVM") {
+        if (Global::config().get("interpreter") == "LVM") {
             std::unique_ptr<LVMInterface> lvm(std::make_unique<LVM>(*ramTranslationUnit));
             lvm->executeMain();
             // If the profiler was started, join back here once it exits.

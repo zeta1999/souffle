@@ -147,9 +147,8 @@ protected:
     }
 
     void writeRecordTuple(const RamDomain ref) {
-        std::cout << "RECORD<" << ref << ">: ";
-        assert(recordTable != nullptr);
         const auto& record = recordTable->getRecord(ref);
+        std::cout << "UnnamedRecord";
         if (record.size() == 0) {
             std::cout << "[]" << std::endl;
         } else {

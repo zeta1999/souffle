@@ -274,7 +274,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
-                out << ", symTable, ioDirectives";
+                out << ", symTable, ::souffle::detail::GeneralRecordMap::getRecordTable(), ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2123,7 +2123,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
                 os << "std::vector<bool>({" << join(symbolMask) << "})";
-                os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
+                os << ", symTable, ::souffle::detail::GeneralRecordMap::getRecordTable(), ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
                 os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2191,7 +2191,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "std::vector<bool>({" << join(symbolMask) << "})";
-        os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
+        os << ", symTable, ::souffle::detail::GeneralRecordMap::getRecordTable(), ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
     };

@@ -137,15 +137,6 @@ public:
             recordMask.push_back(false);
         }
         recordMask[0] = true;
-
-        /*
-        recordTable = new RecordTable();
-        for (const auto* recordMap : detail::createdMaps) {
-            for (const auto& pair : recordMap->getRecordReferences()) {
-                recordTable->addRecord(pair.first, pair.second);
-            }
-        }
-        */
     }
 
     ~WriteCoutCSV() override {

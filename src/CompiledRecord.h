@@ -18,6 +18,7 @@
 
 #include "CompiledTuple.h"
 #include "ParallelUtils.h"
+#include "RecordTable.h"
 #include "Util.h"
 
 #include <limits>
@@ -76,6 +77,7 @@ class GeneralRecordMap;
 
 static std::set<GeneralRecordMap*> createdMaps;
 
+// TODO: change name?
 class GeneralRecordMap {
 public:
     GeneralRecordMap() {
@@ -83,6 +85,19 @@ public:
     }
 
     virtual std::map<RamDomain, std::vector<RamDomain>> getRecordReferences() const = 0;
+
+    static RecordTable* getRecordTable() {
+        RecordTable* recordTable = new RecordTable();
+
+        recordTable = new RecordTable();
+        for (const auto* recordMap : createdMaps) {
+            for (const auto& pair : recordMap->getRecordReferences()) {
+                recordTable->addRecord(pair.first, pair.second);
+            }
+        }
+
+        return recordTable;
+    }
 };
 
 /**

@@ -65,18 +65,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        if (kindMask.at(0)) {
-            file << symbolTable.unsafeResolve(tuple[0]);
-        } else {
-            file << tuple[0];
-        }
+        writeValue(file, kindMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
-            if (kindMask.at(col)) {
-                file << symbolTable.unsafeResolve(tuple[col]);
-            } else {
-                file << tuple[col];
-            }
+            writeValue(file, kindMask.at(col), tuple[col]);
         }
         file << "\n";
     }
@@ -103,18 +95,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        if (kindMask.at(0)) {
-            file << symbolTable.unsafeResolve(tuple[0]);
-        } else {
-            file << tuple[0];
-        }
+        writeValue(file, kindMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
-            if (kindMask.at(col)) {
-                file << symbolTable.unsafeResolve(tuple[col]);
-            } else {
-                file << tuple[col];
-            }
+            writeValue(file, kindMask.at(col), tuple[col]);
         }
         file << "\n";
     }
@@ -146,51 +130,16 @@ protected:
         std::cout << "()\n";
     }
 
-    void writeValue(char kind, RamDomain ref) {
-        switch (kind) {
-            case 'i': {
-                std::cout << ref;
-                break;
-            }
-
-            case 's': {
-                std::cout << symbolTable.unsafeResolve(ref);
-                break;
-            }
-
-            case 'r': {
-                const auto& record = recordTable->getRecord(ref);
-
-                std::cout << "UnnamedRecord";
-                if (record.size() == 0) {
-                    std::cout << "[]" << std::endl;
-                } else {
-                    std::cout << "[" << record[0];
-                    for (size_t i = 1; i < record.size(); i++) {
-                        std::cout << ", " << record[i];
-                    }
-                    std::cout << "]";
-                }
-
-                break;
-            }
-
-            default:
-                assert(false && "cannot print value of unknown kind");
-        }
-    }
-
     void writeNextTuple(const RamDomain* tuple) override {
-        writeValue(kindMask.at(0), tuple[0]);
+        writeValue(std::cout, kindMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             std::cout << delimiter;
-            writeValue(kindMask.at(col), tuple[col]);
+            writeValue(std::cout, kindMask.at(col), tuple[col]);
         }
         std::cout << "\n";
     }
 
     const std::string delimiter;
-    std::vector<bool> recordMask{};
 };
 
 class WriteCoutPrintSize : public WriteStream {

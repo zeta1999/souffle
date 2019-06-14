@@ -72,6 +72,40 @@ protected:
     void writeNext(const Tuple tuple) {
         writeNextTuple(tuple.data);
     }
+
+    void writeValue(std::ostream& os, char kind, RamDomain repr) {
+        switch (kind) {
+            case 'i': {
+                os << repr;
+                break;
+            }
+
+            case 's': {
+                os << symbolTable.unsafeResolve(repr);
+                break;
+            }
+
+            case 'r': {
+                const auto& record = recordTable->getRecord(repr);
+
+                os << "UnnamedRecord";
+                if (record.size() == 0) {
+                    os << "[]" << std::endl;
+                } else {
+                    os << "[" << record[0];
+                    for (size_t i = 1; i < record.size(); i++) {
+                        os << ", " << record[i];
+                    }
+                    os << "]";
+                }
+
+                break;
+            }
+
+            default:
+                assert(false && "cannot print value of unknown kind");
+        }
+    }
 };
 
 class WriteStreamFactory {

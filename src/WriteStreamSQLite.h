@@ -52,11 +52,16 @@ protected:
     void writeNextTuple(const RamDomain* tuple) override {
         for (size_t i = 0; i < arity; i++) {
             RamDomain value;
-            if (kindMask.at(i)) {
+            if (kindMask.at(i) == 's') {
                 value = getSymbolTableID(tuple[i]);
-            } else {
+            } else if (kindMask.at(i) == 'i') {
                 value = tuple[i];
+            } else if (kindMask.at(i) == 'r') {
+                assert(false && "Record tuples cannot be written to sqlite db");
+            } else {
+                assert(false && "Attempting to store unknown type in sqlite db");
             }
+
 #if RAM_DOMAIN_SIZE == 64
             if (sqlite3_bind_int64(insertStatement, i + 1, value) != SQLITE_OK) {
 #else
@@ -215,7 +220,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (!kindMask.at(i)) {
+            if (kindMask.at(i) != 's') {
                 projectionClause << "'_" << relationName << "'.'" << columnName << "'";
             } else {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";

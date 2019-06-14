@@ -93,16 +93,29 @@ void SynthesiserDirectRelation::computeIndices() {
         // and also add provenance annotations to the indices
         if (isProvenance) {
             // expand index to be full
-            for (size_t i = 0; i < getArity() - 2; i++) {
+            for (size_t i = 0; i < getArity() - 1 - relation.getNumberOfHeights(); i++) {
                 if (curIndexElems.find(i) == curIndexElems.end()) {
                     ind.push_back(i);
                 }
             }
 
-            // index refers to height parameter before last position and therefore was added for provenance
-            // computation
-            if (curIndexElems.find(getArity() - 1) != curIndexElems.end() &&
-                    (size_t)ind[ind.size() - 1] != (getArity() - 1)) {
+            // TODO (sarah): assumption index is used exclusively for provenance in case a height parameter
+            // occurs in order of columns before regular columns (at least only in this case it needs to be
+            //copied) -- verify this!!
+
+            auto firstProvenanceColumn = (getArity() - relation.getNumberOfHeights() - 1);
+
+            // position of last non provenance column
+            auto nonProv = std::find_if(ind.rbegin(), ind.rend(),
+                    [firstProvenanceColumn](size_t i) { return i < firstProvenanceColumn; });
+            auto indNonProv = std::distance(nonProv, ind.rend());
+
+            // position of first height column
+            auto prov = std::find_if(ind.begin(), ind.end(),
+                    [firstProvenanceColumn](size_t i) { return i >= firstProvenanceColumn + 1; });
+            auto indProv = std::distance(ind.begin(), prov);
+
+            if (indNonProv > indProv) {
                 provenanceIndexNumbers.insert(index_nr);
             } else {
                 // index was not added for provenance and can therefore be used as master index
@@ -110,14 +123,17 @@ void SynthesiserDirectRelation::computeIndices() {
             }
 
             // add provenance annotations to the index but in reverse order
-            // add height if not already contained
-            if (curIndexElems.find(getArity() - 1) == curIndexElems.end()) ind.push_back(getArity() - 1);
+            // add height columns if not already contained
+            for (size_t i = getArity() - relation.getNumberOfHeights(); i < getArity(); i++) {
+                if (curIndexElems.find(i) == curIndexElems.end()) ind.push_back(i);
+            }
+
             // remove rule annotation if already in the index order
-            if (curIndexElems.find(getArity() - 2) != curIndexElems.end()) {
-                ind.erase(std::find(ind.begin(), ind.end(), getArity() - 2));
+            if (curIndexElems.find(getArity() - 1 - relation.getNumberOfHeights()) != curIndexElems.end()) {
+                ind.erase(std::find(ind.begin(), ind.end(), getArity() - 1 - relation.getNumberOfHeights()));
             }
             // add rule as last parameter
-            ind.push_back(getArity() - 2);
+            ind.push_back(getArity() - 1 - relation.getNumberOfHeights());
 
         } else if (ind.size() < getArity()) {
             // expand index to be full
@@ -159,6 +175,7 @@ std::string SynthesiserDirectRelation::getTypeName() {
 /** Generate type struct of a direct indexed relation */
 void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     size_t arity = getArity();
+    size_t numberOfHeights = relation.getNumberOfHeights();
     const auto& inds = getIndices();
     size_t numIndexes = inds.size();
     std::map<MinIndexSelection::LexOrder, int> indexToNumMap;
@@ -173,8 +190,11 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     if (isProvenance) {
         out << "struct updater_" << getTypeName() << " {\n";
         out << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
-        out << "old_t[" << arity - 2 << "] = new_t[" << arity - 2 << "];\n";
-        out << "old_t[" << arity - 1 << "] = new_t[" << arity - 1 << "];\n";
+
+        for (size_t i = arity - numberOfHeights - 1; i < arity; i++) {
+            out << "old_t[" << i << "] = new_t[" << i << "];\n";
+        }
+
         out << "}\n";
         out << "};\n";
     }
@@ -195,7 +215,8 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
                 out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);
                 out << ">, std::allocator<t_tuple>, 256, typename "
                        "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
-                out << join(ind.begin(), ind.end() - 2) << ">, updater_" << getTypeName() << ">;\n";
+                out << join(ind.begin(), ind.end() - 1 - numberOfHeights) << ">, updater_" << getTypeName()
+                    << ">;\n";
             } else {  // index for top down phase
                 out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);
                 out << ">, std::allocator<t_tuple>, 256, typename "

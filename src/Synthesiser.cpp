@@ -1323,6 +1323,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto arity = rel.getArity();
+            auto numberOfHeights = rel.getNumberOfHeights();
 
             // provenance not exists is never total, conduct a range query
             out << "[&]() -> bool {\n";
@@ -1331,7 +1332,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // out << synthesiser.toIndex(ne.getSearchSignature());
             out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">({{";
-            for (size_t i = 0; i < provExists.getValues().size() - 1; i++) {
+            for (size_t i = 0; i < provExists.getValues().size() - numberOfHeights; i++) {
                 RamExpression* val = provExists.getValues()[i];
                 if (!isRamUndefValue(val)) {
                     visit(*val, out);
@@ -1340,13 +1341,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 out << ",";
             }
-            // extra 0 for provenance height annotation
+            // extra 0 for provenance height annotations
+            for (int i = 0; i < (int)(numberOfHeights - 1); i++) {
+                out << "0,";
+            }
             out << "0";
 
             out << "}})," << ctxName << ");\n";
             out << "if (existenceCheck.empty()) return false; else return (*existenceCheck.begin())["
-                << arity - 1 << "] <= ";
-            visit(*(provExists.getValues()[arity - 1]), out);
+                << arity - numberOfHeights << "] <= ";
+            visit(*(provExists.getValues()[arity - numberOfHeights]), out);
             out << ";}()\n";
             PRINT_END_COMMENT(out);
         }
@@ -2382,7 +2386,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
     }
 
-    if (Global::config().get("provenance") == "explain") {
+    if (Global::config().get("provenance") == "explain" ||
+            Global::config().get("provenance") == "subtreeHeights") {
         os << "obj.copyIndex();\n";
         os << "explain(obj, false);\n";
     } else if (Global::config().get("provenance") == "explore") {

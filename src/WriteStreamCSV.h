@@ -146,33 +146,37 @@ protected:
         std::cout << "()\n";
     }
 
-    void writeRecordTuple(const RamDomain ref) {
-        const auto& record = recordTable->getRecord(ref);
-        std::cout << "UnnamedRecord";
-        if (record.size() == 0) {
-            std::cout << "[]" << std::endl;
-        } else {
-            std::cout << "[" << record[0];
-            for (size_t i = 1; i < record.size(); i++) {
-                std::cout << ", " << record[i];
-            }
-            std::cout << "]";
-        }
-    }
-
     void writeValue(char kind, RamDomain ref) {
         switch (kind) {
-            case 'i':
+            case 'i': {
                 std::cout << ref;
                 break;
-            case 's':
+            }
+
+            case 's': {
                 std::cout << symbolTable.unsafeResolve(ref);
                 break;
-            case 'r':
-                writeRecordTuple(ref);
+            }
+
+            case 'r': {
+                const auto& record = recordTable->getRecord(ref);
+
+                std::cout << "UnnamedRecord";
+                if (record.size() == 0) {
+                    std::cout << "[]" << std::endl;
+                } else {
+                    std::cout << "[" << record[0];
+                    for (size_t i = 1; i < record.size(); i++) {
+                        std::cout << ", " << record[i];
+                    }
+                    std::cout << "]";
+                }
+
                 break;
+            }
+
             default:
-                assert(false && "unimplemented");
+                assert(false && "cannot print value of unknown kind");
         }
     }
 

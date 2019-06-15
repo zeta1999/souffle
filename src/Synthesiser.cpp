@@ -260,10 +260,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitStore(const RamStore& store, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
-            std::vector<bool> symbolMask;
+            std::vector<char> kindMask;
             for (auto& cur : store.getRelation().getAttributeTypeQualifiers()) {
-                symbolMask.push_back(cur[0] == 's');
+                kindMask.push_back(cur[0]);
             }
+
+            std::stringstream kindMaskStr;
+            kindMaskStr << "std::vector<char>({";
+            if (!kindMask.empty()) {
+                kindMaskStr << "'" << join(kindMask, "','") << "'";
+            }
+            kindMaskStr << "})";
+
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 out << "try {";
                 out << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
@@ -273,7 +281,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << "std::vector<bool>({" << join(symbolMask) << "})";
+                out << kindMaskStr.str();
                 out << ", symTable, ::souffle::detail::GeneralRecordMap::getRecordTable(), ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
@@ -2109,10 +2117,18 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
     visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
-            std::vector<bool> symbolMask;
+            std::vector<char> kindMask;
             for (auto& cur : store->getRelation().getAttributeTypeQualifiers()) {
-                symbolMask.push_back(cur[0] == 's');
+                kindMask.push_back(cur[0]);
             }
+
+            std::stringstream kindMaskStr;
+            kindMaskStr << "std::vector<char>({";
+            if (!kindMask.empty()) {
+                kindMaskStr << "'" << join(kindMask, "','") << "'";
+            }
+            kindMaskStr << "})";
+
             for (IODirectives ioDirectives : store->getIODirectives()) {
                 os << "try {";
                 os << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
@@ -2122,7 +2138,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "}\n";
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
-                os << "std::vector<bool>({" << join(symbolMask) << "})";
+                os << kindMaskStr.str();
                 os << ", symTable, ::souffle::detail::GeneralRecordMap::getRecordTable(), ioDirectives, "
                    << (Global::config().has("provenance") ? "true" : "false");
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
@@ -2181,17 +2197,24 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue dump methods
     auto dumpRelation = [&](const std::string& name, const std::vector<std::string>& mask, size_t arity) {
         auto relName = name;
-        std::vector<bool> symbolMask;
+        std::vector<char> kindMask;
         for (auto& cur : mask) {
-            symbolMask.push_back(cur[0] == 's');
+            kindMask.push_back(cur[0]);
         }
+
+        std::stringstream kindMaskStr;
+        kindMaskStr << "std::vector<char>({";
+        if (!kindMask.empty()) {
+            kindMaskStr << "'" << join(kindMask, "','") << "'";
+        }
+        kindMaskStr << "})";
 
         os << "try {";
         os << "IODirectives ioDirectives;\n";
         os << "ioDirectives.setIOType(\"stdout\");\n";
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
-        os << "std::vector<bool>({" << join(symbolMask) << "})";
+        os << kindMaskStr.str();
         os << ", symTable, ::souffle::detail::GeneralRecordMap::getRecordTable(), ioDirectives, "
            << (Global::config().has("provenance") ? "true" : "false");
         os << ")->writeAll(*" << relName << ");\n";

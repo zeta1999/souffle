@@ -571,9 +571,21 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     if (Global::config().has("provenance") &&
             ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
                     !Global::config().has("generate")))) {
-        auto arity = head->getArity() - 1 -
-                     translator.program->getRelation(head->getName())->numberOfHeightParameters();
-        ;
+        size_t numberOfHeigths = 1;
+
+        // TODO (sarah) what is correct way to get number of height parameters here?
+        if (head->getName().getName().rfind("@delta_") == 0) {
+            const AstRelationIdentifier& originalRel =
+                    AstRelationIdentifier(head->getName().getName().substr(7));
+            numberOfHeigths = translator.program->getRelation(originalRel)->numberOfHeightParameters();
+        } else if (head->getName().getName().rfind("@new_") == 0) {
+            const AstRelationIdentifier& originalRel =
+                    AstRelationIdentifier(head->getName().getName().substr(5));
+            numberOfHeigths = translator.program->getRelation(originalRel)->numberOfHeightParameters();
+        } else
+            translator.program->getRelation(head->getName())->numberOfHeightParameters();
+
+        auto arity = head->getArity() - 1 - numberOfHeigths;
 
         std::vector<std::unique_ptr<RamExpression>> values;
 
@@ -589,9 +601,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
 
         // add unnamed args for provenance columns
         values.push_back(std::make_unique<RamUndefValue>());
-        for (size_t h = 0; h < translator.program->getRelation(head->getName())->numberOfHeightParameters();
-                h++)
-            values.push_back(std::make_unique<RamUndefValue>());
+        for (size_t h = 0; h < numberOfHeigths; h++) values.push_back(std::make_unique<RamUndefValue>());
 
         if (isVolatile) {
             return std::make_unique<RamFilter>(

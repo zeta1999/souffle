@@ -71,34 +71,43 @@ bool isNull(RamDomain ref) {
     return ref == 0;
 }
 
-namespace detail {
-
-class GeneralRecordMap;
-
-static std::set<GeneralRecordMap*> createdMaps;
-
-// TODO: change name?
+/**
+ * A superclass for all generated record map classes.
+ */
 class GeneralRecordMap {
 public:
     GeneralRecordMap() {
         createdMaps.insert(this);
     }
 
+    /**
+     * Get the reference-to-tuple mapping for the current record map.
+     */
     virtual std::map<RamDomain, std::vector<RamDomain>> getRecordReferences() const = 0;
 
+    /**
+     * Get the reference-to-tuple mapping generated so far across all record maps.
+     */
     static RecordTable* getRecordTable() {
         RecordTable* recordTable = new RecordTable();
 
-        recordTable = new RecordTable();
+        // add in all records from all created maps
         for (const auto* recordMap : createdMaps) {
             for (const auto& pair : recordMap->getRecordReferences()) {
-                recordTable->addRecord(pair.first, pair.second);
+                RamDomain ref = pair.first;
+                const auto& tuple = pair.second;
+                recordTable->addRecord(ref, tuple);
             }
         }
 
         return recordTable;
     }
+
+private:
+    static std::set<GeneralRecordMap*> createdMaps;
 };
+
+namespace detail {
 
 /**
  * A bidirectional mapping between tuples and reference indices.

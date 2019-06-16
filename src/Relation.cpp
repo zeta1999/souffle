@@ -339,6 +339,12 @@ namespace souffle {
 		case 4: return std::make_unique<BTreeIndex<4>>(order);
 		case 5: return std::make_unique<BTreeIndex<5>>(order);
 		case 6: return std::make_unique<BTreeIndex<6>>(order);
+		case 7: return std::make_unique<BTreeIndex<7>>(order);
+		case 8: return std::make_unique<BTreeIndex<8>>(order);
+		case 9: return std::make_unique<BTreeIndex<9>>(order);
+		case 10: return std::make_unique<BTreeIndex<10>>(order);
+		case 11: return std::make_unique<BTreeIndex<11>>(order);
+		case 12: return std::make_unique<BTreeIndex<12>>(order);
 		}
 		assert(false && "Requested arity not yet supported. Feel free to add it.");
 	}
@@ -353,6 +359,12 @@ namespace souffle {
 		case 4: return std::make_unique<BrieIndex<4>>(order);
 		case 5: return std::make_unique<BrieIndex<5>>(order);
 		case 6: return std::make_unique<BrieIndex<6>>(order);
+		case 7: return std::make_unique<BrieIndex<7>>(order);
+		case 8: return std::make_unique<BrieIndex<8>>(order);
+		case 9: return std::make_unique<BrieIndex<9>>(order);
+		case 10: return std::make_unique<BrieIndex<10>>(order);
+		case 11: return std::make_unique<BrieIndex<11>>(order);
+		case 12: return std::make_unique<BrieIndex<12>>(order);
 		}
 		assert(false && "Requested arity not yet supported. Feel free to add it.");
 	}

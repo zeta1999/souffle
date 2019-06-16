@@ -2068,7 +2068,7 @@ struct fix_lower_bound {
 
     	get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
 
-    	assert(entry[Pos] <= *cur);
+    	assert(entry[Pos] <= int(*cur));
     	iter.value[Pos] = *cur;
 
         // no more remaining levels to fix
@@ -2082,7 +2082,7 @@ struct fix_lower_bound {
 
     	// if no lower boundary is found, be done
     	if (cur == store.end()) return false;
-    	assert(cur->first >= entry[Pos]);
+    	assert(int(cur->first) >= entry[Pos]);
 
     	// if the lower bound is higher than the requested value, go to first in subtree
     	if (cur->first > entry[Pos]) {

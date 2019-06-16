@@ -217,19 +217,8 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const Ast
     if (const auto rel = getAtomRelation(atom, program)) {
         return translateRelation(rel);
     } else {
-        // TODO (sarah) what is correct way to get number of height parameters here?
-        if (atom->getName().getName().rfind("@delta_") == 0) {
-            const AstRelationIdentifier& originalRel =
-                    AstRelationIdentifier(atom->getName().getName().substr(7));
-            return createRelationReference(getRelationName(atom->getName()), atom->getArity(),
-                    program->getRelation(originalRel)->numberOfHeightParameters());
-        } else if (atom->getName().getName().rfind("@new_") == 0) {
-            const AstRelationIdentifier& originalRel =
-                    AstRelationIdentifier(atom->getName().getName().substr(5));
-            return createRelationReference(getRelationName(atom->getName()), atom->getArity(),
-                    program->getRelation(originalRel)->numberOfHeightParameters());
-        } else
-            return createRelationReference(getRelationName(atom->getName()), atom->getArity(), 1);
+        return createRelationReference(
+                getRelationName(atom->getName()), atom->getArity(), getNumberOfHeights(atom, program));
     }
 }
 
@@ -357,8 +346,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             // get contained atom
             const auto* atom = neg.getAtom();
             auto arity = atom->getArity();
-            auto numberOfHeightParameters =
-                    translator.program->getRelation(atom->getName())->numberOfHeightParameters();
+            auto numberOfHeightParameters = getNumberOfHeights(atom, translator.program);
 
             // account for extra provenance columns
             if (Global::config().has("provenance")) {
@@ -396,8 +384,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             // get contained atom
             const AstAtom* atom = neg.getAtom();
             auto arity = atom->getArity();
-            auto numberOfHeightParameters =
-                    translator.program->getRelation(atom->getName())->numberOfHeightParameters();
+            auto numberOfHeightParameters = getNumberOfHeights(atom, translator.program);
 
             // account for extra provenance columns
             if (Global::config().has("provenance")) {
@@ -571,19 +558,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     if (Global::config().has("provenance") &&
             ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
                     !Global::config().has("generate")))) {
-        size_t numberOfHeigths = 1;
-
-        // TODO (sarah) what is correct way to get number of height parameters here?
-        if (head->getName().getName().rfind("@delta_") == 0) {
-            const AstRelationIdentifier& originalRel =
-                    AstRelationIdentifier(head->getName().getName().substr(7));
-            numberOfHeigths = translator.program->getRelation(originalRel)->numberOfHeightParameters();
-        } else if (head->getName().getName().rfind("@new_") == 0) {
-            const AstRelationIdentifier& originalRel =
-                    AstRelationIdentifier(head->getName().getName().substr(5));
-            numberOfHeigths = translator.program->getRelation(originalRel)->numberOfHeightParameters();
-        } else
-            translator.program->getRelation(head->getName())->numberOfHeightParameters();
+        size_t numberOfHeigths = getNumberOfHeights(head, translator.program);
 
         auto arity = head->getArity() - 1 - numberOfHeigths;
 
@@ -633,8 +608,7 @@ std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createO
             values.push_back(translator.translateValue(con->getLHS(), valueIndex));
             values.push_back(translator.translateValue(con->getRHS(), valueIndex));
         } else if (auto neg = dynamic_cast<AstProvenanceNegation*>(lit)) {
-            size_t numberOfHeights =
-                    translator.program->getRelation(neg->getAtom()->getName())->numberOfHeightParameters();
+            size_t numberOfHeights = getNumberOfHeights(neg->getAtom(), translator.program);
 
             for (size_t i = 0; i < neg->getAtom()->getArguments().size() - 1 - numberOfHeights; ++i) {
                 auto arg = neg->getAtom()->getArguments()[i];

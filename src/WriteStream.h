@@ -28,9 +28,11 @@ namespace souffle {
 class WriteStream {
 public:
     WriteStream(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const RecordTable* recordTable, const bool prov, bool summary = false)
-            : kindMask(kindMask), symbolTable(symbolTable), recordTable(recordTable), isProvenance(prov),
-              summary(summary), arity(kindMask.size() - (prov ? 2 : 0)) {}
+            const std::map<int, int>& recordArityMask, const RecordTable* recordTable, const bool prov,
+            bool summary = false)
+            : kindMask(kindMask), symbolTable(symbolTable), recordArityMask(recordArityMask),
+              recordTable(recordTable), isProvenance(prov), summary(summary),
+              arity(kindMask.size() - (prov ? 2 : 0)) {}
     template <typename T>
     void writeAll(const T& relation) {
         if (summary) {
@@ -58,6 +60,7 @@ public:
 protected:
     const std::vector<char>& kindMask;
     const SymbolTable& symbolTable;
+    const std::map<int, int>& recordArityMask;
     const RecordTable* recordTable;
     const bool isProvenance;
     const bool summary;
@@ -74,36 +77,29 @@ protected:
     }
 
     void writeValue(std::ostream& os, char kind, RamDomain repr) {
-        switch (kind) {
-            case 'i': {
-                os << repr;
-                break;
+        assert(kind != 'r' && "attempting to print record with unknown arity");
+        if (kind == 'i') {
+            os << repr;
+        } else if (kind == 's') {
+            os << symbolTable.unsafeResolve(repr);
+        } else {
+            assert(false && "cannot print value of unknown kind");
+        }
+    }
+
+    void writeValue(std::ostream& os, char kind, RamDomain repr, int arity) {
+        assert(kind == 'r' && "only record types should have associated arity");
+        const auto& record = recordTable->getRecord(arity, repr);
+
+        os << "UnnamedRecord";
+        if (record.size() == 0) {
+            os << "[]" << std::endl;
+        } else {
+            os << "[" << record[0];
+            for (size_t i = 1; i < record.size(); i++) {
+                os << ", " << record[i];
             }
-
-            case 's': {
-                os << symbolTable.unsafeResolve(repr);
-                break;
-            }
-
-            case 'r': {
-                const auto& record = recordTable->getRecord(repr);
-
-                os << "UnnamedRecord";
-                if (record.size() == 0) {
-                    os << "[]" << std::endl;
-                } else {
-                    os << "[" << record[0];
-                    for (size_t i = 1; i < record.size(); i++) {
-                        os << ", " << record[i];
-                    }
-                    os << "]";
-                }
-
-                break;
-            }
-
-            default:
-                assert(false && "cannot print value of unknown kind");
+            os << "]";
         }
     }
 };
@@ -111,8 +107,8 @@ protected:
 class WriteStreamFactory {
 public:
     virtual std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask,
-            const SymbolTable& symbolTable, const RecordTable* recordTable, const IODirectives& ioDirectives,
-            const bool provenance) = 0;
+            const SymbolTable& symbolTable, const std::map<int, int>& recordArityMask,
+            const RecordTable* recordTable, const IODirectives& ioDirectives, const bool provenance) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
 };

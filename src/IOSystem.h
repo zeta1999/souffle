@@ -51,13 +51,13 @@ public:
      * Return a new WriteStream
      */
     std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const RecordTable* recordTable, const IODirectives& ioDirectives, const bool provenance) const {
+            const std::map<int,int>& recordArityMask, const RecordTable* recordTable, const IODirectives& ioDirectives, const bool provenance) const {
         std::string ioType = ioDirectives.getIOType();
         if (outputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested output type <" + ioType + "> is not supported.");
         }
         return outputFactories.at(ioType)->getWriter(
-                kindMask, symbolTable, recordTable, ioDirectives, provenance);
+                kindMask, symbolTable, recordArityMask, recordTable, ioDirectives, provenance);
     }
     // TODO: READER STUFF?
     /**

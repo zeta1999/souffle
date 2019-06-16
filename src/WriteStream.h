@@ -76,30 +76,40 @@ protected:
         writeNextTuple(tuple.data);
     }
 
-    void writeValue(std::ostream& os, char kind, RamDomain repr) {
-        assert(kind != 'r' && "attempting to print record with unknown arity");
-        if (kind == 'i') {
-            os << repr;
-        } else if (kind == 's') {
-            os << symbolTable.unsafeResolve(repr);
-        } else {
-            assert(false && "cannot print value of unknown kind");
-        }
-    }
+    void writeValue(std::ostream& os, size_t col, RamDomain repr) {
+        char kind = kindMask.at(col);
 
-    void writeValue(std::ostream& os, char kind, RamDomain repr, int arity) {
-        assert(kind == 'r' && "only record types should have associated arity");
-        const auto& record = recordTable->getRecord(arity, repr);
-
-        os << "UnnamedRecord";
-        if (record.size() == 0) {
-            os << "[]" << std::endl;
-        } else {
-            os << "[" << record[0];
-            for (size_t i = 1; i < record.size(); i++) {
-                os << ", " << record[i];
+        switch (kind) {
+            case 'i': {
+                os << repr;
+                break;
             }
-            os << "]";
+
+            case 's': {
+                os << symbolTable.unsafeResolve(repr);
+                break;
+            }
+
+            case 'r': {
+                int arity = recordArityMask.at(col);
+                const auto& record = recordTable->getRecord(arity, repr);
+
+                os << "UnnamedRecord";
+                if (record.size() == 0) {
+                    os << "[]" << std::endl;
+                } else {
+                    os << "[" << record[0];
+                    for (size_t i = 1; i < record.size(); i++) {
+                        os << ", " << record[i];
+                    }
+                    os << "]";
+                }
+
+                break;
+            }
+
+            default:
+                assert(false && "cannot print value of unknown kind");
         }
     }
 };

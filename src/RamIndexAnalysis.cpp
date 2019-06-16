@@ -392,7 +392,6 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
     auto numberOfHeights = provExistCheck->getRelation().getNumberOfHeights();
     // values.size() - numberOfHeights because we discard the height annotations
 
-    // TODO (sarah) what is the effect of this on provenance indices?
     for (int i = 0; i < (int)values.size() - (int)numberOfHeights; i++) {
         if (!isRamUndefValue(values[i])) {
             res |= (1 << i);

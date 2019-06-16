@@ -74,8 +74,7 @@ public:
 
     virtual void printRulesJSON(std::ostream& os) = 0;
 
-    // TODO (sarah) include after fixing printRelationOutput
-    /*virtual std::string getRelationOutput(const std::string& relName) {
+    virtual std::string getRelationOutput(const std::string& relName) {
         auto rel = prog.getRelation(relName);
         if (rel == nullptr) {
             return "Relation " + relName + " not found\n";
@@ -105,7 +104,7 @@ public:
         std::cout.rdbuf(originalCoutBuf);
 
         return out.str();
-    }*/
+    }
 
 protected:
     SouffleProgram& prog;
@@ -159,9 +158,8 @@ protected:
         return args;
     }
 
-    // TODO (sarah) include once printRelationOutput is fixed
-    /*virtual void printRelationOutput(
-            const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) = 0;*/
+    virtual void printRelationOutput(
+            const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) = 0;
 };
 
 }  // end of namespace souffle

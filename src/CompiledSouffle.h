@@ -66,7 +66,7 @@ inline souffle::SouffleProgram* getInstance(const char* p) {
 /**
  * Relation wrapper used internally in the generated Datalog program
  */
-template <uint32_t id, class RelType, class TupleType, size_t Arity>
+template <uint32_t id, class RelType, class TupleType, size_t Arity, size_t NumberOfHeights>
 class RelationWrapper : public Relation {
 private:
     RelType& relation;
@@ -146,6 +146,9 @@ public:
     }
     size_t getArity() const override {
         return Arity;
+    }
+    size_t getNumberOfHeights() const override {
+        return NumberOfHeights;
     }
     SymbolTable& getSymbolTable() const override {
         return symTable;

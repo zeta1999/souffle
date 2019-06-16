@@ -1266,7 +1266,9 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
     if (Global::config().get("provenance") == "subtreeHeights") {
         // staring index of subtree level arguments in argument list
-        size_t levelIndex = head->getArguments().size() - (numberOfHeights - 1);
+        // starts immediately after original arguments as height and rulenumber of tuple are not passed to
+        // subroutine
+        size_t levelIndex = head->getArguments().size() - numberOfHeights - 1;
 
         // add level constraints
         for (size_t i = 0; i < intermediateClause->getBodyLiterals().size(); i++) {

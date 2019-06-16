@@ -114,6 +114,7 @@ public:
     virtual const char* getAttrType(size_t) const = 0;
     virtual const char* getAttrName(size_t) const = 0;
     virtual size_t getArity() const = 0;
+    virtual size_t getNumberOfHeights() const = 0;
     virtual SymbolTable& getSymbolTable() const = 0;
     std::string getSignature() {
         std::string signature = "<" + std::string(getAttrType(0));

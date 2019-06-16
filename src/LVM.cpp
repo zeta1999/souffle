@@ -836,10 +836,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 // Obtain the orderSet for this relation
                 const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
 
+                // TODO (sarah) fix for extended height instrumentation
                 if (code[ip + 3] == LVM_EQREL) {
-                    res = std::make_unique<LVMEqRelation>(arity, &orderSet, relName);
+                    res = std::make_unique<LVMEqRelation>(arity, 1, &orderSet, relName);
                 } else {
-                    res = std::make_unique<LVMRelation>(arity, &orderSet, relName);
+                    res = std::make_unique<LVMRelation>(arity, 1, &orderSet, relName);
                 }
                 std::vector<std::string> attributeTypes;
                 for (int i = 0; i < code[ip + 2]; ++i) {

@@ -1905,6 +1905,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         // get some table details
         const auto& rel = create.getRelation();
         int arity = rel.getArity();
+        int numberOfHeights = rel.getNumberOfHeights();
         const std::string& raw_name = rel.getName();
         const std::string& name = getRelationName(rel);
 
@@ -1926,7 +1927,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << relCtr++ << ",";
             os << type << ",";
             os << "Tuple<RamDomain," << arity << ">,";
-            os << arity;
+            os << arity << ",";
+            os << numberOfHeights;
             os << "> wrapper_" << name << ";\n";
 
             // construct types

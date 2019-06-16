@@ -1120,7 +1120,6 @@ void RAMI::executeSubroutine(const std::string& name, const std::vector<RamDomai
     ctxt.setReturnErrors(returnErrors);
     ctxt.setArguments(arguments);
     const RamStatement& stmt = translationUnit.getProgram()->getSubroutine(name);
-
     // run subroutine
     // const RamOperation& op = static_cast<const RamQuery&>(stmt).getOperation();
     evalStmt(stmt, ctxt);

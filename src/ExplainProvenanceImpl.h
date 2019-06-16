@@ -59,7 +59,7 @@ public:
                     bodyLiterals.push_back(bodyLit);
                 }
 
-                std::string rule;
+                std::string rule;  // clause representation
                 tuple >> rule;
 
                 info.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), bodyLiterals});
@@ -68,8 +68,8 @@ public:
         }
     }
 
-    std::unique_ptr<TreeNode> explain(
-            std::string relName, std::vector<RamDomain> tuple, int ruleNum, int levelNum, size_t depthLimit) {
+    std::unique_ptr<TreeNode> explain(std::string relName, std::vector<RamDomain> tuple, int ruleNum,
+            int levelNum, std::vector<int> subtreeLevels, size_t depthLimit) {
         std::stringstream joinedArgs;
         joinedArgs << join(numsToArgs(relName, tuple), ", ");
         auto joinedArgsStr = joinedArgs.str();
@@ -85,6 +85,10 @@ public:
         if (depthLimit <= 1) {
             tuple.push_back(ruleNum);
             tuple.push_back(levelNum);
+
+            for (auto l : subtreeLevels) {
+                tuple.push_back(l);
+            }
 
             // find if subproof exists already
             size_t idx = 0;
@@ -106,8 +110,10 @@ public:
         std::vector<RamDomain> ret;
         std::vector<bool> err;
 
-        // add level number to tuple
-        tuple.push_back(levelNum);
+        // add subtree level numbers to tuple
+        for (auto l : subtreeLevels) {
+            tuple.push_back(l);
+        }
 
         // execute subroutine to get subproofs
         prog.executeSubroutine(relName + "_" + std::to_string(ruleNum) + "_subproof", tuple, ret, err);
@@ -148,13 +154,21 @@ public:
             std::vector<RamDomain> subproofTuple;
             std::vector<bool> subproofTupleError;
 
-            for (; tupleCurInd < tupleEnd - 2; tupleCurInd++) {
+            for (; tupleCurInd < tupleEnd - 1 - prog.getRelation(bodyRelAtomName)->getNumberOfHeights();
+                    tupleCurInd++) {
                 subproofTuple.push_back(ret[tupleCurInd]);
                 subproofTupleError.push_back(err[tupleCurInd]);
             }
 
             int subproofRuleNum = ret[tupleCurInd];
             int subproofLevelNum = ret[tupleCurInd + 1];
+
+            tupleCurInd += 2;
+
+            std::vector<int> subsubtreeLevels;
+            for (; tupleCurInd < tupleEnd; tupleCurInd++) {
+                subsubtreeLevels.push_back(ret[tupleCurInd]);
+            }
 
             // for a negation, display the corresponding tuple and do not recurse
             if (bodyRel[0] == '!') {
@@ -178,8 +192,8 @@ public:
                 internalNode->setSize(internalNode->getSize() + 1);
                 // otherwise, for a normal tuple, recurse
             } else {
-                auto child =
-                        explain(bodyRel, subproofTuple, subproofRuleNum, subproofLevelNum, depthLimit - 1);
+                auto child = explain(bodyRel, subproofTuple, subproofRuleNum, subproofLevelNum,
+                        subsubtreeLevels, depthLimit - 1);
                 internalNode->setSize(internalNode->getSize() + child->getSize());
                 internalNode->add_child(std::move(child));
             }
@@ -197,15 +211,17 @@ public:
             return std::make_unique<LeafNode>("Relation not found");
         }
 
-        std::pair<int, int> tupleInfo = findTuple(relName, tuple);
-        int ruleNum = tupleInfo.first;
-        int levelNum = tupleInfo.second;
+        std::tuple<int, int, std::vector<int>> tupleInfo = findTuple(relName, tuple);
+
+        int ruleNum = std::get<0>(tupleInfo);
+        int levelNum = std::get<1>(tupleInfo);
+        std::vector<int> subtreeLevels = std::get<2>(tupleInfo);
 
         if (ruleNum < 0 || levelNum == -1) {
             return std::make_unique<LeafNode>("Tuple not found");
         }
 
-        return explain(relName, tuple, ruleNum, levelNum, depthLimit);
+        return explain(relName, tuple, ruleNum, levelNum, subtreeLevels, depthLimit);
     }
 
     std::unique_ptr<TreeNode> explainSubproof(
@@ -215,12 +231,24 @@ public:
         }
 
         auto tup = subproofs[subproofNum];
-        RamDomain levelNum = tup.back();
-        tup.pop_back();
-        RamDomain ruleNum = tup.back();
-        tup.pop_back();
 
-        return explain(relName, tup, ruleNum, levelNum, depthLimit);
+        auto rel = prog.getRelation(relName);
+
+        RamDomain ruleNum;
+        ruleNum = tup[rel->getArity() - rel->getNumberOfHeights() - 1];
+
+        RamDomain levelNum;
+        levelNum = tup[rel->getArity() - rel->getNumberOfHeights()];
+
+        std::vector<RamDomain> subtreeLevels;
+
+        for (size_t i = rel->getArity() - rel->getNumberOfHeights() + 1; i < rel->getArity(); i++) {
+            subtreeLevels.push_back(tup[i]);
+        }
+
+        tup.erase(tup.begin() + rel->getArity() - rel->getNumberOfHeights() - 1, tup.end());
+
+        return explain(relName, tup, ruleNum, levelNum, subtreeLevels, depthLimit);
     }
 
     std::vector<std::string> explainNegationGetVariables(
@@ -228,7 +256,9 @@ public:
         std::vector<std::string> variables;
 
         // check that the tuple actually doesn't exist
-        if (findTuple(relName, argsToNums(relName, args)) != std::make_pair(-1, -1)) {
+
+        std::tuple<int, int, std::vector<int>> t = findTuple(relName, argsToNums(relName, args));
+        if (std::get<0>(t) != -1 || std::get<1>(t) != -1) {
             // return a sentinel value
             return std::vector<std::string>({"@"});
         }
@@ -403,7 +433,9 @@ public:
             std::vector<RamDomain> atomValues;
             std::vector<bool> atomErrs;
             size_t j = returnCounter;
-            for (; j < returnCounter + arity - 2; j++) {
+
+            for (; j < returnCounter + arity - 1 - prog.getRelation(bodyRelAtomName)->getNumberOfHeights();
+                    j++) {
                 atomValues.push_back(ret[j]);
                 atomErrs.push_back(err[j]);
             }
@@ -493,7 +525,7 @@ public:
             }*/
 
             std::vector<RamDomain> currentTuple;
-            for (size_t i = 0; i < rel->getArity() - 2; i++) {
+            for (size_t i = 0; i < rel->getArity() - 1 - rel->getNumberOfHeights(); i++) {
                 RamDomain n;
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
@@ -512,7 +544,15 @@ public:
             RamDomain levelNum;
             tuple >> levelNum;
 
-            explain(relName, currentTuple, ruleNum, levelNum, 10000);
+            std::vector<RamDomain> subtreeLevels;
+
+            for (size_t i = rel->getArity() - rel->getNumberOfHeights() + 1; i < rel->getArity(); i++) {
+                int subLevel;
+                tuple >> subLevel;
+                subtreeLevels.push_back(subLevel);
+            }
+
+            explain(relName, currentTuple, ruleNum, levelNum, subtreeLevels, 10000);
 
             // std::cout << "Tuples expanded: "
             //<< explain(relName, currentTuple, ruleNum, levelNum, 20)->getSize();
@@ -556,11 +596,11 @@ private:
     std::vector<std::string> constraintList = {
             "=", "!=", "<", "<=", ">=", ">", "match", "contains", "not_match", "not_contains"};
 
-    std::pair<int, int> findTuple(const std::string& relName, std::vector<RamDomain> tup) {
+    std::tuple<int, int, std::vector<int>> findTuple(const std::string& relName, std::vector<RamDomain> tup) {
         auto rel = prog.getRelation(relName);
 
         if (rel == nullptr) {
-            return std::make_pair(-1, -1);
+            return std::make_tuple(-1, -1, std::vector<int>());
         }
 
         // find correct tuple
@@ -568,7 +608,7 @@ private:
             bool match = true;
             std::vector<RamDomain> currentTuple;
 
-            for (size_t i = 0; i < rel->getArity() - 2; i++) {
+            for (size_t i = 0; i < rel->getArity() - 1 - rel->getNumberOfHeights(); i++) {
                 RamDomain n;
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
@@ -593,19 +633,28 @@ private:
                 RamDomain levelNum;
                 tuple >> levelNum;
 
-                return std::make_pair(ruleNum, levelNum);
+                std::vector<RamDomain> subtreeLevels;
+
+                for (size_t i = rel->getArity() - rel->getNumberOfHeights() + 1; i < rel->getArity(); i++) {
+                    int subLevel;
+                    tuple >> subLevel;
+                    subtreeLevels.push_back(subLevel);
+                }
+
+                return std::make_tuple(ruleNum, levelNum, subtreeLevels);
             }
         }
 
         // if no tuple exists
-        return std::make_pair(-1, -1);
+        return std::make_tuple(-1, -1, std::vector<int>());
     }
 
-    // TODO (sarah) adapt for extended provenance
-    /*void printRelationOutput(
+    void printRelationOutput(
             const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) override {
-        WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), ioDir, true, )->writeAll(rel);
-    }*/
+        WriteCoutCSVFactory()
+                .getWriter(symMask, prog.getSymbolTable(), ioDir, true, rel.getNumberOfHeights())
+                ->writeAll(rel);
+    }
 };
 
 }  // end of namespace souffle

@@ -29,20 +29,25 @@ public:
     RecordTable() {}
 
     void addRecord(RamDomain ref, const std::vector<RamDomain>& tuple) {
+        int arity = tuple.size();
+
         std::vector<RamDomain> tupleCopy;
-        for (size_t i = 0; i < tuple.size(); i++) {
+        for (int i = 0; i < arity; i++) {
             tupleCopy.push_back(tuple[i]);
         }
-        recordMap[ref] = tupleCopy;
+
+        if (recordMap.find(arity) == recordMap.end()) {
+            recordMap[arity] = std::map<RamDomain, std::vector<RamDomain>>();
+        }
+        recordMap[arity][ref] = tupleCopy;
     }
 
-    const std::vector<RamDomain>& getRecord(RamDomain ref) const {
-        assert(recordMap.find(ref) != recordMap.end() && "reference not in map");
-        return recordMap.at(ref);
+    const std::vector<RamDomain>& getRecord(int arity, RamDomain ref) const {
+        return recordMap.at(arity).at(ref);
     }
 
 private:
-    std::map<RamDomain, std::vector<RamDomain>> recordMap{};
+    std::map<int, std::map<RamDomain, std::vector<RamDomain>>> recordMap{};
 };
 
 }  // namespace souffle

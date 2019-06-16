@@ -30,6 +30,33 @@
 namespace souffle {
 
 	/**
+	 * A construction-time sized tuple instance easing tuple handling
+	 * in non-compiled contexts.
+	 */
+	class DynTuple {
+
+		std::vector<RamDomain> data;
+
+	public:
+
+		DynTuple(std::size_t arity) : data(arity) {}
+
+		std::size_t size() const {
+			return data.size();
+		}
+
+		RamDomain& operator[](std::size_t i) {
+			return data[i];
+		}
+
+		const RamDomain& operator[](std::size_t i) const {
+			return data[i];
+		}
+
+	};
+
+
+	/**
 	 * A type-erased reference to tuples. The reference does not
 	 * own the referenced data. It is thus very light-weight to
 	 * create and forward.
@@ -59,6 +86,9 @@ namespace souffle {
 		template<std::size_t Arity>
 		TupleRef(const ram::Tuple<RamDomain,Arity>& tuple)
 			: TupleRef(&tuple[0], Arity) {}
+
+		TupleRef(const DynTuple& tuple)
+			: TupleRef(&tuple[0], tuple.size()) {}
 
 		template<std::size_t Arity>
 		const ram::Tuple<RamDomain,Arity>& asTuple() const {
@@ -281,6 +311,10 @@ namespace souffle {
 		 */
 		virtual Stream range(TupleRef low, TupleRef high) const =0;
 
+		/**
+		 * Clears the content of this index, turning it empty.
+		 */
+		virtual void clear() =0;
 	};
 
 	// The type of index factory functions.
@@ -352,6 +386,17 @@ namespace souffle {
 		 * Obtains a stream covering the interval between the two given entries.
 		 */
 		Stream range(const Order& order, TupleRef low, TupleRef high) const;
+
+		/**
+		 * Removes the content of this relation, but retains the empty indexes.
+		 */
+		void clear();
+
+		/**
+		 * Swaps the content of this and the given relation, including the
+		 * installed indexes.
+		 */
+		void swap(Relation& other);
 
 	};
 

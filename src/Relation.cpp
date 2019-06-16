@@ -129,6 +129,15 @@ namespace souffle {
 		return pos->second->range(low,high);
 	}
 
+	void Relation::clear() {
+		for (const auto& cur : indexes) {
+			cur.second->clear();
+		}
+	}
+
+	void Relation::swap(Relation& other) {
+		indexes.swap(other.indexes);
+	}
 
 
 	namespace {
@@ -188,8 +197,12 @@ namespace souffle {
 				return std::make_unique<Source>(present);
 			}
 
-			Stream range(TupleRef low, TupleRef high) const {
+			Stream range(TupleRef low, TupleRef high) const override {
 				return scan();
+			}
+
+			void clear() override {
+				present = false;
 			}
 
 		};
@@ -279,15 +292,20 @@ namespace souffle {
 				return std::make_unique<Source>(order, data.begin(),data.end());
 			}
 
-			Stream range(TupleRef low, TupleRef high) const {
-				assert(false && "Not implemented!");
-				return scan();
-				/*
+			Stream range(TupleRef low, TupleRef high) const override {
+				Entry a = order.encode(low.asTuple<Arity>());
+				Entry b = order.encode(high.asTuple<Arity>());
+				if (!(a < b)) {
+					return std::make_unique<Source>(order, data.end(), data.end());
+				}
 				return std::make_unique<Source>(order,
 					data.lower_bound(order.encode(low.asTuple<Arity>())),
-					data.lower_bound(order.encode(high.asTuple<Arity>())),
+					data.lower_bound(order.encode(high.asTuple<Arity>()))
 				);
-				*/
+			}
+
+			void clear() override {
+				data.clear();
 			}
 		};
 

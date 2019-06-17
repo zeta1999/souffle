@@ -1260,7 +1260,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
         }
     } else {
         // index of level argument in argument list
-        size_t levelIndex = head->getArguments().size() - 1 - (numberOfHeights - 1);
+        size_t levelIndex = head->getArguments().size() - numberOfHeights - 1;
 
         // add level constraints
         for (size_t i = 0; i < intermediateClause->getBodyLiterals().size(); i++) {

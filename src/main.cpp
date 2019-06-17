@@ -552,9 +552,9 @@ int main(int argc, char** argv) {
                 LVMProgInterface interface(*lvm);
                 if (Global::config().get("provenance") == "explain" ||
                         Global::config().get("provenance") == "subtreeHeights") {
-                    explain(interface, false);
+                    explain(interface, false, Global::config().get("provenance") == "subtreeHeights");
                 } else if (Global::config().get("provenance") == "explore") {
-                    explain(interface, true);
+                    explain(interface, true, false);
                 }
             }
         } else {
@@ -569,9 +569,9 @@ int main(int argc, char** argv) {
                 RAMIProgInterface interface(*rami);
                 if (Global::config().get("provenance") == "explain" ||
                         Global::config().get("provenance") == "subtreeHeights") {
-                    explain(interface, false);
+                    explain(interface, false, Global::config().get("provenance") == "subtreeHeights");
                 } else if (Global::config().get("provenance") == "explore") {
-                    explain(interface, true);
+                    explain(interface, true, false);
                 }
             }
         }

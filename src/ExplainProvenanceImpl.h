@@ -32,7 +32,7 @@ namespace souffle {
 
 class ExplainProvenanceImpl : public ExplainProvenance {
 public:
-    ExplainProvenanceImpl(SouffleProgram& prog) : ExplainProvenance(prog) {
+    ExplainProvenanceImpl(SouffleProgram& prog, bool useSublevels) : ExplainProvenance(prog, useSublevels) {
         setup();
     }
 
@@ -110,10 +110,13 @@ public:
         std::vector<RamDomain> ret;
         std::vector<bool> err;
 
-        // add subtree level numbers to tuple
-        for (auto l : subtreeLevels) {
-            tuple.push_back(l);
-        }
+        if (useSublevels)
+            // add subtree level numbers to tuple
+            for (auto l : subtreeLevels) {
+                tuple.push_back(l);
+            }
+        else
+            tuple.push_back(levelNum);
 
         // execute subroutine to get subproofs
         prog.executeSubroutine(relName + "_" + std::to_string(ruleNum) + "_subproof", tuple, ret, err);

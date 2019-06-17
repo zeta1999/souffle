@@ -563,6 +563,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             }
             case LVM_EmptinessCheck: {
                 size_t relId = code[ip + 1];
+                printf("Check %s emptiness, size:%ld\n", getRelation(relId)->getName().c_str(), getRelation(relId)->size());
                 stack.push(getRelation(relId)->empty());
                 ip += 2;
                 break;
@@ -586,7 +587,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         tuple[arity - i - 1] = stack.top();
                         stack.pop();
                     }
-                    stack.push(rel.exists(tuple));
+                    stack.push(rel.contains(TupleRef(tuple, arity)));
                     ip += 4;
                     break;
                 } else {  // for partial we search for lower and upper boundaries
@@ -604,9 +605,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                     }
 
-                    auto range = rel.lowerUpperBound(low, high, indexPos);
+                    auto range = rel.range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
 
-                    stack.push(range.first != range.second);
+                    stack.push(range.begin() != range.end());
                     ip += 4;
                     break;
                 }
@@ -640,8 +641,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 high[arity - 2] = MAX_RAM_DOMAIN;
                 high[arity - 1] = MAX_RAM_DOMAIN;
 
-                auto range = rel.lowerUpperBound(low, high, indexPos);
-                stack.push(range.first != range.second);
+                auto range = rel.range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                stack.push(range.begin() != range.end());
                 ip += 4;
                 break;
             }
@@ -686,8 +687,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     break;
                 }
 
-                RamDomain* tuple = unpack(ref, arity);
-                ctxt[id] = tuple;
+                ctxt[id] = TupleRef(unpack(ref, arity), arity);
                 ip += 4;
                 break;
             }
@@ -709,7 +709,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     tuple[arity - i - 1] = stack.top();
                     stack.pop();
                 }
-                rel.insert(tuple);
+                rel.insert(TupleRef(tuple, arity));
                 ip += 3;
                 break;
             }
@@ -839,12 +839,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 // Obtain the orderSet for this relation
                 const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
 
-                if (arity == 0) {
-                    res = std::make_unique<LVMNullaryRelation>(relName, attributeTypes);
-                } else if (code[ip + 3] == LVM_EQREL) {
-                    res = std::make_unique<LVMEqRelation>(arity, &orderSet, relName, attributeTypes);
-                } else {
-                    res = std::make_unique<LVMIndirectRelation>(arity, &orderSet, relName, attributeTypes);
+                if (code[ip + 3] == LVM_EQREL) {
+                    assert("LVM_EqRel not supported yet" && false);
+                } else { //TODO test Brie 
+                    res = std::make_unique<LVMRelation>(arity, relName, attributeTypes, orderSet);
                 }
 
                 res->setLevel(level);
@@ -908,7 +906,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                         IOSystem::getInstance()
                                 .getWriter(symbolMask, symbolTable, io, Global::config().has("provenance"))
-                                ->writeAll(*relPtr);
+                                ->writeLVMAll(*relPtr);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";
                     }
@@ -924,7 +922,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     tuple[arity - i - 1] = stack.top();
                     stack.pop();
                 }
-                getRelation(relId)->insert(tuple);
+                printf("Inserting %d\n", tuple[0]);
+                getRelation(relId)->insert(TupleRef(tuple, arity));
                 ip += 3;
                 break;
             }
@@ -935,10 +934,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 auto srcPtr = getRelation(sourceId);
                 auto trgPtr = getRelation(targetId);
 
-                if (dynamic_cast<LVMEqRelation*>(trgPtr) != nullptr) {
-                    // expand src with the new knowledge generated by insertion.
-                    srcPtr->extend(*trgPtr);
-                }
+                // TODO Add EqRelation Support
+                // if (dynamic_cast<LVMEqRelation*>(trgPtr) != nullptr) {
+                //    // expand src with the new knowledge generated by insertion.
+                //    srcPtr->extend(*trgPtr);
+                //}
                 // merge in all elements
                 trgPtr->insert(*srcPtr);
 
@@ -982,8 +982,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             case LVM_Aggregate_COUNT: {
                 RamDomain res = 0;
                 RamDomain idx = code[ip + 1];
-                auto& iter = iteratorPool[idx];
-                for (auto i = iter.first; i != iter.second; ++i) {
+                auto& stream = streamPool[idx];
+                for (auto i = stream.begin(); i != stream.end(); ++i) {
                     res++;
                 }
                 stack.push(res);
@@ -996,7 +996,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 stack.pop();
                 RamDomain* tuple = ctxt.allocateNewTuple(1);
                 tuple[0] = res;
-                ctxt[id] = tuple;
+                ctxt[id] = TupleRef(tuple, 1);
                 ip += 2;
                 break;
             };
@@ -1004,12 +1004,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 RamDomain dest = code[ip + 1];
                 size_t relId = code[ip + 2];
                 const auto& relPtr = getRelation(relId);
-                auto iterPairs = std::make_pair(relPtr->begin(), relPtr->end());
-                lookUpIterator(dest) = iterPairs;
+                lookUpStream(dest) = relPtr->scan();
                 ip += 3;
                 break;
             };
             case LVM_ITER_InitRangeIndex: {
+                printf("init range index\n");
                 RamDomain dest = code[ip + 1];
                 size_t relId = code[ip + 2];
                 auto relPtr = getRelation(relId);
@@ -1032,28 +1032,35 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 }
 
                 // get iterator range
-                lookUpIterator(dest) = relPtr->lowerUpperBound(low, hig, indexPos);
+                printf("Init range index %d with range:%d %d\n", indexPos, low[0], hig[0]);
+                lookUpStream(dest) = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(hig, arity));
+                printf("Empty range? %s\n", (lookUpStream(dest).begin() == lookUpStream(dest).end()) == true ? "T" : "F");
+                for (auto cur : relPtr->scan()) {
+                    printf("v:%d\n", cur[0]);
+                }
+                printf("%d\n", (*lookUpStream(dest).begin())[0]);
                 ip += 5;
                 break;
             };
             case LVM_ITER_NotAtEnd: {
                 RamDomain idx = code[ip + 1];
-                auto& iter = lookUpIterator(idx);
-                stack.push(iter.first != iter.second);
+                auto& stream = lookUpStream(idx);
+                stack.push(stream.begin() != stream.end());
                 ip += 2;
                 break;
             }
             case LVM_ITER_Select: {
                 RamDomain idx = code[ip + 1];
                 RamDomain tupleId = code[ip + 2];
-                auto& iter = lookUpIterator(idx);
-                ctxt[tupleId] = *iter.first;
+                auto& stream = lookUpStream(idx);
+                ctxt[tupleId] = *stream.begin();
+                printf("Select A: %d\n", ctxt[tupleId][0]);
                 ip += 3;
                 break;
             }
             case LVM_ITER_Inc: {
                 RamDomain idx = code[ip + 1];
-                ++iteratorPool[idx].first;
+                ++streamPool[idx].begin();
                 ip += 2;
                 break;
             }

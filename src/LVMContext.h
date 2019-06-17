@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RamTypes.h"
+#include "Relation.h"
 #include <cassert>
 #include <memory>
 #include <vector>
@@ -27,7 +28,8 @@ namespace souffle {
  * Evaluation context for Interpreter operations
  */
 class LVMContext {
-    std::vector<const RamDomain*> data;
+    //std::vector<const RamDomain*> data;
+    std::vector<TupleRef> data;
     std::vector<RamDomain>* returnValues = nullptr;
     std::vector<bool>* returnErrors = nullptr;
     const std::vector<RamDomain>* args = nullptr;
@@ -37,14 +39,10 @@ public:
     LVMContext(size_t size = 0) : data(size) {}
     virtual ~LVMContext() = default;
 
-    const RamDomain*& operator[](size_t index) {
+    TupleRef& operator[](size_t index) {
         if (index >= data.size()) {
             data.resize((index + 1));
         }
-        return data[index];
-    }
-
-    const RamDomain* const& operator[](size_t index) const {
         return data[index];
     }
 

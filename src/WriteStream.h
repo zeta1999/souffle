@@ -47,6 +47,24 @@ public:
             writeNext(current);
         }
     }
+    // TODO quick fix, refactor later
+    template <typename T>
+    void writeLVMAll(const T& relation) {
+        if (summary) {
+            return writeSize(relation.size());
+        }
+        auto lease = symbolTable.acquireLock();
+        (void)lease;
+        if (arity == 0) {
+            if (relation.size() != 0) {
+                writeNullary();
+            }
+            return;
+        }
+        for (const auto& current : relation.scan()) {
+            writeNext(current.getBase());   //TODO
+        }
+    }
     template <typename T>
     void writeSize(const T& relation) {
         writeSize(relation.size());

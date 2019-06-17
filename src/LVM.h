@@ -170,12 +170,12 @@ protected:
         environment[relAId].swap(environment[relBId]);
     }
 
-    /** Lookup iterator, resize the iterator pool if necessary */
-    std::pair<index_set::iterator, index_set::iterator>& lookUpIterator(size_t idx) {
-        if (idx >= iteratorPool.size()) {
-            iteratorPool.resize(idx + 1);
+    /** Lookup stream, resize the pool if necessary */
+    Stream& lookUpStream(size_t idx) {
+        if (idx >= streamPool.size()) {
+            streamPool.resize(idx + 1);
         }
-        return iteratorPool[idx];
+        return streamPool[idx];
     }
 
     /** Obtain the search columns */
@@ -210,8 +210,8 @@ private:
     /** counters for non-existence check */
     std::map<std::string, std::atomic<size_t>> reads;
 
-    /** List of iters for indexScan operation */
-    std::vector<std::pair<index_set::iterator, index_set::iterator>> iteratorPool;
+    /** List of streams for range operation */
+    std::vector<Stream> streamPool;
 
     /** Hash map from relationName to RamRelationNode in RAM */
     std::unordered_map<std::string, const RamRelation*> relNameToNode;

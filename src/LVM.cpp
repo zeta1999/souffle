@@ -842,9 +842,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 if (arity == 0) {
                     res = std::make_unique<LVMNullaryRelation>(relName, attributeTypes);
                 } else if (code[ip + 3] == LVM_EQREL) {
-                    res = std::make_unique<LVMEqRelation>(arity, 1, &orderSet, relName, attributeTypes); //TODO (sarah) fix for extended provenance
+                    res = std::make_unique<LVMEqRelation>(arity, 1, &orderSet, relName,
+                            attributeTypes);  // TODO (sarah) fix for extended provenance
                 } else {
-                    res = std::make_unique<LVMIndirectRelation>(arity, 1, &orderSet, relName, attributeTypes); //TODO (sarah) fix for extended provenance
+                    res = std::make_unique<LVMIndirectRelation>(arity, 1, &orderSet, relName,
+                            attributeTypes);  // TODO (sarah) fix for extended provenance
                 }
 
                 res->setLevel(level);

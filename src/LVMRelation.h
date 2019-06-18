@@ -35,11 +35,10 @@ class LVMRelation {
 public:
     using iterator = LVMIndex::iterator;
 
-    LVMRelation(size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet, std::string& relName,
-            std::vector<std::string>& attributeTypes)
-            : arity(relArity), numberOfHeights(numberOfHeights), orderSet(orderSet), relName(relName), attributeTypeQualifiers(attributeTypes) {
-
-    }
+    LVMRelation(size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet,
+            std::string& relName, std::vector<std::string>& attributeTypes)
+            : arity(relArity), numberOfHeights(numberOfHeights), orderSet(orderSet), relName(relName),
+              attributeTypeQualifiers(attributeTypes) {}
 
     LVMRelation(const LVMRelation& other) = delete;
 
@@ -71,9 +70,9 @@ public:
     }
 
     /** Get arity of relation */
-	size_t getNumberOfHeights() const {
-		return numberOfHeights;
-	}
+    size_t getNumberOfHeights() const {
+        return numberOfHeights;
+    }
 
     /** Gets the number of contained tuples */
     virtual size_t size() const {
@@ -120,7 +119,7 @@ protected:
     const size_t arity;
 
     /** Number of height parameters of relation */
-	const size_t numberOfHeights;
+    const size_t numberOfHeights;
 
     /** Number of tuples in relation */
     size_t num_tuples = 0;
@@ -140,8 +139,8 @@ protected:
  */
 class LVMIndirectRelation : public LVMRelation {
 public:
-    LVMIndirectRelation(size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet, std::string& relName,
-            std::vector<std::string>& attributeTypes)
+    LVMIndirectRelation(size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet,
+            std::string& relName, std::vector<std::string>& attributeTypes)
             : LVMRelation(relArity, numberOfHeights, orderSet, relName, attributeTypes) {
         for (auto& order : orderSet->getAllOrders()) {
             indices.push_back(LVMIndex(order));
@@ -267,7 +266,7 @@ class LVMNullaryRelation : public LVMRelation {
 public:
     LVMNullaryRelation(std::string relName, std::vector<std::string>& attributeTypes)
             : LVMRelation(0, 0, nullptr, relName, attributeTypes), nullaryIndex(std::vector<int>()) {}
-    		//TODO (sarah) what to putfor numberOfHeights here?
+    // TODO (sarah) what to putfor numberOfHeights here?
 
     /** Insert tuple into nullary relation */
     void insert(const RamDomain* tuple) override {
@@ -335,7 +334,6 @@ private:
     /** Nullary can hold only one tuple */
     bool inserted = false;
 
-
     /** Nullary index with empty search signature */
     LVMIndex nullaryIndex;
 };
@@ -346,8 +344,8 @@ private:
 
 class LVMEqRelation : public LVMIndirectRelation {
 public:
-    LVMEqRelation(size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet, std::string relName,
-            std::vector<std::string>& attributeTypes)
+    LVMEqRelation(size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet,
+            std::string relName, std::vector<std::string>& attributeTypes)
             : LVMIndirectRelation(relArity, numberOfHeights, orderSet, relName, attributeTypes) {}
 
     /** Insert tuple */

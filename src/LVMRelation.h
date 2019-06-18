@@ -29,43 +29,40 @@
 
 namespace souffle {
 
-/**
- * Interpreter Relation
- */
 class LVMRelation {
     using LexOrder = std::vector<int>;
 
 public:
-    LVMRelation(
-            size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet, std::string relName)
-            : arity(relArity), numberOfHeights(numberOfHeights), orderSet(orderSet),
-              relName(std::move(relName)) {
-        // Create all necessary indices based on orderSet
-        for (auto& order : orderSet->getAllOrders()) {
-            indices.push_back(LVMIndex(order));
-        }
+    using iterator = LVMIndex::iterator;
+
+    LVMRelation(size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet, std::string& relName,
+            std::vector<std::string>& attributeTypes)
+            : arity(relArity), numberOfHeights(numberOfHeights), orderSet(orderSet), relName(relName), attributeTypeQualifiers(attributeTypes) {
+
     }
 
     LVMRelation(const LVMRelation& other) = delete;
 
     virtual ~LVMRelation() = default;
 
-    /** Set AttributeType for the relation */
-    void setAttributes(const std::vector<std::string> attributeTypes) {
-        attributeTypeQualifiers = attributeTypes;
-    }
-
     /** Get AttributeType for the relation */
     std::vector<std::string>& getAttributeTypeQualifiers() {
         return attributeTypeQualifiers;
     }
 
+    /** Return relation name */
     const std::string& getName() const {
         return relName;
     }
 
-    std::string getName() {
-        return relName;
+    /** Set relation level */
+    void setLevel(size_t level) {
+        this->level = level;
+    }
+
+    /** Get relation level */
+    size_t getLevel() {
+        return level;
     }
 
     /** Get arity of relation */
@@ -74,33 +71,89 @@ public:
     }
 
     /** Get arity of relation */
-    size_t getNumberOfHeights() const {
-        return numberOfHeights;
-    }
-
-    /** Check whether relation is empty */
-    bool empty() const {
-        return num_tuples == 0;
-    }
+	size_t getNumberOfHeights() const {
+		return numberOfHeights;
+	}
 
     /** Gets the number of contained tuples */
-    size_t size() const {
+    virtual size_t size() const {
         return num_tuples;
     }
 
+    /** Check whether relation is empty */
+    virtual bool empty() const {
+        return num_tuples == 0;
+    }
+
     /** Insert tuple */
-    virtual void insert(const RamDomain* tuple) {
+    virtual void insert(const RamDomain* tuple) = 0;
+
+    /** Merge another relation into this relation */
+    virtual void insert(const LVMRelation& other) = 0;
+
+    /** Purge table */
+    virtual void purge() = 0;
+
+    /** check whether a tuple exists in the relation */
+    virtual bool exists(const RamDomain* tuple) const = 0;
+
+    /** Iterator for relation, uses full-order index as default */
+    virtual iterator begin() const = 0;
+
+    virtual iterator end() const = 0;
+
+    /** Return range iterator */
+    virtual std::pair<iterator, iterator> lowerUpperBound(
+            const RamDomain* low, const RamDomain* high, size_t indexPosition) const = 0;
+
+    /** Extend tuple */
+    virtual std::vector<RamDomain*> extend(const RamDomain* tuple) = 0;
+
+    /** Extend relation */
+    virtual void extend(const LVMRelation& rel) = 0;
+
+protected:
+    /** Relation level */
+    size_t level = 0;
+
+    /** Arity of relation */
+    const size_t arity;
+
+    /** Number of height parameters of relation */
+	const size_t numberOfHeights;
+
+    /** Number of tuples in relation */
+    size_t num_tuples = 0;
+
+    /** IndexSet */
+    const MinIndexSelection* orderSet;
+
+    /** Relation name */
+    const std::string relName;
+
+    /** Type of attributes */
+    std::vector<std::string> attributeTypeQualifiers;
+};
+
+/**
+ * Interpreter Relation
+ */
+class LVMIndirectRelation : public LVMRelation {
+public:
+    LVMIndirectRelation(size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet, std::string& relName,
+            std::vector<std::string>& attributeTypes)
+            : LVMRelation(relArity, numberOfHeights, orderSet, relName, attributeTypes) {
+        for (auto& order : orderSet->getAllOrders()) {
+            indices.push_back(LVMIndex(order));
+        }
+    }
+
+    /** Insert tuple */
+    void insert(const RamDomain* tuple) override {
         assert(tuple);
 
         // make existence check
         if (exists(tuple)) {
-            return;
-        }
-
-        // check for null-arity
-        if (arity == 0) {
-            indices[0].insert(tuple);
-            num_tuples = 1;
             return;
         }
 
@@ -126,7 +179,7 @@ public:
     }
 
     /** Merge another relation into this relation */
-    void insert(const LVMRelation& other) {
+    void insert(const LVMRelation& other) override {
         assert(getArity() == other.getArity());
         for (const auto& cur : other) {
             insert(cur);
@@ -134,7 +187,7 @@ public:
     }
 
     /** Purge table */
-    void purge() {
+    void purge() override {
         blockList.clear();
         for (auto& cur : indices) {
             cur.purge();
@@ -142,10 +195,45 @@ public:
         num_tuples = 0;
     }
 
+    /** check whether a tuple exists in the relation */
+    bool exists(const RamDomain* tuple) const override {
+        LVMIndex* index = getIndex(getTotalIndexKey());
+        return index->exists(tuple);
+    }
+
+    /** Iterator for relation, uses full-order index as default */
+    iterator begin() const override {
+        return indices[0].begin();
+    }
+
+    iterator end() const override {
+        return indices[0].end();
+    }
+
+    /** Return range iterator */
+    std::pair<iterator, iterator> lowerUpperBound(
+            const RamDomain* low, const RamDomain* high, size_t indexPosition) const override {
+        auto idx = this->getIndexByPos(indexPosition);
+        return idx->lowerUpperBound(low, high);
+    }
+
+    /** Extend tuple */
+    std::vector<RamDomain*> extend(const RamDomain* tuple) override {
+        std::vector<RamDomain*> newTuples;
+
+        // A standard relation does not generate extra new knowledge on insertion.
+        newTuples.push_back(new RamDomain[2]{tuple[0], tuple[1]});
+
+        return newTuples;
+    }
+
+    /** Extend relation */
+    void extend(const LVMRelation& rel) override {}
+
     /** get index for a given search signature. Order are encoded as bits for each column */
     LVMIndex* getIndex(const SearchSignature& col) const {
         // Special case in provenance program, a 0 searchSignature is considered as a full search
-        if (col == 0 && arity != 0) {
+        if (col == 0) {
             return getIndex(getTotalIndexKey());
         }
         return getIndexByPos(orderSet->getLexOrderNum(col));
@@ -161,33 +249,77 @@ public:
         return (1 << (getArity())) - 1;
     }
 
+private:
+    /** Size of blocks containing tuples */
+    static const int BLOCK_SIZE = 1024;
+
+    std::deque<std::unique_ptr<RamDomain[]>> blockList;
+
+    /** List of indices */
+    mutable std::vector<LVMIndex> indices;
+};
+
+/**
+ * Interpreter Nullary relation
+ */
+
+class LVMNullaryRelation : public LVMRelation {
+public:
+    LVMNullaryRelation(std::string relName, std::vector<std::string>& attributeTypes)
+            : LVMRelation(0, 0, nullptr, relName, attributeTypes), nullaryIndex(std::vector<int>()) {}
+    		//TODO (sarah) what to putfor numberOfHeights here?
+
+    /** Insert tuple into nullary relation */
+    void insert(const RamDomain* tuple) override {
+        if (!inserted) {
+            nullaryIndex.insert(tuple);
+        }
+        inserted = true;
+    }
+
+    /** Merge another relation into this relation */
+    void insert(const LVMRelation& other) override {
+        if (!other.empty() && !inserted) {
+            insert(nullptr);
+        }
+    }
+
+    /** Size of nullary is either 0 or 1 */
+    size_t size() const override {
+        return inserted == true ? 1 : 0;
+    }
+
+    bool empty() const override {
+        return !inserted;
+    }
+
+    /** Purge table */
+    void purge() override {
+        inserted = false;
+    }
+
     /** check whether a tuple exists in the relation */
-    bool exists(const RamDomain* tuple) const {
-        LVMIndex* index = getIndex(getTotalIndexKey());
-        return index->exists(tuple);
+    bool exists(const RamDomain* tuple) const override {
+        return inserted;
     }
-
-    void setLevel(size_t level) {
-        this->level = level;
-    }
-
-    size_t getLevel() {
-        return this->level;
-    }
-
-    using iterator = LVMIndex::iterator;
 
     /** Iterator for relation, uses full-order index as default */
-    iterator begin() const {
-        return indices[0].begin();
+    iterator begin() const override {
+        return nullaryIndex.begin();
     }
 
-    iterator end() const {
-        return indices[0].end();
+    iterator end() const override {
+        return nullaryIndex.end();
+    }
+
+    /** Return range iterator */
+    std::pair<iterator, iterator> lowerUpperBound(
+            const RamDomain* low, const RamDomain* high, size_t indexPosition) const override {
+        return std::make_pair(begin(), end());
     }
 
     /** Extend tuple */
-    virtual std::vector<RamDomain*> extend(const RamDomain* tuple) {
+    std::vector<RamDomain*> extend(const RamDomain* tuple) override {
         std::vector<RamDomain*> newTuples;
 
         // A standard relation does not generate extra new knowledge on insertion.
@@ -197,51 +329,26 @@ public:
     }
 
     /** Extend relation */
-    virtual void extend(const LVMRelation& rel) {}
+    void extend(const LVMRelation& rel) override {}
 
 private:
-    /** Arity of relation */
-    const size_t arity;
+    /** Nullary can hold only one tuple */
+    bool inserted = false;
 
-    /** number of height parameters of relation */
-    const size_t numberOfHeights;
 
-    /** Size of blocks containing tuples */
-    static const int BLOCK_SIZE = 1024;
-
-    /** Number of tuples in relation */
-    size_t num_tuples = 0;
-
-    std::deque<std::unique_ptr<RamDomain[]>> blockList;
-
-    /** List of indices */
-    mutable std::vector<LVMIndex> indices;
-
-    /** IndexSet */
-    const MinIndexSelection* orderSet;
-
-    /** Lock for parallel execution */
-    mutable Lock lock;
-
-    /** Type of attributes */
-    std::vector<std::string> attributeTypeQualifiers;
-
-    /** Stratum level information */
-    size_t level = 0;
-
-    /** Relation name */
-    const std::string relName;
+    /** Nullary index with empty search signature */
+    LVMIndex nullaryIndex;
 };
 
 /**
  * Interpreter Equivalence Relation
  */
 
-class LVMEqRelation : public LVMRelation {
+class LVMEqRelation : public LVMIndirectRelation {
 public:
-    LVMEqRelation(
-            size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet, std::string relName)
-            : LVMRelation(relArity, numberOfHeights, orderSet, relName) {}
+    LVMEqRelation(size_t relArity, size_t numberOfHeights, const MinIndexSelection* orderSet, std::string relName,
+            std::vector<std::string>& attributeTypes)
+            : LVMIndirectRelation(relArity, numberOfHeights, orderSet, relName, attributeTypes) {}
 
     /** Insert tuple */
     void insert(const RamDomain* tuple) override {
@@ -258,7 +365,7 @@ public:
         // ):
 
         for (auto* newTuple : extend(tuple)) {
-            LVMRelation::insert(newTuple);
+            LVMIndirectRelation::insert(newTuple);
             delete[] newTuple;
         }
     }
@@ -302,7 +409,7 @@ public:
             }
         }
         for (const auto* newTuple : newTuples) {
-            LVMRelation::insert(newTuple);
+            LVMIndirectRelation::insert(newTuple);
             delete[] newTuple;
         }
     }

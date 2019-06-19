@@ -887,9 +887,20 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                         InterpreterRelation& relation = getRelation(relName);
                         std::vector<char> kindMask;
                         std::map<int, int> recordArityMask;
-                        for (auto& cur : relation.getAttributeTypeQualifiers()) {
-                            kindMask.push_back(cur[0]);
+                        const auto& typeQualifiers = relation.getAttributeTypeQualifiers();
+
+                        for (size_t i = 0; i < typeQualifiers.size(); i++) {
+                            const auto& curId = typeQualifiers[i];
+
+                            char kind = typeQualifiers[i][0];
+                            kindMask.push_back(kind);
+
+                            std::string typeInfo = curId.substr(2, curId.length() - 2);
+                            int arity = std::stoi(typeInfo);
+
+                            recordArityMask[i] = arity;
                         }
+
                         IOSystem::getInstance()
                                 .getWriter(kindMask, symbolTable, recordArityMask,
                                         createInterpreterRecordTable(), io,

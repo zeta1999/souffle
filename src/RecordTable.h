@@ -26,22 +26,23 @@ namespace souffle {
 
 class RecordTable {
 public:
-    RecordTable() {}
+    RecordTable() = default;
 
+    /**
+     * Add a record tuple with the given reference number to the table.
+     */
     void addRecord(RamDomain ref, const std::vector<RamDomain>& tuple) {
-        int arity = tuple.size();
-
-        std::vector<RamDomain> tupleCopy;
-        for (int i = 0; i < arity; i++) {
-            tupleCopy.push_back(tuple[i]);
-        }
-
+        const size_t arity = tuple.size();
         if (recordMap.find(arity) == recordMap.end()) {
+            // create record map for that arity if it does not already exist
             recordMap[arity] = std::map<RamDomain, std::vector<RamDomain>>();
         }
-        recordMap[arity][ref] = tupleCopy;
+        recordMap[arity][ref] = std::vector<RamDomain>(tuple);
     }
 
+    /**
+     * Get the record tuple with given arity and reference number.
+     */
     const std::vector<RamDomain>& getRecord(int arity, RamDomain ref) const {
         return recordMap.at(arity).at(ref);
     }

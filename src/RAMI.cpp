@@ -967,26 +967,18 @@ void RAMI::evalStmt(const RamStatement& stmt) {
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 try {
                     std::vector<char> kindMask;
-                    std::map<int,int> recordArityMask;
+                    std::map<int, int> recordArityMask;
                     const auto& typeQualifiers = store.getRelation().getAttributeTypeQualifiers();
+
                     for (size_t i = 0; i < typeQualifiers.size(); i++) {
                         const auto& curId = typeQualifiers[i];
 
                         char kind = typeQualifiers[i][0];
                         kindMask.push_back(kind);
 
-                        const auto& type = curId.substr(2,curId.length()-2);
-                        int arity = 0;
-                        int nesting = 0;
-                        for (auto chr : type) {
-                            if (chr == '{') {
-                                nesting += 1;
-                            } else if (chr == '}') {
-                                nesting -= 1;
-                            } else if (nesting == 1 && chr == ':') {
-                                arity++;
-                            }
-                        }
+                        std::string typeInfo = curId.substr(2, curId.length() - 2);
+                        int arity = std::stoi(typeInfo);
+
                         recordArityMask[i] = arity;
                     }
 

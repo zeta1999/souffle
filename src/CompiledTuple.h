@@ -18,6 +18,7 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
 
 namespace souffle {
 
@@ -52,8 +53,8 @@ struct Tuple {
     }
 
     // get vector representation of tuple
-    std::vector<Domain> toVector() {
-        return std::vector<Domain>(begin(data), end(data));
+    std::vector<Domain> toVector() const {
+        return std::vector<Domain>(std::begin(data), std::end(data));
     }
 
     // a comparison operation

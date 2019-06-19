@@ -213,13 +213,14 @@ public:
     RamDomain pack(const ram::Tuple<RamDomain, 0>& tuple) {
         return 1;
     }
+
     const ram::Tuple<RamDomain, 0>& unpack(RamDomain index) {
         static ram::Tuple<RamDomain, 0> empty;
         return empty;
     }
 
     std::map<int, std::vector<RamDomain>> getRecordReferences() const override {
-        return std::map<int, std::vector<RamDomain>>();
+        return std::map<int, std::vector<RamDomain>>({{1, {}}});
     }
 };
 

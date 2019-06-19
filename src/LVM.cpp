@@ -895,10 +895,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                             char kind = typeQualifiers[i][0];
                             kindMask.push_back(kind);
 
-                            std::string typeInfo = curId.substr(2, curId.length() - 2);
-                            int arity = std::stoi(typeInfo);
+                            if (kind == 'r') {
+                                std::string typeInfo = curId.substr(2, curId.length() - 2);
+                                int arity = std::stoi(typeInfo);
 
-                            recordArityMask[i] = arity;
+                                recordArityMask[i] = arity;
+                            }
                         }
 
                         IOSystem::getInstance()

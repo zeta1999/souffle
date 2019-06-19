@@ -77,6 +77,7 @@ bool isNull(RamDomain ref) {
 class GeneralRecordMap {
 public:
     GeneralRecordMap() {
+        // store an internal reference to the created record map
         getMaps().insert(this);
     }
 
@@ -86,12 +87,14 @@ public:
     virtual std::map<RamDomain, std::vector<RamDomain>> getRecordReferences() const = 0;
 
     /**
-     * Get the reference-to-tuple mapping generated so far across all record maps.
+     * Get the reference-to-tuple mapping generated so far across all stored maps.
      */
     static RecordTable* getRecordTable() {
+        // TODO: change to unique pointer
         RecordTable* recordTable = new RecordTable();
 
         // add in all records from all created maps
+        // TODO: more efficient? unnecessary copies here
         for (const auto* recordMap : getMaps()) {
             for (const auto& pair : recordMap->getRecordReferences()) {
                 RamDomain ref = pair.first;
@@ -103,6 +106,9 @@ public:
         return recordTable;
     }
 
+    /**
+     * Get the references to all created record maps.
+     */
     static std::set<GeneralRecordMap*>& getMaps() {
         static std::set<GeneralRecordMap*> createdMaps;
         return createdMaps;
@@ -189,13 +195,10 @@ public:
     }
 
     std::map<int, std::vector<RamDomain>> getRecordReferences() const override {
+        // TODO: more efficient here maybe?
         std::map<int, std::vector<RamDomain>> recordValues;
         for (const auto& pair : r2i) {
-            std::vector<RamDomain> value;
-            for (size_t i = 0; i < pair.first.arity; i++) {
-                value.push_back(pair.first[i]);
-            }
-            recordValues[pair.second] = value;
+            recordValues[pair.second] = pair.first.toVector();
         }
         return recordValues;
     }

@@ -51,6 +51,11 @@ struct Tuple {
         return data[index];
     }
 
+    // get vector representation of tuple
+    std::vector<Domain> toVector() {
+        return std::vector<Domain>(begin(data), end(data));
+    }
+
     // a comparison operation
     bool operator==(const Tuple& other) const {
         for (std::size_t i = 0; i < arity; i++) {

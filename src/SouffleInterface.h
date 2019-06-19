@@ -242,22 +242,24 @@ class SouffleProgram {
 private:
     // define a relation map for external access
     std::map<std::string, Relation*> relationMap;
-    std::set<Relation*> inputRelations;
-    std::set<Relation*> outputRelations;
-    std::set<Relation*> internalRelations;
+    std::vector<Relation*> inputRelations;
+    std::vector<Relation*> outputRelations;
+    std::vector<Relation*> internalRelations;
+    std::vector<Relation*> allRelations;
 
 protected:
     // add relation to relation map
     void addRelation(const std::string& name, Relation* rel, bool isInput, bool isOutput) {
         relationMap[name] = rel;
+        allRelations.push_back(rel);
         if (isInput) {
-            inputRelations.insert(rel);
+            inputRelations.push_back(rel);
         }
         if (isOutput) {
-            outputRelations.insert(rel);
+            outputRelations.push_back(rel);
         }
         if (!isInput && !isOutput) {
-            internalRelations.insert(rel);
+            internalRelations.push_back(rel);
         }
     }
 
@@ -293,23 +295,19 @@ public:
         }
     };
 
-    std::set<Relation*> getOutputRelations() const {
+    std::vector<Relation*> getOutputRelations() const {
         return outputRelations;
     }
 
-    std::set<Relation*> getInputRelations() const {
+    std::vector<Relation*> getInputRelations() const {
         return inputRelations;
     }
 
-    std::set<Relation*> getInternalRelations() const {
+    std::vector<Relation*> getInternalRelations() const {
         return internalRelations;
     }
 
-    std::set<Relation*> getAllRelations() const {
-        std::set<Relation*> allRelations;
-        allRelations.insert(inputRelations.begin(), inputRelations.end());
-        allRelations.insert(internalRelations.begin(), internalRelations.end());
-        allRelations.insert(outputRelations.begin(), outputRelations.end());
+    std::vector<Relation*> getAllRelations() const {
         return allRelations;
     }
 

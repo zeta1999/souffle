@@ -352,7 +352,8 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
             // if fact, level number is 0
             if (clause->isFact()) {
                 clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
-                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
+                for (size_t i = 0; i < relation->numberOfHeightParameters(); i++)
+                    clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
             } else {
                 std::vector<AstArgument*> bodyLevels;
 
@@ -362,13 +363,13 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                     // add unnamed vars to each atom nested in arguments of lit
                     lit->apply(M());
 
-                    // add two provenance columns to lit; first is rule num, second is level num
+                    // add provenance columns to lit; first rule num, then level nums
                     if (auto atom = dynamic_cast<AstAtom*>(lit)) {
                         // rule num
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         atom->addArgument(
                                 std::make_unique<AstVariable>("@level_number_" + std::to_string(i)));
-                        // level num
+                        // level nums
                         for (size_t j = 0;
                                 j < program->getRelation(atom->getName())->numberOfHeightParameters() - 1;
                                 j++) {
@@ -384,12 +385,12 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                 // max level
                 clause->getHead()->addArgument(std::unique_ptr<AstArgument>(getNextLevelNumber(bodyLevels)));
                 // level numbers
-                for (size_t j = 0; j < clause->getBodyLiterals().size(); j++) {
+                for (size_t j = 0; j < clause->getAtoms().size(); j++) {
                     clause->getHead()->addArgument(
                             std::make_unique<AstVariable>("@level_number_" + std::to_string(j)));
                 }
-                for (size_t j = clause->getBodyLiterals().size();
-                        j < relation->numberOfHeightParameters() - 1; j++) {
+                for (size_t j = clause->getAtoms().size(); j < relation->numberOfHeightParameters() - 1;
+                        j++) {
                     clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(
                             -1));  // which value to use for encoding empty height parameter?
                 }

@@ -184,7 +184,8 @@ public:
         if (Global::config().has("provenance") && Global::config().get("provenance") == "subtreeHeights") {
             size_t maxNrOfPremises = 0;
             for (auto& cur : clauses) {
-                if (cur->getBodySize() > maxNrOfPremises) maxNrOfPremises = cur->getBodySize();
+                size_t numberOfAtoms = cur->getAtoms().size();
+                if (numberOfAtoms > maxNrOfPremises) maxNrOfPremises = numberOfAtoms;
             }
             return maxNrOfPremises + 1;
         } else {

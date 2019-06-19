@@ -144,12 +144,15 @@ public:
 
             // traverse subroutine return
             size_t arity;
+            size_t numberOfHeights;
             if (isConstraint) {
                 // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
                 // annotations
                 arity = 4;
+                numberOfHeights = 1;
             } else {
                 arity = prog.getRelation(bodyRelAtomName)->getArity();
+                numberOfHeights = prog.getRelation(bodyRelAtomName)->getNumberOfHeights();
             }
             auto tupleEnd = tupleCurInd + arity;
 
@@ -157,7 +160,7 @@ public:
             std::vector<RamDomain> subproofTuple;
             std::vector<bool> subproofTupleError;
 
-            for (; tupleCurInd < tupleEnd - 1 - prog.getRelation(bodyRelAtomName)->getNumberOfHeights();
+            for (; tupleCurInd < tupleEnd - 1 - numberOfHeights;
                     tupleCurInd++) {
                 subproofTuple.push_back(ret[tupleCurInd]);
                 subproofTupleError.push_back(err[tupleCurInd]);
@@ -180,7 +183,7 @@ public:
                 auto joinedTupleStr = joinedTuple.str();
                 internalNode->add_child(std::make_unique<LeafNode>(bodyRel + "(" + joinedTupleStr + ")"));
                 internalNode->setSize(internalNode->getSize() + 1);
-                // for a binary constraint, display the corresponding values and do not recurse
+            // for a binary constraint, display the corresponding values and do not recurse
             } else if (isConstraint) {
                 std::stringstream joinedConstraint;
 
@@ -424,12 +427,15 @@ public:
 
             // traverse subroutine return
             size_t arity;
+            size_t numberOfHeights;
             if (isConstraint) {
                 // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
                 // annotations
                 arity = 4;
+                numberOfHeights = 1;
             } else {
                 arity = prog.getRelation(bodyRelAtomName)->getArity();
+                numberOfHeights = prog.getRelation(bodyRelAtomName)->getNumberOfHeights();
             }
 
             // process current literal
@@ -437,7 +443,7 @@ public:
             std::vector<bool> atomErrs;
             size_t j = returnCounter;
 
-            for (; j < returnCounter + arity - 1 - prog.getRelation(bodyRelAtomName)->getNumberOfHeights();
+            for (; j < returnCounter + arity - 1 - numberOfHeights;
                     j++) {
                 atomValues.push_back(ret[j]);
                 atomErrs.push_back(err[j]);

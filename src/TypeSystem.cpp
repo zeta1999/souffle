@@ -272,7 +272,9 @@ std::string getTypeQualifier(const Type& type) {
         }
 
         std::string visitRecordType(const RecordType& type) const override {
-            std::string str = visitType(type);
+            std::string str = toString(type.getFields().size());
+            str += "-";
+            str += visitType(type);
             str += "{";
             bool first = true;
             for (auto field : type.getFields()) {

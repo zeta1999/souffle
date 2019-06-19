@@ -160,8 +160,7 @@ public:
             std::vector<RamDomain> subproofTuple;
             std::vector<bool> subproofTupleError;
 
-            for (; tupleCurInd < tupleEnd - 1 - numberOfHeights;
-                    tupleCurInd++) {
+            for (; tupleCurInd < tupleEnd - 1 - numberOfHeights; tupleCurInd++) {
                 subproofTuple.push_back(ret[tupleCurInd]);
                 subproofTupleError.push_back(err[tupleCurInd]);
             }
@@ -183,7 +182,7 @@ public:
                 auto joinedTupleStr = joinedTuple.str();
                 internalNode->add_child(std::make_unique<LeafNode>(bodyRel + "(" + joinedTupleStr + ")"));
                 internalNode->setSize(internalNode->getSize() + 1);
-            // for a binary constraint, display the corresponding values and do not recurse
+                // for a binary constraint, display the corresponding values and do not recurse
             } else if (isConstraint) {
                 std::stringstream joinedConstraint;
 
@@ -443,8 +442,7 @@ public:
             std::vector<bool> atomErrs;
             size_t j = returnCounter;
 
-            for (; j < returnCounter + arity - 1 - numberOfHeights;
-                    j++) {
+            for (; j < returnCounter + arity - 1 - numberOfHeights; j++) {
                 atomValues.push_back(ret[j]);
                 atomErrs.push_back(err[j]);
             }

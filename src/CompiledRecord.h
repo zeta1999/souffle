@@ -77,7 +77,7 @@ bool isNull(RamDomain ref) {
 class GeneralRecordMap {
 public:
     GeneralRecordMap() {
-        createdMaps.insert(this);
+        getMaps().insert(this);
     }
 
     /**
@@ -92,7 +92,7 @@ public:
         RecordTable* recordTable = new RecordTable();
 
         // add in all records from all created maps
-        for (const auto* recordMap : createdMaps) {
+        for (const auto* recordMap : getMaps()) {
             for (const auto& pair : recordMap->getRecordReferences()) {
                 RamDomain ref = pair.first;
                 const auto& tuple = pair.second;
@@ -103,8 +103,10 @@ public:
         return recordTable;
     }
 
-private:
-    static std::set<GeneralRecordMap*> createdMaps;
+    static std::set<GeneralRecordMap*>& getMaps() {
+        static std::set<GeneralRecordMap*> createdMaps;
+        return createdMaps;
+    }
 };
 
 namespace detail {

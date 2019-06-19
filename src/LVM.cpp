@@ -886,12 +886,13 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     try {
                         InterpreterRelation& relation = getRelation(relName);
                         std::vector<char> kindMask;
-                        std::map<int,int> recordArityMask;
+                        std::map<int, int> recordArityMask;
                         for (auto& cur : relation.getAttributeTypeQualifiers()) {
                             kindMask.push_back(cur[0]);
                         }
                         IOSystem::getInstance()
-                                .getWriter(kindMask, symbolTable, recordArityMask, createInterpreterRecordTable(), io,
+                                .getWriter(kindMask, symbolTable, recordArityMask,
+                                        createInterpreterRecordTable(), io,
                                         Global::config().has("provenance"))
                                 ->writeAll(relation);
                     } catch (std::exception& e) {

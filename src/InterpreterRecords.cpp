@@ -90,20 +90,13 @@ public:
     }
 };
 
-/**
- * The static access function for all record maps.
- */
-map<int, RecordMap> getRecordMaps() {
-    static map<int, RecordMap> maps;
-    return maps;
-}
+// the static container -- filled on demand
+static map<int, RecordMap> maps;
 
 /**
  * The static access function for record maps of certain arities.
  */
 RecordMap& getForArity(int arity) {
-    auto maps = getRecordMaps();
-
     // get container if present
     auto pos = maps.find(arity);
     if (pos != maps.end()) {
@@ -142,7 +135,7 @@ const RecordTable& getInterpreterRecordTable() {
     // only construct record table once
     if (!created) {
         created = true;
-        for (const auto& map : getRecordMaps()) {
+        for (const auto& map : maps) {
             const auto& records = map.second.getRecordValues();
             for (size_t i = 0; i < records.size(); i++) {
                 recordTable.addRecord(i, records[i]);

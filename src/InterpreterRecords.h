@@ -43,8 +43,7 @@ RamDomain getNull();
 bool isNull(RamDomain ref);
 
 /**
- * Create the record table containing all reference-to-tuple mappings generated
- * so far.
+ * Create the record table containing all reference-to-tuple mappings generated so far.
  */
 const RecordTable& getInterpreterRecordTable();
 

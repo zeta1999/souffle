@@ -68,43 +68,31 @@ protected:
 
     virtual void writeNullary() = 0;
     virtual void writeNextTuple(const RamDomain* tuple) = 0;
+
     virtual void writeSize(std::size_t size) {
         assert(false && "attempting to print size of a write operation");
     }
+
     template <typename Tuple>
     void writeNext(const Tuple tuple) {
         writeNextTuple(tuple.data);
     }
 
     void writeValue(std::ostream& os, size_t col, RamDomain repr) {
-        char kind = kindMask.at(col);
-
-        switch (kind) {
-            case 'i': {
+        switch (kindMask.at(col)) {
+            case 'i':
                 os << repr;
                 break;
-            }
 
-            case 's': {
+            case 's':
                 os << symbolTable.unsafeResolve(repr);
                 break;
-            }
 
             case 'r': {
                 int arity = recordArityMask.at(col);
                 const auto& record = recordTable.getRecord(arity, repr);
 
-                os << "UnnamedRecord";
-                if (record.size() == 0) {
-                    os << "[]";
-                } else {
-                    os << "[" << record[0];
-                    for (size_t i = 1; i < record.size(); i++) {
-                        os << ", " << record[i];
-                    }
-                    os << "]";
-                }
-
+                os << "UnnamedRecord[" << join(record, ",") << "]";
                 break;
             }
 

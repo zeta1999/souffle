@@ -89,17 +89,21 @@ public:
     /**
      * Get the reference-to-tuple mapping generated so far across all stored maps.
      */
-    static RecordTable* getRecordTable() {
-        // TODO: change to unique pointer
-        RecordTable* recordTable = new RecordTable();
+    static const RecordTable& getRecordTable() {
+        static RecordTable recordTable;
+        bool created = false;
 
-        // add in all records from all created maps
-        // TODO: more efficient? unnecessary copies here
-        for (const auto* recordMap : getMaps()) {
-            for (const auto& pair : recordMap->getRecordReferences()) {
-                RamDomain ref = pair.first;
-                const auto& tuple = pair.second;
-                recordTable->addRecord(ref, tuple);
+        // only construct record table once
+        if (!created) {
+            created = true;
+            // add in all records from all created maps
+            // TODO: more efficient? unnecessary copies here
+            for (const auto* recordMap : getMaps()) {
+                for (const auto& pair : recordMap->getRecordReferences()) {
+                    RamDomain ref = pair.first;
+                    const auto& tuple = pair.second;
+                    recordTable.addRecord(ref, tuple);
+                }
             }
         }
 

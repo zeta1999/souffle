@@ -47,6 +47,20 @@ public:
         return recordMap.at(arity).at(ref);
     }
 
+    /**
+     * Empty the record table.
+     */
+    void clear() {
+        recordMap.clear();
+    }
+
+    /**
+     * Check if the record table is empty.
+     */
+    bool empty() const {
+        return recordMap.empty();
+    }
+
 private:
     std::map<int, std::map<RamDomain, std::vector<RamDomain>>> recordMap{};
 };

@@ -28,7 +28,7 @@ namespace souffle {
 class WriteStream {
 public:
     WriteStream(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const std::vector<int>& recordArityMask, const RecordTable* recordTable, const bool prov,
+            const std::vector<int>& recordArityMask, const RecordTable& recordTable, const bool prov,
             bool summary = false)
             : kindMask(kindMask), symbolTable(symbolTable), recordArityMask(recordArityMask),
               recordTable(recordTable), isProvenance(prov), summary(summary),
@@ -61,7 +61,7 @@ protected:
     const std::vector<char>& kindMask;
     const SymbolTable& symbolTable;
     const std::vector<int>& recordArityMask;
-    const RecordTable* recordTable;
+    const RecordTable& recordTable;
     const bool isProvenance;
     const bool summary;
     const size_t arity;
@@ -92,7 +92,7 @@ protected:
 
             case 'r': {
                 int arity = recordArityMask.at(col);
-                const auto& record = recordTable->getRecord(arity, repr);
+                const auto& record = recordTable.getRecord(arity, repr);
 
                 os << "UnnamedRecord";
                 if (record.size() == 0) {
@@ -118,7 +118,7 @@ class WriteStreamFactory {
 public:
     virtual std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask,
             const SymbolTable& symbolTable, const std::vector<int>& recordArityMask,
-            const RecordTable* recordTable, const IODirectives& ioDirectives, const bool provenance) = 0;
+            const RecordTable& recordTable, const IODirectives& ioDirectives, const bool provenance) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
 };

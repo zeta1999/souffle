@@ -905,7 +905,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
 
                         IOSystem::getInstance()
                                 .getWriter(kindMask, symbolTable, recordArityMask,
-                                        createInterpreterRecordTable(), io,
+                                        getInterpreterRecordTable(), io,
                                         Global::config().has("provenance"))
                                 ->writeAll(relation);
                     } catch (std::exception& e) {

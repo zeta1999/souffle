@@ -261,6 +261,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
 
+            // TODO: repeated three times in this file - consider function?
             std::vector<char> kindMask;
             std::vector<int> recordArityMask;
             const auto& typeQualifiers = store.getRelation().getAttributeTypeQualifiers();

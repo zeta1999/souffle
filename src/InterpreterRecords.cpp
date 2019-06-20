@@ -127,14 +127,21 @@ bool isNull(RamDomain ref) {
     return ref == 0;
 }
 
-RecordTable* createInterpreterRecordTable() {
-    RecordTable* recordTable = new RecordTable();
-    for (const auto& map : maps) {
-        const auto& records = map.second.getRecordValues();
-        for (size_t i = 0; i < records.size(); i++) {
-            recordTable->addRecord(i, records[i]);
+const RecordTable& getInterpreterRecordTable() {
+    static RecordTable recordTable;
+    bool created = false;
+
+    // only construct record table once
+    if (!created) {
+        created = true;
+        for (const auto& map : maps) {
+            const auto& records = map.second.getRecordValues();
+            for (size_t i = 0; i < records.size(); i++) {
+                recordTable.addRecord(i, records[i]);
+            }
         }
     }
+
     return recordTable;
 }
 

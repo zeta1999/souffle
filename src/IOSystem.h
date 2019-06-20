@@ -51,7 +51,7 @@ public:
      * Return a new WriteStream
      */
     std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const std::vector<int>& recordArityMask, const RecordTable* recordTable,
+            const std::vector<int>& recordArityMask, const RecordTable& recordTable,
             const IODirectives& ioDirectives, const bool provenance) const {
         std::string ioType = ioDirectives.getIOType();
         if (outputFactories.count(ioType) == 0) {

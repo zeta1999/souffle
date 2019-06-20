@@ -600,10 +600,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                             high[arity - i - 1] = low[arity - i - 1] + 1;
                         } else {
                             low[arity - i - 1] = MIN_RAM_DOMAIN;
-                            high[arity - i - 1] = MAX_RAM_DOMAIN;
+                            high[arity - i - 1] = MIN_RAM_DOMAIN;
                         }
                     }
-
                     auto range = rel.range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
 
                     stack.push(range.begin() != range.end());
@@ -631,14 +630,14 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         high[arity - i - 1] = low[arity - i - 1] + 1;
                     } else {
                         low[arity - i - 1] = MIN_RAM_DOMAIN;
-                        high[arity - i - 1] = MAX_RAM_DOMAIN;
+                        high[arity - i - 1] = MIN_RAM_DOMAIN;
                     }
                 }
 
                 low[arity - 2] = MIN_RAM_DOMAIN;
                 low[arity - 1] = MIN_RAM_DOMAIN;
-                high[arity - 2] = MAX_RAM_DOMAIN;
-                high[arity - 1] = MAX_RAM_DOMAIN;
+                high[arity - 2] = MIN_RAM_DOMAIN;
+                high[arity - 1] = MIN_RAM_DOMAIN;
 
                 auto range = rel.range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
                 stack.push(range.begin() != range.end());
@@ -842,6 +841,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     assert("LVM_EqRel not supported yet" && false);
                 } else { //TODO test Brie 
                     res = std::make_unique<LVMRelation>(arity, relName, attributeTypes, orderSet);
+                    //res = std::make_unique<LVMRelation>(arity, relName, attributeTypes, orderSet, createBrieIndex);
                 }
 
                 res->setLevel(level);
@@ -1024,10 +1024,13 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         hig[arity - i - 1] = low[arity - i - 1] + 1;
                     } else {
                         low[arity - i - 1] = MIN_RAM_DOMAIN;
-                        hig[arity - i - 1] = MAX_RAM_DOMAIN;
+                        hig[arity - i - 1] = MIN_RAM_DOMAIN;
                     }
                 }
-
+                // Case when RAM try to use a range query as full index search.
+                if (arity == 1 && low[0] == hig[0] && hig[0] == MIN_RAM_DOMAIN) {
+                    hig[0] = MAX_RAM_DOMAIN;
+                }
                 // get iterator range
                 lookUpStream(dest) = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(hig, arity));
                 ip += 5;

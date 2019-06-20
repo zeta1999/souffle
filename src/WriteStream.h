@@ -96,7 +96,7 @@ protected:
 
                 os << "UnnamedRecord";
                 if (record.size() == 0) {
-                    os << "[]" << std::endl;
+                    os << "[]";
                 } else {
                     os << "[" << record[0];
                     for (size_t i = 1; i < record.size(); i++) {

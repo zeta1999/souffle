@@ -563,7 +563,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             }
             case LVM_EmptinessCheck: {
                 size_t relId = code[ip + 1];
-                printf("Check %s emptiness, size:%ld\n", getRelation(relId)->getName().c_str(), getRelation(relId)->size());
                 stack.push(getRelation(relId)->empty());
                 ip += 2;
                 break;
@@ -598,7 +597,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         if (patterns[arity - i - 1] == 'V') {
                             low[arity - i - 1] = stack.top();
                             stack.pop();
-                            high[arity - i - 1] = low[arity - i - 1];
+                            high[arity - i - 1] = low[arity - i - 1] + 1;
                         } else {
                             low[arity - i - 1] = MIN_RAM_DOMAIN;
                             high[arity - i - 1] = MAX_RAM_DOMAIN;
@@ -629,10 +628,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     if (patterns[arity - i - 1] == 'V') {
                         low[arity - i - 1] = stack.top();
                         stack.pop();
-                        high[arity - i - 1] = low[arity - i - 1];
+                        high[arity - i - 1] = low[arity - i - 1] + 1;
                     } else {
                         low[arity - i - 1] = MIN_RAM_DOMAIN;
-                        low[arity - i - 1] = MAX_RAM_DOMAIN;
+                        high[arity - i - 1] = MAX_RAM_DOMAIN;
                     }
                 }
 
@@ -922,7 +921,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     tuple[arity - i - 1] = stack.top();
                     stack.pop();
                 }
-                printf("Inserting %d\n", tuple[0]);
                 getRelation(relId)->insert(TupleRef(tuple, arity));
                 ip += 3;
                 break;
@@ -1009,7 +1007,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             };
             case LVM_ITER_InitRangeIndex: {
-                printf("init range index\n");
                 RamDomain dest = code[ip + 1];
                 size_t relId = code[ip + 2];
                 auto relPtr = getRelation(relId);
@@ -1024,7 +1021,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     if (pattern[arity - i - 1] == 'V') {
                         low[arity - i - 1] = stack.top();
                         stack.pop();
-                        hig[arity - i - 1] = low[arity - i - 1];
+                        hig[arity - i - 1] = low[arity - i - 1] + 1;
                     } else {
                         low[arity - i - 1] = MIN_RAM_DOMAIN;
                         hig[arity - i - 1] = MAX_RAM_DOMAIN;
@@ -1032,13 +1029,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 }
 
                 // get iterator range
-                printf("Init range index %d with range:%d %d\n", indexPos, low[0], hig[0]);
                 lookUpStream(dest) = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(hig, arity));
-                printf("Empty range? %s\n", (lookUpStream(dest).begin() == lookUpStream(dest).end()) == true ? "T" : "F");
-                for (auto cur : relPtr->scan()) {
-                    printf("v:%d\n", cur[0]);
-                }
-                printf("%d\n", (*lookUpStream(dest).begin())[0]);
                 ip += 5;
                 break;
             };
@@ -1054,7 +1045,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 RamDomain tupleId = code[ip + 2];
                 auto& stream = lookUpStream(idx);
                 ctxt[tupleId] = *stream.begin();
-                printf("Select A: %d\n", ctxt[tupleId][0]);
                 ip += 3;
                 break;
             }

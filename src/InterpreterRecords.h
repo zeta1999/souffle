@@ -42,6 +42,10 @@ RamDomain getNull();
  */
 bool isNull(RamDomain ref);
 
+/**
+ * Create the record table containing all reference-to-tuple mappings generated
+ * so far.
+ */
 RecordTable* createInterpreterRecordTable();
 
 }  // end of namespace souffle

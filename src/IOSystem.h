@@ -60,7 +60,7 @@ public:
         return outputFactories.at(ioType)->getWriter(
                 kindMask, symbolTable, recordArityMask, recordTable, ioDirectives, provenance);
     }
-    // TODO: READER STUFF?
+
     /**
      * Return a new ReadStream
      */

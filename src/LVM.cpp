@@ -886,20 +886,20 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     try {
                         InterpreterRelation& relation = getRelation(relName);
                         std::vector<char> kindMask;
-                        std::map<int, int> recordArityMask;
+                        std::vector<int> recordArityMask;
                         const auto& typeQualifiers = relation.getAttributeTypeQualifiers();
 
-                        for (size_t i = 0; i < typeQualifiers.size(); i++) {
-                            const auto& curId = typeQualifiers[i];
-
-                            char kind = typeQualifiers[i][0];
+                        for (const auto& cur : typeQualifiers) {
+                            // store the kind
+                            char kind = cur[0];
                             kindMask.push_back(kind);
 
+                            // store the arity if relevant
                             if (kind == 'r') {
-                                std::string typeInfo = curId.substr(2, curId.length() - 2);
-                                int arity = std::stoi(typeInfo);
-
-                                recordArityMask[i] = arity;
+                                std::string typeInfo = cur.substr(2, cur.length() - 2);
+                                recordArityMask.push_back(std::stoi(typeInfo));
+                            } else {
+                                recordArityMask.push_back(-1);
                             }
                         }
 

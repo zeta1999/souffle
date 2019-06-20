@@ -260,22 +260,22 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitStore(const RamStore& store, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
+
             std::vector<char> kindMask;
-            // TODO: change to vector throughout
-            std::map<int, int> recordArityMask;
+            std::vector<int> recordArityMask;
             const auto& typeQualifiers = store.getRelation().getAttributeTypeQualifiers();
 
-            for (size_t i = 0; i < typeQualifiers.size(); i++) {
-                const auto& curId = typeQualifiers[i];
-
-                char kind = typeQualifiers[i][0];
+            for (const auto& cur : typeQualifiers) {
+                // store the kind
+                char kind = cur[0];
                 kindMask.push_back(kind);
 
+                // store the arity if relevant
                 if (kind == 'r') {
-                    std::string typeInfo = curId.substr(2, curId.length() - 2);
-                    int arity = std::stoi(typeInfo);
-
-                    recordArityMask[i] = arity;
+                    std::string typeInfo = cur.substr(2, cur.length() - 2);
+                    recordArityMask.push_back(std::stoi(typeInfo));
+                } else {
+                    recordArityMask.push_back(-1);
                 }
             }
 
@@ -286,17 +286,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             kindMaskStr << "})";
 
-            std::stringstream recordArityMaskStr;
-            recordArityMaskStr << "std::map<int,int>({";
-            std::vector<std::string> arityMappings;
-            for (const auto& pair : recordArityMask) {
-                std::stringstream curMapping;
-                curMapping << "{" << pair.first << ", " << pair.second << "}";
-                arityMappings.push_back(curMapping.str());
-            }
-            recordArityMaskStr << join(arityMappings, ",");
-            recordArityMaskStr << "})";
-
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 out << "try {";
                 out << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
@@ -306,10 +295,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << kindMaskStr.str();
-                out << ", symTable, ";
-                out << recordArityMaskStr.str();
-                out << ", GeneralRecordMap::getRecordTable(), ioDirectives";
+                out << kindMaskStr.str() << ", ";
+                out << "symTable, ";
+                out << "std::vector<int>({" << join(recordArityMask, ",") << "}), ";
+                out << "GeneralRecordMap::getRecordTable(), ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2145,20 +2134,20 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
             std::vector<char> kindMask;
-            std::map<int, int> recordArityMask;
+            std::vector<int> recordArityMask;
             const auto& typeQualifiers = store->getRelation().getAttributeTypeQualifiers();
 
-            for (size_t i = 0; i < typeQualifiers.size(); i++) {
-                const auto& curId = typeQualifiers[i];
-
-                char kind = typeQualifiers[i][0];
+            for (const auto& cur : typeQualifiers) {
+                // store the kind
+                char kind = cur[0];
                 kindMask.push_back(kind);
 
+                // store the arity if relevant
                 if (kind == 'r') {
-                    std::string typeInfo = curId.substr(2, curId.length() - 2);
-                    int arity = std::stoi(typeInfo);
-
-                    recordArityMask[i] = arity;
+                    std::string typeInfo = cur.substr(2, cur.length() - 2);
+                    recordArityMask.push_back(std::stoi(typeInfo));
+                } else {
+                    recordArityMask.push_back(-1);
                 }
             }
 
@@ -2168,17 +2157,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 kindMaskStr << "'" << join(kindMask, "','") << "'";
             }
             kindMaskStr << "})";
-
-            std::stringstream recordArityMaskStr;
-            recordArityMaskStr << "std::map<int,int>({";
-            std::vector<std::string> arityMappings;
-            for (const auto& pair : recordArityMask) {
-                std::stringstream curMapping;
-                curMapping << "{" << pair.first << ", " << pair.second << "}";
-                arityMappings.push_back(curMapping.str());
-            }
-            recordArityMaskStr << join(arityMappings, ",");
-            recordArityMaskStr << "})";
 
             for (IODirectives ioDirectives : store->getIODirectives()) {
                 os << "try {";
@@ -2191,8 +2169,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "IOSystem::getInstance().getWriter(";
                 os << kindMaskStr.str();
                 os << ", symTable, ";
-                os << recordArityMaskStr.str();
-                os << ", GeneralRecordMap::getRecordTable(), ioDirectives, "
+                os << "std::vector<int>({" << join(recordArityMask, ",") << "}), ";
+                os << "GeneralRecordMap::getRecordTable(), ioDirectives, "
                    << (Global::config().has("provenance") ? "true" : "false");
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
@@ -2251,18 +2229,19 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     auto dumpRelation = [&](const std::string& name, const std::vector<std::string>& mask, size_t arity) {
         auto relName = name;
         std::vector<char> kindMask;
-        std::map<int, int> recordArityMask;
-        for (size_t i = 0; i < mask.size(); i++) {
-            const auto& curId = mask[i];
+        std::vector<int> recordArityMask;
 
-            char kind = mask[i][0];
+        for (const auto& cur : mask) {
+            // store the kind
+            char kind = cur[0];
             kindMask.push_back(kind);
 
+            // store the arity if relevant
             if (kind == 'r') {
-                std::string typeInfo = curId.substr(2, curId.length() - 2);
-                int arity = std::stoi(typeInfo);
-
-                recordArityMask[i] = arity;
+                std::string typeInfo = cur.substr(2, cur.length() - 2);
+                recordArityMask.push_back(std::stoi(typeInfo));
+            } else {
+                recordArityMask.push_back(-1);
             }
         }
 
@@ -2273,17 +2252,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         }
         kindMaskStr << "})";
 
-        std::stringstream recordArityMaskStr;
-        recordArityMaskStr << "std::map<int,int>({";
-        std::vector<std::string> arityMappings;
-        for (const auto& pair : recordArityMask) {
-            std::stringstream curMapping;
-            curMapping << "{" << pair.first << ", " << pair.second << "}";
-            arityMappings.push_back(curMapping.str());
-        }
-        recordArityMaskStr << join(arityMappings, ",");
-        recordArityMaskStr << "})";
-
         os << "try {";
         os << "IODirectives ioDirectives;\n";
         os << "ioDirectives.setIOType(\"stdout\");\n";
@@ -2291,8 +2259,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "IOSystem::getInstance().getWriter(";
         os << kindMaskStr.str();
         os << ", symTable, ";
-        os << recordArityMaskStr.str();
-        os << ", GeneralRecordMap::getRecordTable(), ioDirectives, "
+        os << "std::vector<int>({" << join(recordArityMask, ",") << "}), ";
+        os << "GeneralRecordMap::getRecordTable(), ioDirectives, "
            << (Global::config().has("provenance") ? "true" : "false");
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";

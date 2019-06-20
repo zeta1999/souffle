@@ -28,7 +28,7 @@ namespace souffle {
 class WriteStream {
 public:
     WriteStream(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const std::map<int, int>& recordArityMask, const RecordTable* recordTable, const bool prov,
+            const std::vector<int>& recordArityMask, const RecordTable* recordTable, const bool prov,
             bool summary = false)
             : kindMask(kindMask), symbolTable(symbolTable), recordArityMask(recordArityMask),
               recordTable(recordTable), isProvenance(prov), summary(summary),
@@ -60,7 +60,7 @@ public:
 protected:
     const std::vector<char>& kindMask;
     const SymbolTable& symbolTable;
-    const std::map<int, int>& recordArityMask;
+    const std::vector<int>& recordArityMask;
     const RecordTable* recordTable;
     const bool isProvenance;
     const bool summary;
@@ -117,7 +117,7 @@ protected:
 class WriteStreamFactory {
 public:
     virtual std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask,
-            const SymbolTable& symbolTable, const std::map<int, int>& recordArityMask,
+            const SymbolTable& symbolTable, const std::vector<int>& recordArityMask,
             const RecordTable* recordTable, const IODirectives& ioDirectives, const bool provenance) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;

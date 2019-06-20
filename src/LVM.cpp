@@ -905,8 +905,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
 
                         IOSystem::getInstance()
                                 .getWriter(kindMask, symbolTable, recordArityMask,
-                                        getInterpreterRecordTable(), io,
-                                        Global::config().has("provenance"))
+                                        getInterpreterRecordTable(), io, Global::config().has("provenance"))
                                 ->writeAll(relation);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";

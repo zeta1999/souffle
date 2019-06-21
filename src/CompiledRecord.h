@@ -92,7 +92,7 @@ public:
      */
     static const RecordTable& getRecordTable() {
         static RecordTable recordTable;
-        bool created = false;
+        static bool created = false;
 
         // only construct record table once
         if (!created) {

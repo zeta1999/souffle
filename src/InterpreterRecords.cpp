@@ -130,7 +130,7 @@ bool isNull(RamDomain ref) {
 const RecordTable& getInterpreterRecordTable() {
     // TODO: need to make sure this is ok
     static RecordTable recordTable;
-    bool created = false;
+    static bool created = false;
 
     // only construct record table once
     if (!created) {

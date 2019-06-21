@@ -199,9 +199,9 @@ public:
         return (*(i2r[index / BLOCK_SIZE]))[index % BLOCK_SIZE];
     }
 
-    std::map<int, std::vector<RamDomain>> getRecordReferences() const override {
+    std::map<RamDomain, std::vector<RamDomain>> getRecordReferences() const override {
         // TODO: more efficient here maybe?
-        std::map<int, std::vector<RamDomain>> recordValues;
+        std::map<RamDomain, std::vector<RamDomain>> recordValues;
         for (const auto& pair : r2i) {
             recordValues[pair.second] = pair.first.toVector();
         }
@@ -224,8 +224,8 @@ public:
         return empty;
     }
 
-    std::map<int, std::vector<RamDomain>> getRecordReferences() const override {
-        return std::map<int, std::vector<RamDomain>>({{1, {}}});
+    std::map<RamDomain, std::vector<RamDomain>> getRecordReferences() const override {
+        return std::map<RamDomain, std::vector<RamDomain>>({{1, {}}});
     }
 };
 

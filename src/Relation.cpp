@@ -106,7 +106,7 @@ public:
         return present ? 1 : 0;
     }
 
-    bool insert(TupleRef tuple) override {
+    bool insert(const TupleRef& tuple) override {
         assert(tuple.size() == 0);
         bool res = present;
         present = true;
@@ -118,7 +118,7 @@ public:
         present = present | !src.empty();
     }
 
-    bool contains(TupleRef tuple) const override {
+    bool contains(const TupleRef& tuple) const override {
         assert(tuple.size() == 0);
         return present;
     }
@@ -127,7 +127,7 @@ public:
         return std::make_unique<Source>(present);
     }
 
-    Stream range(TupleRef low, TupleRef high) const override {
+    Stream range(const TupleRef& low, const TupleRef& high) const override {
         return scan();
     }
 
@@ -197,7 +197,7 @@ public:
         return data.size();
     }
 
-    bool insert(TupleRef tuple) override {
+    bool insert(const TupleRef& tuple) override {
         return data.insert(order.encode(tuple.asTuple<Arity>()));
     }
 
@@ -208,7 +208,7 @@ public:
         }
     }
 
-    bool contains(TupleRef tuple) const override {
+    bool contains(const TupleRef& tuple) const override {
         return data.contains(order.encode(tuple.asTuple<Arity>()));
     }
 
@@ -216,7 +216,7 @@ public:
         return std::make_unique<Source>(order, data.begin(), data.end());
     }
 
-    Stream range(TupleRef low, TupleRef high) const override {
+    Stream range(const TupleRef& low, const TupleRef& high) const override {
         Entry a = order.encode(low.asTuple<Arity>());
         Entry b = order.encode(high.asTuple<Arity>());
         for (int i = Arity - 1; i >= 0; --i) {

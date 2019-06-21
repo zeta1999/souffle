@@ -300,7 +300,7 @@ public:
     /**
      * Inserts a tuple into this index.
      */
-    virtual bool insert(TupleRef tuple) = 0;
+    virtual bool insert(const TupleRef& tuple) = 0;
 
     /**
      * Inserts all elements of the given index.
@@ -310,7 +310,7 @@ public:
     /**
      * Tests whether the given tuple is present in this index or not.
      */
-    virtual bool contains(TupleRef tuple) const = 0;
+    virtual bool contains(const TupleRef& tuple) const = 0;
 
     /**
      * Returns a stream covering the entire index content.
@@ -320,7 +320,7 @@ public:
     /**
      * Returns a stream covering the elements
      */
-    virtual Stream range(TupleRef low, TupleRef high) const = 0;
+    virtual Stream range(const TupleRef& low, const TupleRef& high) const = 0;
 
     /**
      * Clears the content of this index, turning it empty.

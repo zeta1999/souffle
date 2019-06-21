@@ -93,7 +93,10 @@ public:
     std::size_t size() const {
         return arity;
     }
-
+    
+    /*
+     * Provide access to base reference.
+     */
     const RamDomain* getBase() const {
         return base;
     }
@@ -153,9 +156,6 @@ public:
     bool operator==(const Order& other) const;
     bool operator!=(const Order& other) const;
     bool operator<(const Order& other) const;
-    int operator[](const size_t i) const {
-        return order[i];
-    }
 
     friend std::ostream& operator<<(std::ostream& out, const Order& order);
 };
@@ -244,7 +244,7 @@ public:
             return *this;
         }
 
-        TupleRef operator*() const {
+        const TupleRef& operator*() const {
             return stream->buffer[stream->cur];
         }
 

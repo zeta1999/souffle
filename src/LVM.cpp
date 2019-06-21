@@ -1025,10 +1025,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         hig[arity - i - 1] = MIN_RAM_DOMAIN;
                     }
                 }
-                // Case when RAM try to use a range query as full index search.
-                if (arity == 1 && low[0] == hig[0] && hig[0] == MIN_RAM_DOMAIN) {
-                    hig[0] = MAX_RAM_DOMAIN;
-                }
+
                 // get iterator range
                 lookUpStream(dest) = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(hig, arity));
                 ip += 5;

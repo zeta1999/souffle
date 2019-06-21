@@ -9,14 +9,6 @@
 
 namespace souffle {
 
-std::istream& operator<<(std::istream& in, std::vector<int>& order) {
-    for (int i = 0; i < order.size(); ++i) {
-        printf("%d ", order[i]);
-    }
-    printf("\n");
-    return in;
-}
-
 LVMRelation ::LVMRelation(std::size_t arity, std::string& name, std::vector<std::string> attributeTypes,
         const MinIndexSelection& orderSet, IndexFactory factory)
         : arity(arity), relName(name), attributeTypes(std::move(attributeTypes)) {

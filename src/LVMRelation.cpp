@@ -9,16 +9,32 @@
 
 namespace souffle {
 
+std::istream& operator<<(std::istream& in, std::vector<int>& order) {
+    for (int i = 0; i < order.size(); ++i) {
+        printf("%d ", order[i]);
+    }
+    printf("\n");
+    return in;
+}
+
 LVMRelation ::LVMRelation(std::size_t arity, std::string& name, std::vector<std::string> attributeTypes,
         const MinIndexSelection& orderSet, IndexFactory factory)
         : arity(arity), relName(name), attributeTypes(std::move(attributeTypes)) {
-    for (auto& order : orderSet.getAllOrders()) {
-        assert(order.size() == arity && "Order == Arity failed");
+    for (auto order : orderSet.getAllOrders()) {
+        // Expand the order to a total order
+        std::set<int> set;
+        for (const auto& i : order) {
+            set.insert(i);
+        }
+        for (int i = 0; i < arity; ++i) {
+            if (set.find(i) == set.end()) {
+                order.push_back(i);
+            }
+        }
         indexes.push_back(factory(Order(order)));
     }
 
     // Use the first index as default main index
-    // TODO make sure first index is full index
     main = indexes[0].get();
 }
 
@@ -28,7 +44,7 @@ void LVMRelation::removeIndex(const size_t& indexPos) {
     indexes[indexPos].reset(nullptr);
 }
 
-bool LVMRelation::insert(TupleRef tuple) {
+bool LVMRelation::insert(const TupleRef& tuple) {
     if (!main->insert(tuple)) return false;
     for (const auto& cur : indexes) {
         if (cur.get() == main) continue;
@@ -44,7 +60,7 @@ void LVMRelation::insert(const LVMRelation& other) {
     }
 }
 
-bool LVMRelation::contains(TupleRef tuple) const {
+bool LVMRelation::contains(const TupleRef& tuple) const {
     return main->contains(tuple);
 }
 
@@ -52,7 +68,7 @@ Stream LVMRelation::scan() const {
     return main->scan();
 }
 
-Stream LVMRelation::range(const size_t& indexPos, TupleRef low, TupleRef high) const {
+Stream LVMRelation::range(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
     auto& pos = indexes[indexPos];
     return pos->range(low, high);
 }
@@ -101,6 +117,74 @@ bool LVMRelation::exists(const TupleRef& tuple) const {
     return main->contains(tuple);
 }
 
-void extend(const LVMRelation& rel) {}
+void LVMRelation::extend(const LVMRelation& rel) {}
+
+LVMEqRelation::LVMEqRelation(size_t arity, std::string& name, std::vector<std::string> attributeTypes,
+        const MinIndexSelection& orderSet)
+        : LVMRelation(arity, name, std::move(attributeTypes), orderSet) {}
+
+bool LVMEqRelation::insert(const TupleRef& tuple) {
+    // TODO: (pnappa) an eqrel check here is all that appears to be needed for implicit additions
+    // TODO: future optimisation would require this as a member datatype
+    // brave soul required to pass this quest
+    // // specialisation for eqrel defs
+    // std::unique_ptr<binaryrelation> eqreltuples;
+    // in addition, it requires insert functions to insert into that, and functions
+    // which allow reading of stored values must be changed to accommodate.
+    // e.g. insert =>  eqRelTuples->insert(tuple[0], tuple[1]);
+
+    // for now, we just have a naive & extremely slow version, otherwise known as a O(n^2) insertion
+    // ):
+
+    for (auto& newTuple : extend(tuple)) {
+        LVMRelation::insert(TupleRef(newTuple, arity));
+        delete[] newTuple;
+    }
+    return true;
+}
+
+std::vector<RamDomain*> LVMEqRelation::extend(const TupleRef& tuple) {
+    std::vector<RamDomain*> newTuples;
+
+    newTuples.push_back(new RamDomain[2]{tuple[0], tuple[0]});
+    newTuples.push_back(new RamDomain[2]{tuple[0], tuple[1]});
+    newTuples.push_back(new RamDomain[2]{tuple[1], tuple[0]});
+    newTuples.push_back(new RamDomain[2]{tuple[1], tuple[1]});
+
+    std::vector<const RamDomain*> relevantStored;
+    for (const TupleRef& vals : this->scan()) {
+        if (vals[0] == tuple[0] || vals[0] == tuple[1] || vals[1] == tuple[0] || vals[1] == tuple[1]) {
+            relevantStored.push_back(new RamDomain[2]{vals[0], vals[1]});
+        }
+    }
+
+    for (auto& vals : relevantStored) {
+        newTuples.push_back(new RamDomain[2]{vals[0], tuple[0]});
+        newTuples.push_back(new RamDomain[2]{vals[0], tuple[1]});
+        newTuples.push_back(new RamDomain[2]{vals[1], tuple[0]});
+        newTuples.push_back(new RamDomain[2]{vals[1], tuple[1]});
+        newTuples.push_back(new RamDomain[2]{tuple[0], vals[0]});
+        newTuples.push_back(new RamDomain[2]{tuple[0], vals[1]});
+        newTuples.push_back(new RamDomain[2]{tuple[1], vals[0]});
+        newTuples.push_back(new RamDomain[2]{tuple[1], vals[1]});
+        delete[] vals;
+    }
+    return newTuples;
+}
+
+void LVMEqRelation::extend(const LVMRelation& rel) {
+    std::vector<RamDomain*> newTuples;
+    // store all values that will be implicitly relevant to the those that we will insert
+    for (const auto& tuple : rel.scan()) {
+        for (auto& newTuple : extend(tuple)) {
+            newTuples.push_back(newTuple);
+        }
+    }
+    for (const auto& newTuple : newTuples) {
+        LVMRelation::insert(TupleRef(newTuple, arity));
+        delete[] newTuple;
+    }
+}
 
 }  // namespace souffle
+

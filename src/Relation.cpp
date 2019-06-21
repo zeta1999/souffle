@@ -219,11 +219,19 @@ public:
     Stream range(TupleRef low, TupleRef high) const override {
         Entry a = order.encode(low.asTuple<Arity>());
         Entry b = order.encode(high.asTuple<Arity>());
+        for (int i = Arity - 1; i >= 0; --i) {
+            if (a[i] == b[i] && b[i] != MIN_RAM_DOMAIN) {
+                b[i] += 1;
+                break;
+            }
+            if (i == 0) {
+                b[i] = MAX_RAM_DOMAIN;
+            }
+        }
         if (!(a < b)) {
             return std::make_unique<Source>(order, data.end(), data.end());
         }
-        return std::make_unique<Source>(order, data.lower_bound(order.encode(low.asTuple<Arity>())),
-                data.lower_bound(order.encode(high.asTuple<Arity>())));
+        return std::make_unique<Source>(order, data.lower_bound(a), data.lower_bound(b));
     }
 
     void clear() override {

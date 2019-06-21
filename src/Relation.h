@@ -153,6 +153,9 @@ public:
     bool operator==(const Order& other) const;
     bool operator!=(const Order& other) const;
     bool operator<(const Order& other) const;
+    int operator[](const size_t i) const {
+        return order[i];
+    }
 
     friend std::ostream& operator<<(std::ostream& out, const Order& order);
 };

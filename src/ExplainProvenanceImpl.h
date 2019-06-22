@@ -598,8 +598,8 @@ private:
     }
 
     void printRelationOutput(
-            const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) override {
-        WriteCoutCSVFactory().getWriter(symMask, prog.getSymbolTable(), ioDir, true)->writeAll(rel);
+            const std::vector<char>& kindMask, const IODirectives& ioDir, const Relation& rel) override {
+        assert(false && "unimplemented!");
     }
 };
 

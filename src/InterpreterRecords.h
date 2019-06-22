@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RamTypes.h"
+#include "RecordTable.h"
 
 namespace souffle {
 
@@ -40,5 +41,10 @@ RamDomain getNull();
  * the absence of any nested record.
  */
 bool isNull(RamDomain ref);
+
+/**
+ * Create the record table containing all reference-to-tuple mappings generated so far.
+ */
+const RecordTable& getInterpreterRecordTable();
 
 }  // end of namespace souffle

@@ -81,12 +81,10 @@ public:
         }
 
         // create symbol mask
-        std::vector<bool> symMask(rel->getArity());
+        std::vector<char> kindMask(rel->getArity());
 
         for (size_t i = 0; i < rel->getArity(); i++) {
-            if (*(rel->getAttrType(i)) == 's') {
-                symMask.at(i) = true;
-            }
+            kindMask.at(i) = *(rel->getAttrType(i));
         }
 
         // create IODirectives
@@ -98,7 +96,7 @@ public:
         auto originalCoutBuf = std::cout.rdbuf(out.rdbuf());
 
         // print relation
-        printRelationOutput(symMask, dir, *rel);
+        printRelationOutput(kindMask, dir, *rel);
 
         // restore original cout buffer
         std::cout.rdbuf(originalCoutBuf);
@@ -159,7 +157,7 @@ protected:
     }
 
     virtual void printRelationOutput(
-            const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) = 0;
+            const std::vector<char>& kindMask, const IODirectives& ioDir, const Relation& rel) = 0;
 };
 
 }  // end of namespace souffle

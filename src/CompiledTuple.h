@@ -18,6 +18,7 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
 
 namespace souffle {
 
@@ -49,6 +50,11 @@ struct Tuple {
     // provide access to components
     Domain& operator[](std::size_t index) {
         return data[index];
+    }
+
+    // get vector representation of tuple
+    std::vector<Domain> toVector() const {
+        return std::vector<Domain>(std::begin(data), std::end(data));
     }
 
     // a comparison operation

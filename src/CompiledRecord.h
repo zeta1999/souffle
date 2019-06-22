@@ -18,9 +18,11 @@
 
 #include "CompiledTuple.h"
 #include "ParallelUtils.h"
+#include "RecordTable.h"
 #include "Util.h"
 
 #include <limits>
+#include <map>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -70,13 +72,61 @@ bool isNull(RamDomain ref) {
     return ref == 0;
 }
 
+/**
+ * A superclass for all generated record map classes.
+ */
+class GeneralRecordMap {
+public:
+    GeneralRecordMap() {
+        // store an internal reference to the created record map
+        getMaps().insert(this);
+    }
+
+    /**
+     * Get the reference-to-tuple mapping for the current record map.
+     */
+    virtual std::map<RamDomain, std::vector<RamDomain>> getRecordReferences() const = 0;
+
+    /**
+     * Get the reference-to-tuple mapping generated so far across all stored maps.
+     */
+    static const RecordTable& getRecordTable() {
+        static RecordTable recordTable;
+        static bool created = false;
+
+        // only construct record table once
+        if (!created) {
+            created = true;
+            // add in all records from all created maps
+            // TODO: more efficient? unnecessary copies here
+            for (const auto* recordMap : getMaps()) {
+                for (const auto& pair : recordMap->getRecordReferences()) {
+                    RamDomain ref = pair.first;
+                    const auto& tuple = pair.second;
+                    recordTable.addRecord(ref, tuple);
+                }
+            }
+        }
+
+        return recordTable;
+    }
+
+    /**
+     * Get the references to all created record maps.
+     */
+    static std::set<GeneralRecordMap*>& getMaps() {
+        static std::set<GeneralRecordMap*> createdMaps;
+        return createdMaps;
+    }
+};
+
 namespace detail {
 
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
 template <typename Tuple>
-class RecordMap {
+class RecordMap : public GeneralRecordMap {
     // create blocks of a million entries
     static const std::size_t BLOCK_SIZE = 1 << 20;
 
@@ -99,7 +149,7 @@ class RecordMap {
     Lock pack_lock;
 
 public:
-    RecordMap() = default;
+    RecordMap() : GeneralRecordMap() {}
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -148,20 +198,34 @@ public:
         // just look up the right spot
         return (*(i2r[index / BLOCK_SIZE]))[index % BLOCK_SIZE];
     }
+
+    std::map<RamDomain, std::vector<RamDomain>> getRecordReferences() const override {
+        // TODO: more efficient here maybe?
+        std::map<RamDomain, std::vector<RamDomain>> recordValues;
+        for (const auto& pair : r2i) {
+            recordValues[pair.second] = pair.first.toVector();
+        }
+        return recordValues;
+    }
 };
 
 /**
  * Specialisation for empty records
  */
 template <>
-class RecordMap<ram::Tuple<RamDomain, 0>> {
+class RecordMap<ram::Tuple<RamDomain, 0>> : public GeneralRecordMap {
 public:
     RamDomain pack(const ram::Tuple<RamDomain, 0>& tuple) {
         return 1;
     }
+
     const ram::Tuple<RamDomain, 0>& unpack(RamDomain index) {
         static ram::Tuple<RamDomain, 0> empty;
         return empty;
+    }
+
+    std::map<RamDomain, std::vector<RamDomain>> getRecordReferences() const override {
+        return std::map<RamDomain, std::vector<RamDomain>>({{1, {}}});
     }
 };
 

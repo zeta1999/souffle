@@ -296,7 +296,10 @@ std::string getTypeQualifier(const Type& type) {
             } else if (isSymbolType(type)) {
                 str = "s:" + toString(type.getName());
             } else if (isRecordType(type)) {
-                str = "r:" + toString(type.getName());
+                const RecordType& rec = static_cast<const RecordType&>(type);
+                str = "r:";
+                str += toString(rec.getFields().size()) + "-";
+                str += toString(type.getName());
             } else {
                 assert(false && "unknown type class");
             }

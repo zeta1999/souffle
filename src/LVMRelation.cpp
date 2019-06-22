@@ -96,7 +96,7 @@ size_t LVMRelation::size() const {
 }
 
 bool LVMRelation::empty() const {
-    return main->size() == 0;
+    return main->empty();
 }
 
 void LVMRelation::purge() {

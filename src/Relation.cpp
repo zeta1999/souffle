@@ -219,11 +219,14 @@ public:
     Stream range(const TupleRef& low, const TupleRef& high) const override {
         Entry a = order.encode(low.asTuple<Arity>());
         Entry b = order.encode(high.asTuple<Arity>());
+        // Transfer upper_bound to a equivalent lower bound
+        // TODO Efficiency? Correctness?
         for (int i = Arity - 1; i >= 0; --i) {
             if (a[i] == b[i] && b[i] != MIN_RAM_DOMAIN) {
                 b[i] += 1;
                 break;
             }
+            // Special case for RAM
             if (i == 0) {
                 b[i] = MAX_RAM_DOMAIN;
             }

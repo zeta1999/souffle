@@ -226,10 +226,6 @@ public:
                 b[i] += 1;
                 break;
             }
-            // Special case for RAM
-            if (i == 0) {
-                b[i] = MAX_RAM_DOMAIN;
-            }
         }
         return std::make_unique<Source>(order, data.lower_bound(a), data.lower_bound(b));
     }

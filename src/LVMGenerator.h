@@ -446,19 +446,27 @@ protected:
         auto patterns = scan.getRangePattern();
         std::string types;
         auto arity = scan.getRelation().getArity();
+        bool fullIndexSearch = true;
         for (size_t i = 0; i < arity; i++) {
             if (!isRamUndefValue(patterns[i])) {
                 visit(patterns[i], exitAddress);
+                fullIndexSearch = false;
             }
             types += (isRamUndefValue(patterns[i]) ? "_" : "V");
         }
 
         // Init range index based on pattern
-        code->push_back(LVM_ITER_InitRangeIndex);
-        code->push_back(counterLabel);
-        code->push_back(relationEncoder.encodeRelation(scan.getRelation().getName()));
-        code->push_back(symbolTable.lookup(types));
-        code->push_back(getIndexPos(scan));
+        if (fullIndexSearch == true) {
+            code->push_back(LVM_ITER_InitFullIndex);
+            code->push_back(counterLabel);
+            code->push_back(relationEncoder.encodeRelation(scan.getRelation().getName()));
+        } else {
+            code->push_back(LVM_ITER_InitRangeIndex);
+            code->push_back(counterLabel);
+            code->push_back(relationEncoder.encodeRelation(scan.getRelation().getName()));
+            code->push_back(symbolTable.lookup(types));
+            code->push_back(getIndexPos(scan));
+        }
 
         // While iter is not at end
         size_t address_L0 = code->size();
@@ -492,19 +500,27 @@ protected:
         auto patterns = indexChoice.getRangePattern();
         std::string types;
         auto arity = indexChoice.getRelation().getArity();
+        bool fullIndexSearch = true;
         for (size_t i = 0; i < arity; i++) {
             if (!isRamUndefValue(patterns[i])) {
                 visit(patterns[i], exitAddress);
+                fullIndexSearch = false;
             }
             types += (isRamUndefValue(patterns[i]) ? "_" : "V");
         }
 
         // Init range index based on pattern
-        code->push_back(LVM_ITER_InitRangeIndex);
-        code->push_back(counterLabel);
-        code->push_back(relationEncoder.encodeRelation(indexChoice.getRelation().getName()));
-        code->push_back(symbolTable.lookup(types));
-        code->push_back(getIndexPos(indexChoice));
+        if (fullIndexSearch == true) {
+            code->push_back(LVM_ITER_InitFullIndex);
+            code->push_back(counterLabel);
+            code->push_back(relationEncoder.encodeRelation(indexChoice.getRelation().getName()));
+        } else {
+            code->push_back(LVM_ITER_InitRangeIndex);
+            code->push_back(counterLabel);
+            code->push_back(relationEncoder.encodeRelation(indexChoice.getRelation().getName()));
+            code->push_back(symbolTable.lookup(types));
+            code->push_back(getIndexPos(indexChoice));
+        }
 
         // While iter is not at end.
         size_t address_L0 = code->size();
@@ -668,19 +684,27 @@ protected:
         auto patterns = aggregate.getRangePattern();
         std::string types;
         auto arity = aggregate.getRelation().getArity();
+        bool fullIndexSearch = true;
         for (size_t i = 0; i < arity; i++) {
             if (!isRamUndefValue(patterns[i])) {
                 visit(patterns[i], exitAddress);
+                fullIndexSearch = false;
             }
             types += (isRamUndefValue(patterns[i]) ? "_" : "V");
         }
 
         // Init range index based on pattern
-        code->push_back(LVM_ITER_InitRangeIndex);
-        code->push_back(counterLabel);
-        code->push_back(relationEncoder.encodeRelation(aggregate.getRelation().getName()));
-        code->push_back(symbolTable.lookup(types));
-        code->push_back(getIndexPos(aggregate));
+        if (fullIndexSearch == true) {
+            code->push_back(LVM_ITER_InitFullIndex);
+            code->push_back(counterLabel);
+            code->push_back(relationEncoder.encodeRelation(aggregate.getRelation().getName()));
+        } else {
+            code->push_back(LVM_ITER_InitRangeIndex);
+            code->push_back(counterLabel);
+            code->push_back(relationEncoder.encodeRelation(aggregate.getRelation().getName()));
+            code->push_back(symbolTable.lookup(types));
+            code->push_back(getIndexPos(aggregate));
+        }
 
         if (aggregate.getFunction() == souffle::COUNT &&
                 dynamic_cast<const RamTrue*>(&aggregate.getCondition()) != nullptr) {

@@ -835,12 +835,18 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 // Obtain the orderSet for this relation
                 const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
 
-                if (code[ip + 3] == LVM_EQREL) {
-                    res = std::make_unique<LVMEqRelation>(arity, relName, attributeTypes, orderSet);
-                } else {  // TODO test Brie
-                    res = std::make_unique<LVMRelation>(arity, relName, attributeTypes, orderSet);
-                    // res = std::make_unique<LVMRelation>(arity, relName, attributeTypes, orderSet,
-                    // createBrieIndex);
+                switch (code[ip + 3]) {
+                    case(LVM_EQREL):
+                        res = std::make_unique<LVMEqRelation>(arity, relName, attributeTypes, orderSet);
+                        break;
+                    case(LVM_BTREE):
+                        res = std::make_unique<LVMRelation>(arity, relName, attributeTypes, orderSet);
+                        break;
+                    case(LVM_BRIE):
+                        res = std::make_unique<LVMRelation>(arity, relName, attributeTypes, orderSet, createBrieIndex);
+                        break;
+                    default:
+                        assert("Unknown data structure\n");
                 }
 
                 res->setLevel(level);

@@ -948,7 +948,7 @@ protected:
                 code->push_back(LVM_EQREL);
                 break;
             case RelationRepresentation::DEFAULT:
-                code->push_back(LVM_DEFAULT);
+                code->push_back(LVM_BTREE);
             default:
                 break;
         }

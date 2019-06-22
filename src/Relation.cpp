@@ -16,6 +16,7 @@
 #include "BTree.h"
 #include "Brie.h"
 #include "Util.h"
+#include "CompiledIndexUtils.h"
 
 namespace souffle {
 
@@ -86,8 +87,9 @@ class NullaryIndex : public Index {
 
     public:
         Source(bool present) : present(present) {}
-        int load(TupleRef*, int max) override {
+        int load(TupleRef* buffer, int max) override {
             if (!present) return 0;
+            buffer[0] = TupleRef(nullptr,0);
             present = false;
             return 1;
         }
@@ -164,11 +166,11 @@ class GenericIndex : public Index {
         iter end;
 
         // an internal buffer for re-ordered elements
-        std::vector<Entry> buffer;
+        std::array<Entry,Stream::BUFFER_SIZE> buffer;
 
     public:
         Source(const Order& order, iter begin, iter end)
-                : order(order), cur(begin), end(end), buffer(Stream::BUFFER_SIZE) {}
+                : order(order), cur(begin), end(end) {}
 
         int load(TupleRef* out, int max) override {
             int c = 0;
@@ -235,13 +237,17 @@ public:
     }
 };
 
+// The comparator to be used for B-tree nodes.
+template<std::size_t Arity>
+using comparator = typename ram::index_utils::get_full_index<Arity>::type::comparator;
+
 /**
  * A index adapter for B-trees, using the generic index adapter.
  */
 template <std::size_t Arity>
-class BTreeIndex : public GenericIndex<btree_set<ram::Tuple<RamDomain, Arity>>> {
+class BTreeIndex : public GenericIndex<btree_set<ram::Tuple<RamDomain, Arity>, comparator<Arity>>> {
 public:
-    using GenericIndex<btree_set<ram::Tuple<RamDomain, Arity>>>::GenericIndex;
+    using GenericIndex<btree_set<ram::Tuple<RamDomain, Arity>, comparator<Arity>>>::GenericIndex;
 };
 
 /**

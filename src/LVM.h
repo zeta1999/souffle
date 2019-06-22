@@ -49,7 +49,10 @@ class LVMProgInterface;
  */
 class LVM : public LVMInterface {
 public:
-    LVM(RamTranslationUnit& tUnit) : LVMInterface(tUnit) {
+    LVM(RamTranslationUnit& tUnit)
+		: LVMInterface(tUnit)
+		, profile(Global::config().has("profile"))
+		, provenance(Global::config().has("provenance")) {
         // Construct mapping from relation Name to RamRelation node in RAM tree.
         // This will later be used for fast lookup during RamRelationCreate in order to retrieve
         // minIndexSet from a given relation.
@@ -197,6 +200,10 @@ private:
      * @param ip the instruction pointer start position, default is 0.
      * */
     void execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t ip = 0);
+
+    bool profile;
+
+    bool provenance;
 
     /** subroutines */
     std::map<std::string, std::unique_ptr<LVMCode>> subroutines;

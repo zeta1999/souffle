@@ -38,7 +38,7 @@ public:
     /**
      * Creates a relation, build all necessary indexes.
      */
-    LVMRelation(std::size_t arity, std::string& name, std::vector<std::string> attributeTypes,
+    LVMRelation(std::size_t arity, const std::string& name, std::vector<std::string>&& attributeTypes,
             const MinIndexSelection& orderSet, IndexFactory factory = &createBTreeIndex);
 
     LVMRelation(LVMRelation& other) = delete;
@@ -172,7 +172,7 @@ protected:
 
 class LVMEqRelation : public LVMRelation {
 public:
-    LVMEqRelation(size_t arity, std::string& relName, std::vector<std::string> attributeTypes,
+    LVMEqRelation(size_t arity, const std::string& relName, std::vector<std::string>&& attributeTypes,
             const MinIndexSelection& orderSet);
 
     /** Insert tuple */

@@ -67,7 +67,7 @@ void LVM::executeMain() {
         SignalHandler::instance()->enableLogging();
     }
 
-    if (!Global::config().has("profile")) {
+    if (!profile) {
         execute(mainProgram, ctxt);
     } else {
         ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
@@ -314,12 +314,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             }
             case LVM_OP_CAT: {
                 size_t size = code[ip + 1];
-                std::string cat;
+                std::stringstream buf;
                 for (size_t i = 0; i < size; ++i) {
-                    cat += symbolTable.resolve(stack.top());
+                    buf << symbolTable.resolve(stack.top());
                     stack.pop();
                 }
-                stack.push(symbolTable.lookup(cat));
+                stack.push(symbolTable.lookup(buf.str()));
                 ip += 2;
                 break;
             }
@@ -330,15 +330,13 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 stack.pop();
                 RamDomain symbol = stack.top();
                 stack.pop();
-                std::string str = symbolTable.resolve(symbol);
-                std::string sub_str;
+                const std::string& str = symbolTable.resolve(symbol);
                 try {
-                    sub_str = str.substr(idx, len);
+                    stack.push(symbolTable.lookup(str.substr(idx, len)));
                 } catch (...) {
                     std::cerr << "warning: wrong index position provided by substr(\"";
                     std::cerr << str << "\"," << (int32_t)idx << "," << (int32_t)len << ") functor.\n";
                 }
-                stack.push(symbolTable.lookup(sub_str));
 
                 ip += 1;
                 break;
@@ -575,7 +573,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 const std::string& relName = rel.getName();
                 size_t arity = rel.getArity();
 
-                if (Global::config().has("profile") && !(relName[0] == '@')) {
+                if (profile && !(relName[0] == '@')) {
                     this->reads[relName]++;
                 }
 
@@ -613,8 +611,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             }
             case LVM_ProvenanceExistenceCheck: {
                 size_t relId = code[ip + 1];
-                std::string relationName = relationEncoder.decodeRelation(relId);
-                std::string patterns = symbolTable.resolve(code[ip + 2]);
+                const std::string& patterns = symbolTable.resolve(code[ip + 2]);
                 RamDomain indexPos = code[ip + 3];
                 const LVMRelation& rel = *getRelation(relId);
                 auto arity = rel.getArity();
@@ -663,8 +660,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 ip += 1;
                 break;
             case LVM_Search: {
-                if (Global::config().has("profile") && code[ip + 1] != 0) {
-                    std::string msg = symbolTable.resolve(code[ip + 2]);
+                if (profile && code[ip + 1] != 0) {
+                    const std::string& msg = symbolTable.resolve(code[ip + 2]);
                     this->frequencies[msg][this->getIterationNumber()]++;
                 }
                 ip += 3;
@@ -688,8 +685,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             }
             case LVM_Filter:
-                if (Global::config().has("profile")) {
-                    std::string msg = symbolTable.resolve(code[ip + 1]);
+                if (profile) {
+                    const std::string& msg = symbolTable.resolve(code[ip + 1]);
                     if (!msg.empty()) {
                         this->frequencies[msg][this->getIterationNumber()]++;
                     }
@@ -711,7 +708,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             }
             case LVM_ReturnValue: {
                 RamDomain size = code[ip + 1];
-                std::string types = symbolTable.resolve(code[ip + 2]);
+                const std::string& types = symbolTable.resolve(code[ip + 2]);
                 for (auto i = 0; i < size; ++i) {
                     if (types[size - i - 1] == '_') {
                         ctxt.addReturnValue(0, true);
@@ -772,7 +769,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             }
             case LVM_LogTimer: {
-                std::string msg = symbolTable.resolve(code[ip + 1]);
+                const std::string& msg = symbolTable.resolve(code[ip + 1]);
                 size_t timerIndex = code[ip + 2];
                 Logger* logger = new Logger(msg.c_str(), this->getIterationNumber());
                 insertTimerAt(timerIndex, logger);
@@ -780,7 +777,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             }
             case LVM_LogRelationTimer: {
-                std::string msg = symbolTable.resolve(code[ip + 1]);
+                const std::string& msg = symbolTable.resolve(code[ip + 1]);
                 size_t timerIndex = code[ip + 2];
                 size_t relId = code[ip + 3];
                 const LVMRelation& rel = *getRelation(relId);
@@ -797,7 +794,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             }
             case LVM_DebugInfo: {
-                std::string msg = symbolTable.resolve(code[ip + 1]);
+                const std::string& msg = symbolTable.resolve(code[ip + 1]);
                 SignalHandler::instance()->setMsg(msg.c_str());
                 ip += 2;
                 break;
@@ -805,7 +802,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             case LVM_Stratum: {
                 this->level++;
                 // Record all the rleation that is created in the previous level
-                if (Global::config().has("profile") || this->level != 0) {
+                if (profile || this->level != 0) {
                     for (const auto& rel : environment) {
                         if (rel == nullptr) {
                             continue;
@@ -824,7 +821,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             case LVM_Create: {
                 std::unique_ptr<LVMRelation> res = nullptr;
                 size_t relId = code[ip + 1];
-                std::string relName = relationEncoder.decodeRelation(relId);
+                const std::string& relName = relationEncoder.decodeRelation(relId);
                 auto arity = code[ip + 2];
 
                 std::vector<std::string> attributeTypes;
@@ -837,13 +834,13 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
 
                 switch (code[ip + 3]) {
                     case(LVM_EQREL):
-                        res = std::make_unique<LVMEqRelation>(arity, relName, attributeTypes, orderSet);
+                        res = std::make_unique<LVMEqRelation>(arity, relName, std::move(attributeTypes), orderSet);
                         break;
                     case(LVM_BTREE):
-                        res = std::make_unique<LVMRelation>(arity, relName, attributeTypes, orderSet);
+                        res = std::make_unique<LVMRelation>(arity, relName, std::move(attributeTypes), orderSet);
                         break;
                     case(LVM_BRIE):
-                        res = std::make_unique<LVMRelation>(arity, relName, attributeTypes, orderSet, createBrieIndex);
+                        res = std::make_unique<LVMRelation>(arity, relName, std::move(attributeTypes), orderSet, createBrieIndex);
                         break;
                     default:
                         assert("Unknown data structure\n");
@@ -870,7 +867,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             case LVM_LogSize: {
                 size_t relId = code[ip + 1];
                 auto relPtr = getRelation(relId);
-                std::string msg = symbolTable.resolve(code[ip + 2]);
+                const std::string& msg = symbolTable.resolve(code[ip + 2]);
                 ProfileEventSingleton::instance().makeQuantityEvent(
                         msg, relPtr->size(), this->getIterationNumber());
                 ip += 3;
@@ -888,7 +885,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                             symbolMask.push_back(cur[0] == 's');
                         }
                         IOSystem::getInstance()
-                                .getReader(symbolMask, symbolTable, io, Global::config().has("provenance"))
+                                .getReader(symbolMask, symbolTable, io, provenance)
                                 ->readAll(*relPtr);
                     } catch (std::exception& e) {
                         std::cerr << "Error loading data: " << e.what() << "\n";
@@ -909,7 +906,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                             symbolMask.push_back(cur[0] == 's');
                         }
                         IOSystem::getInstance()
-                                .getWriter(symbolMask, symbolTable, io, Global::config().has("provenance"))
+                                .getWriter(symbolMask, symbolTable, io, provenance)
                                 ->writeLVMAll(*relPtr);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";
@@ -1014,7 +1011,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 RamDomain dest = code[ip + 1];
                 size_t relId = code[ip + 2];
                 auto relPtr = getRelation(relId);
-                std::string pattern = symbolTable.resolve(code[ip + 3]);
+                const std::string& pattern = symbolTable.resolve(code[ip + 3]);
                 RamDomain indexPos = code[ip + 4];
 
                 // create pattern tuple for range query

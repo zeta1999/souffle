@@ -9,16 +9,16 @@
 
 namespace souffle {
 
-LVMRelation ::LVMRelation(std::size_t arity, std::string& name, std::vector<std::string> attributeTypes,
+LVMRelation ::LVMRelation(std::size_t arity, const std::string& name, std::vector<std::string>&& attributeTypes,
         const MinIndexSelection& orderSet, IndexFactory factory)
-        : arity(arity), relName(name), attributeTypes(std::move(attributeTypes)) {
+        : relName(name), arity(arity), attributeTypes(std::move(attributeTypes)) {
     for (auto order : orderSet.getAllOrders()) {
         // Expand the order to a total order
         std::set<int> set;
         for (const auto& i : order) {
             set.insert(i);
         }
-        for (int i = 0; i < arity; ++i) {
+        for (std::size_t i = 0; i < arity; ++i) {
             if (set.find(i) == set.end()) {
                 order.push_back(i);
             }
@@ -111,7 +111,7 @@ bool LVMRelation::exists(const TupleRef& tuple) const {
 
 void LVMRelation::extend(const LVMRelation& rel) {}
 
-LVMEqRelation::LVMEqRelation(size_t arity, std::string& name, std::vector<std::string> attributeTypes,
+LVMEqRelation::LVMEqRelation(size_t arity, const std::string& name, std::vector<std::string>&& attributeTypes,
         const MinIndexSelection& orderSet)
         : LVMRelation(arity, name, std::move(attributeTypes), orderSet) {}
 

@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstring>
 #include <map>
 #include <memory>
 #include <utility>
@@ -192,7 +193,7 @@ private:
     std::unique_ptr<Source> source;
 
     // an internal buffer for decoded elements
-    std::vector<TupleRef> buffer;
+    std::array<TupleRef,BUFFER_SIZE> buffer;
 
     // the current position in the buffer
     int cur = 0;
@@ -201,19 +202,20 @@ private:
     int limit = 0;
 
 public:
-    Stream(std::unique_ptr<Source>&& src) : source(std::move(src)), buffer(BUFFER_SIZE) {
+    Stream(std::unique_ptr<Source>&& src) : source(std::move(src)) {
         loadNext();
     }
 
     Stream() : source(nullptr) {}
 
     Stream(Stream&& other)
-            : source(std::move(other.source)), buffer(std::move(other.buffer)), cur(other.cur),
+            : source(std::move(other.source)), buffer(other.buffer), cur(other.cur),
               limit(other.limit) {}
 
     Stream& operator=(Stream&& other) {
         source = std::move(other.source);
-        buffer = std::move(other.buffer);
+        // only copy important data
+        std::memcpy(&buffer[other.cur],&other.buffer[other.cur],sizeof(TupleRef) * (other.limit-other.cur));
         cur = other.cur;
         limit = other.limit;
         return *this;

@@ -231,9 +231,6 @@ public:
                 b[i] = MAX_RAM_DOMAIN;
             }
         }
-        if (!(a < b)) {
-            return std::make_unique<Source>(order, data.end(), data.end());
-        }
         return std::make_unique<Source>(order, data.lower_bound(a), data.lower_bound(b));
     }
 

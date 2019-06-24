@@ -45,36 +45,68 @@ public:
 
     virtual ~LVMRelation() {}
 
-    class Iterator : public std::iterator<std::forward_iterator_tag, TupleRef> {
-        std::unique_ptr<Stream> stream;
+    /**
+     * A heavy but copy-able Iterator for SouffleInterface.
+     */
+    class Iterator : public std::iterator<std::forward_iterator_tag, RamDomain*> {
+        const Index* index;
+        Stream stream;
+        int counter = 0;
+        void setToEnd() {
+            index = nullptr;
+            counter = 0;
+        }
 
     public:
-        Iterator() : stream(nullptr) {}
+        Iterator() : index(nullptr) {}
 
-        Iterator(const LVMRelation& rel) : stream(std::make_unique<Stream>(rel.scan())) {}
+        Iterator(const Index* index) : index(index), stream() {
+            if (index) {
+                stream = index->scan();
+                if (stream.begin() == stream.end()) {
+                    setToEnd();
+                }
+            }
+        }
 
-        Iterator(Iterator&& iter) : stream(std::move(iter.stream)) {}
+        Iterator(const Iterator& iter) : index(iter.index), stream(), counter(iter.counter) {
+            if (index) {
+                stream = index->scan();
+                for (int i = 0; i < counter; ++i) {
+                    ++stream.begin();
+                }
+                if (stream.begin() == stream.end()) {
+                    setToEnd();
+                }
+            }
+        }
 
         Iterator& operator++() {
-            ++stream->begin();
+            ++stream.begin();
+            if (stream.begin() == stream.end()) {
+                setToEnd();
+                return *this;
+            }
+            ++counter;
             return *this;
         }
 
         const RamDomain* operator*() {
-            return (*stream->begin()).getBase();
+            auto i = (*stream.begin()).getBase();
+            return i;
         }
 
         bool operator!=(const Iterator& other) const {
-            return stream != other.stream;
+            return index != other.index || counter != other.counter;
         }
 
         bool operator==(const Iterator& other) const {
-            return stream == other.stream;
+            return index == other.index && counter == other.counter;
         }
     };
 
     Iterator begin() const {
-        return *this;
+        return this->main;
     }
 
     Iterator end() const {

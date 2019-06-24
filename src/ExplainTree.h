@@ -196,7 +196,9 @@ private:
  */
 class LeafNode : public TreeNode {
 public:
-    LeafNode(const std::string& t = "") : TreeNode(t) {}
+    LeafNode(const std::string& t = "") : TreeNode(t) {
+    	setSize(1);
+    }
 
     // place leaf node
     void place(uint32_t x, uint32_t y) override {

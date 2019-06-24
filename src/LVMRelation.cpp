@@ -22,8 +22,9 @@
 namespace souffle {
 
 LVMRelation::LVMRelation(std::size_t arity, const std::string& name,
-        std::vector<std::string>&& attributeTypes, const MinIndexSelection& orderSet, IndexFactory factory)
-        : relName(name), arity(arity), attributeTypes(std::move(attributeTypes)) {
+        const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet,
+        IndexFactory factory)
+        : relName(name), arity(arity), attributeTypes(attributeTypes) {
     for (auto order : orderSet.getAllOrders()) {
         // Expand the order to a total order
         std::set<int> set;
@@ -117,9 +118,9 @@ bool LVMRelation::exists(const TupleRef& tuple) const {
 
 void LVMRelation::extend(const LVMRelation& rel) {}
 
-LVMEqRelation::LVMEqRelation(size_t arity, const std::string& name, std::vector<std::string>&& attributeTypes,
-        const MinIndexSelection& orderSet)
-        : LVMRelation(arity, name, std::move(attributeTypes), orderSet) {}
+LVMEqRelation::LVMEqRelation(size_t arity, const std::string& name,
+        const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
+        : LVMRelation(arity, name, attributeTypes, orderSet) {}
 
 bool LVMEqRelation::insert(const TupleRef& tuple) {
     // TODO: (pnappa) an eqrel check here is all that appears to be needed for implicit additions
@@ -185,8 +186,8 @@ void LVMEqRelation::extend(const LVMRelation& rel) {
 }
 
 LVMIndirectRelation::LVMIndirectRelation(size_t arity, const std::string& name,
-        std::vector<std::string>&& attributeTypes, const MinIndexSelection& orderSet)
-        : LVMRelation(arity, name, std::move(attributeTypes), orderSet, createIndirectIndex) {}
+        const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
+        : LVMRelation(arity, name, attributeTypes, orderSet, createIndirectIndex) {}
 
 bool LVMIndirectRelation::insert(const TupleRef& tuple) {
     if (main->contains(tuple)) {

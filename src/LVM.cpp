@@ -59,7 +59,7 @@ namespace souffle {
 void LVM::executeMain() {
     const RamStatement& main = *translationUnit.getProgram()->getMain();
     if (mainProgram.get() == nullptr) {
-        LVMGenerator generator(translationUnit.getSymbolTable(), main, *isa, relationEncoder);
+        LVMGenerator generator(translationUnit.getSymbolTable(), main, relationEncoder);
         mainProgram = generator.getCodeStream();
     }
     LVMContext ctxt;
@@ -119,7 +119,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
     std::stack<RamDomain> stack;
     const LVMCode& code = *codeStream;
     auto& symbolTable = codeStream->getSymbolTable();
-    this->environment.resize(relationEncoder.getSize());
     while (true) {
         switch (code[ip]) {
             case LVM_Number:
@@ -806,7 +805,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 this->level++;
                 // Record all the rleation that is created in the previous level
                 if (profile || this->level != 0) {
-                    for (const auto& rel : environment) {
+                    for (const auto& rel : relationEncoder.getRelationMap()) {
                         if (rel == nullptr) {
                             continue;
                         }
@@ -822,38 +821,39 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             }
             case LVM_Create: {
-                std::unique_ptr<LVMRelation> res = nullptr;
-                size_t relId = code[ip + 1];
-                const std::string& relName = relationEncoder.decodeRelation(relId);
-                auto arity = code[ip + 2];
-
-                std::vector<std::string> attributeTypes;
-                for (int i = 0; i < code[ip + 2]; ++i) {
-                    attributeTypes.push_back(symbolTable.resolve(code[ip + 4 + i]));
-                }
-
-                // Obtain the orderSet for this relation
-                const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
-
-                switch (code[ip + 3]) {
-                    case (LVM_EQREL):
-                        res = std::make_unique<LVMEqRelation>(
-                                arity, relName, std::move(attributeTypes), orderSet);
-                        break;
-                    case (LVM_BTREE):
-                        res = std::make_unique<LVMRelation>(
-                                arity, relName, std::move(attributeTypes), orderSet);
-                        break;
-                    case (LVM_BRIE):
-                        res = std::make_unique<LVMRelation>(
-                                arity, relName, std::move(attributeTypes), orderSet, createBTreeIndex);
-                        break;
-                    default:
-                        assert("Unknown data structure\n");
-                }
-
-                res->setLevel(level);
-                environment[relId] = std::move(res);
+                // std::unique_ptr<LVMRelation> res = nullptr;
+                // size_t relId = code[ip + 1];
+                // const std::string& relName = relationEncoder.decodeRelation(relId);
+                // auto arity = code[ip + 2];
+                //
+                // std::vector<std::string> attributeTypes;
+                // for (int i = 0; i < code[ip + 2]; ++i) {
+                //    attributeTypes.push_back(symbolTable.resolve(code[ip + 4 + i]));
+                //}
+                //
+                //// Obtain the orderSet for this relation
+                // const MinIndexSelection& orderSet =
+                // isa->getIndexes(*(relNameToNode.find(relName)->second));
+                //
+                // switch (code[ip + 3]) {
+                //    case (LVM_EQREL):
+                //        res = std::make_unique<LVMEqRelation>(
+                //                arity, relName, std::move(attributeTypes), orderSet);
+                //        break;
+                //    case (LVM_BTREE):
+                //        res = std::make_unique<LVMRelation>(
+                //                arity, relName, std::move(attributeTypes), orderSet);
+                //        break;
+                //    case (LVM_BRIE):
+                //        res = std::make_unique<LVMRelation>(
+                //                arity, relName, std::move(attributeTypes), orderSet, createBTreeIndex);
+                //        break;
+                //    default:
+                //        assert("Unknown data structure\n");
+                //}
+                //
+                // res->setLevel(level);
+                // environment[relId] = std::move(res);
                 ip += 3 + code[ip + 2] + 1;
                 break;
             }

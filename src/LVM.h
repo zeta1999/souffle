@@ -51,14 +51,7 @@ class LVM : public LVMInterface {
 public:
     LVM(RamTranslationUnit& tUnit)
             : LVMInterface(tUnit), profile(Global::config().has("profile")),
-              provenance(Global::config().has("provenance")) {
-        // Construct mapping from relation Name to RamRelation node in RAM tree.
-        // This will later be used for fast lookup during RamRelationCreate in order to retrieve
-        // minIndexSet from a given relation.
-        visitDepthFirst(*translationUnit.getProgram(), [&](const RamRelation& node) {
-            relNameToNode.insert(std::make_pair(node.getName(), &node));
-        });
-    }
+              provenance(Global::config().has("provenance")) {}
 
     virtual ~LVM() {
         for (auto* timer : timers) {
@@ -92,7 +85,7 @@ public:
         } else {
             // Parse and cache the program
             LVMGenerator generator(translationUnit.getSymbolTable(),
-                    translationUnit.getProgram()->getSubroutine(name), *isa, relationEncoder);
+                    translationUnit.getProgram()->getSubroutine(name), relationEncoder);
             subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
             execute(subroutines.at(name), ctxt);
         }
@@ -102,7 +95,7 @@ public:
     void printMain() {
         if (mainProgram.get() == nullptr) {
             LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain(),
-                    *isa, relationEncoder);
+                    relationEncoder);
             mainProgram = generator.getCodeStream();
         }
         mainProgram->print();
@@ -156,17 +149,17 @@ protected:
 
     /** Get a relation */
     LVMRelation* getRelation(size_t id) {
-        return environment[id].get();
+        return relationEncoder[id].get();
     }
 
     /** Drop relation */
     void dropRelation(size_t id) {
-        environment[id].reset(nullptr);
+        relationEncoder[id].reset(nullptr);
     }
 
     /** Swap relation */
     void swapRelation(size_t relAId, size_t relBId) {
-        environment[relAId].swap(environment[relBId]);
+        relationEncoder[relAId].swap(relationEncoder[relBId]);
     }
 
     /** Lookup stream, resize the pool if necessary */
@@ -216,9 +209,6 @@ private:
     /** List of streams for range operation */
     std::vector<Stream> streamPool;
 
-    /** Hash map from relationName to RamRelationNode in RAM */
-    std::unordered_map<std::string, const RamRelation*> relNameToNode;
-
     /** stratum */
     size_t level = 0;
 
@@ -233,9 +223,6 @@ private:
 
     /** Dynamic library for user-defined functors */
     void* dll = nullptr;
-
-    /** Relation Encode */
-    RelationEncoder relationEncoder;
 };
 
 }  // end of namespace souffle

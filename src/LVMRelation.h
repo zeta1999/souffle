@@ -45,6 +45,42 @@ public:
 
     virtual ~LVMRelation() {}
 
+    class Iterator : public std::iterator<std::forward_iterator_tag, TupleRef> {
+        std::unique_ptr<Stream> stream;
+
+    public:
+        Iterator() : stream(nullptr) {}
+
+        Iterator(const LVMRelation& rel) : stream(std::make_unique<Stream>(rel.scan())) {}
+
+        Iterator(Iterator&& iter) : stream(std::move(iter.stream)) {}
+
+        Iterator& operator++() {
+            ++stream->begin();
+            return *this;
+        }
+
+        const RamDomain* operator*() {
+            return (*stream->begin()).getBase();
+        }
+
+        bool operator!=(const Iterator& other) const {
+            return stream != other.stream;
+        }
+
+        bool operator==(const Iterator& other) const {
+            return stream == other.stream;
+        }
+    };
+
+    Iterator begin() const {
+        return *this;
+    }
+
+    Iterator end() const {
+        return Iterator();
+    }
+
     /**
      * Drops an index from the maintained indexes. All but one index
      * may be removed.
@@ -164,7 +200,7 @@ protected:
 
     // relation level
     size_t level;
-};
+};  // namespace souffle
 
 /**
  * Interpreter Equivalence Relation

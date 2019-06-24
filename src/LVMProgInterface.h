@@ -48,12 +48,12 @@ public:
 
     /** Iterator to first tuple */
     iterator begin() const override {
-        return LVMRelInterface::iterator(new LVMRelInterface::iterator_base(id, this, relation.scan().begin()));
+        return LVMRelInterface::iterator(new LVMRelInterface::iterator_base(id, this, relation.begin()));
     }
 
     /** Iterator to last tuple */
     iterator end() const override {
-        return LVMRelInterface::iterator(new LVMRelInterface::iterator_base(id, this, relation.scan().end()));
+        return LVMRelInterface::iterator(new LVMRelInterface::iterator_base(id, this, relation.end()));
     }
 
     /** Get name */
@@ -99,8 +99,8 @@ protected:
      */
     class iterator_base : public Relation::iterator_base {
     public:
-        iterator_base(uint32_t arg_id, const LVMRelInterface* r, Stream::Iterator i)
-                : Relation::iterator_base(arg_id), ramRelationInterface(r), it(i), tup(r) {}
+        iterator_base(uint32_t arg_id, const LVMRelInterface* r, LVMRelation::Iterator i)
+                : Relation::iterator_base(arg_id), ramRelationInterface(r), it(std::move(i)), tup(r) {}
         ~iterator_base() override = default;
 
         /** Increment iterator */
@@ -144,7 +144,7 @@ protected:
 
     private:
         const LVMRelInterface* ramRelationInterface;
-        Stream::Iterator it;
+        LVMRelation::Iterator it;
         tuple tup;
     };
 

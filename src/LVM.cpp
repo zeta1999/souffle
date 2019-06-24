@@ -912,7 +912,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                         IOSystem::getInstance()
                                 .getWriter(symbolMask, symbolTable, io, provenance)
-                                ->writeLVMAll(*relPtr);
+                                ->writeAll(*relPtr);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";
                     }

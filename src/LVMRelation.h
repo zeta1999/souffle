@@ -20,7 +20,7 @@
 #include "ParallelUtils.h"
 #include "RamIndexAnalysis.h"
 #include "RamTypes.h"
-#include "Relation.h"
+#include "LVMRelation.h"
 
 #include <array>
 #include <deque>

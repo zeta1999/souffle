@@ -33,7 +33,7 @@ public:
 
     LVMRelation(LVMRelation& other) = delete;
 
-    virtual ~LVMRelation() {}
+    virtual ~LVMRelation() = default;
 
     /**
      * Support for-each iteration for LVMRelation.

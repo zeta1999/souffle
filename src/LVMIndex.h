@@ -60,7 +60,7 @@ public:
  */
 class TupleRef {
     // The address of the first component of the tuple.
-    const RamDomain* base;
+    const RamDomain* base{};
 
     // The size of the tuple.
     std::size_t arity;
@@ -191,7 +191,7 @@ public:
     // the 'interface' for data sources
     class Source {
     public:
-        virtual ~Source(){};
+        virtual ~Source() = default;
 
         /**
          * Requests the source to retrieve the next set of elements,
@@ -214,7 +214,7 @@ private:
     std::unique_ptr<Source> source;
 
     // an internal buffer for decoded elements
-    std::array<TupleRef, BUFFER_SIZE> buffer;
+    std::array<TupleRef, BUFFER_SIZE> buffer{};
 
     // the current position in the buffer
     int cur = 0;
@@ -261,7 +261,7 @@ public:
      * its elements using a range-based for.
      */
     class Iterator : public std::iterator<std::forward_iterator_tag, TupleRef> {
-        Stream* stream;
+        Stream* stream = nullptr;
 
     public:
         Iterator() : stream(nullptr) {}
@@ -320,7 +320,7 @@ private:
  */
 class LVMIndex {
 public:
-    virtual ~LVMIndex(){};
+    virtual ~LVMIndex() = default;
 
     /**
      * Obtains the arity of the given index.

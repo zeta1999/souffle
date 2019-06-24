@@ -521,9 +521,8 @@ public:
 
         int numTuples = 0;
         int proc = 0;
-
         for (auto& tuple : *rel) {
-            // auto tupleStart = std::chrono::high_resolution_clock::now();
+           auto tupleStart = std::chrono::high_resolution_clock::now();
 
             // measure for all tuples
             /*if (numTuples % skip != 0) {
@@ -559,18 +558,16 @@ public:
                 subtreeLevels.push_back(subLevel);
             }
 
-            explain(relName, currentTuple, ruleNum, levelNum, subtreeLevels, 10000);
+            std::cout << "Tuples expanded: " << explain(relName, currentTuple, ruleNum, levelNum, subtreeLevels, 10000)->getSize();
 
-            // std::cout << "Tuples expanded: "
-            //<< explain(relName, currentTuple, ruleNum, levelNum, 20)->getSize();
             numTuples++;
             proc++;
 
-            // auto tupleEnd = std::chrono::high_resolution_clock::now();
-            // auto tupleDuration =
-            // std::chrono::duration_cast<std::chrono::duration<double>>(tupleEnd - tupleStart);
+            auto tupleEnd = std::chrono::high_resolution_clock::now();
+            auto tupleDuration =
+            std::chrono::duration_cast<std::chrono::duration<double>>(tupleEnd - tupleStart);
 
-            // std::cout << ", Time: " << tupleDuration.count() << "\n";
+            std::cout << ", Time: " << tupleDuration.count() << "\n";
         }
 
         auto after_time = std::chrono::high_resolution_clock::now();

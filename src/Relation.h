@@ -24,6 +24,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <array>
 
 #include "CompiledTuple.h"
 #include "RamTypes.h"

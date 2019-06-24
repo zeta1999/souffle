@@ -331,12 +331,14 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 RamDomain symbol = stack.top();
                 stack.pop();
                 const std::string& str = symbolTable.resolve(symbol);
+                std::string sub_str;
                 try {
-                    stack.push(symbolTable.lookup(str.substr(idx, len)));
+                    sub_str = str.substr(idx, len);
                 } catch (...) {
                     std::cerr << "warning: wrong index position provided by substr(\"";
                     std::cerr << str << "\"," << (int32_t)idx << "," << (int32_t)len << ") functor.\n";
                 }
+                stack.push(symbolTable.lookup(sub_str));
 
                 ip += 1;
                 break;
@@ -833,14 +835,17 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 const MinIndexSelection& orderSet = isa->getIndexes(*(relNameToNode.find(relName)->second));
 
                 switch (code[ip + 3]) {
-                    case(LVM_EQREL):
-                        res = std::make_unique<LVMEqRelation>(arity, relName, std::move(attributeTypes), orderSet);
+                    case (LVM_EQREL):
+                        res = std::make_unique<LVMEqRelation>(
+                                arity, relName, std::move(attributeTypes), orderSet);
                         break;
-                    case(LVM_BTREE):
-                        res = std::make_unique<LVMRelation>(arity, relName, std::move(attributeTypes), orderSet);
+                    case (LVM_BTREE):
+                        res = std::make_unique<LVMRelation>(
+                                arity, relName, std::move(attributeTypes), orderSet);
                         break;
-                    case(LVM_BRIE):
-                        res = std::make_unique<LVMRelation>(arity, relName, std::move(attributeTypes), orderSet, createBrieIndex);
+                    case (LVM_BRIE):
+                        res = std::make_unique<LVMRelation>(
+                                arity, relName, std::move(attributeTypes), orderSet, createBrieIndex);
                         break;
                     default:
                         assert("Unknown data structure\n");

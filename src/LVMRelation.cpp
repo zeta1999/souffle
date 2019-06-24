@@ -230,4 +230,3 @@ void LVMIndirectRelation::purge() {
 }
 
 }  // namespace souffle
-

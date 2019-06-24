@@ -284,6 +284,12 @@ test_btree_multiset_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/
 test_btree_multiset_test_SOURCES = test/btree_multiset_test.cpp
 test_btree_multiset_test_LDADD = libsouffle.la
 
+# binary relation tests
+check_PROGRAMS += test/binary_relation_test
+test_binary_relation_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
+test_binary_relation_test_SOURCES = test/binary_relation_test.cpp
+test_binary_relation_test_LDADD = libsouffle.la
+
 # pnappa's good ol fashioned data structure tests (auxilliary structures to binrel, and potentially useful outside)
 check_PROGRAMS += test/eqrel_datastructure_test
 test_eqrel_datastructure_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
@@ -361,12 +367,6 @@ check_PROGRAMS += test/parallel_utils_test
 test_parallel_utils_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
 test_parallel_utils_test_SOURCES = test/parallel_utils_test.cpp
 test_parallel_utils_test_LDADD = libsouffle.la
-
-# binary relation tests
-check_PROGRAMS += test/relation_test
-test_relation_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
-test_relation_test_SOURCES = test/relation_test.cpp
-test_relation_test_LDADD = libsouffle.la
 
 if MPI
 # mpi interface

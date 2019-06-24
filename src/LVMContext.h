@@ -17,7 +17,7 @@
 #pragma once
 
 #include "RamTypes.h"
-#include "Relation.h"
+#include "LVMRelation.h"
 #include <cassert>
 #include <memory>
 #include <vector>

@@ -23,6 +23,7 @@
 #include "IOSystem.h"
 #include "LVMIndex.h"
 #include "LVMRecords.h"
+#include "LVMRelation.h"
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"

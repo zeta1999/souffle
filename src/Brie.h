@@ -2085,7 +2085,7 @@ struct fix_lower_bound {
     	assert(int(cur->first) >= entry[Pos]);
 
     	// if the lower bound is higher than the requested value, go to first in subtree
-    	if (cur->first > entry[Pos]) {
+    	if (int(cur->first) > entry[Pos]) {
     		get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
     		iter.value[Pos] = cur->first;
     		fix_first<Pos+1,Dim>()(cur->second->getStore(), iter);
@@ -2097,7 +2097,7 @@ struct fix_lower_bound {
     		// if it does not work, since there are no matching elements in this branch, go to next
     		entry_type sub = entry;
     		sub[Pos] += 1;
-    		for (int i=Pos+1; i<Dim; ++i) {
+    		for (size_t i=Pos+1; i<Dim; ++i) {
     			sub[i] = 0;
     		}
     		return (*this)(store,iter,sub);

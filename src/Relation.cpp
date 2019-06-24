@@ -15,8 +15,8 @@
 #include "Relation.h"
 #include "BTree.h"
 #include "Brie.h"
-#include "Util.h"
 #include "CompiledIndexUtils.h"
+#include "Util.h"
 
 namespace souffle {
 
@@ -89,7 +89,7 @@ class NullaryIndex : public Index {
         Source(bool present) : present(present) {}
         int load(TupleRef* buffer, int max) override {
             if (!present) return 0;
-            buffer[0] = TupleRef(nullptr,0);
+            buffer[0] = TupleRef(nullptr, 0);
             present = false;
             return 1;
         }
@@ -166,11 +166,10 @@ class GenericIndex : public Index {
         iter end;
 
         // an internal buffer for re-ordered elements
-        std::array<Entry,Stream::BUFFER_SIZE> buffer;
+        std::array<Entry, Stream::BUFFER_SIZE> buffer;
 
     public:
-        Source(const Order& order, iter begin, iter end)
-                : order(order), cur(begin), end(end) {}
+        Source(const Order& order, iter begin, iter end) : order(order), cur(begin), end(end) {}
 
         int load(TupleRef* out, int max) override {
             int c = 0;
@@ -222,8 +221,7 @@ public:
         Entry a = order.encode(low.asTuple<Arity>());
         Entry b = order.encode(high.asTuple<Arity>());
         // Transfer upper_bound to a equivalent lower bound
-        // TODO Efficiency? Correctness?
-        for (int i = Arity - 1; i >= 0; --i) {
+        for (size_t i = Arity - 1; i >= 0; --i) {
             if (a[i] == b[i] && b[i] != MIN_RAM_DOMAIN) {
                 b[i] += 1;
                 break;
@@ -238,7 +236,7 @@ public:
 };
 
 // The comparator to be used for B-tree nodes.
-template<std::size_t Arity>
+template <std::size_t Arity>
 using comparator = typename ram::index_utils::get_full_index<Arity>::type::comparator;
 
 /**

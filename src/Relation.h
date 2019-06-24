@@ -18,13 +18,13 @@
 
 #pragma once
 
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <map>
 #include <memory>
 #include <utility>
 #include <vector>
-#include <array>
 
 #include "CompiledTuple.h"
 #include "RamTypes.h"
@@ -95,7 +95,7 @@ public:
     std::size_t size() const {
         return arity;
     }
-    
+
     /*
      * Provide access to base reference.
      */
@@ -194,7 +194,7 @@ private:
     std::unique_ptr<Source> source;
 
     // an internal buffer for decoded elements
-    std::array<TupleRef,BUFFER_SIZE> buffer;
+    std::array<TupleRef, BUFFER_SIZE> buffer;
 
     // the current position in the buffer
     int cur = 0;
@@ -210,13 +210,13 @@ public:
     Stream() : source(nullptr) {}
 
     Stream(Stream&& other)
-            : source(std::move(other.source)), buffer(other.buffer), cur(other.cur),
-              limit(other.limit) {}
+            : source(std::move(other.source)), buffer(other.buffer), cur(other.cur), limit(other.limit) {}
 
     Stream& operator=(Stream&& other) {
         source = std::move(other.source);
         // only copy important data
-        std::memcpy(&buffer[other.cur],&other.buffer[other.cur],sizeof(TupleRef) * (other.limit-other.cur));
+        std::memcpy(
+                &buffer[other.cur], &other.buffer[other.cur], sizeof(TupleRef) * (other.limit - other.cur));
         cur = other.cur;
         limit = other.limit;
         return *this;

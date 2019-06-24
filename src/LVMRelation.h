@@ -17,335 +17,9 @@
 #pragma once
 
 #include "LVMIndex.h"
-#include "ParallelUtils.h"
 #include "RamIndexAnalysis.h"
-#include "RamTypes.h"
-#include "LVMRelation.h"
-
-#include <array>
-#include <deque>
-#include <map>
-#include <memory>
-#include <utility>
-#include <vector>
 
 namespace souffle {
-
-/**
- * A construction-time sized tuple instance easing tuple handling
- * in non-compiled contexts.
- */
-class DynTuple {
-    std::vector<RamDomain> data;
-
-public:
-    DynTuple(std::size_t arity) : data(arity) {}
-
-    std::size_t size() const {
-        return data.size();
-    }
-
-    RamDomain& operator[](std::size_t i) {
-        return data[i];
-    }
-
-    const RamDomain& operator[](std::size_t i) const {
-        return data[i];
-    }
-};
-
-/**
- * A type-erased reference to tuples. The reference does not
- * own the referenced data. It is thus very light-weight to
- * create and forward.
- */
-class TupleRef {
-    // The address of the first component of the tuple.
-    const RamDomain* base;
-
-    // The size of the tuple.
-    std::size_t arity;
-
-public:
-    TupleRef() = default;
-
-    /**
-     * Creates a tuple reference from some externally maintained
-     */
-    TupleRef(const RamDomain* base, std::size_t arity) : base(base), arity(arity) {}
-
-    /**
-     * A constructor supporting the implicit conversion of
-     * a tuple into a reference.
-     */
-    template <std::size_t Arity>
-    TupleRef(const ram::Tuple<RamDomain, Arity>& tuple) : TupleRef(&tuple[0], Arity) {}
-
-    TupleRef(const DynTuple& tuple) : TupleRef(&tuple[0], tuple.size()) {}
-
-    template <std::size_t Arity>
-    const ram::Tuple<RamDomain, Arity>& asTuple() const {
-        assert(arity == Arity);
-        return *reinterpret_cast<const ram::Tuple<RamDomain, Arity>*>(base);
-    }
-
-    /**
-     * Obtains the arity of the referenced tuple.
-     */
-    std::size_t size() const {
-        return arity;
-    }
-
-    /*
-     * Provide access to base reference.
-     */
-    const RamDomain* getBase() const {
-        return base;
-    }
-
-    /**
-     * Provides access to tuple components.
-     */
-    const RamDomain& operator[](std::size_t i) const {
-        return base[i];
-    }
-
-    friend std::ostream& operator<<(std::ostream& out, TupleRef ref);
-};
-
-/**
- * An order to be enforced for storing tuples within
- * indexes. The order is defined by the sequence of
- * component to be considered in sorting tuples.
- */
-class Order {
-    std::vector<int> order;
-
-public:
-    template <typename... Positions>
-    Order(Positions... pos) : order{pos...} {
-        assert(valid());
-    }
-
-    // Creates a natural order for the given arity.
-    static Order create(size_t arity);
-
-    std::size_t size() const;
-
-    /**
-     * Determines whether this order is a valid order.
-     */
-    bool valid() const;
-
-    template <std::size_t Arity>
-    ram::Tuple<RamDomain, Arity> encode(const ram::Tuple<RamDomain, Arity>& entry) const {
-        ram::Tuple<RamDomain, Arity> res;
-        for (std::size_t i = 0; i < Arity; ++i) {
-            res[i] = entry[order[i]];
-        }
-        return res;
-    }
-
-    template <std::size_t Arity>
-    ram::Tuple<RamDomain, Arity> decode(const ram::Tuple<RamDomain, Arity>& entry) const {
-        ram::Tuple<RamDomain, Arity> res;
-        for (std::size_t i = 0; i < Arity; ++i) {
-            res[order[i]] = entry[i];
-        }
-        return res;
-    }
-
-    bool operator==(const Order& other) const;
-    bool operator!=(const Order& other) const;
-    bool operator<(const Order& other) const;
-
-    friend std::ostream& operator<<(std::ostream& out, const Order& order);
-};
-
-/**
- * An abstract perspective on a data range. A stream is a pair of iterators,
- * referencing the begin and end of a traversible sequence. A stream can only
- * be traversed once.
- */
-class Stream {
-public:
-    // the size of the internally maintained buffer, corresponding
-    // to the maximum chunk size retrieved from the source
-    constexpr static int BUFFER_SIZE = 128;
-
-    // the 'interface' for data sources
-    class Source {
-    public:
-        virtual ~Source(){};
-
-        /**
-         * Requests the source to retrieve the next set of elements,
-         * to be stored in an array addressed by the first parameter.
-         * The second parameter states an upper limit for the number
-         * of elements to be retrieved.
-         *
-         * @return the number of elements retrieved, 0 if end has reached.
-         */
-        virtual int load(TupleRef* trg, int max) = 0;
-    };
-
-private:
-    // the source to read data from
-    std::unique_ptr<Source> source;
-
-    // an internal buffer for decoded elements
-    std::array<TupleRef, BUFFER_SIZE> buffer;
-
-    // the current position in the buffer
-    int cur = 0;
-
-    // the end of valid elements in the buffer
-    int limit = 0;
-
-public:
-    Stream(std::unique_ptr<Source>&& src) : source(std::move(src)) {
-        loadNext();
-    }
-
-    Stream() : source(nullptr) {}
-
-    Stream(Stream&& other)
-            : source(std::move(other.source)), buffer(other.buffer), cur(other.cur), limit(other.limit) {}
-
-    Stream& operator=(Stream&& other) {
-        source = std::move(other.source);
-        // only copy important data
-        std::memcpy(
-                &buffer[other.cur], &other.buffer[other.cur], sizeof(TupleRef) * (other.limit - other.cur));
-        cur = other.cur;
-        limit = other.limit;
-        return *this;
-    }
-
-    template <typename S>
-    Stream(std::unique_ptr<S>&& src) : Stream(std::unique_ptr<Source>(std::move(src))) {}
-
-    /**
-     * The iterator exposed by this stream to iterate through
-     * its elements using a range-based for.
-     */
-    class Iterator : public std::iterator<std::forward_iterator_tag, TupleRef> {
-        Stream* stream;
-
-    public:
-        Iterator() : stream(nullptr) {}
-
-        Iterator(Stream& stream) : stream(&stream) {
-            if (stream.cur >= stream.limit) {
-                this->stream = nullptr;
-            }
-        }
-
-        Iterator& operator++() {
-            ++stream->cur;
-            if (stream->cur < stream->limit) {
-                return *this;
-            }
-            stream->loadNext();
-            if (stream->cur >= stream->limit) {
-                stream = nullptr;
-            }
-            return *this;
-        }
-
-        const TupleRef& operator*() const {
-            return stream->buffer[stream->cur];
-        }
-
-        bool operator!=(const Iterator& other) const {
-            return stream != other.stream;
-        }
-
-        bool operator==(const Iterator& other) const {
-            return stream == other.stream;
-        }
-    };
-
-    // support for ranged based for loops
-    Iterator begin() {
-        return *this;
-    }
-    Iterator end() const {
-        return {};
-    }
-
-private:
-    /**
-     * Retrieves the next chunk of elements from the source.
-     */
-    void loadNext() {
-        limit = source->load(&buffer[0], BUFFER_SIZE);
-        cur = 0;
-    }
-};
-
-/**
- * An index is an abstraction of a data structure
- */
-class Index {
-public:
-    virtual ~Index(){};
-
-    /**
-     * Obtains the arity of the given index.
-     */
-    virtual size_t arity() const = 0;
-
-    /**
-     * Tests whether this index is empty or not.
-     */
-    virtual bool empty() const = 0;
-
-    /**
-     * Obtains the number of elements stored in this index.
-     */
-    virtual std::size_t size() const = 0;
-
-    /**
-     * Inserts a tuple into this index.
-     */
-    virtual bool insert(const TupleRef& tuple) = 0;
-
-    /**
-     * Inserts all elements of the given index.
-     */
-    virtual void insert(const Index& src) = 0;
-
-    /**
-     * Tests whether the given tuple is present in this index or not.
-     */
-    virtual bool contains(const TupleRef& tuple) const = 0;
-
-    /**
-     * Returns a stream covering the entire index content.
-     */
-    virtual Stream scan() const = 0;
-
-    /**
-     * Returns a stream covering the elements
-     */
-    virtual Stream range(const TupleRef& low, const TupleRef& high) const = 0;
-
-    /**
-     * Clears the content of this index, turning it empty.
-     */
-    virtual void clear() = 0;
-};
-
-// The type of index factory functions.
-using IndexFactory = std::unique_ptr<Index> (*)(const Order&);
-
-// A factory for BTree based index.
-std::unique_ptr<Index> createBTreeIndex(const Order&);
-
-// A factory for Brie based index.
-std::unique_ptr<Index> createBrieIndex(const Order&);
-
 /**
  * A relation, composed of a collection of indexes.
  */
@@ -365,7 +39,7 @@ public:
      * A heavy but copy-able Iterator for SouffleInterface.
      */
     class Iterator : public std::iterator<std::forward_iterator_tag, RamDomain*> {
-        const Index* index;
+        const LVMIndex* index;
         Stream stream;
         int counter = 0;
         void setToEnd() {
@@ -376,7 +50,7 @@ public:
     public:
         Iterator() : index(nullptr) {}
 
-        Iterator(const Index* index) : index(index), stream() {
+        Iterator(const LVMIndex* index) : index(index), stream() {
             if (index) {
                 stream = index->scan();
                 if (stream.begin() == stream.end()) {
@@ -443,7 +117,7 @@ public:
     /**
      * Add the given tuple to this relation.
      */
-    bool insert(const RamDomain* tuple) {
+    virtual bool insert(const RamDomain* tuple) {
         return insert(TupleRef(tuple, arity));
     }
 
@@ -468,11 +142,6 @@ public:
     Stream range(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const;
 
     /**
-     * Removes the content of this relation, but retains the empty indexes.
-     */
-    void clear();
-
-    /**
      * Swaps the content of this and the given relation, including the
      * installed indexes.
      */
@@ -482,7 +151,7 @@ public:
      * Set level
      */
     void setLevel(size_t level) {
-        this->level = level;  // TODO necessary?
+        this->level = level;
     }
 
     /**
@@ -518,7 +187,7 @@ public:
     /**
      * Clear all indexes
      */
-    void purge();
+    virtual void purge();
 
     /**
      * Check if a tuple exists in realtion
@@ -541,10 +210,10 @@ protected:
     std::vector<std::string> attributeTypes;
 
     // a map of managed indexes
-    std::vector<std::unique_ptr<Index>> indexes;
+    std::vector<std::unique_ptr<LVMIndex>> indexes;
 
     // a pointer to the main index within the managed index
-    Index* main;
+    LVMIndex* main;
 
     // relation level
     size_t level;
@@ -553,7 +222,6 @@ protected:
 /**
  * Interpreter Equivalence Relation
  */
-
 class LVMEqRelation : public LVMRelation {
 public:
     LVMEqRelation(size_t arity, const std::string& relName, std::vector<std::string>&& attributeTypes,
@@ -561,10 +229,36 @@ public:
 
     /** Insert tuple */
     bool insert(const TupleRef& tuple) override;
+
     /** Find the new knowledge generated by inserting a tuple */
     std::vector<RamDomain*> extend(const TupleRef& tuple);
+
     /** Extend this relation with new knowledge generated by inserting all tuples from a relation */
     void extend(const LVMRelation& rel) override;
+};
+
+/**
+ * Interpreter Indirect Relation
+ */
+class LVMIndirectRelation : public LVMRelation {
+public:
+    LVMIndirectRelation(size_t arity, const std::string& relName, std::vector<std::string>&& attributeTypes,
+            const MinIndexSelection& orderSet);
+    /** Insert tuple */
+    bool insert(const TupleRef& tuple) override;
+
+    bool insert(const RamDomain* tuple) override;
+
+    /** Clear all indexes */
+    void purge() override;
+
+private:
+    /** Size of blocks containing tuples */
+    static const int BLOCK_SIZE = 1024;
+
+    std::deque<std::unique_ptr<RamDomain[]>> blockList;
+
+    size_t num_tuples = 0;
 };
 
 }  // end of namespace souffle

@@ -106,7 +106,7 @@ souffle_sources = \
 			  LVMCode.cpp			LVMCode.h			\
 			  LVMContext.h								\
 			  LVMGenerator.h							\
-			  LVMIndex.h								\
+			  LVMIndex.h			LVMIndex.cpp		\
 			  LVMInterface.h							\
 			  LVMProgInterface.h						\
 			  LVMRecords.h			LVMRecords.cpp		\

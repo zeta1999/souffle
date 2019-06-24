@@ -50,9 +50,8 @@ class LVMProgInterface;
 class LVM : public LVMInterface {
 public:
     LVM(RamTranslationUnit& tUnit)
-		: LVMInterface(tUnit)
-		, profile(Global::config().has("profile"))
-		, provenance(Global::config().has("provenance")) {
+            : LVMInterface(tUnit), profile(Global::config().has("profile")),
+              provenance(Global::config().has("provenance")) {
         // Construct mapping from relation Name to RamRelation node in RAM tree.
         // This will later be used for fast lookup during RamRelationCreate in order to retrieve
         // minIndexSet from a given relation.
@@ -110,9 +109,6 @@ public:
     }
 
 protected:
-    using index_set =
-            btree_multiset<const RamDomain*, LVMIndex::comparator, std::allocator<const RamDomain*>, 512>;
-
     /** Insert Logger */
     void insertTimerAt(size_t index, Logger* timer) {
         if (index >= timers.size()) {

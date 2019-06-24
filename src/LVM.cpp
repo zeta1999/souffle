@@ -600,7 +600,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                             high[arity - i - 1] = low[arity - i - 1];
                         } else {
                             low[arity - i - 1] = MIN_RAM_DOMAIN;
-                            high[arity - i - 1] = MIN_RAM_DOMAIN;
+                            high[arity - i - 1] = MAX_RAM_DOMAIN;
                         }
                     }
                     auto range = rel.range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
@@ -628,14 +628,14 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         high[arity - i - 1] = low[arity - i - 1];
                     } else {
                         low[arity - i - 1] = MIN_RAM_DOMAIN;
-                        high[arity - i - 1] = MIN_RAM_DOMAIN;
+                        high[arity - i - 1] = MAX_RAM_DOMAIN;
                     }
                 }
 
                 low[arity - 2] = MIN_RAM_DOMAIN;
                 low[arity - 1] = MIN_RAM_DOMAIN;
-                high[arity - 2] = MIN_RAM_DOMAIN;
-                high[arity - 1] = MIN_RAM_DOMAIN;
+                high[arity - 2] = MAX_RAM_DOMAIN;
+                high[arity - 1] = MAX_RAM_DOMAIN;
 
                 auto range = rel.range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
                 stack.push(range.begin() != range.end());
@@ -846,7 +846,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         break;
                     case (LVM_BRIE):
                         res = std::make_unique<LVMRelation>(
-                                arity, relName, std::move(attributeTypes), orderSet, createBrieIndex);
+                                arity, relName, std::move(attributeTypes), orderSet, createBTreeIndex);
                         break;
                     default:
                         assert("Unknown data structure\n");
@@ -1031,7 +1031,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         hig[arity - i - 1] = low[arity - i - 1];
                     } else {
                         low[arity - i - 1] = MIN_RAM_DOMAIN;
-                        hig[arity - i - 1] = MIN_RAM_DOMAIN;
+                        hig[arity - i - 1] = MAX_RAM_DOMAIN;
                     }
                 }
 

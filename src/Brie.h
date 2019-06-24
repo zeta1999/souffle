@@ -1711,33 +1711,32 @@ public:
      * than the given index.
      */
     iterator lower_bound(index_type i) const {
-    	auto it = store.lowerBound(i >> LEAF_INDEX_WIDTH);
-    	if (it.isEnd()) return end();
+        auto it = store.lowerBound(i >> LEAF_INDEX_WIDTH);
+        if (it.isEnd()) return end();
 
-    	// check bit-set part
-    	uint64_t mask = iterator::toMask(it->second);
+        // check bit-set part
+        uint64_t mask = iterator::toMask(it->second);
 
-    	// if there is no bit remaining in this mask, check next mask.
-    	if (!(mask & ((~uint64_t(0)) << (i & LEAF_INDEX_MASK)))) {
-    		index_type next = ((i >> LEAF_INDEX_WIDTH) + 1) << LEAF_INDEX_WIDTH;
-    		if (next < i) return end();
-    		return lower_bound(next);
-    	}
+        // if there is no bit remaining in this mask, check next mask.
+        if (!(mask & ((~uint64_t(0)) << (i & LEAF_INDEX_MASK)))) {
+            index_type next = ((i >> LEAF_INDEX_WIDTH) + 1) << LEAF_INDEX_WIDTH;
+            if (next < i) return end();
+            return lower_bound(next);
+        }
 
-    	// there are bits left, use least significant bit of those
-    	mask &= ((~uint64_t(0)) << (i & LEAF_INDEX_MASK));  // remove all bits before pos i
+        // there are bits left, use least significant bit of those
+        mask &= ((~uint64_t(0)) << (i & LEAF_INDEX_MASK));  // remove all bits before pos i
 
-    	// compute value represented by least significant bit
-    	index_type pos = __builtin_ctzll(mask);
+        // compute value represented by least significant bit
+        index_type pos = __builtin_ctzll(mask);
 
-    	// remove this bit as well
-    	mask = mask & ~(1ull << pos);
+        // remove this bit as well
+        mask = mask & ~(1ull << pos);
 
-    	// construct value of this located bit
-    	index_type val = i & ~LEAF_INDEX_MASK;
-    	val |= pos;
-    	return iterator(it, mask, val);
-
+        // construct value of this located bit
+        index_type val = i & ~LEAF_INDEX_MASK;
+        val |= pos;
+        return iterator(it, mask, val);
     }
 
     /**
@@ -2058,18 +2057,16 @@ struct fix_binding<0, Dim, Dim> {
 template <unsigned Pos, unsigned Dim>
 struct fix_lower_bound {
     template <unsigned bits, typename iterator, typename entry_type>
-    bool operator()(
-            const SparseBitMap<bits>& store, iterator& iter, const entry_type& entry) const {
+    bool operator()(const SparseBitMap<bits>& store, iterator& iter, const entry_type& entry) const {
+        // search in current level
+        auto cur = store.lower_bound(entry[Pos]);
 
-    	// search in current level
-    	auto cur = store.lower_bound(entry[Pos]);
+        if (cur == store.end()) return false;
 
-    	if (cur == store.end()) return false;
+        get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
 
-    	get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
-
-    	assert(entry[Pos] <= int(*cur));
-    	iter.value[Pos] = *cur;
+        assert(entry[Pos] <= int(*cur));
+        iter.value[Pos] = *cur;
 
         // no more remaining levels to fix
         return true;
@@ -2077,40 +2074,40 @@ struct fix_lower_bound {
 
     template <typename Store, typename iterator, typename entry_type>
     bool operator()(const Store& store, iterator& iter, const entry_type& entry) const {
-    	// search in current level
-    	auto cur = store.lowerBound(entry[Pos]);
+        // search in current level
+        auto cur = store.lowerBound(entry[Pos]);
 
-    	// if no lower boundary is found, be done
-    	if (cur == store.end()) return false;
-    	assert(int(cur->first) >= entry[Pos]);
+        // if no lower boundary is found, be done
+        if (cur == store.end()) return false;
+        assert(int(cur->first) >= entry[Pos]);
 
-    	// if the lower bound is higher than the requested value, go to first in subtree
-    	if (int(cur->first) > entry[Pos]) {
-    		get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
-    		iter.value[Pos] = cur->first;
-    		fix_first<Pos+1,Dim>()(cur->second->getStore(), iter);
-    		return true;
-    	}
+        // if the lower bound is higher than the requested value, go to first in subtree
+        if (int(cur->first) > entry[Pos]) {
+            get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
+            iter.value[Pos] = cur->first;
+            fix_first<Pos + 1, Dim>()(cur->second->getStore(), iter);
+            return true;
+        }
 
-    	// attempt to fix the rest
-    	if (!fix_lower_bound<Pos+1,Dim>()(cur->second->getStore(), iter, entry)) {
-    		// if it does not work, since there are no matching elements in this branch, go to next
-    		entry_type sub = entry;
-    		sub[Pos] += 1;
-    		for (size_t i=Pos+1; i<Dim; ++i) {
-    			sub[i] = 0;
-    		}
-    		return (*this)(store,iter,sub);
-    	}
+        // attempt to fix the rest
+        if (!fix_lower_bound<Pos + 1, Dim>()(cur->second->getStore(), iter, entry)) {
+            // if it does not work, since there are no matching elements in this branch, go to next
+            entry_type sub = entry;
+            sub[Pos] += 1;
+            for (size_t i = Pos + 1; i < Dim; ++i) {
+                sub[i] = 0;
+            }
+            return (*this)(store, iter, sub);
+        }
 
-    	// remember result
-    	get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
+        // remember result
+        get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
 
-    	// update iterator value
-    	iter.value[Pos] = cur->first;
+        // update iterator value
+        iter.value[Pos] = cur->first;
 
-    	// done!
-    	return true;
+        // done!
+        return true;
     }
 };
 
@@ -2478,14 +2475,14 @@ public:
      * @return an iterator addressing the first element in this structure not less than the given value
      */
     iterator lower_bound(const entry_type& entry) const {
-    	// start with an default-initialized iterator
-		iterator res;
+        // start with an default-initialized iterator
+        iterator res;
 
-		// adapt it level by level
-		bool found = detail::fix_lower_bound<0, Dim>()(store, res, entry);
+        // adapt it level by level
+        bool found = detail::fix_lower_bound<0, Dim>()(store, res, entry);
 
-		// use the result
-		return found ? res : end();
+        // use the result
+        return found ? res : end();
     }
 
     /**
@@ -3120,7 +3117,7 @@ public:
     }
 
     iterator lower_bound(const entry_type& entry) const {
-    	return iterator(map.lower_bound(entry[0]));
+        return iterator(map.lower_bound(entry[0]));
     }
 
     /**

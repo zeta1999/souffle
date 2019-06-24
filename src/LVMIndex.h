@@ -109,6 +109,18 @@ public:
         return base[i];
     }
 
+    bool operator==(const TupleRef& other) const {
+        if (arity != other.arity) {
+            return false;
+        }
+        for (size_t i = 0; i < arity; ++i) {
+            if (base[i] != other[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     friend std::ostream& operator<<(std::ostream& out, TupleRef ref);
 };
 
@@ -190,6 +202,11 @@ public:
          * @return the number of elements retrieved, 0 if end has reached.
          */
         virtual int load(TupleRef* trg, int max) = 0;
+
+        /**
+         * Clone a source with the exact same state
+         */
+        virtual std::unique_ptr<Source> clone() = 0;
     };
 
 private:
@@ -227,6 +244,17 @@ public:
 
     template <typename S>
     Stream(std::unique_ptr<S>&& src) : Stream(std::unique_ptr<Source>(std::move(src))) {}
+
+    std::unique_ptr<Stream> clone() const {
+        if (source == nullptr) {
+            return std::make_unique<Stream>();
+        }
+        auto newStream = std::make_unique<Stream>(source->clone());
+        newStream->buffer = buffer;
+        newStream->cur = cur;
+        newStream->limit = limit;
+        return newStream;
+    }
 
     /**
      * The iterator exposed by this stream to iterate through

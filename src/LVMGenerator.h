@@ -1007,27 +1007,6 @@ protected:
     void visitCreate(const RamCreate& create, size_t exitAddress) override {
         code->push_back(LVM_Create);
         code->push_back(relationEncoder.encodeRelation(create.getRelation()));
-        code->push_back(create.getRelation().getArity());
-        switch (create.getRelation().getRepresentation()) {
-            case RelationRepresentation::BTREE:
-                code->push_back(LVM_BTREE);
-                break;
-            case RelationRepresentation::BRIE:
-                code->push_back(LVM_BRIE);
-                break;
-            case RelationRepresentation::EQREL:
-                code->push_back(LVM_EQREL);
-                break;
-            case RelationRepresentation::DEFAULT:
-                code->push_back(LVM_BTREE);
-            default:
-                break;
-        }
-
-        auto attributeTypes = create.getRelation().getAttributeTypeQualifiers();
-        for (auto type : attributeTypes) {
-            code->push_back(symbolTable.lookup(type));
-        }
     }
 
     void visitClear(const RamClear& clear, size_t exitAddress) override {

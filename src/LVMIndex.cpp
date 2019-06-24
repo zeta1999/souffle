@@ -100,6 +100,10 @@ class NullaryIndex : public LVMIndex {
             present = false;
             return 1;
         }
+
+        std::unique_ptr<Stream::Source> clone() override {
+            return std::make_unique<Source>(present);
+        }
     };
 
 public:
@@ -187,6 +191,12 @@ class GenericIndex : public LVMIndex {
                 ++c;
             }
             return c;
+        }
+
+        std::unique_ptr<Stream::Source> clone() override {
+            auto source = std::make_unique<Source>(order, cur, end);
+            source->buffer = this->buffer;
+            return source;
         }
     };
 
@@ -306,6 +316,12 @@ public:
                 ++c;
             }
             return c;
+        }
+
+        std::unique_ptr<Stream::Source> clone() override {
+            auto source = std::make_unique<Source>(cur, end);
+            source->buffer = this->buffer;
+            return source;
         }
     };
 

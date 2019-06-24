@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "RamTypes.h"
 #include "LVMRelation.h"
+#include "RamTypes.h"
 #include <cassert>
 #include <memory>
 #include <vector>
@@ -28,7 +28,7 @@ namespace souffle {
  * Evaluation context for Interpreter operations
  */
 class LVMContext {
-    //std::vector<const RamDomain*> data;
+    // std::vector<const RamDomain*> data;
     std::vector<TupleRef> data;
     std::vector<RamDomain>* returnValues = nullptr;
     std::vector<bool>* returnErrors = nullptr;

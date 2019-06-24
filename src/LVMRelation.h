@@ -36,67 +36,41 @@ public:
     virtual ~LVMRelation() {}
 
     /**
-     * A heavy but copy-able Iterator for SouffleInterface.
+     * Support for-each iteration for LVMRelation.
      */
     class Iterator : public std::iterator<std::forward_iterator_tag, RamDomain*> {
-        const LVMIndex* index;
-        Stream stream;
-        int counter = 0;
-        void setToEnd() {
-            index = nullptr;
-            counter = 0;
-        }
+        std::unique_ptr<Stream> stream;
 
     public:
-        Iterator() : index(nullptr) {}
+        Iterator() : stream(std::make_unique<Stream>()) {}
 
-        Iterator(const LVMIndex* index) : index(index), stream() {
-            if (index) {
-                stream = index->scan();
-                if (stream.begin() == stream.end()) {
-                    setToEnd();
-                }
-            }
-        }
+        Iterator(const LVMRelation& rel) : stream(std::make_unique<Stream>(rel.scan())) {}
 
-        Iterator(const Iterator& iter) : index(iter.index), stream(), counter(iter.counter) {
-            if (index) {
-                stream = index->scan();
-                for (int i = 0; i < counter; ++i) {
-                    ++stream.begin();
-                }
-                if (stream.begin() == stream.end()) {
-                    setToEnd();
-                }
-            }
-        }
+        Iterator(const Iterator& iter) : stream(iter.stream->clone()) {}
+
+        Iterator(Iterator&& iter) : stream(std::move(iter.stream)) {}
 
         Iterator& operator++() {
-            ++stream.begin();
-            if (stream.begin() == stream.end()) {
-                setToEnd();
-                return *this;
-            }
-            ++counter;
+            ++stream->begin();
             return *this;
         }
 
         const RamDomain* operator*() {
-            auto i = (*stream.begin()).getBase();
+            auto i = (*stream->begin()).getBase();
             return i;
         }
 
         bool operator!=(const Iterator& other) const {
-            return index != other.index || counter != other.counter;
+            return stream->begin() != other.stream->begin();
         }
 
         bool operator==(const Iterator& other) const {
-            return index == other.index && counter == other.counter;
+            return stream->begin() == other.stream->begin();
         }
     };
 
     Iterator begin() const {
-        return this->main;
+        return *this;
     }
 
     Iterator end() const {
@@ -216,7 +190,7 @@ protected:
     LVMIndex* main;
 
     // relation level
-    size_t level;
+    size_t level = 0;
 };  // namespace souffle
 
 /**
@@ -242,8 +216,8 @@ public:
  */
 class LVMIndirectRelation : public LVMRelation {
 public:
-    LVMIndirectRelation(size_t arity, const std::string& relName, const std::vector<std::string>& attributeTypes,
-            const MinIndexSelection& orderSet);
+    LVMIndirectRelation(size_t arity, const std::string& relName,
+            const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet);
     /** Insert tuple */
     bool insert(const TupleRef& tuple) override;
 

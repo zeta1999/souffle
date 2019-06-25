@@ -325,7 +325,7 @@ public:
     /**
      * Obtains the arity of the given index.
      */
-    virtual size_t arity() const = 0;
+    virtual size_t getArity() const = 0;
 
     /**
      * Tests whether this index is empty or not.

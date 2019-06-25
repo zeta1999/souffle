@@ -2079,10 +2079,10 @@ struct fix_lower_bound {
 
         // if no lower boundary is found, be done
         if (cur == store.end()) return false;
-        assert(int(cur->first) >= entry[Pos]);
+        assert(RamDomain(cur->first) >= entry[Pos]);
 
         // if the lower bound is higher than the requested value, go to first in subtree
-        if (int(cur->first) > entry[Pos]) {
+        if (RamDomain(cur->first) > entry[Pos]) {
             get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
             iter.value[Pos] = cur->first;
             fix_first<Pos + 1, Dim>()(cur->second->getStore(), iter);
@@ -2469,13 +2469,13 @@ public:
     }
 
     /**
-     * Obtains an iterator to the first element not less to the given entry value.
+     * Obtains an iterator to the first element not less than the given entry value.
      *
      * @param entry the lower bound for this search
      * @return an iterator addressing the first element in this structure not less than the given value
      */
     iterator lower_bound(const entry_type& entry) const {
-        // start with an default-initialized iterator
+        // start with a default-initialized iterator
         iterator res;
 
         // adapt it level by level

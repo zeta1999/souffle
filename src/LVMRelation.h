@@ -56,8 +56,7 @@ public:
         }
 
         const RamDomain* operator*() {
-            auto i = (*stream->begin()).getBase();
-            return i;
+            return (*stream->begin()).getBase();
         }
 
         bool operator!=(const Iterator& other) const {

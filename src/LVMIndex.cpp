@@ -107,7 +107,7 @@ class NullaryIndex : public LVMIndex {
     };
 
 public:
-    size_t arity() const override {
+    size_t getArity() const override {
         return 0;
     }
 
@@ -127,7 +127,7 @@ public:
     }
 
     void insert(const LVMIndex& src) override {
-        assert(src.arity() == 0);
+        assert(src.getArity() == 0);
         present = present | !src.empty();
     }
 
@@ -203,7 +203,7 @@ class GenericIndex : public LVMIndex {
 public:
     GenericIndex(const Order& order) : order(order) {}
 
-    size_t arity() const override {
+    size_t getArity() const override {
         return Arity;
     }
 
@@ -330,10 +330,10 @@ public:
 
     IndirectIndex(std::vector<int> order)
             : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)),
-              Arity(order.size()) {}
+              arity(order.size()) {}
 
-    size_t arity() const override {
-        return Arity;
+    size_t getArity() const override {
+        return arity;
     };
 
     bool empty() const override {
@@ -381,7 +381,7 @@ private:
     index_set::btree_operation_hints<1> operation_hints;
 
     /** Arity as the relation arity, not necessary the order size in indirect index */
-    size_t Arity;
+    size_t arity;
 };
 
 // The comparator to be used for B-tree nodes.

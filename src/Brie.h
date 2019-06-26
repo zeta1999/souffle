@@ -2065,7 +2065,7 @@ struct fix_lower_bound {
 
         get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
 
-        assert(entry[Pos] <= int(*cur));
+        assert(entry[Pos] <= RamDomain(*cur));
         iter.value[Pos] = *cur;
 
         // no more remaining levels to fix

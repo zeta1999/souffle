@@ -1707,6 +1707,39 @@ public:
     }
 
     /**
+     * Locates an iterator to the first element in this sparse bit map not less
+     * than the given index.
+     */
+    iterator lower_bound(index_type i) const {
+        auto it = store.lowerBound(i >> LEAF_INDEX_WIDTH);
+        if (it.isEnd()) return end();
+
+        // check bit-set part
+        uint64_t mask = iterator::toMask(it->second);
+
+        // if there is no bit remaining in this mask, check next mask.
+        if (!(mask & ((~uint64_t(0)) << (i & LEAF_INDEX_MASK)))) {
+            index_type next = ((i >> LEAF_INDEX_WIDTH) + 1) << LEAF_INDEX_WIDTH;
+            if (next < i) return end();
+            return lower_bound(next);
+        }
+
+        // there are bits left, use least significant bit of those
+        mask &= ((~uint64_t(0)) << (i & LEAF_INDEX_MASK));  // remove all bits before pos i
+
+        // compute value represented by least significant bit
+        index_type pos = __builtin_ctzll(mask);
+
+        // remove this bit as well
+        mask = mask & ~(1ull << pos);
+
+        // construct value of this located bit
+        index_type val = i & ~LEAF_INDEX_MASK;
+        val |= pos;
+        return iterator(it, mask, val);
+    }
+
+    /**
      * A debugging utility printing the internal structure of this map to the
      * given output stream.
      */
@@ -1777,6 +1810,9 @@ public:
     class iterator : public std::iterator<std::forward_iterator_tag, entry_type> {
         template <unsigned Len, unsigned Pos, unsigned Dimensions>
         friend struct fix_binding;
+
+        template <unsigned Pos, unsigned Dimensions>
+        friend struct fix_lower_bound;
 
         template <unsigned Pos, unsigned Dimensions>
         friend struct fix_first;
@@ -1899,6 +1935,7 @@ struct fix_first {
         // set iterator to first in store
         auto first = store.begin();
         get_nested_iter_core<Pos>()(iter.iter_core).setIterator(first);
+        iter.value[Pos] = *first;
     }
 
     template <typename Store, typename iterator>
@@ -1906,6 +1943,7 @@ struct fix_first {
         // set iterator to first in store
         auto first = store.begin();
         get_nested_iter_core<Pos>()(iter.iter_core).setIterator(first);
+        iter.value[Pos] = first->first;
         // and continue recursively
         fix_first<Pos + 1, Dim>()(first->second->getStore(), iter);
     }
@@ -2011,6 +2049,68 @@ struct fix_binding<0, Dim, Dim> {
         return true;
     }
 };
+
+/**
+ * A functor initializing an iterator upon creation to reference the first element
+ * within a given Trie being not less than a given value .
+ */
+template <unsigned Pos, unsigned Dim>
+struct fix_lower_bound {
+    template <unsigned bits, typename iterator, typename entry_type>
+    bool operator()(const SparseBitMap<bits>& store, iterator& iter, const entry_type& entry) const {
+        // search in current level
+        auto cur = store.lower_bound(entry[Pos]);
+
+        if (cur == store.end()) return false;
+
+        get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
+
+        assert(entry[Pos] <= RamDomain(*cur));
+        iter.value[Pos] = *cur;
+
+        // no more remaining levels to fix
+        return true;
+    }
+
+    template <typename Store, typename iterator, typename entry_type>
+    bool operator()(const Store& store, iterator& iter, const entry_type& entry) const {
+        // search in current level
+        auto cur = store.lowerBound(entry[Pos]);
+
+        // if no lower boundary is found, be done
+        if (cur == store.end()) return false;
+        assert(RamDomain(cur->first) >= entry[Pos]);
+
+        // if the lower bound is higher than the requested value, go to first in subtree
+        if (RamDomain(cur->first) > entry[Pos]) {
+            get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
+            iter.value[Pos] = cur->first;
+            fix_first<Pos + 1, Dim>()(cur->second->getStore(), iter);
+            return true;
+        }
+
+        // attempt to fix the rest
+        if (!fix_lower_bound<Pos + 1, Dim>()(cur->second->getStore(), iter, entry)) {
+            // if it does not work, since there are no matching elements in this branch, go to next
+            entry_type sub = entry;
+            sub[Pos] += 1;
+            for (size_t i = Pos + 1; i < Dim; ++i) {
+                sub[i] = 0;
+            }
+            return (*this)(store, iter, sub);
+        }
+
+        // remember result
+        get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
+
+        // update iterator value
+        iter.value[Pos] = cur->first;
+
+        // done!
+        return true;
+    }
+};
+
 }  // namespace detail
 
 /**
@@ -2059,6 +2159,7 @@ class Trie : public detail::TrieBase<Dim, Trie<Dim>> {
 
 public:
     using entry_type = typename ram::Tuple<RamDomain, Dim>;
+    using element_type = entry_type;
 
     // ---------------------------------------------------------------------
     //                           Iterator
@@ -2368,6 +2469,23 @@ public:
     }
 
     /**
+     * Obtains an iterator to the first element not less than the given entry value.
+     *
+     * @param entry the lower bound for this search
+     * @return an iterator addressing the first element in this structure not less than the given value
+     */
+    iterator lower_bound(const entry_type& entry) const {
+        // start with a default-initialized iterator
+        iterator res;
+
+        // adapt it level by level
+        bool found = detail::fix_lower_bound<0, Dim>()(store, res, entry);
+
+        // use the result
+        return found ? res : end();
+    }
+
+    /**
      * Computes a partition of an approximate number of chunks of the content
      * of this trie. Thus, the union of the resulting set of disjoint ranges is
      * equivalent to the content of this trie.
@@ -2532,6 +2650,7 @@ class Trie<0u> : public detail::TrieBase<0u, Trie<0u>> {
     bool present = false;
 
 public:
+    using element_type = entry_type;
     struct op_context {};
 
     using base::contains;
@@ -2759,6 +2878,7 @@ class Trie<1u> : public detail::TrieBase<1u, Trie<1u>> {
     map_type map;
 
 public:
+    using element_type = entry_type;
     using op_context = typename map_type::op_context;
 
     using base::contains;
@@ -2994,6 +3114,10 @@ public:
         auto next = pos;
         ++next;
         return make_range(iterator(pos), iterator(next));
+    }
+
+    iterator lower_bound(const entry_type& entry) const {
+        return iterator(map.lower_bound(entry[0]));
     }
 
     /**

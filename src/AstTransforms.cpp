@@ -226,6 +226,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             if (!needsMaterializedRelation(agg)) {
                 return;
             }
+
             changed = true;
 
             // -- create a new clause --

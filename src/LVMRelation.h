@@ -17,284 +17,221 @@
 #pragma once
 
 #include "LVMIndex.h"
-#include "ParallelUtils.h"
 #include "RamIndexAnalysis.h"
-#include "RamTypes.h"
-
-#include <deque>
-#include <map>
-#include <memory>
-#include <utility>
-#include <vector>
 
 namespace souffle {
-
 /**
- * Interpreter Relation
+ * A relation, composed of a collection of indexes.
  */
 class LVMRelation {
-    using LexOrder = std::vector<int>;
-
 public:
-    LVMRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
-            : arity(relArity), orderSet(orderSet), relName(std::move(relName)) {
-        // Create all necessary indices based on orderSet
-        for (auto& order : orderSet->getAllOrders()) {
-            indices.push_back(LVMIndex(order));
-        }
-    }
+    /**
+     * Creates a relation, build all necessary indexes.
+     */
+    LVMRelation(std::size_t arity, const std::string& name, const std::vector<std::string>& attributeTypes,
+            const MinIndexSelection& orderSet, IndexFactory factory = &createBTreeIndex);
 
-    LVMRelation(const LVMRelation& other) = delete;
+    LVMRelation(LVMRelation& other) = delete;
 
     virtual ~LVMRelation() = default;
 
-    /** Set AttributeType for the relation */
-    void setAttributes(const std::vector<std::string> attributeTypes) {
-        attributeTypeQualifiers = attributeTypes;
-    }
+    /**
+     * Support for-each iteration for LVMRelation.
+     */
+    class Iterator : public std::iterator<std::forward_iterator_tag, RamDomain*> {
+        std::unique_ptr<Stream> stream;
 
-    /** Get AttributeType for the relation */
-    std::vector<std::string>& getAttributeTypeQualifiers() {
-        return attributeTypeQualifiers;
-    }
+    public:
+        Iterator() : stream(std::make_unique<Stream>()) {}
 
-    const std::string& getName() const {
-        return relName;
-    }
+        Iterator(const LVMRelation& rel) : stream(std::make_unique<Stream>(rel.scan())) {}
 
-    std::string getName() {
-        return relName;
-    }
+        Iterator(const Iterator& iter) : stream(iter.stream->clone()) {}
 
-    /** Get arity of relation */
-    size_t getArity() const {
-        return arity;
-    }
+        Iterator(Iterator&& iter) : stream(std::move(iter.stream)) {}
 
-    /** Check whether relation is empty */
-    bool empty() const {
-        return num_tuples == 0;
-    }
-
-    /** Gets the number of contained tuples */
-    size_t size() const {
-        return num_tuples;
-    }
-
-    /** Insert tuple */
-    virtual void insert(const RamDomain* tuple) {
-        assert(tuple);
-
-        // make existence check
-        if (exists(tuple)) {
-            return;
+        Iterator& operator++() {
+            ++stream->begin();
+            return *this;
         }
 
-        // check for null-arity
-        if (arity == 0) {
-            indices[0].insert(tuple);
-            num_tuples = 1;
-            return;
+        const RamDomain* operator*() {
+            return (*stream->begin()).getBase();
         }
 
-        int blockIndex = num_tuples / (BLOCK_SIZE / arity);
-        int tupleIndex = (num_tuples % (BLOCK_SIZE / arity)) * arity;
-
-        if (tupleIndex == 0) {
-            blockList.push_back(std::make_unique<RamDomain[]>(BLOCK_SIZE));
+        bool operator!=(const Iterator& other) const {
+            return stream->begin() != other.stream->begin();
         }
 
-        RamDomain* newTuple = &blockList[blockIndex][tupleIndex];
-        for (size_t i = 0; i < arity; ++i) {
-            newTuple[i] = tuple[i];
+        bool operator==(const Iterator& other) const {
+            return stream->begin() == other.stream->begin();
         }
+    };
 
-        // update all indexes with new tuple
-        for (auto& cur : indices) {
-            cur.insert(newTuple);
-        }
-
-        // increment relation size
-        num_tuples++;
+    Iterator begin() const {
+        return *this;
     }
 
-    /** Merge another relation into this relation */
-    void insert(const LVMRelation& other) {
-        assert(getArity() == other.getArity());
-        for (const auto& cur : other) {
-            insert(cur);
-        }
+    Iterator end() const {
+        return Iterator();
     }
 
-    /** Purge table */
-    void purge() {
-        blockList.clear();
-        for (auto& cur : indices) {
-            cur.purge();
-        }
-        num_tuples = 0;
+    /**
+     * Drops an index from the maintained indexes. All but one index
+     * may be removed.
+     */
+    void removeIndex(const size_t& indexPos);
+
+    /**
+     * Add the given tuple to this relation.
+     */
+    virtual bool insert(const TupleRef& tuple);
+
+    /**
+     * Add the given tuple to this relation.
+     */
+    virtual bool insert(const RamDomain* tuple) {
+        return insert(TupleRef(tuple, arity));
     }
 
-    /** get index for a given search signature. Order are encoded as bits for each column */
-    LVMIndex* getIndex(const SearchSignature& col) const {
-        // Special case in provenance program, a 0 searchSignature is considered as a full search
-        if (col == 0 && arity != 0) {
-            return getIndex(getTotalIndexKey());
-        }
-        return getIndexByPos(orderSet->getLexOrderNum(col));
-    }
+    /**
+     * Add all entries of the given relation to this relation.
+     */
+    void insert(const LVMRelation& other);
 
-    /** get index for a given order. Order are encoded as bits for each column */
-    LVMIndex* getIndexByPos(int idx) const {
-        return &indices[idx];
-    }
+    /**
+     * Tests whether this relation contains the given tuple.
+     */
+    bool contains(const TupleRef& tuple) const;
 
-    /** Obtains a full index-key for this relation */
-    SearchSignature getTotalIndexKey() const {
-        return (1 << (getArity())) - 1;
-    }
+    /**
+     * Obtains a stream to scan the entire relation.
+     */
+    Stream scan() const;
 
-    /** check whether a tuple exists in the relation */
-    bool exists(const RamDomain* tuple) const {
-        LVMIndex* index = getIndex(getTotalIndexKey());
-        return index->exists(tuple);
-    }
+    /**
+     * Obtains a stream covering the interval between the two given entries.
+     */
+    Stream range(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const;
 
+    /**
+     * Swaps the content of this and the given relation, including the
+     * installed indexes.
+     */
+    void swap(LVMRelation& other);
+
+    /**
+     * Set level
+     */
     void setLevel(size_t level) {
         this->level = level;
     }
 
-    size_t getLevel() {
-        return this->level;
-    }
+    /**
+     * Return the level of the relation.
+     */
+    size_t getLevel() const;
 
-    using iterator = LVMIndex::iterator;
+    /**
+     * Return the relation name.
+     */
+    const std::string& getName() const;
 
-    /** Iterator for relation, uses full-order index as default */
-    iterator begin() const {
-        return indices[0].begin();
-    }
+    /**
+     * Return the attribute types
+     */
+    const std::vector<std::string>& getAttributeTypeQualifiers() const;
 
-    iterator end() const {
-        return indices[0].end();
-    }
+    /**
+     * Return arity
+     */
+    size_t getArity() const;
 
-    /** Extend tuple */
-    virtual std::vector<RamDomain*> extend(const RamDomain* tuple) {
-        std::vector<RamDomain*> newTuples;
+    /**
+     * Return number of tuples in relation (full-order)
+     */
+    size_t size() const;
 
-        // A standard relation does not generate extra new knowledge on insertion.
-        newTuples.push_back(new RamDomain[2]{tuple[0], tuple[1]});
+    /**
+     * Check if the relation is empty
+     */
+    bool empty() const;
 
-        return newTuples;
-    }
+    /**
+     * Clear all indexes
+     */
+    virtual void purge();
 
-    /** Extend relation */
-    virtual void extend(const LVMRelation& rel) {}
+    /**
+     * Check if a tuple exists in realtion
+     */
+    bool exists(const TupleRef& tuple) const;
 
-private:
-    /** Arity of relation */
-    const size_t arity;
+    /**
+     * Extend another relation
+     */
+    virtual void extend(const LVMRelation& rel);
 
-    /** Size of blocks containing tuples */
-    static const int BLOCK_SIZE = 1024;
+protected:
+    // Relation name
+    std::string relName;
 
-    /** Number of tuples in relation */
-    size_t num_tuples = 0;
+    // Relation Arity
+    size_t arity;
 
-    std::deque<std::unique_ptr<RamDomain[]>> blockList;
+    // Relation attributes types
+    std::vector<std::string> attributeTypes;
 
-    /** List of indices */
-    mutable std::vector<LVMIndex> indices;
+    // a map of managed indexes
+    std::vector<std::unique_ptr<LVMIndex>> indexes;
 
-    /** IndexSet */
-    const MinIndexSelection* orderSet;
+    // a pointer to the main index within the managed index
+    LVMIndex* main;
 
-    /** Lock for parallel execution */
-    mutable Lock lock;
-
-    /** Type of attributes */
-    std::vector<std::string> attributeTypeQualifiers;
-
-    /** Stratum level information */
+    // relation level
     size_t level = 0;
-
-    /** Relation name */
-    const std::string relName;
-};
+};  // namespace souffle
 
 /**
  * Interpreter Equivalence Relation
  */
-
 class LVMEqRelation : public LVMRelation {
 public:
-    LVMEqRelation(size_t relArity, const MinIndexSelection* orderSet, std::string relName)
-            : LVMRelation(relArity, orderSet, relName) {}
+    LVMEqRelation(size_t arity, const std::string& relName, const std::vector<std::string>& attributeTypes,
+            const MinIndexSelection& orderSet);
 
     /** Insert tuple */
-    void insert(const RamDomain* tuple) override {
-        // TODO: (pnappa) an eqrel check here is all that appears to be needed for implicit additions
-        // TODO: future optimisation would require this as a member datatype
-        // brave soul required to pass this quest
-        // // specialisation for eqrel defs
-        // std::unique_ptr<binaryrelation> eqreltuples;
-        // in addition, it requires insert functions to insert into that, and functions
-        // which allow reading of stored values must be changed to accommodate.
-        // e.g. insert =>  eqRelTuples->insert(tuple[0], tuple[1]);
-
-        // for now, we just have a naive & extremely slow version, otherwise known as a O(n^2) insertion
-        // ):
-
-        for (auto* newTuple : extend(tuple)) {
-            LVMRelation::insert(newTuple);
-            delete[] newTuple;
-        }
-    }
+    bool insert(const TupleRef& tuple) override;
 
     /** Find the new knowledge generated by inserting a tuple */
-    std::vector<RamDomain*> extend(const RamDomain* tuple) override {
-        std::vector<RamDomain*> newTuples;
+    std::vector<RamDomain*> extend(const TupleRef& tuple);
 
-        newTuples.push_back(new RamDomain[2]{tuple[0], tuple[0]});
-        newTuples.push_back(new RamDomain[2]{tuple[0], tuple[1]});
-        newTuples.push_back(new RamDomain[2]{tuple[1], tuple[0]});
-        newTuples.push_back(new RamDomain[2]{tuple[1], tuple[1]});
-
-        std::vector<const RamDomain*> relevantStored;
-        for (const RamDomain* vals : *this) {
-            if (vals[0] == tuple[0] || vals[0] == tuple[1] || vals[1] == tuple[0] || vals[1] == tuple[1]) {
-                relevantStored.push_back(vals);
-            }
-        }
-
-        for (const auto vals : relevantStored) {
-            newTuples.push_back(new RamDomain[2]{vals[0], tuple[0]});
-            newTuples.push_back(new RamDomain[2]{vals[0], tuple[1]});
-            newTuples.push_back(new RamDomain[2]{vals[1], tuple[0]});
-            newTuples.push_back(new RamDomain[2]{vals[1], tuple[1]});
-            newTuples.push_back(new RamDomain[2]{tuple[0], vals[0]});
-            newTuples.push_back(new RamDomain[2]{tuple[0], vals[1]});
-            newTuples.push_back(new RamDomain[2]{tuple[1], vals[0]});
-            newTuples.push_back(new RamDomain[2]{tuple[1], vals[1]});
-        }
-
-        return newTuples;
-    }
     /** Extend this relation with new knowledge generated by inserting all tuples from a relation */
-    void extend(const LVMRelation& rel) override {
-        std::vector<RamDomain*> newTuples;
-        // store all values that will be implicitly relevant to the those that we will insert
-        for (const auto* tuple : rel) {
-            for (auto* newTuple : extend(tuple)) {
-                newTuples.push_back(newTuple);
-            }
-        }
-        for (const auto* newTuple : newTuples) {
-            LVMRelation::insert(newTuple);
-            delete[] newTuple;
-        }
-    }
+    void extend(const LVMRelation& rel) override;
+};
+
+/**
+ * Interpreter Indirect Relation
+ */
+class LVMIndirectRelation : public LVMRelation {
+public:
+    LVMIndirectRelation(size_t arity, const std::string& relName,
+            const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet);
+    /** Insert tuple */
+    bool insert(const TupleRef& tuple) override;
+
+    bool insert(const RamDomain* tuple) override;
+
+    /** Clear all indexes */
+    void purge() override;
+
+private:
+    /** Size of blocks containing tuples */
+    static const int BLOCK_SIZE = 1024;
+
+    std::deque<std::unique_ptr<RamDomain[]>> blockList;
+
+    size_t num_tuples = 0;
 };
 
 }  // end of namespace souffle

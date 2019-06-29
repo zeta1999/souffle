@@ -35,55 +35,75 @@ class RamNode {
 public:
     RamNode() = default;
 
-    /** A virtual destructor for RAM nodes */
+    /*
+     * @brief A virtual destructor for RAM nodes
+     */
     virtual ~RamNode() = default;
 
-    /** Equivalence check for two RAM nodes */
+    /**
+     * @brief Equivalence check for two RAM nodes
+     */
     bool operator==(const RamNode& other) const {
         return this == &other || (typeid(*this) == typeid(other) && equal(other));
     }
 
-    /** Inequality check for two RAM nodes */
+    /**
+     * @brief Inequality check for two RAM nodes
+     */
     bool operator!=(const RamNode& other) const {
         return !(*this == other);
     }
 
-    /** Create a clone (i.e. deep copy) of this node */
+    /**
+     * @brief Create a clone (i.e. deep copy) of this node
+     */
     virtual RamNode* clone() const = 0;
 
-    /** Apply the mapper to all child nodes */
+    /**
+     * @brief Apply the mapper to all child nodes
+     */
     virtual void apply(const RamNodeMapper& mapper) {}
 
-    /** Obtain list of all embedded child nodes */
+    /**
+     * @brief Obtain list of all embedded child nodes
+     */
     virtual std::vector<const RamNode*> getChildNodes() const {
         return {};
     }
 
-    /** Print RAM node */
+    /**
+     * @brief Print RAM node
+     */
     virtual void print(std::ostream& out = std::cout) const = 0;
 
-    /** Print RAM on a stream */
+    /**
+     * Print RAM on a stream
+     */
     friend std::ostream& operator<<(std::ostream& out, const RamNode& node) {
         node.print(out);
         return out;
     }
 
 protected:
-    /** Equality check for two RAM nodes. Default action is that nothing needs to be checked. */
+    /**
+     * @brief Equality check for two RAM nodes.
+     * Default action is that nothing needs to be checked.
+     */
     virtual bool equal(const RamNode& other) const {
         return true;
     }
 };
 
 /**
- * An abstract class for manipulating RAM Nodes by substitution
+ * @class RamNodeMapper
+ * @brief An abstract class for manipulating RAM Nodes by substitution
  */
 class RamNodeMapper {
 public:
     virtual ~RamNodeMapper() = default;
 
     /**
-     * Abstract replacement method for a node.
+     * @brief Abstract replacement method for a node.
      *
      * If the given nodes is to be replaced, the handed in node
      * will be destroyed by the mapper and the returned node
@@ -92,7 +112,7 @@ public:
     virtual std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const = 0;
 
     /**
-     * Wrapper for any subclass of the RAM node hierarchy performing type casts.
+     * @brief Wrapper for any subclass of the RAM node hierarchy performing type casts.
      */
     template <typename T>
     std::unique_ptr<T> operator()(std::unique_ptr<T> node) const {
@@ -106,15 +126,22 @@ public:
 namespace detail {
 
 /**
- * A special RamNodeMapper wrapping a lambda conducting node transformations.
+ * @class LambdaRamNodeMapper
+ * @brief A special RamNodeMapper wrapping a lambda conducting node transformations.
  */
 template <typename Lambda>
 class LambdaRamNodeMapper : public RamNodeMapper {
     const Lambda& lambda;
 
 public:
+    /**
+     * @brief Constructor for LambdaRamNodeMapper
+     */
     LambdaRamNodeMapper(const Lambda& lambda) : lambda(lambda) {}
 
+    /**
+     * @brief Applies lambda
+     */
     std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
         return lambda(std::move(node));
     }
@@ -122,7 +149,7 @@ public:
 }  // namespace detail
 
 /**
- * Creates a node mapper based on a corresponding lambda expression.
+ * @brief Creates a node mapper based on a corresponding lambda expression.
  */
 template <typename Lambda>
 detail::LambdaRamNodeMapper<Lambda> makeLambdaRamMapper(const Lambda& lambda) {

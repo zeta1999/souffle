@@ -33,7 +33,8 @@
 namespace souffle {
 
 /**
- * Abstract class for describing scalar values in RAM
+ * @class RamExpression
+ * @brief Abstract class for describing scalar values in RAM
  */
 class RamExpression : public RamNode {
 public:
@@ -41,24 +42,25 @@ public:
 };
 
 /**
- * Abstract class for an operator/functor
+ * @class RamAbstractOperator
+ * @brief Abstract class for an operator/functor
  */
 class RamAbstractOperator : public RamExpression {
 public:
     RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {}
 
-    /** Get argument values */
+    /** @brief Get argument values */
     std::vector<RamExpression*> getArguments() const {
         return toPtrVector(arguments);
     }
 
-    /** Get i-th argument value */
+    /** @brief Get i-th argument value */
     const RamExpression& getArgument(size_t i) const {
         assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
         return *arguments[i];
     }
 
-    /** Get number of arguments */
+    /** @brief Get number of arguments */
     size_t getArgCount() const {
         return arguments.size();
     }
@@ -89,7 +91,8 @@ protected:
 };
 
 /**
- * Operator that represents an intrinsic (built-in) functor
+ * @class RamIntrinsicOperator
+ * @brief Operator that represents an intrinsic (built-in) functor
  */
 class RamIntrinsicOperator : public RamAbstractOperator {
 public:
@@ -118,7 +121,7 @@ public:
         }
     }
 
-    /** Get operator symbol */
+    /** @brief Get operator symbol */
     FunctorOp getOperator() const {
         return operation;
     }
@@ -142,7 +145,8 @@ protected:
 };
 
 /**
- * Operator that represents an extrinsic (user-defined) functor
+ * @class RamUserDefinedOperator
+ * @brief Operator that represents an extrinsic (user-defined) functor
  */
 class RamUserDefinedOperator : public RamAbstractOperator {
 public:
@@ -156,12 +160,12 @@ public:
         os << ")";
     }
 
-    /** Get operator name */
+    /** @brief Get operator name */
     const std::string& getName() const {
         return name;
     }
 
-    /** Get types of arguments */
+    /** @brief Get types of arguments */
     const std::string& getType() const {
         return type;
     }
@@ -189,7 +193,14 @@ protected:
 };
 
 /**
- * Access element from the current tuple in a tuple environment
+ * @class RamTupleElement
+ * @brief Access element from the current tuple in a tuple environment
+ *
+ * In the following example, the tuple element t0.1 is accessed:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * IF t0.1 in A
+ * 	...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamTupleElement : public RamExpression {
 public:
@@ -200,12 +211,12 @@ public:
         os << "t" << identifier << "." << element;
     }
 
-    /** Get identifier */
+    /** @brief Get identifier */
     int getTupleId() const {
         return identifier;
     }
 
-    /** Get element */
+    /** @brief Get element */
     size_t getElement() const {
         return element;
     }
@@ -229,13 +240,19 @@ protected:
 };
 
 /**
- * Number Constant
+ * @class RamNumber
+ * @brief Represents a number constant
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * number(5)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamNumber : public RamExpression {
 public:
     RamNumber(RamDomain c) : constant(c) {}
 
-    /** Get constant */
+    /** @brief Get constant */
     RamDomain getConstant() const {
         return constant;
     }
@@ -261,10 +278,10 @@ protected:
 };
 
 /**
- * Counter
+ * @class RamAutoIncrement
+ * @brief Increment a counter and return its value.
  *
- * Increment a counter and return its value. Note that
- * there exists a single counter only.
+ * Note that there exists a single counter only.
  */
 class RamAutoIncrement : public RamExpression {
 public:
@@ -280,7 +297,10 @@ public:
 };
 
 /**
- * Undefined Expression
+ * @class RamUndefValue
+ * @brief An undefined expression
+ *
+ * Output is ⊥
  */
 class RamUndefValue : public RamExpression {
 public:
@@ -295,18 +315,20 @@ public:
     }
 };
 
+/** @brief Determines if an expression is undefined */
 inline bool isRamUndefValue(const RamExpression* expr) {
     return nullptr != dynamic_cast<const RamUndefValue*>(expr);
 }
 
 /**
- * Record pack operation
+ * @class RamPackRecord
+ * @brief Packs a record's arguments into a reference
  */
 class RamPackRecord : public RamExpression {
 public:
     RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {}
 
-    /** Get arguments */
+    /** @brief Get record arguments */
     std::vector<RamExpression*> getArguments() const {
         return toPtrVector(arguments);
     }
@@ -351,7 +373,8 @@ protected:
 };
 
 /**
- * Access argument of a subroutine
+ * @class RamSubroutineArgument
+ * @brief Access argument of a subroutine
  *
  * Arguments are number from zero 0 to n-1
  * where n is the number of arguments of the
@@ -361,7 +384,7 @@ class RamSubroutineArgument : public RamExpression {
 public:
     RamSubroutineArgument(size_t number) : number(number) {}
 
-    /** Get argument */
+    /** @brief Get argument */
     size_t getArgument() const {
         return number;
     }

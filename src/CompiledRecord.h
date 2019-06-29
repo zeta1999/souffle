@@ -90,7 +90,7 @@ public:
     /**
      * Get the reference-to-tuple mapping generated so far across all stored maps.
      */
-    static const RecordTable& getRecordTable() {
+    static RecordTable& getRecordTable() {
         static RecordTable recordTable;
         static bool created = false;
 

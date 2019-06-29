@@ -131,14 +131,14 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
     };
 
     // hoist conditions to the most outer scope if they
-    // don't depend on RamSearches
+    // don't depend on RamTupleOperations
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::unique_ptr<RamCondition> newCondition;
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (auto* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition& condition = filter->getCondition();
-                // if filter condition is independent of any RamSearch,
+                // if filter condition is independent of any RamTupleOperation,
                 // delete the filter operation and collect condition
                 if (rla->getLevel(&condition) == -1) {
                     changed = true;
@@ -158,14 +158,14 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
         }
     });
 
-    // hoist conditions for each RamSearch operation
-    visitDepthFirst(program, [&](const RamSearch& search) {
+    // hoist conditions for each RamTupleOperation operation
+    visitDepthFirst(program, [&](const RamTupleOperation& search) {
         std::unique_ptr<RamCondition> newCondition;
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (auto* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition& condition = filter->getCondition();
-                // if filter condition matches level of RamSearch,
+                // if filter condition matches level of RamTupleOperation,
                 // delete the filter operation and collect condition
                 if (rla->getLevel(&condition) == search.getTupleId()) {
                     changed = true;
@@ -177,7 +177,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
             node->apply(makeLambdaRamMapper(filterRewriter));
             return node;
         };
-        const_cast<RamSearch*>(&search)->apply(makeLambdaRamMapper(filterRewriter));
+        const_cast<RamTupleOperation*>(&search)->apply(makeLambdaRamMapper(filterRewriter));
         if (newCondition != nullptr) {
             // insert new filter operation after the search operation
             changed = true;
@@ -191,14 +191,14 @@ std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
         RamCondition* c, size_t& element, int identifier) {
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
-            if (const auto* lhs = dynamic_cast<const RamElementAccess*>(&binRelOp->getLHS())) {
+            if (const auto* lhs = dynamic_cast<const RamTupleElement*>(&binRelOp->getLHS())) {
                 const RamExpression* rhs = &binRelOp->getRHS();
                 if (lhs->getTupleId() == identifier && rla->getLevel(rhs) < identifier) {
                     element = lhs->getElement();
                     return std::unique_ptr<RamExpression>(rhs->clone());
                 }
             }
-            if (const auto* rhs = dynamic_cast<const RamElementAccess*>(&binRelOp->getRHS())) {
+            if (const auto* rhs = dynamic_cast<const RamTupleElement*>(&binRelOp->getRHS())) {
                 const RamExpression* lhs = &binRelOp->getLHS();
                 if (rhs->getTupleId() == identifier && rla->getLevel(lhs) < identifier) {
                     element = rhs->getElement();
@@ -366,7 +366,7 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
 std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const RamIndexScan* indexScan) {
     // check whether tuple is used in subsequent operations
     bool tupleNotUsed = true;
-    visitDepthFirst(*indexScan, [&](const RamElementAccess& element) {
+    visitDepthFirst(*indexScan, [&](const RamTupleElement& element) {
         if (element.getTupleId() == indexScan->getTupleId()) {
             tupleNotUsed = false;
         }
@@ -432,7 +432,7 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const Ram
             // Check that the filter is not referred to after
             const auto* nextNode = dynamic_cast<const RamNode*>(&filter->getOperation());
 
-            visitDepthFirst(*nextNode, [&](const RamElementAccess& element) {
+            visitDepthFirst(*nextNode, [&](const RamTupleElement& element) {
                 if (element.getTupleId() == scan->getTupleId()) {
                     transformTuple = false;
                 }
@@ -465,7 +465,7 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
             // Check that the filter is not referred to after
             const auto* nextNode = dynamic_cast<const RamNode*>(&filter->getOperation());
 
-            visitDepthFirst(*nextNode, [&](const RamElementAccess& element) {
+            visitDepthFirst(*nextNode, [&](const RamTupleElement& element) {
                 if (element.getTupleId() == indexScan->getTupleId()) {
                     transformTuple = false;
                 }
@@ -530,21 +530,21 @@ bool TupleIdTransformer::reorderOperations(RamProgram& program) {
         std::map<int, int> reorder;
         int ctr = 0;
 
-        visitDepthFirst(query, [&](const RamSearch& search) {
+        visitDepthFirst(query, [&](const RamTupleOperation& search) {
             if (ctr != search.getTupleId()) {
                 changed = true;
             }
             reorder[search.getTupleId()] = ctr;
-            const_cast<RamSearch*>(&search)->setTupleId(ctr);
+            const_cast<RamTupleOperation*>(&search)->setTupleId(ctr);
             ctr++;
         });
 
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> elementRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
-            if (auto* element = dynamic_cast<RamElementAccess*>(node.get())) {
+            if (auto* element = dynamic_cast<RamTupleElement*>(node.get())) {
                 if (reorder[element->getTupleId()] != element->getTupleId()) {
                     changed = true;
-                    node = std::make_unique<RamElementAccess>(
+                    node = std::make_unique<RamTupleElement>(
                             reorder[element->getTupleId()], element->getElement());
                 }
             }
@@ -586,9 +586,9 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
             // If so, remove the aggregate from the loop nest
             if (const RamAggregate* agg = dynamic_cast<RamAggregate*>(node.get())) {
                 aggIds.push_back(agg->getTupleId());
-                // assuming that RamSearches have tupleIds 0, 1, 2, ...
+                // assuming that RamTupleOperations have tupleIds 0, 1, 2, ...
                 if (!hoist && rla->getLevel(agg) < agg->getTupleId() - 1) {
-                    // If all searches between the rla->getLevel(agg) and agg
+                    // If all tuple ops between the rla->getLevel(agg) and agg
                     // are aggregates, then we do not transform
                     bool allAggragates = true;
                     for (int i = rla->getLevel(agg) + 1; i <= agg->getTupleId(); i++) {
@@ -616,7 +616,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
             } else if (const RamIndexAggregate* agg = dynamic_cast<RamIndexAggregate*>(node.get())) {
                 aggIds.push_back(agg->getTupleId());
                 if (!hoist && rla->getLevel(agg) < agg->getTupleId() - 1) {
-                    // If all searches above agg in the loop nest are also aggregates
+                    // If all tuple ops above agg in the loop nest are also aggregates
                     // then we do not transform
                     bool allAggragates = true;
                     for (int i = rla->getLevel(agg) + 1; i <= agg->getTupleId(); i++) {
@@ -652,13 +652,13 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         // Adding back the aggregate if one was removed before
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggAdder =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
-            if (auto* search = dynamic_cast<RamSearch*>(node.get())) {
+            if (auto* search = dynamic_cast<RamTupleOperation*>(node.get())) {
                 if (!added && search->getTupleId() == currLevel - 1) {
                     added = true;
                     auto* op = dynamic_cast<RamNestedOperation*>(search);
-                    // Finding the operation right before the RamSearch
+                    // Finding the operation right before the RamTupleOperation
                     // with tupleId = aggregate's tupleId - 1
-                    while (dynamic_cast<RamSearch*>(&op->getOperation()) != nullptr) {
+                    while (dynamic_cast<RamTupleOperation*>(&op->getOperation()) != nullptr) {
                         op = dynamic_cast<RamNestedOperation*>(&op->getOperation());
                     }
 

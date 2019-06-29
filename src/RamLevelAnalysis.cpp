@@ -40,7 +40,7 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
         }
 
         // tuple element access
-        int visitElementAccess(const RamElementAccess& elem) override {
+        int visitTupleElement(const RamTupleElement& elem) override {
             return elem.getTupleId();
         }
 
@@ -120,7 +120,7 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
         }
 
         // return
-        int visitReturnValue(const RamReturnValue& ret) override {
+        int visitSubroutineReturnValue(const RamSubroutineReturnValue& ret) override {
             int level = -1;
             for (auto& exp : ret.getValues()) {
                 if (exp != nullptr) {
@@ -163,7 +163,7 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
         }
 
         // argument
-        int visitArgument(const RamArgument& arg) override {
+        int visitSubroutineArgument(const RamSubroutineArgument& arg) override {
             return -1;
         }
 

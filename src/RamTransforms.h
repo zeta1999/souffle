@@ -164,7 +164,7 @@ public:
      *
      * There are two types of conditions in
      * filter operations. The first type depends on tuples of
-     * RamSearch operations. The second type are independent of
+     * RamTupleOperation operations. The second type are independent of
      * tuple access. Both types of conditions will be hoisted to
      * the most out-scope such that the program is still valid.
      */
@@ -409,10 +409,10 @@ protected:
 
 /**
  * @class TupleIdTransformer
- * @brief Ordering tupleIds in RamSearch operations correctly
+ * @brief Ordering tupleIds in RamTupleOperation operations correctly
  *
  * Transformations, like MakeIndex and IfConversion do not
- * ensure that RamSearches maintain an appropriate order
+ * ensure that RamTupleOperations maintain an appropriate order
  * with respect to their tupleId's
  *
  * For example:
@@ -439,7 +439,7 @@ public:
      * @param RAM program
      * @result A flag indicating whether the RAM program has been changed.
      *
-     * Search for RamSearches and RamElementAccesses and rewrite their tupleIds
+     * Search for RamTupleOperations and RamTupleElements and rewrite their tupleIds
      */
     bool reorderOperations(RamProgram& program);
 

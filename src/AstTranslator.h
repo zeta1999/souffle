@@ -40,7 +40,7 @@ class AstRelation;
 class AstTranslationUnit;
 class IODirectives;
 class RamCondition;
-class RamElementAccess;
+class RamTupleElement;
 class RamOperation;
 class RamProgram;
 class RamStatement;
@@ -266,7 +266,7 @@ private:
     };
 
     /** create a RAM element access node */
-    static std::unique_ptr<RamElementAccess> makeRamElementAccess(const Location& loc);
+    static std::unique_ptr<RamTupleElement> makeRamTupleElement(const Location& loc);
 
     /**
      * assigns names to unnamed variables such that enclosing

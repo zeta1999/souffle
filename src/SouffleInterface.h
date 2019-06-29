@@ -116,6 +116,10 @@ public:
     virtual size_t getArity() const = 0;
     virtual SymbolTable& getSymbolTable() const = 0;
     std::string getSignature() {
+        if (getArity() == 0) {
+            return "<>";
+        }
+
         std::string signature = "<" + std::string(getAttrType(0));
         for (size_t i = 1; i < getArity(); i++) {
             signature += "," + std::string(getAttrType(i));

@@ -98,19 +98,36 @@ public:
 };
 
 /**
- * Load data into a relation
- *
- * TODO (b-scholz): introduce an abstract class for load/store
+ * Abstract class for load/store for a relation
  */
-class RamLoad : public RamRelationStatement {
+class RamAbstractLoadStore : public RamRelationStatement {
 public:
-    RamLoad(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
+    RamAbstractLoadStore(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
             : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
 
     /** Get load directives */
     const std::vector<IODirectives>& getIODirectives() const {
         return ioDirectives;
     }
+
+protected:
+    /** load directives of a relation */
+    const std::vector<IODirectives> ioDirectives;
+
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamAbstractLoadStore*>(&node));
+        const auto& other = static_cast<const RamAbstractLoadStore&>(node);
+        return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
+    }
+};
+
+/**
+ * Load data into a relation
+ */
+class RamLoad : public RamAbstractLoadStore {
+public:
+    RamLoad(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
+            : RamAbstractLoadStore(std::move(relRef), std::move(ioDirectives)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -127,28 +144,18 @@ public:
     }
 
 protected:
-    /** load directives of a relation */
-    const std::vector<IODirectives> ioDirectives;
-
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamLoad*>(&node));
-        const auto& other = static_cast<const RamLoad&>(node);
-        return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
+        return RamAbstractLoadStore::equal(node);
     }
 };
 
 /**
  * Store data of a relation
  */
-class RamStore : public RamRelationStatement {
+class RamStore : public RamAbstractLoadStore {
 public:
     RamStore(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
-            : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
-
-    /** Get store directives */
-    const std::vector<IODirectives>& getIODirectives() const {
-        return ioDirectives;
-    }
+            : RamAbstractLoadStore(std::move(relRef), std::move(ioDirectives)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -165,13 +172,8 @@ public:
     }
 
 protected:
-    /** store directives of a relation */
-    const std::vector<IODirectives> ioDirectives;
-
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamStore*>(&node));
-        const auto& other = static_cast<const RamStore&>(node);
-        return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
+        return RamAbstractLoadStore::equal(node);
     }
 };
 
@@ -215,79 +217,12 @@ public:
 };
 
 /**
- * Merge tuples from a source into target relation.
- * Note that semantically uniqueness of tuples is not checked.
- *
- * TODO (b-scholz): introduce an abstract class for Merge/Swap
+ * Binary relation
  */
-class RamMerge : public RamStatement {
+class RamBinRelationStatement : public RamStatement {
 public:
-    RamMerge(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
-            : targetRef(std::move(tRef)), sourceRef(std::move(sRef)) {
-        const RamRelation* source = sourceRef->get();
-        const RamRelation* target = targetRef->get();
-        assert(source->getArity() == target->getArity() && "mismatching relations");
-        for (size_t i = 0; i < source->getArity(); i++) {
-            assert(source->getArgTypeQualifier(i) == target->getArgTypeQualifier(i) && "mismatching type");
-        }
-    }
-
-    /** Get source relation */
-    const RamRelation& getSourceRelation() const {
-        assert(sourceRef != nullptr && "Source relation is a null-pointer");
-        return *sourceRef->get();
-    }
-
-    /** Get target relation */
-    const RamRelation& getTargetRelation() const {
-        assert(targetRef != nullptr && "Target relation is a null-pointer");
-        return *targetRef->get();
-    }
-
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "MERGE " << getTargetRelation().getName() << " WITH " << getSourceRelation().getName();
-        os << std::endl;
-    }
-
-    std::vector<const RamNode*> getChildNodes() const override {
-        return {sourceRef.get(), targetRef.get()};
-    }
-
-    RamMerge* clone() const override {
-        auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(targetRef->clone()),
-                std::unique_ptr<RamRelationReference>(sourceRef->clone()));
-        return res;
-    }
-
-    void apply(const RamNodeMapper& map) override {
-        sourceRef = map(std::move(sourceRef));
-        targetRef = map(std::move(targetRef));
-    }
-
-protected:
-    /** source relation reference of merge statement */
-    std::unique_ptr<RamRelationReference> targetRef;
-
-    /** target relation reference of merge statement */
-    std::unique_ptr<RamRelationReference> sourceRef;
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamMerge*>(&node));
-        const auto& other = static_cast<const RamMerge&>(node);
-        return getTargetRelation() == other.getTargetRelation() &&
-               getSourceRelation() == other.getSourceRelation();
-    }
-};
-
-/**
- * Swap operation two relations
- */
-class RamSwap : public RamStatement {
-public:
-    RamSwap(std::unique_ptr<RamRelationReference> f, std::unique_ptr<RamRelationReference> s)
+    RamBinRelationStatement(std::unique_ptr<RamRelationReference> f, std::unique_ptr<RamRelationReference> s)
             : first(std::move(f)), second(std::move(s)) {
-        // check for type equivalence
         assert(first->get()->getArity() == second->get()->getArity() && "mismatching relations");
         for (size_t i = 0; i < first->get()->getArity(); i++) {
             assert(first->get()->getArgTypeQualifier(i) == second->get()->getArgTypeQualifier(i) &&
@@ -297,29 +232,18 @@ public:
 
     /** Get first relation */
     const RamRelation& getFirstRelation() const {
-        assert(first != nullptr && "Relation is a null-pointer");
+        assert(first != nullptr && "First relation is a null-pointer");
         return *first->get();
     }
 
     /** Get second relation */
     const RamRelation& getSecondRelation() const {
-        assert(second != nullptr && "Relation is a null-pointer");
+        assert(second != nullptr && "Second relation is a null-pointer");
         return *second->get();
     }
 
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "SWAP (" << getFirstRelation().getName() << ", " << getSecondRelation().getName() << ")";
-        os << std::endl;
-    };
-
     std::vector<const RamNode*> getChildNodes() const override {
         return {first.get(), second.get()};
-    }
-
-    RamSwap* clone() const override {
-        return new RamSwap(std::unique_ptr<RamRelationReference>(first->clone()),
-                std::unique_ptr<RamRelationReference>(second->clone()));
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -335,10 +259,72 @@ protected:
     std::unique_ptr<RamRelationReference> second;
 
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamSwap*>(&node));
-        const auto& other = static_cast<const RamSwap&>(node);
+        assert(nullptr != dynamic_cast<const RamBinRelationStatement*>(&node));
+        const auto& other = static_cast<const RamBinRelationStatement&>(node);
         return getFirstRelation() == other.getFirstRelation() &&
                getSecondRelation() == other.getSecondRelation();
+    }
+};
+
+/**
+ * Merge tuples from a source into target relation.
+ * Note that semantically uniqueness of tuples is not checked.
+ */
+class RamMerge : public RamBinRelationStatement {
+public:
+    RamMerge(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
+            : RamBinRelationStatement(std::move(sRef), std::move(tRef)) {}
+
+    /** Get source relation */
+    const RamRelation& getSourceRelation() const {
+        return getFirstRelation();
+    }
+
+    /** Get target relation */
+    const RamRelation& getTargetRelation() const {
+        return getSecondRelation();
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "MERGE " << getTargetRelation().getName() << " WITH " << getSourceRelation().getName();
+        os << std::endl;
+    }
+
+    RamMerge* clone() const override {
+        auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(first->clone()),
+                std::unique_ptr<RamRelationReference>(second->clone()));
+        return res;
+    }
+
+protected:
+    bool equal(const RamNode& node) const override {
+        return RamBinRelationStatement::equal(node);
+    }
+};
+
+/**
+ * Swap operation two relations
+ */
+class RamSwap : public RamBinRelationStatement {
+public:
+    RamSwap(std::unique_ptr<RamRelationReference> f, std::unique_ptr<RamRelationReference> s)
+            : RamBinRelationStatement(std::move(f), std::move(s)) {}
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "SWAP (" << getFirstRelation().getName() << ", " << getSecondRelation().getName() << ")";
+        os << std::endl;
+    };
+
+    RamSwap* clone() const override {
+        return new RamSwap(std::unique_ptr<RamRelationReference>(first->clone()),
+                std::unique_ptr<RamRelationReference>(second->clone()));
+    }
+
+protected:
+    bool equal(const RamNode& node) const override {
+        return RamBinRelationStatement::equal(node);
     }
 };
 
@@ -438,45 +424,21 @@ protected:
 };
 
 /**
- * Sequence of RAM statements
- *
- * Execute statement one by one from an ordered list of statements.
- *
- * TODO (b-scholz): introduce an abstract class for sequence/loop
- *
+ * List of RAM statements
  */
-class RamSequence : public RamStatement {
+class RamListStatement : public RamStatement {
 public:
-    RamSequence() : RamStatement() {}
+    RamListStatement() : RamStatement() {}
 
-    template <typename... Stmts>
-    RamSequence(std::unique_ptr<Stmts>&&... stmts) : RamStatement() {
-        // move all the given statements into the vector (not so simple)
-        std::unique_ptr<RamStatement> tmp[] = {std::move(stmts)...};
-        for (auto& cur : tmp) {
-            statements.emplace_back(std::move(cur));
-        }
-        for (const auto& cur : statements) {
-            (void)cur;
-            assert(cur);
-        }
-    }
-
-    /** Add new statement to the end of ordered list */
-    void add(std::unique_ptr<RamStatement> stmt) {
-        if (stmt) {
-            statements.push_back(std::move(stmt));
-        }
-    }
-
-    /** Get RAM statements from ordered list */
+    /** Get statements */
     std::vector<RamStatement*> getStatements() const {
         return toPtrVector(statements);
     }
 
-    void print(std::ostream& os, int tabpos) const override {
-        for (const auto& stmt : statements) {
-            stmt->print(os, tabpos);
+    /** Add new statement to block */
+    void add(std::unique_ptr<RamStatement> stmt) {
+        if (stmt) {
+            statements.push_back(std::move(stmt));
         }
     }
 
@@ -484,14 +446,6 @@ public:
         std::vector<const RamNode*> res;
         for (const auto& cur : statements) {
             res.push_back(cur.get());
-        }
-        return res;
-    }
-
-    RamSequence* clone() const override {
-        auto* res = new RamSequence();
-        for (auto& cur : statements) {
-            res->add(std::unique_ptr<RamStatement>(cur->clone()));
         }
         return res;
     }
@@ -507,9 +461,51 @@ protected:
     std::vector<std::unique_ptr<RamStatement>> statements;
 
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamSequence*>(&node));
-        const auto& other = static_cast<const RamSequence&>(node);
+        assert(nullptr != dynamic_cast<const RamListStatement*>(&node));
+        const auto& other = static_cast<const RamListStatement&>(node);
         return equal_targets(statements, other.statements);
+    }
+};
+
+/**
+ * Sequence of RAM statements
+ *
+ * Execute statement one by one from an ordered list of statements.
+ */
+class RamSequence : public RamListStatement {
+public:
+    RamSequence() : RamListStatement() {}
+
+    template <typename... Stmts>
+    RamSequence(std::unique_ptr<Stmts>&&... stmts) : RamListStatement() {
+        // move all the given statements into the vector (not so simple)
+        std::unique_ptr<RamStatement> tmp[] = {std::move(stmts)...};
+        for (auto& cur : tmp) {
+            statements.emplace_back(std::move(cur));
+        }
+        for (const auto& cur : statements) {
+            (void)cur;
+            assert(cur);
+        }
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        for (const auto& stmt : statements) {
+            stmt->print(os, tabpos);
+        }
+    }
+
+    RamSequence* clone() const override {
+        auto* res = new RamSequence();
+        for (auto& cur : statements) {
+            res->add(std::unique_ptr<RamStatement>(cur->clone()));
+        }
+        return res;
+    }
+
+protected:
+    bool equal(const RamNode& node) const override {
+        return RamListStatement::equal(node);
     }
 };
 
@@ -520,21 +516,9 @@ protected:
  * completed their execution before completing the execution of the
  * parallel block.
  */
-class RamParallel : public RamStatement {
+class RamParallel : public RamListStatement {
 public:
-    RamParallel() : RamStatement() {}
-
-    /** Add new statement to parallel block */
-    void add(std::unique_ptr<RamStatement> stmt) {
-        if (stmt) {
-            statements.push_back(std::move(stmt));
-        }
-    }
-
-    /** Get statements of parallel block */
-    std::vector<RamStatement*> getStatements() const {
-        return toPtrVector(statements);
-    }
+    RamParallel() : RamListStatement() {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "PARALLEL" << std::endl;
@@ -542,14 +526,6 @@ public:
             stmt->print(os, tabpos + 1);
         }
         os << times(" ", tabpos) << "END PARALLEL" << std::endl;
-    }
-
-    std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res;
-        for (const auto& cur : statements) {
-            res.push_back(cur.get());
-        }
-        return res;
     }
 
     RamParallel* clone() const override {
@@ -560,20 +536,9 @@ public:
         return res;
     }
 
-    void apply(const RamNodeMapper& map) override {
-        for (auto& stmt : statements) {
-            stmt = map(std::move(stmt));
-        }
-    }
-
 protected:
-    /** list of statements executed in parallel */
-    std::vector<std::unique_ptr<RamStatement>> statements;
-
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamParallel*>(&node));
-        const auto& other = static_cast<const RamParallel&>(node);
-        return equal_targets(statements, other.statements);
+        return RamListStatement::equal(node);
     }
 };
 

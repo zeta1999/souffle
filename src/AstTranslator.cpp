@@ -1733,6 +1733,7 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     SymbolTable& symTab = tu.getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
+    auto typeTab = std::make_unique<TypeTable>(10);
     if (!Global::config().get("debug-report").empty()) {
         if (ramProg) {
             auto ram_end = std::chrono::high_resolution_clock::now();
@@ -1744,7 +1745,8 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
                     "ram-program", "RAM Program " + runtimeStr, ramProgStr.str()));
         }
     }
-    return std::make_unique<RamTranslationUnit>(std::move(ramProg), symTab, errReport, debugReport);
+    return std::make_unique<RamTranslationUnit>(
+            std::move(ramProg), symTab, std::move(typeTab), errReport, debugReport);
 }
 
 }  // end of namespace souffle

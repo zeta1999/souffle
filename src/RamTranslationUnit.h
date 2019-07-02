@@ -22,6 +22,7 @@
 #include "RamAnalysis.h"
 #include "RamProgram.h"
 #include "SymbolTable.h"
+#include "TypeTable.h"
 
 #include <map>
 #include <memory>
@@ -35,8 +36,10 @@ namespace souffle {
  */
 class RamTranslationUnit {
 public:
-    RamTranslationUnit(std::unique_ptr<RamProgram> program, SymbolTable& sym, ErrorReport& e, DebugReport& d)
-            : program(std::move(program)), symbolTable(sym), errorReport(e), debugReport(d) {}
+    RamTranslationUnit(std::unique_ptr<RamProgram> program, SymbolTable& sym,
+            std::unique_ptr<TypeTable> types, ErrorReport& e, DebugReport& d)
+            : program(std::move(program)), symbolTable(sym), typeTable(std::move(types)), errorReport(e),
+              debugReport(d) {}
 
     virtual ~RamTranslationUnit() = default;
 
@@ -99,6 +102,9 @@ protected:
 
     /* The table of symbols encountered in the input program */
     souffle::SymbolTable& symbolTable;
+
+    /* The table of types encountered in the input program */
+    std::unique_ptr<TypeTable> typeTable;
 
     ErrorReport& errorReport;
 

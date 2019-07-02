@@ -127,7 +127,7 @@ bool isNull(RamDomain ref) {
     return ref == 0;
 }
 
-const RecordTable& getInterpreterRecordTable() {
+RecordTable& getInterpreterRecordTable() {
     // TODO: need to make sure this is ok
     static RecordTable recordTable;
     static bool created = false;

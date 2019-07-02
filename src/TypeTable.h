@@ -9,9 +9,9 @@
 
 /************************************************************************
  *
- * @file RecordTable.h
+ * @file TypeTable.h
  *
- * A unidirectional helper table to store record values for printing.
+ * A unidirectional helper table to store type information.
  *
  ***********************************************************************/
 
@@ -21,9 +21,9 @@
 #include <map>
 #include <vector>
 
-namespace souffle {
+// TODO: fix types used
 
-class AstType;
+namespace souffle {
 
 class TypeTable {
 public:

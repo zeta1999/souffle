@@ -434,19 +434,16 @@ void AstSemanticChecker::checkLiteral(
 void AstSemanticChecker::checkAggregator(
         ErrorReport& report, const AstProgram& program, const AstAggregator& aggregator) {
 
-    bool nestedFound = false;
-    // default value
-    auto* inner = &aggregator;
+    auto* inner = nullptr;
 
     visitDepthFirst(aggregator, [&](const AstAggregator& innerAgg) {
-      if (aggregator != innerAgg) {
-        nestedFound = true;
-        inner = &innerAgg;
+      	if (aggregator != innerAgg) {
+   		  	  inner = &innerAgg;
       }
     });
 
-    if (nestedFound) {
-      report.addError("Unsupported nested aggregate", inner->getSrcLoc());
+    if (inner) {
+     	 	report.addError("Unsupported nested aggregate", inner->getSrcLoc());
     }
 
     for (AstLiteral* literal : aggregator.getBodyLiterals()) {

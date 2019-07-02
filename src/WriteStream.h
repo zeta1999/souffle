@@ -96,6 +96,8 @@ protected:
                 int arity = recordArityMask.at(col);
                 const auto& record = recordTable.getRecord(arity, repr);
 
+                typeTable.print();
+
                 os << "UnnamedRecord[" << join(record, ",") << "]";
                 break;
             }

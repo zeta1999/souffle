@@ -43,6 +43,19 @@ public:
         addType(type, kind);
     }
 
+    void print() const {
+        std::cout << "TYPE TABLE" << std::endl;
+        for (const auto& pair : idToName) {
+            std::cout << pair.first << " <-> " << pair.second << std::endl;
+        }
+        for (const auto& pair : recordToFields) {
+            std::cout << pair.first << " -> " << pair.second << std::endl;
+        }
+        for (const auto& pair : typeToKind) {
+            std::cout << pair.first << " |-> " << pair.second << std::endl;
+        }
+    }
+
 private:
     std::map<int, std::string> idToName;
     std::map<std::string, int> nameToId;

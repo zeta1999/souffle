@@ -1739,8 +1739,9 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
         std::stringstream ss;
         type->getName().print(ss);
 
-        if (dynamic_cast<const AstPrimitiveType*>(type) != nullptr) {
-            typeTab->addPrimitiveType(ss.str());
+        if (auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
+            std::string kind = pt->isNumeric() ? "number" : "symbol";
+            typeTab->addPrimitiveType(ss.str(), kind);
         } else if (auto* rt = dynamic_cast<const AstRecordType*>(type)) {
             std::vector<std::string> fields;
             for (const auto& field : rt->getFields()) {
@@ -1750,7 +1751,8 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
             }
             typeTab->addRecordType(ss.str(), fields);
         } else if (dynamic_cast<const AstUnionType*>(type) != nullptr) {
-            typeTab->addUnionType(ss.str());
+            // TODO: pass in actual kind
+            typeTab->addUnionType(ss.str(), "union");
         } else {
             assert(false && "unknown typeclass encountered");
         }

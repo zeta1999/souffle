@@ -29,28 +29,31 @@ class TypeTable {
 public:
     TypeTable() = default;
 
-    void addPrimitiveType(std::string type) {
-        addType(type);
+    // TODO: should be enum
+    void addPrimitiveType(std::string type, std::string kind) {
+        addType(type, kind);
     }
 
     void addRecordType(std::string type, std::vector<std::string> fields) {
-        addType(type);
+        addType(type, "record");
         recordToFields[type] = fields;
     }
 
-    void addUnionType(std::string type) {
-        addType(type);
+    void addUnionType(std::string type, std::string kind) {
+        addType(type, kind);
     }
 
 private:
     std::map<int, std::string> idToName;
     std::map<std::string, int> nameToId;
     std::map<std::string, std::vector<std::string>> recordToFields;
+    std::map<std::string, std::string> typeToKind;
 
-    int addType(std::string type) {
+    int addType(std::string type, std::string kind) {
         static int count = 0;
         idToName[count] = type;
         nameToId[type] = count;
+        typeToKind[type] = kind;
 
         count++;
         return count;

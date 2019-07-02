@@ -1733,7 +1733,15 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     SymbolTable& symTab = tu.getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
-    auto typeTab = std::make_unique<TypeTable>(10);
+
+    std::set<std::string> types;
+    for (const auto* type : program->getTypes()) {
+        std::stringstream ss;
+        type->getName().print(ss);
+        types.insert(ss.str());
+    }
+    auto typeTab = std::make_unique<TypeTable>(types);
+
     if (!Global::config().get("debug-report").empty()) {
         if (ramProg) {
             auto ram_end = std::chrono::high_resolution_clock::now();

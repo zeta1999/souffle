@@ -23,18 +23,20 @@
 
 namespace souffle {
 
+class AstType;
+
 class TypeTable {
 public:
-    TypeTable(int test) : test(test) {
-        std::cout << "Created! Value: " << test << std::endl;
-    }
-
-    int getTest() const {
-        return test;
+    TypeTable(const std::set<std::string>& types) {
+        for (const auto& type : types) {
+            std::cout << type << std::endl;
+        }
     }
 
 private:
-    int test;
+    std::map<int, std::string> idToName;
+    std::map<std::string, int> nameToId;
+    std::map<int, std::vector<int>> recordToFields;
 };
 
 }  // namespace souffle

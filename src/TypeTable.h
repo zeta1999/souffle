@@ -27,16 +27,35 @@ class AstType;
 
 class TypeTable {
 public:
-    TypeTable(const std::set<std::string>& types) {
-        for (const auto& type : types) {
-            std::cout << type << std::endl;
-        }
+    TypeTable() = default;
+
+    void addPrimitiveType(std::string type) {
+        addType(type);
+        std::cout << "PRIMITIVE: " << type << std::endl;
+    }
+
+    void addRecordType(std::string type, const std::vector<std::string>& fields) {
+        addType(type);
+        std::cout << "RECORD: " << type << " || " << fields << std::endl;
+    }
+
+    void addUnionType(std::string type, const std::vector<std::string>& variants) {
+        addType(type);
+        std::cout << "UNION: " << type << " || " << variants << std::endl;
     }
 
 private:
     std::map<int, std::string> idToName;
     std::map<std::string, int> nameToId;
     std::map<int, std::vector<int>> recordToFields;
+
+    void addType(std::string type) {
+        static int count = 0;
+        idToName[count] = type;
+        nameToId[type] = count;
+
+        count++;
+    }
 };
 
 }  // namespace souffle

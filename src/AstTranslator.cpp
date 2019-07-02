@@ -1734,13 +1734,24 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
 
-    std::set<std::string> types;
+    auto typeTab = std::make_unique<TypeTable>();
     for (const auto* type : program->getTypes()) {
         std::stringstream ss;
         type->getName().print(ss);
-        types.insert(ss.str());
+
+        std::vector<std::string> hello;
+        hello.push_back("yes");
+
+        if (auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
+            typeTab->addPrimitiveType(ss.str());
+        } else if (auto* rt = dynamic_cast<const AstRecordType*>(type)) {
+            typeTab->addRecordType(ss.str(), hello);
+        } else if (auto* ut = dynamic_cast<const AstUnionType*>(type)) {
+            typeTab->addUnionType(ss.str(), hello);
+        } else {
+            assert(false && "unknown typeclass encountered");
+        }
     }
-    auto typeTab = std::make_unique<TypeTable>(types);
 
     if (!Global::config().get("debug-report").empty()) {
         if (ramProg) {

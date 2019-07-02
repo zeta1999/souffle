@@ -31,30 +31,29 @@ public:
 
     void addPrimitiveType(std::string type) {
         addType(type);
-        std::cout << "PRIMITIVE: " << type << std::endl;
     }
 
-    void addRecordType(std::string type, const std::vector<std::string>& fields) {
+    void addRecordType(std::string type, std::vector<std::string> fields) {
         addType(type);
-        std::cout << "RECORD: " << type << " || " << fields << std::endl;
+        recordToFields[type] = fields;
     }
 
-    void addUnionType(std::string type, const std::vector<std::string>& variants) {
+    void addUnionType(std::string type) {
         addType(type);
-        std::cout << "UNION: " << type << " || " << variants << std::endl;
     }
 
 private:
     std::map<int, std::string> idToName;
     std::map<std::string, int> nameToId;
-    std::map<int, std::vector<int>> recordToFields;
+    std::map<std::string, std::vector<std::string>> recordToFields;
 
-    void addType(std::string type) {
+    int addType(std::string type) {
         static int count = 0;
         idToName[count] = type;
         nameToId[type] = count;
 
         count++;
+        return count;
     }
 };
 

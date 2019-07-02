@@ -1739,15 +1739,16 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
         std::stringstream ss;
         type->getName().print(ss);
 
-        std::vector<std::string> hello;
-        hello.push_back("yes");
-
         if (auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
             typeTab->addPrimitiveType(ss.str());
         } else if (auto* rt = dynamic_cast<const AstRecordType*>(type)) {
-            typeTab->addRecordType(ss.str(), hello);
+            std::vector<std::string> fields;
+            for (const auto& field : rt->getFields()) {
+                fields.push_back(field.name);
+            }
+            typeTab->addRecordType(ss.str(), fields);
         } else if (auto* ut = dynamic_cast<const AstUnionType*>(type)) {
-            typeTab->addUnionType(ss.str(), hello);
+            typeTab->addUnionType(ss.str());
         } else {
             assert(false && "unknown typeclass encountered");
         }

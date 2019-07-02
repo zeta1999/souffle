@@ -433,17 +433,16 @@ void AstSemanticChecker::checkLiteral(
 
 void AstSemanticChecker::checkAggregator(
         ErrorReport& report, const AstProgram& program, const AstAggregator& aggregator) {
-
     auto* inner = nullptr;
 
     visitDepthFirst(aggregator, [&](const AstAggregator& innerAgg) {
-      	if (aggregator != innerAgg) {
-   		  	  inner = &innerAgg;
-      }
+        if (aggregator != innerAgg) {
+            inner = &innerAgg;
+        }
     });
 
     if (inner) {
-     	 	report.addError("Unsupported nested aggregate", inner->getSrcLoc());
+        report.addError("Unsupported nested aggregate", inner->getSrcLoc());
     }
 
     for (AstLiteral* literal : aggregator.getBodyLiterals()) {

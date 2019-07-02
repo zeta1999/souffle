@@ -21,6 +21,22 @@
 
 namespace souffle {
 
+/**
+ * @class RamProgram
+ * @brief RAM program relation declaration and functions
+ *
+ * A typical example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * PROGRAM
+ *   DECLARATION
+ *     A(x:i:number)
+ *   END DECLARATION
+ *   BEGIN MAIN
+ *     ...
+ *   END MAIN
+ * END PROGRAM
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 class RamProgram : public RamNode {
 public:
     RamProgram() = default;
@@ -58,22 +74,23 @@ public:
         out << "END PROGRAM" << std::endl;
     }
 
+    /** @brief Set a statement to main */
     void setMain(std::unique_ptr<RamStatement> stmt) {
         main = std::move(stmt);
     }
 
-    /** Get main program */
+    /** @brief Get main program */
     RamStatement* getMain() const {
         assert(main && "Program has no main routine");
         return main.get();
     }
 
-    /** Add relation */
+    /** @brief Add relation */
     void addRelation(std::unique_ptr<RamRelation> rel) {
         relations.insert(std::make_pair(rel->getName(), std::move(rel)));
     }
 
-    /** Get relation */
+    /** @brief Get relation */
     const RamRelation* getRelation(const std::string& name) const {
         auto it = relations.find(name);
         if (it != relations.end()) {
@@ -83,12 +100,17 @@ public:
         }
     }
 
-    /** Add subroutine */
+    /** @brief Get relations map */
+    const std::map<std::string, std::unique_ptr<RamRelation>>& getAllRelations() const {
+        return this->relations;
+    }
+
+    /** @brief Add subroutine */
     void addSubroutine(std::string name, std::unique_ptr<RamStatement> subroutine) {
         subroutines.insert(std::make_pair(name, std::move(subroutine)));
     }
 
-    /** Get subroutines */
+    /** @brief Get subroutines */
     const std::map<std::string, RamStatement*> getSubroutines() const {
         std::map<std::string, RamStatement*> subroutineRefs;
         for (auto& s : subroutines) {
@@ -97,7 +119,7 @@ public:
         return subroutineRefs;
     }
 
-    /** Get subroutine */
+    /** @brief Get subroutine */
     const RamStatement& getSubroutine(const std::string& name) const {
         return *subroutines.at(name);
     }

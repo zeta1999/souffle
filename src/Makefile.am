@@ -106,11 +106,11 @@ souffle_sources = \
 			  LVMCode.cpp			LVMCode.h			\
 			  LVMContext.h								\
 			  LVMGenerator.h							\
-			  LVMIndex.h								\
+			  LVMIndex.h			LVMIndex.cpp		\
 			  LVMInterface.h							\
 			  LVMProgInterface.h						\
 			  LVMRecords.h			LVMRecords.cpp		\
-			  LVMRelation.h								\
+			  LVMRelation.h			LVMRelation.cpp		\
               MagicSet.cpp          MagicSet.h          \
               MinimiseProgramTransformer.cpp            \
               ParserDriver.cpp      ParserDriver.h      \

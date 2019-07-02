@@ -38,12 +38,12 @@ public:
 
     /** Insert tuple */
     void insert(const tuple& t) override {
-        relation.insert(t.data);
+        relation.insert(TupleRef(t.data, relation.getArity()));
     }
 
     /** Check whether tuple exists */
     bool contains(const tuple& t) const override {
-        return relation.exists(t.data);
+        return relation.exists(TupleRef(t.data, relation.getArity()));
     }
 
     /** Iterator to first tuple */
@@ -99,8 +99,8 @@ protected:
      */
     class iterator_base : public Relation::iterator_base {
     public:
-        iterator_base(uint32_t arg_id, const LVMRelInterface* r, LVMRelation::iterator i)
-                : Relation::iterator_base(arg_id), ramRelationInterface(r), it(i), tup(r) {}
+        iterator_base(uint32_t arg_id, const LVMRelInterface* r, LVMRelation::Iterator i)
+                : Relation::iterator_base(arg_id), ramRelationInterface(r), it(std::move(i)), tup(r) {}
         ~iterator_base() override = default;
 
         /** Increment iterator */
@@ -144,7 +144,7 @@ protected:
 
     private:
         const LVMRelInterface* ramRelationInterface;
-        LVMRelation::iterator it;
+        LVMRelation::Iterator it;
         tuple tup;
     };
 

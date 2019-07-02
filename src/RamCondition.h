@@ -33,7 +33,8 @@
 namespace souffle {
 
 /**
- * Abstract Class for conditions and boolean values in RAM
+ * @class RamCondition
+ * @brief Abstract class for conditions and boolean values in RAM
  */
 class RamCondition : public RamNode {
 public:
@@ -41,7 +42,10 @@ public:
 };
 
 /**
- * True Value
+ * @class RamTrue
+ * @brief True value condition
+ *
+ * Output is "true"
  */
 class RamTrue : public RamCondition {
 public:
@@ -61,7 +65,10 @@ inline bool isRamTrue(const RamCondition* cond) {
 }
 
 /**
- * False Value
+ * @class RamTrue
+ * @brief False value condition
+ *
+ * Output is "false"
  */
 class RamFalse : public RamCondition {
 public:
@@ -77,29 +84,40 @@ public:
 };
 
 /**
- * Conjunction
+ * @class RamConjunction
+ * @brief A conjunction of conditions
+ *
+ * Condition of the form "LHS and RHS", where LHS
+ * and RHS are conditions
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * C1 AND C2 AND C3
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Is a RamConjunction, which may have LHS "C1"
+ * and RHS "C2 AND C3"
  */
 class RamConjunction : public RamCondition {
 public:
     RamConjunction(std::unique_ptr<RamCondition> l, std::unique_ptr<RamCondition> r)
             : lhs(std::move(l)), rhs(std::move(r)) {}
 
-    /** Get left-hand side of conjunction */
+    /** @brief Get left-hand side of conjunction */
     const RamCondition& getLHS() const {
         assert(lhs != nullptr && "left-hand side of conjunction is a nullptr");
         return *lhs;
     }
 
-    /** Get right-hand side of conjunction */
+    /** @brief Get right-hand side of conjunction */
     const RamCondition& getRHS() const {
-        assert(rhs != nullptr && "right-hand side of conjunction  is a nullptr");
+        assert(rhs != nullptr && "right-hand side of conjunction is a nullptr");
         return *rhs;
     }
 
     void print(std::ostream& os) const override {
         os << "(";
         lhs->print(os);
-        os << " and ";
+        os << " AND ";
         rhs->print(os);
         os << ")";
     }
@@ -133,20 +151,26 @@ protected:
 };
 
 /**
- * Negation
+ * @class RamNegation
+ * @brief Negates a given condition
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * (NOT t0 IN A)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamNegation : public RamCondition {
 public:
     RamNegation(std::unique_ptr<RamCondition> operand) : operand(std::move(operand)) {}
 
-    /** Get operand of negation */
+    /** @brief Get operand of negation */
     const RamCondition& getOperand() const {
         assert(nullptr != operand && "operand of negation is a null-pointer");
         return *operand;
     }
 
     void print(std::ostream& os) const override {
-        os << "(not ";
+        os << "(NOT ";
         operand->print(os);
         os << ")";
     }
@@ -175,7 +199,17 @@ protected:
 };
 
 /**
- * Binary constraint
+ * @class RamConstraint
+ * @brief Evaluates a binary constraint with respect to two RamExpressions
+ *
+ * Condition is true if the constraint (a logical operator
+ * such as "<") holds between the two operands
+ *
+ * The following example checks the equality of
+ * the two given tuple elements:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * t0.1 = t1.0
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamConstraint : public RamCondition {
 public:
@@ -190,19 +224,19 @@ public:
         os << ")";
     }
 
-    /** Get left-hand side */
+    /** @brief Get left-hand side */
     const RamExpression& getLHS() const {
         assert(lhs != nullptr && "left-hand side of constraint is a null-pointer");
         return *lhs;
     }
 
-    /** Get right-hand side */
+    /** @brief Get right-hand side */
     const RamExpression& getRHS() const {
         assert(rhs != nullptr && "right-hand side of constraint is a null-pointer");
         return *rhs;
     }
 
-    /** Get operator symbol */
+    /** @brief Get operator symbol */
     BinaryConstraintOp getOperator() const {
         return op;
     }
@@ -240,7 +274,8 @@ protected:
 };
 
 /**
- * Abstract existence check
+ * @class RamAbstractExistenceCheck
+ * @brief Abstract existence check for a tuple in a relation
  */
 class RamAbstractExistenceCheck : public RamCondition {
 public:
@@ -248,12 +283,12 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : relationRef(std::move(relRef)), values(std::move(vals)) {}
 
-    /** Get relation */
+    /** @brief Get relation */
     const RamRelation& getRelation() const {
         return *relationRef->get();
     }
 
-    /** Get arguments */
+    /** @brief Get arguments of the tuple/pattern */
     std::vector<RamExpression*> getValues() const {
         return toPtrVector(values);
     }
@@ -274,7 +309,7 @@ public:
     }
 
 protected:
-    /* Relation */
+    /** Relation */
     std::unique_ptr<RamRelationReference> relationRef;
 
     /** Pattern -- nullptr if undefined */
@@ -288,7 +323,16 @@ protected:
 };
 
 /**
- * Existence check for a tuple(-pattern) in a relation
+ * @class RamExistenceCheck
+ * @brief Existence check for a tuple(-pattern) in a relation
+ *
+ * Returns true if the tuple is in the relation
+ *
+ * The following condition is evaluated to true if the
+ * tuple element t0.1 is in the relation A:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * t0.1 IN A
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamExistenceCheck : public RamAbstractExistenceCheck {
 public:
@@ -320,7 +364,8 @@ public:
 };
 
 /**
- * Existence check for a relation for provenance existence check
+ * @class RamProvenanceExistenceCheck
+ * @brief Provenance Existence check for a relation
  */
 class RamProvenanceExistenceCheck : public RamAbstractExistenceCheck {
 public:
@@ -352,13 +397,21 @@ public:
 };
 
 /**
- * Emptiness check for a relation
+ * @class RamEmptinessCheck
+ * @brief Emptiness check for a relation
+ *
+ * Evaluates to true if the given relation is the empty set
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * (B = ∅)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamEmptinessCheck : public RamCondition {
 public:
     RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {}
 
-    /** Get relation */
+    /** @brief Get relation */
     const RamRelation& getRelation() const {
         return *relationRef->get();
     }

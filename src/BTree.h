@@ -249,6 +249,7 @@ public:
     using const_iterator = iterator;
 
     using key_type = Key;
+    using element_type = Key;
     using chunk = range<iterator>;
 
 protected:

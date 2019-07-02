@@ -32,11 +32,12 @@
 namespace souffle {
 
 /**
- * Abstract class for a relational algebra operation
+ * @class RamOperation
+ * @brief Abstract class for a relational algebra operation
  */
 class RamOperation : public RamNode {
 public:
-    /** pretty print with intentation */
+    /** @brief Pretty print with indentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
     void print(std::ostream& os) const override {
@@ -47,25 +48,37 @@ public:
 };
 
 /**
- * Abstract class for parallel operation
+ * @class RamAbstractParallel
+ * @brief Abstract class for parallel operation
  */
 class RamAbstractParallel {};
 
 /**
- * Abstract class for a nesting operations in a loop-nest
+ * @class RamNestedOperation
+ * @brief Abstract class for a nesting operations in a loop-nest
+ *
+ * In the following example, the nested operation
+ * of "IF C1" is "IF C2":
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    IF C1
+ *     IF C2
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamNestedOperation : public RamOperation {
 public:
     RamNestedOperation(std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamOperation(), nestedOperation(std::move(nested)), profileText(std::move(profileText)) {}
 
-    /** Get nested operation */
+    /** @brief Get nested operation */
     RamOperation& getOperation() const {
         assert(nullptr != nestedOperation);
         return *nestedOperation;
     }
 
-    /** Get profile text */
+    /** @brief Get profile text */
     const std::string& getProfileText() const {
         return profileText;
     }
@@ -86,7 +99,7 @@ protected:
     /** Nested operation */
     std::unique_ptr<RamOperation> nestedOperation;
 
-    /** Profile text */
+    /** Text used by the profiler */
     const std::string profileText;
 
     bool equal(const RamNode& node) const override {
@@ -97,19 +110,20 @@ protected:
 };
 
 /**
- * Abstract class for relation searches and lookups
+ * @class RamTupleOperation
+ * @brief Abstract class for relation searches and lookups
  */
 class RamTupleOperation : public RamNestedOperation {
 public:
     RamTupleOperation(int ident, std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamNestedOperation(std::move(nested), std::move(profileText)), identifier(ident) {}
 
-    /** Get identifier */
+    /** @brief Get identifier */
     int getTupleId() const {
         return identifier;
     }
 
-    /** Set identifier */
+    /** @brief Set identifier */
     void setTupleId(int id) {
         identifier = id;
     }
@@ -119,7 +133,10 @@ public:
     }
 
 protected:
-    /** Identifier for the tuple */
+    /**
+     * Identifier for the tuple, corresponding to
+     * its position in the loop nest
+     */
     int identifier;
 
     bool equal(const RamNode& node) const override {
@@ -130,7 +147,10 @@ protected:
 };
 
 /**
- * Abstract class for relation searches
+ * @class RamRelationOperation
+ * @brief Abstract class for operations on relations
+ *
+ * One such operation is a for loop
  */
 class RamRelationOperation : public RamTupleOperation {
 public:
@@ -139,7 +159,7 @@ public:
             : RamTupleOperation(ident, std::move(nested), std::move(profileText)),
               relationRef(std::move(relRef)) {}
 
-    /** Get search relation */
+    /** @brief Get search relation */
     const RamRelation& getRelation() const {
         return *relationRef->get();
     }
@@ -167,9 +187,17 @@ protected:
 };
 
 /**
- * Relation Scan
+ * @class RamScan
+ * @brief Iterate all tuples of a relation
  *
- * Iterate all tuples of a relation
+ * The following example iterates over all tuples
+ * in the set A:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *   FOR t0 IN A
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamScan : public RamRelationOperation {
 public:
@@ -191,9 +219,16 @@ public:
 };
 
 /**
- * Parallel Relation Scan
+ * @class RamParallelScan
+ * @brief Iterate all tuples of a relation in parallel
  *
- * Iterate all tuples of a relation in parallel
+ * An example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *   PARALLEL FOR t0 IN A
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallelScan : public RamScan, public RamAbstractParallel {
 public:
@@ -215,9 +250,8 @@ public:
 };
 
 /**
- * Relation Scan with Index
- *
- * Search for tuples of a relation matching a criteria
+ * @class Relation Scan with Index
+ * @brief An abstract class for performing indexed operations
  */
 class RamIndexOperation : public RamRelationOperation {
 public:
@@ -229,7 +263,10 @@ public:
         assert(getRangePattern().size() == getRelation().getArity());
     }
 
-    /** Get range pattern */
+    /**
+     * @brief Get range pattern
+     * @return A std::vector of pointers to RamExpression objects
+     */
     std::vector<RamExpression*> getRangePattern() const {
         return toPtrVector(queryPattern);
     }
@@ -253,6 +290,7 @@ protected:
     /** Values of index per column of table (if indexable) */
     std::vector<std::unique_ptr<RamExpression>> queryPattern;
 
+    /** @brief Helper method for printing */
     void printIndex(std::ostream& os) const {
         bool first = true;
         for (unsigned int i = 0; i < queryPattern.size(); ++i) {
@@ -278,9 +316,16 @@ protected:
 };
 
 /**
- * Relation Scan with Index
+ * @class RamIndexScan
+ * @brief Search for tuples of a relation matching a criteria
  *
- * Search for tuples of a relation matching a criteria
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *	 FOR t1 IN X ON INDEX t1.c = t0.0
+ *	 ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamIndexScan : public RamIndexOperation {
 public:
@@ -312,9 +357,16 @@ public:
 };
 
 /**
- * Parallel Relation Scan with Index
+ * @class RamParallelIndexScan
+ * @brief Search for tuples of a relation matching a criteria
  *
- * Search for tuples of a relation matching a criteria
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *	   PARALLEL FOR t1 IN X ON INDEX t1.c = t0.0
+ *	     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallelIndexScan : public RamIndexScan, public RamAbstractParallel {
 public:
@@ -345,20 +397,61 @@ public:
 };
 
 /**
- * Find a tuple in a relation such that a given condition holds.
+ * @class RamAbstractChoice
+ * @brief Abstract class for a choice operation
+ *
+ * Finding a single tuple, if it exists, such that a condition holds.
  */
-class RamChoice : public RamRelationOperation {
+class RamAbstractChoice {
 public:
-    RamChoice(std::unique_ptr<RamRelationReference> rel, size_t ident, std::unique_ptr<RamCondition> cond,
-            std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamRelationOperation(std::move(rel), ident, std::move(nested), std::move(profileText)),
-              condition(std::move(cond)) {}
+    RamAbstractChoice(std::unique_ptr<RamCondition> cond) : condition(std::move(cond)) {}
 
-    /** get condition */
+    /** @brief Getter for the condition */
     const RamCondition& getCondition() const {
         assert(condition != nullptr && "condition of choice is a null-pointer");
         return *condition;
     }
+
+    void apply(const RamNodeMapper& map) {
+        condition = map(std::move(condition));
+    }
+
+    std::vector<const RamNode*> getChildNodes() const {
+        return {condition.get()};
+    }
+
+protected:
+    /** Condition for which a tuple in the relation may hold */
+    std::unique_ptr<RamCondition> condition;
+
+    bool equal(const RamNode& node) const {
+        assert(nullptr != dynamic_cast<const RamAbstractChoice*>(&node));
+        const auto& other = dynamic_cast<const RamAbstractChoice*>(&node);
+        return getCondition() == other->getCondition();
+    }
+};
+
+/**
+ * @class RamChoice
+ * @brief Find a tuple in a relation such that a given condition holds.
+ *
+ * Only one tuple is returned (if one exists), even
+ * if multiple tuples satisfying the condition exist.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    CHOICE t1 IN A WHERE (t1.x, t1.y) NOT IN A
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+class RamChoice : public RamRelationOperation, public RamAbstractChoice {
+public:
+    RamChoice(std::unique_ptr<RamRelationReference> rel, size_t ident, std::unique_ptr<RamCondition> cond,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamRelationOperation(std::move(rel), ident, std::move(nested), std::move(profileText)),
+              RamAbstractChoice(std::move(cond)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -371,7 +464,7 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
-        condition = map(std::move(condition));
+        RamAbstractChoice::apply(map);
     }
 
     RamChoice* clone() const override {
@@ -381,12 +474,10 @@ public:
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
-        return {nestedOperation.get(), relationRef.get(), condition.get()};
+        return {nestedOperation.get(), relationRef.get(), RamAbstractChoice::getChildNodes().at(0)};
     }
 
 protected:
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamChoice*>(&node));
         const auto& other = static_cast<const RamChoice&>(node);
@@ -395,7 +486,16 @@ protected:
 };
 
 /**
- * Find a tuple in a relation such that a given condition holds.
+ * @class ParallelRamChoice
+ * @brief Find a tuple in a relation such that a given condition holds in parallel.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    PARALLEL CHOICE t1 IN A WHERE (t1.x, t1.y) NOT IN A
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallelChoice : public RamChoice, public RamAbstractParallel {
 public:
@@ -421,23 +521,30 @@ public:
 };
 
 /**
- * Use an index to find a tuple in a relation such that a given condition holds.
+ * @class RamIndexChoice
+ * @brief Use an index to find a tuple in a relation such that a given condition holds.
+ *
+ * Only one tuple is returned (if one exists), even
+ * if multiple tuples satisfying the condition exist.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    CHOICE A AS t1 ON INDEX t1.x=10 AND t1.y = 20
+ *    WHERE (t1.x, t1.y) NOT IN A
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamIndexChoice : public RamIndexOperation {
+class RamIndexChoice : public RamIndexOperation, public RamAbstractChoice {
 public:
     RamIndexChoice(std::unique_ptr<RamRelationReference> r, int ident, std::unique_ptr<RamCondition> cond,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
             : RamIndexOperation(std::move(r), ident, std::move(queryPattern), std::move(nested),
                       std::move(profileText)),
-              condition(std::move(cond)) {
+              RamAbstractChoice(std::move(cond)) {
         assert(getRangePattern().size() == getRelation().getArity());
-    }
-
-    /** get condition */
-    const RamCondition& getCondition() const {
-        assert(condition != nullptr && "condition of index-choice is a null-pointer");
-        return *condition;
     }
 
     void print(std::ostream& os, int tabpos) const override {
@@ -455,12 +562,12 @@ public:
         for (auto& cur : queryPattern) {
             cur = map(std::move(cur));
         }
-        condition = map(std::move(condition));
+        RamAbstractChoice::apply(map);
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamIndexOperation::getChildNodes();
-        res.push_back(condition.get());
+        res.push_back(RamAbstractChoice::getChildNodes().at(0));
         return res;
     }
 
@@ -476,8 +583,6 @@ public:
     }
 
 protected:
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamIndexChoice*>(&node));
         const auto& other = static_cast<const RamIndexChoice&>(node);
@@ -487,7 +592,17 @@ protected:
 };
 
 /**
- * Use an index to find a tuple in a relation such that a given condition holds.
+ * @class RamParallelIndexChoice
+ * @brief Use an index to find a tuple in a relation such that a given condition holds in parallel.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    PARALLEL CHOICE A AS t1 ON INDEX t1.x=10 AND t1.y = 20
+ *    WHERE (t1.x, t1.y) NOT IN A
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallelIndexChoice : public RamIndexChoice, public RamAbstractParallel {
 public:
@@ -524,7 +639,11 @@ public:
 enum AggregateFunction { MAX, MIN, COUNT, SUM };
 
 /**
- * Abstract class for aggregation
+ * @class RamAbstractAggregate
+ * @brief Abstract class for aggregation
+ *
+ * A particular function (e.g. MIN) is applied given a
+ * that a condition holds
  */
 class RamAbstractAggregate {
 public:
@@ -532,18 +651,18 @@ public:
             std::unique_ptr<RamCondition> condition)
             : function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
-    /** Get condition */
+    /** @brief Get condition */
     const RamCondition& getCondition() const {
         assert(condition != nullptr && "Condition of aggregate is a null-pointer");
         return *condition;
     }
 
-    /** Get aggregation function */
+    /** @brief Get aggregation function */
     AggregateFunction getFunction() const {
         return function;
     }
 
-    /** Get target expression */
+    /** @brief Get target expression */
     const RamExpression& getExpression() const {
         assert(expression != nullptr && "Expression of aggregate is a null-pointer");
         return *expression;
@@ -592,7 +711,15 @@ protected:
 };
 
 /**
- * Aggregation
+ * @class RamAggregate
+ * @brief Aggregation function applied on some relation
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * t0.0 = COUNT FOR ALL t0 IN A
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Applies the function COUNT to determine the number
+ * of elements in A.
  */
 class RamAggregate : public RamRelationOperation, public RamAbstractAggregate {
 public:
@@ -606,7 +733,7 @@ public:
         os << times(" ", tabpos);
         os << "t" << getTupleId() << ".0=";
         RamAbstractAggregate::print(os, tabpos);
-        os << " FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
+        os << "FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
         if (!isRamTrue(condition.get())) {
             os << " WHERE " << getCondition();
         }
@@ -642,7 +769,8 @@ protected:
 };
 
 /**
- * Index Aggregation
+ * @class RamIndexAggregate
+ * @brief Indexed aggregation on a relation
  */
 class RamIndexAggregate : public RamIndexOperation, public RamAbstractAggregate {
 public:
@@ -657,7 +785,7 @@ public:
         os << times(" ", tabpos);
         os << "t" << getTupleId() << ".0=";
         RamAbstractAggregate::print(os, tabpos);
-        os << " SEARCH t" << getTupleId() << " ∈ " << getRelation().getName();
+        os << "SEARCH t" << getTupleId() << " ∈ " << getRelation().getName();
         printIndex(os);
         if (!isRamTrue(condition.get())) {
             os << " WHERE " << getCondition();
@@ -698,7 +826,15 @@ protected:
 };
 
 /**
- * Record lookup
+ * @class RamUnpackRecord
+ * @brief Record lookup
+ *
+ * Looks up a record with respect to an expression
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * UNPACK t0.0 INTO t1
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamUnpackRecord : public RamTupleOperation {
 public:
@@ -706,13 +842,13 @@ public:
             size_t arity)
             : RamTupleOperation(ident, std::move(nested)), expression(std::move(expr)), arity(arity) {}
 
-    /** Get expression */
+    /** @brief Get record expression */
     const RamExpression& getExpression() const {
         assert(expression != nullptr && "Expression of unpack-record is a null-pointer");
         return *expression;
     }
 
-    /** Get arity */
+    /** @brief Get arity of record */
     std::size_t getArity() const {
         return arity;
     }
@@ -754,7 +890,8 @@ protected:
 };
 
 /**
- * Abstract conditional statement
+ * @class RamAbstractConditional
+ * @brief Abstract conditional statement
  */
 class RamAbstractConditional : public RamNestedOperation {
 public:
@@ -762,7 +899,7 @@ public:
             std::string profileText = "")
             : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
 
-    /** Get condition */
+    /** @brief Get condition that must be satisfied */
     const RamCondition& getCondition() const {
         assert(condition != nullptr && "condition of conditional operation is a null-pointer");
         return *condition;
@@ -791,7 +928,17 @@ protected:
 };
 
 /**
- * Filter statement
+ * @class RamFilter
+ * @brief Checks whether a given condition holds
+ *
+ * The RamFilter is essentially an "if" statement.
+ *
+ * The following example checks that both C1 and C2 hold
+ * before proceeding deeper in the loop nest:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * IF C1 AND C2
+ *  ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamFilter : public RamAbstractConditional {
 public:
@@ -817,7 +964,17 @@ protected:
 };
 
 /**
- * Break statement
+ * @class RamBreak
+ * @brief Breaks out of the loop if a condition holds
+ *
+ * The following example will break out of the inner-most
+ * loop if the condition (t1.1 = 4) holds:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * FOR t0 in A
+ *   FOR t1 in B
+ *     IF t0.1 = 4 BREAK
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamBreak : public RamAbstractConditional {
 public:
@@ -842,19 +999,29 @@ protected:
     }
 };
 
-/** Projection */
+/**
+ * @class RamProject
+ * @brief Project a result into the target relation.
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * FOR t0 IN A
+ *   ...
+ *     PROJECT (t0.a, t0.b, t0.c) INTO @new_X
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 class RamProject : public RamOperation {
 public:
     RamProject(std::unique_ptr<RamRelationReference> relRef,
             std::vector<std::unique_ptr<RamExpression>> expressions)
             : RamOperation(), relationRef(std::move(relRef)), expressions(std::move(expressions)) {}
 
-    /** Get relation */
+    /** @brief Get relation */
     const RamRelation& getRelation() const {
         return *relationRef->get();
     }
 
-    /** Get expressions */
+    /** @brief Get expressions */
     std::vector<RamExpression*> getValues() const {
         return toPtrVector(expressions);
     }
@@ -891,10 +1058,10 @@ public:
     }
 
 protected:
-    /** Relation */
+    /** Relation that values are projected into */
     std::unique_ptr<RamRelationReference> relationRef;
 
-    /* Values for projection */
+    /* Values (expressions) for projection */
     std::vector<std::unique_ptr<RamExpression>> expressions;
 
     bool equal(const RamNode& node) const override {
@@ -904,7 +1071,16 @@ protected:
     }
 };
 
-/** A statement for returning from a ram subroutine */
+/**
+ * @class RamSubroutineReturnValue
+ * @brief A statement for returning from a ram subroutine
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *   ...
+ *     RETURN (t0.0, t0.1)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 class RamSubroutineReturnValue : public RamOperation {
 public:
     RamSubroutineReturnValue(std::vector<std::unique_ptr<RamExpression>> vals)
@@ -922,6 +1098,7 @@ public:
         os << ")" << std::endl;
     }
 
+    /** @brief Getter for expressions */
     std::vector<RamExpression*> getValues() const {
         return toPtrVector(expressions);
     }

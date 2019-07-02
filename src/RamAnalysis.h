@@ -23,16 +23,17 @@ namespace souffle {
 class RamTranslationUnit;
 
 /**
- * Abstract class for a RAM Analysis.
+ * @class RamAnalysis
+ * @brief Abstract class for a RAM Analysis.
  */
 class RamAnalysis {
 public:
     virtual ~RamAnalysis() = default;
 
-    /** run analysis for a RAM translation unit */
+    /** @brief Run analysis for a RAM translation unit */
     virtual void run(const RamTranslationUnit& translationUnit) = 0;
 
-    /** print the analysis result in HTML format */
+    /** @brief Print the analysis result in HTML format */
     virtual void print(std::ostream& os) const {}
 
     /** define output stream operator */

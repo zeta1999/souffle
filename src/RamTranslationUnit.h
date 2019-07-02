@@ -31,7 +31,10 @@
 namespace souffle {
 
 /**
- * Class for RamTranslationUnit
+ * @class RamTranslationUnit
+ * @brief Translating a RAM program
+ *
+ * Comprises the program, symbol table, error report and debug report
  */
 class RamTranslationUnit {
 public:

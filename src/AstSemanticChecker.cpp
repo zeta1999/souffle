@@ -433,7 +433,7 @@ void AstSemanticChecker::checkLiteral(
 
 void AstSemanticChecker::checkAggregator(
         ErrorReport& report, const AstProgram& program, const AstAggregator& aggregator) {
-    auto* inner = nullptr;
+    const AstAggregator* inner = nullptr;
 
     visitDepthFirst(aggregator, [&](const AstAggregator& innerAgg) {
         if (aggregator != innerAgg) {

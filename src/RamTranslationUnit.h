@@ -73,6 +73,10 @@ public:
         return symbolTable;
     }
 
+    const souffle::TypeTable& getTypeTable() const {
+        return *typeTable;
+    }
+
     ErrorReport& getErrorReport() {
         return errorReport;
     }

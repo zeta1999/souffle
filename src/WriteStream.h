@@ -18,6 +18,7 @@
 #include "RamTypes.h"
 #include "RecordTable.h"
 #include "SymbolTable.h"
+#include "TypeTable.h"
 
 #include <cassert>
 #include <string>
@@ -28,10 +29,10 @@ namespace souffle {
 class WriteStream {
 public:
     WriteStream(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const std::vector<int>& recordArityMask, const RecordTable& recordTable, const bool prov,
+            const std::vector<int>& recordArityMask, const RecordTable& recordTable, const TypeTable& typeTable, const bool prov,
             bool summary = false)
             : kindMask(kindMask), symbolTable(symbolTable), recordArityMask(recordArityMask),
-              recordTable(recordTable), isProvenance(prov), summary(summary),
+              recordTable(recordTable), typeTable(typeTable), isProvenance(prov), summary(summary),
               arity(kindMask.size() - (prov ? 2 : 0)) {}
     template <typename T>
     void writeAll(const T& relation) {
@@ -60,8 +61,11 @@ public:
 protected:
     const std::vector<char>& kindMask;
     const SymbolTable& symbolTable;
+
+    // TODO: may no longer need this arity mask
     const std::vector<int>& recordArityMask;
     const RecordTable& recordTable;
+    const TypeTable& typeTable;
     const bool isProvenance;
     const bool summary;
     const size_t arity;
@@ -106,7 +110,7 @@ class WriteStreamFactory {
 public:
     virtual std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask,
             const SymbolTable& symbolTable, const std::vector<int>& recordArityMask,
-            const RecordTable& recordTable, const IODirectives& ioDirectives, const bool provenance) = 0;
+            const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives, const bool provenance) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
 };

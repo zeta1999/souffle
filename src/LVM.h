@@ -124,6 +124,11 @@ protected:
         return translationUnit.getSymbolTable();
     }
 
+    /** Get type table */
+    const TypeTable& getTypeTable() {
+        return translationUnit.getTypeTable();
+    }
+
     /** Get Counter */
     int getCounter() {
         return counter;

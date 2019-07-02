@@ -1744,7 +1744,9 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
         } else if (auto* rt = dynamic_cast<const AstRecordType*>(type)) {
             std::vector<std::string> fields;
             for (const auto& field : rt->getFields()) {
-                fields.push_back(field.name);
+                std::stringstream ssField;
+                field.type.print(ssField);
+                fields.push_back(ssField.str());
             }
             typeTab->addRecordType(ss.str(), fields);
         } else if (auto* ut = dynamic_cast<const AstUnionType*>(type)) {

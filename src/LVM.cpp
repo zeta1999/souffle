@@ -885,26 +885,21 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 for (auto& io : IOs) {
                     try {
                         InterpreterRelation& relation = getRelation(relName);
-                        std::vector<char> kindMask;
+                        std::vector<int> typeMask;
                         std::vector<int> recordArityMask;
-                        const auto& typeQualifiers = relation.getAttributeTypeQualifiers();
+                        const auto& typeIds = relation.getAttributeTypeIds();
 
-                        for (const auto& cur : typeQualifiers) {
+                        for (const auto& cur : typeIds) {
                             // store the kind
-                            char kind = cur[0];
-                            kindMask.push_back(kind);
+                            typeMask.push_back(cur);
 
                             // store the arity if relevant
-                            if (kind == 'r') {
-                                std::string typeInfo = cur.substr(2, cur.length() - 2);
-                                recordArityMask.push_back(std::stoi(typeInfo));
-                            } else {
-                                recordArityMask.push_back(-1);
-                            }
+                            // TODO: remove this later
+                            recordArityMask.push_back(-1);
                         }
 
                         IOSystem::getInstance()
-                                .getWriter(kindMask, symbolTable, recordArityMask,
+                                .getWriter(typeMask, symbolTable, recordArityMask,
                                         getInterpreterRecordTable(), getTypeTable(), io, Global::config().has("provenance"))
                                 ->writeAll(relation);
                     } catch (std::exception& e) {

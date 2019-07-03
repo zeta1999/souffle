@@ -48,6 +48,13 @@ public:
         return attributeTypeQualifiers;
     }
 
+    /** Get type of attributes for the relation */
+    std::vector<int>& getAttributeTypeIds() {
+        // TODO: implement this
+        assert(false && "unimplemented");
+        return attributeTypeIds;
+    }
+
     /** Get arity of relation */
     size_t getArity() const {
         return arity;
@@ -318,6 +325,9 @@ private:
 
     /** Type of attributes */
     std::vector<std::string> attributeTypeQualifiers;
+
+    /** Type of attributes */
+    std::vector<int> attributeTypeIds;
 
     /** Stratum level information */
     size_t level = 0;

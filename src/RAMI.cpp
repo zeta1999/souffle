@@ -967,26 +967,21 @@ void RAMI::evalStmt(const RamStatement& stmt) {
         bool visitStore(const RamStore& store) override {
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 try {
-                    std::vector<char> kindMask;
+                    std::vector<int> typeMask;
                     std::vector<int> recordArityMask;
-                    const auto& typeQualifiers = store.getRelation().getAttributeTypeQualifiers();
+                    const auto& typeIds = store.getRelation().getAttributeTypeIds();
 
-                    for (const auto& cur : typeQualifiers) {
-                        // store the kind
-                        char kind = cur[0];
-                        kindMask.push_back(kind);
+                    for (const auto& cur : typeIds) {
+                        // store the type
+                        typeMask.push_back(cur);
 
                         // store the arity if relevant
-                        if (kind == 'r') {
-                            std::string typeInfo = cur.substr(2, cur.length() - 2);
-                            recordArityMask.push_back(std::stoi(typeInfo));
-                        } else {
-                            recordArityMask.push_back(-1);
-                        }
+                        // TODO: remove this later
+                        recordArityMask.push_back(-1);
                     }
 
                     IOSystem::getInstance()
-                            .getWriter(kindMask, interpreter.getSymbolTable(), recordArityMask,
+                            .getWriter(typeMask, interpreter.getSymbolTable(), recordArityMask,
                                     getInterpreterRecordTable(), interpreter.getTypeTable(), ioDirectives,
                                     Global::config().has("provenance"))
                             ->writeAll(interpreter.getRelation(store.getRelation()));

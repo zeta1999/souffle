@@ -571,7 +571,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 auto relPtr = getRelation(code[ip + 1]);
                 auto arity = relPtr->getArity();
                 RamDomain tuple[arity];
-                for (auto i = 0; i < arity; ++i) {
+                for (size_t i = 0; i < arity; ++i) {
                     tuple[i] = stack.top();
                     stack.pop();
                 }

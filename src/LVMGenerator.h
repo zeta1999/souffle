@@ -1198,9 +1198,9 @@ private:
         }
         code->push_back(relId);
         code->push_back(indexPos);
-        for (auto i = 0; i < numOfTypeMasks; ++i) {
+        for (size_t i = 0; i < numOfTypeMasks; ++i) {
             RamDomain types = 0;
-            for (auto j = 0; j < RAM_DOMAIN_SIZE; ++j) {
+            for (size_t j = 0; j < RAM_DOMAIN_SIZE; ++j) {
                 auto projectedIndex = i * RAM_DOMAIN_SIZE + j;
                 if (projectedIndex >= arity) {
                     break;
@@ -1227,9 +1227,9 @@ private:
         code->push_back(counterLabel);
         code->push_back(relId);
         code->push_back(indexPos);
-        for (auto i = 0; i < numOfTypeMasks; ++i) {
+        for (size_t i = 0; i < numOfTypeMasks; ++i) {
             RamDomain types = 0;
-            for (auto j = 0; j < RAM_DOMAIN_SIZE; ++j) {
+            for (size_t j = 0; j < RAM_DOMAIN_SIZE; ++j) {
                 auto projectedIndex = i * RAM_DOMAIN_SIZE + j;
                 if (projectedIndex >= arity) {
                     break;

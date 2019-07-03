@@ -82,42 +82,8 @@ protected:
         writeNextTuple(tuple.data);
     }
 
-    void _write_value(std::ostream& os, char kind, RamDomain repr, std::string recordName = "bad") {
-        switch (kind) {
-            case 'i':
-                os << repr;
-                break;
-            case 's':
-                os << symbolTable.unsafeResolve(repr);
-                break;
-            case 'r': {
-                int arity = typeTable.getRecordArity(recordName);
-                const auto& record = recordTable.getRecord(arity + 1, repr);
-                std::string recordName = typeTable.getRecordName(record[0]);
-                const std::vector<std::string>& fieldTypes = typeTable.getFieldTypes(recordName);
-                const std::vector<char>& fieldKinds = typeTable.getFieldKinds(recordName);
-
-                os << recordName << "[";
-                for (size_t i = 0; i < arity; i++) {
-                    if (fieldKinds[i] == 'r') {
-                        _write_value(os, fieldKinds[i], record[i+1], fieldTypes[i]);
-                    } else {
-                        _write_value(os, fieldKinds[i], record[i+1]);
-                    }
-                    if (i != arity - 1) {
-                        os << ", ";
-                    }
-                }
-                os << "]";
-                break;
-            }
-            default:
-                assert(false && "cannot print value of unknown kind");
-        }
-    }
-
-    void writeValue(std::ostream& os, size_t col, RamDomain repr) {
-        switch (kindMask.at(col)) {
+    void writeValue(std::ostream& os, RamDomain repr, char kind, int recordType = -1) {
+        switch(kind) {
             case 'i':
                 os << repr;
                 break;
@@ -127,19 +93,26 @@ protected:
                 break;
 
             case 'r': {
-                int arity = recordArityMask.at(col);
-                const auto& record = recordTable.getRecord(arity + 1, repr);
-                std::string recordName = typeTable.getRecordName(record[0]);
-                const std::vector<std::string>& fieldTypes = typeTable.getFieldTypes(recordName);
-                const std::vector<char>& fieldKinds = typeTable.getFieldKinds(recordName);
+                // get record metadata
+                const auto& name = typeTable.getRecordName(recordType);
+                const auto& fieldTypes = typeTable.getFieldTypes(recordType);
+                int arity = fieldTypes.size();
 
-                os << recordName << "[";
-                for (size_t i = 0; i < arity; i++) {
-                    if (fieldKinds[i] == 'r') {
-                        _write_value(os, fieldKinds[i], record[i+1], fieldTypes[i]);
+                // get record data
+                const auto& record = recordTable.getRecord(arity + 1, repr);
+
+                // print out the record recursively
+                os << name << "[";
+                for (int i = 0; i < arity; i++) {
+                    char kind = typeTable.getKind(fieldTypes[i]);
+
+                    if (kind == 'r') {
+                        writeValue(os, record[i+1], kind, fieldTypes[i]);
                     } else {
-                        _write_value(os, fieldKinds[i], record[i+1]);
+                        writeValue(os, record[i+1], kind);
                     }
+
+                    // print delimiter
                     if (i != arity - 1) {
                         os << ", ";
                     }

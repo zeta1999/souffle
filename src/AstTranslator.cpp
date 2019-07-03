@@ -301,7 +301,9 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             for (const auto& cur : init.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
-            return std::make_unique<RamPackRecord>(std::move(values));
+            std::stringstream recordType;
+            init.getType().print(recordType);
+            return std::make_unique<RamPackRecord>(recordType.str(), std::move(values));
         }
 
         std::unique_ptr<RamExpression> visitAggregator(const AstAggregator& agg) override {

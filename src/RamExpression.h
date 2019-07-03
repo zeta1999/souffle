@@ -378,12 +378,17 @@ protected:
  */
 class RamPackRecord : public RamExpression {
 public:
-    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args)
-            : RamExpression(), arguments(std::move(args)) {}
+    RamPackRecord(std::string recordType, std::vector<std::unique_ptr<RamExpression>> args)
+            : RamExpression(), recordType(recordType), arguments(std::move(args)) {}
 
     /** Get arguments */
     std::vector<RamExpression*> getArguments() const {
         return toPtrVector(arguments);
+    }
+
+    /** Get associated record type */
+    std::string getRecordType() const {
+        return recordType;
     }
 
     /** Print */
@@ -406,7 +411,7 @@ public:
 
     /** Create clone */
     RamPackRecord* clone() const override {
-        auto* res = new RamPackRecord({});
+        auto* res = new RamPackRecord(recordType, {});
         for (auto& cur : arguments) {
             RamExpression* arg = nullptr;
             if (cur != nullptr) {
@@ -427,6 +432,9 @@ public:
     }
 
 protected:
+    /** Record type id */
+    std::string recordType;
+
     /** Arguments */
     std::vector<std::unique_ptr<RamExpression>> arguments;
 

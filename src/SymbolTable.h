@@ -307,7 +307,8 @@ public:
             auto pos = static_cast<size_t>(index);
             if (pos >= size()) {
                 // TODO: use different error reporting here!!
-                std::cerr << "Error index out of bounds in call to SymbolTable::resolve.\n";
+                std::cerr << "Error index out of bounds in call to SymbolTable::resolve [" << pos << "].\n";
+                assert(false && "error index out of bounds in call to SymbolTable::resolve.");
                 exit(1);
             }
             return numToStr[pos];

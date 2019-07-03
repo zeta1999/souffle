@@ -94,7 +94,7 @@ protected:
 
             case 'r': {
                 int arity = recordArityMask.at(col);
-                const auto& record = recordTable.getRecord(arity, repr);
+                const auto& record = recordTable.getRecord(arity + 1, repr);
 
                 typeTable.print();
 

@@ -43,6 +43,10 @@ public:
         addType(type, kind);
     }
 
+    int getTypeId(const std::string& type) const {
+        return nameToId.at(type);
+    }
+
     void print() const {
         std::cout << "TYPE TABLE" << std::endl;
         for (const auto& pair : idToName) {
@@ -63,7 +67,7 @@ private:
     std::map<std::string, std::string> typeToKind;
 
     int addType(std::string type, std::string kind) {
-        static int count = 0;
+        static int count = 100;
         idToName[count] = type;
         nameToId[type] = count;
         typeToKind[type] = kind;

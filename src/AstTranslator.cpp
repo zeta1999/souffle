@@ -232,8 +232,9 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
     std::vector<int> attributeTypeIds;
     for (size_t i = 0; i < rel->getArity(); ++i) {
         attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
-        auto* type = program->getType(rel->getAttribute(i)->getTypeName());
-        attributeTypeIds.push_back(typeTable->getId(toString(type)));
+
+        const auto& typeName = rel->getAttribute(i)->getTypeName();
+        attributeTypeIds.push_back(typeTable->getId(toString(typeName)));
         if (typeEnv) {
             attributeTypeQualifiers.push_back(
                     getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
@@ -1461,17 +1462,17 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     };
 
     // sift through the types
-    std::vector<const AstPrimitiveType*> primitiveTypes;
-    std::vector<const AstRecordType*> recordTypes;
-    std::vector<const AstUnionType*> unionTypes;
+    std::set<const AstPrimitiveType*> primitiveTypes;
+    std::set<const AstRecordType*> recordTypes;
+    std::set<const AstUnionType*> unionTypes;
 
     for (const auto* type : program->getTypes()) {
         if (const auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
-            primitiveTypes.push_back(pt);
+            primitiveTypes.insert(pt);
         } else if (const auto* rt = dynamic_cast<const AstRecordType*>(type)) {
-            recordTypes.push_back(rt);
+            recordTypes.insert(rt);
         } else if (const auto* ut = dynamic_cast<const AstUnionType*>(type)) {
-            unionTypes.push_back(ut);
+            unionTypes.insert(ut);
         } else {
             assert(false && "unsupported typeclass");
         }

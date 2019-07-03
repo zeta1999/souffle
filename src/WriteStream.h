@@ -82,7 +82,8 @@ protected:
         writeNextTuple(tuple.data);
     }
 
-    void writeValue(std::ostream& os, RamDomain repr, char kind, int recordType = -1) {
+    void writeValue(std::ostream& os, RamDomain repr, int typeId) {
+        char kind = typeTable.getKind(typeId);
         switch(kind) {
             case 'i':
                 os << repr;
@@ -94,8 +95,8 @@ protected:
 
             case 'r': {
                 // get record metadata
-                const auto& name = typeTable.getRecordName(recordType);
-                const auto& fieldTypes = typeTable.getFieldTypes(recordType);
+                const auto& name = typeTable.getRecordName(typeId);
+                const auto& fieldTypes = typeTable.getFieldTypes(typeId);
                 int arity = fieldTypes.size();
 
                 // get record data
@@ -104,15 +105,8 @@ protected:
                 // print out the record recursively
                 os << name << "[";
                 for (int i = 0; i < arity; i++) {
-                    char kind = typeTable.getKind(fieldTypes[i]);
+                    writeValue(os, record[i+1], fieldTypes[i]);
 
-                    if (kind == 'r') {
-                        writeValue(os, record[i+1], kind, fieldTypes[i]);
-                    } else {
-                        writeValue(os, record[i+1], kind);
-                    }
-
-                    // print delimiter
                     if (i != arity - 1) {
                         os << ", ";
                     }

@@ -95,8 +95,7 @@ private:
         idToName[count] = type;
         idToKind[count] = kind;
 
-        count++;
-        return count;
+        return count++;
     }
 };
 

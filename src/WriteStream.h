@@ -94,8 +94,21 @@ protected:
                 int arity = typeTable.getRecordArity(recordName);
                 const auto& record = recordTable.getRecord(arity + 1, repr);
                 std::string recordName = typeTable.getRecordName(record[0]);
+                const std::vector<std::string>& fieldTypes = typeTable.getFieldTypes(recordName);
+                const std::vector<char>& fieldKinds = typeTable.getFieldKinds(recordName);
 
-                os << recordName << "[" << "<unknown>" << "]";
+                os << recordName << "[";
+                for (size_t i = 0; i < arity; i++) {
+                    if (fieldKinds[i] == 'r') {
+                        _write_value(os, fieldKinds[i], record[i+1], fieldTypes[i]);
+                    } else {
+                        _write_value(os, fieldKinds[i], record[i+1]);
+                    }
+                    if (i != arity - 1) {
+                        os << ", ";
+                    }
+                }
+                os << "]";
                 break;
             }
             default:

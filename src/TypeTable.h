@@ -59,9 +59,7 @@ public:
         const std::vector<std::string>& fields = recordToFields.at(recordName);
         std::vector<char> res;
         for (const auto& _field : fields) {
-            std::cout << "getting _field: " << _field << std::endl;
             const std::string& field = typeToKind.at(_field);
-            std::cout << "field is: " << field << std::endl;
             if (field == "record") {
                 res.push_back('r');
             } else if (field == "number") {

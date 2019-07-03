@@ -441,7 +441,7 @@ void AstSemanticChecker::checkAggregator(
         }
     });
 
-    if (inner) {
+    if (inner != nullptr) {
         report.addError("Unsupported nested aggregate", inner->getSrcLoc());
     }
 

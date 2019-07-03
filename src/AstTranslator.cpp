@@ -200,7 +200,8 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
         const size_t arity, const std::vector<std::string> attributeNames,
-        const std::vector<std::string> attributeTypeQualifiers, const std::vector<int> attributeTypeIds, const RelationRepresentation representation) {
+        const std::vector<std::string> attributeTypeQualifiers, const std::vector<int> attributeTypeIds,
+        const RelationRepresentation representation) {
     const RamRelation* ramRel = ramProg->getRelation(name);
     if (ramRel == nullptr) {
         ramProg->addRelation(std::make_unique<RamRelation>(
@@ -1459,23 +1460,38 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         assert(false && "unsupported typeclass");
     };
 
-    // store each type in the table
+    // sift through the types
+    std::vector<const AstPrimitiveType*> primitiveTypes;
+    std::vector<const AstRecordType*> recordTypes;
+    std::vector<const AstUnionType*> unionTypes;
+
     for (const auto* type : program->getTypes()) {
-        if (dynamic_cast<const AstPrimitiveType*>(type) != nullptr) {
-            char kind = getKind(type);
-            typeTable->addPrimitiveType(toString(type->getName()), kind);
-        } else if (auto* rt = dynamic_cast<const AstRecordType*>(type)) {
-            std::vector<std::string> fields;
-            for (const auto& field : rt->getFields()) {
-                fields.push_back(toString(field.type));
-            }
-            typeTable->addRecordType(toString(type->getName()), fields);
-        } else if (dynamic_cast<const AstUnionType*>(type) != nullptr) {
-            char kind = getKind(type);
-            typeTable->addUnionType(toString(type->getName()), kind);
+        if (const auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
+            primitiveTypes.push_back(pt);
+        } else if (const auto* rt = dynamic_cast<const AstRecordType*>(type)) {
+            recordTypes.push_back(rt);
+        } else if (const auto* ut = dynamic_cast<const AstUnionType*>(type)) {
+            unionTypes.push_back(ut);
         } else {
             assert(false && "unsupported typeclass");
         }
+    }
+
+    // store each type in the table
+    for (const auto* pt : primitiveTypes) {
+        char kind = getKind(pt);
+        typeTable->addPrimitiveType(toString(pt->getName()), kind);
+    }
+    for (const auto* ut : unionTypes) {
+        char kind = getKind(ut);
+        typeTable->addUnionType(toString(ut->getName()), kind);
+    }
+    for (const auto* rt : recordTypes) {
+        std::vector<std::string> fields;
+        for (const auto& field : rt->getFields()) {
+            fields.push_back(toString(field.type));
+        }
+        typeTable->addRecordType(toString(rt->getName()), fields);
     }
 
     // start with an empty sequence of ram statements
@@ -1770,7 +1786,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             ramProg->addSubroutine(negationSubroutineLabel, makeNegationSubproofSubroutine(clause));
         });
     }
-}
+}  // namespace souffle
 
 std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationUnit& tu) {
     auto ram_start = std::chrono::high_resolution_clock::now();

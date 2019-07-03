@@ -50,7 +50,7 @@ public:
     /**
      * Return a new WriteStream
      */
-    std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
             const std::vector<int>& recordArityMask, const RecordTable& recordTable,
             const TypeTable& typeTable, const IODirectives& ioDirectives, const bool provenance) const {
         std::string ioType = ioDirectives.getIOType();
@@ -58,7 +58,7 @@ public:
             throw std::invalid_argument("Requested output type <" + ioType + "> is not supported.");
         }
         return outputFactories.at(ioType)->getWriter(
-                kindMask, symbolTable, recordArityMask, recordTable, typeTable, ioDirectives, provenance);
+                typeMask, symbolTable, recordArityMask, recordTable, typeTable, ioDirectives, provenance);
     }
 
     /**

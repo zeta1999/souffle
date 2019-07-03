@@ -28,12 +28,12 @@ namespace souffle {
 
 class WriteStream {
 public:
-    WriteStream(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
+    WriteStream(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
             const std::vector<int>& recordArityMask, const RecordTable& recordTable,
             const TypeTable& typeTable, const bool prov, bool summary = false)
-            : kindMask(kindMask), symbolTable(symbolTable), recordArityMask(recordArityMask),
+            : typeMask(typeMask), symbolTable(symbolTable), recordArityMask(recordArityMask),
               recordTable(recordTable), typeTable(typeTable), isProvenance(prov), summary(summary),
-              arity(kindMask.size() - (prov ? 2 : 0)) {}
+              arity(typeMask.size() - (prov ? 2 : 0)) {}
     template <typename T>
     void writeAll(const T& relation) {
         if (summary) {
@@ -59,7 +59,7 @@ public:
     virtual ~WriteStream() = default;
 
 protected:
-    const std::vector<char>& kindMask;
+    const std::vector<int>& typeMask;
     const SymbolTable& symbolTable;
 
     // TODO: may no longer need this arity mask
@@ -149,14 +149,14 @@ protected:
             }
 
             default:
-                assert(false && "cannot print value of unknown kind");
+                assert(false && "unsupported kind");
         }
     }
 };
 
 class WriteStreamFactory {
 public:
-    virtual std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask,
+    virtual std::unique_ptr<WriteStream> getWriter(const std::vector<int>& typeMask,
             const SymbolTable& symbolTable, const std::vector<int>& recordArityMask,
             const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
             const bool provenance) = 0;

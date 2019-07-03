@@ -29,10 +29,10 @@ namespace souffle {
 class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<char>& kindMask, const SymbolTable& symbolTable,
+            const std::vector<int>& typeMask, const SymbolTable& symbolTable,
             const std::vector<int>& recordArityMask, const RecordTable& recordTable,
             const TypeTable& typeTable, const bool provenance)
-            : WriteStream(kindMask, symbolTable, recordArityMask, recordTable, typeTable, provenance),
+            : WriteStream(typeMask, symbolTable, recordArityMask, recordTable, typeTable, provenance),
               dbFilename(dbFilename), relationName(relationName) {
         openDB();
         createTables();
@@ -53,11 +53,12 @@ protected:
     void writeNextTuple(const RamDomain* tuple) override {
         for (size_t i = 0; i < arity; i++) {
             RamDomain value;
-            if (kindMask.at(i) == 's') {
+            char kind = typeTable.getKind(typeMask.at(i));
+            if (kind == 's') {
                 value = getSymbolTableID(tuple[i]);
-            } else if (kindMask.at(i) == 'i') {
+            } else if (kind == 'i') {
                 value = tuple[i];
-            } else if (kindMask.at(i) == 'r') {
+            } else if (kind == 'r') {
                 assert(false && "Record tuples cannot be written to sqlite db");
             } else {
                 assert(false && "Attempting to store unknown type in sqlite db");
@@ -221,7 +222,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (kindMask.at(i) != 's') {
+            if (typeTable.getKind(typeMask.at(i)) != 's') {
                 projectionClause << "'_" << relationName << "'.'" << columnName << "'";
             } else {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
@@ -262,13 +263,13 @@ private:
 
 class WriteSQLiteFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
             const std::vector<int>& recordArityMask, const RecordTable& recordTable, const TypeTable& typeTable,
             const IODirectives& ioDirectives, const bool provenance) override {
         std::string dbName = ioDirectives.get("dbname");
         std::string relationName = ioDirectives.getRelationName();
         return std::make_unique<WriteStreamSQLite>(
-                dbName, relationName, kindMask, symbolTable, recordArityMask, recordTable, typeTable, provenance);
+                dbName, relationName, typeMask, symbolTable, recordArityMask, recordTable, typeTable, provenance);
     }
     const std::string& getName() const override {
         static const std::string name = "sqlite";

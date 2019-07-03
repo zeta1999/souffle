@@ -249,7 +249,7 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
             auto values = pr.getArguments();
             auto arity = values.size();
             RamDomain data[arity + 1];
-            data[0] = interpreter.getTypeTable().getTypeId(pr.getRecordType());
+            data[0] = interpreter.getTypeTable().getId(pr.getRecordType());
             for (size_t i = 0; i < arity; ++i) {
                 data[i+1] = visit(values[i]);
             }

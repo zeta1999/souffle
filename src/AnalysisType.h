@@ -30,6 +30,7 @@
 
 namespace souffle {
 
+// TODO: move to new file
 enum class Kind { SYMBOL, NUMBER, RECORD };
 
 inline std::ostream& operator<<(std::ostream& os, Kind kind) {

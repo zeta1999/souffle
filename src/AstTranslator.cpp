@@ -1435,22 +1435,28 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // obtain the schedule of relations expired at each index of the topological order
     const auto& expirySchedule = translationUnit.getAnalysis<RelationSchedule>()->schedule();
 
-    // creates the type table associated with the AST program
+    // create the type table associated with the AST program
     typeTable = std::make_unique<TypeTable>();
+
+    // helper function to get the kind of an AST type
     std::function<char(const AstType*)> getKind = [&](const AstType* type) {
         if (auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
             return pt->isNumeric() ? 'i' : 's';
         } else if (dynamic_cast<const AstRecordType*>(type) != nullptr) {
             return 'r';
         } else if (auto* ut = dynamic_cast<const AstUnionType*>(type)) {
+            // all union variants have the same kind
             const auto& variants = ut->getTypes();
             assert(!variants.empty() && "union types cannot be empty");
+
+            // union variants cannot be recursive, so this will terminate
             return getKind(program->getType(variants[0]));
-        } else {
-            assert(false && "unsupported typeclass");
         }
+
+        assert(false && "unsupported typeclass");
     };
 
+    // store each type in the table
     for (const auto* type : program->getTypes()) {
         if (dynamic_cast<const AstPrimitiveType*>(type) != nullptr) {
             char kind = getKind(type);

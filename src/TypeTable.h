@@ -28,9 +28,9 @@ namespace souffle {
 class TypeTable {
 public:
     TypeTable() {
-        typeToKind["number"] = 'i';
-        typeToKind["symbol"] = 's';
-        typeToKind["record"] = 'r';
+        addPrimitiveType("number", 'i');
+        addPrimitiveType("symbol", 's');
+        addPrimitiveType("record", 'r');
     }
 
     // TODO: should be enum
@@ -38,38 +38,36 @@ public:
         addType(type, kind);
     }
 
-    void addRecordType(std::string type, std::vector<std::string> fields) {
-        addType(type, 'r');
-        recordToFields[type] = fields;
+    void addRecordType(std::string type, const std::vector<std::string>& fields) {
+        int id = addType(type, 'r');
+
+        std::vector<int> fieldIds;
+        for (const auto& field : fields) {
+            auto pos = nameToId.find(field);
+            assert(pos != nameToId.end() && "type does not exist in table");
+            fieldIds.push_back(pos->second);
+        }
+        idToFields[id] = fieldIds;
     }
 
     void addUnionType(std::string type, char kind) {
         addType(type, kind);
     }
 
-    int getTypeId(const std::string& type) const {
+    int getId(const std::string& type) const {
         return nameToId.at(type);
     }
 
-    std::string getRecordName(int typeId) const {
-        return idToName.at(typeId);
+    char getKind(int id) const {
+        return idToKind.at(id);
     }
 
-    std::vector<char> getFieldKinds(const std::string& recordName) const {
-        const std::vector<std::string>& fields = recordToFields.at(recordName);
-        std::vector<char> res;
-        for (const auto& _field : fields) {
-            res.push_back(typeToKind.at(_field));
-        }
-        return res;
+    std::string getRecordName(int recordId) const {
+        return idToName.at(recordId);
     }
 
-    const std::vector<std::string>& getFieldTypes(const std::string& recordName) const {
-        return recordToFields.at(recordName);
-    }
-
-    int getRecordArity(const std::string& recordName) const {
-        return recordToFields.at(recordName).size();
+    const std::vector<int>& getFieldTypes(int recordId) const {
+        return idToFields.at(recordId);
     }
 
     void print() const {
@@ -77,25 +75,25 @@ public:
         for (const auto& pair : idToName) {
             std::cout << pair.first << " <-> " << pair.second << std::endl;
         }
-        for (const auto& pair : recordToFields) {
+        for (const auto& pair : idToFields) {
             std::cout << pair.first << " -> " << pair.second << std::endl;
         }
-        for (const auto& pair : typeToKind) {
+        for (const auto& pair : idToKind) {
             std::cout << pair.first << " |-> " << pair.second << std::endl;
         }
     }
 
 private:
-    std::map<int, std::string> idToName;
     std::map<std::string, int> nameToId;
-    std::map<std::string, std::vector<std::string>> recordToFields;
-    std::map<std::string, char> typeToKind;
+    std::map<int, std::string> idToName;
+    std::map<int, std::vector<int>> idToFields;
+    std::map<int, char> idToKind;
 
     int addType(std::string type, char kind) {
-        static int count = 100;
-        idToName[count] = type;
+        static int count = 0;
         nameToId[type] = count;
-        typeToKind[type] = kind;
+        idToName[count] = type;
+        idToKind[count] = kind;
 
         count++;
         return count;

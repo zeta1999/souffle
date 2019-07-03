@@ -28,22 +28,22 @@ namespace souffle {
 class TypeTable {
 public:
     TypeTable() {
-        typeToKind["number"] = "number";
-        typeToKind["symbol"] = "symbol";
-        typeToKind["record"] = "record";
+        typeToKind["number"] = 'i';
+        typeToKind["symbol"] = 's';
+        typeToKind["record"] = 'r';
     }
 
     // TODO: should be enum
-    void addPrimitiveType(std::string type, std::string kind) {
+    void addPrimitiveType(std::string type, char kind) {
         addType(type, kind);
     }
 
     void addRecordType(std::string type, std::vector<std::string> fields) {
-        addType(type, "record");
+        addType(type, 'r');
         recordToFields[type] = fields;
     }
 
-    void addUnionType(std::string type, std::string kind) {
+    void addUnionType(std::string type, char kind) {
         addType(type, kind);
     }
 
@@ -59,19 +59,7 @@ public:
         const std::vector<std::string>& fields = recordToFields.at(recordName);
         std::vector<char> res;
         for (const auto& _field : fields) {
-            const std::string& field = typeToKind.at(_field);
-            if (field == "record") {
-                res.push_back('r');
-            } else if (field == "number") {
-                res.push_back('i');
-            } else if (field == "symbol") {
-                res.push_back('s');
-            } else if (field == "union") {
-                assert(false && "union currently not supported");
-            } else {
-                std::cout << field << std::endl;
-                assert(false && "unexpected kind");
-            }
+            res.push_back(typeToKind.at(_field));
         }
         return res;
     }
@@ -101,9 +89,9 @@ private:
     std::map<int, std::string> idToName;
     std::map<std::string, int> nameToId;
     std::map<std::string, std::vector<std::string>> recordToFields;
-    std::map<std::string, std::string> typeToKind;
+    std::map<std::string, char> typeToKind;
 
-    int addType(std::string type, std::string kind) {
+    int addType(std::string type, char kind) {
         static int count = 100;
         idToName[count] = type;
         nameToId[type] = count;

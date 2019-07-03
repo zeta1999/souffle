@@ -44,6 +44,7 @@
 #include "RamTranslationUnit.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
+#include "TypeTable.h"
 #include "Util.h"
 #include <algorithm>
 #include <cassert>
@@ -1434,6 +1435,40 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // obtain the schedule of relations expired at each index of the topological order
     const auto& expirySchedule = translationUnit.getAnalysis<RelationSchedule>()->schedule();
 
+    // creates the type table associated with the AST program
+    typeTable = std::make_unique<TypeTable>();
+    std::function<char(const AstType*)> getKind = [&](const AstType* type) {
+        if (auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
+            return pt->isNumeric() ? 'i' : 's';
+        } else if (dynamic_cast<const AstRecordType*>(type) != nullptr) {
+            return 'r';
+        } else if (auto* ut = dynamic_cast<const AstUnionType*>(type)) {
+            const auto& variants = ut->getTypes();
+            assert(!variants.empty() && "union types cannot be empty");
+            return getKind(program->getType(variants[0]));
+        } else {
+            assert(false && "unsupported typeclass");
+        }
+    };
+
+    for (const auto* type : program->getTypes()) {
+        if (dynamic_cast<const AstPrimitiveType*>(type) != nullptr) {
+            char kind = getKind(type);
+            typeTable->addPrimitiveType(toString(type->getName()), kind);
+        } else if (auto* rt = dynamic_cast<const AstRecordType*>(type)) {
+            std::vector<std::string> fields;
+            for (const auto& field : rt->getFields()) {
+                fields.push_back(toString(field.type));
+            }
+            typeTable->addRecordType(toString(type->getName()), fields);
+        } else if (dynamic_cast<const AstUnionType*>(type) != nullptr) {
+            char kind = getKind(type);
+            typeTable->addUnionType(toString(type->getName()), kind);
+        } else {
+            assert(false && "unsupported typeclass");
+        }
+    }
+
     // start with an empty sequence of ram statements
     std::unique_ptr<RamStatement> res = std::make_unique<RamSequence>();
 
@@ -1736,30 +1771,6 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
 
-    auto typeTab = std::make_unique<TypeTable>();
-    for (const auto* type : program->getTypes()) {
-        std::stringstream ss;
-        type->getName().print(ss);
-
-        if (auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
-            std::string kind = pt->isNumeric() ? "number" : "symbol";
-            typeTab->addPrimitiveType(ss.str(), kind);
-        } else if (auto* rt = dynamic_cast<const AstRecordType*>(type)) {
-            std::vector<std::string> fields;
-            for (const auto& field : rt->getFields()) {
-                std::stringstream ssField;
-                field.type.print(ssField);
-                fields.push_back(ssField.str());
-            }
-            typeTab->addRecordType(ss.str(), fields);
-        } else if (dynamic_cast<const AstUnionType*>(type) != nullptr) {
-            // TODO: pass in actual kind
-            typeTab->addUnionType(ss.str(), "union");
-        } else {
-            assert(false && "unknown typeclass encountered");
-        }
-    }
-
     if (!Global::config().get("debug-report").empty()) {
         if (ramProg) {
             auto ram_end = std::chrono::high_resolution_clock::now();
@@ -1772,7 +1783,7 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
         }
     }
     return std::make_unique<RamTranslationUnit>(
-            std::move(ramProg), symTab, std::move(typeTab), errReport, debugReport);
+            std::move(ramProg), symTab, std::move(typeTable), errReport, debugReport);
 }
 
 }  // end of namespace souffle

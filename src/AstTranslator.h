@@ -20,6 +20,7 @@
 #include "AstRelationIdentifier.h"
 #include "RamRelation.h"
 #include "RelationRepresentation.h"
+#include "TypeTable.h"
 #include "Util.h"
 #include <cassert>
 #include <map>
@@ -66,6 +67,9 @@ private:
 
     /** Type environment */
     const TypeEnvironment* typeEnv = nullptr;
+
+    /** Type table */
+    std::unique_ptr<TypeTable> typeTable;
 
     /** RAM program */
     std::unique_ptr<RamProgram> ramProg;

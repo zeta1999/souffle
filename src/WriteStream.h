@@ -95,10 +95,8 @@ protected:
             case 'r': {
                 int arity = recordArityMask.at(col);
                 const auto& record = recordTable.getRecord(arity + 1, repr);
-
-                typeTable.print();
-
-                os << "UnnamedRecord[" << join(record, ",") << "]";
+                std::string recordName = typeTable.getRecordName(record[0]);
+                os << recordName << "[" << join(record, ",") << "]";
                 break;
             }
 

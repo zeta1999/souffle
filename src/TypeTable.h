@@ -47,6 +47,10 @@ public:
         return nameToId.at(type);
     }
 
+    std::string getRecordName(int typeId) const {
+        return idToName.at(typeId);
+    }
+
     void print() const {
         std::cout << "TYPE TABLE" << std::endl;
         for (const auto& pair : idToName) {

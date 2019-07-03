@@ -27,7 +27,11 @@ namespace souffle {
 
 class TypeTable {
 public:
-    TypeTable() = default;
+    TypeTable() {
+        typeToKind["number"] = "number";
+        typeToKind["symbol"] = "symbol";
+        typeToKind["record"] = "record";
+    }
 
     // TODO: should be enum
     void addPrimitiveType(std::string type, std::string kind) {
@@ -49,6 +53,37 @@ public:
 
     std::string getRecordName(int typeId) const {
         return idToName.at(typeId);
+    }
+
+    std::vector<char> getFieldKinds(const std::string& recordName) const {
+        const std::vector<std::string>& fields = recordToFields.at(recordName);
+        std::vector<char> res;
+        for (const auto& _field : fields) {
+            std::cout << "getting _field: " << _field << std::endl;
+            const std::string& field = typeToKind.at(_field);
+            std::cout << "field is: " << field << std::endl;
+            if (field == "record") {
+                res.push_back('r');
+            } else if (field == "number") {
+                res.push_back('i');
+            } else if (field == "symbol") {
+                res.push_back('s');
+            } else if (field == "union") {
+                assert(false && "union currently not supported");
+            } else {
+                std::cout << field << std::endl;
+                assert(false && "unexpected kind");
+            }
+        }
+        return res;
+    }
+
+    const std::vector<std::string>& getFieldTypes(const std::string& recordName) const {
+        return recordToFields.at(recordName);
+    }
+
+    int getRecordArity(const std::string& recordName) const {
+        return recordToFields.at(recordName).size();
     }
 
     void print() const {

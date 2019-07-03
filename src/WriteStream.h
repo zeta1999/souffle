@@ -29,8 +29,8 @@ namespace souffle {
 class WriteStream {
 public:
     WriteStream(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const std::vector<int>& recordArityMask, const RecordTable& recordTable, const TypeTable& typeTable, const bool prov,
-            bool summary = false)
+            const std::vector<int>& recordArityMask, const RecordTable& recordTable,
+            const TypeTable& typeTable, const bool prov, bool summary = false)
             : kindMask(kindMask), symbolTable(symbolTable), recordArityMask(recordArityMask),
               recordTable(recordTable), typeTable(typeTable), isProvenance(prov), summary(summary),
               arity(kindMask.size() - (prov ? 2 : 0)) {}
@@ -82,6 +82,27 @@ protected:
         writeNextTuple(tuple.data);
     }
 
+    void _write_value(std::ostream& os, char kind, RamDomain repr, std::string recordName = "bad") {
+        switch (kind) {
+            case 'i':
+                os << repr;
+                break;
+            case 's':
+                os << symbolTable.unsafeResolve(repr);
+                break;
+            case 'r': {
+                int arity = typeTable.getRecordArity(recordName);
+                const auto& record = recordTable.getRecord(arity + 1, repr);
+                std::string recordName = typeTable.getRecordName(record[0]);
+
+                os << recordName << "[" << "<unknown>" << "]";
+                break;
+            }
+            default:
+                assert(false && "cannot print value of unknown kind");
+        }
+    }
+
     void writeValue(std::ostream& os, size_t col, RamDomain repr) {
         switch (kindMask.at(col)) {
             case 'i':
@@ -96,7 +117,21 @@ protected:
                 int arity = recordArityMask.at(col);
                 const auto& record = recordTable.getRecord(arity + 1, repr);
                 std::string recordName = typeTable.getRecordName(record[0]);
-                os << recordName << "[" << join(record, ",") << "]";
+                const std::vector<std::string>& fieldTypes = typeTable.getFieldTypes(recordName);
+                const std::vector<char>& fieldKinds = typeTable.getFieldKinds(recordName);
+
+                os << recordName << "[";
+                for (size_t i = 0; i < arity; i++) {
+                    if (fieldKinds[i] == 'r') {
+                        _write_value(os, fieldKinds[i], record[i+1], fieldTypes[i]);
+                    } else {
+                        _write_value(os, fieldKinds[i], record[i+1]);
+                    }
+                    if (i != arity - 1) {
+                        os << ", ";
+                    }
+                }
+                os << "]";
                 break;
             }
 
@@ -110,7 +145,8 @@ class WriteStreamFactory {
 public:
     virtual std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask,
             const SymbolTable& symbolTable, const std::vector<int>& recordArityMask,
-            const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives, const bool provenance) = 0;
+            const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
+            const bool provenance) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
 };

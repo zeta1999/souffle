@@ -249,10 +249,16 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
             auto values = pr.getArguments();
             auto arity = values.size();
             RamDomain data[arity + 1];
+
+            // first argument is type-id
             data[0] = interpreter.getTypeTable().getId(pr.getRecordType());
+
+            // then add in the values
             for (size_t i = 0; i < arity; ++i) {
                 data[i+1] = visit(values[i]);
             }
+
+            // pack them up into one record tuple
             return pack(data, arity + 1);
         }
 
@@ -578,6 +584,8 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
 
             // update environment variable
             auto arity = lookup.getArity();
+
+            // unpack the tuple, taking into account extra leading type-id field
             const RamDomain* tuple = unpack(ref, arity + 1) + 1;
 
             // save reference to temporary value

@@ -1481,12 +1481,10 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
     // store each type in the table
     for (const auto* pt : primitiveTypes) {
-        Kind kind = getKind(pt);
-        typeTable->addPrimitiveType(toString(pt->getName()), kind);
+        typeTable->addPrimitiveType(toString(pt->getName()), getKind(pt));
     }
     for (const auto* ut : unionTypes) {
-        Kind kind = getKind(ut);
-        typeTable->addUnionType(toString(ut->getName()), kind);
+        typeTable->addUnionType(toString(ut->getName()), getKind(ut));
     }
     for (const auto* rt : recordTypes) {
         std::vector<int> fields;

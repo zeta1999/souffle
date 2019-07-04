@@ -17,6 +17,7 @@
 #include "IODirectives.h"
 #include "RamTypes.h"
 #include "RecordTable.h"
+#include "SouffleType.h"
 #include "SymbolTable.h"
 #include "TypeTable.h"
 
@@ -78,17 +79,17 @@ protected:
     }
 
     void writeValue(std::ostream& os, RamDomain repr, int typeId) {
-        char kind = typeTable.getKind(typeId);
+        Kind kind = typeTable.getKind(typeId);
         switch (kind) {
-            case 'i':
+            case Kind::NUMBER:
                 os << repr;
                 break;
 
-            case 's':
+            case Kind::SYMBOL:
                 os << symbolTable.unsafeResolve(repr);
                 break;
 
-            case 'r': {
+            case Kind::RECORD: {
                 // get record metadata
                 const auto& name = typeTable.getName(typeId);
                 const auto& fieldTypes = typeTable.getFieldTypes(typeId);

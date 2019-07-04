@@ -14,6 +14,8 @@
  *
  ***********************************************************************/
 
+#pragma once
+
 namespace souffle {
 
 enum class Kind { SYMBOL, NUMBER, RECORD };

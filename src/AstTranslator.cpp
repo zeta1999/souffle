@@ -1481,11 +1481,11 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
     // store each type in the table
     for (const auto* pt : primitiveTypes) {
-        char kind = getKind(pt);
+        Kind kind = getKind(pt);
         typeTable->addPrimitiveType(toString(pt->getName()), kind);
     }
     for (const auto* ut : unionTypes) {
-        char kind = getKind(ut);
+        Kind kind = getKind(ut);
         typeTable->addUnionType(toString(ut->getName()), kind);
     }
     for (const auto* rt : recordTypes) {

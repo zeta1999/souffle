@@ -52,15 +52,18 @@ protected:
     void writeNextTuple(const RamDomain* tuple) override {
         for (size_t i = 0; i < arity; i++) {
             RamDomain value;
-            char kind = typeTable.getKind(typeMask.at(i));
-            if (kind == 's') {
-                value = getSymbolTableID(tuple[i]);
-            } else if (kind == 'i') {
-                value = tuple[i];
-            } else if (kind == 'r') {
-                assert(false && "Record tuples cannot be written to sqlite db");
-            } else {
-                assert(false && "Attempting to store unknown type in sqlite db");
+            switch (typeTable.getKind(typeMask.at(i))) {
+                case Kind::SYMBOL:
+                    value = getSymbolTableID(tuple[i]);
+                    break;
+                case Kind::NUMBER:
+                    value = tuple[i];
+                    break;
+                case Kind::RECORD:
+                    assert(false && "Record tuples cannot be written to sqlite db");
+                    break;
+                default:
+                    assert(false && "Attempting to store unknown type in sqlite db");
             }
 
 #if RAM_DOMAIN_SIZE == 64
@@ -221,7 +224,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (typeTable.getKind(typeMask.at(i)) != 's') {
+            if (typeTable.getKind(typeMask.at(i)) != Kind::SYMBOL) {
                 projectionClause << "'_" << relationName << "'.'" << columnName << "'";
             } else {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";

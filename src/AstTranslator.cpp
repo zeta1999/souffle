@@ -1488,9 +1488,9 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         typeTable->addUnionType(toString(ut->getName()), kind);
     }
     for (const auto* rt : recordTypes) {
-        std::vector<std::string> fields;
+        std::vector<int> fields;
         for (const auto& field : rt->getFields()) {
-            fields.push_back(toString(field.type));
+            fields.push_back(typeTable->getId(toString(field.type)));
         }
         typeTable->addRecordType(toString(rt->getName()), fields);
     }

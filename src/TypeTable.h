@@ -38,20 +38,13 @@ public:
         addType(type, kind);
     }
 
-    void addRecordType(std::string type, const std::vector<std::string>& fields) {
-        int id = addType(type, 'r');
-
-        std::vector<int> fieldIds;
-        for (const auto& field : fields) {
-            auto pos = nameToId.find(field);
-            assert(pos != nameToId.end() && "type does not exist in table");
-            fieldIds.push_back(pos->second);
-        }
-        idToFields[id] = fieldIds;
-    }
-
     void addUnionType(std::string type, char kind) {
         addType(type, kind);
+    }
+
+    void addRecordType(std::string type, std::vector<int> fieldIds) {
+        int id = addType(type, 'r');
+        idToFields[id] = fieldIds;
     }
 
     int getId(const std::string& type) const {
@@ -62,8 +55,8 @@ public:
         return idToKind.at(id);
     }
 
-    std::string getRecordName(int recordId) const {
-        return idToName.at(recordId);
+    const std::string& getName(int id) const {
+        return idToName.at(id);
     }
 
     const std::vector<int>& getFieldTypes(int recordId) const {
@@ -71,7 +64,7 @@ public:
     }
 
     void print() const {
-        std::cout << "TYPE TABLE" << std::endl;
+        std::cout << "--- TYPE TABLE ---" << std::endl;
         for (const auto& pair : idToName) {
             std::cout << pair.first << " <-> " << pair.second << std::endl;
         }
@@ -81,6 +74,7 @@ public:
         for (const auto& pair : idToKind) {
             std::cout << pair.first << " |-> " << pair.second << std::endl;
         }
+        std::cout << " - - - - - - - - -" << std::endl;
     }
 
 private:
@@ -90,6 +84,9 @@ private:
     std::map<int, char> idToKind;
 
     int addType(std::string type, char kind) {
+        // type must only be added once
+        assert(nameToId.find(type) == nameToId.end() && "typename already exists in type table");
+
         static int count = 0;
         nameToId[type] = count;
         idToName[count] = type;

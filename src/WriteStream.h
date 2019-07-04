@@ -29,11 +29,9 @@ namespace souffle {
 class WriteStream {
 public:
     WriteStream(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
-            const std::vector<int>& recordArityMask, const RecordTable& recordTable,
-            const TypeTable& typeTable, const bool prov, bool summary = false)
-            : typeMask(typeMask), symbolTable(symbolTable), recordArityMask(recordArityMask),
-              recordTable(recordTable), typeTable(typeTable), isProvenance(prov), summary(summary),
-              arity(typeMask.size() - (prov ? 2 : 0)) {}
+            const RecordTable& recordTable, const TypeTable& typeTable, const bool prov, bool summary = false)
+            : typeMask(typeMask), symbolTable(symbolTable), recordTable(recordTable), typeTable(typeTable),
+              isProvenance(prov), summary(summary), arity(typeMask.size() - (prov ? 2 : 0)) {}
     template <typename T>
     void writeAll(const T& relation) {
         if (summary) {
@@ -61,9 +59,6 @@ public:
 protected:
     const std::vector<int>& typeMask;
     const SymbolTable& symbolTable;
-
-    // TODO: may no longer need this arity mask
-    const std::vector<int>& recordArityMask;
     const RecordTable& recordTable;
     const TypeTable& typeTable;
     const bool isProvenance;
@@ -84,7 +79,7 @@ protected:
 
     void writeValue(std::ostream& os, RamDomain repr, int typeId) {
         char kind = typeTable.getKind(typeId);
-        switch(kind) {
+        switch (kind) {
             case 'i':
                 os << repr;
                 break;
@@ -95,7 +90,7 @@ protected:
 
             case 'r': {
                 // get record metadata
-                const auto& name = typeTable.getRecordName(typeId);
+                const auto& name = typeTable.getName(typeId);
                 const auto& fieldTypes = typeTable.getFieldTypes(typeId);
                 int arity = fieldTypes.size();
 
@@ -105,7 +100,7 @@ protected:
                 // print out the record recursively
                 os << name << "[";
                 for (int i = 0; i < arity; i++) {
-                    writeValue(os, record[i+1], fieldTypes[i]);
+                    writeValue(os, record[i + 1], fieldTypes[i]);
 
                     if (i != arity - 1) {
                         os << ", ";
@@ -124,9 +119,8 @@ protected:
 class WriteStreamFactory {
 public:
     virtual std::unique_ptr<WriteStream> getWriter(const std::vector<int>& typeMask,
-            const SymbolTable& symbolTable, const std::vector<int>& recordArityMask,
-            const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
-            const bool provenance) = 0;
+            const SymbolTable& symbolTable, const RecordTable& recordTable, const TypeTable& typeTable,
+            const IODirectives& ioDirectives, const bool provenance) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
 };

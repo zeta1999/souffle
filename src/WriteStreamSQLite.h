@@ -29,11 +29,10 @@ namespace souffle {
 class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<int>& typeMask, const SymbolTable& symbolTable,
-            const std::vector<int>& recordArityMask, const RecordTable& recordTable,
+            const std::vector<int>& typeMask, const SymbolTable& symbolTable, const RecordTable& recordTable,
             const TypeTable& typeTable, const bool provenance)
-            : WriteStream(typeMask, symbolTable, recordArityMask, recordTable, typeTable, provenance),
-              dbFilename(dbFilename), relationName(relationName) {
+            : WriteStream(typeMask, symbolTable, recordTable, typeTable, provenance), dbFilename(dbFilename),
+              relationName(relationName) {
         openDB();
         createTables();
         prepareStatements();
@@ -264,12 +263,12 @@ private:
 class WriteSQLiteFactory : public WriteStreamFactory {
 public:
     std::unique_ptr<WriteStream> getWriter(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
-            const std::vector<int>& recordArityMask, const RecordTable& recordTable, const TypeTable& typeTable,
-            const IODirectives& ioDirectives, const bool provenance) override {
+            const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
+            const bool provenance) override {
         std::string dbName = ioDirectives.get("dbname");
         std::string relationName = ioDirectives.getRelationName();
         return std::make_unique<WriteStreamSQLite>(
-                dbName, relationName, typeMask, symbolTable, recordArityMask, recordTable, typeTable, provenance);
+                dbName, relationName, typeMask, symbolTable, recordTable, typeTable, provenance);
     }
     const std::string& getName() const override {
         static const std::string name = "sqlite";

@@ -378,7 +378,7 @@ protected:
  */
 class RamPackRecord : public RamExpression {
 public:
-    RamPackRecord(std::string recordType, std::vector<std::unique_ptr<RamExpression>> args)
+    RamPackRecord(int recordType, std::vector<std::unique_ptr<RamExpression>> args)
             : RamExpression(), recordType(recordType), arguments(std::move(args)) {}
 
     /** Get arguments */
@@ -387,7 +387,7 @@ public:
     }
 
     /** Get associated record type */
-    std::string getRecordType() const {
+    int getRecordType() const {
         return recordType;
     }
 
@@ -433,7 +433,7 @@ public:
 
 protected:
     /** Record type id */
-    std::string recordType;
+    int recordType;
 
     /** Arguments */
     std::vector<std::unique_ptr<RamExpression>> arguments;

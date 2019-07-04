@@ -251,7 +251,7 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
             RamDomain data[arity + 1];
 
             // first argument is type-id
-            data[0] = interpreter.getTypeTable().getId(pr.getRecordType());
+            data[0] = pr.getRecordType();
 
             // then add in the values
             for (size_t i = 0; i < arity; ++i) {

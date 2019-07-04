@@ -519,13 +519,15 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
             }
             case LVM_PackRecord: {
                 RamDomain arity = code[ip + 1];
-                RamDomain data[arity];
+                RamDomain recordType = code[ip + 2];
+                RamDomain data[arity + 1];
+                data[0] = recordType;
                 for (auto i = 0; i < arity; ++i) {
-                    data[arity - i - 1] = stack.top();
+                    data[arity - i] = stack.top();
                     stack.pop();
                 }
-                stack.push(pack(data, arity));
-                ip += 2;
+                stack.push(pack(data, arity + 1));
+                ip += 3;
                 break;
             }
             case LVM_Argument: {
@@ -682,7 +684,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     break;
                 }
 
-                RamDomain* tuple = unpack(ref, arity);
+                // unpack the tuple, taking into account extra leading type-id field
+                RamDomain* tuple = unpack(ref, arity + 1) + 1;
                 ctxt[id] = tuple;
                 ip += 4;
                 break;
@@ -887,8 +890,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                         InterpreterRelation& relation = getRelation(relName);
                         const auto& typeMask = relation.getAttributeTypeIds();
                         IOSystem::getInstance()
-                                .getWriter(typeMask, symbolTable,
-                                        getInterpreterRecordTable(), getTypeTable(), io, Global::config().has("provenance"))
+                                .getWriter(typeMask, symbolTable, getInterpreterRecordTable(), getTypeTable(),
+                                        io, Global::config().has("provenance"))
                                 ->writeAll(relation);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";

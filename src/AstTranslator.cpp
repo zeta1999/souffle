@@ -42,6 +42,7 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
+#include "SouffleType.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "TypeTable.h"
@@ -1444,11 +1445,11 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     typeTable = std::make_unique<TypeTable>();
 
     // helper function to get the kind of an AST type
-    std::function<char(const AstType*)> getKind = [&](const AstType* type) {
+    std::function<Kind(const AstType*)> getKind = [&](const AstType* type) {
         if (auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
-            return pt->isNumeric() ? 'i' : 's';
+            return pt->isNumeric() ? Kind::NUMBER : Kind::SYMBOL;
         } else if (dynamic_cast<const AstRecordType*>(type) != nullptr) {
-            return 'r';
+            return Kind::RECORD;
         } else if (auto* ut = dynamic_cast<const AstUnionType*>(type)) {
             // all union variants have the same kind
             const auto& variants = ut->getTypes();

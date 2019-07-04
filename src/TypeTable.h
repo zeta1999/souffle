@@ -17,33 +17,32 @@
 
 #pragma once
 
+#include "SouffleType.h"
 #include <cassert>
 #include <map>
 #include <vector>
-
-// TODO: fix types used
 
 namespace souffle {
 
 class TypeTable {
 public:
     TypeTable() {
-        addPrimitiveType("number", 'i');
-        addPrimitiveType("symbol", 's');
-        addPrimitiveType("record", 'r');
+        addPrimitiveType("number", Kind::NUMBER);
+        addPrimitiveType("symbol", Kind::SYMBOL);
+        addPrimitiveType("record", Kind::RECORD);
     }
 
     // TODO: should be enum
-    void addPrimitiveType(std::string type, char kind) {
+    void addPrimitiveType(std::string type, Kind kind) {
         addType(type, kind);
     }
 
-    void addUnionType(std::string type, char kind) {
+    void addUnionType(std::string type, Kind kind) {
         addType(type, kind);
     }
 
     void addRecordType(std::string type, std::vector<int> fieldIds) {
-        int id = addType(type, 'r');
+        int id = addType(type, Kind::RECORD);
         idToFields[id] = fieldIds;
     }
 
@@ -51,7 +50,7 @@ public:
         return nameToId.at(type);
     }
 
-    char getKind(int id) const {
+    Kind getKind(int id) const {
         return idToKind.at(id);
     }
 
@@ -81,9 +80,9 @@ private:
     std::map<std::string, int> nameToId;
     std::map<int, std::string> idToName;
     std::map<int, std::vector<int>> idToFields;
-    std::map<int, char> idToKind;
+    std::map<int, Kind> idToKind;
 
-    int addType(std::string type, char kind) {
+    int addType(std::string type, Kind kind) {
         // type must only be added once
         assert(nameToId.find(type) == nameToId.end() && "typename already exists in type table");
 

@@ -32,7 +32,10 @@ public:
         addPrimitiveType("record", Kind::RECORD);
     }
 
-    // TODO: should be enum
+    TypeTable(std::map<std::string, int> nameToId, std::map<int, std::string> idToName,
+            std::map<int, std::vector<int>> idToFields, std::map<int, Kind> idToKind)
+            : nameToId(nameToId), idToName(idToName), idToFields(idToFields), idToKind(idToKind) {}
+
     void addPrimitiveType(std::string type, Kind kind) {
         addType(type, kind);
     }
@@ -62,6 +65,18 @@ public:
         return idToFields.at(recordId);
     }
 
+    const std::map<int, std::string>& getIdToNameMap() const {
+        return idToName;
+    }
+
+    const std::map<int, std::vector<int>> getIdToFieldsMap() const {
+        return idToFields;
+    }
+
+    const std::map<int, Kind> getIdToKindMap() const {
+        return idToKind;
+    }
+
     void print() const {
         std::cout << "--- TYPE TABLE ---" << std::endl;
         for (const auto& pair : idToName) {
@@ -77,6 +92,7 @@ public:
     }
 
 private:
+    // TODO: maybe change to vectors or some sort of array access
     std::map<std::string, int> nameToId;
     std::map<int, std::string> idToName;
     std::map<int, std::vector<int>> idToFields;

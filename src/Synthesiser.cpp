@@ -1694,6 +1694,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     //                      Auto-Index Generation
     // ---------------------------------------------------------------
     const SymbolTable& symTable = translationUnit.getSymbolTable();
+    const TypeTable& typeTable = translationUnit.getTypeTable();
     const RamProgram& prog = *translationUnit.getProgram();
     auto* idxAnalysis = translationUnit.getAnalysis<RamIndexAnalysis>();
 
@@ -1848,7 +1849,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             }
             os << "}";
         }
-        os << ";";
+        os << ";\n";
     }
     if (Global::config().has("profile")) {
         os << "private:\n";
@@ -1860,6 +1861,16 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             if (!node.getRelation().isTemp()) numRead++;
         });
         os << "  size_t reads[" << numRead << "]{};\n";
+    }
+
+    // declare type table
+    os << "// -- declare type table --\n";
+    {
+        os << "TypeTable typeTable(";
+        os << toString(typeTable.getNameToIdMap()) << ",";
+        os << toString(typeTable.getIdToNameMap()) << ",";
+        os << toString(typeTable.getIdToFieldsMap()) << ",";
+        os << toString(typeTable.getIdToKindMap()) << ");";
     }
 
     // print relation definitions

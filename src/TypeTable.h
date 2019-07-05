@@ -65,15 +65,19 @@ public:
         return idToFields.at(recordId);
     }
 
+    const std::map<std::string, int>& getNameToIdMap() const {
+        return nameToId;
+    }
+
     const std::map<int, std::string>& getIdToNameMap() const {
         return idToName;
     }
 
-    const std::map<int, std::vector<int>> getIdToFieldsMap() const {
+    const std::map<int, std::vector<int>>& getIdToFieldsMap() const {
         return idToFields;
     }
 
-    const std::map<int, Kind> getIdToKindMap() const {
+    const std::map<int, Kind>& getIdToKindMap() const {
         return idToKind;
     }
 

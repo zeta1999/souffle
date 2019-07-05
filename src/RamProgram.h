@@ -100,6 +100,11 @@ public:
         }
     }
 
+    /** @brief Get relations map */
+    const std::map<std::string, std::unique_ptr<RamRelation>>& getAllRelations() const {
+        return this->relations;
+    }
+
     /** @brief Add subroutine */
     void addSubroutine(std::string name, std::unique_ptr<RamStatement> subroutine) {
         subroutines.insert(std::make_pair(name, std::move(subroutine)));

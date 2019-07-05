@@ -16,43 +16,92 @@
 #pragma once
 
 #include "LVMCode.h"
+#include "LVMRelation.h"
 #include "RamIndexAnalysis.h"
+#include "RamTranslationUnit.h"
 #include "RamVisitor.h"
 
 namespace souffle {
 
-/** RelationEncoder encode a relation into a index position for fast lookup */
+/** RelationEncoder create and encode a LVMRelation into a index position for fast lookup */
 class RelationEncoder {
 public:
+    RelationEncoder(RamIndexAnalysis* isa, RamTranslationUnit& tUnit) : isa(isa) {
+        for (const auto& pair : tUnit.getProgram()->getAllRelations()) {
+            encodeRelation(*pair.second);
+        }
+    }
+
     /** Encode a relation into a index Id and return the encoding result.  */
-    size_t encodeRelation(std::string relationName) {
-        auto iter = relations.find(relationName);
-        // Give relation a new index if it is not in the environment yet
-        if (iter == relations.end()) {
-            relations.insert(std::make_pair(relationName, relations.size()));
-            relationNames.push_back(relationName);
-            return relations.size() - 1;
+    size_t encodeRelation(const RamRelation& rel) {
+        const std::string& relationName = rel.getName();
+        auto iter = relNameToIndex.find(relationName);
+        // Create and give relation a new index if it is not in the environment yet
+        if (iter == relNameToIndex.end()) {
+            relNameToIndex.insert(std::make_pair(relationName, relNameToIndex.size()));
+            relationMap.push_back(createRelation(rel));
+            return relNameToIndex.size() - 1;
         } else {
             return iter->second;
         }
     }
 
     /** Decode relationId, return relationName */
-    const std::string& decodeRelation(size_t relId) const {
-        return relationNames[relId];
+    LVMRelation* decodeRelation(size_t relId) const {
+        return relationMap[relId].get();
     }
 
     /** Get total number of relations */
     size_t getSize() const {
-        return relationNames.size();
+        return relationMap.size();
     }
 
-private:
-    /** RelName to index mapping */
-    std::map<std::string, size_t> relations;
+    std::unique_ptr<LVMRelation>& operator[](size_t idx) {
+        return relationMap[idx];
+    }
 
-    /** Index to RelName mapping */
-    std::vector<std::string> relationNames;
+    std::vector<std::unique_ptr<LVMRelation>>& getRelationMap() {
+        return relationMap;
+    }
+
+    RamIndexAnalysis* isa;
+
+private:
+    constexpr static size_t MAX_DIRECT_INDEX_SIZE = 12;
+
+    /** RelName to index mapping */
+    std::map<std::string, size_t> relNameToIndex;
+
+    /** Index to concrete relation mapping */
+    std::vector<std::unique_ptr<LVMRelation>> relationMap;
+
+    /** Create relation with corresponding index type */
+    std::unique_ptr<LVMRelation> createRelation(const RamRelation& rel) {
+        const MinIndexSelection& orderSet = isa->getIndexes(rel);
+
+        if (rel.getArity() > MAX_DIRECT_INDEX_SIZE) {
+            return std::make_unique<LVMIndirectRelation>(
+                    rel.getArity(), rel.getNumberOfHeights(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
+        }
+
+        switch (rel.getRepresentation()) {
+            case RelationRepresentation::BTREE:
+                return std::make_unique<LVMRelation>(
+                        rel.getArity(), rel.getNumberOfHeights(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
+            case RelationRepresentation::BRIE:
+                return std::make_unique<LVMRelation>(rel.getArity(), rel.getNumberOfHeights(), rel.getName(),
+                        rel.getAttributeTypeQualifiers(), orderSet, createBrieIndex);
+            case RelationRepresentation::EQREL:
+                return std::make_unique<LVMEqRelation>(
+                        rel.getArity(), rel.getNumberOfHeights(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
+            case RelationRepresentation::DEFAULT:
+                return std::make_unique<LVMRelation>(
+                        rel.getArity(), rel.getNumberOfHeights(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
+            default:
+                break;
+        }
+        return nullptr;
+    }
 };
 
 /**
@@ -65,10 +114,8 @@ public:
      * This is done by traversing the tree twice, in order to find the necessary information (Jump
      * destination) for LVM branch operations.
      */
-    LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry, RamIndexAnalysis& isa,
-            RelationEncoder& relationEncoder)
-            : symbolTable(symbolTable), code(new LVMCode(symbolTable)), isa(isa),
-              relationEncoder(relationEncoder) {
+    LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry, RelationEncoder& relationEncoder)
+            : symbolTable(symbolTable), code(new LVMCode(symbolTable)), relationEncoder(relationEncoder) {
         (*this)(entry, 0);
         (*this).cleanUp();
         (*this)(entry, 0);
@@ -224,7 +271,7 @@ protected:
     }
 
     void visitUserDefinedOperator(const RamUserDefinedOperator& op, size_t exitAddress) override {
-        for (size_t i = 0; i < op.getArgCount(); i++) {
+        for (size_t i = op.getArgCount(); i-- > 0;) {
             visit(op.getArgument(i), exitAddress);
         }
         code->push_back(LVM_UserDefinedOperator);
@@ -270,40 +317,68 @@ protected:
 
     void visitEmptinessCheck(const RamEmptinessCheck& emptiness, size_t exitAddress) override {
         code->push_back(LVM_EmptinessCheck);
-        code->push_back(relationEncoder.encodeRelation(emptiness.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(emptiness.getRelation()));
     }
 
     void visitExistenceCheck(const RamExistenceCheck& exists, size_t exitAddress) override {
         auto values = exists.getValues();
         auto arity = exists.getRelation().getArity();
-        std::string types;
-        for (size_t i = 0; i < arity; ++i) {
+        auto relId = relationEncoder.encodeRelation(exists.getRelation());
+        std::vector<int> typeMask(arity);
+        bool emptinessCheck = true;
+        bool fullExistenceCheck = true;
+        for (size_t i = arity; i-- > 0;) {
             if (!isRamUndefValue(values[i])) {
                 visit(values[i], exitAddress);
+                emptinessCheck = false;
+                typeMask[i] = 1;
+            } else {
+                fullExistenceCheck = false;
             }
-            types += (isRamUndefValue(values[i]) ? "_" : "V");
         }
-        code->push_back(LVM_ExistenceCheck);
-        code->push_back(relationEncoder.encodeRelation(exists.getRelation().getName()));
-        code->push_back(symbolTable.lookup(types));
-        code->push_back(getIndexPos(exists));
+        // Empty type mask is equivalent to a non-emptiness check
+        if (emptinessCheck == true) {
+            code->push_back(LVM_EmptinessCheck);
+            code->push_back(relId);
+            code->push_back(LVM_Negation);
+        } else if (fullExistenceCheck == true) {
+            // Full type mask is equivalent to a full order existence check
+            code->push_back(LVM_ContainCheck);
+            code->push_back(relId);
+        } else {  // Otherwise we do a partial existence check.
+            size_t indexPos = getIndexPos(exists);
+            this->emitExistenceCheckInst(arity, relId, indexPos, typeMask);
+        }
     }
 
     void visitProvenanceExistenceCheck(
             const RamProvenanceExistenceCheck& provExists, size_t exitAddress) override {
+        // By leaving the last two pattern mask empty (0), we can transfer a provenance existence into an
+        // equivalent Ram existence check.
+        // Unlike RamExistence, a ProvenanceExistence can never be a full order existence check.
         auto values = provExists.getValues();
         auto arity = provExists.getRelation().getArity();
-        std::string types;
-        for (size_t i = 0; i < arity - 2; ++i) {
+        auto numberOfHeights = provExists.getRelation().getNumberOfHeights();
+        auto relId = relationEncoder.encodeRelation(provExists.getRelation());
+        std::vector<int> typeMask(arity);
+        bool emptinessCheck = true;
+        for (size_t i = arity - numberOfHeights; i-- > 0;) {
             if (!isRamUndefValue(values[i])) {
                 visit(values[i], exitAddress);
+                emptinessCheck = false;
+                typeMask[i] = 1;
             }
-            types += (isRamUndefValue(values[i]) ? "_" : "V");
         }
-        code->push_back(LVM_ProvenanceExistenceCheck);
-        code->push_back(relationEncoder.encodeRelation(provExists.getRelation().getName()));
-        code->push_back(symbolTable.lookup(types));
-        code->push_back(getIndexPos(provExists));
+
+        // Empty type mask is equivalent to a non-emptiness check
+        if (emptinessCheck == true) {
+            code->push_back(LVM_EmptinessCheck);
+            code->push_back(relId);
+            code->push_back(LVM_Negation);
+        } else {  // Otherwise we do a partial existence check.
+            size_t indexPos = getIndexPos(provExists);
+            this->emitExistenceCheckInst(arity, relId, indexPos, typeMask);
+        }
     }
 
     void visitConstraint(const RamConstraint& relOp, size_t exitAddress) override {
@@ -371,7 +446,7 @@ protected:
         // Init the Iterator
         code->push_back(LVM_ITER_InitFullIndex);
         code->push_back(counterLabel);
-        code->push_back(relationEncoder.encodeRelation(scan.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(scan.getRelation()));
 
         // While iterator is not at end
         size_t address_L0 = code->size();
@@ -407,7 +482,7 @@ protected:
         // Init the Iterator
         code->push_back(LVM_ITER_InitFullIndex);
         code->push_back(counterLabel);
-        code->push_back(relationEncoder.encodeRelation(choice.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(choice.getRelation()));
 
         // While iterator is not at end
         size_t address_L0 = code->size();
@@ -444,21 +519,27 @@ protected:
 
         // Obtain the pattern for index
         auto patterns = scan.getRangePattern();
-        std::string types;
         auto arity = scan.getRelation().getArity();
-        for (size_t i = 0; i < arity; i++) {
+        auto relId = relationEncoder.encodeRelation(scan.getRelation());
+        std::vector<int> typeMask(arity);
+        bool fullIndexSearch = true;
+        for (size_t i = arity; i-- > 0;) {
             if (!isRamUndefValue(patterns[i])) {
                 visit(patterns[i], exitAddress);
+                fullIndexSearch = false;
+                typeMask[i] = 1;
             }
-            types += (isRamUndefValue(patterns[i]) ? "_" : "V");
         }
 
         // Init range index based on pattern
-        code->push_back(LVM_ITER_InitRangeIndex);
-        code->push_back(counterLabel);
-        code->push_back(relationEncoder.encodeRelation(scan.getRelation().getName()));
-        code->push_back(symbolTable.lookup(types));
-        code->push_back(getIndexPos(scan));
+        if (fullIndexSearch == true) {
+            code->push_back(LVM_ITER_InitFullIndex);
+            code->push_back(counterLabel);
+            code->push_back(relId);
+        } else {
+            auto indexPos = getIndexPos(scan);
+            this->emitRangeIndexInst(arity, relId, indexPos, counterLabel, typeMask);
+        }
 
         // While iter is not at end
         size_t address_L0 = code->size();
@@ -490,21 +571,27 @@ protected:
 
         // Obtain the pattern for index
         auto patterns = indexChoice.getRangePattern();
-        std::string types;
         auto arity = indexChoice.getRelation().getArity();
-        for (size_t i = 0; i < arity; i++) {
+        auto relId = relationEncoder.encodeRelation(indexChoice.getRelation());
+        std::vector<int> typeMask(arity);
+        bool fullIndexSearch = true;
+        for (size_t i = arity; i-- > 0;) {
             if (!isRamUndefValue(patterns[i])) {
                 visit(patterns[i], exitAddress);
+                fullIndexSearch = false;
+                typeMask[i] = 1;
             }
-            types += (isRamUndefValue(patterns[i]) ? "_" : "V");
         }
 
         // Init range index based on pattern
-        code->push_back(LVM_ITER_InitRangeIndex);
-        code->push_back(counterLabel);
-        code->push_back(relationEncoder.encodeRelation(indexChoice.getRelation().getName()));
-        code->push_back(symbolTable.lookup(types));
-        code->push_back(getIndexPos(indexChoice));
+        if (fullIndexSearch == true) {
+            code->push_back(LVM_ITER_InitFullIndex);
+            code->push_back(counterLabel);
+            code->push_back(relId);
+        } else {
+            auto indexPos = getIndexPos(indexChoice);
+            this->emitRangeIndexInst(arity, relId, indexPos, counterLabel, typeMask);
+        }
 
         // While iter is not at end.
         size_t address_L0 = code->size();
@@ -556,7 +643,7 @@ protected:
         // Init the Iterator
         code->push_back(LVM_ITER_InitFullIndex);
         code->push_back(counterLabel);
-        code->push_back(relationEncoder.encodeRelation(aggregate.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(aggregate.getRelation()));
 
         // TODO (xiaowen/#992): Count -> Size for optimization
         if (aggregate.getFunction() == souffle::COUNT &&
@@ -666,21 +753,27 @@ protected:
 
         // Obtain the pattern for index
         auto patterns = aggregate.getRangePattern();
-        std::string types;
         auto arity = aggregate.getRelation().getArity();
-        for (size_t i = 0; i < arity; i++) {
+        auto relId = relationEncoder.encodeRelation(aggregate.getRelation());
+        std::vector<int> typeMask(arity);
+        bool fullIndexSearch = true;
+        for (size_t i = arity; i-- > 0;) {
             if (!isRamUndefValue(patterns[i])) {
                 visit(patterns[i], exitAddress);
+                fullIndexSearch = false;
+                typeMask[i] = 1;
             }
-            types += (isRamUndefValue(patterns[i]) ? "_" : "V");
         }
 
         // Init range index based on pattern
-        code->push_back(LVM_ITER_InitRangeIndex);
-        code->push_back(counterLabel);
-        code->push_back(relationEncoder.encodeRelation(aggregate.getRelation().getName()));
-        code->push_back(symbolTable.lookup(types));
-        code->push_back(getIndexPos(aggregate));
+        if (fullIndexSearch == true) {
+            code->push_back(LVM_ITER_InitFullIndex);
+            code->push_back(counterLabel);
+            code->push_back(relId);
+        } else {
+            auto indexPos = getIndexPos(aggregate);
+            this->emitRangeIndexInst(arity, relId, indexPos, counterLabel, typeMask);
+        }
 
         if (aggregate.getFunction() == souffle::COUNT &&
                 dynamic_cast<const RamTrue*>(&aggregate.getCondition()) != nullptr) {
@@ -809,19 +902,19 @@ protected:
         size_t arity = project.getRelation().getArity();
         std::string relationName = project.getRelation().getName();
         auto values = project.getValues();
-        for (auto& value : values) {
-            assert(value);
-            visit(value, exitAddress);
+        for (size_t i = values.size(); i-- > 0;) {
+            assert(values[i]);
+            visit(values[i], exitAddress);
         }
         code->push_back(LVM_Project);
         code->push_back(arity);
-        code->push_back(relationEncoder.encodeRelation(relationName));
+        code->push_back(relationEncoder.encodeRelation(project.getRelation()));
     }
     void visitSubroutineReturnValue(const RamSubroutineReturnValue& ret, size_t exitAddress) override {
         std::string types;
         auto expressions = ret.getValues();
         size_t size = expressions.size();
-        for (int i = size - 1; i >= 0; --i) {
+        for (size_t i = size; i-- > 0;) {
             if (isRamUndefValue(expressions[i])) {
                 types += '_';
             } else {
@@ -906,7 +999,7 @@ protected:
         size_t timerIndex = getNewTimer();
         code->push_back(symbolTable.lookup(timer.getMessage()));
         code->push_back(timerIndex);
-        code->push_back(relationEncoder.encodeRelation(timer.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(timer.getRelation()));
         visit(timer.getStatement(), exitAddress);
         code->push_back(LVM_StopLogTimer);
         code->push_back(timerIndex);
@@ -935,49 +1028,28 @@ protected:
 
     void visitCreate(const RamCreate& create, size_t exitAddress) override {
         code->push_back(LVM_Create);
-        code->push_back(relationEncoder.encodeRelation(create.getRelation().getName()));
-        code->push_back(create.getRelation().getArity());
-        switch (create.getRelation().getRepresentation()) {
-            case RelationRepresentation::BTREE:
-                code->push_back(LVM_BTREE);
-                break;
-            case RelationRepresentation::BRIE:
-                code->push_back(LVM_BRIE);
-                break;
-            case RelationRepresentation::EQREL:
-                code->push_back(LVM_EQREL);
-                break;
-            case RelationRepresentation::DEFAULT:
-                code->push_back(LVM_DEFAULT);
-            default:
-                break;
-        }
-
-        auto attributeTypes = create.getRelation().getAttributeTypeQualifiers();
-        for (auto type : attributeTypes) {
-            code->push_back(symbolTable.lookup(type));
-        }
+        code->push_back(relationEncoder.encodeRelation(create.getRelation()));
     }
 
     void visitClear(const RamClear& clear, size_t exitAddress) override {
         code->push_back(LVM_Clear);
-        code->push_back(relationEncoder.encodeRelation(clear.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(clear.getRelation()));
     }
 
     void visitDrop(const RamDrop& drop, size_t exitAddress) override {
         code->push_back(LVM_Drop);
-        code->push_back(relationEncoder.encodeRelation(drop.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(drop.getRelation()));
     }
 
     void visitLogSize(const RamLogSize& size, size_t exitAddress) override {
         code->push_back(LVM_LogSize);
-        code->push_back(relationEncoder.encodeRelation(size.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(size.getRelation()));
         code->push_back(symbolTable.lookup(size.getMessage()));
     }
 
     void visitLoad(const RamLoad& load, size_t exitAddress) override {
         code->push_back(LVM_Load);
-        code->push_back(relationEncoder.encodeRelation(load.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(load.getRelation()));
 
         code->getIODirectives().push_back(load.getIODirectives());
         code->push_back(code->getIODirectivesSize() - 1);
@@ -985,7 +1057,7 @@ protected:
 
     void visitStore(const RamStore& store, size_t exitAddress) override {
         code->push_back(LVM_Store);
-        code->push_back(relationEncoder.encodeRelation(store.getRelation().getName()));
+        code->push_back(relationEncoder.encodeRelation(store.getRelation()));
 
         code->getIODirectives().push_back(store.getIODirectives());
         code->push_back(code->getIODirectivesSize() - 1);
@@ -994,12 +1066,12 @@ protected:
     void visitFact(const RamFact& fact, size_t exitAddress) override {
         size_t arity = fact.getRelation().getArity();
         auto values = fact.getValues();
-        for (size_t i = 0; i < arity; ++i) {
+        for (size_t i = arity; i-- > 0;) {
             visit(values[i], exitAddress);  // Values cannot be null here
         }
         std::string targertRelation = fact.getRelation().getName();
         code->push_back(LVM_Fact);
-        code->push_back(relationEncoder.encodeRelation(targertRelation));
+        code->push_back(relationEncoder.encodeRelation(fact.getRelation()));
         code->push_back(arity);
     }
 
@@ -1012,16 +1084,16 @@ protected:
         std::string source = merge.getSourceRelation().getName();
         std::string target = merge.getTargetRelation().getName();
         code->push_back(LVM_Merge);
-        code->push_back(relationEncoder.encodeRelation(source));
-        code->push_back(relationEncoder.encodeRelation(target));
+        code->push_back(relationEncoder.encodeRelation(merge.getSourceRelation()));
+        code->push_back(relationEncoder.encodeRelation(merge.getTargetRelation()));
     }
 
     void visitSwap(const RamSwap& swap, size_t exitAddress) override {
         std::string first = swap.getFirstRelation().getName();
         std::string second = swap.getSecondRelation().getName();
         code->push_back(LVM_Swap);
-        code->push_back(relationEncoder.encodeRelation(first));
-        code->push_back(relationEncoder.encodeRelation(second));
+        code->push_back(relationEncoder.encodeRelation(swap.getFirstRelation()));
+        code->push_back(relationEncoder.encodeRelation(swap.getSecondRelation()));
     }
 
     void visitUndefValue(const RamUndefValue& undef, size_t exitAddress) override {
@@ -1051,9 +1123,6 @@ private:
 
     /** Current timer index for logger */
     size_t timerIndex = 0;
-
-    /** RamIndexAnalysis */
-    RamIndexAnalysis& isa;
 
     /** Relation Encoder */
     RelationEncoder& relationEncoder;
@@ -1105,8 +1174,8 @@ private:
     /** Get the index position in a relation based on the SearchSignature */
     template <class RamNode>
     size_t getIndexPos(RamNode& node) {
-        const MinIndexSelection& orderSet = isa.getIndexes(node.getRelation());
-        SearchSignature signature = isa.getSearchSignature(&node);
+        const MinIndexSelection& orderSet = relationEncoder.isa->getIndexes(node.getRelation());
+        SearchSignature signature = relationEncoder.isa->getSearchSignature(&node);
         // A zero signature is equivalent as a full order signature.
         if (signature == 0) {
             signature = (1 << node.getRelation().getArity()) - 1;
@@ -1114,6 +1183,64 @@ private:
         auto i = orderSet.getLexOrderNum(signature);
         return i;
     };
-};
+
+    /** Emit existence check instructions */
+    void emitExistenceCheckInst(const size_t& arity, const size_t& relId, const size_t& indexPos,
+            const std::vector<int>& typeMask) {
+        size_t numOfTypeMasks = arity / RAM_DOMAIN_SIZE + (arity % RAM_DOMAIN_SIZE != 0);
+        // Emit special instruction for relation with arity < RAM_DOMAIN_SIZE
+        // to avoid overhead of checking argument size --- as it is the most common case
+        // TODO (xiaowen): benchmark suggest no noticeable difference whether we add
+        // this optimization or not.
+        if (numOfTypeMasks == 1) {
+            code->push_back(LVM_ExistenceCheckOneArg);
+        } else {
+            code->push_back(LVM_ExistenceCheck);
+        }
+        code->push_back(relId);
+        code->push_back(indexPos);
+        for (size_t i = 0; i < numOfTypeMasks; ++i) {
+            RamDomain types = 0;
+            for (size_t j = 0; j < RAM_DOMAIN_SIZE; ++j) {
+                auto projectedIndex = i * RAM_DOMAIN_SIZE + j;
+                if (projectedIndex >= arity) {
+                    break;
+                }
+                types |= (typeMask[projectedIndex] << j);
+            }
+            code->push_back(types);
+        }
+    }
+
+    /** Emit range index instructions */
+    void emitRangeIndexInst(const size_t& arity, const size_t& relId, const size_t& indexPos,
+            const size_t& counterLabel, const std::vector<int>& typeMask) {
+        size_t numOfTypeMasks = arity / RAM_DOMAIN_SIZE + (arity % RAM_DOMAIN_SIZE != 0);
+        // Emit special instruction for relation with arity < RAM_DOMAIN_SIZE
+        // to avoid overhead of checking argumnet size --- as it is the most common case
+        // TODO (xiaowen): benchmark suggest no noticeable difference whether we add
+        // this optimization or not.
+        if (numOfTypeMasks == 1) {
+            code->push_back(LVM_ITER_InitRangeIndexOneArg);
+        } else {
+            code->push_back(LVM_ITER_InitRangeIndex);
+        }
+        code->push_back(counterLabel);
+        code->push_back(relId);
+        code->push_back(indexPos);
+        for (size_t i = 0; i < numOfTypeMasks; ++i) {
+            RamDomain types = 0;
+            for (size_t j = 0; j < RAM_DOMAIN_SIZE; ++j) {
+                auto projectedIndex = i * RAM_DOMAIN_SIZE + j;
+                if (projectedIndex >= arity) {
+                    break;
+                }
+                types |= (typeMask[projectedIndex] << j);
+            }
+            code->push_back(types);
+        }
+    }
+
+};  // namespace souffle
 
 }  // end of namespace souffle

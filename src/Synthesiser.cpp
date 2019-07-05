@@ -260,33 +260,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitStore(const RamStore& store, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
-
-            // TODO: repeated three times in this file - consider function?
-            std::vector<char> kindMask;
-            std::vector<int> recordArityMask;
-            const auto& typeQualifiers = store.getRelation().getAttributeTypeQualifiers();
-
-            for (const auto& cur : typeQualifiers) {
-                // store the kind
-                char kind = cur[0];
-                kindMask.push_back(kind);
-
-                // store the arity if relevant
-                if (kind == 'r') {
-                    std::string typeInfo = cur.substr(2, cur.length() - 2);
-                    recordArityMask.push_back(std::stoi(typeInfo));
-                } else {
-                    recordArityMask.push_back(-1);
-                }
-            }
-
-            std::stringstream kindMaskStr;
-            kindMaskStr << "std::vector<char>({";
-            if (!kindMask.empty()) {
-                kindMaskStr << "'" << join(kindMask, "','") << "'";
-            }
-            kindMaskStr << "})";
-
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 out << "try {";
                 out << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
@@ -296,9 +269,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << kindMaskStr.str() << ", ";
-                out << "symTable, ";
-                out << "std::vector<int>({" << join(recordArityMask, ",") << "}), ";
+                out << "std::vector<int>({" << join(store.getRelation().getAttributeTypeIds(), ",") << "})";
+                out << ", symTable, ";
                 out << "GeneralRecordMap::getRecordTable(), ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
@@ -2134,31 +2106,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
     visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
-            std::vector<char> kindMask;
-            std::vector<int> recordArityMask;
-            const auto& typeQualifiers = store->getRelation().getAttributeTypeQualifiers();
-
-            for (const auto& cur : typeQualifiers) {
-                // store the kind
-                char kind = cur[0];
-                kindMask.push_back(kind);
-
-                // store the arity if relevant
-                if (kind == 'r') {
-                    std::string typeInfo = cur.substr(2, cur.length() - 2);
-                    recordArityMask.push_back(std::stoi(typeInfo));
-                } else {
-                    recordArityMask.push_back(-1);
-                }
-            }
-
-            std::stringstream kindMaskStr;
-            kindMaskStr << "std::vector<char>({";
-            if (!kindMask.empty()) {
-                kindMaskStr << "'" << join(kindMask, "','") << "'";
-            }
-            kindMaskStr << "})";
-
             for (IODirectives ioDirectives : store->getIODirectives()) {
                 os << "try {";
                 os << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
@@ -2168,9 +2115,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "}\n";
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
-                os << kindMaskStr.str();
+                os << "std::vector<int>({" << join(store->getRelation().getAttributeTypeIds(), ",") << "})";
                 os << ", symTable, ";
-                os << "std::vector<int>({" << join(recordArityMask, ",") << "}), ";
                 os << "GeneralRecordMap::getRecordTable(), ioDirectives, "
                    << (Global::config().has("provenance") ? "true" : "false");
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
@@ -2227,43 +2173,17 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of loadAll() method
 
     // issue dump methods
-    auto dumpRelation = [&](const std::string& name, const std::vector<std::string>& mask, size_t arity) {
-        auto relName = name;
-        std::vector<char> kindMask;
-        std::vector<int> recordArityMask;
-
-        for (const auto& cur : mask) {
-            // store the kind
-            char kind = cur[0];
-            kindMask.push_back(kind);
-
-            // store the arity if relevant
-            if (kind == 'r') {
-                std::string typeInfo = cur.substr(2, cur.length() - 2);
-                recordArityMask.push_back(std::stoi(typeInfo));
-            } else {
-                recordArityMask.push_back(-1);
-            }
-        }
-
-        std::stringstream kindMaskStr;
-        kindMaskStr << "std::vector<char>({";
-        if (!kindMask.empty()) {
-            kindMaskStr << "'" << join(kindMask, "','") << "'";
-        }
-        kindMaskStr << "})";
-
+    auto dumpRelation = [&](const std::string& name, const std::vector<int>& mask, size_t arity) {
         os << "try {";
         os << "IODirectives ioDirectives;\n";
         os << "ioDirectives.setIOType(\"stdout\");\n";
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
-        os << kindMaskStr.str();
+        os << "std::vector<int>({" << join(mask, ",") << "})";
         os << ", symTable, ";
-        os << "std::vector<int>({" << join(recordArityMask, ",") << "}), ";
         os << "GeneralRecordMap::getRecordTable(), ioDirectives, "
            << (Global::config().has("provenance") ? "true" : "false");
-        os << ")->writeAll(*" << relName << ");\n";
+        os << ")->writeAll(*" << name << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
     };
 
@@ -2272,7 +2192,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void dumpInputs(std::ostream& out = std::cout) override {\n";
     visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) {
         auto& name = getRelationName(load.getRelation());
-        auto& mask = load.getRelation().getAttributeTypeQualifiers();
+        auto& mask = load.getRelation().getAttributeTypeIds();
         size_t arity = load.getRelation().getArity();
         dumpRelation(name, mask, arity);
     });
@@ -2283,7 +2203,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void dumpOutputs(std::ostream& out = std::cout) override {\n";
     visitDepthFirst(*(prog.getMain()), [&](const RamStore& store) {
         auto& name = getRelationName(store.getRelation());
-        auto& mask = store.getRelation().getAttributeTypeQualifiers();
+        auto& mask = store.getRelation().getAttributeTypeIds();
         size_t arity = store.getRelation().getArity();
         dumpRelation(name, mask, arity);
     });

@@ -1865,13 +1865,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // declare type table
     os << "// -- declare type table --\n";
-    {
-        os << "TypeTable typeTable(";
-        os << toString(typeTable.getNameToIdMap()) << ",";
-        os << toString(typeTable.getIdToNameMap()) << ",";
-        os << toString(typeTable.getIdToFieldsMap()) << ",";
-        os << toString(typeTable.getIdToKindMap()) << ");";
-    }
+    os << "std::unique_ptr<TypeTable> typeTable;\n";
 
     // print relation definitions
     std::string initCons;     // initialization of constructor
@@ -1946,6 +1940,59 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "public:\n";
 
     // -- constructor --
+
+    // construct type table
+    {
+        std::stringstream initList;
+        initList << "\ntypeTable(std::make_unique<TypeTable>(";
+        // name to id map
+        initList << "\tstd::map<std::string, int>{{";
+        for (const auto& pair : typeTable.getNameToIdMap()) {
+            initList << "{R\"_(" << pair.first << ")_\", " << pair.second << "},";
+        }
+        initList << "}},\n";
+
+        // id to name map
+        initList << "\tstd::map<int, std::string>{{";
+        for (const auto& pair : typeTable.getIdToNameMap()) {
+            initList << "{" << pair.first << ",R\"_(" << pair.second << ")_\"},";
+        }
+        initList << "}},\n";
+
+        // id to fields map
+        initList << "\tstd::map<int, std::vector<int>>{{";
+        for (const auto& pair : typeTable.getIdToFieldsMap()) {
+            initList << "{" << pair.first << ",std::vector<int>{" << join(pair.second, ",") << "}},";
+        }
+        initList << "}},\n";
+
+        // id to kind map
+        initList << "\tstd::map<int, Kind>{{";
+        for (const auto& pair : typeTable.getIdToKindMap()) {
+            initList << "{" << pair.first << ", Kind::";
+            switch (pair.second) {
+                case Kind::NUMBER:
+                    initList << "NUMBER";
+                    break;
+                case Kind::SYMBOL:
+                    initList << "SYMBOL";
+                    break;
+                case Kind::RECORD:
+                    initList << "RECORD";
+                    break;
+                default:
+                    assert(false && "unsupported kind");
+            }
+            initList << "},";
+        }
+        initList << "}}";
+        initList << "))";
+
+        if (!initCons.empty()) {
+            initCons += ",";
+        }
+        initCons += initList.str();
+    }
 
     os << classname;
     if (Global::config().has("profile")) {

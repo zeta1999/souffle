@@ -919,9 +919,9 @@ protected:
                 break;
         }
 
-        auto attributeTypes = create.getRelation().getAttributeTypeQualifiers();
+        auto attributeTypes = create.getRelation().getAttributeTypeIds();
         for (auto type : attributeTypes) {
-            code->push_back(symbolTable.lookup(type));
+            code->push_back(type);
         }
     }
 

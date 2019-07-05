@@ -827,12 +827,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 } else {
                     res = new InterpreterRelation(arity);
                 }
-                std::vector<std::string> attributeTypes;
+                std::vector<int> attributeTypes;
                 for (int i = 0; i < code[ip + 2]; ++i) {
-                    attributeTypes.push_back(symbolTable.resolve(code[ip + 4 + i]));
+                    attributeTypes.push_back(code[ip + 4 + i]);
                 }
                 attributeTypes.reserve(attributeTypes.size());
-                res->setAttributes(attributeTypes);
+                res->setAttributeTypes(attributeTypes);
                 res->setLevel(level);
                 environment[relName] = res;
                 ip += 3 + code[ip + 2] + 1;

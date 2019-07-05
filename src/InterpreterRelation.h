@@ -40,7 +40,12 @@ public:
 
     /** Set AttributeType for the relation */
     void setAttributes(const std::vector<std::string> attributeTypes) {
+        assert(false && "should not be used!");
         attributeTypeQualifiers = attributeTypes;
+    }
+
+    void setAttributeTypes(const std::vector<int> attributeTypes) {
+        attributeTypeIds = attributeTypes;
     }
 
     /** Get AttributeType for the relation */
@@ -50,8 +55,6 @@ public:
 
     /** Get type of attributes for the relation */
     std::vector<int>& getAttributeTypeIds() {
-        // TODO: implement this
-        assert(false && "unimplemented");
         return attributeTypeIds;
     }
 

@@ -316,6 +316,35 @@ private:
 };
 
 /**
+ * A partitioned stream is a list of streams each covering a disjoint subset
+ * of a specific range. The individual subsets may be processed in parallel.
+ */
+class PartitionedStream {
+
+	// The internally owned list of streams maintaining a partition of the
+	// overall iteration range.
+	std::vector<Stream> streams;
+
+public:
+
+	using iterator = typename std::vector<Stream>::const_iterator;
+
+	PartitionedStream(std::vector<Stream>&& streams)
+		: streams(std::move(streams)) {}
+
+	// -- allow PartitionStreams to be processed by for-loops --
+
+	iterator begin() const {
+		return streams.begin();
+	}
+
+	iterator end() const {
+		return streams.end();
+	}
+
+};
+
+/**
  * An index is an abstraction of a data structure
  */
 class LVMIndex {
@@ -358,9 +387,19 @@ public:
     virtual Stream scan() const = 0;
 
     /**
-     * Returns a stream covering the elements
+     * Returns a partitioned stream covering the entire index content.
+     */
+    virtual PartitionedStream pscan(int num_partitions) const = 0;
+
+    /**
+     * Returns a stream covering elements in the range [low,high)
      */
     virtual Stream range(const TupleRef& low, const TupleRef& high) const = 0;
+
+    /**
+     * Returns a partitioned stream covering elements in the range [low,high)
+     */
+    virtual PartitionedStream prange(const TupleRef& low, const TupleRef& high, int num_partitions) const = 0;
 
     /**
      * Clears the content of this index, turning it empty.

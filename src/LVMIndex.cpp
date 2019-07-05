@@ -14,6 +14,7 @@
  *
  ***********************************************************************/
 
+#include "Util.h"
 #include "LVMIndex.h"
 #include "CompiledIndexUtils.h"
 
@@ -140,8 +141,20 @@ public:
         return std::make_unique<Source>(present);
     }
 
+    PartitionedStream pscan(int) const override {
+    	std::vector<Stream> res;
+    	res.push_back(scan());
+    	return res;
+    }
+
     Stream range(const TupleRef& low, const TupleRef& high) const override {
         return scan();
+    }
+
+    PartitionedStream prange(const TupleRef& low, const TupleRef& high, int) const override {
+    	std::vector<Stream> res;
+    	res.push_back(range(low,high));
+    	return res;
     }
 
     void clear() override {
@@ -167,12 +180,13 @@ class GenericIndex : public LVMIndex {
     // the internal data structure
     Structure data;
 
+	using iter = typename Structure::iterator;
+
     // a source adapter for streaming through data
     class Source : public Stream::Source {
         const Order& order;
 
         // the begin and end of the stream
-        using iter = typename Structure::iterator;
         iter cur;
         iter end;
 
@@ -234,24 +248,53 @@ public:
         return std::make_unique<Source>(order, data.begin(), data.end());
     }
 
+    PartitionedStream pscan(int num_partitions) const override {
+    	auto chunks = data.partition(num_partitions);
+    	std::vector<Stream> res;
+    	res.reserve(chunks.size());
+    	for (const auto& cur : chunks) {
+    		res.push_back(std::make_unique<Source>(order, cur.begin(), cur.end()));
+    	}
+    	return res;
+    }
+
+private:
+
+    souffle::range<iter> bounds(const TupleRef& low, const TupleRef& high) const {
+    	Entry a = order.encode(low.asTuple<Arity>());
+		Entry b = order.encode(high.asTuple<Arity>());
+		// Transfer upper_bound to a equivalent lower bound
+		bool fullIndexSearch = true;
+		for (size_t i = Arity; i-- > 0;) {
+			if (a[i] == MIN_RAM_DOMAIN && b[i] == MAX_RAM_DOMAIN) {
+				b[i] = MIN_RAM_DOMAIN;
+				continue;
+			}
+			if (a[i] == b[i]) {
+				b[i] += 1;
+				fullIndexSearch = false;
+				break;
+			}
+		}
+		assert(fullIndexSearch == false && "Full index search is not allowed in range query\n");
+		return { data.lower_bound(a), data.lower_bound(b) };
+    }
+
+public:
+
     Stream range(const TupleRef& low, const TupleRef& high) const override {
-        Entry a = order.encode(low.asTuple<Arity>());
-        Entry b = order.encode(high.asTuple<Arity>());
-        // Transfer upper_bound to a equivalent lower bound
-        bool fullIndexSearch = true;
-        for (size_t i = Arity; i-- > 0;) {
-            if (a[i] == MIN_RAM_DOMAIN && b[i] == MAX_RAM_DOMAIN) {
-                b[i] = MIN_RAM_DOMAIN;
-                continue;
-            }
-            if (a[i] == b[i]) {
-                b[i] += 1;
-                fullIndexSearch = false;
-                break;
-            }
-        }
-        assert(fullIndexSearch == false && "Full index search is not allowed in range query\n");
-        return std::make_unique<Source>(order, data.lower_bound(a), data.lower_bound(b));
+    	auto range = bounds(low, high);
+        return std::make_unique<Source>(order, range.begin(), range.end());
+    }
+
+    PartitionedStream prange(const TupleRef& low, const TupleRef& high, int num_partitions) const override {
+    	auto range = bounds(low, high);
+    	std::vector<Stream> res;
+    	res.reserve(num_partitions);
+    	for (const auto& cur : range.partition(num_partitions)) {
+    		res.push_back(std::make_unique<Source>(order, cur.begin(), cur.end()));
+    	}
+    	return res;
     }
 
     void clear() override {
@@ -365,8 +408,22 @@ public:
         return std::make_unique<Source>(set.begin(), set.end());
     }
 
+    PartitionedStream pscan(int) const override {
+    	assert(false && "Does only produce a single subset!");
+    	std::vector<Stream> res;
+    	res.push_back(scan());
+    	return res;
+    }
+
     Stream range(const TupleRef& low, const TupleRef& high) const override {
         return std::make_unique<Source>(set.lower_bound(low), set.upper_bound(high));
+    }
+
+    PartitionedStream prange(const TupleRef& low, const TupleRef& high, int) const override {
+    	assert(false && "Does only produce a single subset!");
+    	std::vector<Stream> res;
+		res.push_back(range(low,high));
+		return res;
     }
 
     void clear() override {

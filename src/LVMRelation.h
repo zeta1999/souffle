@@ -163,7 +163,7 @@ public:
     virtual void purge();
 
     /**
-     * Check if a tuple exists in realtion
+     * Check if a tuple exists in relation
      */
     bool exists(const TupleRef& tuple) const;
 

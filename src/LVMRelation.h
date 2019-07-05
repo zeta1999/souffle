@@ -25,12 +25,12 @@ namespace souffle {
  */
 class LVMRelation {
 public:
-
     /**
      * Creates a relation, build all necessary indexes.
      */
-    LVMRelation(std::size_t arity, std::size_t numberOfHeights, const std::string& name, const std::vector<std::string>& attributeTypes,
-            const MinIndexSelection& orderSet, IndexFactory factory = &createBTreeIndex);
+    LVMRelation(std::size_t arity, std::size_t numberOfHeights, const std::string& name,
+            const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet,
+            IndexFactory factory = &createBTreeIndex);
 
     LVMRelation(LVMRelation& other) = delete;
 
@@ -149,9 +149,9 @@ public:
     size_t getArity() const;
 
     /**
-	 * Return arity
-	 */
-	size_t getNumberOfHeights() const;
+     * Return arity
+     */
+    size_t getNumberOfHeights() const;
 
     /**
      * Return number of tuples in relation (full-order)
@@ -206,8 +206,8 @@ protected:
  */
 class LVMEqRelation : public LVMRelation {
 public:
-    LVMEqRelation(size_t arity, size_t numberOfHeights, const std::string& relName, const std::vector<std::string>& attributeTypes,
-            const MinIndexSelection& orderSet);
+    LVMEqRelation(size_t arity, size_t numberOfHeights, const std::string& relName,
+            const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet);
 
     /** Insert tuple */
     bool insert(const TupleRef& tuple) override;
@@ -224,7 +224,6 @@ public:
  */
 class LVMIndirectRelation : public LVMRelation {
 public:
-
     LVMIndirectRelation(size_t arity, size_t numberOfHeights, const std::string& relName,
             const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet);
     /** Insert tuple */

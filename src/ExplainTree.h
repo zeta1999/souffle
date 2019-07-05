@@ -197,7 +197,7 @@ private:
 class LeafNode : public TreeNode {
 public:
     LeafNode(const std::string& t = "") : TreeNode(t) {
-    	setSize(1);
+        setSize(1);
     }
 
     // place leaf node

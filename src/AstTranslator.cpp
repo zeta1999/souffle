@@ -305,6 +305,9 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
 
         std::unique_ptr<RamExpression> visitRecordInit(const AstRecordInit& init) override {
             std::vector<std::unique_ptr<RamExpression>> values;
+            int typeId = translator.typeTable->getId(toString(init.getType()));
+            auto metaArgument = std::make_unique<AstNumberConstant>(typeId);
+            values.push_back(translator.translateValue(metaArgument.get(), index));
             for (const auto& cur : init.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
@@ -450,7 +453,9 @@ AstTranslator::ClauseTranslator::arg_list* AstTranslator::ClauseTranslator::getA
         const AstNode* curNode, std::map<const AstNode*, std::unique_ptr<arg_list>>& nodeArgs) const {
     if (!nodeArgs.count(curNode)) {
         if (auto rec = dynamic_cast<const AstRecordInit*>(curNode)) {
-            nodeArgs[curNode] = std::make_unique<arg_list>(rec->getArguments());
+            auto args = rec->getArguments();
+            args.insert(args.begin(), new AstNumberConstant(translator.typeTable->getId(toString(rec->getType()))));
+            nodeArgs[curNode] = std::make_unique<arg_list>(args);
         } else if (auto atom = dynamic_cast<const AstAtom*>(curNode)) {
             nodeArgs[curNode] = std::make_unique<arg_list>(atom->getArguments());
         } else {
@@ -856,14 +861,16 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add constant constraints
             for (size_t pos = 0; pos < rec->getArguments().size(); ++pos) {
                 if (AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
-                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                             std::make_unique<RamElementAccess>(level, pos),
-                                                             std::make_unique<RamNumber>(c->getIndex())),
+                    op = std::make_unique<RamFilter>(
+                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                    std::make_unique<RamElementAccess>(level, pos + 1),
+                                    std::make_unique<RamNumber>(c->getIndex())),
                             std::move(op));
                 } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
-                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                             std::make_unique<RamElementAccess>(level, pos),
-                                                             translator.translateValue(func, valueIndex)),
+                    op = std::make_unique<RamFilter>(
+                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                    std::make_unique<RamElementAccess>(level, pos + 1),
+                                    translator.translateValue(func, valueIndex)),
                             std::move(op));
                 }
             }
@@ -871,7 +878,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add an unpack level
             const Location& loc = valueIndex.getDefinitionPoint(*rec);
             op = std::make_unique<RamUnpackRecord>(
-                    std::move(op), level, makeRamElementAccess(loc), rec->getArguments().size());
+                    std::move(op), level, makeRamElementAccess(loc), rec->getArguments().size() + 1);
         } else {
             assert(false && "Unsupported AST node for creation of scan-level!");
         }
@@ -1276,8 +1283,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
     visitDepthFirst(*clauseReplacedAggregates, [&](const AstVariable& var) {
         if (var.getName().find("@level_num") == std::string::npos) {
-            // use find_if since uniqueVariables stores pointers, and we need to dereference the pointer to
-            // check equality
+            // use find_if since uniqueVariables stores pointers, and we need to dereference the pointer
+            // to check equality
             if (std::find_if(uniqueVariables.begin(), uniqueVariables.end(),
                         [&](const AstVariable* v) { return *v == var; }) == uniqueVariables.end()) {
                 uniqueVariables.push_back(&var);

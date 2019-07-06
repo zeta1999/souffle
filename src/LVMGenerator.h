@@ -203,7 +203,6 @@ protected:
         }
         code->push_back(LVM_PackRecord);
         code->push_back(values.size());
-        code->push_back(pack.getRecordType());
     }
 
     void visitArgument(const RamArgument& arg, size_t exitAddress) override {

@@ -305,9 +305,6 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
 
         std::unique_ptr<RamExpression> visitRecordInit(const AstRecordInit& init) override {
             std::vector<std::unique_ptr<RamExpression>> values;
-            int typeId = translator.typeTable->getId(toString(init.getType()));
-            auto metaArgument = std::make_unique<AstNumberConstant>(typeId);
-            values.push_back(translator.translateValue(metaArgument.get(), index));
             for (const auto& cur : init.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
@@ -453,9 +450,7 @@ AstTranslator::ClauseTranslator::arg_list* AstTranslator::ClauseTranslator::getA
         const AstNode* curNode, std::map<const AstNode*, std::unique_ptr<arg_list>>& nodeArgs) const {
     if (!nodeArgs.count(curNode)) {
         if (auto rec = dynamic_cast<const AstRecordInit*>(curNode)) {
-            auto args = rec->getArguments();
-            args.insert(args.begin(), new AstNumberConstant(translator.typeTable->getId(toString(rec->getType()))));
-            nodeArgs[curNode] = std::make_unique<arg_list>(args);
+            nodeArgs[curNode] = std::make_unique<arg_list>(rec->getArguments());
         } else if (auto atom = dynamic_cast<const AstAtom*>(curNode)) {
             nodeArgs[curNode] = std::make_unique<arg_list>(atom->getArguments());
         } else {
@@ -863,13 +858,13 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 if (AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                    std::make_unique<RamElementAccess>(level, pos + 1),
+                                    std::make_unique<RamElementAccess>(level, pos),
                                     std::make_unique<RamNumber>(c->getIndex())),
                             std::move(op));
                 } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                    std::make_unique<RamElementAccess>(level, pos + 1),
+                                    std::make_unique<RamElementAccess>(level, pos),
                                     translator.translateValue(func, valueIndex)),
                             std::move(op));
                 }
@@ -878,7 +873,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add an unpack level
             const Location& loc = valueIndex.getDefinitionPoint(*rec);
             op = std::make_unique<RamUnpackRecord>(
-                    std::move(op), level, makeRamElementAccess(loc), rec->getArguments().size() + 1);
+                    std::move(op), level, makeRamElementAccess(loc), rec->getArguments().size());
         } else {
             assert(false && "Unsupported AST node for creation of scan-level!");
         }
@@ -1498,6 +1493,32 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             fields.push_back(typeTable->getId(toString(field.type)));
         }
         typeTable->addRecordType(toString(rt->getName()), fields);
+    }
+
+    // prepend type information to record constructors
+    struct prependTypes : public AstNodeMapper {
+        const TypeTable& typeTable;
+
+        prependTypes(const TypeTable& typeTable) : typeTable(typeTable) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            node->apply(*this);
+            if (auto* rec = dynamic_cast<AstRecordInit*>(node.get())) {
+                auto replacement = std::make_unique<AstRecordInit>(rec->getType());
+                replacement->add(
+                        std::make_unique<AstNumberConstant>(typeTable.getId(toString(rec->getType()))));
+                for (const auto& arg : rec->getArguments()) {
+                    replacement->add(std::unique_ptr<AstArgument>(arg->clone()));
+                }
+                return std::move(replacement);
+            }
+            return node;
+        }
+    };
+
+    for (auto* rel : program->getRelations()) {
+        prependTypes update(*typeTable);
+        rel->apply(update);
     }
 
     // start with an empty sequence of ram statements

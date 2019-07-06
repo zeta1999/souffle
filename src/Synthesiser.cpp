@@ -271,7 +271,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IOSystem::getInstance().getWriter(";
                 out << "std::vector<int>({" << join(store.getRelation().getAttributeTypeIds(), ",") << "})";
                 out << ", symTable, ";
-                out << "GeneralRecordMap::getRecordTable(), typeTable, ioDirectives";
+                out << "GeneralRecordMap::getRecordTable(), *typeTable, ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2175,7 +2175,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "IOSystem::getInstance().getWriter(";
                 os << "std::vector<int>({" << join(store->getRelation().getAttributeTypeIds(), ",") << "})";
                 os << ", symTable, ";
-                os << "GeneralRecordMap::getRecordTable(), typeTable, ioDirectives, "
+                os << "GeneralRecordMap::getRecordTable(), *typeTable, ioDirectives, "
                    << (Global::config().has("provenance") ? "true" : "false");
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
@@ -2239,7 +2239,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "IOSystem::getInstance().getWriter(";
         os << "std::vector<int>({" << join(mask, ",") << "})";
         os << ", symTable, ";
-        os << "GeneralRecordMap::getRecordTable(), typeTable, ioDirectives, "
+        os << "GeneralRecordMap::getRecordTable(), *typeTable, ioDirectives, "
            << (Global::config().has("provenance") ? "true" : "false");
         os << ")->writeAll(*" << name << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";

@@ -308,8 +308,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             for (const auto& cur : init.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
-            return std::make_unique<RamPackRecord>(
-                    translator.typeTable->getId(toString(init.getType())), std::move(values));
+            return std::make_unique<RamPackRecord>(std::move(values));
         }
 
         std::unique_ptr<RamExpression> visitAggregator(const AstAggregator& agg) override {
@@ -856,16 +855,14 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add constant constraints
             for (size_t pos = 0; pos < rec->getArguments().size(); ++pos) {
                 if (AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
-                    op = std::make_unique<RamFilter>(
-                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                    std::make_unique<RamElementAccess>(level, pos),
-                                    std::make_unique<RamNumber>(c->getIndex())),
+                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                                             std::make_unique<RamElementAccess>(level, pos),
+                                                             std::make_unique<RamNumber>(c->getIndex())),
                             std::move(op));
                 } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
-                    op = std::make_unique<RamFilter>(
-                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                    std::make_unique<RamElementAccess>(level, pos),
-                                    translator.translateValue(func, valueIndex)),
+                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                                             std::make_unique<RamElementAccess>(level, pos),
+                                                             translator.translateValue(func, valueIndex)),
                             std::move(op));
                 }
             }

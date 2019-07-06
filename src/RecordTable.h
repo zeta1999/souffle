@@ -17,7 +17,6 @@
 #pragma once
 
 #include "RamTypes.h"
-#include "Util.h"
 
 #include <cassert>
 #include <iostream>
@@ -61,10 +60,6 @@ public:
      */
     bool empty() const {
         return recordMap.empty();
-    }
-
-    void print() const {
-        std::cout << recordMap << std::endl;
     }
 
 private:

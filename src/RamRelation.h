@@ -47,6 +47,7 @@ protected:
     const std::vector<std::string> attributeNames;
 
     /** Type of attributes */
+    // TODO: should eventually get rid of this, now redundant
     const std::vector<std::string> attributeTypeQualifiers;
 
     /** Type of attributes */

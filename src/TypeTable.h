@@ -1,4 +1,3 @@
-
 /*
  * Souffle - A Datalog Compiler
  * Copyright (c) 2019, The Souffle Developers. All rights reserved.
@@ -81,22 +80,7 @@ public:
         return idToKind;
     }
 
-    void print() const {
-        std::cout << "--- TYPE TABLE ---" << std::endl;
-        for (const auto& pair : idToName) {
-            std::cout << pair.first << " <-> " << pair.second << std::endl;
-        }
-        for (const auto& pair : idToFields) {
-            std::cout << pair.first << " -> " << pair.second << std::endl;
-        }
-        for (const auto& pair : idToKind) {
-            std::cout << pair.first << " |-> " << pair.second << std::endl;
-        }
-        std::cout << " - - - - - - - - -" << std::endl;
-    }
-
 private:
-    // TODO: maybe change to vectors or some sort of array access
     std::map<std::string, int> nameToId;
     std::map<int, std::string> idToName;
     std::map<int, std::vector<int>> idToFields;

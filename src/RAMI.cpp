@@ -248,18 +248,15 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
         RamDomain visitPackRecord(const RamPackRecord& pr) override {
             auto values = pr.getArguments();
             auto arity = values.size();
-            RamDomain data[arity + 1];
-
-            // first argument is type-id
-            data[0] = pr.getRecordType();
+            RamDomain data[arity];
 
             // then add in the values
             for (size_t i = 0; i < arity; ++i) {
-                data[i+1] = visit(values[i]);
+                data[i] = visit(values[i]);
             }
 
             // pack them up into one record tuple
-            return pack(data, arity + 1);
+            return pack(data, arity);
         }
 
         // -- subroutine argument
@@ -586,7 +583,7 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
             auto arity = lookup.getArity();
 
             // unpack the tuple, taking into account extra leading type-id field
-            const RamDomain* tuple = unpack(ref, arity + 1) + 1;
+            const RamDomain* tuple = unpack(ref, arity);
 
             // save reference to temporary value
             ctxt[lookup.getTupleId()] = tuple;

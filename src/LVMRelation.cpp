@@ -73,9 +73,19 @@ Stream LVMRelation::scan() const {
     return main->scan();
 }
 
+PartitionedStream LVMRelation::pscan() const {
+    return main->pscan(500);  // TODO chunk size
+}
+
 Stream LVMRelation::range(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
     auto& pos = indexes[indexPos];
     return pos->range(low, high);
+}
+
+PartitionedStream LVMRelation::prange(
+        const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
+    auto& pos = indexes[indexPos];
+    return pos->prange(low, high, 500);
 }
 
 void LVMRelation::swap(LVMRelation& other) {

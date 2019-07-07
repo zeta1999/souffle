@@ -28,12 +28,12 @@ namespace souffle {
  * Evaluation context for Interpreter operations
  */
 class LVMContext {
-    // std::vector<const RamDomain*> data;
     std::vector<TupleRef> data;
     std::vector<RamDomain>* returnValues = nullptr;
     std::vector<bool>* returnErrors = nullptr;
     const std::vector<RamDomain>* args = nullptr;
     std::vector<std::unique_ptr<RamDomain[]>> allocatedDataContainer;
+    std::vector<Stream> streamPool;
 
 public:
     LVMContext(size_t size = 0) : data(size) {}
@@ -89,6 +89,14 @@ public:
     RamDomain getArgument(size_t i) const {
         assert(args != nullptr && i < args->size() && "argument out of range");
         return (*args)[i];
+    }
+
+    /** Lookup stream, resize the pool if necessary */
+    Stream& lookUpStream(size_t idx) {
+        if (idx >= streamPool.size()) {
+            streamPool.resize(idx + 1);
+        }
+        return streamPool[idx];
     }
 };
 

@@ -15,10 +15,11 @@
  ***********************************************************************/
 
 #include "LVMCode.h"
+#include "LVMGenerator.h"
 
 namespace souffle {
 
-void LVMCode::print() const {
+void LVMCode::print(RelationEncoder& re) const {
     size_t ip = 0;
     const auto& code = this->getCode();
     size_t stratumLevel = 0;
@@ -232,21 +233,28 @@ void LVMCode::print() const {
             }
             case LVM_EmptinessCheck: {
                 printf("%ld\tLVM_EmptinessCheck", ip);
-                printf("\tTarget: %s\n", symbolTable.resolve(code[ip + 1]).c_str());
+                printf("\tTarget relId: %d\n", code[ip + 1]);
                 ip += 2;
                 break;
             }
+            case LVM_ContainCheck: {
+                printf("%ld\tLVM_ContainCheck", ip);
+                printf("\tTarget relId: %d\n", code[ip + 1]);
+                ip += 2;
+                break;
+            };
             case LVM_ExistenceCheck: {
                 printf("%ld\tLVM_ExistenceCheck\t\n", ip);
-                printf("\tTarget: %s\tTypes: %s\n", symbolTable.resolve(code[ip + 1]).c_str(),
-                        symbolTable.resolve(code[ip + 2]).c_str());
-                ip += 4;
+                printf("\tTarget relId: %d\n", code[ip + 1]);
+                auto relPtr = re[code[ip + 1]].get();
+                auto arity = relPtr->getArity();
+                size_t numOfTypeMasks = arity / RAM_DOMAIN_SIZE + (arity % RAM_DOMAIN_SIZE != 0);
+                ip += (3 + numOfTypeMasks);
                 break;
             }
-            case LVM_ProvenanceExistenceCheck: {
-                printf("%ld\tLVM_ProvenanceExitenceChekck\t\n", ip);
-                printf("\tTarget: %s\tTypes: %s\n", symbolTable.resolve(code[ip + 1]).c_str(),
-                        symbolTable.resolve(code[ip + 2]).c_str());
+            case LVM_ExistenceCheckOneArg: {
+                printf("%ld\tLVM_ExistenceCheck\t\n", ip);
+                printf("\tTarget relId: %d\n", code[ip + 1]);
                 ip += 4;
                 break;
             }
@@ -263,29 +271,47 @@ void LVMCode::print() const {
                 printf("%ld\tLVM_IndexScan\n", ip);
                 ip += 1;
                 break;
+            case LVM_Choice: {
+                printf("%ld\tLVM_Choice\t\n", ip);
+                ip += 1;
+                break;
+            }
+            case LVM_IndexChoice: {
+                printf("%ld\tLVM_IndexChoice\t\n", ip);
+                ip += 1;
+                break;
+            }
             case LVM_Search: {
                 printf("%ld\tLVM_Search\t\n", ip);
                 ip += 3;
                 break;
             }
-            case LVM_UnpackRecord:
+            case LVM_UnpackRecord: {
                 printf("%ld\tLVM_UnpackRecord\tArity:%d ID:%d ExistAddress:%d\n", ip, code[ip + 1],
                         code[ip + 2], code[ip + 3]);
                 ip += 4;
                 break;
+            }
             case LVM_Filter:
                 printf("%ld\tLVM_Filter\n", ip);
                 ip += 2;
                 break;
             case LVM_Project:
                 printf("%ld\tLVM_Project\tArity:%d\t\n", ip, code[ip + 1]);
-                printf("\tTarget: %s\t\n", symbolTable.resolve(code[ip + 2]).c_str());
+                printf("\tTarget RelId: %d\t\n", code[ip + 2]);
                 ip += 3;
                 break;
             case LVM_ReturnValue: {
                 printf("%ld\tLVM_ReturnValue\tArity:%dTypes:%s\t\n", ip, code[ip + 1],
                         symbolTable.resolve(code[ip + 2]).c_str());
                 ip += 3;
+                break;
+            }
+            case LVM_ProvenanceExistenceCheck: {
+                printf("%ld\tLVM_ProvenanceExitenceChekck\t\n", ip);
+                printf("\tTarget: %s\tTypes: %s\n", symbolTable.resolve(code[ip + 1]).c_str(),
+                        symbolTable.resolve(code[ip + 2]).c_str());
+                ip += 4;
                 break;
             }
             case LVM_Sequence: {
@@ -352,24 +378,19 @@ void LVMCode::print() const {
                 ip += 1;
                 break;
             case LVM_Create: {
-                printf("%ld\tLVM_Create\t Name:%s Arity:%d Struct:%d\n", ip,
-                        symbolTable.resolve(code[ip + 1]).c_str(), code[ip + 2], code[ip + 3]);
-                for (int i = 0; i < code[ip + 2]; ++i) {
-                    printf("\t%s", symbolTable.resolve(code[ip + 4 + i]).c_str());
-                }
-                putchar('\n');
-                ip += 3 + code[ip + 2] + 1;
+                printf("LVMCreate\n");
+                ip += 1;
                 break;
             }
             case LVM_Clear: {
                 printf("%ld\tLVM_Clear\t\n", ip);
-                printf("\tTarget: %s\t\n", symbolTable.resolve(code[ip + 1]).c_str());
+                printf("\tTarget: %d\t\n", code[ip + 1]);
                 ip += 2;
                 break;
             }
             case LVM_Drop: {
                 printf("%ld\tLVM_Drop\t\n", ip);
-                printf("\tTarget: %s\t\n", symbolTable.resolve(code[ip + 1]).c_str());
+                printf("\tTarget: %d\t\n", code[ip + 1]);
                 ip += 2;
                 break;
             }
@@ -381,14 +402,13 @@ void LVMCode::print() const {
             }
             case LVM_Load: {
                 printf("%ld\tLVM_Load\t\n", ip);
-                printf("\t%s\t IODirectivesID:%d\n", symbolTable.resolve(code[ip + 1]).c_str(), code[ip + 2]);
+                printf("\t%d\t IODirectivesID:%d\n", code[ip + 1], code[ip + 2]);
                 ip += 3;
                 break;
             }
             case LVM_Store:
                 printf("%ld\tLVM_Store\t\n", ip);
-                printf("\tTarget: %s\t IODirectivesID:%d\n", symbolTable.resolve(code[ip + 1]).c_str(),
-                        code[ip + 2]);
+                printf("\tTarget: %d\t IODirectivesID:%d\n", code[ip + 1], code[ip + 2]);
                 ip += 3;
                 break;
             case LVM_Fact: {
@@ -399,15 +419,13 @@ void LVMCode::print() const {
             }
             case LVM_Merge: {
                 printf("%ld\tLVM_Merge\t\n", ip);
-                printf("\tTarget: %s\tSource: %s\n", symbolTable.resolve(code[ip + 1]).c_str(),
-                        symbolTable.resolve(code[ip + 2]).c_str());
+                printf("\tTarget: %d\tSource: %d\n", code[ip + 1], code[ip + 2]);
                 ip += 3;
                 break;
             }
             case LVM_Swap: {
                 printf("%ld\tLVM_Swap\t\n", ip);
-                printf("\tFirst: %s\tSecond: %s\n", symbolTable.resolve(code[ip + 1]).c_str(),
-                        symbolTable.resolve(code[ip + 2]).c_str());
+                printf("\tFirst: %d\tSecond: %d\n", code[ip + 1], code[ip + 2]);
                 ip += 3;
                 break;
             }
@@ -446,9 +464,14 @@ void LVMCode::print() const {
                 break;
             };
             case LVM_ITER_InitFullIndex: {
-                printf("%ld\tLVM_ITER_InitFullIndex\t RelationName:%s\n", ip,
-                        symbolTable.resolve(code[ip + 2]).c_str());
+                printf("%ld\tLVM_ITER_InitFullIndex\t RelationName:%d\n", ip, code[ip + 2]);
                 ip += 3;
+                break;
+            };
+            case LVM_ITER_InitFullIndexParallel: {
+                printf("%ld\tLVM_ITER_InitFullIndexParallel\t RelationName:%d\n", ip, code[ip + 2]);
+                printf("Join address:%d\n", code[ip + 3]);
+                ip += 4;
                 break;
             };
             case LVM_ITER_InitRangeIndex: {
@@ -479,6 +502,10 @@ void LVMCode::print() const {
             case LVM_STOP:
                 printf("%ld\tLVM_STOP\t\n", ip);
                 return;
+            case LVM_ParallelStop:
+                printf("%ld\tLVM_ParallelStop\n", ip);
+                ip += 1;
+                break;
             default:
                 printf("Unkown Operator id:%d\n", code[ip]);
                 return;

@@ -20,6 +20,7 @@
 #include "RamIndexAnalysis.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
+#include <omp.h>
 
 namespace souffle {
 
@@ -116,6 +117,9 @@ public:
      */
     LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry, RelationEncoder& relationEncoder)
             : symbolTable(symbolTable), code(new LVMCode(symbolTable)), relationEncoder(relationEncoder) {
+        if (std::stoi(Global::config().get("jobs")) > 1) {
+            omp_set_num_threads(std::stoi(Global::config().get("jobs")));
+        }
         (*this)(entry, 0);
         (*this).cleanUp();
         (*this)(entry, 0);
@@ -127,6 +131,7 @@ public:
     }
 
 protected:
+    bool preambleIssued = false;
     // Visit RAM Expressions
 
     void visitNumber(const RamNumber& num, size_t exitAddress) override {
@@ -437,6 +442,55 @@ protected:
         visitNestedOperation(search, exitAddress);
     }
 
+    void visitParallelScan(const RamParallelScan& pscan, size_t exitAddress) override {
+        size_t counterLabel = getNewIterator();
+        size_t L1 = getNewAddressLabel();
+        const auto& rel = pscan.getRelation();
+
+        assert(pscan.getTupleId() == 0 && "not outer-most loop");
+
+        assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
+
+        assert(!preambleIssued && "only first loop can be made parallel");
+
+        preambleIssued = true;
+
+        code->push_back(LVM_ITER_InitFullIndexParallel);
+        code->push_back(counterLabel);
+        code->push_back(relationEncoder.encodeRelation(pscan.getRelation()));
+        // Setup dest for joining
+        code->push_back(lookupAddress(L1) + 1);
+
+        // While iterator is not at end
+        size_t address_L0 = code->size();
+
+        code->push_back(LVM_ITER_NotAtEnd);
+        code->push_back(counterLabel);
+        code->push_back(LVM_Jmpez);
+        code->push_back(lookupAddress(L1));
+
+        // Select the tuple pointed by iter
+        code->push_back(LVM_ITER_Select);
+        code->push_back(counterLabel);
+        code->push_back(pscan.getTupleId());
+
+        // Perform nested operation
+        visitTupleOperation(pscan, lookupAddress(L1));
+
+        // Increment the Iter and jump to the start of the while loop
+        code->push_back(LVM_ITER_Inc);
+        code->push_back(counterLabel);
+        code->push_back(LVM_Goto);
+        code->push_back(address_L0);
+
+        setAddress(L1, code->size());
+
+        // Stop the child process
+        code->push_back(LVM_ParallelStop);
+
+        preambleIssued = false;
+    }
+
     void visitScan(const RamScan& scan, size_t exitAddress) override {
         code->push_back(LVM_Scan);
         size_t counterLabel = getNewIterator();
@@ -470,6 +524,60 @@ protected:
         code->push_back(address_L0);
 
         setAddress(L1, code->size());
+    }
+
+    void visitParallelChoice(const RamParallelChoice& pchoice, size_t exitAddress) override {
+        size_t counterLabel = getNewIterator();
+        size_t L1 = getNewAddressLabel();
+        size_t L2 = getNewAddressLabel();
+        const auto& rel = pchoice.getRelation();
+
+        assert(pchoice.getTupleId() == 0 && "not outer-most loop");
+
+        assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
+
+        assert(!preambleIssued && "only first loop can be made parallel");
+
+        preambleIssued = true;
+
+        // Init the Iterator
+        code->push_back(LVM_ITER_InitFullIndexParallel);
+        code->push_back(counterLabel);
+        code->push_back(relationEncoder.encodeRelation(pchoice.getRelation()));
+        // Setup dest for joining
+        code->push_back(lookupAddress(L2) + 1);
+
+        // While iterator is not at end
+        size_t address_L0 = code->size();
+        code->push_back(LVM_ITER_NotAtEnd);
+        code->push_back(counterLabel);
+        code->push_back(LVM_Jmpez);
+        code->push_back(lookupAddress(L2));
+
+        // Select the tuple pointed by iter
+        code->push_back(LVM_ITER_Select);
+        code->push_back(counterLabel);
+        code->push_back(pchoice.getTupleId());
+
+        // If condition is met, perform nested operation and exit.
+        visit(pchoice.getCondition(), exitAddress);
+        code->push_back(LVM_Jmpnz);
+        code->push_back(lookupAddress(L1));
+
+        // Else increment the iter and jump to the start of the while loop.
+        code->push_back(LVM_ITER_Inc);
+        code->push_back(counterLabel);
+        code->push_back(LVM_Goto);
+        code->push_back(address_L0);
+
+        setAddress(L1, code->size());
+        visitTupleOperation(pchoice, lookupAddress(L2));
+        setAddress(L2, code->size());
+
+        // Stop the child process
+        code->push_back(LVM_ParallelStop);
+
+        preambleIssued = false;
     }
 
     void visitChoice(const RamChoice& choice, size_t exitAddress) override {
@@ -507,8 +615,73 @@ protected:
         code->push_back(address_L0);
 
         setAddress(L1, code->size());
-        visitTupleOperation(choice, exitAddress);
+        visitTupleOperation(choice, lookupAddress(L2));
         setAddress(L2, code->size());
+    }
+
+    void visitParallelIndexScan(const RamParallelIndexScan& piscan, size_t exitAddress) override {
+        code->push_back(LVM_IndexScan);
+        size_t counterLabel = getNewIterator();
+        size_t L1 = getNewAddressLabel();
+        const auto& rel = piscan.getRelation();
+
+        assert(piscan.getTupleId() == 0 && "not outer-most loop");
+
+        assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
+
+        assert(!preambleIssued && "only first loop can be made parallel");
+
+        preambleIssued = true;
+
+        // Obtain the pattern for index
+        auto patterns = piscan.getRangePattern();
+        auto arity = piscan.getRelation().getArity();
+        auto relId = relationEncoder.encodeRelation(piscan.getRelation());
+        std::vector<int> typeMask(arity);
+        bool fullIndexSearch = true;
+        for (size_t i = arity; i-- > 0;) {
+            if (!isRamUndefValue(patterns[i])) {
+                visit(patterns[i], exitAddress);
+                fullIndexSearch = false;
+                typeMask[i] = 1;
+            }
+        }
+
+        // Init range index based on pattern
+        if (fullIndexSearch == true) {
+            code->push_back(LVM_ITER_InitFullIndexParallel);
+            code->push_back(counterLabel);
+            code->push_back(relId);
+            code->push_back(lookupAddress(L1) + 1);
+        } else {
+            auto indexPos = getIndexPos(piscan);
+            this->emitParallelRangeIndexInst(
+                    arity, relId, indexPos, counterLabel, typeMask, lookupAddress(L1) + 1);
+        }
+
+        // While iter is not at end
+        size_t address_L0 = code->size();
+        code->push_back(LVM_ITER_NotAtEnd);
+        code->push_back(counterLabel);
+        code->push_back(LVM_Jmpez);
+        code->push_back(lookupAddress(L1));
+
+        // Select the tuple pointed by the iter
+        code->push_back(LVM_ITER_Select);
+        code->push_back(counterLabel);
+        code->push_back(piscan.getTupleId());
+
+        // Increment the iter and jump to the start of while loop.
+        visitTupleOperation(piscan, lookupAddress(L1));
+
+        code->push_back(LVM_ITER_Inc);
+        code->push_back(counterLabel);
+        code->push_back(LVM_Goto);
+        code->push_back(address_L0);
+        setAddress(L1, code->size());
+
+        code->push_back(LVM_ParallelStop);
+        preambleIssued = false;
     }
 
     void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
@@ -560,6 +733,75 @@ protected:
         code->push_back(LVM_Goto);
         code->push_back(address_L0);
         setAddress(L1, code->size());
+    }
+
+    void visitParallelIndexChoice(const RamParallelIndexChoice& ichoice, size_t exitAddress) override {
+        size_t counterLabel = getNewIterator();
+        size_t L1 = getNewAddressLabel();
+        size_t L2 = getNewAddressLabel();
+        const auto& rel = ichoice.getRelation();
+
+        assert(ichoice.getTupleId() == 0 && "not outer-most loop");
+
+        assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
+
+        assert(!preambleIssued && "only first loop can be made parallel");
+
+        preambleIssued = true;
+
+        // Obtain the pattern for index
+        auto patterns = ichoice.getRangePattern();
+        auto arity = ichoice.getRelation().getArity();
+        auto relId = relationEncoder.encodeRelation(ichoice.getRelation());
+        std::vector<int> typeMask(arity);
+        bool fullIndexSearch = true;
+        for (size_t i = arity; i-- > 0;) {
+            if (!isRamUndefValue(patterns[i])) {
+                visit(patterns[i], exitAddress);
+                fullIndexSearch = false;
+                typeMask[i] = 1;
+            }
+        }
+
+        // Init range index based on pattern
+        if (fullIndexSearch == true) {
+            code->push_back(LVM_ITER_InitFullIndexParallel);
+            code->push_back(counterLabel);
+            code->push_back(relId);
+        } else {
+            auto indexPos = getIndexPos(ichoice);
+            this->emitParallelRangeIndexInst(
+                    arity, relId, indexPos, counterLabel, typeMask, lookupAddress(L2) + 1);
+        }
+
+        // While iter is not at end.
+        size_t address_L0 = code->size();
+        code->push_back(LVM_ITER_NotAtEnd);
+        code->push_back(counterLabel);
+        code->push_back(LVM_Jmpez);
+        code->push_back(lookupAddress(L2));
+
+        // Select the tuple pointed by iter
+        code->push_back(LVM_ITER_Select);
+        code->push_back(counterLabel);
+        code->push_back(ichoice.getTupleId());
+
+        visit(ichoice.getCondition(), lookupAddress(L2));
+        // If condition is true, perform nested operation and return.
+        code->push_back(LVM_Jmpnz);
+        code->push_back(lookupAddress(L1));
+
+        // Else increment the iter and continue
+        code->push_back(LVM_ITER_Inc);
+        code->push_back(counterLabel);
+        code->push_back(LVM_Goto);
+        code->push_back(address_L0);
+        setAddress(L1, code->size());
+        visitTupleOperation(ichoice, exitAddress);
+        setAddress(L2, code->size());
+        code->push_back(LVM_ParallelStop);
+
+        preambleIssued = false;
     }
 
     void visitIndexChoice(const RamIndexChoice& indexChoice, size_t exitAddress) override {
@@ -1179,8 +1421,7 @@ private:
         if (signature == 0) {
             signature = (1 << node.getRelation().getArity()) - 1;
         }
-        auto i = orderSet.getLexOrderNum(signature);
-        return i;
+        return orderSet.getLexOrderNum(signature);
     };
 
     /** Emit existence check instructions */
@@ -1227,6 +1468,32 @@ private:
         code->push_back(counterLabel);
         code->push_back(relId);
         code->push_back(indexPos);
+        for (size_t i = 0; i < numOfTypeMasks; ++i) {
+            RamDomain types = 0;
+            for (size_t j = 0; j < RAM_DOMAIN_SIZE; ++j) {
+                auto projectedIndex = i * RAM_DOMAIN_SIZE + j;
+                if (projectedIndex >= arity) {
+                    break;
+                }
+                types |= (typeMask[projectedIndex] << j);
+            }
+            code->push_back(types);
+        }
+    }
+
+    /** Emit parallel range index instruction */
+    void emitParallelRangeIndexInst(const size_t& arity, const size_t& relId, const size_t& indexPos,
+            const size_t& counterLabel, const std::vector<int>& typeMask, const size_t& joinLocation) {
+        size_t numOfTypeMasks = arity / RAM_DOMAIN_SIZE + (arity % RAM_DOMAIN_SIZE != 0);
+        if (numOfTypeMasks == 1) {
+            code->push_back(LVM_ITER_InitRangeIndexOneArgParallel);
+        } else {
+            code->push_back(LVM_ITER_InitRangeIndexParallel);
+        }
+        code->push_back(counterLabel);
+        code->push_back(relId);
+        code->push_back(indexPos);
+        code->push_back(joinLocation);
         for (size_t i = 0; i < numOfTypeMasks; ++i) {
             RamDomain types = 0;
             for (size_t j = 0; j < RAM_DOMAIN_SIZE; ++j) {

@@ -320,28 +320,24 @@ private:
  * of a specific range. The individual subsets may be processed in parallel.
  */
 class PartitionedStream {
-
-	// The internally owned list of streams maintaining a partition of the
-	// overall iteration range.
-	std::vector<Stream> streams;
+    // The internally owned list of streams maintaining a partition of the
+    // overall iteration range.
+    std::vector<Stream> streams;
 
 public:
+    using iterator = typename std::vector<Stream>::iterator;
 
-	using iterator = typename std::vector<Stream>::const_iterator;
+    PartitionedStream(std::vector<Stream>&& streams) : streams(std::move(streams)) {}
 
-	PartitionedStream(std::vector<Stream>&& streams)
-		: streams(std::move(streams)) {}
+    // -- allow PartitionStreams to be processed by for-loops --
 
-	// -- allow PartitionStreams to be processed by for-loops --
+    iterator begin() {
+        return streams.begin();
+    }
 
-	iterator begin() const {
-		return streams.begin();
-	}
-
-	iterator end() const {
-		return streams.end();
-	}
-
+    iterator end() {
+        return streams.end();
+    }
 };
 
 /**

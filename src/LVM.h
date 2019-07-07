@@ -98,7 +98,7 @@ public:
                     relationEncoder);
             mainProgram = generator.getCodeStream();
         }
-        mainProgram->print();
+        mainProgram->print(relationEncoder);
     }
 
 protected:
@@ -162,14 +162,6 @@ protected:
         relationEncoder[relAId].swap(relationEncoder[relBId]);
     }
 
-    /** Lookup stream, resize the pool if necessary */
-    Stream& lookUpStream(size_t idx) {
-        if (idx >= streamPool.size()) {
-            streamPool.resize(idx + 1);
-        }
-        return streamPool[idx];
-    }
-
     /** Obtain the search columns */
     SearchSignature getSearchSignature(const std::string& patterns, size_t arity) {
         SearchSignature res = 0;
@@ -216,7 +208,7 @@ private:
     std::vector<Logger*> timers;
 
     /** counter for $ operator */
-    int counter = 0;
+    std::atomic<RamDomain> counter{0};
 
     /** iteration number (in a fix-point calculation) */
     size_t iteration = 0;

@@ -130,6 +130,7 @@ enum LVM_Type {
     LVM_Jmpnz,
     LVM_Jmpez,
     LVM_STOP,
+    LVM_ParallelStop,
     LVM_NOP,
 
     // LVM Relation Structure Representation
@@ -139,13 +140,18 @@ enum LVM_Type {
     LVM_DEFAULT,
 
     LVM_ITER_InitFullIndex,
+    LVM_ITER_InitFullIndexParallel,
     LVM_ITER_InitRangeIndex,
+    LVM_ITER_InitRangeIndexParallel,
     LVM_ITER_InitRangeIndexOneArg,
+    LVM_ITER_InitRangeIndexOneArgParallel,
     LVM_ITER_Select,
     LVM_ITER_Inc,
     LVM_ITER_NotAtEnd,
 
 };
+
+class RelationEncoder;
 
 /**
  * LVMCode is an array of LVM Opcode and operands.
@@ -189,7 +195,7 @@ public:
     }
 
     /** Print out the code stream */
-    virtual void print() const;
+    virtual void print(RelationEncoder&) const;
 
     virtual ~LVMCode() = default;
 

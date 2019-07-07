@@ -130,8 +130,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 ip += 3;
                 break;
             case LVM_AutoIncrement:
-                stack.push(this->counter);
-                incCounter();
+                stack.push(this->counter++);
                 ip += 1;
                 break;
             case LVM_OP_ORD:
@@ -951,7 +950,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             case LVM_Aggregate_COUNT: {
                 RamDomain res = 0;
                 RamDomain idx = code[ip + 1];
-                auto& stream = streamPool[idx];
+                auto& stream = ctxt.lookUpStream(idx);
                 for (auto i = stream.begin(); i != stream.end(); ++i) {
                     res++;
                 }
@@ -973,8 +972,32 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 RamDomain dest = code[ip + 1];
                 size_t relId = code[ip + 2];
                 const auto& relPtr = getRelation(relId);
-                lookUpStream(dest) = relPtr->scan();
+                ctxt.lookUpStream(dest) = relPtr->scan();
                 ip += 3;
+                break;
+            };
+            case LVM_ITER_InitFullIndexParallel: {
+                RamDomain dest = code[ip + 1];
+                RamDomain relId = code[ip + 2];
+                RamDomain joinDest = code[ip + 3];
+                const auto& relPtr = getRelation(relId);
+
+                // Obtain partitioned streams
+                auto pstream = relPtr->pscan();
+                PARALLEL_START;
+                pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                    // pfor(auto& stream : pstream) {
+                    // try {
+                    // Create local context for child process
+                    LVMContext ctxt;
+                    ctxt.lookUpStream(dest) = std::move(*it);
+                    execute(codeStream, ctxt, ip + 4);
+                    //} catch (std::exception& e) {
+                    //    SignalHandler::instance()->error(e.what());
+                    //}
+                }
+                PARALLEL_END;
+                ip = joinDest;
                 break;
             };
             case LVM_ITER_InitRangeIndex: {
@@ -1005,10 +1028,58 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     }
                 }
                 // get iterator range
-                lookUpStream(dest) = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                ctxt.lookUpStream(dest) =
+                        relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
                 ip += (4 + numOfTypeMasks);
                 break;
             };
+            case LVM_ITER_InitRangeIndexParallel: {
+                RamDomain dest = code[ip + 1];
+                auto relPtr = getRelation(code[ip + 2]);
+                auto arity = relPtr->getArity();
+                RamDomain indexPos = code[ip + 3];
+                RamDomain joinLocation = code[ip + 4];
+
+                // create pattern tuple for range query
+                size_t numOfTypeMasks = arity / RAM_DOMAIN_SIZE + (arity % RAM_DOMAIN_SIZE != 0);
+                RamDomain low[arity];
+                RamDomain high[arity];
+                for (size_t i = 0; i < numOfTypeMasks; ++i) {
+                    RamDomain typeMask = code[ip + 5 + i];
+                    for (size_t j = 0; j < RAM_DOMAIN_SIZE; ++j) {
+                        auto projectedIndex = i * RAM_DOMAIN_SIZE + j;
+                        if (projectedIndex >= arity) {
+                            break;
+                        }
+                        if (1 << j & typeMask) {
+                            low[projectedIndex] = stack.top();
+                            stack.pop();
+                            high[projectedIndex] = low[projectedIndex];
+                        } else {
+                            low[projectedIndex] = MIN_RAM_DOMAIN;
+                            high[projectedIndex] = MAX_RAM_DOMAIN;
+                        }
+                    }
+                }
+
+                // create pattern tuple for range query
+                auto pstream = relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                PARALLEL_START;
+                pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                    // pfor(auto& stream : pstream) {
+                    try {
+                        // Create local context for child process
+                        LVMContext ctxt;
+                        ctxt.lookUpStream(dest) = std::move(*it);
+                        execute(codeStream, ctxt, ip + 6 + numOfTypeMasks);
+                    } catch (std::exception& e) {
+                        SignalHandler::instance()->error(e.what());
+                    }
+                }
+                PARALLEL_END;
+
+                ip = joinLocation;
+            }
             case LVM_ITER_InitRangeIndexOneArg: {
                 RamDomain dest = code[ip + 1];
                 auto relPtr = getRelation(code[ip + 2]);
@@ -1030,13 +1101,55 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     }
                 }
                 // get iterator range
-                lookUpStream(dest) = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                ctxt.lookUpStream(dest) =
+                        relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
                 ip += 5;
                 break;
             };
+            case LVM_ITER_InitRangeIndexOneArgParallel: {
+                RamDomain dest = code[ip + 1];
+                auto relPtr = getRelation(code[ip + 2]);
+                auto arity = relPtr->getArity();
+                auto indexPos = code[ip + 3];
+                auto joinDest = code[ip + 4];
+                auto typeMask = code[ip + 5];
+
+                // create pattern tuple for range query
+                RamDomain low[arity];
+                RamDomain high[arity];
+                for (size_t i = 0; i < arity; ++i) {
+                    if (1 << i & typeMask) {
+                        low[i] = stack.top();
+                        stack.pop();
+                        high[i] = low[i];
+                    } else {
+                        low[i] = MIN_RAM_DOMAIN;
+                        high[i] = MAX_RAM_DOMAIN;
+                    }
+                }
+
+                // create pattern tuple for range query
+                auto pstream = relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                PARALLEL_START;
+                // pfor(auto& stream : pstream) {
+                pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                    try {
+                        // Create local context for child process
+                        LVMContext ctxt;
+                        ctxt.lookUpStream(dest) = std::move(*it);
+                        execute(codeStream, ctxt, ip + 6);
+                    } catch (std::exception& e) {
+                        SignalHandler::instance()->error(e.what());
+                    }
+                }
+                PARALLEL_END;
+
+                ip = joinDest;
+                break;
+            }
             case LVM_ITER_NotAtEnd: {
                 RamDomain idx = code[ip + 1];
-                auto& stream = lookUpStream(idx);
+                auto& stream = ctxt.lookUpStream(idx);
                 stack.push(stream.begin() != stream.end());
                 ip += 2;
                 break;
@@ -1044,18 +1157,22 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             case LVM_ITER_Select: {
                 RamDomain idx = code[ip + 1];
                 RamDomain tupleId = code[ip + 2];
-                auto& stream = lookUpStream(idx);
+                auto& stream = ctxt.lookUpStream(idx);
                 ctxt[tupleId] = *stream.begin();
                 ip += 3;
                 break;
             }
             case LVM_ITER_Inc: {
                 RamDomain idx = code[ip + 1];
-                ++streamPool[idx].begin();
+                auto& stream = ctxt.lookUpStream(idx);
+                ++stream.begin();
                 ip += 2;
                 break;
             }
             case LVM_STOP:
+                assert(stack.size() == 0);
+                return;
+            case LVM_ParallelStop:
                 assert(stack.size() == 0);
                 return;
             default:

@@ -90,6 +90,13 @@ protected:
                 break;
 
             case Kind::RECORD: {
+                // special case: nil
+                // TODO: assuming nil = 0
+                if (repr == 0) {
+                    os << "nil";
+                    break;
+                }
+
                 // get record metadata
                 const auto& name = typeTable.getName(typeId);
                 const auto& fieldTypes = typeTable.getFieldTypes(typeId);

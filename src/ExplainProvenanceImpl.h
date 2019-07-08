@@ -282,10 +282,7 @@ public:
         auto headVariables = splitString(atoms[0], ',');
 
         auto isVariable = [&](std::string arg) {
-            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
-                return false;
-            }
-            return true;
+            return !(isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_");
         };
 
         // check that head variable bindings make sense, i.e. for a head like a(x, x), make sure both x are
@@ -344,10 +341,7 @@ public:
         uniqueVariables.insert(uniqueVariables.end(), headVariables.begin(), headVariables.end());
 
         auto isVariable = [&](std::string arg) {
-            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
-                return false;
-            }
-            return true;
+            return !(isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_");
         };
 
         // get body variables

@@ -974,8 +974,8 @@ void RAMI::evalStmt(const RamStatement& stmt) {
                 try {
                     const auto& typeMask = store.getRelation().getAttributeTypeIds();
                     IOSystem::getInstance()
-                            .getWriter(typeMask, interpreter.getSymbolTable(),
-                                    getInterpreterRecordTable(), interpreter.getTypeTable(), ioDirectives,
+                            .getWriter(typeMask, interpreter.getSymbolTable(), getInterpreterRecordTable(),
+                                    interpreter.getTypeTable(), ioDirectives,
                                     Global::config().has("provenance"))
                             ->writeAll(interpreter.getRelation(store.getRelation()));
                 } catch (std::exception& e) {

@@ -36,4 +36,4 @@ inline std::ostream& operator<<(std::ostream& os, Kind kind) {
     return os;
 }
 
-}
+}  // namespace souffle

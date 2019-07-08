@@ -1493,6 +1493,10 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     }
 
     // prepend type information to record constructors
+    // TODO: don't like that we're manipulating the program here!!! BUT type table not consturcted until this
+    // point, and easiset way to fit in the new type information field is this way (without adding +1's
+    // everywhere in LVM + RAMI, and having to change compiledtuple behaviour slightly for synthesiser) -- up
+    // for discussion...
     struct prependTypes : public AstNodeMapper {
         const TypeTable& typeTable;
 

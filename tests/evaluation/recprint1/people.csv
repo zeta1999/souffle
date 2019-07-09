@@ -1,0 +1,3 @@
+Person["azreika", 17, Car["Toyota", 1996]]
+Person["aker_f", 10, Car["FakeBrand", 1924]]
+Person["mr_e", 13, Car["RealBrand", 2021]]

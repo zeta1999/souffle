@@ -1449,9 +1449,9 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
             // union variants cannot be recursive, so this will terminate
             return getKind(program->getType(variants[0]));
+        } else {
+            assert(false && "unsupported typeclass");
         }
-
-        assert(false && "unsupported typeclass");
     };
 
     // sift through the types

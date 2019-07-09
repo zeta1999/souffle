@@ -108,7 +108,13 @@ protected:
                 // print out the record recursively
                 os << name << "[";
                 for (int i = 0; i < arity; i++) {
-                    writeValue(os, record[i + 1], fieldTypes[i]);
+                    if (typeTable.getKind(fieldTypes[i]) == Kind::SYMBOL) {
+                        os << "\"";
+                        writeValue(os, record[i + 1], fieldTypes[i]);
+                        os << "\"";
+                    } else {
+                        writeValue(os, record[i + 1], fieldTypes[i]);
+                    }
 
                     if (i != arity - 1) {
                         os << ", ";

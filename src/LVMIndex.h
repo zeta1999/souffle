@@ -229,6 +229,10 @@ public:
 
     Stream() : source(nullptr) {}
 
+    Stream(Stream& other) = delete;
+
+    Stream& operator=(Stream& other) = delete;
+
     Stream(Stream&& other)
             : source(std::move(other.source)), buffer(other.buffer), cur(other.cur), limit(other.limit) {}
 
@@ -337,6 +341,10 @@ public:
 
     iterator end() {
         return streams.end();
+    }
+
+    std::vector<Stream>& getStreams() {
+        return streams;
     }
 };
 

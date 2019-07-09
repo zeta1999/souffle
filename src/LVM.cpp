@@ -797,7 +797,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             case LVM_Stratum: {
                 this->level++;
                 // Record all the rleation that is created in the previous level
-                if (profile || this->level != 0) {
+                if (profile && this->level != 0) {
                     for (const auto& rel : relationEncoder.getRelationMap()) {
                         if (rel == nullptr) {
                             continue;
@@ -983,18 +983,18 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 const auto& relPtr = getRelation(relId);
 
                 // Obtain partitioned streams
-                auto pstream = relPtr->pscan();
+                auto pstream = relPtr->pscan(numOfThreads);
                 PARALLEL_START;
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     // pfor(auto& stream : pstream) {
-                    // try {
-                    // Create local context for child process
-                    LVMContext ctxt;
-                    ctxt.lookUpStream(dest) = std::move(*it);
-                    execute(codeStream, ctxt, ip + 4);
-                    //} catch (std::exception& e) {
-                    //    SignalHandler::instance()->error(e.what());
-                    //}
+                    try {
+                        // Create local context for child process
+                        LVMContext ctxt;
+                        ctxt.lookUpStream(dest) = std::move(*it);
+                        execute(codeStream, ctxt, ip + 4);
+                    } catch (std::exception& e) {
+                        SignalHandler::instance()->error(e.what());
+                    }
                 }
                 PARALLEL_END;
                 ip = joinDest;
@@ -1063,7 +1063,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 }
 
                 // create pattern tuple for range query
-                auto pstream = relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                auto pstream = relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     // pfor(auto& stream : pstream) {
@@ -1129,7 +1129,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 }
 
                 // create pattern tuple for range query
-                auto pstream = relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                auto pstream = relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
                 // pfor(auto& stream : pstream) {
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {

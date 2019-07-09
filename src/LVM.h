@@ -51,7 +51,9 @@ class LVM : public LVMInterface {
 public:
     LVM(RamTranslationUnit& tUnit)
             : LVMInterface(tUnit), profile(Global::config().has("profile")),
-              provenance(Global::config().has("provenance")) {}
+              provenance(Global::config().has("provenance")) {
+        numOfThreads = std::stoi(Global::config().get("jobs"));
+    }
 
     virtual ~LVM() {
         for (auto* timer : timers) {
@@ -215,6 +217,9 @@ private:
 
     /** Dynamic library for user-defined functors */
     void* dll = nullptr;
+    
+    /** Number of threads for parallel computing */
+    size_t numOfThreads;
 };
 
 }  // end of namespace souffle

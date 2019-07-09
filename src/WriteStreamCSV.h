@@ -44,7 +44,7 @@ protected:
 
 class WriteFileCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteFileCSV(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
+    WriteFileCSV(const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
             const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
             const bool provenance = false)
             : WriteStream(typeMask, symbolTable, recordTable, typeTable, provenance),
@@ -79,7 +79,7 @@ protected:
 #ifdef USE_LIBZ
 class WriteGZipFileCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteGZipFileCSV(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
+    WriteGZipFileCSV(const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
             const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
             const bool provenance = false)
             : WriteStream(typeMask, symbolTable, recordTable, typeTable, provenance),
@@ -114,7 +114,7 @@ protected:
 
 class WriteCoutCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteCoutCSV(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
+    WriteCoutCSV(const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
             const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
             const bool provenance = false)
             : WriteStream(typeMask, symbolTable, recordTable, typeTable, provenance),
@@ -175,7 +175,7 @@ protected:
 
 class WriteFileCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
             const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
             const bool provenance) override {
 #ifdef USE_LIBZ
@@ -196,7 +196,7 @@ public:
 
 class WriteCoutCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
             const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
             const bool provenance) override {
         return std::make_unique<WriteCoutCSV>(

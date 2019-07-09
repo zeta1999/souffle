@@ -21,6 +21,7 @@
 namespace souffle {
 
 // define the domain for type ids
+// TODO: clarify actual type we want
 using TypeId = RamDomain;
 #define MIN_TYPE_ID 0
 #define MAX_TYPE_ID MAX_RAM_DOMAIN

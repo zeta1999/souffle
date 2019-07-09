@@ -1494,14 +1494,10 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     assert(typeTable->isComplete() && "undefined types exist in type table");
 
     // prepend type information to record constructors
-    // TODO: don't like that we're manipulating the program here!!! BUT type table not consturcted until this
-    // point, and easiset way to fit in the new type information field is this way (without adding +1's
-    // everywhere in LVM + RAMI, and having to change compiledtuple behaviour slightly for synthesiser) -- up
-    // for discussion...
-    struct prependTypes : public AstNodeMapper {
+    struct TypePrepender : public AstNodeMapper {
         const TypeTable& typeTable;
 
-        prependTypes(const TypeTable& typeTable) : typeTable(typeTable) {}
+        TypePrepender(const TypeTable& typeTable) : typeTable(typeTable) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             node->apply(*this);
@@ -1518,8 +1514,8 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         }
     };
 
+    TypePrepender update(*typeTable);
     for (auto* rel : program->getRelations()) {
-        prependTypes update(*typeTable);
         rel->apply(update);
     }
 

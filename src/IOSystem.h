@@ -50,7 +50,7 @@ public:
     /**
      * Return a new WriteStream
      */
-    std::unique_ptr<WriteStream> getWriter(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
             const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
             const bool provenance) const {
         std::string ioType = ioDirectives.getIOType();

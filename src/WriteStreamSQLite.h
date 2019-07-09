@@ -29,7 +29,7 @@ namespace souffle {
 class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<int>& typeMask, const SymbolTable& symbolTable, const RecordTable& recordTable,
+            const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable, const RecordTable& recordTable,
             const TypeTable& typeTable, const bool provenance)
             : WriteStream(typeMask, symbolTable, recordTable, typeTable, provenance), dbFilename(dbFilename),
               relationName(relationName) {
@@ -265,7 +265,7 @@ private:
 
 class WriteSQLiteFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<int>& typeMask, const SymbolTable& symbolTable,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
             const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
             const bool provenance) override {
         std::string dbName = ioDirectives.get("dbname");

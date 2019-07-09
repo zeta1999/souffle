@@ -1485,12 +1485,13 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         typeTable->addUnionType(toString(ut->getName()), getKind(ut));
     }
     for (const auto* rt : recordTypes) {
-        std::vector<int> fields;
+        std::vector<std::string> fields;
         for (const auto& field : rt->getFields()) {
-            fields.push_back(typeTable->getId(toString(field.type)));
+            fields.push_back(toString(field.type));
         }
         typeTable->addRecordType(toString(rt->getName()), fields);
     }
+    assert(typeTable->isComplete() && "undefined types exist in type table");
 
     // prepend type information to record constructors
     // TODO: don't like that we're manipulating the program here!!! BUT type table not consturcted until this

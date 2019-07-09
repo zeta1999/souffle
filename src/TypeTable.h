@@ -19,6 +19,7 @@
 #include "SouffleType.h"
 #include <cassert>
 #include <map>
+#include <set>
 #include <vector>
 
 namespace souffle {
@@ -43,8 +44,18 @@ public:
         addType(type, kind);
     }
 
-    void addRecordType(std::string type, std::vector<int> fieldIds) {
+    void addRecordType(std::string type, std::vector<std::string> fieldNames) {
         int id = addType(type, Kind::RECORD);
+        std::vector<int> fieldIds;
+        for (auto field : fieldNames) {
+            auto fieldPair = nameToId.find(field);
+            if (fieldPair != nameToId.end()) {
+                fieldIds.push_back(fieldPair->second);
+            } else {
+                int fieldId = addTentativeType(field);
+                fieldIds.push_back(fieldId);
+            }
+        }
         idToFields[id] = fieldIds;
     }
 
@@ -80,22 +91,45 @@ public:
         return idToKind;
     }
 
+    bool isComplete() const {
+        return tentativeTypes.empty();
+    }
+
 private:
     std::map<std::string, int> nameToId;
     std::map<int, std::string> idToName;
     std::map<int, std::vector<int>> idToFields;
     std::map<int, Kind> idToKind;
+    std::set<std::string> tentativeTypes{};
+    int numTypes{0};
+
+    int addTentativeType(std::string type) {
+        assert(nameToId.find(type) == nameToId.end() && "tentative type cannot already exist");
+        int id = numTypes++;
+        tentativeTypes.insert(type);
+        nameToId[type] = id;
+        return id;
+    }
 
     int addType(std::string type, Kind kind) {
-        // type must only be added once
-        assert(nameToId.find(type) == nameToId.end() && "typename already exists in type table");
+        // check if tentative type
+        int id;
+        if (tentativeTypes.find(type) != tentativeTypes.end()) {
+            // name to id map must already exist
+            assert(nameToId.find(type) != nameToId.end() && "tentative type must already have id");
+            id = nameToId.at(type);
+            tentativeTypes.erase(type);
+        } else {
+            // type must only be added once
+            assert(nameToId.find(type) == nameToId.end() && "typename already exists in type table");
+            id = numTypes++;
+            nameToId[type] = id;
+        }
 
-        static int count = 0;
-        nameToId[type] = count;
-        idToName[count] = type;
-        idToKind[count] = kind;
+        idToName[id] = type;
+        idToKind[id] = kind;
 
-        return count++;
+        return id;
     }
 };
 

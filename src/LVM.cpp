@@ -866,8 +866,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     try {
                         InterpreterRelation& relation = getRelation(relName);
                         std::vector<bool> symbolMask;
-                        for (auto& cur : relation.getAttributeTypeQualifiers()) {
-                            symbolMask.push_back(cur[0] == 's');
+                        for (auto& cur : relation.getAttributeTypeIds()) {
+                            symbolMask.push_back(cur == 1);
                         }
                         IOSystem::getInstance()
                                 .getReader(symbolMask, symbolTable, io, Global::config().has("provenance"))

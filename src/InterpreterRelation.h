@@ -50,6 +50,7 @@ public:
 
     /** Get AttributeType for the relation */
     std::vector<std::string>& getAttributeTypeQualifiers() {
+        assert(false && "should not be used!");
         return attributeTypeQualifiers;
     }
 

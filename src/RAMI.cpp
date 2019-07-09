@@ -956,8 +956,9 @@ void RAMI::evalStmt(const RamStatement& stmt) {
                 try {
                     InterpreterRelation& relation = interpreter.getRelation(load.getRelation());
                     std::vector<bool> symbolMask;
-                    for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
-                        symbolMask.push_back(cur[0] == 's');
+                    for (auto& cur : load.getRelation().getAttributeTypeIds()) {
+                        // TODO: get rid of magic number here later on
+                        symbolMask.push_back(cur == 1);
                     }
                     IOSystem::getInstance()
                             .getReader(symbolMask, interpreter.getSymbolTable(), ioDirectives,

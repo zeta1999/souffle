@@ -231,8 +231,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
             std::vector<bool> symbolMask;
-            for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
-                symbolMask.push_back(cur[0] == 's');
+            for (auto& cur : load.getRelation().getAttributeTypeIds()) {
+                symbolMask.push_back(cur == 1);
             }
             // get some table details
             for (IODirectives ioDirectives : load.getIODirectives()) {
@@ -2206,8 +2206,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) {
         // get some table details
         std::vector<bool> symbolMask;
-        for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
-            symbolMask.push_back(cur[0] == 's');
+        for (auto& cur : load.getRelation().getAttributeTypeIds()) {
+            symbolMask.push_back(cur == 1);
         }
         for (IODirectives ioDirectives : load.getIODirectives()) {
             os << "try {";

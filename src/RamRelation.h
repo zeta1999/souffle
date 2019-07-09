@@ -89,6 +89,7 @@ public:
     }
 
     const std::vector<std::string>& getAttributeTypeQualifiers() const {
+        assert(false && "should not be used!");
         return attributeTypeQualifiers;
     }
 

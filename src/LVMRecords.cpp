@@ -93,15 +93,16 @@ LVMRecordMap& getForArity(int arity) {
     // the static container -- filled on demand
     static map<int, LVMRecordMap> maps;
 
-    // get container if present
-    auto pos = maps.find(arity);
-    if (pos != maps.end()) {
-        return pos->second;
+    // TODO This can be done during code generation and does not need lock.
+#pragma omp critical(find_map)
+    {
+        auto pos = maps.find(arity);
+        if (pos == maps.end()) {
+            maps.emplace(arity, arity);
+        }
     }
 
-    // create new container if required
-    maps.emplace(arity, arity);
-    return getForArity(arity);
+    return maps.find(arity)->second;
 }
 }  // namespace
 

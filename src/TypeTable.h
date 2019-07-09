@@ -27,6 +27,7 @@ namespace souffle {
 class TypeTable {
 public:
     TypeTable() {
+        // add the primary types corresponding to each kind
         addPrimitiveType("number", Kind::NUMBER);
         addPrimitiveType("symbol", Kind::SYMBOL);
         addPrimitiveType("record", Kind::RECORD);
@@ -36,22 +37,38 @@ public:
             std::map<int, std::vector<int>> idToFields, std::map<int, Kind> idToKind)
             : nameToId(nameToId), idToName(idToName), idToFields(idToFields), idToKind(idToKind) {}
 
+    /**
+     * Add a primitive type to the type table.
+     */
     void addPrimitiveType(std::string type, Kind kind) {
         addType(type, kind);
     }
 
+    /**
+     * Add a union type to the type table.
+     * Note: all variants of a union type have the same kind.
+     */
     void addUnionType(std::string type, Kind kind) {
         addType(type, kind);
     }
 
+    /**
+     * Add a record type to the type table.
+     * If a field type does not exist yet in the type table, it is added tentatively.
+     */
     void addRecordType(std::string type, std::vector<std::string> fieldNames) {
+        // add the overarching record type
         int id = addType(type, Kind::RECORD);
+
+        // add the record->fields map
         std::vector<int> fieldIds;
         for (auto field : fieldNames) {
             auto fieldPair = nameToId.find(field);
             if (fieldPair != nameToId.end()) {
+                // field already exists in the type table, no need to add it
                 fieldIds.push_back(fieldPair->second);
             } else {
+                // field does not exist yet
                 int fieldId = addTentativeType(field);
                 fieldIds.push_back(fieldId);
             }
@@ -59,63 +76,97 @@ public:
         idToFields[id] = fieldIds;
     }
 
+    /** Get the type id of a given type */
     int getId(const std::string& type) const {
         return nameToId.at(type);
     }
 
+    /** Get the kind of a given typeid */
     Kind getKind(int id) const {
         return idToKind.at(id);
     }
 
+    /** Get the name corresponding to a given typeid */
     const std::string& getName(int id) const {
         return idToName.at(id);
     }
 
+    /** Get the fields corresponding to a given record type id */
     const std::vector<int>& getFieldTypes(int recordId) const {
+        assert(idToKind.at(recordId) == Kind::RECORD && "only records can have fields");
         return idToFields.at(recordId);
     }
 
+    /** Get the full name-to-id mapping */
     const std::map<std::string, int>& getNameToIdMap() const {
         return nameToId;
     }
 
+    /** Get the full id-to-name mapping */
     const std::map<int, std::string>& getIdToNameMap() const {
         return idToName;
     }
 
+    /** Get the full recordid-to-fields mapping */
     const std::map<int, std::vector<int>>& getIdToFieldsMap() const {
         return idToFields;
     }
 
+    /** Get the full id-to-kind mapping */
     const std::map<int, Kind>& getIdToKindMap() const {
         return idToKind;
     }
 
+    /**
+     * Checks if the type table is completely defined.
+     * @return true iff no tentative types exist.
+     */
     bool isComplete() const {
         return tentativeTypes.empty();
     }
 
 private:
+    // type information
+    int numTypes{0};
     std::map<std::string, int> nameToId;
     std::map<int, std::string> idToName;
     std::map<int, std::vector<int>> idToFields;
     std::map<int, Kind> idToKind;
-    std::set<std::string> tentativeTypes{};
-    int numTypes{0};
 
+    // partially defined types
+    std::set<std::string> tentativeTypes{};
+
+    /**
+     * Defines a type partially, with the expectation that it will be completely defined later.
+     * @param type type to partially define
+     * @return type-id assigned to the given type
+     */
     int addTentativeType(std::string type) {
+        if (tentativeTypes.find(type) != tentativeTypes.end()) {
+            // tentative type already exists, just return the id
+            return nameToId.at(type);
+        }
+
         assert(nameToId.find(type) == nameToId.end() && "tentative type cannot already exist");
+
+        // assign known information
         int id = numTypes++;
         tentativeTypes.insert(type);
         nameToId[type] = id;
         return id;
     }
 
+    /**
+     * Adds a type to the type table.
+     *
+     * @param type type to add
+     * @param kind type kind
+     * @return id assigned to the type
+     */
     int addType(std::string type, Kind kind) {
-        // check if tentative type
         int id;
         if (tentativeTypes.find(type) != tentativeTypes.end()) {
-            // name to id map must already exist
+            // type already partially defined
             assert(nameToId.find(type) != nameToId.end() && "tentative type must already have id");
             id = nameToId.at(type);
             tentativeTypes.erase(type);
@@ -126,6 +177,7 @@ private:
             nameToId[type] = id;
         }
 
+        // complete type metadata
         idToName[id] = type;
         idToKind[id] = kind;
 

@@ -175,9 +175,9 @@ protected:
 
 class WriteFileCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
-            const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
-            const bool provenance) override {
+    std::unique_ptr<WriteStream> getWriter(const std::vector<TypeId>& typeMask,
+            const SymbolTable& symbolTable, const RecordTable& recordTable, const TypeTable& typeTable,
+            const IODirectives& ioDirectives, const bool provenance) override {
 #ifdef USE_LIBZ
         if (ioDirectives.has("compress")) {
             return std::make_unique<WriteGZipFileCSV>(
@@ -196,9 +196,9 @@ public:
 
 class WriteCoutCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
-            const RecordTable& recordTable, const TypeTable& typeTable, const IODirectives& ioDirectives,
-            const bool provenance) override {
+    std::unique_ptr<WriteStream> getWriter(const std::vector<TypeId>& typeMask,
+            const SymbolTable& symbolTable, const RecordTable& recordTable, const TypeTable& typeTable,
+            const IODirectives& ioDirectives, const bool provenance) override {
         return std::make_unique<WriteCoutCSV>(
                 typeMask, symbolTable, recordTable, typeTable, ioDirectives, provenance);
     }

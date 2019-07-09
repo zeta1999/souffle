@@ -177,7 +177,8 @@ class InterpreterProgInterface : public SouffleProgram {
 public:
     InterpreterProgInterface(Interpreter& interp)
             : prog(*interp.getTranslationUnit().getProgram()), exec(interp),
-              symTable(interp.getTranslationUnit().getSymbolTable()), typeTable(interp.getTranslationUnit().getTypeTable()) {
+              symTable(interp.getTranslationUnit().getSymbolTable()),
+              typeTable(interp.getTranslationUnit().getTypeTable()) {
         uint32_t id = 0;
 
         // Retrieve AST Relations and store them in a map

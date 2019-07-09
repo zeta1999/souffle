@@ -269,7 +269,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << "std::vector<int>({" << join(store.getRelation().getAttributeTypeIds(), ",") << "})";
+                out << "std::vector<TypeId>({" << join(store.getRelation().getAttributeTypeIds(), ",")
+                    << "})";
                 out << ", symTable, ";
                 out << "GeneralRecordMap::getRecordTable(), *typeTable, ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
@@ -1643,7 +1644,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // destinations
             const auto& destinationStrata = send.getDestinationStrata();
             auto it = destinationStrata.begin();
-            os << "std::set<int>(";
+            os << "std::set<TypeId>(";
             if (it != destinationStrata.end()) {
                 os << "{" << *it + 1;
                 ++it;
@@ -1880,7 +1881,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         std::stringstream initList;
         initList << "\ntypeTable(std::make_unique<TypeTable>(";
         // name to id map
-        initList << "\tstd::map<std::string, int>{{";
+        initList << "\tstd::map<std::string, TypeId>{{";
         for (const auto& pair : typeTable.getNameToIdMap()) {
             initList << "{R\"_(" << pair.first << ")_\", " << pair.second << "},";
         }
@@ -1894,9 +1895,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         initList << "}},\n";
 
         // id to fields map
-        initList << "\tstd::map<int, std::vector<int>>{{";
+        initList << "\tstd::map<int, std::vector<TypeId>>{{";
         for (const auto& pair : typeTable.getIdToFieldsMap()) {
-            initList << "{" << pair.first << ",std::vector<int>{" << join(pair.second, ",") << "}},";
+            initList << "{" << pair.first << ",std::vector<TypeId>{" << join(pair.second, ",") << "}},";
         }
         initList << "}},\n";
 
@@ -2173,7 +2174,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "}\n";
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
-                os << "std::vector<int>({" << join(store->getRelation().getAttributeTypeIds(), ",") << "})";
+                os << "std::vector<TypeId>({" << join(store->getRelation().getAttributeTypeIds(), ",")
+                   << "})";
                 os << ", symTable, ";
                 os << "GeneralRecordMap::getRecordTable(), *typeTable, ioDirectives, "
                    << (Global::config().has("provenance") ? "true" : "false");
@@ -2231,13 +2233,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of loadAll() method
 
     // issue dump methods
-    auto dumpRelation = [&](const std::string& name, const std::vector<int>& mask, size_t arity) {
+    auto dumpRelation = [&](const std::string& name, const std::vector<TypeId>& mask, size_t arity) {
         os << "try {";
         os << "IODirectives ioDirectives;\n";
         os << "ioDirectives.setIOType(\"stdout\");\n";
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
-        os << "std::vector<int>({" << join(mask, ",") << "})";
+        os << "std::vector<TypeId>({" << join(mask, ",") << "})";
         os << ", symTable, ";
         os << "GeneralRecordMap::getRecordTable(), *typeTable, ioDirectives, "
            << (Global::config().has("provenance") ? "true" : "false");

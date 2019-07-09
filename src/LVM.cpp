@@ -33,6 +33,7 @@
 #include "RamVisitor.h"
 #include "ReadStream.h"
 #include "SignalHandler.h"
+#include "SouffleType.h"
 #include "SymbolTable.h"
 #include "Util.h"
 #include "WriteStream.h"
@@ -825,7 +826,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 } else {
                     res = new InterpreterRelation(arity);
                 }
-                std::vector<int> attributeTypes;
+                std::vector<TypeId> attributeTypes;
                 for (int i = 0; i < code[ip + 2]; ++i) {
                     attributeTypes.push_back(code[ip + 4 + i]);
                 }

@@ -201,7 +201,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
         const size_t arity, const std::vector<std::string> attributeNames,
-        const std::vector<int> attributeTypeIds, const RelationRepresentation representation) {
+        const std::vector<TypeId> attributeTypeIds, const RelationRepresentation representation) {
     const RamRelation* ramRel = ramProg->getRelation(name);
     if (ramRel == nullptr) {
         ramProg->addRelation(
@@ -228,7 +228,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const Ast
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
         const AstRelation* rel, const std::string relationNamePrefix) {
     std::vector<std::string> attributeNames;
-    std::vector<int> attributeTypeIds;
+    std::vector<TypeId> attributeTypeIds;
     for (size_t i = 0; i < rel->getArity(); ++i) {
         attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
 

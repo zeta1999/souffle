@@ -48,7 +48,7 @@ protected:
     const std::vector<std::string> attributeNames;
 
     /** Type of attributes */
-    const std::vector<int> attributeTypeIds;
+    const std::vector<TypeId> attributeTypeIds;
 
     /** Data-structure representation */
     const RelationRepresentation representation;

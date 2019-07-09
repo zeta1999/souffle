@@ -16,8 +16,16 @@
 
 #pragma once
 
+#include "RamTypes.h"
+
 namespace souffle {
 
+// define the domain for type ids
+using TypeId = RamDomain;
+#define MIN_TYPE_ID 0
+#define MAX_TYPE_ID MAX_RAM_DOMAIN
+
+// define Kinds
 enum class Kind { SYMBOL, NUMBER, RECORD };
 
 inline std::ostream& operator<<(std::ostream& os, Kind kind) {

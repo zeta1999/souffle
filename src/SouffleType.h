@@ -22,6 +22,8 @@ namespace souffle {
 
 // define the domain for type ids
 // TODO: clarify actual type we want
+// TODO: use max type id to ensure we dont go over it
+// TODO: should merge this with arity once polymorphism is implemented
 using TypeId = RamDomain;
 #define MIN_TYPE_ID 0
 #define MAX_TYPE_ID MAX_RAM_DOMAIN

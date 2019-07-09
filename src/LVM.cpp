@@ -683,7 +683,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     break;
                 }
 
-                // unpack the tuple, taking into account extra leading type-id field
+                // unpack the tuple
                 RamDomain* tuple = unpack(ref, arity);
                 ctxt[id] = tuple;
                 ip += 4;
@@ -867,8 +867,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     try {
                         InterpreterRelation& relation = getRelation(relName);
                         std::vector<bool> symbolMask;
+                        auto symbolTypeId = getTypeTable().getId("symbol");
                         for (auto& cur : relation.getAttributeTypeIds()) {
-                            symbolMask.push_back(cur == 1);
+                            symbolMask.push_back(cur == symbolTypeId ? 1 : 0);
                         }
                         IOSystem::getInstance()
                                 .getReader(symbolMask, symbolTable, io, Global::config().has("provenance"))

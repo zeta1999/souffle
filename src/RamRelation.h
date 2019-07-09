@@ -20,6 +20,7 @@
 #include "RamNode.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
+#include "SouffleType.h"
 #include "SymbolTable.h"
 #include "Table.h"
 #include "Util.h"
@@ -47,10 +48,6 @@ protected:
     const std::vector<std::string> attributeNames;
 
     /** Type of attributes */
-    // TODO: should eventually get rid of this, now redundant
-    const std::vector<std::string> attributeTypeQualifiers;
-
-    /** Type of attributes */
     const std::vector<int> attributeTypeIds;
 
     /** Data-structure representation */
@@ -58,13 +55,11 @@ protected:
 
 public:
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
-            const std::vector<std::string> attributeTypeQualifiers, const std::vector<int> attributeTypeIds,
-            const RelationRepresentation representation)
+            const std::vector<TypeId> attributeTypeIds, const RelationRepresentation representation)
             : RamNode(), name(std::move(name)), arity(arity), attributeNames(std::move(attributeNames)),
-              attributeTypeQualifiers(std::move(attributeTypeQualifiers)), attributeTypeIds(attributeTypeIds),
-              representation(representation) {
+              attributeTypeIds(attributeTypeIds), representation(representation) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
-        assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
+        assert(this->attributeTypeIds.size() == arity || this->attributeTypeIds.empty());
     }
 
     /** Get name */
@@ -83,17 +78,13 @@ public:
         return "c" + std::to_string(i);
     }
 
-    /** Get Argument Type Qualifier */
-    const std::string getArgTypeQualifier(uint32_t i) const {
-        return (i < attributeTypeQualifiers.size()) ? attributeTypeQualifiers[i] : "";
+    /** Get argument type id */
+    TypeId getAttributeTypeId(uint32_t idx) const {
+        assert(idx < attributeTypeIds.size() && "index out of bounds");
+        return attributeTypeIds.at(idx);
     }
 
-    const std::vector<std::string>& getAttributeTypeQualifiers() const {
-        assert(false && "should not be used!");
-        return attributeTypeQualifiers;
-    }
-
-    const std::vector<int>& getAttributeTypeIds() const {
+    const std::vector<TypeId>& getAttributeTypeIds() const {
         return attributeTypeIds;
     }
 
@@ -122,14 +113,16 @@ public:
         return name < other.name;
     }
 
+    // TODO: should probs print type table in ram too now
+
     /* Print */
     void print(std::ostream& out) const override {
         out << name;
         if (arity > 0) {
-            out << "(" << getArg(0) << ":" << attributeTypeQualifiers[0];
+            out << "(" << getArg(0) << ":" << attributeTypeIds[0];
             for (unsigned i = 1; i < arity; i++) {
                 out << ",";
-                out << getArg(i) << ":" << attributeTypeQualifiers[i];
+                out << getArg(i) << ":" << attributeTypeIds[i];
             }
             out << ")";
             out << " " << representation;
@@ -145,8 +138,7 @@ public:
 
     /** Create clone */
     RamRelation* clone() const override {
-        auto* res = new RamRelation(
-                name, arity, attributeNames, attributeTypeQualifiers, attributeTypeIds, representation);
+        auto* res = new RamRelation(name, arity, attributeNames, attributeTypeIds, representation);
         return res;
     }
 
@@ -159,8 +151,8 @@ protected:
         assert(nullptr != dynamic_cast<const RamRelation*>(&node));
         const auto& other = static_cast<const RamRelation&>(node);
         return name == other.name && arity == other.arity && attributeNames == other.attributeNames &&
-               attributeTypeQualifiers == other.attributeTypeQualifiers &&
-               representation == other.representation && isTemp() == other.isTemp();
+               attributeTypeIds == other.attributeTypeIds && representation == other.representation &&
+               isTemp() == other.isTemp();
     }
 };
 

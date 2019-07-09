@@ -18,6 +18,7 @@
 
 #include "RamTypes.h"
 #include "SymbolTable.h"
+#include "TypeTable.h"
 
 #include <initializer_list>
 #include <iostream>
@@ -241,6 +242,7 @@ private:
     std::vector<Relation*> inputRelations;
     std::vector<Relation*> outputRelations;
     std::vector<Relation*> internalRelations;
+    std::unique_ptr<TypeTable> typeTable;
 
 protected:
     // add relation to relation map
@@ -312,6 +314,7 @@ public:
     virtual void executeSubroutine(std::string name, const std::vector<RamDomain>& args,
             std::vector<RamDomain>& ret, std::vector<bool>& retErr) {}
     virtual SymbolTable& getSymbolTable() = 0;
+    virtual const TypeTable& getTypeTable() const = 0;
 
     // remove all the facts from the output relations
     void purgeOutputRelations() {

@@ -1965,9 +1965,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             std::string tupleName = "std::array<const char *," + std::to_string(arity) + ">{{";
 
             if (rel.getArity()) {
-                tupleType += "\"" + rel.getArgTypeQualifier(0) + "\"";
+                tupleType += "\"" + toString(rel.getAttributeTypeId(0)) + "\"";
                 for (int i = 1; i < arity; i++) {
-                    tupleType += ",\"" + rel.getArgTypeQualifier(i) + "\"";
+                    tupleType += ",\"" + toString(rel.getAttributeTypeId(i)) + "\"";
                 }
 
                 tupleName += "\"" + rel.getArg(0) + "\"";
@@ -2271,6 +2271,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "SymbolTable& getSymbolTable() override {\n";
     os << "return symTable;\n";
     os << "}\n";  // end of getSymbolTable() method
+
+    os << "const TypeTable& getTypeTable() const override{\n";
+    os << "return *typeTable.get();\n";
+    os << "}\n";  // end of getTypeTable() method
 
     // TODO: generate code for subroutines
     if (Global::config().has("provenance")) {

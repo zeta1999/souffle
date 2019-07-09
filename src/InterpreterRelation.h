@@ -19,6 +19,7 @@
 #include "InterpreterIndex.h"
 #include "ParallelUtils.h"
 #include "RamTypes.h"
+#include "SouffleType.h"
 
 #include <deque>
 #include <map>
@@ -38,25 +39,20 @@ public:
 
     virtual ~InterpreterRelation() = default;
 
-    /** Set AttributeType for the relation */
-    void setAttributes(const std::vector<std::string> attributeTypes) {
-        assert(false && "should not be used!");
-        attributeTypeQualifiers = attributeTypes;
-    }
-
-    void setAttributeTypes(const std::vector<int> attributeTypes) {
+    /** Set types of attributes for the relation */
+    void setAttributeTypes(const std::vector<TypeId> attributeTypes) {
         attributeTypeIds = attributeTypes;
     }
 
-    /** Get AttributeType for the relation */
-    std::vector<std::string>& getAttributeTypeQualifiers() {
-        assert(false && "should not be used!");
-        return attributeTypeQualifiers;
+    /** Get types of attributes for the relation */
+    std::vector<TypeId>& getAttributeTypeIds() {
+        return attributeTypeIds;
     }
 
-    /** Get type of attributes for the relation */
-    std::vector<int>& getAttributeTypeIds() {
-        return attributeTypeIds;
+    /** Gets the type of the attribute at the given index */
+    TypeId getAttributeTypeId(size_t idx) const {
+        assert(idx < attributeTypeIds.size() && "index out of bounds");
+        return attributeTypeIds.at(idx);
     }
 
     /** Get arity of relation */
@@ -328,10 +324,7 @@ private:
     mutable Lock lock;
 
     /** Type of attributes */
-    std::vector<std::string> attributeTypeQualifiers;
-
-    /** Type of attributes */
-    std::vector<int> attributeTypeIds;
+    std::vector<TypeId> attributeTypeIds;
 
     /** Stratum level information */
     size_t level = 0;

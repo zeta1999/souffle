@@ -177,7 +177,7 @@ class InterpreterProgInterface : public SouffleProgram {
 public:
     InterpreterProgInterface(Interpreter& interp)
             : prog(*interp.getTranslationUnit().getProgram()), exec(interp),
-              symTable(interp.getTranslationUnit().getSymbolTable()) {
+              symTable(interp.getTranslationUnit().getSymbolTable()), typeTable(interp.getTranslationUnit().getTypeTable()) {
         uint32_t id = 0;
 
         // Retrieve AST Relations and store them in a map
@@ -195,7 +195,7 @@ public:
             std::vector<std::string> types;
             std::vector<std::string> attrNames;
             for (size_t i = 0; i < rel.getArity(); i++) {
-                std::string t = rel.getArgTypeQualifier(i);
+                std::string t = typeTable.getName(rel.getAttributeTypeId(i));
                 types.push_back(t);
 
                 std::string n = rel.getArg(i);
@@ -255,10 +255,16 @@ public:
         return symTable;
     }
 
+    /** Get type table */
+    const TypeTable& getTypeTable() const override {
+        return typeTable;
+    }
+
 private:
     const RamProgram& prog;
     Interpreter& exec;
     SymbolTable& symTable;
+    const TypeTable& typeTable;
     std::vector<InterpreterRelInterface*> interfaces;
 };
 

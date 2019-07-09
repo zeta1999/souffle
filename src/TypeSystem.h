@@ -388,6 +388,7 @@ private:
 /**
  * Returns full type qualifier for a given type
  */
+// TODO: maybe use this instead of names for types later on
 std::string getTypeQualifier(const Type& type);
 
 /**

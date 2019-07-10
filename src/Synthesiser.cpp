@@ -1963,13 +1963,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "> wrapper_" << name << ";\n";
 
             // construct types
-            std::string tupleType = "std::array<const char *," + std::to_string(arity) + ">{{";
+            std::string tupleType = "std::array<TypeId," + std::to_string(arity) + ">{{";
             std::string tupleName = "std::array<const char *," + std::to_string(arity) + ">{{";
 
             if (rel.getArity()) {
-                tupleType += "\"" + toString(rel.getAttributeTypeId(0)) + "\"";
+                tupleType += toString(rel.getAttributeTypeId(0));
                 for (int i = 1; i < arity; i++) {
-                    tupleType += ",\"" + toString(rel.getAttributeTypeId(i)) + "\"";
+                    tupleType += "," + toString(rel.getAttributeTypeId(i));
                 }
 
                 tupleName += "\"" + rel.getArg(0) + "\"";
@@ -1983,8 +1983,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             if (!initCons.empty()) {
                 initCons += ",\n";
             }
-            initCons += "\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
-                        tupleType + "," + tupleName + ")";
+            initCons += "\nwrapper_" + name + "(" + "*" + name + ",symTable, *typeTable, \"" + raw_name +
+                        "\"," + tupleType + "," + tupleName + ")";
             registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + ",";
             registerRel += (loadRelations.count(rel.getName()) > 0) ? "true" : "false";
             registerRel += ",";

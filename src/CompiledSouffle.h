@@ -72,6 +72,7 @@ class RelationWrapper : public Relation {
 private:
     RelType& relation;
     SymbolTable& symTable;
+    const TypeTable& typeTable;
     std::string name;
     std::array<TypeId, Arity> tupleType;
     std::array<const char*, Arity> tupleName;
@@ -106,9 +107,10 @@ private:
     };
 
 public:
-    RelationWrapper(RelType& r, SymbolTable& s, std::string name, const std::array<TypeId, Arity>& t,
-            const std::array<const char*, Arity>& n)
-            : relation(r), symTable(s), name(std::move(name)), tupleType(t), tupleName(n) {}
+    RelationWrapper(RelType& r, SymbolTable& s, const TypeTable& typeTable, std::string name,
+            const std::array<TypeId, Arity>& t, const std::array<const char*, Arity>& n)
+            : relation(r), symTable(s), typeTable(typeTable), name(std::move(name)), tupleType(t),
+              tupleName(n) {}
     iterator begin() const override {
         return iterator(new iterator_wrapper(id, this, relation.begin()));
     }
@@ -145,11 +147,18 @@ public:
         assert(false <= arg && arg < Arity && "attribute out of bound");
         return tupleName[arg];
     }
+    Kind getAttrKind(size_t arg) const override {
+        assert(false <= arg && arg < Arity && "attribute out of bound");
+        return typeTable.getKind(getAttrType(arg));
+    }
     size_t getArity() const override {
         return Arity;
     }
     SymbolTable& getSymbolTable() const override {
         return symTable;
+    }
+    const TypeTable& getTypeTable() const override {
+        return typeTable;
     }
 
     /** Eliminate all the tuples in relation*/

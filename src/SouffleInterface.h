@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RamTypes.h"
+#include "SouffleType.h"
 #include "SymbolTable.h"
 #include "TypeTable.h"
 
@@ -112,14 +113,15 @@ public:
 
     // properties
     virtual std::string getName() const = 0;
-    virtual const char* getAttrType(size_t) const = 0;
+    virtual TypeId getAttrType(size_t) const = 0;
+    virtual Kind getAttrKind(size_t) const = 0;
     virtual const char* getAttrName(size_t) const = 0;
     virtual size_t getArity() const = 0;
     virtual SymbolTable& getSymbolTable() const = 0;
     std::string getSignature() {
-        std::string signature = "<" + std::string(getAttrType(0));
+        std::string signature = "<" + toString(getAttrType(0));
         for (size_t i = 1; i < getArity(); i++) {
-            signature += "," + std::string(getAttrType(i));
+            signature += "," + toString(getAttrType(i));
         }
         signature += ">";
         return signature;
@@ -180,7 +182,7 @@ public:
      */
     tuple& operator<<(const std::string& str) {
         assert(pos < size() && "exceeded tuple's size");
-        assert(*relation.getAttrType(pos) == 's' && "wrong element type");
+        assert(relation.getAttrKind(pos) == Kind::SYMBOL && "wrong element type");
         array[pos++] = relation.getSymbolTable().lookup(str);
         return *this;
     }
@@ -190,7 +192,7 @@ public:
      */
     tuple& operator<<(RamDomain number) {
         assert(pos < size() && "exceeded tuple's size");
-        assert((*relation.getAttrType(pos) == 'i' || *relation.getAttrType(pos) == 'r') &&
+        assert((relation.getAttrKind(pos) == Kind::NUMBER || relation.getAttrKind(pos) == Kind::RECORD) &&
                 "wrong element type");
         array[pos++] = number;
         return *this;
@@ -201,7 +203,7 @@ public:
      */
     tuple& operator>>(std::string& str) {
         assert(pos < size() && "exceeded tuple's size");
-        assert(*relation.getAttrType(pos) == 's' && "wrong element type");
+        assert(relation.getAttrKind(pos) == Kind::SYMBOL && "wrong element type");
         str = relation.getSymbolTable().resolve(array[pos++]);
         return *this;
     }
@@ -211,7 +213,7 @@ public:
      */
     tuple& operator>>(RamDomain& number) {
         assert(pos < size() && "exceeded tuple's size");
-        assert((*relation.getAttrType(pos) == 'i' || *relation.getAttrType(pos) == 'r') &&
+        assert((relation.getAttrKind(pos) == Kind::NUMBER || relation.getAttrKind(pos) == Kind::RECORD) &&
                 "wrong element type");
         number = array[pos++];
         return *this;

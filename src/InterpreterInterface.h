@@ -19,6 +19,7 @@
 #include "Interpreter.h"
 #include "RamVisitor.h"
 #include "SouffleInterface.h"
+#include "SouffleType.h"
 
 #include <array>
 #include <utility>
@@ -30,10 +31,10 @@ namespace souffle {
  */
 class InterpreterRelInterface : public Relation {
 public:
-    InterpreterRelInterface(InterpreterRelation& r, SymbolTable& s, std::string n, std::vector<std::string> t,
-            std::vector<std::string> an, uint32_t i)
-            : relation(r), symTable(s), name(std::move(n)), types(std::move(t)), attrNames(std::move(an)),
-              id(i) {}
+    InterpreterRelInterface(InterpreterRelation& r, SymbolTable& s, const TypeTable& types, std::string n,
+            TypeId t, std::vector<std::string> an, uint32_t i)
+            : relation(r), symTable(s), typeTable(types), name(std::move(n)), types(std::move(t)),
+              attrNames(std::move(an)), id(i) {}
     ~InterpreterRelInterface() override = default;
 
     /** Insert tuple */
@@ -73,10 +74,21 @@ public:
         return symTable;
     }
 
+    /** Get type table */
+    const TypeTable& getTypeTable() const override {
+        return typeTable;
+    }
+
     /** Get attribute type */
-    const char* getAttrType(size_t idx) const override {
+    TypeId getAttrType(size_t idx) const override {
         assert(idx < getArity() && "exceeded tuple size");
-        return types[idx].c_str();
+        return types[idx];
+    }
+
+    /** Get attribute kind */
+    Kind getAttrKind(size_t idx) const override {
+        assert(idx < getArity() && "exceeded tuple size");
+        return getTypeTable().getKind(types[idx]);
     }
 
     /** Get attribute name */
@@ -117,7 +129,7 @@ protected:
 
             // construct the tuple to return
             for (size_t i = 0; i < ramRelationInterface->getArity(); i++) {
-                if (*(ramRelationInterface->getAttrType(i)) == 's') {
+                if (ramRelationInterface->getAttrKind(i) == Kind::SYMBOL) {
                     std::string s = ramRelationInterface->getSymbolTable().resolve((*it)[i]);
                     tup << s;
                 } else {
@@ -156,6 +168,9 @@ private:
 
     /** Symbol table */
     SymbolTable& symTable;
+
+    /** Type table */
+    const TypeTable& typeTable;
 
     /** Name of relation */
     std::string name;

@@ -118,6 +118,7 @@ public:
     virtual const char* getAttrName(size_t) const = 0;
     virtual size_t getArity() const = 0;
     virtual SymbolTable& getSymbolTable() const = 0;
+    virtual const TypeTable& getTypeTable() const = 0;
     std::string getSignature() {
         std::string signature = "<" + toString(getAttrType(0));
         for (size_t i = 1; i < getArity(); i++) {

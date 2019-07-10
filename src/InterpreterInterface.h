@@ -32,7 +32,7 @@ namespace souffle {
 class InterpreterRelInterface : public Relation {
 public:
     InterpreterRelInterface(InterpreterRelation& r, SymbolTable& s, const TypeTable& types, std::string n,
-            TypeId t, std::vector<std::string> an, uint32_t i)
+            std::vector<TypeId> t, std::vector<std::string> an, uint32_t i)
             : relation(r), symTable(s), typeTable(types), name(std::move(n)), types(std::move(t)),
               attrNames(std::move(an)), id(i) {}
     ~InterpreterRelInterface() override = default;
@@ -176,7 +176,7 @@ private:
     std::string name;
 
     /** Attribute type */
-    std::vector<std::string> types;
+    std::vector<TypeId> types;
 
     /** Attribute Names */
     std::vector<std::string> attrNames;
@@ -208,17 +208,14 @@ public:
             const RamRelation& rel = *map[name];
 
             // construct types and names vectors
-            std::vector<std::string> types;
+            std::vector<TypeId> types;
             std::vector<std::string> attrNames;
             for (size_t i = 0; i < rel.getArity(); i++) {
-                std::string t = typeTable.getName(rel.getAttributeTypeId(i));
-                types.push_back(t);
-
-                std::string n = rel.getArg(i);
-                attrNames.push_back(n);
+                types.push_back(rel.getAttributeTypeId(i));
+                attrNames.push_back(rel.getArg(i));
             }
             auto* interface = new InterpreterRelInterface(
-                    interpreterRel, symTable, rel.getName(), types, attrNames, id);
+                    interpreterRel, symTable, typeTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);
             bool input;
             bool output;

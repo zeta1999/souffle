@@ -18,6 +18,8 @@
 
 #include "RamTypes.h"
 
+#include <ostream>
+
 namespace souffle {
 
 // define the domain for type ids

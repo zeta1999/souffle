@@ -17,10 +17,14 @@
 #pragma once
 
 #include "SouffleType.h"
+
 #include <cassert>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
+
+// TODO: maybe use qualifiers for names instead of just toString?
 
 namespace souffle {
 

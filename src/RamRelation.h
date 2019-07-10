@@ -113,7 +113,7 @@ public:
         return name < other.name;
     }
 
-    // TODO: should probs print type table in ram too now
+    // TODO (tmp): should probs print type table in ram too now
 
     /* Print */
     void print(std::ostream& out) const override {

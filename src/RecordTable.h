@@ -44,7 +44,7 @@ public:
      * Get the record tuple with given arity and reference number.
      */
     const std::vector<RamDomain>& getRecord(int arity, RamDomain ref) const {
-        // TODO: special handling for nil records?
+        // TODO (tmp): special handling for nil records?
         return recordMap.at(arity).at(ref);
     }
 

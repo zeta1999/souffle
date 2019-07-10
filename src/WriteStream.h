@@ -91,7 +91,7 @@ protected:
 
             case Kind::RECORD: {
                 // special case: nil
-                // TODO: assuming nil = 0
+                // TODO (tmp): assuming nil = 0
                 if (repr == 0) {
                     os << "nil";
                     break;

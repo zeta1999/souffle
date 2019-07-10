@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-// TODO: maybe use qualifiers for names instead of just toString?
+// TODO (tmp): maybe use qualifiers for names instead of just toString?
 
 namespace souffle {
 

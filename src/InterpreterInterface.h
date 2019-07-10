@@ -31,10 +31,10 @@ namespace souffle {
  */
 class InterpreterRelInterface : public Relation {
 public:
-    InterpreterRelInterface(InterpreterRelation& r, SymbolTable& s, const TypeTable& types, std::string n,
-            std::vector<TypeId> t, std::vector<std::string> an, uint32_t i)
-            : relation(r), symTable(s), typeTable(types), name(std::move(n)), types(std::move(t)),
-              attrNames(std::move(an)), id(i) {}
+    InterpreterRelInterface(InterpreterRelation& relation, SymbolTable& symTable, const TypeTable& typeTable, std::string name,
+            std::vector<TypeId> types, std::vector<std::string> attrNames, uint32_t id)
+            : relation(relation), symTable(symTable), typeTable(typeTable), name(std::move(name)), types(std::move(types)),
+              attrNames(std::move(attrNames)), id(id) {}
     ~InterpreterRelInterface() override = default;
 
     /** Insert tuple */

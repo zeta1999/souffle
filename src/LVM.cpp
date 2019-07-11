@@ -986,7 +986,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 auto pstream = relPtr->pscan(numOfThreads);
                 PARALLEL_START;
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
-                    // pfor(auto& stream : pstream) {
                     try {
                         // Create local context for child process
                         LVMContext ctxt;
@@ -1063,10 +1062,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 }
 
                 // create pattern tuple for range query
-                auto pstream = relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
+                auto pstream =
+                        relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
-                    // pfor(auto& stream : pstream) {
                     try {
                         // Create local context for child process
                         LVMContext ctxt;
@@ -1129,9 +1128,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 }
 
                 // create pattern tuple for range query
-                auto pstream = relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
+                auto pstream =
+                        relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
-                // pfor(auto& stream : pstream) {
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
                         // Create local context for child process

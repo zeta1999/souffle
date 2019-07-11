@@ -17,6 +17,7 @@
 
 #include "LVMCode.h"
 #include "LVMRelation.h"
+#include "LVMRecords.h"
 #include "RamIndexAnalysis.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
@@ -292,6 +293,7 @@ protected:
         }
         code->push_back(LVM_PackRecord);
         code->push_back(values.size());
+        createRecordMap(values.size());
     }
 
     void visitSubroutineArgument(const RamSubroutineArgument& arg, size_t exitAddress) override {
@@ -873,6 +875,8 @@ protected:
         code->push_back(lookupAddress(L0));
         visitTupleOperation(lookup, exitAddress);
         setAddress(L0, code->size());
+
+        createRecordMap(lookup.getArity());
     }
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {

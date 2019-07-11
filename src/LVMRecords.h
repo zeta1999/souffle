@@ -41,4 +41,9 @@ RamDomain getNull();
  */
 bool isNull(RamDomain ref);
 
+/**
+ * Create static record map with corresponding entry.
+ */
+void createRecordMap(int arity);
+
 }  // end of namespace souffle

@@ -445,6 +445,8 @@ protected:
     }
 
     void visitParallelScan(const RamParallelScan& pscan, size_t exitAddress) override {
+        size_t savedIterId = this->iteratorIndex;
+        this->iteratorIndex = 0;
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         const auto& rel = pscan.getRelation();
@@ -491,6 +493,7 @@ protected:
         code->push_back(LVM_ParallelStop);
 
         preambleIssued = false;
+        this->iteratorIndex = savedIterId;
     }
 
     void visitScan(const RamScan& scan, size_t exitAddress) override {
@@ -529,6 +532,8 @@ protected:
     }
 
     void visitParallelChoice(const RamParallelChoice& pchoice, size_t exitAddress) override {
+        size_t savedIterId = this->iteratorIndex;
+        this->iteratorIndex = 0;
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
@@ -580,6 +585,7 @@ protected:
         code->push_back(LVM_ParallelStop);
 
         preambleIssued = false;
+        this->iteratorIndex = savedIterId;
     }
 
     void visitChoice(const RamChoice& choice, size_t exitAddress) override {
@@ -622,6 +628,8 @@ protected:
     }
 
     void visitParallelIndexScan(const RamParallelIndexScan& piscan, size_t exitAddress) override {
+        size_t savedIterId = this->iteratorIndex;
+        this->iteratorIndex = 0;
         code->push_back(LVM_IndexScan);
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
@@ -684,6 +692,7 @@ protected:
 
         code->push_back(LVM_ParallelStop);
         preambleIssued = false;
+        this->iteratorIndex = savedIterId;
     }
 
     void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
@@ -738,6 +747,8 @@ protected:
     }
 
     void visitParallelIndexChoice(const RamParallelIndexChoice& ichoice, size_t exitAddress) override {
+        size_t savedIterId = this->iteratorIndex;
+        this->iteratorIndex = 0;
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
@@ -804,6 +815,7 @@ protected:
         code->push_back(LVM_ParallelStop);
 
         preambleIssued = false;
+        this->iteratorIndex = savedIterId;
     }
 
     void visitIndexChoice(const RamIndexChoice& indexChoice, size_t exitAddress) override {

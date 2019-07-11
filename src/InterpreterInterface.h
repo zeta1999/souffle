@@ -19,6 +19,7 @@
 #include "Interpreter.h"
 #include "RamVisitor.h"
 #include "SouffleInterface.h"
+#include "SouffleType.h"
 
 #include <array>
 #include <utility>
@@ -30,10 +31,10 @@ namespace souffle {
  */
 class InterpreterRelInterface : public Relation {
 public:
-    InterpreterRelInterface(InterpreterRelation& r, SymbolTable& s, std::string n, std::vector<std::string> t,
-            std::vector<std::string> an, uint32_t i)
-            : relation(r), symTable(s), name(std::move(n)), types(std::move(t)), attrNames(std::move(an)),
-              id(i) {}
+    InterpreterRelInterface(InterpreterRelation& relation, SymbolTable& symTable, const TypeTable& typeTable,
+            std::string name, std::vector<TypeId> types, std::vector<std::string> attrNames, uint32_t id)
+            : relation(relation), symTable(symTable), typeTable(typeTable), name(std::move(name)),
+              types(std::move(types)), attrNames(std::move(attrNames)), id(id) {}
     ~InterpreterRelInterface() override = default;
 
     /** Insert tuple */
@@ -73,10 +74,21 @@ public:
         return symTable;
     }
 
+    /** Get type table */
+    const TypeTable& getTypeTable() const override {
+        return typeTable;
+    }
+
     /** Get attribute type */
-    const char* getAttrType(size_t idx) const override {
+    TypeId getAttrType(size_t idx) const override {
         assert(idx < getArity() && "exceeded tuple size");
-        return types[idx].c_str();
+        return types[idx];
+    }
+
+    /** Get attribute kind */
+    Kind getAttrKind(size_t idx) const override {
+        assert(idx < getArity() && "exceeded tuple size");
+        return getTypeTable().getKind(types[idx]);
     }
 
     /** Get attribute name */
@@ -117,7 +129,7 @@ protected:
 
             // construct the tuple to return
             for (size_t i = 0; i < ramRelationInterface->getArity(); i++) {
-                if (*(ramRelationInterface->getAttrType(i)) == 's') {
+                if (ramRelationInterface->getAttrKind(i) == Kind::SYMBOL) {
                     std::string s = ramRelationInterface->getSymbolTable().resolve((*it)[i]);
                     tup << s;
                 } else {
@@ -157,11 +169,14 @@ private:
     /** Symbol table */
     SymbolTable& symTable;
 
+    /** Type table */
+    const TypeTable& typeTable;
+
     /** Name of relation */
     std::string name;
 
     /** Attribute type */
-    std::vector<std::string> types;
+    std::vector<TypeId> types;
 
     /** Attribute Names */
     std::vector<std::string> attrNames;
@@ -177,7 +192,8 @@ class InterpreterProgInterface : public SouffleProgram {
 public:
     InterpreterProgInterface(Interpreter& interp)
             : prog(*interp.getTranslationUnit().getProgram()), exec(interp),
-              symTable(interp.getTranslationUnit().getSymbolTable()) {
+              symTable(interp.getTranslationUnit().getSymbolTable()),
+              typeTable(interp.getTranslationUnit().getTypeTable()) {
         uint32_t id = 0;
 
         // Retrieve AST Relations and store them in a map
@@ -192,17 +208,14 @@ public:
             const RamRelation& rel = *map[name];
 
             // construct types and names vectors
-            std::vector<std::string> types;
+            std::vector<TypeId> types;
             std::vector<std::string> attrNames;
             for (size_t i = 0; i < rel.getArity(); i++) {
-                std::string t = rel.getArgTypeQualifier(i);
-                types.push_back(t);
-
-                std::string n = rel.getArg(i);
-                attrNames.push_back(n);
+                types.push_back(rel.getAttributeTypeId(i));
+                attrNames.push_back(rel.getArg(i));
             }
             auto* interface = new InterpreterRelInterface(
-                    interpreterRel, symTable, rel.getName(), types, attrNames, id);
+                    interpreterRel, symTable, typeTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);
             bool input;
             bool output;
@@ -255,10 +268,16 @@ public:
         return symTable;
     }
 
+    /** Get type table */
+    const TypeTable& getTypeTable() const override {
+        return typeTable;
+    }
+
 private:
     const RamProgram& prog;
     Interpreter& exec;
     SymbolTable& symTable;
+    const TypeTable& typeTable;
     std::vector<InterpreterRelInterface*> interfaces;
 };
 

@@ -30,6 +30,7 @@
 #include "souffle/RamTypes.h"
 #include "souffle/SignalHandler.h"
 #include "souffle/SouffleInterface.h"
+#include "souffle/SouffleType.h"
 #include "souffle/SymbolTable.h"
 #include "souffle/Util.h"
 #include "souffle/WriteStream.h"
@@ -71,8 +72,9 @@ class RelationWrapper : public Relation {
 private:
     RelType& relation;
     SymbolTable& symTable;
+    const TypeTable& typeTable;
     std::string name;
-    std::array<const char*, Arity> tupleType;
+    std::array<TypeId, Arity> tupleType;
     std::array<const char*, Arity> tupleName;
 
     class iterator_wrapper : public iterator_base {
@@ -105,9 +107,10 @@ private:
     };
 
 public:
-    RelationWrapper(RelType& r, SymbolTable& s, std::string name, const std::array<const char*, Arity>& t,
-            const std::array<const char*, Arity>& n)
-            : relation(r), symTable(s), name(std::move(name)), tupleType(t), tupleName(n) {}
+    RelationWrapper(RelType& r, SymbolTable& s, const TypeTable& typeTable, std::string name,
+            const std::array<TypeId, Arity>& t, const std::array<const char*, Arity>& n)
+            : relation(r), symTable(s), typeTable(typeTable), name(std::move(name)), tupleType(t),
+              tupleName(n) {}
     iterator begin() const override {
         return iterator(new iterator_wrapper(id, this, relation.begin()));
     }
@@ -136,7 +139,7 @@ public:
     std::string getName() const override {
         return name;
     }
-    const char* getAttrType(size_t arg) const override {
+    TypeId getAttrType(size_t arg) const override {
         assert(false <= arg && arg < Arity && "attribute out of bound");
         return tupleType[arg];
     }
@@ -144,11 +147,18 @@ public:
         assert(false <= arg && arg < Arity && "attribute out of bound");
         return tupleName[arg];
     }
+    Kind getAttrKind(size_t arg) const override {
+        assert(false <= arg && arg < Arity && "attribute out of bound");
+        return typeTable.getKind(getAttrType(arg));
+    }
     size_t getArity() const override {
         return Arity;
     }
     SymbolTable& getSymbolTable() const override {
         return symTable;
+    }
+    const TypeTable& getTypeTable() const override {
+        return typeTable;
     }
 
     /** Eliminate all the tuples in relation*/

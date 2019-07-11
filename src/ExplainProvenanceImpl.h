@@ -18,6 +18,7 @@
 
 #include "BinaryConstraintOps.h"
 #include "ExplainProvenance.h"
+#include "SouffleType.h"
 #include "Util.h"
 
 #include <algorithm>
@@ -281,8 +282,8 @@ public:
         // construct a vector of unique variables that occur in the rule
         std::vector<std::string> uniqueVariables;
 
-        // we also need to know the type of each variable
-        std::map<std::string, char> variableTypes;
+        // we also need to know the kind of each variable
+        std::map<std::string, Kind> variableTypes;
 
         // atom meta information stored for the current rule
         auto atoms = info[std::make_pair(relName, ruleNum)];
@@ -308,9 +309,9 @@ public:
                         assert(currentRel != nullptr &&
                                 ("relation " + atomRepresentation[0] + " doesn't exist").c_str());
                         variableTypes[*atomIt] =
-                                *currentRel->getAttrType(atomIt - atomRepresentation.begin() - 1);
+                                currentRel->getAttrKind(atomIt - atomRepresentation.begin() - 1);
                     } else if (atomIt->find("agg_") != std::string::npos) {
-                        variableTypes[*atomIt] = 'i';
+                        variableTypes[*atomIt] = Kind::NUMBER;
                     }
                 }
             }
@@ -331,7 +332,7 @@ public:
         while (varCounter < uniqueVariables.size()) {
             auto var = uniqueVariables[varCounter];
             auto varValue = bodyVariables[var];
-            if (variableTypes[var] == 's') {
+            if (variableTypes[var] == Kind::SYMBOL) {
                 if (varValue.size() >= 2 && varValue[0] == '"' && varValue[varValue.size() - 1] == '"') {
                     auto originalStr = varValue.substr(1, varValue.size() - 2);
                     args.push_back(symTable.lookup(originalStr));
@@ -493,7 +494,7 @@ public:
             std::vector<RamDomain> currentTuple;
             for (size_t i = 0; i < rel->getArity() - 2; i++) {
                 RamDomain n;
-                if (*rel->getAttrType(i) == 's') {
+                if (rel->getAttrKind(i) == Kind::SYMBOL) {
                     std::string s;
                     tuple >> s;
                     n = symTable.lookupExisting(s.c_str());
@@ -566,7 +567,7 @@ private:
 
             for (size_t i = 0; i < rel->getArity() - 2; i++) {
                 RamDomain n;
-                if (*rel->getAttrType(i) == 's') {
+                if (rel->getAttrKind(i) == Kind::SYMBOL) {
                     std::string s;
                     tuple >> s;
                     n = symTable.lookupExisting(s);
@@ -595,11 +596,6 @@ private:
 
         // if no tuple exists
         return std::make_pair(-1, -1);
-    }
-
-    void printRelationOutput(
-            const std::vector<char>& kindMask, const IODirectives& ioDir, const Relation& rel) override {
-        assert(false && "unimplemented!");
     }
 };
 

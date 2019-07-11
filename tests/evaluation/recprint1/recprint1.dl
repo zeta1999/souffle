@@ -1,0 +1,26 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the printing of records.
+
+.symbol_type Name
+.type Car = [make:symbol, year:number]
+.type Person = [name:Name, id:number, car:Car]
+.type NameList = [name:Name, rest:NameList]
+
+.decl customer(person:Person, aliases:NameList)
+customer(Person["azreika", 17, Car["Toyota", 1996]], NameList["bzreika", NameList["czreika", nil]]).
+customer(Person["aker_f", 10, Car["FakeBrand", 1924]], nil).
+customer(Person["mr_e", 13, Car["RealBrand", 2021]], NameList["mr_f", nil]).
+
+.decl people(person:Person)
+people(x) :- customer(x, _).
+
+.decl aliases(name:Name, aliases:NameList)
+aliases(name, aliases) :- customer(Person[name, _, _], aliases).
+
+.output people()
+.output aliases()

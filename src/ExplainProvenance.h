@@ -19,6 +19,7 @@
 #include "ExplainTree.h"
 #include "RamTypes.h"
 #include "SouffleInterface.h"
+#include "SouffleType.h"
 #include "WriteStreamCSV.h"
 
 #include <sstream>
@@ -74,36 +75,6 @@ public:
 
     virtual void printRulesJSON(std::ostream& os) = 0;
 
-    virtual std::string getRelationOutput(const std::string& relName) {
-        auto rel = prog.getRelation(relName);
-        if (rel == nullptr) {
-            return "Relation " + relName + " not found\n";
-        }
-
-        // create symbol mask
-        std::vector<char> kindMask(rel->getArity());
-
-        for (size_t i = 0; i < rel->getArity(); i++) {
-            kindMask.at(i) = *(rel->getAttrType(i));
-        }
-
-        // create IODirectives
-        IODirectives dir;
-        dir.setRelationName(relName);
-
-        // redirect cout to stringstream
-        std::stringstream out;
-        auto originalCoutBuf = std::cout.rdbuf(out.rdbuf());
-
-        // print relation
-        printRelationOutput(kindMask, dir, *rel);
-
-        // restore original cout buffer
-        std::cout.rdbuf(originalCoutBuf);
-
-        return out.str();
-    }
-
 protected:
     SouffleProgram& prog;
     SymbolTable& symTable;
@@ -118,7 +89,7 @@ protected:
         }
 
         for (size_t i = 0; i < args.size(); i++) {
-            if (*rel->getAttrType(i) == 's') {
+            if (rel->getAttrKind(i) == Kind::SYMBOL) {
                 // remove quotation marks
                 if (args[i].size() >= 2 && args[i][0] == '"' && args[i][args[i].size() - 1] == '"') {
                     auto originalStr = args[i].substr(1, args[i].size() - 2);
@@ -145,7 +116,7 @@ protected:
             if (err && (*err)[i]) {
                 args.push_back("_");
             } else {
-                if (*rel->getAttrType(i) == 's') {
+                if (rel->getAttrKind(i) == Kind::SYMBOL) {
                     args.push_back("\"" + std::string(symTable.resolve(nums[i])) + "\"");
                 } else {
                     args.push_back(std::to_string(nums[i]));
@@ -155,9 +126,6 @@ protected:
 
         return args;
     }
-
-    virtual void printRelationOutput(
-            const std::vector<char>& kindMask, const IODirectives& ioDir, const Relation& rel) = 0;
 };
 
 }  // end of namespace souffle

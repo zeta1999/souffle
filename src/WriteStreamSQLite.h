@@ -29,10 +29,10 @@ namespace souffle {
 class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const std::vector<int>& recordArityMask, const RecordTable& recordTable, const bool provenance)
-            : WriteStream(kindMask, symbolTable, recordArityMask, recordTable, provenance),
-              dbFilename(dbFilename), relationName(relationName) {
+            const std::vector<TypeId>& typeMask, const SymbolTable& symbolTable,
+            const RecordTable& recordTable, const TypeTable& typeTable, const bool provenance)
+            : WriteStream(typeMask, symbolTable, recordTable, typeTable, provenance), dbFilename(dbFilename),
+              relationName(relationName) {
         openDB();
         createTables();
         prepareStatements();
@@ -52,14 +52,18 @@ protected:
     void writeNextTuple(const RamDomain* tuple) override {
         for (size_t i = 0; i < arity; i++) {
             RamDomain value;
-            if (kindMask.at(i) == 's') {
-                value = getSymbolTableID(tuple[i]);
-            } else if (kindMask.at(i) == 'i') {
-                value = tuple[i];
-            } else if (kindMask.at(i) == 'r') {
-                assert(false && "Record tuples cannot be written to sqlite db");
-            } else {
-                assert(false && "Attempting to store unknown type in sqlite db");
+            switch (typeTable.getKind(typeMask.at(i))) {
+                case Kind::SYMBOL:
+                    value = getSymbolTableID(tuple[i]);
+                    break;
+                case Kind::NUMBER:
+                    value = tuple[i];
+                    break;
+                case Kind::RECORD:
+                    assert(false && "Record tuples cannot be written to sqlite db");
+                    break;
+                default:
+                    assert(false && "Attempting to store unknown type in sqlite db");
             }
 
 #if RAM_DOMAIN_SIZE == 64
@@ -220,7 +224,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (kindMask.at(i) != 's') {
+            if (typeTable.getKind(typeMask.at(i)) != Kind::SYMBOL) {
                 projectionClause << "'_" << relationName << "'.'" << columnName << "'";
             } else {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
@@ -261,13 +265,13 @@ private:
 
 class WriteSQLiteFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<char>& kindMask, const SymbolTable& symbolTable,
-            const std::vector<int>& recordArityMask, const RecordTable& recordTable,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<TypeId>& typeMask,
+            const SymbolTable& symbolTable, const RecordTable& recordTable, const TypeTable& typeTable,
             const IODirectives& ioDirectives, const bool provenance) override {
         std::string dbName = ioDirectives.get("dbname");
         std::string relationName = ioDirectives.getRelationName();
         return std::make_unique<WriteStreamSQLite>(
-                dbName, relationName, kindMask, symbolTable, recordArityMask, recordTable, provenance);
+                dbName, relationName, typeMask, symbolTable, recordTable, typeTable, provenance);
     }
     const std::string& getName() const override {
         static const std::string name = "sqlite";

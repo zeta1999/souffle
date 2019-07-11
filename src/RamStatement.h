@@ -229,7 +229,7 @@ public:
         const RamRelation* target = targetRef->get();
         assert(source->getArity() == target->getArity() && "mismatching relations");
         for (size_t i = 0; i < source->getArity(); i++) {
-            assert(source->getArgTypeQualifier(i) == target->getArgTypeQualifier(i) && "mismatching type");
+            assert(source->getAttributeTypeId(i) == target->getAttributeTypeId(i) && "mismatching type");
         }
     }
 
@@ -290,7 +290,7 @@ public:
             : RamStatement(), first(std::move(f)), second(std::move(s)) {
         assert(first->get()->getArity() == second->get()->getArity() && "mismatching relations");
         for (size_t i = 0; i < first->get()->getArity(); i++) {
-            assert(first->get()->getArgTypeQualifier(i) == second->get()->getArgTypeQualifier(i) &&
+            assert(first->get()->getAttributeTypeId(i) == second->get()->getAttributeTypeId(i) &&
                     "mismatching type");
         }
     }

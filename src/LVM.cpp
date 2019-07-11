@@ -33,6 +33,7 @@
 #include "RamVisitor.h"
 #include "ReadStream.h"
 #include "SignalHandler.h"
+#include "SouffleType.h"
 #include "SymbolTable.h"
 #include "Util.h"
 #include "WriteStream.h"
@@ -682,6 +683,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     break;
                 }
 
+                // unpack the tuple
                 RamDomain* tuple = unpack(ref, arity);
                 ctxt[id] = tuple;
                 ip += 4;
@@ -824,12 +826,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 } else {
                     res = new InterpreterRelation(arity);
                 }
-                std::vector<std::string> attributeTypes;
+                std::vector<TypeId> attributeTypes;
                 for (int i = 0; i < code[ip + 2]; ++i) {
-                    attributeTypes.push_back(symbolTable.resolve(code[ip + 4 + i]));
+                    attributeTypes.push_back(code[ip + 4 + i]);
                 }
                 attributeTypes.reserve(attributeTypes.size());
-                res->setAttributes(attributeTypes);
+                res->setAttributeTypes(attributeTypes);
                 res->setLevel(level);
                 environment[relName] = res;
                 ip += 3 + code[ip + 2] + 1;
@@ -865,8 +867,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                     try {
                         InterpreterRelation& relation = getRelation(relName);
                         std::vector<bool> symbolMask;
-                        for (auto& cur : relation.getAttributeTypeQualifiers()) {
-                            symbolMask.push_back(cur[0] == 's');
+                        auto symbolTypeId = getTypeTable().getId("symbol");
+                        for (auto& cur : relation.getAttributeTypeIds()) {
+                            symbolMask.push_back(cur == symbolTypeId ? 1 : 0);
                         }
                         IOSystem::getInstance()
                                 .getReader(symbolMask, symbolTable, io, Global::config().has("provenance"))
@@ -885,27 +888,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, InterpreterContext& ctxt
                 for (auto& io : IOs) {
                     try {
                         InterpreterRelation& relation = getRelation(relName);
-                        std::vector<char> kindMask;
-                        std::vector<int> recordArityMask;
-                        const auto& typeQualifiers = relation.getAttributeTypeQualifiers();
-
-                        for (const auto& cur : typeQualifiers) {
-                            // store the kind
-                            char kind = cur[0];
-                            kindMask.push_back(kind);
-
-                            // store the arity if relevant
-                            if (kind == 'r') {
-                                std::string typeInfo = cur.substr(2, cur.length() - 2);
-                                recordArityMask.push_back(std::stoi(typeInfo));
-                            } else {
-                                recordArityMask.push_back(-1);
-                            }
-                        }
-
+                        const auto& typeMask = relation.getAttributeTypeIds();
                         IOSystem::getInstance()
-                                .getWriter(kindMask, symbolTable, recordArityMask,
-                                        getInterpreterRecordTable(), io, Global::config().has("provenance"))
+                                .getWriter(typeMask, symbolTable, getInterpreterRecordTable(), getTypeTable(),
+                                        io, Global::config().has("provenance"))
                                 ->writeAll(relation);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";

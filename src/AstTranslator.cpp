@@ -42,8 +42,10 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
+#include "SouffleType.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
+#include "TypeTable.h"
 #include "Util.h"
 #include <algorithm>
 #include <cassert>
@@ -199,11 +201,11 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
         const size_t arity, const std::vector<std::string> attributeNames,
-        const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation representation) {
+        const std::vector<TypeId> attributeTypeIds, const RelationRepresentation representation) {
     const RamRelation* ramRel = ramProg->getRelation(name);
     if (ramRel == nullptr) {
-        ramProg->addRelation(std::make_unique<RamRelation>(
-                name, arity, attributeNames, attributeTypeQualifiers, representation));
+        ramProg->addRelation(
+                std::make_unique<RamRelation>(name, arity, attributeNames, attributeTypeIds, representation));
         ramRel = ramProg->getRelation(name);
         assert(ramRel != nullptr && "cannot find relation");
     }
@@ -226,17 +228,16 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const Ast
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
         const AstRelation* rel, const std::string relationNamePrefix) {
     std::vector<std::string> attributeNames;
-    std::vector<std::string> attributeTypeQualifiers;
+    std::vector<TypeId> attributeTypeIds;
     for (size_t i = 0; i < rel->getArity(); ++i) {
         attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
-        if (typeEnv) {
-            attributeTypeQualifiers.push_back(
-                    getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
-        }
+
+        const auto& typeName = rel->getAttribute(i)->getTypeName();
+        attributeTypeIds.push_back(typeTable->getId(toString(typeName)));
     }
 
     return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
-            attributeNames, attributeTypeQualifiers, rel->getRepresentation());
+            attributeNames, attributeTypeIds, rel->getRepresentation());
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {
@@ -1268,8 +1269,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
     visitDepthFirst(*clauseReplacedAggregates, [&](const AstVariable& var) {
         if (var.getName().find("@level_num") == std::string::npos) {
-            // use find_if since uniqueVariables stores pointers, and we need to dereference the pointer to
-            // check equality
+            // use find_if since uniqueVariables stores pointers, and we need to dereference the pointer
+            // to check equality
             if (std::find_if(uniqueVariables.begin(), uniqueVariables.end(),
                         [&](const AstVariable* v) { return *v == var; }) == uniqueVariables.end()) {
                 uniqueVariables.push_back(&var);
@@ -1431,6 +1432,86 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
     // obtain the schedule of relations expired at each index of the topological order
     const auto& expirySchedule = translationUnit.getAnalysis<RelationSchedule>()->schedule();
+
+    // create the type table associated with the AST program
+    typeTable = std::make_unique<TypeTable>();
+
+    // helper function to get the kind of an AST type
+    std::function<Kind(const AstType*)> getKind = [&](const AstType* type) {
+        if (auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
+            return pt->isNumeric() ? Kind::NUMBER : Kind::SYMBOL;
+        } else if (dynamic_cast<const AstRecordType*>(type) != nullptr) {
+            return Kind::RECORD;
+        } else if (auto* ut = dynamic_cast<const AstUnionType*>(type)) {
+            // all union variants have the same kind
+            const auto& variants = ut->getTypes();
+            assert(!variants.empty() && "union types cannot be empty");
+
+            // union variants cannot be recursive, so this will terminate
+            return getKind(program->getType(variants[0]));
+        } else {
+            assert(false && "unsupported typeclass");
+        }
+    };
+
+    // sift through the types
+    std::set<const AstPrimitiveType*> primitiveTypes;
+    std::set<const AstRecordType*> recordTypes;
+    std::set<const AstUnionType*> unionTypes;
+
+    for (const auto* type : program->getTypes()) {
+        if (const auto* pt = dynamic_cast<const AstPrimitiveType*>(type)) {
+            primitiveTypes.insert(pt);
+        } else if (const auto* rt = dynamic_cast<const AstRecordType*>(type)) {
+            recordTypes.insert(rt);
+        } else if (const auto* ut = dynamic_cast<const AstUnionType*>(type)) {
+            unionTypes.insert(ut);
+        } else {
+            assert(false && "unsupported typeclass");
+        }
+    }
+
+    // store each type in the table
+    for (const auto* pt : primitiveTypes) {
+        typeTable->addPrimitiveType(toString(pt->getName()), getKind(pt));
+    }
+    for (const auto* ut : unionTypes) {
+        typeTable->addUnionType(toString(ut->getName()), getKind(ut));
+    }
+    for (const auto* rt : recordTypes) {
+        std::vector<std::string> fields;
+        for (const auto& field : rt->getFields()) {
+            fields.push_back(toString(field.type));
+        }
+        typeTable->addRecordType(toString(rt->getName()), fields);
+    }
+    assert(typeTable->isComplete() && "undefined types exist in type table");
+
+    // prepend type information to record constructors
+    struct TypePrepender : public AstNodeMapper {
+        const TypeTable& typeTable;
+
+        TypePrepender(const TypeTable& typeTable) : typeTable(typeTable) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            node->apply(*this);
+            if (auto* rec = dynamic_cast<AstRecordInit*>(node.get())) {
+                auto replacement = std::make_unique<AstRecordInit>(rec->getType());
+                replacement->add(
+                        std::make_unique<AstNumberConstant>(typeTable.getId(toString(rec->getType()))));
+                for (const auto& arg : rec->getArguments()) {
+                    replacement->add(std::unique_ptr<AstArgument>(arg->clone()));
+                }
+                return std::move(replacement);
+            }
+            return node;
+        }
+    };
+
+    TypePrepender update(*typeTable);
+    for (auto* rel : program->getRelations()) {
+        rel->apply(update);
+    }
 
     // start with an empty sequence of ram statements
     std::unique_ptr<RamStatement> res = std::make_unique<RamSequence>();
@@ -1724,7 +1805,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             ramProg->addSubroutine(negationSubroutineLabel, makeNegationSubproofSubroutine(clause));
         });
     }
-}
+}  // namespace souffle
 
 std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationUnit& tu) {
     auto ram_start = std::chrono::high_resolution_clock::now();
@@ -1733,6 +1814,7 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     SymbolTable& symTab = tu.getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
+
     if (!Global::config().get("debug-report").empty()) {
         if (ramProg) {
             auto ram_end = std::chrono::high_resolution_clock::now();
@@ -1744,7 +1826,8 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
                     "ram-program", "RAM Program " + runtimeStr, ramProgStr.str()));
         }
     }
-    return std::make_unique<RamTranslationUnit>(std::move(ramProg), symTab, errReport, debugReport);
+    return std::make_unique<RamTranslationUnit>(
+            std::move(ramProg), symTab, std::move(typeTable), errReport, debugReport);
 }
 
 }  // end of namespace souffle

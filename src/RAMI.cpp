@@ -248,10 +248,12 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const InterpreterContext& ct
         RamDomain visitPackRecord(const RamPackRecord& pr) override {
             auto values = pr.getArguments();
             auto arity = values.size();
+
             RamDomain data[arity];
             for (size_t i = 0; i < arity; ++i) {
                 data[i] = visit(values[i]);
             }
+
             return pack(data, arity);
         }
 
@@ -577,6 +579,8 @@ void RAMI::evalOp(const RamOperation& op, const InterpreterContext& args) {
 
             // update environment variable
             auto arity = lookup.getArity();
+
+            // unpack the tuple
             const RamDomain* tuple = unpack(ref, arity);
 
             // save reference to temporary value
@@ -950,8 +954,9 @@ void RAMI::evalStmt(const RamStatement& stmt) {
                 try {
                     InterpreterRelation& relation = interpreter.getRelation(load.getRelation());
                     std::vector<bool> symbolMask;
-                    for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
-                        symbolMask.push_back(cur[0] == 's');
+                    auto symbolTypeId = interpreter.getTypeTable().getId("symbol");
+                    for (auto& cur : load.getRelation().getAttributeTypeIds()) {
+                        symbolMask.push_back(cur == symbolTypeId ? 1 : 0);
                     }
                     IOSystem::getInstance()
                             .getReader(symbolMask, interpreter.getSymbolTable(), ioDirectives,
@@ -966,27 +971,10 @@ void RAMI::evalStmt(const RamStatement& stmt) {
         bool visitStore(const RamStore& store) override {
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 try {
-                    std::vector<char> kindMask;
-                    std::vector<int> recordArityMask;
-                    const auto& typeQualifiers = store.getRelation().getAttributeTypeQualifiers();
-
-                    for (const auto& cur : typeQualifiers) {
-                        // store the kind
-                        char kind = cur[0];
-                        kindMask.push_back(kind);
-
-                        // store the arity if relevant
-                        if (kind == 'r') {
-                            std::string typeInfo = cur.substr(2, cur.length() - 2);
-                            recordArityMask.push_back(std::stoi(typeInfo));
-                        } else {
-                            recordArityMask.push_back(-1);
-                        }
-                    }
-
+                    const auto& typeMask = store.getRelation().getAttributeTypeIds();
                     IOSystem::getInstance()
-                            .getWriter(kindMask, interpreter.getSymbolTable(), recordArityMask,
-                                    getInterpreterRecordTable(), ioDirectives,
+                            .getWriter(typeMask, interpreter.getSymbolTable(), getInterpreterRecordTable(),
+                                    interpreter.getTypeTable(), ioDirectives,
                                     Global::config().has("provenance"))
                             ->writeAll(interpreter.getRelation(store.getRelation()));
                 } catch (std::exception& e) {

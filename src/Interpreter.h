@@ -132,6 +132,11 @@ protected:
         return translationUnit.getSymbolTable();
     }
 
+    /** Get type table */
+    const TypeTable& getTypeTable() {
+        return translationUnit.getTypeTable();
+    }
+
     /** Get relation map */
     relation_map& getRelationMap() const {
         return const_cast<relation_map&>(environment);

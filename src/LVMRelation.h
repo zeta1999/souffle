@@ -122,7 +122,8 @@ public:
     /**
      * Obtains a partitioned stream list for parallel computation
      */
-    PartitionedStream prange(const size_t& indexPos, const TupleRef& low, const TupleRef& high, size_t num_partitions) const;
+    PartitionedStream prange(
+            const size_t& indexPos, const TupleRef& low, const TupleRef& high, size_t num_partitions) const;
 
     /**
      * Swaps the content of this and the given relation, including the

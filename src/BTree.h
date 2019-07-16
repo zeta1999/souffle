@@ -1728,7 +1728,7 @@ public:
      * @return a list of chunks partitioning this tree
      */
     std::vector<chunk> partition(size_type num) const {
-    	return getChunks(num);
+        return getChunks(num);
     }
 
     std::vector<chunk> getChunks(size_type num) const {

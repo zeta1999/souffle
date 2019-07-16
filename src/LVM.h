@@ -217,7 +217,7 @@ private:
 
     /** Dynamic library for user-defined functors */
     void* dll = nullptr;
-    
+
     /** Number of threads for parallel computing */
     size_t numOfThreads;
 };

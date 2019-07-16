@@ -16,8 +16,8 @@
 #pragma once
 
 #include "LVMCode.h"
-#include "LVMRelation.h"
 #include "LVMRecords.h"
+#include "LVMRelation.h"
 #include "RamIndexAnalysis.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"

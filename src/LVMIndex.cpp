@@ -138,8 +138,8 @@ public:
     }
 
     bool contains(const TupleRef&, const TupleRef&) const override {
-		return present;
-	}
+        return present;
+    }
 
     Stream scan() const override {
         return std::make_unique<Source>(present);
@@ -249,8 +249,8 @@ public:
     }
 
     bool contains(const TupleRef& low, const TupleRef& high) const override {
-		return !bounds(low,high).empty();
-	}
+        return !bounds(low, high).empty();
+    }
 
     Stream scan() const override {
         return std::make_unique<Source>(order, data.begin(), data.end());
@@ -268,25 +268,25 @@ public:
 
 private:
     souffle::range<iter> bounds(const TupleRef& low, const TupleRef& high) const {
-    	Entry a = order.encode(low.asTuple<Arity>());
-		Entry b = order.encode(high.asTuple<Arity>());
-		// Transfer upper_bound to a equivalent lower bound
-		bool fullIndexSearch = true;
-		for (size_t i = Arity; i-- > 0;) {
-			if (a[i] == MIN_RAM_DOMAIN && b[i] == MAX_RAM_DOMAIN) {
-				b[i] = MIN_RAM_DOMAIN;
-				continue;
-			}
-			if (a[i] == b[i]) {
-				b[i] += 1;
-				fullIndexSearch = false;
-				break;
-			}
-		}
-		if (fullIndexSearch) {
-			b[Arity-1]++;
-		}
-		return { data.lower_bound(a), data.lower_bound(b) };
+        Entry a = order.encode(low.asTuple<Arity>());
+        Entry b = order.encode(high.asTuple<Arity>());
+        // Transfer upper_bound to a equivalent lower bound
+        bool fullIndexSearch = true;
+        for (size_t i = Arity; i-- > 0;) {
+            if (a[i] == MIN_RAM_DOMAIN && b[i] == MAX_RAM_DOMAIN) {
+                b[i] = MIN_RAM_DOMAIN;
+                continue;
+            }
+            if (a[i] == b[i]) {
+                b[i] += 1;
+                fullIndexSearch = false;
+                break;
+            }
+        }
+        if (fullIndexSearch) {
+            b[0] = MAX_RAM_DOMAIN;
+        }
+        return {data.lower_bound(a), data.lower_bound(b)};
     }
 
 public:
@@ -413,9 +413,9 @@ public:
     }
 
     bool contains(const TupleRef& low, const TupleRef& high) const override {
-    	assert(false && "Not implemented!");
-		return false;
-	}
+        assert(false && "Not implemented!");
+        return false;
+    }
 
     Stream scan() const override {
         return std::make_unique<Source>(set.begin(), set.end());

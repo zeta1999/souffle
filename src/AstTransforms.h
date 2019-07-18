@@ -322,15 +322,16 @@ private:
  * Transformation pass to remove expressions of the form
  * sum k : { ... } and replace them with
  * k * count : { ... }
- * where k is a constant. 	
+ * where k is a constant.
  */
 class RemoveRedundantSumsTransformer : public AstTransformer {
 public:
-		std::string getName() const override {
-			 	return "RemoveRedundantSumsTransformer";
-		}
+    std::string getName() const override {
+        return "RemoveRedundantSumsTransformer";
+    }
+
 private:
-		bool transform(AstTranslationUnit& translationUnit) override;
+    bool transform(AstTranslationUnit& translationUnit) override;
 };
 
 /**

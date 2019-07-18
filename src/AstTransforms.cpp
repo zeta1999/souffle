@@ -1026,6 +1026,48 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
     return changed;
 }
 
+bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUnit) {
+
+		struct ReplaceSumWithCount : public AstNodeMapper {
+			ReplaceSumWithCount() {}
+			
+      std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+
+					// Apply to all aggregates of the form
+					// sum k : { .. } where k is a constant
+					if (auto* agg = dynamic_cast<AstAggregator*>(node.get())) {
+							if (agg->getOperator() == AstAggregator::Op::sum) {
+								 if (const auto* constant = dynamic_cast<const AstNumberConstant*>(agg->getTargetExpression())) {
+								 		changed = true;
+								 		// Then construct the new thing to replace it with
+										auto count = std::make_unique<AstAggregator>(AstAggregator::Op::count);
+										// Duplicate the body of the aggregate
+										for (const auto& lit : agg->getBodyLiterals()) {
+											count->addBodyLiteral(std::unique_ptr<AstLiteral>(lit->clone()));
+										}
+										auto number = std::unique_ptr<AstNumberConstant>(constant->clone());
+										// Now it's constant * count : { ... }
+										auto result = std::make_unique<AstIntrinsicFunctor>(FunctorOp::MUL, 
+																		std::move(number), 
+																		std::move(count));
+										
+										return std::move(result);
+							}								
+					}
+				}
+				node->apply(*this);
+				return node;
+			}
+
+			// variables
+			mutable bool changed = false;
+		};
+
+		ReplaceSumWithCount update;
+		translationUnit.getProgram()->apply(update);
+		return update.changed;
+}
+
 bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
 

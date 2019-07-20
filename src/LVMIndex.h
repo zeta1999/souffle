@@ -329,22 +329,18 @@ class PartitionedStream {
     std::vector<Stream> streams;
 
 public:
-    using iterator = typename std::vector<Stream>::iterator;
+    using iterator = typename std::vector<Stream>::const_iterator;
 
     PartitionedStream(std::vector<Stream>&& streams) : streams(std::move(streams)) {}
 
     // -- allow PartitionStreams to be processed by for-loops --
 
-    iterator begin() {
+    iterator begin() const {
         return streams.begin();
     }
 
-    iterator end() {
+    iterator end() const {
         return streams.end();
-    }
-
-    std::vector<Stream>& getStreams() {
-        return streams;
     }
 };
 
@@ -414,6 +410,13 @@ public:
      * Clears the content of this index, turning it empty.
      */
     virtual void clear() = 0;
+
+    /**
+     * Extend another index.
+     *
+     * Does nothing except for EqrelIndex
+     */
+    virtual void extend(LVMIndex*) {}
 };
 
 // The type of index factory functions.
@@ -427,5 +430,8 @@ std::unique_ptr<LVMIndex> createBrieIndex(const Order&);
 
 // A factory for indirect index.
 std::unique_ptr<LVMIndex> createIndirectIndex(const Order&);
+
+// A factory for Eqrel index.
+std::unique_ptr<LVMIndex> createEqrelIndex(const Order&);
 
 }  // end of namespace souffle

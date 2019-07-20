@@ -175,6 +175,7 @@ public:
  */
 template <typename Structure>
 class GenericIndex : public LVMIndex {
+protected:
     using Entry = typename Structure::element_type;
     static constexpr int Arity = Entry::arity;
 
@@ -217,6 +218,28 @@ class GenericIndex : public LVMIndex {
             return std::unique_ptr<Stream::Source>(source);
         }
     };
+
+    virtual souffle::range<iter> bounds(const TupleRef& low, const TupleRef& high) const {
+        Entry a = order.encode(low.asTuple<Arity>());
+        Entry b = order.encode(high.asTuple<Arity>());
+        // Transfer upper_bound to a equivalent lower bound
+        bool fullIndexSearch = true;
+        for (size_t i = Arity; i-- > 0;) {
+            if (a[i] == MIN_RAM_DOMAIN && b[i] == MAX_RAM_DOMAIN) {
+                b[i] = MIN_RAM_DOMAIN;
+                continue;
+            }
+            if (a[i] == b[i]) {
+                b[i] += 1;
+                fullIndexSearch = false;
+                break;
+            }
+        }
+        if (fullIndexSearch) {
+            return {data.begin(), data.end()};
+        }
+        return {data.lower_bound(a), data.lower_bound(b)};
+    }
 
 public:
     GenericIndex(const Order& order) : order(order) {}
@@ -266,30 +289,6 @@ public:
         return res;
     }
 
-private:
-    souffle::range<iter> bounds(const TupleRef& low, const TupleRef& high) const {
-        Entry a = order.encode(low.asTuple<Arity>());
-        Entry b = order.encode(high.asTuple<Arity>());
-        // Transfer upper_bound to a equivalent lower bound
-        bool fullIndexSearch = true;
-        for (size_t i = Arity; i-- > 0;) {
-            if (a[i] == MIN_RAM_DOMAIN && b[i] == MAX_RAM_DOMAIN) {
-                b[i] = MIN_RAM_DOMAIN;
-                continue;
-            }
-            if (a[i] == b[i]) {
-                b[i] += 1;
-                fullIndexSearch = false;
-                break;
-            }
-        }
-        if (fullIndexSearch) {
-            b[0] = MAX_RAM_DOMAIN;
-        }
-        return {data.lower_bound(a), data.lower_bound(b)};
-    }
-
-public:
     Stream range(const TupleRef& low, const TupleRef& high) const override {
         auto range = bounds(low, high);
         return std::make_unique<Source>(order, range.begin(), range.end());
@@ -479,6 +478,27 @@ public:
     using GenericIndex<Trie<Arity>>::GenericIndex;
 };
 
+/**
+ * A index adapter for EquivalenceRelation, using the generic index adapter.
+ */
+class EqrelIndex : public GenericIndex<EquivalenceRelation<ram::Tuple<RamDomain, 2>>> {
+public:
+    using GenericIndex<EquivalenceRelation<ram::Tuple<RamDomain, 2>>>::GenericIndex;
+
+    void extend(LVMIndex* other) override {
+        auto otherIndex = dynamic_cast<EqrelIndex*>(other);
+        assert(otherIndex != nullptr && "Can only extend to EqrelIndex");
+        this->data.extend(otherIndex->data);
+    }
+
+protected:
+    souffle::range<iter> bounds(const TupleRef& low, const TupleRef& high) const override {
+        Entry a = order.encode(low.asTuple<Arity>());
+
+        return {data.lower_bound(a), data.end()};
+    }
+};
+
 std::unique_ptr<LVMIndex> createBTreeIndex(const Order& order) {
     switch (order.size()) {
         case 0:
@@ -546,6 +566,11 @@ std::unique_ptr<LVMIndex> createBrieIndex(const Order& order) {
 std::unique_ptr<LVMIndex> createIndirectIndex(const Order& order) {
     assert(order.size() != 0 && "IndirectIndex does not work with nullary relation\n");
     return std::make_unique<IndirectIndex>(order.getOrder());
+}
+
+std::unique_ptr<LVMIndex> createEqrelIndex(const Order& order) {
+    assert(order.size() == 2 && "Eqrel index must have tuple of 2 arities");
+    return std::make_unique<EqrelIndex>(order);
 }
 
 }  // namespace souffle

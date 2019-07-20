@@ -94,8 +94,8 @@ private:
                 return std::make_unique<LVMRelation>(rel.getArity(), rel.getName(),
                         rel.getAttributeTypeQualifiers(), orderSet, createBrieIndex);
             case RelationRepresentation::EQREL:
-                return std::make_unique<LVMEqRelation>(
-                        rel.getArity(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
+                return std::make_unique<LVMEqRelation>(rel.getArity(), rel.getName(),
+                        rel.getAttributeTypeQualifiers(), orderSet);
             case RelationRepresentation::DEFAULT:
                 return std::make_unique<LVMRelation>(
                         rel.getArity(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);

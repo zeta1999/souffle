@@ -17,6 +17,7 @@
 #include "LVMRelation.h"
 #include "BTree.h"
 #include "Brie.h"
+#include "EquivalenceRelation.h"
 #include "Util.h"
 
 namespace souffle {
@@ -70,9 +71,8 @@ bool LVMRelation::contains(const TupleRef& tuple) const {
 }
 
 bool LVMRelation::contains(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
-	return indexes[indexPos]->contains(low,high);
+    return indexes[indexPos]->contains(low, high);
 }
-
 
 Stream LVMRelation::scan() const {
     return main->scan();
@@ -131,69 +131,15 @@ void LVMRelation::extend(const LVMRelation& rel) {}
 
 LVMEqRelation::LVMEqRelation(size_t arity, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
-        : LVMRelation(arity, name, attributeTypes, orderSet) {}
-
-bool LVMEqRelation::insert(const TupleRef& tuple) {
-    // TODO: (pnappa) an eqrel check here is all that appears to be needed for implicit additions
-    // TODO: future optimisation would require this as a member datatype
-    // brave soul required to pass this quest
-    // // specialisation for eqrel defs
-    // std::unique_ptr<binaryrelation> eqreltuples;
-    // in addition, it requires insert functions to insert into that, and functions
-    // which allow reading of stored values must be changed to accommodate.
-    // e.g. insert =>  eqRelTuples->insert(tuple[0], tuple[1]);
-
-    // for now, we just have a naive & extremely slow version, otherwise known as a O(n^2) insertion
-    // ):
-
-    for (auto& newTuple : extend(tuple)) {
-        LVMRelation::insert(TupleRef(newTuple, arity));
-        delete[] newTuple;
-    }
-    return true;
-}
-
-std::vector<RamDomain*> LVMEqRelation::extend(const TupleRef& tuple) {
-    std::vector<RamDomain*> newTuples;
-
-    newTuples.push_back(new RamDomain[2]{tuple[0], tuple[0]});
-    newTuples.push_back(new RamDomain[2]{tuple[0], tuple[1]});
-    newTuples.push_back(new RamDomain[2]{tuple[1], tuple[0]});
-    newTuples.push_back(new RamDomain[2]{tuple[1], tuple[1]});
-
-    std::vector<const RamDomain*> relevantStored;
-    for (const TupleRef& vals : this->scan()) {
-        if (vals[0] == tuple[0] || vals[0] == tuple[1] || vals[1] == tuple[0] || vals[1] == tuple[1]) {
-            relevantStored.push_back(new RamDomain[2]{vals[0], vals[1]});
-        }
-    }
-
-    for (auto& vals : relevantStored) {
-        newTuples.push_back(new RamDomain[2]{vals[0], tuple[0]});
-        newTuples.push_back(new RamDomain[2]{vals[0], tuple[1]});
-        newTuples.push_back(new RamDomain[2]{vals[1], tuple[0]});
-        newTuples.push_back(new RamDomain[2]{vals[1], tuple[1]});
-        newTuples.push_back(new RamDomain[2]{tuple[0], vals[0]});
-        newTuples.push_back(new RamDomain[2]{tuple[0], vals[1]});
-        newTuples.push_back(new RamDomain[2]{tuple[1], vals[0]});
-        newTuples.push_back(new RamDomain[2]{tuple[1], vals[1]});
-        delete[] vals;
-    }
-    return newTuples;
+        : LVMRelation(arity, name, attributeTypes, orderSet, createEqrelIndex) {
+    // EqivalenceRelation should have only index.
+    assert(this->indexes.size() == 1);
 }
 
 void LVMEqRelation::extend(const LVMRelation& rel) {
-    std::vector<RamDomain*> newTuples;
-    // store all values that will be implicitly relevant to the those that we will insert
-    for (const auto& tuple : rel.scan()) {
-        for (auto& newTuple : extend(tuple)) {
-            newTuples.push_back(newTuple);
-        }
-    }
-    for (const auto& newTuple : newTuples) {
-        LVMRelation::insert(TupleRef(newTuple, arity));
-        delete[] newTuple;
-    }
+    auto otherEqRel = dynamic_cast<const LVMEqRelation*>(&rel);
+    assert(otherEqRel != nullptr && "A eqRel can only merge with another eqRel");
+    this->main->extend(otherEqRel->main);
 }
 
 LVMIndirectRelation::LVMIndirectRelation(size_t arity, const std::string& name,

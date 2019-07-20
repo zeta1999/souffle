@@ -329,17 +329,17 @@ class PartitionedStream {
     std::vector<Stream> streams;
 
 public:
-    using iterator = typename std::vector<Stream>::const_iterator;
+    using iterator = typename std::vector<Stream>::iterator;
 
     PartitionedStream(std::vector<Stream>&& streams) : streams(std::move(streams)) {}
 
     // -- allow PartitionStreams to be processed by for-loops --
 
-    iterator begin() const {
+    iterator begin() {
         return streams.begin();
     }
 
-    iterator end() const {
+    iterator end() {
         return streams.end();
     }
 };
@@ -351,22 +351,20 @@ public:
  */
 class IndexView {
 public:
+    /**
+     * Tests whether the given entry is contained in this index.
+     */
+    virtual bool contains(const TupleRef& entry) const = 0;
 
-	/**
-	 * Tests whether the given entry is contained in this index.
-	 */
-	virtual bool contains(const TupleRef& entry) const =0;
-
-	/**
-	 * Tests whether any element in the given range is contained in this index.
-	 */
-    virtual bool contains(const TupleRef& low, const TupleRef& high) const =0;
+    /**
+     * Tests whether any element in the given range is contained in this index.
+     */
+    virtual bool contains(const TupleRef& low, const TupleRef& high) const = 0;
 
     /**
      * Obtains a stream for the given range within this index.
      */
-    virtual Stream range(const TupleRef& low, const TupleRef& high) const =0;
-
+    virtual Stream range(const TupleRef& low, const TupleRef& high) const = 0;
 };
 
 // A general handler type for index views.

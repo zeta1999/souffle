@@ -94,8 +94,8 @@ private:
                 return std::make_unique<LVMRelation>(rel.getArity(), rel.getName(),
                         rel.getAttributeTypeQualifiers(), orderSet, createBrieIndex);
             case RelationRepresentation::EQREL:
-                return std::make_unique<LVMEqRelation>(rel.getArity(), rel.getName(),
-                        rel.getAttributeTypeQualifiers(), orderSet);
+                return std::make_unique<LVMEqRelation>(
+                        rel.getArity(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
             case RelationRepresentation::DEFAULT:
                 return std::make_unique<LVMRelation>(
                         rel.getArity(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
@@ -118,9 +118,11 @@ public:
      */
     LVMGenerator(SymbolTable& symbolTable, const RamStatement& entry, RelationEncoder& relationEncoder)
             : symbolTable(symbolTable), code(new LVMCode(symbolTable)), relationEncoder(relationEncoder) {
+#ifdef _OPENMP
         if (std::stoi(Global::config().get("jobs")) > 1) {
             omp_set_num_threads(std::stoi(Global::config().get("jobs")));
         }
+#endif
         (*this)(entry, 0);
         (*this).cleanUp();
         (*this)(entry, 0);
@@ -1381,6 +1383,9 @@ private:
     /** Current timer index for logger */
     size_t timerIndex = 0;
 
+    /** Current index view id */
+    size_t indexViewId = 0;
+
     /** Relation Encoder */
     RelationEncoder& relationEncoder;
 
@@ -1393,6 +1398,7 @@ private:
         currentAddressLabel = 0;
         iteratorIndex = 0;
         timerIndex = 0;
+        indexViewId = 0;
     }
 
     /** Get new Address Label */
@@ -1408,6 +1414,11 @@ private:
     /** Get new Timer */
     size_t getNewTimer() {
         return timerIndex++;
+    }
+
+    /** Get new indexView */
+    size_t getNewIndexView() {
+        return indexViewId++;
     }
 
     /* Return the value of the addressLabel.

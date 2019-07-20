@@ -178,7 +178,7 @@ public:
      * Returns whether there exists given tuple.
      * @param tuple The tuple to search for.
      */
-    bool contains(const TupleType& tuple) const {
+    bool contains(const TupleType& tuple, operation_hints&) const {
         return contains(tuple[0], tuple[1]);
     };
 
@@ -514,7 +514,7 @@ public:
      * @param entry the entry to be looking for
      * @return the corresponding range of matching elements
      */
-    iterator lower_bound(const TupleType& entry) const {
+    iterator lower_bound(const TupleType& entry, operation_hints&) const {
         if (entry[0] == MIN_RAM_DOMAIN && entry[1] == MIN_RAM_DOMAIN) {
             // Return an iterator over all tuples.
             return begin();

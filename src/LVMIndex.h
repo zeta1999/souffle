@@ -365,6 +365,11 @@ public:
      * Obtains a stream for the given range within this index.
      */
     virtual Stream range(const TupleRef& low, const TupleRef& high) const = 0;
+
+    /**
+     * Return arity size of the index
+     */
+    virtual size_t getArity() const = 0;
 };
 
 // A general handler type for index views.

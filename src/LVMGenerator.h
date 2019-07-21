@@ -126,6 +126,8 @@ public:
         (*this)(entry, 0);
         (*this).cleanUp();
         (*this)(entry, 0);
+        (*this).cleanUp();
+        (*this)(entry, 0);
         code->push_back(LVM_STOP);
     }
 
@@ -134,7 +136,6 @@ public:
     }
 
 protected:
-    bool preambleIssued = false;
     // Visit RAM Expressions
 
     void visitNumber(const RamNumber& num, size_t exitAddress) override {
@@ -352,11 +353,16 @@ protected:
             code->push_back(LVM_Negation);
         } else if (fullExistenceCheck == true) {
             // Full type mask is equivalent to a full order existence check
-            code->push_back(LVM_ContainCheck);
-            code->push_back(relId);
-        } else {  // Otherwise we do a partial existence check.
+            size_t viewId = getNewIndexView();
             size_t indexPos = getIndexPos(exists);
-            this->emitExistenceCheckInst(arity, relId, indexPos, typeMask);
+            code->push_back(LVM_ContainCheck);
+            code->push_back(viewId);
+            bindViewWithParent(relId, indexPos, viewId);
+        } else {  // Otherwise we do a partial existence check.
+            size_t viewId = getNewIndexView();
+            size_t indexPos = getIndexPos(exists);
+            this->emitExistenceCheckInst(arity, viewId, typeMask);
+            bindViewWithParent(relId, indexPos, viewId);
         }
     }
 
@@ -384,8 +390,10 @@ protected:
             code->push_back(relId);
             code->push_back(LVM_Negation);
         } else {  // Otherwise we do a partial existence check.
+            size_t viewId = getNewIndexView();
             size_t indexPos = getIndexPos(provExists);
-            this->emitExistenceCheckInst(arity, relId, indexPos, typeMask);
+            this->emitExistenceCheckInst(arity, viewId, typeMask);
+            bindViewWithParent(relId, indexPos, viewId);
         }
     }
 
@@ -447,8 +455,7 @@ protected:
     }
 
     void visitParallelScan(const RamParallelScan& pscan, size_t exitAddress) override {
-        size_t savedIterId = this->iteratorIndex;
-        this->iteratorIndex = 0;
+        enterParallelBlock();
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         const auto& rel = pscan.getRelation();
@@ -457,15 +464,16 @@ protected:
 
         assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
 
-        assert(!preambleIssued && "only first loop can be made parallel");
+        assert(!parentParallel && "only first loop can be made parallel");
 
-        preambleIssued = true;
+        parentParallel = &pscan;
 
         code->push_back(LVM_ITER_InitFullIndexParallel);
         code->push_back(counterLabel);
         code->push_back(relationEncoder.encodeRelation(pscan.getRelation()));
         // Setup dest for joining
         code->push_back(lookupAddress(L1) + 1);
+        emitViewsCreationInst(&pscan);
 
         // While iterator is not at end
         size_t address_L0 = code->size();
@@ -494,8 +502,8 @@ protected:
         // Stop the child process
         code->push_back(LVM_ParallelStop);
 
-        preambleIssued = false;
-        this->iteratorIndex = savedIterId;
+        parentParallel = nullptr;
+        exitParallelBlock();
     }
 
     void visitScan(const RamScan& scan, size_t exitAddress) override {
@@ -534,8 +542,7 @@ protected:
     }
 
     void visitParallelChoice(const RamParallelChoice& pchoice, size_t exitAddress) override {
-        size_t savedIterId = this->iteratorIndex;
-        this->iteratorIndex = 0;
+        enterParallelBlock();
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
@@ -545,9 +552,9 @@ protected:
 
         assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
 
-        assert(!preambleIssued && "only first loop can be made parallel");
+        assert(!parentParallel && "only first loop can be made parallel");
 
-        preambleIssued = true;
+        parentParallel = &pchoice;
 
         // Init the Iterator
         code->push_back(LVM_ITER_InitFullIndexParallel);
@@ -555,6 +562,7 @@ protected:
         code->push_back(relationEncoder.encodeRelation(pchoice.getRelation()));
         // Setup dest for joining
         code->push_back(lookupAddress(L2) + 1);
+        emitViewsCreationInst(&pchoice);
 
         // While iterator is not at end
         size_t address_L0 = code->size();
@@ -586,8 +594,8 @@ protected:
         // Stop the child process
         code->push_back(LVM_ParallelStop);
 
-        preambleIssued = false;
-        this->iteratorIndex = savedIterId;
+        parentParallel = nullptr;
+        exitParallelBlock();
     }
 
     void visitChoice(const RamChoice& choice, size_t exitAddress) override {
@@ -630,8 +638,7 @@ protected:
     }
 
     void visitParallelIndexScan(const RamParallelIndexScan& piscan, size_t exitAddress) override {
-        size_t savedIterId = this->iteratorIndex;
-        this->iteratorIndex = 0;
+        enterParallelBlock();
         code->push_back(LVM_IndexScan);
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
@@ -641,9 +648,9 @@ protected:
 
         assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
 
-        assert(!preambleIssued && "only first loop can be made parallel");
+        assert(!parentParallel && "only first loop can be made parallel");
 
-        preambleIssued = true;
+        parentParallel = &piscan;
 
         // Obtain the pattern for index
         auto patterns = piscan.getRangePattern();
@@ -671,6 +678,8 @@ protected:
                     arity, relId, indexPos, counterLabel, typeMask, lookupAddress(L1) + 1);
         }
 
+        emitViewsCreationInst(&piscan);
+
         // While iter is not at end
         size_t address_L0 = code->size();
         code->push_back(LVM_ITER_NotAtEnd);
@@ -693,8 +702,8 @@ protected:
         setAddress(L1, code->size());
 
         code->push_back(LVM_ParallelStop);
-        preambleIssued = false;
-        this->iteratorIndex = savedIterId;
+        parentParallel = nullptr;
+        exitParallelBlock();
     }
 
     void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
@@ -722,8 +731,10 @@ protected:
             code->push_back(counterLabel);
             code->push_back(relId);
         } else {
-            auto indexPos = getIndexPos(scan);
-            this->emitRangeIndexInst(arity, relId, indexPos, counterLabel, typeMask);
+            size_t viewId = getNewIndexView();
+            size_t indexPos = getIndexPos(scan);
+            this->emitRangeIndexInst(arity, viewId, counterLabel, typeMask);
+            bindViewWithParent(relId, indexPos, viewId);
         }
 
         // While iter is not at end
@@ -749,8 +760,7 @@ protected:
     }
 
     void visitParallelIndexChoice(const RamParallelIndexChoice& ichoice, size_t exitAddress) override {
-        size_t savedIterId = this->iteratorIndex;
-        this->iteratorIndex = 0;
+        enterParallelBlock();
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
@@ -760,9 +770,9 @@ protected:
 
         assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
 
-        assert(!preambleIssued && "only first loop can be made parallel");
+        assert(!parentParallel && "only first loop can be made parallel");
 
-        preambleIssued = true;
+        parentParallel = &ichoice;
 
         // Obtain the pattern for index
         auto patterns = ichoice.getRangePattern();
@@ -777,6 +787,8 @@ protected:
                 typeMask[i] = 1;
             }
         }
+
+        emitViewsCreationInst(&ichoice);
 
         // Init range index based on pattern
         if (fullIndexSearch == true) {
@@ -816,8 +828,8 @@ protected:
         setAddress(L2, code->size());
         code->push_back(LVM_ParallelStop);
 
-        preambleIssued = false;
-        this->iteratorIndex = savedIterId;
+        parentParallel = nullptr;
+        exitParallelBlock();
     }
 
     void visitIndexChoice(const RamIndexChoice& indexChoice, size_t exitAddress) override {
@@ -846,8 +858,10 @@ protected:
             code->push_back(counterLabel);
             code->push_back(relId);
         } else {
-            auto indexPos = getIndexPos(indexChoice);
-            this->emitRangeIndexInst(arity, relId, indexPos, counterLabel, typeMask);
+            size_t viewId = getNewIndexView();
+            size_t indexPos = getIndexPos(indexChoice);
+            this->emitRangeIndexInst(arity, viewId, counterLabel, typeMask);
+            bindViewWithParent(relId, indexPos, viewId);
         }
 
         // While iter is not at end.
@@ -1030,8 +1044,10 @@ protected:
             code->push_back(counterLabel);
             code->push_back(relId);
         } else {
-            auto indexPos = getIndexPos(aggregate);
-            this->emitRangeIndexInst(arity, relId, indexPos, counterLabel, typeMask);
+            size_t viewId = getNewIndexView();
+            size_t indexPos = getIndexPos(aggregate);
+            this->emitRangeIndexInst(arity, viewId, counterLabel, typeMask);
+            bindViewWithParent(relId, indexPos, viewId);
         }
 
         if (aggregate.getFunction() == souffle::COUNT &&
@@ -1334,9 +1350,12 @@ protected:
         code->push_back(arity);
     }
 
-    void visitQuery(const RamQuery& insert, size_t exitAddress) override {
+    void visitQuery(const RamQuery& query, size_t exitAddress) override {
         code->push_back(LVM_Query);
-        visit(insert.getOperation(), exitAddress);
+        parentQuery = &query;
+        emitViewsCreationInst(&query);
+        visit(query.getOperation(), exitAddress);
+        parentQuery = nullptr;
     }
 
     void visitMerge(const RamMerge& merge, size_t exitAddress) override {
@@ -1421,6 +1440,9 @@ private:
         return indexViewId++;
     }
 
+    /** Store arguments used to create views. */
+    std::unordered_map<const RamNode*, std::set<std::array<size_t, 3>>> operationViewsTable;
+
     /* Return the value of the addressLabel.
      * Return 0 if label doesn't exits.
      */
@@ -1439,6 +1461,30 @@ private:
         addressMap[addressLabel] = value;
     }
 
+    /** Indicate the parent RamQuery if any */
+    const RamNode* parentQuery = nullptr;
+
+    /** Indicate the parent parallel instruction if any */
+    const RamNode* parentParallel = nullptr;
+
+    /** Temporary saved variables for scoping */
+    size_t savedIterId = 0;
+    size_t savedViewId = 0;
+
+    /** Enter new parallel block, save current state */
+    void enterParallelBlock() {
+        savedIterId = this->iteratorIndex;
+        savedViewId = this->indexViewId;
+        this->iteratorIndex = 0;
+        this->indexViewId = 0;
+    }
+
+    /** Exite parallel block, revert to previous state */
+    void exitParallelBlock() {
+        this->iteratorIndex = savedIterId;
+        this->indexViewId = savedViewId;
+    }
+
     /** Get the index position in a relation based on the SearchSignature */
     template <class RamNode>
     size_t getIndexPos(RamNode& node) {
@@ -1452,8 +1498,7 @@ private:
     };
 
     /** Emit existence check instructions */
-    void emitExistenceCheckInst(const size_t& arity, const size_t& relId, const size_t& indexPos,
-            const std::vector<int>& typeMask) {
+    void emitExistenceCheckInst(const size_t& arity, const size_t& viewId, const std::vector<int>& typeMask) {
         size_t numOfTypeMasks = arity / RAM_DOMAIN_SIZE + (arity % RAM_DOMAIN_SIZE != 0);
         // Emit special instruction for relation with arity < RAM_DOMAIN_SIZE
         // to avoid overhead of checking argument size --- as it is the most common case
@@ -1464,8 +1509,7 @@ private:
         } else {
             code->push_back(LVM_ExistenceCheck);
         }
-        code->push_back(relId);
-        code->push_back(indexPos);
+        code->push_back(viewId);
         for (size_t i = 0; i < numOfTypeMasks; ++i) {
             RamDomain types = 0;
             for (size_t j = 0; j < RAM_DOMAIN_SIZE; ++j) {
@@ -1480,8 +1524,8 @@ private:
     }
 
     /** Emit range index instructions */
-    void emitRangeIndexInst(const size_t& arity, const size_t& relId, const size_t& indexPos,
-            const size_t& counterLabel, const std::vector<int>& typeMask) {
+    void emitRangeIndexInst(const size_t& arity, const size_t& viewId, const size_t& counterLabel,
+            const std::vector<int>& typeMask) {
         size_t numOfTypeMasks = arity / RAM_DOMAIN_SIZE + (arity % RAM_DOMAIN_SIZE != 0);
         // Emit special instruction for relation with arity < RAM_DOMAIN_SIZE
         // to avoid overhead of checking argumnet size --- as it is the most common case
@@ -1493,8 +1537,7 @@ private:
             code->push_back(LVM_ITER_InitRangeIndex);
         }
         code->push_back(counterLabel);
-        code->push_back(relId);
-        code->push_back(indexPos);
+        code->push_back(viewId);
         for (size_t i = 0; i < numOfTypeMasks; ++i) {
             RamDomain types = 0;
             for (size_t j = 0; j < RAM_DOMAIN_SIZE; ++j) {
@@ -1531,6 +1574,33 @@ private:
                 types |= (typeMask[projectedIndex] << j);
             }
             code->push_back(types);
+        }
+    }
+
+    /** Emit instruction for views creation for this operation */
+    void emitViewsCreationInst(const RamNode* node) {
+        if (operationViewsTable.find(node) != operationViewsTable.end()) {
+            auto views = operationViewsTable[node];
+            // create operation hints for this operation
+            code->push_back(LVM_CreateViews);
+            code->push_back(views.size());
+            for (auto view : views) {
+                code->push_back(view[0]);  // Relation id
+                code->push_back(view[1]);  // Index position
+                code->push_back(view[2]);  // location to store the view
+            }
+        }
+    }
+
+    /** Bind the index view with the parent.
+     *  So that during next pass, parent node can issue correct instruction for views creation. */
+    void bindViewWithParent(const size_t relId, const size_t indexPos, const size_t viewId) {
+        if (parentParallel) {
+            // if inside of a parallel for-loop, bind to the parallel statement.
+            operationViewsTable[parentParallel].insert({relId, indexPos, viewId});
+        } else {
+            // Else we bind the views with the query statement
+            operationViewsTable[parentQuery].insert({relId, indexPos, viewId});
         }
     }
 

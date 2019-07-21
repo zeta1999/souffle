@@ -567,27 +567,28 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             }
             case LVM_ContainCheck: {
-                auto relPtr = getRelation(code[ip + 1]);
-                auto arity = relPtr->getArity();
+                auto& view = ctxt.lookUpView(code[ip + 1]);
+                auto arity = view->getArity();
                 RamDomain tuple[arity];
                 for (size_t i = 0; i < arity; ++i) {
                     tuple[i] = stack.top();
                     stack.pop();
                 }
-                stack.push(relPtr->contains(TupleRef(tuple, arity)));
+                stack.push(view->contains(TupleRef(tuple, arity)));
                 ip += 2;
                 break;
             }
             case LVM_ExistenceCheck: {
-                auto relPtr = getRelation(code[ip + 1]);
-                auto arity = relPtr->getArity();
-                auto indexPos = code[ip + 2];
-
+                // auto relPtr = getRelation(code[ip + 1]);
+                // auto arity = relPtr->getArity();
+                // auto indexPos = code[ip + 2];
+                auto& view = ctxt.lookUpView(code[ip + 1]);
+                auto arity = view->getArity();
                 RamDomain low[arity];
                 RamDomain high[arity];
                 size_t numOfTypeMasks = arity / RAM_DOMAIN_SIZE + (arity % RAM_DOMAIN_SIZE != 0);
                 for (size_t i = 0; i < numOfTypeMasks; ++i) {
-                    RamDomain typeMask = code[ip + 3 + i];
+                    RamDomain typeMask = code[ip + 2 + i];
                     for (auto j = 0; j < RAM_DOMAIN_SIZE; ++j) {
                         auto projectedIndex = i * RAM_DOMAIN_SIZE + j;
                         if (projectedIndex >= arity) {
@@ -603,17 +604,21 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                     }
                 }
-                auto range = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                // auto range = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                auto range = view->range(TupleRef(low, arity), TupleRef(high, arity));
                 stack.push(range.begin() != range.end());
 
-                ip += (3 + numOfTypeMasks);
+                ip += (2 + numOfTypeMasks);
                 break;
             }
             case LVM_ExistenceCheckOneArg: {
-                auto relPtr = getRelation(code[ip + 1]);
-                auto arity = relPtr->getArity();
-                auto indexPos = code[ip + 2];
-                auto typeMask = code[ip + 3];
+                // auto relPtr = getRelation(code[ip + 1]);
+                // auto arity = relPtr->getArity();
+                // auto indexPos = code[ip + 2];
+                // auto typeMask = code[ip + 3];
+                auto& view = ctxt.lookUpView(code[ip + 1]);
+                auto arity = view->getArity();
+                auto typeMask = code[ip + 2];
 
                 RamDomain low[arity];
                 RamDomain high[arity];
@@ -628,10 +633,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         high[i] = MAX_RAM_DOMAIN;
                     }
                 }
-                auto range = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                // auto range = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                auto range = view->range(TupleRef(low, arity), TupleRef(high, arity));
                 stack.push(range.begin() != range.end());
 
-                ip += 4;
+                ip += 3;
                 break;
             }
             case LVM_Constraint:
@@ -660,6 +666,18 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     this->frequencies[msg][this->getIterationNumber()]++;
                 }
                 ip += 3;
+                break;
+            }
+            case LVM_CreateViews: {
+                size_t numOfViews = code[ip + 1];
+                for (size_t i = 0; i < numOfViews; ++i) {
+                    size_t j = (ip + 2) + i * 3;
+                    size_t relId = code[j];
+                    size_t indexPos = code[j + 1];
+                    size_t dest = code[j + 2];
+                    ctxt.lookUpView(dest) = getRelation(relId)->getView(indexPos);
+                }
+                ip += numOfViews * 3 + 2;
                 break;
             }
             case LVM_UnpackRecord: {
@@ -1001,16 +1019,18 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             };
             case LVM_ITER_InitRangeIndex: {
                 RamDomain dest = code[ip + 1];
-                auto relPtr = getRelation(code[ip + 2]);
-                auto arity = relPtr->getArity();
-                RamDomain indexPos = code[ip + 3];
+                // auto relPtr = getRelation(code[ip + 2]);
+                // auto arity = relPtr->getArity();
+                // RamDomain indexPos = code[ip + 3];
+                auto& view = ctxt.lookUpView(code[ip + 2]);
+                auto arity = view->getArity();
 
                 // create pattern tuple for range query
                 size_t numOfTypeMasks = arity / RAM_DOMAIN_SIZE + (arity % RAM_DOMAIN_SIZE != 0);
                 RamDomain low[arity];
                 RamDomain high[arity];
                 for (size_t i = 0; i < numOfTypeMasks; ++i) {
-                    RamDomain typeMask = code[ip + 4 + i];
+                    RamDomain typeMask = code[ip + 3 + i];
                     for (auto j = 0; j < RAM_DOMAIN_SIZE; ++j) {
                         auto projectedIndex = i * RAM_DOMAIN_SIZE + j;
                         if (projectedIndex >= arity) {
@@ -1027,9 +1047,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     }
                 }
                 // get iterator range
-                ctxt.lookUpStream(dest) =
-                        relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
-                ip += (4 + numOfTypeMasks);
+                // ctxt.lookUpStream(dest) =
+                //        relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                ctxt.lookUpStream(dest) = view->range(TupleRef(low, arity), TupleRef(high, arity));
+                ip += (3 + numOfTypeMasks);
                 break;
             };
             case LVM_ITER_InitRangeIndexParallel: {
@@ -1081,10 +1102,13 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             }
             case LVM_ITER_InitRangeIndexOneArg: {
                 RamDomain dest = code[ip + 1];
-                auto relPtr = getRelation(code[ip + 2]);
-                auto arity = relPtr->getArity();
-                auto indexPos = code[ip + 3];
-                auto typeMask = code[ip + 4];
+                // auto relPtr = getRelation(code[ip + 2]);
+                // auto arity = relPtr->getArity();
+                // auto indexPos = code[ip + 3];
+                // auto typeMask = code[ip + 4];
+                auto& view = ctxt.lookUpView(code[ip + 2]);
+                auto arity = view->getArity();
+                auto typeMask = code[ip + 3];
 
                 // create pattern tuple for range query
                 RamDomain low[arity];
@@ -1100,9 +1124,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     }
                 }
                 // get iterator range
-                ctxt.lookUpStream(dest) =
-                        relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
-                ip += 5;
+                // ctxt.lookUpStream(dest) =
+                //        relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+                ctxt.lookUpStream(dest) = view->range(TupleRef(low, arity), TupleRef(high, arity));
+                ip += 4;
                 break;
             };
             case LVM_ITER_InitRangeIndexOneArgParallel: {

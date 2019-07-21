@@ -124,6 +124,10 @@ class NullaryIndex : public LVMIndex {
         Stream range(const TupleRef& low, const TupleRef& high) const override {
             return index.range(low, high);
         }
+
+        size_t getArity() const override {
+            return 0;
+        }
     };
 
 public:
@@ -283,6 +287,10 @@ protected:
         Stream range(const TupleRef& low, const TupleRef& high) const override {
             auto range = index.bounds(low, high, hints);
             return std::make_unique<Source>(index.order, range.begin(), range.end());
+        }
+
+        size_t getArity() const override {
+            return Arity;
         }
     };
 
@@ -450,6 +458,10 @@ public:
         Stream range(const TupleRef& low, const TupleRef& high) const override {
             return std::make_unique<Source>(
                     index.set.lower_bound(low, hints), index.set.upper_bound(high, hints));
+        }
+
+        size_t getArity() const override {
+            return index.getArity();
         }
     };
 

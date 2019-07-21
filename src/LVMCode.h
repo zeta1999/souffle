@@ -100,6 +100,7 @@ enum LVM_Type {
     LVM_Project,
     LVM_ReturnValue,
     LVM_Search,
+    LVM_CreateViews,
 
     // LVM Stmts
     LVM_Sequence,

@@ -34,6 +34,7 @@ class LVMContext {
     const std::vector<RamDomain>* args = nullptr;
     std::vector<std::unique_ptr<RamDomain[]>> allocatedDataContainer;
     std::vector<Stream> streamPool;
+    std::vector<std::unique_ptr<IndexView>> viewPool;
 
 public:
     LVMContext(size_t size = 0) : data(size) {}
@@ -97,6 +98,14 @@ public:
             streamPool.resize(idx + 1);
         }
         return streamPool[idx];
+    }
+
+    /** Lookup indexView, resize the pool if necessary */
+    std::unique_ptr<IndexView>& lookUpView(size_t idx) {
+        if (idx >= viewPool.size()) {
+            viewPool.resize(idx + 1);
+        }
+        return viewPool[idx];
     }
 };
 

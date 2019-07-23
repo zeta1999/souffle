@@ -152,7 +152,7 @@ enum LVM_Type {
 
 };
 
-class RelationEncoder;
+class LVMStaticEnvironment;
 
 /**
  * LVMCode is an array of LVM Opcode and operands.
@@ -161,7 +161,6 @@ class RelationEncoder;
  */
 class LVMCode : protected std::vector<RamDomain> {
 public:
-    LVMCode(SymbolTable& symbolTable) : symbolTable(symbolTable) {}
 
     using std::vector<RamDomain>::push_back;
     using std::vector<RamDomain>::clear;
@@ -180,32 +179,7 @@ public:
         return std::vector<RamDomain>(begin(), end());
     }
 
-    /** Return IODirectives pool */
-    std::vector<std::vector<IODirectives>>& getIODirectives() {
-        return IODirectivesPool;
-    }
-
-    /** Return size of the IODirectives pool */
-    size_t getIODirectivesSize() const {
-        return IODirectivesPool.size();
-    }
-
-    /** Return SymbolTabel */
-    SymbolTable& getSymbolTable() {
-        return symbolTable;
-    }
-
-    /** Print out the code stream */
-    virtual void print(RelationEncoder&) const;
-
     virtual ~LVMCode() = default;
-
-private:
-    /** Store reference to IODirectives */
-    std::vector<std::vector<IODirectives>> IODirectivesPool;
-
-    /** Class for converting string to number and vice versa */
-    SymbolTable& symbolTable;
 };
 
 }  // End of namespace souffle

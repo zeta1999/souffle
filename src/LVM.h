@@ -86,22 +86,20 @@ public:
             execute(subroutines.at(name), ctxt);
         } else {
             // Parse and cache the program
-            LVMGenerator generator(translationUnit.getSymbolTable(),
-                    translationUnit.getProgram()->getSubroutine(name), relationEncoder);
-            subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
+            LVMGenerator generator(&translationUnit.getProgram()->getSubroutine(name), staticEnv);
+            subroutines.emplace(std::make_pair(name, generator.parseProgram()));
             execute(subroutines.at(name), ctxt);
         }
     }
 
     /** Print out the instruction stream */
-    void printMain() {
-        if (mainProgram.get() == nullptr) {
-            LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain(),
-                    relationEncoder);
-            mainProgram = generator.getCodeStream();
-        }
-        mainProgram->print(relationEncoder);
-    }
+    // void printMain() {
+    //     if (mainProgram.get() == nullptr) {
+    //         LVMGenerator generator(translationUnit, staticEnv);
+    //         mainProgram = generator.getCodeStream();
+    //     }
+    //     mainProgram->print(staticEnv);
+    // }
 
 protected:
     /** Insert Logger */
@@ -151,17 +149,17 @@ protected:
 
     /** Get a relation */
     LVMRelation* getRelation(size_t id) {
-        return relationEncoder[id].get();
+        return staticEnv.getRelation(id).get();
     }
 
     /** Drop relation */
     void dropRelation(size_t id) {
-        relationEncoder[id].reset(nullptr);
+        staticEnv.getRelation(id).reset(nullptr);
     }
 
     /** Swap relation */
     void swapRelation(size_t relAId, size_t relBId) {
-        relationEncoder[relAId].swap(relationEncoder[relBId]);
+        staticEnv.getRelation(relAId).swap(staticEnv.getRelation(relBId));
     }
 
     /** Obtain the search columns */

@@ -103,7 +103,7 @@ souffle_sources = \
               InlineRelationsTransformer.cpp            \
               LogStatement.h                            \
 			  LVM.cpp 				LVM.h 				\
-			  LVMCode.cpp			LVMCode.h			\
+			  LVMCode.h									\
 			  LVMContext.h								\
 			  LVMGenerator.h							\
 			  LVMIndex.h			LVMIndex.cpp		\

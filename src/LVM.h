@@ -92,15 +92,6 @@ public:
         }
     }
 
-    /** Print out the instruction stream */
-    // void printMain() {
-    //     if (mainProgram.get() == nullptr) {
-    //         LVMGenerator generator(translationUnit, staticEnv);
-    //         mainProgram = generator.getCodeStream();
-    //     }
-    //     mainProgram->print(staticEnv);
-    // }
-
 protected:
     /** Insert Logger */
     void insertTimerAt(size_t index, Logger* timer) {

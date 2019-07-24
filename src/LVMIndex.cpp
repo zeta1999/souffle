@@ -582,7 +582,6 @@ protected:
     virtual souffle::range<iter> bounds(
             const TupleRef& low, const TupleRef& high, Hints& hints) const override {
         Entry a = order.encode(low.asTuple<Arity>());
-
         return {data.lower_bound(a, hints), data.end()};
     }
 };

@@ -180,7 +180,9 @@ public:
     /**
      * Add existence check in outer-most filter operation.
      */
-    void addViewForOuterFilter(const RamExistenceCheck* node) {
+    void addViewForOuterFilter(const RamNode* node) {
+        assert(dynamic_cast<const RamExistenceCheck*>(node) ||
+                dynamic_cast<const RamProvenanceExistenceCheck*>(node));
         viewsForFilterOperation.push_back(node);
     }
 
@@ -189,7 +191,8 @@ public:
      * This node cannot come from the outer-most filter operation.
      */
     void addViewForNestedOperation(const RamNode* op) {
-        assert(dynamic_cast<const RamIndexOperation*>(op) || dynamic_cast<const RamExistenceCheck*>(op));
+        assert(dynamic_cast<const RamIndexOperation*>(op) || dynamic_cast<const RamExistenceCheck*>(op) ||
+                dynamic_cast<const RamProvenanceExistenceCheck*>(op));
         viewsForNestedOperation.push_back(op);
     }
 
@@ -249,6 +252,12 @@ public:
                 }
             }
             return false;
+        } else if (auto provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(node)) {
+            for (auto& v : provExists->getValues()) {
+                if (!isRamUndefValue(v)) {
+                    return true;
+                }
+            }
         } else if (auto indexOp = dynamic_cast<const RamIndexOperation*>(node)) {
             for (auto& v : indexOp->getRangePattern()) {
                 if (!isRamUndefValue(v)) {
@@ -1575,10 +1584,10 @@ protected:
             auto conditions = preamble.toConjunctionList(&filter->getCondition());
             for (auto const& cur : conditions) {
                 bool needView = false;
-                visitDepthFirst(*cur, [&](const RamExistenceCheck& exists) {
-                    if (preamble.requireView(&exists)) {
+                visitDepthFirst(*cur, [&](const RamNode& node) {
+                    if (preamble.requireView(&node)) {
                         needView = true;
-                        preamble.addViewForOuterFilter(&exists);
+                        preamble.addViewForOuterFilter(&node);
                     }
                 });
                 if (needView) {
@@ -1832,6 +1841,14 @@ private:
                 auto indexPos = staticEnv.getIndexPos(exists);
                 auto viewId = getNewIndexView();
                 operationToIndexView[exists] = viewId;
+                code.push_back(relId);
+                code.push_back(indexPos);
+                code.push_back(viewId);
+            } else if (auto provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(node)) {
+                auto relId = staticEnv.encodeRelation(provExists->getRelation());
+                auto indexPos = staticEnv.getIndexPos(provExists);
+                auto viewId = getNewIndexView();
+                operationToIndexView[provExists] = viewId;
                 code.push_back(relId);
                 code.push_back(indexPos);
                 code.push_back(viewId);

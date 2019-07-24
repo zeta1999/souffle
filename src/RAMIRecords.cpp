@@ -18,6 +18,7 @@
 #include <cassert>
 #include <limits>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace souffle {
@@ -91,35 +92,33 @@ public:
  */
 RAMIRecordMap& getForArity(int arity) {
     // the static container -- filled on demand
-    static map<int, RAMIRecordMap> maps;
-
-    // get container if present
-    auto pos = maps.find(arity);
-    if (pos != maps.end()) {
-        return pos->second;
+    static unordered_map<int, RAMIRecordMap> maps;
+#pragma omp critical(find_map)
+    {
+        auto pos = maps.find(arity);
+        if (pos == maps.end()) {
+            maps.emplace(arity, arity);
+        }
     }
-
-    // create new container if required
-    maps.emplace(arity, arity);
-    return getForArity(arity);
+    return maps.find(arity)->second;
 }
 }  // namespace
 
-RamDomain pack(RamDomain* tuple, int arity) {
+RamDomain packRAMI(RamDomain* tuple, int arity) {
     // conduct the packing
     return getForArity(arity).pack(tuple);
 }
 
-RamDomain* unpack(RamDomain ref, int arity) {
+RamDomain* unpackRAMI(RamDomain ref, int arity) {
     // conduct the unpacking
     return getForArity(arity).unpack(ref);
 }
 
-RamDomain getNull() {
+RamDomain getNullRAMI() {
     return 0;
 }
 
-bool isNull(RamDomain ref) {
+bool isNullRAMI(RamDomain ref) {
     return ref == 0;
 }
 

@@ -255,7 +255,7 @@ RamDomain RAMI::evalExpr(const RamExpression& expr, const RAMIContext& ctxt) {
             for (size_t i = 0; i < arity; ++i) {
                 data[i] = visit(values[i]);
             }
-            return pack(data, arity);
+            return packRAMI(data, arity);
         }
 
         // -- subroutine argument
@@ -491,6 +491,26 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
             return true;
         }
 
+        bool visitParallelScan(const RamParallelScan& pscan) override {
+            // get the targeted relation
+            const RAMIRelation& rel = interpreter.getRelation(pscan.getRelation());
+
+            auto pstream = rel.pscan(500);
+            PARALLEL_START;
+            RAMIContext ctxt;
+            OperationEvaluator newOpEval(interpreter, ctxt, profiling_enabled);
+            pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                for (const TupleRef& cur : *it) {
+                    ctxt[pscan.getTupleId()] = cur.getBase();
+                    if (!newOpEval.visitTupleOperation(pscan)) {
+                        break;
+                    }
+                }
+            }
+            PARALLEL_END;
+            return true;
+        }
+
         bool visitIndexScan(const RamIndexScan& scan) override {
             // get the targeted relation
             const RAMIRelation& rel = interpreter.getRelation(scan.getRelation());
@@ -514,13 +534,49 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
 
             // conduct range query
             for (auto data : rel.range(indexPos, TupleRef(low, arity), TupleRef(hig, arity))) {
-                //            for (auto ip = range.first; ip != range.second; ++ip) {
-                //                const RamDomain* data = *(ip);
                 ctxt[scan.getTupleId()] = &data[0];
                 if (!visitTupleOperation(scan)) {
                     break;
                 }
             }
+            return true;
+        }
+
+        bool visitParallelIndexScan(const RamParallelIndexScan& piscan) override {
+            // get the targeted relation
+            const RAMIRelation& rel = interpreter.getRelation(piscan.getRelation());
+
+            // create pattern tuple for range query
+            auto arity = rel.getArity();
+            RamDomain low[arity];
+            RamDomain hig[arity];
+            const auto& pattern = piscan.getRangePattern();
+            for (size_t i = 0; i < arity; i++) {
+                if (!isRamUndefValue(pattern[i])) {
+                    low[i] = interpreter.evalExpr(*pattern[i], ctxt);
+                    hig[i] = low[i];
+                } else {
+                    low[i] = MIN_RAM_DOMAIN;
+                    hig[i] = MAX_RAM_DOMAIN;
+                }
+            }
+
+            size_t indexPos = interpreter.getIndexPos(piscan);
+
+            auto pstream = rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), 500);
+            PARALLEL_START;
+            RAMIContext ctxt;
+            OperationEvaluator newOpEval(interpreter, ctxt, profiling_enabled);
+            pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                for (const TupleRef& cur : *it) {
+                    ctxt[piscan.getTupleId()] = cur.getBase();
+                    if (!newOpEval.visitTupleOperation(piscan)) {
+                        break;
+                    }
+                }
+            }
+            PARALLEL_END;
+
             return true;
         }
 
@@ -536,6 +592,27 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
                     break;
                 }
             }
+            return true;
+        }
+
+        bool visitParallelChoice(const RamParallelChoice& pchoice, size_t exitAddress) {
+            // get the targeted relation
+            const RAMIRelation& rel = interpreter.getRelation(pchoice.getRelation());
+
+            auto pstream = rel.pscan(500);
+            PARALLEL_START;
+            RAMIContext ctxt;
+            OperationEvaluator newOpEval(interpreter, ctxt, profiling_enabled);
+            pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                for (const TupleRef& cur : *it) {
+                    ctxt[pchoice.getTupleId()] = cur.getBase();
+                    if (interpreter.evalCond(pchoice.getCondition(), ctxt)) {
+                        newOpEval.visitTupleOperation(pchoice);
+                        break;
+                    }
+                }
+            }
+            PARALLEL_END;
             return true;
         }
 
@@ -561,7 +638,6 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
             size_t indexPos = interpreter.getIndexPos(choice);
 
             for (auto ip : rel.range(indexPos, TupleRef(low, arity), TupleRef(hig, arity))) {
-                // const RamDomain* data = *(ip);
                 const RamDomain* data = &ip[0];
                 ctxt[choice.getTupleId()] = data;
                 if (interpreter.evalCond(choice.getCondition(), ctxt)) {
@@ -572,18 +648,56 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
             return true;
         }
 
-        bool visitUnpackRecord(const RamUnpackRecord& lookup) override {
-            // get reference
+        bool visitParallelIndexChoice(const RamParallelIndexChoice& ichoice) override {
+            // get the targeted relation
+            const RAMIRelation& rel = interpreter.getRelation(ichoice.getRelation());
+
+            // create pattern tuple for range query
+            auto arity = rel.getArity();
+            RamDomain low[arity];
+            RamDomain hig[arity];
+            auto pattern = ichoice.getRangePattern();
+            for (size_t i = 0; i < arity; i++) {
+                if (!isRamUndefValue(pattern[i])) {
+                    low[i] = interpreter.evalExpr(*pattern[i], ctxt);
+                    hig[i] = low[i];
+                } else {
+                    low[i] = MIN_RAM_DOMAIN;
+                    hig[i] = MAX_RAM_DOMAIN;
+                }
+            }
+
+            size_t indexPos = interpreter.getIndexPos(ichoice);
+
+            auto pstream = rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), 500);
+            PARALLEL_START;
+            RAMIContext ctxt;
+            OperationEvaluator newOpEval(interpreter, ctxt, profiling_enabled);
+            pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                for (const TupleRef& cur : *it) {
+                    ctxt[ichoice.getTupleId()] = cur.getBase();
+                    if (interpreter.evalCond(ichoice.getCondition(), ctxt)) {
+                        newOpEval.visitTupleOperation(ichoice);
+                        break;
+                    }
+                }
+            }
+            PARALLEL_END;
+
+            return true;
+        }
+
+        bool visitUnpackRecord(const RamUnpackRecord& lookup) override {  // get reference
             RamDomain ref = interpreter.evalExpr(lookup.getExpression(), ctxt);
 
             // check for null
-            if (isNull(ref)) {
+            if (isNullRAMI(ref)) {
                 return true;
             }
 
             // update environment variable
             auto arity = lookup.getArity();
-            const RamDomain* tuple = unpack(ref, arity);
+            const RamDomain* tuple = unpackRAMI(ref, arity);
 
             // save reference to temporary value
             ctxt[lookup.getTupleId()] = tuple;
@@ -821,7 +935,7 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
     ctxt.setReturnErrors(args.getReturnErrors());
     ctxt.setArguments(args.getArguments());
     OperationEvaluator(*this, ctxt, profiling_enabled).visit(op);
-}
+}  // namespace souffle
 
 /** Evaluate RAM statement */
 void RAMI::evalStmt(const RamStatement& stmt, const RAMIContext& args) {

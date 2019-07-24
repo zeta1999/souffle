@@ -124,22 +124,25 @@ protected:
     /** Get the index position in a relation based on the SearchSignature */
     template <class RamNode>
     size_t getIndexPos(const RamNode& node) {
-        auto ret = indexPositionCache.find((RamNode*)&node);
         size_t indexPos = 0;
-        if (ret != indexPositionCache.end()) {
-            indexPos = ret->second;
-        } else {
-            /** If index position is not in the cache yet, consult RamIndexAnalysis
-             * and store the position in the cache for fast lookup next time.
-             */
-            const MinIndexSelection& orderSet = isa->getIndexes(node.getRelation());
-            SearchSignature signature = isa->getSearchSignature(&node);
-            // A zero signature is equivalent as a full order signature.
-            if (signature == 0) {
-                signature = (1 << node.getRelation().getArity()) - 1;
+#pragma omp critical(find_index)
+        {
+            auto ret = indexPositionCache.find((RamNode*)&node);
+            if (ret != indexPositionCache.end()) {
+                indexPos = ret->second;
+            } else {
+                /** If index position is not in the cache yet, consult RamIndexAnalysis
+                 * and store the position in the cache for fast lookup next time.
+                 */
+                const MinIndexSelection& orderSet = isa->getIndexes(node.getRelation());
+                SearchSignature signature = isa->getSearchSignature(&node);
+                // A zero signature is equivalent as a full order signature.
+                if (signature == 0) {
+                    signature = (1 << node.getRelation().getArity()) - 1;
+                }
+                indexPos = orderSet.getLexOrderNum(signature);
+                indexPositionCache[(RamNode*)&node] = indexPos;
             }
-            indexPos = orderSet.getLexOrderNum(signature);
-            indexPositionCache[(RamNode*)&node] = indexPos;
         }
         return indexPos;
     };
@@ -194,7 +197,7 @@ private:
     std::map<std::string, std::atomic<size_t>> reads;
 
     /** counter for $ operator */
-    int counter = 0;
+    std::atomic<RamDomain> counter{0};
 
     /** iteration number (in a fix-point calculation) */
     size_t iteration = 0;

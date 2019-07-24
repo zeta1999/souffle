@@ -258,6 +258,7 @@ public:
                     return true;
                 }
             }
+            return false;
         } else if (auto indexOp = dynamic_cast<const RamIndexOperation*>(node)) {
             for (auto& v : indexOp->getRangePattern()) {
                 if (!isRamUndefValue(v)) {
@@ -1576,7 +1577,7 @@ protected:
         // into terms that require a context and terms that
         // do not require a view
         const RamOperation* next = &query.getOperation();
-        std::vector<const RamNode*> freeOfView;
+        std::vector<const RamCondition*> freeOfView;
         if (const auto* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
             next = &filter->getOperation();
             // Check terms of outer filter operation whether they can be pushed before

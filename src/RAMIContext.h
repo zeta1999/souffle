@@ -16,7 +16,11 @@
 
 #pragma once
 
+#include "LVMIndex.h"
+#include "RamNode.h"
 #include "RamTypes.h"
+#include "RamIndexAnalysis.h"
+#include <unordered_map>
 #include <cassert>
 #include <memory>
 #include <vector>
@@ -32,6 +36,9 @@ class RAMIContext {
     std::vector<bool>* returnErrors = nullptr;
     const std::vector<RamDomain>* args = nullptr;
     std::vector<std::unique_ptr<RamDomain[]>> allocatedDataContainer;
+    std::vector<std::unique_ptr<IndexView>> views;
+    std::unordered_map<const RamNode*, size_t> viewTable;
+    std::unordered_map<const RamNode*, size_t> indexPositionCache;
 
 public:
     RAMIContext(size_t size = 0) : data(size) {}
@@ -92,6 +99,40 @@ public:
         assert(args != nullptr && i < args->size() && "argument out of range");
         return (*args)[i];
     }
+
+    size_t addNewView(std::unique_ptr<IndexView> view, const RamNode* node) {
+        views.push_back(std::move(view));
+        viewTable[node] = views.size() - 1;
+        return views.size() - 1;
+    }
+
+    const std::unique_ptr<IndexView>& getView(const RamNode* node) {
+        assert(viewTable.find(node) != viewTable.end());
+        return views[viewTable[node]];
+    }
+
+    /** Get the index position in a relation based on the SearchSignature */
+    template <class RamNode>
+    size_t getIndexPos(const RamNode& node, RamIndexAnalysis* isa) {
+        size_t indexPos = 0;
+            auto ret = indexPositionCache.find((RamNode*)&node);
+            if (ret != indexPositionCache.end()) {
+                indexPos = ret->second;
+            } else {
+                /** If index position is not in the cache yet, consult RamIndexAnalysis
+                 * and store the position in the cache for fast lookup next time.
+                 */
+                const MinIndexSelection& orderSet = isa->getIndexes(node.getRelation());
+                SearchSignature signature = isa->getSearchSignature(&node);
+                // A zero signature is equivalent as a full order signature.
+                if (signature == 0) {
+                    signature = (1 << node.getRelation().getArity()) - 1;
+                }
+                indexPos = orderSet.getLexOrderNum(signature);
+                indexPositionCache[&node] = indexPos;
+            }
+        return indexPos;
+    };
 };
 
 }  // end of namespace souffle

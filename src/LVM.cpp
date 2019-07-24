@@ -1079,9 +1079,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
                         // Create local context for child process
-                        LVMContext ctxt;
-                        ctxt.lookUpStream(dest) = std::move(*it);
-                        execute(codeStream, ctxt, ip + 6 + numOfTypeMasks);
+                        LVMContext newCtxt;
+                        newCtxt.setReturnValues(ctxt.getReturnValues());
+                        newCtxt.setReturnErrors(ctxt.getReturnErrors());
+                        newCtxt.setArguments(ctxt.getArguments());
+                        newCtxt.lookUpStream(dest) = std::move(*it);
+                        execute(codeStream, newCtxt, ip + 6 + numOfTypeMasks);
                     } catch (std::exception& e) {
                         SignalHandler::instance()->error(e.what());
                     }

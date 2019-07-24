@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AstVisitor.h"
+#include "LVMGenerator.h"
 #include "RAMIContext.h"
 #include "RAMIInterface.h"
 #include "RAMIRelation.h"
@@ -45,13 +46,145 @@ class RamExpression;
 class SymbolTable;
 
 /**
+ * This class contains functions for views (Hints) analysis and creation.
+ */
+class RAMIPreamble {
+public:
+    /**
+     * Add outer-most filter operation which require a view.
+     */
+    void addOuterFilterOperation(const RamCondition* node) {
+        outerOperations.push_back(node);
+    }
+
+    /**
+     * Add existence check in outer-most filter operation.
+     */
+    void addViewForOuterFilter(const RamNode* node) {
+        assert(dynamic_cast<const RamExistenceCheck*>(node) ||
+                dynamic_cast<const RamProvenanceExistenceCheck*>(node));
+        viewsForFilterOperation.push_back(node);
+    }
+
+    /**
+     * Add nested operation which require a view (Hints).
+     * This node cannot come from the outer-most filter operation.
+     */
+    void addViewForNestedOperation(const RamNode* op) {
+        assert(dynamic_cast<const RamIndexOperation*>(op) || dynamic_cast<const RamExistenceCheck*>(op) ||
+                dynamic_cast<const RamProvenanceExistenceCheck*>(op));
+        viewsForNestedOperation.push_back(op);
+    }
+
+    /**
+     * Add a list of nested operations which require a view.
+     */
+    void addNestedOperationList(const std::vector<const RamNode*>& nodes) {
+        for (auto& node : nodes) {
+            addViewForNestedOperation(node);
+        }
+    }
+
+    /**
+     * Return outer-most filter operations.
+     */
+    const std::vector<const RamCondition*>& getOuterFilterOperation() {
+        return outerOperations;
+    }
+
+    /**
+     * Return views for outer-most filter operations.
+     */
+    const std::vector<const RamNode*>& getViewsInOuterOperation() {
+        return viewsForFilterOperation;
+    }
+
+    /**
+     * Return nested operations
+     */
+    std::vector<const RamNode*> getViewsInNestedOperation() {
+        return viewsForNestedOperation;
+    }
+
+    /**
+     * Find all operations under the root node that require a view.
+     *
+     * In particular, find all index operation and existence check operation.
+     */
+    std::vector<const RamNode*> findAllViews(const RamNode& node) {
+        std::vector<const RamNode*> res;
+        visitDepthFirst(node, [&](const RamNode& node) {
+            if (requireView(&node) == true) {
+                res.push_back(&node);
+            };
+        });
+        return res;
+    }
+
+    /**
+     * Return true if the given operation requires a view.
+     */
+    bool requireView(const RamNode* node) {
+        if (dynamic_cast<const RamExistenceCheck*>(node)) {
+            return true;
+        } else if (dynamic_cast<const RamProvenanceExistenceCheck*>(node)) {
+            return true;
+        } else if (dynamic_cast<const RamIndexOperation*>(node)) {
+            return true;
+        }
+        return false;
+    }
+
+    void reset() {
+        outerOperations.clear();
+        viewsForFilterOperation.clear();
+        viewsForNestedOperation.clear();
+    }
+
+    /**
+     * Same as toConjunctionList defined in RamOperation. But does not clone new node,
+     * only holds a list of raw pointers to the original node.
+     */
+    inline std::vector<const RamCondition*> toConjunctionList(const RamCondition* condition) {
+        std::vector<const RamCondition*> list;
+        std::stack<const RamCondition*> stack;
+        if (condition != nullptr) {
+            stack.push(condition);
+            while (!stack.empty()) {
+                condition = stack.top();
+                stack.pop();
+                if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
+                    stack.push(&ramConj->getLHS());
+                    stack.push(&ramConj->getRHS());
+                } else {
+                    list.emplace_back(condition);
+                }
+            }
+        }
+        return list;
+    }
+
+private:
+    std::vector<const RamCondition*> outerOperations;
+    std::vector<const RamNode*> viewsForFilterOperation;
+    std::vector<const RamNode*> viewsForNestedOperation;
+};
+
+/**
  * Interpreter executing a RAM translation unit
  */
 
 class RAMI : public RAMIInterface {
 public:
     RAMI(RamTranslationUnit& tUnit)
-            : RAMIInterface(tUnit), profiling_enabled(Global::config().has("profile")) {}
+            : RAMIInterface(tUnit), profiling_enabled(Global::config().has("profile")) {
+        threadsNum = std::stoi(Global::config().get("jobs"));
+#ifdef _OPENMP
+        if (threadsNum > 1) {
+            omp_set_num_threads(threadsNum);
+        }
+#endif
+    }
     ~RAMI() {
         for (auto& x : environment) {
             delete x.second;
@@ -70,13 +203,13 @@ protected:
     RamDomain evalExpr(const RamExpression& value, const RAMIContext& ctxt = RAMIContext());
 
     /** Evaluate operation */
-    void evalOp(const RamOperation& op, const RAMIContext& ctxt = RAMIContext());
+    void evalOp(const RamOperation& op, RAMIContext& ctxt);
 
     /** Evaluate conditions */
-    bool evalCond(const RamCondition& cond, const RAMIContext& ctxt = RAMIContext());
+    bool evalCond(const RamCondition& cond, RAMIContext&);
 
     /** Evaluate statement */
-    void evalStmt(const RamStatement& stmt, const RAMIContext& ctxt = RAMIContext());
+    void evalStmt(const RamStatement& stmt, RAMIContext&);
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
@@ -121,32 +254,6 @@ protected:
         environment[id.getName()] = new RelationHandle(std::move(res));
     }
 
-    /** Get the index position in a relation based on the SearchSignature */
-    template <class RamNode>
-    size_t getIndexPos(const RamNode& node) {
-        size_t indexPos = 0;
-#pragma omp critical(find_index)
-        {
-            auto ret = indexPositionCache.find((RamNode*)&node);
-            if (ret != indexPositionCache.end()) {
-                indexPos = ret->second;
-            } else {
-                /** If index position is not in the cache yet, consult RamIndexAnalysis
-                 * and store the position in the cache for fast lookup next time.
-                 */
-                const MinIndexSelection& orderSet = isa->getIndexes(node.getRelation());
-                SearchSignature signature = isa->getSearchSignature(&node);
-                // A zero signature is equivalent as a full order signature.
-                if (signature == 0) {
-                    signature = (1 << node.getRelation().getArity()) - 1;
-                }
-                indexPos = orderSet.getLexOrderNum(signature);
-                indexPositionCache[(RamNode*)&node] = indexPos;
-            }
-        }
-        return indexPos;
-    };
-
 private:
     /** Get relation */
     RelationHandle& getRelationHandle(const std::string& name) {
@@ -154,6 +261,34 @@ private:
         auto pos = environment.find(name);
         assert(pos != environment.end());
         return *pos->second;
+    }
+
+    /** Copy subroutine arguments and return a new context for parallel execution */
+    void copyContextSubroutineArgs(const RAMIContext& source, RAMIContext& target) const {
+        target.setReturnValues(source.getReturnValues());
+        target.setReturnErrors(source.getReturnErrors());
+        target.setArguments(source.getArguments());
+    }
+
+    /** Create views */
+    void createViews(const std::vector<const RamNode*>& nodes, RAMIContext& ctxt) {
+        for (auto node : nodes) {
+            if (auto exists = dynamic_cast<const RamExistenceCheck*>(node)) {
+                auto& rel = getRelation(exists->getRelation());
+                auto indexPos = ctxt.getIndexPos(*exists, isa);
+                ctxt.addNewView(rel.getView(indexPos), exists);
+            } else if (auto provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(node)) {
+                auto& rel = getRelation(provExists->getRelation());
+                auto indexPos = ctxt.getIndexPos(*provExists, isa);
+                ctxt.addNewView(rel.getView(indexPos), provExists);
+            } else if (auto index = dynamic_cast<const RamIndexOperation*>(node)) {
+                auto& rel = getRelation(index->getRelation());
+                auto indexPos = ctxt.getIndexPos(*index, isa);
+                ctxt.addNewView(rel.getView(indexPos), index);
+            } else {
+                assert(false && "Operation does not need a view!");
+            }
+        }
     }
 
 public:
@@ -202,20 +337,17 @@ private:
     /** iteration number (in a fix-point calculation) */
     size_t iteration = 0;
 
+    /** SymbolTable for views access */
+    size_t viewId = 0;
+
     /** Relation Environment */
     relation_map environment;
 
     bool profiling_enabled;
 
-    /** Index position Cache, mapping from operation to index id*/
-    std::unordered_map<RamNode*, size_t> indexPositionCache;
+    RAMIPreamble preamble;
 
-    /** Copy subroutine arguments and return a new context for parallel execution */
-    void copyContextSubroutineArgs(const RAMIContext& source, RAMIContext& target) const {
-        target.setReturnValues(source.getReturnValues());
-        target.setReturnErrors(source.getReturnErrors());
-        target.setArguments(source.getArguments());
-    }
+    size_t threadsNum;
 };
 
 }  // end of namespace souffle

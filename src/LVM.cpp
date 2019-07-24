@@ -578,9 +578,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             }
             case LVM_ExistenceCheck: {
-                // auto relPtr = getRelation(code[ip + 1]);
-                // auto arity = relPtr->getArity();
-                // auto indexPos = code[ip + 2];
                 auto& view = ctxt.lookUpView(code[ip + 1]);
                 auto arity = view->getArity();
                 RamDomain low[arity];
@@ -611,10 +608,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             }
             case LVM_ExistenceCheckOneArg: {
-                // auto relPtr = getRelation(code[ip + 1]);
-                // auto arity = relPtr->getArity();
-                // auto indexPos = code[ip + 2];
-                // auto typeMask = code[ip + 3];
                 auto& view = ctxt.lookUpView(code[ip + 1]);
                 auto arity = view->getArity();
                 auto typeMask = code[ip + 2];
@@ -1005,9 +998,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
                         // Create local context for child process
-                        LVMContext ctxt;
-                        ctxt.lookUpStream(dest) = std::move(*it);
-                        execute(codeStream, ctxt, ip + 4);
+                        LVMContext newCtxt;
+                        newCtxt.setReturnValues(ctxt.getReturnValues());
+                        newCtxt.setReturnErrors(ctxt.getReturnErrors());
+                        newCtxt.setArguments(ctxt.getArguments());
+                        newCtxt.lookUpStream(dest) = std::move(*it);
+                        execute(codeStream, newCtxt, ip + 4);
                     } catch (std::exception& e) {
                         SignalHandler::instance()->error(e.what());
                     }
@@ -1018,9 +1014,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             };
             case LVM_ITER_InitRangeIndex: {
                 RamDomain dest = code[ip + 1];
-                // auto relPtr = getRelation(code[ip + 2]);
-                // auto arity = relPtr->getArity();
-                // RamDomain indexPos = code[ip + 3];
                 auto& view = ctxt.lookUpView(code[ip + 2]);
                 auto arity = view->getArity();
 
@@ -1045,9 +1038,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                     }
                 }
-                // get iterator range
-                // ctxt.lookUpStream(dest) =
-                //        relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
+
                 ctxt.lookUpStream(dest) = view->range(TupleRef(low, arity), TupleRef(high, arity));
                 ip += (3 + numOfTypeMasks);
                 break;
@@ -1101,10 +1092,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             }
             case LVM_ITER_InitRangeIndexOneArg: {
                 RamDomain dest = code[ip + 1];
-                // auto relPtr = getRelation(code[ip + 2]);
-                // auto arity = relPtr->getArity();
-                // auto indexPos = code[ip + 3];
-                // auto typeMask = code[ip + 4];
                 auto& view = ctxt.lookUpView(code[ip + 2]);
                 auto arity = view->getArity();
                 auto typeMask = code[ip + 3];
@@ -1122,9 +1109,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         high[i] = MAX_RAM_DOMAIN;
                     }
                 }
-                // get iterator range
-                // ctxt.lookUpStream(dest) =
-                //        relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
                 ctxt.lookUpStream(dest) = view->range(TupleRef(low, arity), TupleRef(high, arity));
                 ip += 4;
                 break;
@@ -1158,9 +1142,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
                         // Create local context for child process
-                        LVMContext ctxt;
-                        ctxt.lookUpStream(dest) = std::move(*it);
-                        execute(codeStream, ctxt, ip + 6);
+                        LVMContext newCtxt;
+                        newCtxt.setReturnValues(ctxt.getReturnValues());
+                        newCtxt.setReturnErrors(ctxt.getReturnErrors());
+                        newCtxt.setArguments(ctxt.getArguments());
+                        newCtxt.lookUpStream(dest) = std::move(*it);
+                        execute(codeStream, newCtxt, ip + 6);
                     } catch (std::exception& e) {
                         SignalHandler::instance()->error(e.what());
                     }

@@ -497,11 +497,12 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
 
             auto pstream = rel.pscan(500);
             PARALLEL_START;
-            RAMIContext ctxt;
-            OperationEvaluator newOpEval(interpreter, ctxt, profiling_enabled);
+            RAMIContext newCtxt;
+            interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
+            OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                 for (const TupleRef& cur : *it) {
-                    ctxt[pscan.getTupleId()] = cur.getBase();
+                    newCtxt[pscan.getTupleId()] = cur.getBase();
                     if (!newOpEval.visitTupleOperation(pscan)) {
                         break;
                     }
@@ -565,11 +566,12 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
 
             auto pstream = rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), 500);
             PARALLEL_START;
-            RAMIContext ctxt;
-            OperationEvaluator newOpEval(interpreter, ctxt, profiling_enabled);
+            RAMIContext newCtxt;
+            interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
+            OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                 for (const TupleRef& cur : *it) {
-                    ctxt[piscan.getTupleId()] = cur.getBase();
+                    newCtxt[piscan.getTupleId()] = cur.getBase();
                     if (!newOpEval.visitTupleOperation(piscan)) {
                         break;
                     }
@@ -601,11 +603,12 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
 
             auto pstream = rel.pscan(500);
             PARALLEL_START;
-            RAMIContext ctxt;
-            OperationEvaluator newOpEval(interpreter, ctxt, profiling_enabled);
+            RAMIContext newCtxt;
+            interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
+            OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                 for (const TupleRef& cur : *it) {
-                    ctxt[pchoice.getTupleId()] = cur.getBase();
+                    newCtxt[pchoice.getTupleId()] = cur.getBase();
                     if (interpreter.evalCond(pchoice.getCondition(), ctxt)) {
                         newOpEval.visitTupleOperation(pchoice);
                         break;
@@ -671,11 +674,12 @@ void RAMI::evalOp(const RamOperation& op, const RAMIContext& args) {
 
             auto pstream = rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), 500);
             PARALLEL_START;
-            RAMIContext ctxt;
-            OperationEvaluator newOpEval(interpreter, ctxt, profiling_enabled);
+            RAMIContext newCtxt;
+            interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
+            OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                 for (const TupleRef& cur : *it) {
-                    ctxt[ichoice.getTupleId()] = cur.getBase();
+                    newCtxt[ichoice.getTupleId()] = cur.getBase();
                     if (interpreter.evalCond(ichoice.getCondition(), ctxt)) {
                         newOpEval.visitTupleOperation(ichoice);
                         break;

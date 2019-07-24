@@ -209,6 +209,13 @@ private:
 
     /** Index position Cache, mapping from operation to index id*/
     std::unordered_map<RamNode*, size_t> indexPositionCache;
+
+    /** Copy subroutine arguments and return a new context for parallel execution */
+    void copyContextSubroutineArgs(const RAMIContext& source, RAMIContext& target) const {
+        target.setReturnValues(source.getReturnValues());
+        target.setReturnErrors(source.getReturnErrors());
+        target.setArguments(source.getArguments());
+    }
 };
 
 }  // end of namespace souffle

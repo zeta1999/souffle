@@ -600,7 +600,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                     }
                 }
-                // auto range = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
                 auto range = view->range(TupleRef(low, arity), TupleRef(high, arity));
                 stack.push(range.begin() != range.end());
 
@@ -735,7 +734,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 for (size_t i = 0; i < size; ++i) {
                     startAddresses[i] = code[ip + 3 + i];
                 }
-#pragma omp parallel for
                 for (size_t i = 0; i < size; ++i) {
                     this->execute(codeStream, ctxt, startAddresses[i]);
                 }
@@ -994,13 +992,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 // Obtain partitioned streams
                 auto pstream = relPtr->pscan(numOfThreads);
                 PARALLEL_START;
+                LVMContext newCtxt;
+                newCtxt.setReturnValues(ctxt.getReturnValues());
+                newCtxt.setReturnErrors(ctxt.getReturnErrors());
+                newCtxt.setArguments(ctxt.getArguments());
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
-                        // Create local context for child process
-                        LVMContext newCtxt;
-                        newCtxt.setReturnValues(ctxt.getReturnValues());
-                        newCtxt.setReturnErrors(ctxt.getReturnErrors());
-                        newCtxt.setArguments(ctxt.getArguments());
                         newCtxt.lookUpStream(dest) = std::move(*it);
                         execute(codeStream, newCtxt, ip + 4);
                     } catch (std::exception& e) {
@@ -1075,13 +1072,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 auto pstream =
                         relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
+                LVMContext newCtxt;
+                newCtxt.setReturnValues(ctxt.getReturnValues());
+                newCtxt.setReturnErrors(ctxt.getReturnErrors());
+                newCtxt.setArguments(ctxt.getArguments());
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
-                        // Create local context for child process
-                        LVMContext newCtxt;
-                        newCtxt.setReturnValues(ctxt.getReturnValues());
-                        newCtxt.setReturnErrors(ctxt.getReturnErrors());
-                        newCtxt.setArguments(ctxt.getArguments());
                         newCtxt.lookUpStream(dest) = std::move(*it);
                         execute(codeStream, newCtxt, ip + 6 + numOfTypeMasks);
                     } catch (std::exception& e) {
@@ -1141,13 +1137,12 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 auto pstream =
                         relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
+                LVMContext newCtxt;
+                newCtxt.setReturnValues(ctxt.getReturnValues());
+                newCtxt.setReturnErrors(ctxt.getReturnErrors());
+                newCtxt.setArguments(ctxt.getArguments());
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
-                        // Create local context for child process
-                        LVMContext newCtxt;
-                        newCtxt.setReturnValues(ctxt.getReturnValues());
-                        newCtxt.setReturnErrors(ctxt.getReturnErrors());
-                        newCtxt.setArguments(ctxt.getArguments());
                         newCtxt.lookUpStream(dest) = std::move(*it);
                         execute(codeStream, newCtxt, ip + 6);
                     } catch (std::exception& e) {

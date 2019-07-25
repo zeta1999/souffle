@@ -161,7 +161,6 @@ class LVMStaticEnvironment;
  */
 class LVMCode : protected std::vector<RamDomain> {
 public:
-
     using std::vector<RamDomain>::push_back;
     using std::vector<RamDomain>::clear;
     using std::vector<RamDomain>::size;

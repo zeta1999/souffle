@@ -38,7 +38,7 @@ namespace souffle {
  */
 class RamCondition : public RamNode {
 public:
-	RamCondition(RamNodeKind kind) : RamNode(kind) {}
+    RamCondition(RamNodeKind kind) : RamNode(kind) {}
     RamCondition* clone() const override = 0;
 };
 
@@ -50,7 +50,7 @@ public:
  */
 class RamTrue : public RamCondition {
 public:
-    RamTrue() : RamCondition(RK_True) {};
+    RamTrue() : RamCondition(RK_True){};
 
     void print(std::ostream& os) const override {
         os << "true";
@@ -73,7 +73,7 @@ inline bool isRamTrue(const RamCondition* cond) {
  */
 class RamFalse : public RamCondition {
 public:
-    RamFalse() : RamCondition(RK_False) {};
+    RamFalse() : RamCondition(RK_False){};
 
     void print(std::ostream& os) const override {
         os << "false";
@@ -162,7 +162,8 @@ protected:
  */
 class RamNegation : public RamCondition {
 public:
-    RamNegation(std::unique_ptr<RamCondition> operand) : RamCondition(RK_Negation), operand(std::move(operand)) {}
+    RamNegation(std::unique_ptr<RamCondition> operand)
+            : RamCondition(RK_Negation), operand(std::move(operand)) {}
 
     /** @brief Get operand of negation */
     const RamCondition& getOperand() const {
@@ -280,10 +281,10 @@ protected:
  */
 class RamAbstractExistenceCheck : public RamCondition {
 public:
-    RamAbstractExistenceCheck(
-    		RamNodeKind kind,
-            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamCondition(kind), relationRef(std::move(relRef)), values(std::move(vals)), value_ptr(toPtrVector(values)) {}
+    RamAbstractExistenceCheck(RamNodeKind kind, std::unique_ptr<RamRelationReference> relRef,
+            std::vector<std::unique_ptr<RamExpression>> vals)
+            : RamCondition(kind), relationRef(std::move(relRef)), values(std::move(vals)),
+              value_ptr(toPtrVector(values)) {}
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {
@@ -416,7 +417,8 @@ public:
  */
 class RamEmptinessCheck : public RamCondition {
 public:
-    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef) : RamCondition(RK_EmptinessCheck), relationRef(std::move(relRef)) {}
+    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef)
+            : RamCondition(RK_EmptinessCheck), relationRef(std::move(relRef)) {}
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {

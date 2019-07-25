@@ -625,7 +625,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         high[i] = MAX_RAM_DOMAIN;
                     }
                 }
-                // auto range = relPtr->range(indexPos, TupleRef(low, arity), TupleRef(high, arity));
                 auto range = view->range(TupleRef(low, arity), TupleRef(high, arity));
                 stack.push(range.begin() != range.end());
 

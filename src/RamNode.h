@@ -26,70 +26,70 @@
 namespace souffle {
 
 enum RamNodeKind {
-	// Relation
-	RK_Relation,
-	RK_RelationReference,
+    // Relation
+    RK_Relation,
+    RK_RelationReference,
 
-	// Expressions
-	RK_TupleElement,
-	RK_Number,
-	RK_IntrinsicOperator,
-	RK_UserDefinedOperator,
-	RK_AutoIncrement,
-	RK_PackRecord,
-	RK_SubroutineArgument,
-	RK_UndefValue,
+    // Expressions
+    RK_TupleElement,
+    RK_Number,
+    RK_IntrinsicOperator,
+    RK_UserDefinedOperator,
+    RK_AutoIncrement,
+    RK_PackRecord,
+    RK_SubroutineArgument,
+    RK_UndefValue,
 
-	// Conditions
-	RK_True,
-	RK_False,
-	RK_EmptinessCheck,
-	RK_ExistenceCheck,
-	RK_ProvenanceExistenceCheck,
-	RK_Conjunction,
-	RK_Negation,
-	RK_Constraint,
+    // Conditions
+    RK_True,
+    RK_False,
+    RK_EmptinessCheck,
+    RK_ExistenceCheck,
+    RK_ProvenanceExistenceCheck,
+    RK_Conjunction,
+    RK_Negation,
+    RK_Constraint,
 
-	// Operations
-	RK_Filter,
-	RK_Break,
-	RK_Project,
-	RK_SubroutineReturnValue,
-	RK_UnpackRecord,
-	RK_ParallelScan,
-	RK_Scan,
-	RK_ParallelIndexScan,
-	RK_IndexScan,
-	RK_ParallelChoice,
-	RK_Choice,
-	RK_ParallelIndexChoice,
-	RK_IndexChoice,
-	RK_Aggregate,
-	RK_IndexAggregate,
+    // Operations
+    RK_Filter,
+    RK_Break,
+    RK_Project,
+    RK_SubroutineReturnValue,
+    RK_UnpackRecord,
+    RK_ParallelScan,
+    RK_Scan,
+    RK_ParallelIndexScan,
+    RK_IndexScan,
+    RK_ParallelChoice,
+    RK_Choice,
+    RK_ParallelIndexChoice,
+    RK_IndexChoice,
+    RK_Aggregate,
+    RK_IndexAggregate,
 
-	// Statements
-	RK_Create,
-	RK_Fact,
-	RK_Load,
-	RK_Store,
-	RK_Query,
-	RK_Clear,
-	RK_Drop,
-	RK_LogSize,
+    // Statements
+    RK_Create,
+    RK_Fact,
+    RK_Load,
+    RK_Store,
+    RK_Query,
+    RK_Clear,
+    RK_Drop,
+    RK_LogSize,
 
-	RK_Merge,
-	RK_Swap,
+    RK_Merge,
+    RK_Swap,
 
-	// Control-flow
-	RK_Program,
-	RK_Sequence,
-	RK_Loop,
-	RK_Parallel,
-	RK_Exit,
-	RK_LogTimer,
-	RK_LogRelationTimer,
-	RK_DebugInfo,
-	RK_Stratum
+    // Control-flow
+    RK_Program,
+    RK_Sequence,
+    RK_Loop,
+    RK_Parallel,
+    RK_Exit,
+    RK_LogTimer,
+    RK_LogRelationTimer,
+    RK_DebugInfo,
+    RK_Stratum
 };
 
 class RamNodeMapper;
@@ -100,7 +100,7 @@ class RamNodeMapper;
  */
 class RamNode {
 public:
-	const RamNodeKind kind;
+    const RamNodeKind kind;
     RamNode(RamNodeKind kind) : kind(kind) {}
 
     /*

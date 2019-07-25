@@ -1679,6 +1679,16 @@ private:
     /** Relation Encoder */
     LVMStaticEnvironment& staticEnv;
 
+    /** Preamble for view creation and filter operation */
+    LVMPreamble preamble;
+
+    /** Saved environment variables for scoping */
+    size_t savedIterId = 0;
+    size_t savedViewId = 0;
+
+    /** Operation to view id mapping */
+    std::unordered_map<const RamNode*, size_t> operationToIndexView;
+
     /** Clean up all the content except for addressMap
      *  This is for the double traverse when transforming from RAM -> LVM Bytecode.
      * */
@@ -1710,11 +1720,6 @@ private:
         return indexViewId++;
     }
 
-    /** Store arguments used to create views. */
-    std::unordered_map<const RamNode*, std::set<std::array<size_t, 3>>> operationViewsTable;
-
-    std::unordered_map<const RamNode*, size_t> operationToIndexView;
-
     /* Return the value of the addressLabel.
      * Return 0 if label doesn't exits.
      */
@@ -1732,12 +1737,6 @@ private:
         }
         addressMap[addressLabel] = value;
     }
-
-    LVMPreamble preamble;
-
-    /** Temporary saved variables for scoping */
-    size_t savedIterId = 0;
-    size_t savedViewId = 0;
 
     /** Enter new parallel block, save current state */
     void enterParallelBlock() {
@@ -1833,6 +1832,8 @@ private:
         }
     }
 
+    /** For each RamNode in the list, create view for the operation and
+     * create corresponding symbol entry in the environment */
     void emitViewsCreationInst(const std::vector<const RamNode*>& nodes) {
         code.push_back(LVM_CreateViews);
         code.push_back(nodes.size());

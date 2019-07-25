@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include "LVMRelation.h"
 #include "ParallelUtils.h"
 #include "RAMIIndex.h"
 #include "RamIndexAnalysis.h"
 #include "RamTypes.h"
-#include "LVMRelation.h"
 
 #include <deque>
 #include <map>

@@ -586,7 +586,8 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
             }
 
             size_t indexPos = ctxt.getIndexPos(piscan, interpreter.isa);
-            auto pstream = rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
+            auto pstream =
+                    rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
             PARALLEL_START;
             RAMIContext newCtxt;
             interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
@@ -714,9 +715,9 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
                 }
             }
 
-
             size_t indexPos = ctxt.getIndexPos(ichoice, interpreter.isa);
-            auto pstream = rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
+            auto pstream =
+                    rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
             PARALLEL_START;
             RAMIContext newCtxt;
             interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
@@ -1297,7 +1298,7 @@ void RAMI::executeMain() {
         size_t ruleCount = 0;
         visitDepthFirst(main, [&](const RamQuery& rule) { ++ruleCount; });
         ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
-        
+
         RAMIContext ctxt;
         evalStmt(main, ctxt);
         ProfileEventSingleton::instance().stopTimer();

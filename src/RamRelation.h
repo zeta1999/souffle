@@ -32,7 +32,6 @@
 
 namespace souffle {
 
-
 /**
  * @class RamRelation
  * @brief A RAM Relation in the RAM intermediate representation.
@@ -60,7 +59,8 @@ public:
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers,
             const RelationRepresentation representation)
-            : RamNode(RK_Relation), name(std::move(name)), arity(arity), attributeNames(std::move(attributeNames)),
+            : RamNode(RK_Relation), name(std::move(name)), arity(arity),
+              attributeNames(std::move(attributeNames)),
               attributeTypeQualifiers(std::move(attributeTypeQualifiers)), representation(representation) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());

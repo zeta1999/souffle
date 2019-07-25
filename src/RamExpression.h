@@ -38,7 +38,7 @@ namespace souffle {
  */
 class RamExpression : public RamNode {
 public:
-	RamExpression(RamNodeKind kind) : RamNode(kind) {}
+    RamExpression(RamNodeKind kind) : RamNode(kind) {}
     RamExpression* clone() const override = 0;
 };
 
@@ -48,7 +48,8 @@ public:
  */
 class RamAbstractOperator : public RamExpression {
 public:
-    RamAbstractOperator(RamNodeKind kind, std::vector<std::unique_ptr<RamExpression>> args) : RamExpression(kind), arguments(std::move(args)) {}
+    RamAbstractOperator(RamNodeKind kind, std::vector<std::unique_ptr<RamExpression>> args)
+            : RamExpression(kind), arguments(std::move(args)) {}
 
     /** @brief Get argument values */
     std::vector<RamExpression*> getArguments() const {
@@ -98,7 +99,8 @@ protected:
 class RamIntrinsicOperator : public RamAbstractOperator {
 public:
     template <typename... Args>
-    RamIntrinsicOperator(FunctorOp op, Args... args) : RamAbstractOperator(RK_IntrinsicOperator), operation(op) {
+    RamIntrinsicOperator(FunctorOp op, Args... args)
+            : RamAbstractOperator(RK_IntrinsicOperator), operation(op) {
         std::unique_ptr<RamExpression> tmp[] = {std::move(args)...};
         for (auto& cur : tmp) {
             arguments.push_back(std::move(cur));
@@ -152,7 +154,8 @@ protected:
 class RamUserDefinedOperator : public RamAbstractOperator {
 public:
     RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamExpression>> args)
-            : RamAbstractOperator(RK_UserDefinedOperator, std::move(args)), name(std::move(n)), type(std::move(t)) {}
+            : RamAbstractOperator(RK_UserDefinedOperator, std::move(args)), name(std::move(n)),
+              type(std::move(t)) {}
 
     void print(std::ostream& os) const override {
         os << "@" << name << "_" << type << "(";
@@ -286,7 +289,7 @@ protected:
  */
 class RamAutoIncrement : public RamExpression {
 public:
-    RamAutoIncrement() : RamExpression(RK_AutoIncrement) {};
+    RamAutoIncrement() : RamExpression(RK_AutoIncrement){};
 
     void print(std::ostream& os) const override {
         os << "autoinc()";
@@ -305,7 +308,7 @@ public:
  */
 class RamUndefValue : public RamExpression {
 public:
-    RamUndefValue() : RamExpression(RK_UndefValue) {};
+    RamUndefValue() : RamExpression(RK_UndefValue){};
 
     void print(std::ostream& os) const override {
         os << "⊥";
@@ -318,7 +321,7 @@ public:
 
 /** @brief Determines if an expression is undefined */
 inline bool isRamUndefValue(const RamExpression* expr) {
-	return expr->kind == RK_UndefValue;
+    return expr->kind == RK_UndefValue;
 }
 
 /**
@@ -327,7 +330,8 @@ inline bool isRamUndefValue(const RamExpression* expr) {
  */
 class RamPackRecord : public RamExpression {
 public:
-    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args) : RamExpression(RK_PackRecord), arguments(std::move(args)) {}
+    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args)
+            : RamExpression(RK_PackRecord), arguments(std::move(args)) {}
 
     /** @brief Get record arguments */
     std::vector<RamExpression*> getArguments() const {

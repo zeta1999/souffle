@@ -17,12 +17,12 @@
 #pragma once
 
 #include "LVMIndex.h"
+#include "RamIndexAnalysis.h"
 #include "RamNode.h"
 #include "RamTypes.h"
-#include "RamIndexAnalysis.h"
-#include <unordered_map>
 #include <cassert>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 namespace souffle {
@@ -115,22 +115,22 @@ public:
     template <class RamNode>
     size_t getIndexPos(const RamNode& node, RamIndexAnalysis* isa) {
         size_t indexPos = 0;
-            auto ret = indexPositionCache.find((RamNode*)&node);
-            if (ret != indexPositionCache.end()) {
-                indexPos = ret->second;
-            } else {
-                /** If index position is not in the cache yet, consult RamIndexAnalysis
-                 * and store the position in the cache for fast lookup next time.
-                 */
-                const MinIndexSelection& orderSet = isa->getIndexes(node.getRelation());
-                SearchSignature signature = isa->getSearchSignature(&node);
-                // A zero signature is equivalent as a full order signature.
-                if (signature == 0) {
-                    signature = (1 << node.getRelation().getArity()) - 1;
-                }
-                indexPos = orderSet.getLexOrderNum(signature);
-                indexPositionCache[&node] = indexPos;
+        auto ret = indexPositionCache.find((RamNode*)&node);
+        if (ret != indexPositionCache.end()) {
+            indexPos = ret->second;
+        } else {
+            /** If index position is not in the cache yet, consult RamIndexAnalysis
+             * and store the position in the cache for fast lookup next time.
+             */
+            const MinIndexSelection& orderSet = isa->getIndexes(node.getRelation());
+            SearchSignature signature = isa->getSearchSignature(&node);
+            // A zero signature is equivalent as a full order signature.
+            if (signature == 0) {
+                signature = (1 << node.getRelation().getArity()) - 1;
             }
+            indexPos = orderSet.getLexOrderNum(signature);
+            indexPositionCache[&node] = indexPos;
+        }
         return indexPos;
     };
 };

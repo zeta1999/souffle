@@ -2489,14 +2489,14 @@ public:
     }
 
     /**
-	 * Obtains an iterator to the first element not less than the given entry value.
-	 *
-	 * @param entry the lower bound for this search
-	 * @return an iterator addressing the first element in this structure not less than the given value
-	 */
+     * Obtains an iterator to the first element not less than the given entry value.
+     *
+     * @param entry the lower bound for this search
+     * @return an iterator addressing the first element in this structure not less than the given value
+     */
     iterator lower_bound(const entry_type& entry) const {
-    	op_context ctxt;
-    	return lower_bound(entry, ctxt);
+        op_context ctxt;
+        return lower_bound(entry, ctxt);
     }
 
     /**
@@ -3133,11 +3133,11 @@ public:
     }
 
     iterator lower_bound(const entry_type& entry, op_context&) const {
-		return iterator(map.lower_bound(entry[0]));
-	}
+        return iterator(map.lower_bound(entry[0]));
+    }
 
     iterator lower_bound(const entry_type& entry) const {
-    	op_context ctxt;
+        op_context ctxt;
         return lower_bound(entry, ctxt);
     }
 

@@ -37,7 +37,7 @@ namespace souffle {
  */
 class RamOperation : public RamNode {
 public:
-	RamOperation(RamNodeKind kind) : RamNode(kind) {}
+    RamOperation(RamNodeKind kind) : RamNode(kind) {}
 
     /** @brief Pretty print with indentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
@@ -117,7 +117,8 @@ protected:
  */
 class RamTupleOperation : public RamNestedOperation {
 public:
-    RamTupleOperation(RamNodeKind kind, int ident, std::unique_ptr<RamOperation> nested, std::string profileText = "")
+    RamTupleOperation(
+            RamNodeKind kind, int ident, std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamNestedOperation(kind, std::move(nested), std::move(profileText)), identifier(ident) {}
 
     /** @brief Get identifier */
@@ -205,12 +206,12 @@ class RamScan : public RamRelationOperation {
 public:
     RamScan(std::unique_ptr<RamRelationReference> rel, int ident, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamRelationOperation(RK_Scan, std::move(rel), ident, std::move(nested), std::move(profileText)) {}
+            : RamRelationOperation(
+                      RK_Scan, std::move(rel), ident, std::move(nested), std::move(profileText)) {}
 
-    RamScan(RamNodeKind kind, std::unique_ptr<RamRelationReference> rel, int ident, std::unique_ptr<RamOperation> nested,
-            std::string profileText = "")
+    RamScan(RamNodeKind kind, std::unique_ptr<RamRelationReference> rel, int ident,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamRelationOperation(kind, std::move(rel), ident, std::move(nested), std::move(profileText)) {}
-
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -386,7 +387,8 @@ public:
     RamParallelIndexScan(std::unique_ptr<RamRelationReference> rel, int ident,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamIndexScan(RK_ParallelIndexScan, std::move(rel), ident, std::move(queryPattern), std::move(nested), profileText) {}
+            : RamIndexScan(RK_ParallelIndexScan, std::move(rel), ident, std::move(queryPattern),
+                      std::move(nested), profileText) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -463,11 +465,13 @@ class RamChoice : public RamRelationOperation, public RamAbstractChoice {
 public:
     RamChoice(std::unique_ptr<RamRelationReference> rel, size_t ident, std::unique_ptr<RamCondition> cond,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamRelationOperation(RK_Choice, std::move(rel), ident, std::move(nested), std::move(profileText)),
+            : RamRelationOperation(
+                      RK_Choice, std::move(rel), ident, std::move(nested), std::move(profileText)),
               RamAbstractChoice(std::move(cond)) {}
 
-    RamChoice(RamNodeKind kind, std::unique_ptr<RamRelationReference> rel, size_t ident, std::unique_ptr<RamCondition> cond,
-            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+    RamChoice(RamNodeKind kind, std::unique_ptr<RamRelationReference> rel, size_t ident,
+            std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
             : RamRelationOperation(kind, std::move(rel), ident, std::move(nested), std::move(profileText)),
               RamAbstractChoice(std::move(cond)) {}
 
@@ -520,7 +524,8 @@ public:
     RamParallelChoice(std::unique_ptr<RamRelationReference> rel, size_t ident,
             std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamChoice(RK_ParallelChoice, std::move(rel), ident, std::move(cond), std::move(nested), profileText) {}
+            : RamChoice(RK_ParallelChoice, std::move(rel), ident, std::move(cond), std::move(nested),
+                      profileText) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -559,20 +564,20 @@ public:
     RamIndexChoice(std::unique_ptr<RamRelationReference> r, int ident, std::unique_ptr<RamCondition> cond,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamIndexOperation(RK_IndexChoice, std::move(r), ident, std::move(queryPattern), std::move(nested),
-                      std::move(profileText)),
+            : RamIndexOperation(RK_IndexChoice, std::move(r), ident, std::move(queryPattern),
+                      std::move(nested), std::move(profileText)),
               RamAbstractChoice(std::move(cond)) {
         assert(getRangePattern().size() == getRelation().getArity());
     }
 
-    RamIndexChoice(RamNodeKind kind, std::unique_ptr<RamRelationReference> r, int ident, std::unique_ptr<RamCondition> cond,
-                std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
-                std::string profileText = "")
-                : RamIndexOperation(kind, std::move(r), ident, std::move(queryPattern), std::move(nested),
-                          std::move(profileText)),
-                  RamAbstractChoice(std::move(cond)) {
-            assert(getRangePattern().size() == getRelation().getArity());
-        }
+    RamIndexChoice(RamNodeKind kind, std::unique_ptr<RamRelationReference> r, int ident,
+            std::unique_ptr<RamCondition> cond, std::vector<std::unique_ptr<RamExpression>> queryPattern,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamIndexOperation(kind, std::move(r), ident, std::move(queryPattern), std::move(nested),
+                      std::move(profileText)),
+              RamAbstractChoice(std::move(cond)) {
+        assert(getRangePattern().size() == getRelation().getArity());
+    }
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -636,8 +641,8 @@ public:
     RamParallelIndexChoice(std::unique_ptr<RamRelationReference> r, int ident,
             std::unique_ptr<RamCondition> cond, std::vector<std::unique_ptr<RamExpression>> queryPattern,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamIndexChoice(RK_ParallelIndexChoice, std::move(r), ident, std::move(cond), std::move(queryPattern), std::move(nested),
-                      profileText) {}
+            : RamIndexChoice(RK_ParallelIndexChoice, std::move(r), ident, std::move(cond),
+                      std::move(queryPattern), std::move(nested), profileText) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -805,7 +810,8 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition, std::vector<std::unique_ptr<RamExpression>> queryPattern,
             int ident)
-            : RamIndexOperation(RK_IndexAggregate, std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
+            : RamIndexOperation(RK_IndexAggregate, std::move(relRef), ident, std::move(queryPattern),
+                      std::move(nested)),
               RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
 
     void print(std::ostream& os, int tabpos) const override {
@@ -867,7 +873,8 @@ class RamUnpackRecord : public RamTupleOperation {
 public:
     RamUnpackRecord(std::unique_ptr<RamOperation> nested, int ident, std::unique_ptr<RamExpression> expr,
             size_t arity)
-            : RamTupleOperation(RK_UnpackRecord, ident, std::move(nested)), expression(std::move(expr)), arity(arity) {}
+            : RamTupleOperation(RK_UnpackRecord, ident, std::move(nested)), expression(std::move(expr)),
+              arity(arity) {}
 
     /** @brief Get record expression */
     const RamExpression& getExpression() const {
@@ -922,9 +929,10 @@ protected:
  */
 class RamAbstractConditional : public RamNestedOperation {
 public:
-    RamAbstractConditional(RamNodeKind kind, std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
-            std::string profileText = "")
-            : RamNestedOperation(kind, std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
+    RamAbstractConditional(RamNodeKind kind, std::unique_ptr<RamCondition> cond,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamNestedOperation(kind, std::move(nested), std::move(profileText)),
+              condition(std::move(cond)) {}
 
     /** @brief Get condition that must be satisfied */
     const RamCondition& getCondition() const {

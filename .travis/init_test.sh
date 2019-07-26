@@ -13,3 +13,6 @@ set -x
 ./configure
 make -j2
 
+
+set +e
+set +x

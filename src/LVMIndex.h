@@ -370,6 +370,8 @@ public:
      * Return arity size of the index
      */
     virtual size_t getArity() const = 0;
+
+    virtual ~IndexView() = default;
 };
 
 // A general handler type for index views.

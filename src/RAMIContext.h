@@ -40,6 +40,10 @@ class RAMIContext {
     std::unordered_map<const RamNode*, size_t> viewTable;
     std::unordered_map<const RamNode*, size_t> indexPositionCache;
 
+    // caching the last requester for a view
+    const RamNode* lastRequester = nullptr;
+    IndexView* lastView = nullptr;
+
 public:
     RAMIContext(size_t size = 0) : data(size) {}
     virtual ~RAMIContext() = default;
@@ -106,9 +110,14 @@ public:
         return views.size() - 1;
     }
 
-    const std::unique_ptr<IndexView>& getView(const RamNode* node) {
-        assert(viewTable.find(node) != viewTable.end());
-        return views[viewTable[node]];
+    IndexView& getView(const RamNode* node) {
+    	if (node == lastRequester) return *lastView;
+    	auto pos = viewTable.find(node);
+    	//assert(pos != viewTable.end());
+    	IndexView* res = views[pos->second].get();
+    	lastRequester = node;
+    	lastView = res;
+    	return *res;
     }
 
     /** Get the index position in a relation based on the SearchSignature */

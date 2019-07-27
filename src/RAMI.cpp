@@ -316,10 +316,11 @@ bool RAMI::evalCond(const RamCondition& cond, RAMIContext& ctxt) {
         }
 
         bool visitExistenceCheck(const RamExistenceCheck& exists) override {
-            const RAMIRelation& rel = interpreter.getRelation(exists.getRelation());
+            // obtain view
+            IndexView& view = ctxt.getView(&exists);
 
             // construct the pattern tuple
-            auto arity = rel.getArity();
+            auto arity = exists.getRelation().getArity();
             const auto& values = exists.getValues();
 
             if (profiling_enabled && !exists.getRelation().isTemp()) {
@@ -332,7 +333,7 @@ bool RAMI::evalCond(const RamCondition& cond, RAMIContext& ctxt) {
                     // assert(!isRamUndefValue(values[i]) && "Value in index is undefined");
                     tuple[i] = interpreter.evalExpr(*values[i], ctxt);
                 }
-                return rel.contains(TupleRef(tuple, arity));
+                return view.contains(TupleRef(tuple, arity));
             }
 
             // for partial we search for lower and upper boundaries
@@ -344,18 +345,13 @@ bool RAMI::evalCond(const RamCondition& cond, RAMIContext& ctxt) {
                 high[i] = !isRamUndefValue(values[i]) ? low[i] : MAX_RAM_DOMAIN;
             }
 
-            // obtain view
-            auto& view = ctxt.getView(&exists);
-
-            return view->contains(TupleRef(low, arity), TupleRef(high, arity));
+            return view.contains(TupleRef(low, arity), TupleRef(high, arity));
         }
 
         bool visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
-            const RAMIRelation& rel = interpreter.getRelation(provExists.getRelation());
-
             // construct the pattern tuple
-            auto arity = rel.getArity();
-            auto values = provExists.getValues();
+            auto& values = provExists.getValues();
+            auto arity = provExists.getRelation().getArity();
 
             // for partial we search for lower and upper boundaries
             RamDomain low[arity];
@@ -373,8 +369,7 @@ bool RAMI::evalCond(const RamCondition& cond, RAMIContext& ctxt) {
 
             // obtain view
             auto& view = ctxt.getView(&provExists);
-
-            return view->contains(TupleRef(low, arity), TupleRef(high, arity));
+            return view.contains(TupleRef(low, arity), TupleRef(high, arity));
         }
 
         // -- comparison operators --
@@ -526,11 +521,8 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
         }
 
         bool visitIndexScan(const RamIndexScan& scan) override {
-            // get the targeted relation
-            const RAMIRelation& rel = interpreter.getRelation(scan.getRelation());
-
             // create pattern tuple for range query
-            auto arity = rel.getArity();
+            auto arity = scan.getRelation().getArity();
             RamDomain low[arity];
             RamDomain hig[arity];
             const auto& pattern = scan.getRangePattern();
@@ -547,7 +539,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
             auto& view = ctxt.getView(&scan);
 
             // conduct range query
-            for (auto data : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
+            for (auto data : view.range(TupleRef(low, arity), TupleRef(hig, arity))) {
                 ctxt[scan.getTupleId()] = &data[0];
                 if (!visitTupleOperation(scan)) {
                     break;
@@ -655,11 +647,8 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
         }
 
         bool visitIndexChoice(const RamIndexChoice& choice) override {
-            // get the targeted relation
-            const RAMIRelation& rel = interpreter.getRelation(choice.getRelation());
-
             // create pattern tuple for range query
-            auto arity = rel.getArity();
+            auto arity = choice.getRelation().getArity();
             RamDomain low[arity];
             RamDomain hig[arity];
             auto pattern = choice.getRangePattern();
@@ -675,7 +664,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
 
             auto& view = ctxt.getView(&choice);
 
-            for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
+            for (auto ip : view.range(TupleRef(low, arity), TupleRef(hig, arity))) {
                 const RamDomain* data = &ip[0];
                 ctxt[choice.getTupleId()] = data;
                 if (interpreter.evalCond(choice.getCondition(), ctxt)) {
@@ -829,9 +818,6 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
         }
 
         bool visitIndexAggregate(const RamIndexAggregate& aggregate) override {
-            // get the targeted relation
-            const RAMIRelation& rel = interpreter.getRelation(aggregate.getRelation());
-
             // initialize result
             RamDomain res = 0;
             switch (aggregate.getFunction()) {
@@ -850,7 +836,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
             }
 
             // init temporary tuple for this level
-            auto arity = rel.getArity();
+            auto arity = aggregate.getRelation().getArity();
 
             // get lower and upper boundaries for iteration
             const auto& pattern = aggregate.getRangePattern();
@@ -869,7 +855,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
 
             auto& view = ctxt.getView(&aggregate);
 
-            for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
+            for (auto ip : view.range(TupleRef(low, arity), TupleRef(hig, arity))) {
                 // link tuple
                 const RamDomain* data = &ip[0];
                 ctxt[aggregate.getTupleId()] = data;

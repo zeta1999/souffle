@@ -84,7 +84,7 @@ std::ostream& operator<<(std::ostream& out, const Order& order) {
  */
 class NullaryIndex : public LVMIndex {
     // indicates whether the one single element is present or not.
-    bool present;
+    std::atomic<bool> present;
 
     // a source adaptation, iterating through the optionally present
     // entry in this relation.
@@ -547,13 +547,40 @@ private:
 template <std::size_t Arity>
 using comparator = typename ram::index_utils::get_full_index<Arity>::type::comparator;
 
+// Node type
+template <std::size_t Arity>
+using t_tuple = typename ram::Tuple<RamDomain, Arity>;
+
+// Updater for Provenance
+template <std::size_t Arity>
+struct LVMProvenanceUpdater {
+    void update(t_tuple<Arity>& old_t, const t_tuple<Arity>& new_t) {
+        old_t[Arity - 2] = new_t[Arity - 2];
+        old_t[Arity - 1] = new_t[Arity - 1];
+    }
+};
+
 /**
  * A index adapter for B-trees, using the generic index adapter.
  */
 template <std::size_t Arity>
-class BTreeIndex : public GenericIndex<btree_set<ram::Tuple<RamDomain, Arity>, comparator<Arity>>> {
+class BTreeIndex : public GenericIndex<btree_set<t_tuple<Arity>, comparator<Arity>>> {
 public:
-    using GenericIndex<btree_set<ram::Tuple<RamDomain, Arity>, comparator<Arity>>>::GenericIndex;
+    using GenericIndex<btree_set<t_tuple<Arity>, comparator<Arity>>>::GenericIndex;
+};
+
+/**
+ * Btree index for provenance relation
+ */
+template <std::size_t Arity>
+class BTreeProvenanceIndex
+        : public GenericIndex<btree_set<t_tuple<Arity>, comparator<Arity>, std::allocator<t_tuple<Arity>>,
+                  256, typename detail::default_strategy<t_tuple<Arity>>::type, comparator<Arity - 2>,
+                  LVMProvenanceUpdater<Arity>>> {
+public:
+    using GenericIndex<btree_set<t_tuple<Arity>, comparator<Arity>, std::allocator<t_tuple<Arity>>, 256,
+            typename detail::default_strategy<t_tuple<Arity>>::type, comparator<Arity - 2>,
+            LVMProvenanceUpdater<Arity>>>::GenericIndex;
 };
 
 /**
@@ -568,9 +595,9 @@ public:
 /**
  * A index adapter for EquivalenceRelation, using the generic index adapter.
  */
-class EqrelIndex : public GenericIndex<EquivalenceRelation<ram::Tuple<RamDomain, 2>>> {
+class EqrelIndex : public GenericIndex<EquivalenceRelation<t_tuple<2>>> {
 public:
-    using GenericIndex<EquivalenceRelation<ram::Tuple<RamDomain, 2>>>::GenericIndex;
+    using GenericIndex<EquivalenceRelation<t_tuple<2>>>::GenericIndex;
 
     void extend(LVMIndex* other) override {
         auto otherIndex = dynamic_cast<EqrelIndex*>(other);
@@ -614,6 +641,42 @@ std::unique_ptr<LVMIndex> createBTreeIndex(const Order& order) {
             return std::make_unique<BTreeIndex<11>>(order);
         case 12:
             return std::make_unique<BTreeIndex<12>>(order);
+    }
+    assert(false && "Requested arity not yet supported. Feel free to add it.");
+    return {};
+}
+
+std::unique_ptr<LVMIndex> createBTreeProvenanceIndex(const Order& order) {
+    switch (order.size()) {
+        case 0:
+        case 1:
+            assert(false && "Provenance relation with arity < 2.");
+        case 2:
+            return std::make_unique<BTreeProvenanceIndex<2>>(order);
+        case 3:
+            return std::make_unique<BTreeProvenanceIndex<3>>(order);
+        case 4:
+            return std::make_unique<BTreeProvenanceIndex<4>>(order);
+        case 5:
+            return std::make_unique<BTreeProvenanceIndex<5>>(order);
+        case 6:
+            return std::make_unique<BTreeProvenanceIndex<6>>(order);
+        case 7:
+            return std::make_unique<BTreeProvenanceIndex<7>>(order);
+        case 8:
+            return std::make_unique<BTreeProvenanceIndex<8>>(order);
+        case 9:
+            return std::make_unique<BTreeProvenanceIndex<9>>(order);
+        case 10:
+            return std::make_unique<BTreeProvenanceIndex<10>>(order);
+        case 11:
+            return std::make_unique<BTreeProvenanceIndex<11>>(order);
+        case 12:
+            return std::make_unique<BTreeProvenanceIndex<12>>(order);
+        case 13:
+            return std::make_unique<BTreeProvenanceIndex<13>>(order);
+        case 14:
+            return std::make_unique<BTreeProvenanceIndex<14>>(order);
     }
     assert(false && "Requested arity not yet supported. Feel free to add it.");
     return {};

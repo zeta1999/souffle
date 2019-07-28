@@ -18,10 +18,10 @@
 #include "LVMCode.h"
 #include "LVMRecords.h"
 #include "LVMRelation.h"
+#include "ParallelUtils.h"
 #include "RamIndexAnalysis.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
-#include <omp.h>
 
 namespace souffle {
 
@@ -32,7 +32,8 @@ namespace souffle {
 class LVMStaticEnvironment {
 public:
     LVMStaticEnvironment(RamTranslationUnit& tUnit)
-            : isa(tUnit.getAnalysis<RamIndexAnalysis>()), symbolTable(tUnit.getSymbolTable()) {
+            : isa(tUnit.getAnalysis<RamIndexAnalysis>()), symbolTable(tUnit.getSymbolTable()),
+              isProvenance(Global::config().has("provenance")) {
         for (const auto& pair : tUnit.getProgram()->getAllRelations()) {
             encodeRelation(*pair.second);
         }
@@ -124,6 +125,8 @@ private:
 
     SymbolTable& symbolTable;
 
+    bool isProvenance;
+
     /** IODirectives to index mapping */
     std::unordered_map<const RamAbstractLoadStore*, size_t> IOOperationToIndex;
 
@@ -147,6 +150,10 @@ private:
 
         switch (rel.getRepresentation()) {
             case RelationRepresentation::BTREE:
+                if (isProvenance == true) {
+                    std::make_unique<LVMRelation>(rel.getArity(), rel.getName(),
+                            rel.getAttributeTypeQualifiers(), orderSet, createBTreeProvenanceIndex);
+                }
                 return std::make_unique<LVMRelation>(
                         rel.getArity(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
             case RelationRepresentation::BRIE:
@@ -156,6 +163,10 @@ private:
                 return std::make_unique<LVMEqRelation>(
                         rel.getArity(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
             case RelationRepresentation::DEFAULT:
+                if (isProvenance == true) {
+                    std::make_unique<LVMRelation>(rel.getArity(), rel.getName(),
+                            rel.getAttributeTypeQualifiers(), orderSet, createBTreeProvenanceIndex);
+                }
                 return std::make_unique<LVMRelation>(
                         rel.getArity(), rel.getName(), rel.getAttributeTypeQualifiers(), orderSet);
             default:

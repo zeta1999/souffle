@@ -75,9 +75,6 @@ struct RamVisitor : public ram_visitor_tag {
         // dispatch node processing based on dynamic type
 
         switch (node.kind) {
-            //#define FORWARD(Kind) \
-//    if (const auto* n = dynamic_cast<const Ram##Kind*>(&node)) return visit##Kind(*n, args...);
-
 #define FORWARD(Kind) \
     case RK_##Kind:   \
         return visit##Kind(static_cast<const Ram##Kind&>(node), args...);

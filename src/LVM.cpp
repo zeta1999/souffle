@@ -600,8 +600,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                     }
                 }
-                auto range = view->range(TupleRef(low, arity), TupleRef(high, arity));
-                stack.push(range.begin() != range.end());
+                stack.push(view->contains(TupleRef(low, arity), TupleRef(high, arity)));
 
                 ip += (2 + numOfTypeMasks);
                 break;
@@ -624,8 +623,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         high[i] = MAX_RAM_DOMAIN;
                     }
                 }
-                auto range = view->range(TupleRef(low, arity), TupleRef(high, arity));
-                stack.push(range.begin() != range.end());
+                stack.push(view->contains(TupleRef(low, arity), TupleRef(high, arity)));
 
                 ip += 3;
                 break;

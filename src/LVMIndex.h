@@ -463,6 +463,9 @@ using IndexFactory = std::unique_ptr<LVMIndex> (*)(const Order&);
 // A factory for BTree based index.
 std::unique_ptr<LVMIndex> createBTreeIndex(const Order&);
 
+// A factory for BTree provenance index.
+std::unique_ptr<LVMIndex> createBTreeProvenanceIndex(const Order&);
+
 // A factory for Brie based index.
 std::unique_ptr<LVMIndex> createBrieIndex(const Order&);
 

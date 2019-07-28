@@ -177,7 +177,8 @@ private:
 class RAMI : public RAMIInterface {
 public:
     RAMI(RamTranslationUnit& tUnit)
-            : RAMIInterface(tUnit), profiling_enabled(Global::config().has("profile")) {
+            : RAMIInterface(tUnit), profiling_enabled(Global::config().has("profile")),
+              isProvenance(Global::config().has("provenance")) {
         threadsNum = std::stoi(Global::config().get("jobs"));
 #ifdef _OPENMP
         if (threadsNum > 1) {
@@ -248,8 +249,13 @@ protected:
             res = std::make_unique<RAMIEqRelation>(
                     id.getArity(), id.getName(), std::vector<std::string>(), *orderSet);
         } else {
-            res = std::make_unique<RAMIRelation>(
-                    id.getArity(), id.getName(), std::vector<std::string>(), *orderSet);
+            if (isProvenance == true) {
+                res = std::make_unique<RAMIRelation>(id.getArity(), id.getName(), std::vector<std::string>(),
+                        *orderSet, createBTreeProvenanceIndex);
+            } else {
+                res = std::make_unique<RAMIRelation>(
+                        id.getArity(), id.getName(), std::vector<std::string>(), *orderSet);
+            }
         }
         environment[id.getName()] = new RelationHandle(std::move(res));
     }
@@ -261,13 +267,6 @@ private:
         auto pos = environment.find(name);
         assert(pos != environment.end());
         return *pos->second;
-    }
-
-    /** Copy subroutine arguments and return a new context for parallel execution */
-    void copyContextSubroutineArgs(const RAMIContext& source, RAMIContext& target) const {
-        target.setReturnValues(source.getReturnValues());
-        target.setReturnErrors(source.getReturnErrors());
-        target.setArguments(source.getArguments());
     }
 
     /** Create views */
@@ -344,6 +343,8 @@ private:
     relation_map environment;
 
     bool profiling_enabled;
+
+    bool isProvenance;
 
     RAMIPreamble preamble;
 

@@ -1082,7 +1082,7 @@ protected:
 class RamSend : public RamRelationStatement {
 public:
     RamSend(std::unique_ptr<RamRelationReference> r, const std::set<size_t> s)
-            : RamRelationStatement(std::move(r)), destinationStrata(s) {}
+            : RamRelationStatement(RK_Send, std::move(r)), destinationStrata(s) {}
 
     const std::set<size_t> getDestinationStrata() const {
         return destinationStrata;
@@ -1120,7 +1120,7 @@ protected:
 
 class RamNotify : public RamStatement {
 public:
-    RamNotify() : RamStatement() {}
+    RamNotify() : RamStatement(RK_Notify) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << std::string(tabpos, '\t');
@@ -1145,7 +1145,7 @@ protected:
 
 class RamWait : public RamStatement {
 public:
-    RamWait(const size_t c) : count(c) {}
+    RamWait(const size_t c) : RamStatement(RK_Wait), count(c) {}
 
     /** Get count of termination signals required. */
     const int getCount() const {

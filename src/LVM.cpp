@@ -990,10 +990,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 // Obtain partitioned streams
                 auto pstream = relPtr->pscan(numOfThreads);
                 PARALLEL_START;
-                LVMContext newCtxt;
-                newCtxt.setReturnValues(ctxt.getReturnValues());
-                newCtxt.setReturnErrors(ctxt.getReturnErrors());
-                newCtxt.setArguments(ctxt.getArguments());
+                LVMContext newCtxt(ctxt);
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
                         newCtxt.lookUpStream(dest) = std::move(*it);
@@ -1070,10 +1067,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 auto pstream =
                         relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
-                LVMContext newCtxt;
-                newCtxt.setReturnValues(ctxt.getReturnValues());
-                newCtxt.setReturnErrors(ctxt.getReturnErrors());
-                newCtxt.setArguments(ctxt.getArguments());
+                LVMContext newCtxt(ctxt);
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
                         newCtxt.lookUpStream(dest) = std::move(*it);
@@ -1136,10 +1130,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 auto pstream =
                         relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
-                LVMContext newCtxt;
-                newCtxt.setReturnValues(ctxt.getReturnValues());
-                newCtxt.setReturnErrors(ctxt.getReturnErrors());
-                newCtxt.setArguments(ctxt.getArguments());
+                LVMContext newCtxt(ctxt);
                 pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                     try {
                         newCtxt.lookUpStream(dest) = std::move(*it);

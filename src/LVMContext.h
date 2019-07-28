@@ -38,6 +38,8 @@ class LVMContext {
 
 public:
     LVMContext(size_t size = 0) : data(size) {}
+    LVMContext(LVMContext& ctxt)
+            : data(0), returnValues(ctxt.returnValues), returnErrors(ctxt.returnErrors), args(ctxt.args) {}
     virtual ~LVMContext() = default;
 
     TupleRef& operator[](size_t index) {

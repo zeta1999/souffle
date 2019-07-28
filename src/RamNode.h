@@ -80,6 +80,11 @@ enum RamNodeKind {
     RK_Merge,
     RK_Swap,
 
+    RK_Recv,
+    RK_Send,
+    RK_Notify,
+    RK_Wait,
+
     // Control-flow
     RK_Program,
     RK_Sequence,

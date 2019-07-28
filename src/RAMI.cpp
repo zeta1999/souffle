@@ -504,8 +504,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
 
             auto pstream = rel.pscan(interpreter.threadsNum);
             PARALLEL_START;
-            RAMIContext newCtxt;
-            interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
+            RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);
             OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
@@ -581,8 +580,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
             auto pstream =
                     rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
             PARALLEL_START;
-            RAMIContext newCtxt;
-            interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
+            RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);
             OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
@@ -629,8 +627,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
 
             auto pstream = rel.pscan(interpreter.threadsNum);
             PARALLEL_START;
-            RAMIContext newCtxt;
-            interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
+            RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);
             OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
@@ -708,8 +705,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
             auto pstream =
                     rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
             PARALLEL_START;
-            RAMIContext newCtxt;
-            interpreter.copyContextSubroutineArgs(ctxt, newCtxt);
+            RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);
             OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {

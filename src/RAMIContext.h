@@ -46,6 +46,8 @@ class RAMIContext {
 
 public:
     RAMIContext(size_t size = 0) : data(size) {}
+    RAMIContext(RAMIContext& ctxt)
+            : data(0), returnValues(ctxt.returnValues), returnErrors(ctxt.returnErrors), args(ctxt.args) {}
     virtual ~RAMIContext() = default;
 
     const RamDomain*& operator[](size_t index) {
@@ -105,8 +107,10 @@ public:
     }
 
     size_t addNewView(std::unique_ptr<IndexView> view, const RamNode* node) {
-        if (viewTable.find(node) != viewTable.end()) {  // TODO better
-            return 0;
+        auto pos = viewTable.find(node);
+        if (pos != viewTable.end()) {
+            views[pos->second] = std::move(view);
+            return pos->second;
         }
         views.push_back(std::move(view));
         viewTable[node] = views.size() - 1;

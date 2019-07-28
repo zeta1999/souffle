@@ -143,15 +143,14 @@ struct RamVisitor : public ram_visitor_tag {
             FORWARD(LogRelationTimer);
             FORWARD(DebugInfo);
             FORWARD(Stratum);
-        }
 #ifdef USE_MPI
-        // mpi
-        FORWARD(Send);
-        FORWARD(Recv);
-        FORWARD(Notify);
-        FORWARD(Wait);
+            // mpi
+            FORWARD(Send);
+            FORWARD(Recv);
+            FORWARD(Notify);
+            FORWARD(Wait);
 #endif
-
+        }
 #undef FORWARD
 
         // did not work ...

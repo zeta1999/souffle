@@ -84,7 +84,7 @@ std::ostream& operator<<(std::ostream& out, const Order& order) {
  */
 class NullaryIndex : public LVMIndex {
     // indicates whether the one single element is present or not.
-    bool present;
+    std::atomic<bool> present;
 
     // a source adaptation, iterating through the optionally present
     // entry in this relation.

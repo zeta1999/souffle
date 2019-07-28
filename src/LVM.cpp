@@ -1085,6 +1085,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 PARALLEL_END;
 
                 ip = joinLocation;
+                break;
             }
             case LVM_ITER_InitRangeIndexOneArg: {
                 RamDomain dest = code[ip + 1];

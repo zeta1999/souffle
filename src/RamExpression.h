@@ -100,12 +100,7 @@ class RamIntrinsicOperator : public RamAbstractOperator {
 public:
     template <typename... Args>
     RamIntrinsicOperator(FunctorOp op, Args... args)
-            : RamAbstractOperator(RK_IntrinsicOperator), operation(op) {
-        std::unique_ptr<RamExpression> tmp[] = {std::move(args)...};
-        for (auto& cur : tmp) {
-            arguments.push_back(std::move(cur));
-        }
-    }
+            : RamAbstractOperator(RK_IntrinsicOperator, {std::move(args)...}), operation(op) {}
 
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamExpression>> args)
             : RamAbstractOperator(RK_IntrinsicOperator, std::move(args)), operation(op) {}

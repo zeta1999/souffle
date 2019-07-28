@@ -21,7 +21,7 @@
 #include "RamIndexAnalysis.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
-#include <omp.h>
+#include "ParallelUtils.h"
 
 namespace souffle {
 

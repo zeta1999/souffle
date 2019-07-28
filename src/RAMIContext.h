@@ -105,19 +105,22 @@ public:
     }
 
     size_t addNewView(std::unique_ptr<IndexView> view, const RamNode* node) {
+        if (viewTable.find(node) != viewTable.end()) {  // TODO better
+            return 0;
+        }
         views.push_back(std::move(view));
         viewTable[node] = views.size() - 1;
         return views.size() - 1;
     }
 
     IndexView& getView(const RamNode* node) {
-    	if (node == lastRequester) return *lastView;
-    	auto pos = viewTable.find(node);
-    	//assert(pos != viewTable.end());
-    	IndexView* res = views[pos->second].get();
-    	lastRequester = node;
-    	lastView = res;
-    	return *res;
+        if (node == lastRequester) return *lastView;
+        auto pos = viewTable.find(node);
+        // assert(pos != viewTable.end());
+        IndexView* res = views[pos->second].get();
+        lastRequester = node;
+        lastView = res;
+        return *res;
     }
 
     /** Get the index position in a relation based on the SearchSignature */

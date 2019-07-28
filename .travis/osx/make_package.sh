@@ -26,3 +26,5 @@ ls deploy/*
 #Create tarball for brew
 make dist
 
+set +x
+set +e

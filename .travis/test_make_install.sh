@@ -17,3 +17,6 @@ echo "$A" > a.dl
 
 # test if an installed souffle compiles and runs
 souffle -c a.dl
+
+set +e
+set +x

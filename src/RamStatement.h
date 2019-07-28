@@ -1050,7 +1050,7 @@ protected:
 class RamRecv : public RamRelationStatement {
 public:
     RamRecv(std::unique_ptr<RamRelationReference> r, const int s)
-            : RamRelationStatement(std::move(r)), sourceStratum(s) {}
+            : RamRelationStatement(RK_Recv, std::move(r)), sourceStratum(s) {}
 
     const int getSourceStratum() const {
         return sourceStratum;

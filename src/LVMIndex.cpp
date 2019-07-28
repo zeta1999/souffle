@@ -175,7 +175,7 @@ public:
     PartitionedStream pscan(int) const override {
         std::vector<Stream> res;
         res.push_back(scan());
-        return res;
+        return std::move(res);
     }
 
     Stream range(const TupleRef& low, const TupleRef& high) const override {
@@ -185,7 +185,7 @@ public:
     PartitionedStream prange(const TupleRef& low, const TupleRef& high, int) const override {
         std::vector<Stream> res;
         res.push_back(range(low, high));
-        return res;
+        return std::move(res);
     }
 
     void clear() override {
@@ -343,7 +343,7 @@ public:
         for (const auto& cur : chunks) {
             res.push_back(std::make_unique<Source>(order, cur.begin(), cur.end()));
         }
-        return res;
+        return std::move(res);
     }
 
     Stream range(const TupleRef& low, const TupleRef& high) const override {
@@ -358,7 +358,7 @@ public:
         for (const auto& cur : range.partition(num_partitions)) {
             res.push_back(std::make_unique<Source>(order, cur.begin(), cur.end()));
         }
-        return res;
+        return std::move(res);
     }
 
     void clear() override {
@@ -511,7 +511,7 @@ public:
         assert(false && "Does only produce a single subset!");
         std::vector<Stream> res;
         res.push_back(scan());
-        return res;
+        return std::move(res);
     }
 
     Stream range(const TupleRef& low, const TupleRef& high) const override {
@@ -522,7 +522,7 @@ public:
         assert(false && "Does only produce a single subset!");
         std::vector<Stream> res;
         res.push_back(range(low, high));
-        return res;
+        return std::move(res);
     }
 
     void clear() override {

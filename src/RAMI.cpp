@@ -577,8 +577,8 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
             }
 
             size_t indexPos = ctxt.getIndexPos(piscan, interpreter.isa);
-            auto pstream =
-                    rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
+            auto pstream = rel.partitionRange(
+                    indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
             PARALLEL_START;
             RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);
@@ -702,8 +702,8 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
             }
 
             size_t indexPos = ctxt.getIndexPos(ichoice, interpreter.isa);
-            auto pstream =
-                    rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
+            auto pstream = rel.partitionRange(
+                    indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
             PARALLEL_START;
             RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);

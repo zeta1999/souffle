@@ -432,7 +432,7 @@ public:
     /**
      * Returns a partitioned stream covering the entire index content.
      */
-    virtual PartitionedStream pscan(int num_partitions) const = 0;
+    virtual PartitionedStream partitionScan(int partitionCount) const = 0;
 
     /**
      * Returns a stream covering elements in the range [low,high)
@@ -442,7 +442,8 @@ public:
     /**
      * Returns a partitioned stream covering elements in the range [low,high)
      */
-    virtual PartitionedStream prange(const TupleRef& low, const TupleRef& high, int num_partitions) const = 0;
+    virtual PartitionedStream partitionRange(
+            const TupleRef& low, const TupleRef& high, int partitionCount) const = 0;
 
     /**
      * Clears the content of this index, turning it empty.
@@ -452,7 +453,11 @@ public:
     /**
      * Extend another index.
      *
-     * Does nothing except for EqrelIndex
+     * This should only affect on an EqrelIndex.
+     * Extend this index with another index, expanding this equivalence relation.
+     * The supplied relation is the old knowledge, whilst this relation only contains
+     * explicitly new knowledge. After this operation the "implicitly new tuples" are now
+     * explicitly inserted this relation.
      */
     virtual void extend(LVMIndex*) {}
 };

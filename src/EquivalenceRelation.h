@@ -76,8 +76,8 @@ public:
      * @return true if the tuple is new to the data structure
      */
     bool insert(const TupleType& tuple) {
-        operation_hints z;
-        return insert(tuple[0], tuple[1], z);
+        operation_hints hints;
+        return insert(tuple[0], tuple[1], hints);
     };
 
     /**
@@ -523,14 +523,18 @@ public:
         if (entry[0] != MIN_RAM_DOMAIN && entry[1] == MIN_RAM_DOMAIN) {
             // Return an iterator over all (entry[0], _)
 
-            if (!sds.nodeExists(entry[0])) return end();
+            if (!sds.nodeExists(entry[0])) {
+                return end();
+            }
             return anteriorIt(entry[0]);
         }
 
         if (entry[0] != MIN_RAM_DOMAIN && entry[1] != MIN_RAM_DOMAIN) {
             // Return an iterator point to the exact same node.
 
-            if (!sds.contains(entry[0], entry[1])) return end();
+            if (!sds.contains(entry[0], entry[1])) {
+                return end();
+            }
             return antpostit(entry[0], entry[1]);
         }
 

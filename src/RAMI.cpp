@@ -286,11 +286,11 @@ bool RAMI::evalCond(const RamCondition& cond, RAMIContext& ctxt) {
     class ConditionEvaluator : public RamVisitor<bool> {
         RAMI& interpreter;
         RAMIContext& ctxt;
-        bool profiling_enabled;
+        bool profileEnabled;
 
     public:
         ConditionEvaluator(RAMI& interp, RAMIContext& ctxt, bool profiling)
-                : interpreter(interp), ctxt(ctxt), profiling_enabled(profiling) {}
+                : interpreter(interp), ctxt(ctxt), profileEnabled(profiling) {}
 
         // -- connectors operators --
         bool visitTrue(const RamTrue& ltrue) override {
@@ -323,7 +323,7 @@ bool RAMI::evalCond(const RamCondition& cond, RAMIContext& ctxt) {
             auto arity = exists.getRelation().getArity();
             const auto& values = exists.getValues();
 
-            if (profiling_enabled && !exists.getRelation().isTemp()) {
+            if (profileEnabled && !exists.getRelation().isTemp()) {
                 interpreter.reads[exists.getRelation().getName()]++;
             }
             // for total we use the exists test
@@ -445,7 +445,7 @@ bool RAMI::evalCond(const RamCondition& cond, RAMIContext& ctxt) {
     };
 
     // run evaluator
-    return ConditionEvaluator(*this, ctxt, profiling_enabled)(cond);
+    return ConditionEvaluator(*this, ctxt, profileEnabled)(cond);
 }
 
 /** Evaluate RAM operation */
@@ -453,11 +453,11 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
     class OperationEvaluator : public RamVisitor<bool> {
         RAMI& interpreter;
         RAMIContext& ctxt;
-        bool profiling_enabled;
+        bool profileEnabled;
 
     public:
         OperationEvaluator(RAMI& interp, RAMIContext& ctxt, bool profiling)
-                : interpreter(interp), ctxt(ctxt), profiling_enabled(profiling) {}
+                : interpreter(interp), ctxt(ctxt), profileEnabled(profiling) {}
 
         // -- Operations -----------------------------
 
@@ -468,7 +468,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
         bool visitTupleOperation(const RamTupleOperation& search) override {
             bool result = visitNestedOperation(search);
 
-            if (profiling_enabled && !search.getProfileText().empty()) {
+            if (profileEnabled && !search.getProfileText().empty()) {
                 interpreter.frequencies[search.getProfileText()][interpreter.getIterationNumber()]++;
             }
             return result;
@@ -488,10 +488,10 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
             return true;
         }
 
-        bool visitParallelScan(const RamParallelScan& pscan) override {
+        bool visitParallelScan(const RamParallelScan& pScan) override {
             auto& preamble = interpreter.preamble;
             // get the targeted relation
-            const RAMIRelation& rel = interpreter.getRelation(pscan.getRelation());
+            const RAMIRelation& rel = interpreter.getRelation(pScan.getRelation());
 
             interpreter.createViews(preamble.getViewsInOuterOperation(), ctxt);
             // Issue filter operation
@@ -502,15 +502,15 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
                 }
             }
 
-            auto pstream = rel.pscan(interpreter.threadsNum);
+            auto pstream = rel.partitionScan(interpreter.threadsNum);
             PARALLEL_START;
             RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);
-            OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
+            OperationEvaluator newOpEval(interpreter, newCtxt, profileEnabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                 for (const TupleRef& cur : *it) {
-                    newCtxt[pscan.getTupleId()] = cur.getBase();
-                    if (!newOpEval.visitTupleOperation(pscan)) {
+                    newCtxt[pScan.getTupleId()] = cur.getBase();
+                    if (!newOpEval.visitTupleOperation(pScan)) {
                         break;
                     }
                 }
@@ -578,11 +578,11 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
 
             size_t indexPos = ctxt.getIndexPos(piscan, interpreter.isa);
             auto pstream =
-                    rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
+                    rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
             PARALLEL_START;
             RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);
-            OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
+            OperationEvaluator newOpEval(interpreter, newCtxt, profileEnabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                 for (const TupleRef& cur : *it) {
                     newCtxt[piscan.getTupleId()] = cur.getBase();
@@ -625,11 +625,11 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
                 }
             }
 
-            auto pstream = rel.pscan(interpreter.threadsNum);
+            auto pstream = rel.partitionScan(interpreter.threadsNum);
             PARALLEL_START;
             RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);
-            OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
+            OperationEvaluator newOpEval(interpreter, newCtxt, profileEnabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                 for (const TupleRef& cur : *it) {
                     newCtxt[pchoice.getTupleId()] = cur.getBase();
@@ -703,11 +703,11 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
 
             size_t indexPos = ctxt.getIndexPos(ichoice, interpreter.isa);
             auto pstream =
-                    rel.prange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
+                    rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), interpreter.threadsNum);
             PARALLEL_START;
             RAMIContext newCtxt(ctxt);
             interpreter.createViews(preamble.getViewsInNestedOperation(), newCtxt);
-            OperationEvaluator newOpEval(interpreter, newCtxt, profiling_enabled);
+            OperationEvaluator newOpEval(interpreter, newCtxt, profileEnabled);
             pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
                 for (const TupleRef& cur : *it) {
                     newCtxt[ichoice.getTupleId()] = cur.getBase();
@@ -921,7 +921,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
                 result = visitNestedOperation(filter);
             }
 
-            if (profiling_enabled && !filter.getProfileText().empty()) {
+            if (profileEnabled && !filter.getProfileText().empty()) {
                 interpreter.frequencies[filter.getProfileText()][interpreter.getIterationNumber()]++;
             }
             return result;
@@ -963,7 +963,7 @@ void RAMI::evalOp(const RamOperation& op, RAMIContext& args) {
     };
 
     // create and run interpreter for operations
-    OperationEvaluator(*this, args, profiling_enabled).visit(op);
+    OperationEvaluator(*this, args, profileEnabled).visit(op);
 }  // namespace souffle
 
 /** Evaluate RAM statement */
@@ -971,11 +971,11 @@ void RAMI::evalStmt(const RamStatement& stmt, RAMIContext& args) {
     class StatementEvaluator : public RamVisitor<bool> {
         RAMI& interpreter;
         RAMIContext& ctxt;
-        bool profiling_enabled;
+        bool profileEnabled;
 
     public:
         StatementEvaluator(RAMI& interp, RAMIContext& ctxt, bool profiling)
-                : interpreter(interp), ctxt(ctxt), profiling_enabled(profiling) {}
+                : interpreter(interp), ctxt(ctxt), profileEnabled(profiling) {}
 
         // -- Statements -----------------------------
 
@@ -1007,7 +1007,6 @@ void RAMI::evalStmt(const RamStatement& stmt, RAMIContext& args) {
 
             // parallel execution
             bool cond = true;
-            //#pragma omp parallel for reduction(&& : cond)
             for (size_t i = 0; i < stmts.size(); i++) {  // NOLINT (modernize-loop-convert)
                 cond = cond && visit(stmts[i]);
             }
@@ -1048,7 +1047,7 @@ void RAMI::evalStmt(const RamStatement& stmt, RAMIContext& args) {
             // TODO (lyndonhenry): should enable strata as subprograms for interpreter here
 
             // Record relations created in each stratum
-            if (profiling_enabled) {
+            if (profileEnabled) {
                 std::map<std::string, size_t> relNames;
                 visitDepthFirst(stratum, [&](const RamCreate& create) {
                     relNames[create.getRelation().getName()] = create.getRelation().getArity();
@@ -1234,7 +1233,7 @@ void RAMI::evalStmt(const RamStatement& stmt, RAMIContext& args) {
         }
     };
 
-    StatementEvaluator(*this, args, profiling_enabled).visit(stmt);
+    StatementEvaluator(*this, args, profileEnabled).visit(stmt);
 
     // create and run interpreter for statements
     // StatementEvaluator(*this).visit(stmt);
@@ -1248,7 +1247,7 @@ void RAMI::executeMain() {
     }
     const RamStatement& main = *translationUnit.getProgram()->getMain();
 
-    if (!profiling_enabled) {
+    if (!profileEnabled) {
         RAMIContext ctxt;
         evalStmt(main, ctxt);
     } else {

@@ -125,11 +125,11 @@ public:
      * Return true if the given operation requires a view.
      */
     bool requireView(const RamNode* node) {
-        if (dynamic_cast<const RamExistenceCheck*>(node)) {
+        if (dynamic_cast<const RamExistenceCheck*>(node) != nullptr) {
             return true;
-        } else if (dynamic_cast<const RamProvenanceExistenceCheck*>(node)) {
+        } else if (dynamic_cast<const RamProvenanceExistenceCheck*>(node) != nullptr) {
             return true;
-        } else if (dynamic_cast<const RamIndexOperation*>(node)) {
+        } else if (dynamic_cast<const RamIndexOperation*>(node) != nullptr) {
             return true;
         }
         return false;
@@ -177,7 +177,7 @@ private:
 class RAMI : public RAMIInterface {
 public:
     RAMI(RamTranslationUnit& tUnit)
-            : RAMIInterface(tUnit), profiling_enabled(Global::config().has("profile")),
+            : RAMIInterface(tUnit), profileEnabled(Global::config().has("profile")),
               isProvenance(Global::config().has("provenance")) {
         threadsNum = std::stoi(Global::config().get("jobs"));
 #ifdef _OPENMP
@@ -293,7 +293,9 @@ private:
 public:
     /** Get relation */
     inline RAMIRelation& getRelation(const RamRelation& id) {
-        if (id.relation) return **static_cast<RelationHandle*>(id.relation);
+        if (id.relation != nullptr) {
+            return **static_cast<RelationHandle*>(id.relation);
+        }
         auto& handle = getRelationHandle(id.getName());
         id.relation = &handle;
         return *handle;
@@ -336,13 +338,10 @@ private:
     /** iteration number (in a fix-point calculation) */
     size_t iteration = 0;
 
-    /** SymbolTable for views access */
-    size_t viewId = 0;
-
     /** Relation Environment */
     relation_map environment;
 
-    bool profiling_enabled;
+    bool profileEnabled;
 
     bool isProvenance;
 

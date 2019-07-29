@@ -99,33 +99,33 @@ souffle_sources = \
               GraphUtils.h                              \
               IODirectives.h                            \
               IOSystem.h                                \
-              RamIndexAnalysis.cpp   RamIndexAnalysis.h \
+              RamIndexAnalysis.cpp  RamIndexAnalysis.h  \
               InlineRelationsTransformer.cpp            \
               LogStatement.h                            \
-			  LVM.cpp 				LVM.h 				\
-			  LVMCode.h									\
-			  LVMContext.h								\
-			  LVMGenerator.h							\
-			  LVMIndex.h			LVMIndex.cpp		\
-			  LVMInterface.h							\
-			  LVMProgInterface.h						\
-			  LVMRecords.h			LVMRecords.cpp		\
-			  LVMRelation.h			LVMRelation.cpp		\
-              MagicSet.cpp          MagicSet.h          \
+	       LVM.cpp     LVM.h 			\
+	       LVMCode.h				        \
+	       LVMContext.h                              \
+	       LVMGenerator.h                            \
+	       LVMIndex.h            LVMIndex.cpp	\
+	       LVMInterface.h                            \
+	       LVMProgInterface.h                        \
+	       LVMRecords.h          LVMRecords.cpp      \
+	       LVMRelation.h         LVMRelation.cpp     \
+	       MagicSet.cpp          MagicSet.h          \
               MinimiseProgramTransformer.cpp            \
               ParserDriver.cpp      ParserDriver.h      \
               PrecedenceGraph.cpp   PrecedenceGraph.h   \
               ProfileEvent.h                            \
               ProvenanceTransformer.cpp                 \
-              RamAnalysis.h                             \
-			  RAMI.cpp 				RAMI.h 				\
-			  RAMIContext.h 							\
-			  RAMIIndex.h 								\
-			  RAMIInterface.h							\
-			  RAMIProgInterface.h 						\
-			  RAMIRecords.h			RAMIRecords.cpp 	\
-			  RAMIRelation.h 							\
-              RamLevelAnalysis.cpp 	RamLevelAnalysis.h  \
+              RamAnalysis.h                             \ 
+	       RAMI.cpp              RAMI.h              \ 
+	       RAMIContext.h                             \
+	       RAMIIndex.h                               \
+	       RAMIInterface.h                           \
+	       RAMIProgInterface.h                       \
+	       RAMIRecords.h         RAMIRecords.cpp     \
+	       RAMIRelation.h                            \
+              RamLevelAnalysis.cpp  RamLevelAnalysis.h  \
               RamCondition.h                            \
               RamNode.h                                 \
               RamOperation.h                            \

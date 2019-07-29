@@ -988,10 +988,10 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 const auto& relPtr = getRelation(relId);
 
                 // Obtain partitioned streams
-                auto pstream = relPtr->pscan(numOfThreads);
+                auto pStream = relPtr->partitionScan(numOfThreads);
                 PARALLEL_START;
                 LVMContext newCtxt(ctxt);
-                pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     try {
                         newCtxt.lookUpStream(dest) = std::move(*it);
                         execute(codeStream, newCtxt, ip + 4);
@@ -1064,11 +1064,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 }
 
                 // create pattern tuple for range query
-                auto pstream =
-                        relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
+                auto pStream = relPtr->partitionRange(
+                        indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
                 LVMContext newCtxt(ctxt);
-                pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     try {
                         newCtxt.lookUpStream(dest) = std::move(*it);
                         execute(codeStream, newCtxt, ip + 6 + numOfTypeMasks);
@@ -1127,11 +1127,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 }
 
                 // create pattern tuple for range query
-                auto pstream =
-                        relPtr->prange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
+                auto pStream = relPtr->partitionRange(
+                        indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
                 PARALLEL_START;
                 LVMContext newCtxt(ctxt);
-                pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+                pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     try {
                         newCtxt.lookUpStream(dest) = std::move(*it);
                         execute(codeStream, newCtxt, ip + 6);

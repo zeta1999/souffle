@@ -90,7 +90,7 @@ public:
         return symbolTable.resolve(id);
     }
 
-    /** Encode and store IODirctives. Return its id. */
+    /** Encode and store IODirectives. Returns the generated id. */
     size_t encodeIODirectives(std::vector<IODirectives> IOs, const RamAbstractLoadStore* op) {
         auto iter = IOOperationToIndex.find(op);
         // Create IODirectives if it is not in the environment yet.
@@ -288,8 +288,10 @@ public:
     }
 
     /**
-     * Same as toConjunctionList defined in RamOperation. But does not clone new node,
-     * only holds a list of raw pointers to the original node.
+     * Convert list of conditions to a conjunction. Does not create any new node.
+     *
+     * Convert a list {C1, C2, ..., Cn} to a condition of
+     * the format C1 /\ C2 /\ ... /\ Cn.
      */
     inline std::vector<const RamCondition*> toConjunctionList(const RamCondition* condition) {
         std::vector<const RamCondition*> list;
@@ -303,7 +305,7 @@ public:
                     stack.push(&ramConj->getLHS());
                     stack.push(&ramConj->getRHS());
                 } else {
-                    list.emplace_back(condition);
+                    list.push_back(condition);
                 }
             }
         }

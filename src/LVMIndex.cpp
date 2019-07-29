@@ -172,7 +172,7 @@ public:
         return std::make_unique<Source>(present);
     }
 
-    PartitionedStream pscan(int) const override {
+    PartitionedStream partitionScan(int) const override {
         std::vector<Stream> res;
         res.push_back(scan());
         return std::move(res);
@@ -182,7 +182,7 @@ public:
         return scan();
     }
 
-    PartitionedStream prange(const TupleRef& low, const TupleRef& high, int) const override {
+    PartitionedStream partitionRange(const TupleRef& low, const TupleRef& high, int) const override {
         std::vector<Stream> res;
         res.push_back(range(low, high));
         return std::move(res);
@@ -336,8 +336,8 @@ public:
         return std::make_unique<Source>(order, data.begin(), data.end());
     }
 
-    PartitionedStream pscan(int num_partitions) const override {
-        auto chunks = data.partition(num_partitions);
+    PartitionedStream partitionScan(int partitionCount) const override {
+        auto chunks = data.partition(partitionCount);
         std::vector<Stream> res;
         res.reserve(chunks.size());
         for (const auto& cur : chunks) {
@@ -350,12 +350,13 @@ public:
         return GenericIndexView(*this).range(low, high);
     }
 
-    PartitionedStream prange(const TupleRef& low, const TupleRef& high, int num_partitions) const override {
+    PartitionedStream partitionRange(
+            const TupleRef& low, const TupleRef& high, int partitionCount) const override {
         Hints hints;
         auto range = bounds(low, high, hints);
         std::vector<Stream> res;
-        res.reserve(num_partitions);
-        for (const auto& cur : range.partition(num_partitions)) {
+        res.reserve(partitionCount);
+        for (const auto& cur : range.partition(partitionCount)) {
             res.push_back(std::make_unique<Source>(order, cur.begin(), cur.end()));
         }
         return std::move(res);
@@ -507,7 +508,7 @@ public:
         return std::make_unique<Source>(set.begin(), set.end());
     }
 
-    PartitionedStream pscan(int) const override {
+    PartitionedStream partitionScan(int) const override {
         assert(false && "Does only produce a single subset!");
         std::vector<Stream> res;
         res.push_back(scan());
@@ -518,7 +519,7 @@ public:
         return IndirectIndexView(*this).range(low, high);
     }
 
-    PartitionedStream prange(const TupleRef& low, const TupleRef& high, int) const override {
+    PartitionedStream partitionRange(const TupleRef& low, const TupleRef& high, int) const override {
         assert(false && "Does only produce a single subset!");
         std::vector<Stream> res;
         res.push_back(range(low, high));

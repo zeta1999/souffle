@@ -122,7 +122,7 @@ public:
     /**
      * Obtains a partitioned stream list for parallel computation
      */
-    PartitionedStream pscan(size_t num_partitions) const;
+    PartitionedStream partitionScan(size_t partitionCount) const;
 
     /**
      * Obtains a stream covering the interval between the two given entries.
@@ -132,8 +132,8 @@ public:
     /**
      * Obtains a partitioned stream list for parallel computation
      */
-    PartitionedStream prange(
-            const size_t& indexPos, const TupleRef& low, const TupleRef& high, size_t num_partitions) const;
+    PartitionedStream partitionRange(
+            const size_t& indexPos, const TupleRef& low, const TupleRef& high, size_t partitionCount) const;
 
     /**
      * Swaps the content of this and the given relation, including the

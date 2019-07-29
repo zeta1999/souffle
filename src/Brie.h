@@ -2477,7 +2477,7 @@ public:
      * @param ctxt the operation context to be utilized
      * @return an iterator addressing the first element in this structure not less than the given value
      */
-    iterator lower_bound(const entry_type& entry, op_context&) const {
+    iterator lower_bound(const entry_type& entry, op_context& /* ctxt */) const {
         // start with a default-initialized iterator
         iterator res;
 

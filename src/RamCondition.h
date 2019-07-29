@@ -284,7 +284,7 @@ public:
     RamAbstractExistenceCheck(RamNodeKind kind, std::unique_ptr<RamRelationReference> relRef,
             std::vector<std::unique_ptr<RamExpression>> vals)
             : RamCondition(kind), relationRef(std::move(relRef)), values(std::move(vals)),
-              value_ptr(toPtrVector(values)) {}
+              valuePtr(toPtrVector(values)) {}
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {
@@ -293,7 +293,7 @@ public:
 
     /** @brief Get arguments of the tuple/pattern */
     const std::vector<RamExpression*>& getValues() const {
-        return value_ptr;
+        return valuePtr;
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
@@ -309,7 +309,7 @@ public:
         for (auto& val : values) {
             val = map(std::move(val));
         }
-        value_ptr = toPtrVector(values);
+        valuePtr = toPtrVector(values);
     }
 
     mutable int isTotal = 0;
@@ -321,7 +321,7 @@ protected:
     /** Pattern -- nullptr if undefined */
     std::vector<std::unique_ptr<RamExpression>> values;
 
-    std::vector<RamExpression*> value_ptr;
+    std::vector<RamExpression*> valuePtr;
 
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAbstractExistenceCheck*>(&node));

@@ -42,7 +42,7 @@ class RAMIContext {
 
     // caching the last requester for a view
     const RamNode* lastRequester = nullptr;
-    IndexView* lastView = nullptr;
+    size_t lastView = 0;
 
 public:
     RAMIContext(size_t size = 0) : data(size) {}
@@ -118,13 +118,13 @@ public:
     }
 
     IndexView& getView(const RamNode* node) {
-        if (node == lastRequester) return *lastView;
+        if (node == lastRequester) {
+            return *views[lastView];
+        }
         auto pos = viewTable.find(node);
-        // assert(pos != viewTable.end());
-        IndexView* res = views[pos->second].get();
+        lastView = pos->second;
         lastRequester = node;
-        lastView = res;
-        return *res;
+        return *views[lastView];
     }
 
     /** Get the index position in a relation based on the SearchSignature */

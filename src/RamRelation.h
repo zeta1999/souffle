@@ -54,6 +54,7 @@ protected:
     const RelationRepresentation representation;
 
 public:
+    /** Used by RAMI only */
     mutable void* relation = nullptr;
 
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,

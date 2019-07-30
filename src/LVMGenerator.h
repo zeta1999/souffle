@@ -861,6 +861,17 @@ protected:
         assert(piscan.getTupleId() == 0 && "not outer-most loop");
         assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
 
+        size_t L1 = getNewAddressLabel();
+
+        emitViewsCreationInst(preamble.getViewsInOuterOperation());
+
+        // Issue filter operation
+        for (auto node : preamble.getOuterFilterOperation()) {
+            visit(*node, exitAddress);
+            code.push_back(LVM_Jmpez);
+            code.push_back(lookupAddress(L1) + 1);
+        }
+
         // Obtain the pattern for index
         auto patterns = piscan.getRangePattern();
         auto arity = piscan.getRelation().getArity();
@@ -873,17 +884,6 @@ protected:
                 fullIndexSearch = false;
                 typeMask[i] = 1;
             }
-        }
-
-        size_t L1 = getNewAddressLabel();
-
-        emitViewsCreationInst(preamble.getViewsInOuterOperation());
-
-        // Issue filter operation
-        for (auto node : preamble.getOuterFilterOperation()) {
-            visit(*node, exitAddress);
-            code.push_back(LVM_Jmpez);
-            code.push_back(lookupAddress(L1) + 1);
         }
 
         // Enter new scope.
@@ -987,6 +987,18 @@ protected:
         assert(ichoice.getTupleId() == 0 && "not outer-most loop");
         assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
 
+        size_t L1 = getNewAddressLabel();
+        size_t L2 = getNewAddressLabel();
+
+        emitViewsCreationInst(preamble.getViewsInOuterOperation());
+
+        // Issue filter operation
+        for (auto node : preamble.getOuterFilterOperation()) {
+            visit(*node, exitAddress);
+            code.push_back(LVM_Jmpez);
+            code.push_back(lookupAddress(L2) + 1);
+        }
+
         // Obtain the pattern for index
         auto patterns = ichoice.getRangePattern();
         auto arity = ichoice.getRelation().getArity();
@@ -999,18 +1011,6 @@ protected:
                 fullIndexSearch = false;
                 typeMask[i] = 1;
             }
-        }
-
-        size_t L1 = getNewAddressLabel();
-        size_t L2 = getNewAddressLabel();
-
-        emitViewsCreationInst(preamble.getViewsInOuterOperation());
-
-        // Issue filter operation
-        for (auto node : preamble.getOuterFilterOperation()) {
-            visit(*node, exitAddress);
-            code.push_back(LVM_Jmpez);
-            code.push_back(lookupAddress(L2) + 1);
         }
 
         // Enter new scope.

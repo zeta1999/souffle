@@ -4,7 +4,13 @@
 # - https://opensource.org/licenses/UPL
 # - <souffle root>/licenses/SOUFFLE-UPL.txt
 
-AC_INIT(souffle, m4_esyscmd([git describe --tags --always | tr -d '\n']), [souffle-talk@googlegroups.com])
+m4_define([SOUFFLE_VERSION], m4_esyscmd([
+  souffle_version=$(git describe --tags --always)
+  test -z "$souffle_version" && souffle_version=$(pwd | sed '/^.*souffle-[0-9\.]*$/!d' | sed 's/^.*souffle-//')
+  test -z "$souffle_version" && souffle_version="unknown"
+  echo $souffle_version| tr -d '\n']))
+
+AC_INIT(souffle, SOUFFLE_VERSION, [souffle-talk@googlegroups.com])
 AC_PREREQ(2.68)
 AC_COPYRIGHT(['2013-15 Oracle and/or its affiliates'])
 

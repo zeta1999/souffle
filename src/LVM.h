@@ -40,6 +40,10 @@
 namespace souffle {
 class LVMProgInterface;
 
+class LVMStack : std::vector<RamDomain> {
+
+};
+
 /**
  * Bytecode Interpreter executing a RAM translation unit.
  *

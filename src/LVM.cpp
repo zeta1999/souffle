@@ -1154,8 +1154,11 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
             case LVM_ITER_NotAtEnd: {
                 RamDomain idx = code[ip + 1];
                 auto& stream = ctxt.lookUpStream(idx);
-                stack.push(stream.begin() != stream.end());
-                ip += 2;
+                if (stream.begin() == stream.end()) {
+                    ip = code[ip+2];
+                } else {
+                    ip += 3;
+                }
                 break;
             }
             case LVM_ITER_Select: {
@@ -1170,7 +1173,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 RamDomain idx = code[ip + 1];
                 auto& stream = ctxt.lookUpStream(idx);
                 ++stream.begin();
-                ip += 2;
+                ip = code[ip + 2];
                 break;
             }
             case LVM_STOP:

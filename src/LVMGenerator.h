@@ -691,7 +691,6 @@ protected:
         size_t address_L0 = code.size();
         code.push_back(LVM_ITER_NotAtEnd);
         code.push_back(counterLabel);
-        code.push_back(LVM_Jmpez);
         code.push_back(lookupAddress(L1));
 
         // Select the tuple pointed by iter
@@ -705,7 +704,6 @@ protected:
         // Increment the Iter and jump to the start of the while loop
         code.push_back(LVM_ITER_Inc);
         code.push_back(counterLabel);
-        code.push_back(LVM_Goto);
         code.push_back(address_L0);
 
         setAddress(L1, code.size());
@@ -730,7 +728,6 @@ protected:
 
         code.push_back(LVM_ITER_NotAtEnd);
         code.push_back(counterLabel);
-        code.push_back(LVM_Jmpez);
         code.push_back(lookupAddress(L1));
 
         // Select the tuple pointed by iter
@@ -744,7 +741,6 @@ protected:
         // Increment the Iter and jump to the start of the while loop
         code.push_back(LVM_ITER_Inc);
         code.push_back(counterLabel);
-        code.push_back(LVM_Goto);
         code.push_back(address_L0);
 
         setAddress(L1, code.size());
@@ -784,7 +780,6 @@ protected:
         size_t address_L0 = code.size();
         code.push_back(LVM_ITER_NotAtEnd);
         code.push_back(counterLabel);
-        code.push_back(LVM_Jmpez);
         code.push_back(lookupAddress(L2));
 
         // Select the tuple pointed by iter
@@ -800,7 +795,6 @@ protected:
         // Else increment the iter and jump to the start of the while loop.
         code.push_back(LVM_ITER_Inc);
         code.push_back(counterLabel);
-        code.push_back(LVM_Goto);
         code.push_back(address_L0);
 
         setAddress(L1, code.size());
@@ -827,7 +821,6 @@ protected:
         size_t address_L0 = code.size();
         code.push_back(LVM_ITER_NotAtEnd);
         code.push_back(counterLabel);
-        code.push_back(LVM_Jmpez);
         code.push_back(lookupAddress(L2));
 
         // Select the tuple pointed by iter
@@ -843,7 +836,6 @@ protected:
         // Else increment the iter and jump to the start of the while loop.
         code.push_back(LVM_ITER_Inc);
         code.push_back(counterLabel);
-        code.push_back(LVM_Goto);
         code.push_back(address_L0);
 
         setAddress(L1, code.size());
@@ -903,7 +895,6 @@ protected:
         size_t address_L0 = code.size();
         code.push_back(LVM_ITER_NotAtEnd);
         code.push_back(counterLabel);
-        code.push_back(LVM_Jmpez);
         code.push_back(lookupAddress(L1));
 
         // Select the tuple pointed by the iter
@@ -916,7 +907,6 @@ protected:
 
         code.push_back(LVM_ITER_Inc);
         code.push_back(counterLabel);
-        code.push_back(LVM_Goto);
         code.push_back(address_L0);
         setAddress(L1, code.size());
 
@@ -958,7 +948,6 @@ protected:
         size_t address_L0 = code.size();
         code.push_back(LVM_ITER_NotAtEnd);
         code.push_back(counterLabel);
-        code.push_back(LVM_Jmpez);
         code.push_back(lookupAddress(L1));
 
         // Select the tuple pointed by the iter
@@ -971,7 +960,6 @@ protected:
 
         code.push_back(LVM_ITER_Inc);
         code.push_back(counterLabel);
-        code.push_back(LVM_Goto);
         code.push_back(address_L0);
         setAddress(L1, code.size());
     }
@@ -1029,7 +1017,6 @@ protected:
         size_t address_L0 = code.size();
         code.push_back(LVM_ITER_NotAtEnd);
         code.push_back(counterLabel);
-        code.push_back(LVM_Jmpez);
         code.push_back(lookupAddress(L2));
 
         // Select the tuple pointed by iter
@@ -1045,7 +1032,6 @@ protected:
         // Else increment the iter and continue
         code.push_back(LVM_ITER_Inc);
         code.push_back(counterLabel);
-        code.push_back(LVM_Goto);
         code.push_back(address_L0);
         setAddress(L1, code.size());
         visitTupleOperation(ichoice, exitAddress);
@@ -1088,7 +1074,6 @@ protected:
         size_t address_L0 = code.size();
         code.push_back(LVM_ITER_NotAtEnd);
         code.push_back(counterLabel);
-        code.push_back(LVM_Jmpez);
         code.push_back(lookupAddress(L2));
 
         // Select the tuple pointed by iter
@@ -1104,7 +1089,6 @@ protected:
         // Else increment the iter and continue
         code.push_back(LVM_ITER_Inc);
         code.push_back(counterLabel);
-        code.push_back(LVM_Goto);
         code.push_back(address_L0);
         setAddress(L1, code.size());
         visitTupleOperation(indexChoice, exitAddress);
@@ -1168,7 +1152,6 @@ protected:
             // Start the aggregate for loop
             code.push_back(LVM_ITER_NotAtEnd);
             code.push_back(counterLabel);
-            code.push_back(LVM_Jmpez);
             code.push_back(lookupAddress(L1));
 
             // Select the element pointed by iter
@@ -1209,7 +1192,6 @@ protected:
             setAddress(endOfLoop, code.size());
             code.push_back(LVM_ITER_Inc);
             code.push_back(counterLabel);
-            code.push_back(LVM_Goto);
             code.push_back(address_L0);
         }
 
@@ -1296,7 +1278,6 @@ protected:
             // Start the aggregate for loop
             code.push_back(LVM_ITER_NotAtEnd);
             code.push_back(counterLabel);
-            code.push_back(LVM_Jmpez);
             code.push_back(lookupAddress(L1));
 
             code.push_back(LVM_ITER_Select);
@@ -1336,7 +1317,6 @@ protected:
             setAddress(endOfLoop, code.size());
             code.push_back(LVM_ITER_Inc);
             code.push_back(counterLabel);
-            code.push_back(LVM_Goto);
             code.push_back(address_L0);
         }
 
@@ -1576,6 +1556,8 @@ protected:
         // We then issue the view creations after view-free filter operation to avoid some extra overhead.
 
         preamble.reset();
+        this->iteratorIndex = 0;
+        this->indexViewId = 0;
         size_t L0 = getNewAddressLabel();
 
         // split terms of conditions of outer-most filter operation

@@ -328,7 +328,8 @@ public:
      * This is done by traversing the tree twice, in order to find the necessary information (Jump
      * destination) for LVM branch operations.
      */
-    LVMGenerator(const RamStatement* entry, LVMStaticEnvironment& staticEnv) : staticEnv(staticEnv) {
+    LVMGenerator(const RamStatement* entry, LVMStaticEnvironment& staticEnv)
+            : staticEnv(staticEnv), profileEnabled(Global::config().has("profile")) {
 #ifdef _OPENMP
         if (std::stoi(Global::config().get("jobs")) > 1) {
             omp_set_num_threads(std::stoi(Global::config().get("jobs")));
@@ -651,13 +652,10 @@ protected:
     }
 
     void visitTupleOperation(const RamTupleOperation& search, size_t exitAddress) override {
-        code.push_back(LVM_Search);
-        if (search.getProfileText().empty()) {
-            code.push_back(0);
-        } else {
-            code.push_back(1);
+        if (profileEnabled == true) {
+            code.push_back(LVM_Search);
+            code.push_back(staticEnv.encodeString(search.getProfileText()));
         }
-        code.push_back(staticEnv.encodeString(search.getProfileText()));
         visitNestedOperation(search, exitAddress);
     }
 
@@ -719,7 +717,6 @@ protected:
     }
 
     void visitScan(const RamScan& scan, size_t exitAddress) override {
-        code.push_back(LVM_Scan);
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
 
@@ -817,7 +814,6 @@ protected:
     }
 
     void visitChoice(const RamChoice& choice, size_t exitAddress) override {
-        code.push_back(LVM_Choice);
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
@@ -930,7 +926,6 @@ protected:
     }
 
     void visitIndexScan(const RamIndexScan& scan, size_t exitAddress) override {
-        code.push_back(LVM_IndexScan);
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
 
@@ -1061,7 +1056,6 @@ protected:
     }
 
     void visitIndexChoice(const RamIndexChoice& indexChoice, size_t exitAddress) override {
-        code.push_back(LVM_IndexChoice);
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
@@ -1134,7 +1128,6 @@ protected:
     }
 
     void visitAggregate(const RamAggregate& aggregate, size_t exitAddress) override {
-        code.push_back(LVM_Aggregate);
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
@@ -1245,7 +1238,6 @@ protected:
     }
 
     void visitIndexAggregate(const RamIndexAggregate& aggregate, size_t exitAddress) override {
-        code.push_back(LVM_IndexAggregate);
         size_t counterLabel = getNewIterator();
         size_t L1 = getNewAddressLabel();
         size_t L2 = getNewAddressLabel();
@@ -1380,10 +1372,11 @@ protected:
     }
 
     void visitFilter(const RamFilter& filter, size_t exitAddress) override {
-        code.push_back(LVM_Filter);
-
-        // Profile Action
-        code.push_back(staticEnv.encodeString(filter.getProfileText()));
+        if (profileEnabled == true) {
+            code.push_back(LVM_Filter);
+            // Profile Action
+            code.push_back(staticEnv.encodeString(filter.getProfileText()));
+        }
 
         size_t L0 = getNewAddressLabel();
 
@@ -1472,7 +1465,6 @@ protected:
 
     void visitLoop(const RamLoop& loop, size_t exitAddress) override {
         size_t address_L0 = code.size();
-        code.push_back(LVM_Loop);
 
         size_t L1 = getNewAddressLabel();
         size_t address_L1 = lookupAddress(L1);
@@ -1521,13 +1513,14 @@ protected:
     }
 
     void visitStratum(const RamStratum& stratum, size_t exitAddress) override {
-        code.push_back(LVM_Stratum);
+        /** Profile action in stratum can be done statically. There is not
+         * need to issue LVM instruction to do it during run time */
         visit(stratum.getBody(), exitAddress);
     }
 
     void visitCreate(const RamCreate& create, size_t exitAddress) override {
-        code.push_back(LVM_Create);
-        code.push_back(staticEnv.encodeRelation(create.getRelation()));
+        /** Relation creation is done by staticEnv. LVM does not create
+         * any new relation at runtime */
     }
 
     void visitClear(const RamClear& clear, size_t exitAddress) override {
@@ -1582,7 +1575,6 @@ protected:
         // Extra optimization is done for the case when first operation is a filter operation.
         // We then issue the view creations after view-free filter operation to avoid some extra overhead.
 
-        code.push_back(LVM_Query);
         preamble.reset();
         size_t L0 = getNewAddressLabel();
 
@@ -1694,6 +1686,9 @@ private:
 
     /** Preamble for view creation and filter operation */
     LVMPreamble preamble;
+
+    /** whether profile is enabled */
+    const bool profileEnabled;
 
     /** Saved environment variables for scoping */
     size_t savedIterId = 0;

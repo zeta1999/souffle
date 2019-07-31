@@ -85,15 +85,28 @@ void LVM::executeMain() {
         for (const auto& cur : Global::config().data()) {
             ProfileEventSingleton::instance().makeConfigRecord(cur.first, cur.second);
         }
-        // Store count of relations
+        // Store number of relations created in each stratum and total relations created
+        // in the program.
         size_t relationCount = 0;
-        visitDepthFirst(main, [&](const RamCreate& create) {
-            if (create.getRelation().getName()[0] != '@') {
-                ++relationCount;
-                reads[create.getRelation().getName()] = 0;
+        size_t curLevel = 0;
+        std::map<const RamCreate*, size_t> relationMap;  // Map from relation to its stratum level
+        visitDepthFirst(main, [&](const RamNode& node) {
+            if (auto create = dynamic_cast<const RamCreate*>(&node)) {
+                if (create->getRelation().getName()[0] != '@') {
+                    ++relationCount;
+                    reads[create->getRelation().getName()] = 0;
+                    relationMap[create] = curLevel;
+                }
+            } else if (auto stratum = dynamic_cast<const RamStratum*>(&node)) {
+                curLevel = stratum->getIndex();
             }
         });
         ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string(relationCount));
+        for (const auto& cur : relationMap) {
+            ProfileEventSingleton::instance().makeStratumRecord(cur.second, "relation",
+                    cur.first->getRelation().getName(), "arity",
+                    std::to_string(cur.first->getRelation().getArity()));
+        }
 
         // Store count of rules
         size_t ruleCount = 0;
@@ -649,11 +662,9 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 ip += 1;
                 break;
             case LVM_Search: {
-                if (profile && code[ip + 1] != 0) {
-                    const std::string& msg = staticEnv.decodeString(code[ip + 2]);
-                    this->frequencies[msg][this->getIterationNumber()]++;
-                }
-                ip += 3;
+                const std::string& msg = staticEnv.decodeString(code[ip + 1]);
+                this->frequencies[msg][this->getIterationNumber()]++;
+                ip += 2;
                 break;
             }
             case LVM_CreateViews: {
@@ -685,15 +696,14 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 ip += 4;
                 break;
             }
-            case LVM_Filter:
-                if (profile) {
-                    const std::string& msg = staticEnv.decodeString(code[ip + 1]);
-                    if (!msg.empty()) {
-                        this->frequencies[msg][this->getIterationNumber()]++;
-                    }
+            case LVM_Filter: {
+                const std::string& msg = staticEnv.decodeString(code[ip + 1]);
+                if (!msg.empty()) {
+                    this->frequencies[msg][this->getIterationNumber()]++;
                 }
                 ip += 2;
                 break;
+            }
             case LVM_Project: {
                 RamDomain arity = code[ip + 1];
                 size_t relId = code[ip + 2];
@@ -819,10 +829,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 break;
             }
             case LVM_Create: {
-                size_t relId = code[ip + 1];
-                auto res = getRelation(relId);
-                res->setLevel(level);
-                ip += 2;
+                assert(false && "LVM should not create new relation at runtime");
                 break;
             }
             case LVM_Clear: {

@@ -1,4 +1,8 @@
 souffle (@VERSION@-1) UNRELEASED; urgency=low
+
+ -- Kostyantyn Vorobyov <k.a.vorobyov@gmail.com>  Fri, 2 Aug 2019 13:30:33 +1100
+
+souffle (1.6.0); urgency=low
   * Low Level Machine Interpreter for improved non-synthesised performance (XiaowenHu96,HerbertJordan)
   * Provenance support for negation and equivalence relations (taipan-snake)
   * New semantics for RAM (b-scholz)

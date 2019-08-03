@@ -430,11 +430,35 @@ void AstSemanticChecker::checkLiteral(
         }
     }
 }
+/**
+ * agg1, agg2 are clauses which contain no head, and consist of a single literal
+ * that contains an aggregate.
+ * agg1 is dependent on agg2 if agg1 contains a variable which is grounded by agg2, and not by agg1.
+ */
+bool AstSemanticChecker::isDependent(const AstClause& agg1, const AstClause& agg2) {
+    auto grounded1 = getGroundedTerms(agg1);
+    auto grounded2 = getGroundedTerms(agg2);
+    bool dependent = false;
+    visitDepthFirst(agg1, [&](const AstVariable& var) {
+        const AstVariable* var2 = nullptr;
+        visitDepthFirst(agg2, [&](const AstVariable& v2) {
+            if (v2.getName() == var.getName()) {
+                var2 = &v2;
+                return;
+            }
+        });
+        if (var2 != nullptr) {
+            if (!grounded1[&var] && grounded2[var2]) dependent = true;
+        }
+    });
+    return dependent;
+}
 
 void AstSemanticChecker::checkAggregator(
         ErrorReport& report, const AstProgram& program, const AstAggregator& aggregator) {
     const AstAggregator* inner = nullptr;
 
+    // check for disallowed nested aggregates
     visitDepthFirst(aggregator, [&](const AstAggregator& innerAgg) {
         if (aggregator != innerAgg) {
             inner = &innerAgg;
@@ -444,6 +468,30 @@ void AstSemanticChecker::checkAggregator(
     if (inner != nullptr) {
         report.addError("Unsupported nested aggregate", inner->getSrcLoc());
     }
+
+    AstClause clauseAggregator;
+    // check whether this aggregate 'aggregator' is mutually dependent with
+    // another aggregate contained in this rule. This is disallowed
+    visitDepthFirst(program, [&](const AstLiteral& literal) {
+        visitDepthFirst(literal, [&](const AstAggregator& agg) {
+            if (agg == aggregator) {
+                // make a dummy clause containing the literal in which the aggregate sits
+                clauseAggregator.addToBody(std::unique_ptr<AstLiteral>(literal.clone()));
+                // compare this dummy aggregate clause with every other aggregate clause
+                // to see if there is a mutual dependence
+                visitDepthFirst(program, [&](const AstLiteral& l) {
+                    visitDepthFirst(l, [&](const AstAggregator& a) {
+                        // for each literal l with an aggregate inside of it
+                        AstClause other;
+                        other.addToBody(std::unique_ptr<AstLiteral>(l.clone()));
+                        if (isDependent(clauseAggregator, other) && isDependent(other, clauseAggregator)) {
+                            report.addError("Mutually dependent aggregate", aggregator.getSrcLoc());
+                        }
+                    });
+                });
+            }
+        });
+    });
 
     for (AstLiteral* literal : aggregator.getBodyLiterals()) {
         checkLiteral(report, program, *literal);

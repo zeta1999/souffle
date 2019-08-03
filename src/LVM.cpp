@@ -641,26 +641,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 ip += 3;
                 break;
             }
-            case LVM_Constraint:
-                /** Does nothing, just a label */
-                ip += 1;
-                break;
-            case LVM_Scan:
-                /** Does nothing, just a label */
-                ip += 1;
-                break;
-            case LVM_IndexScan:
-                /** Does nothing, just a label */
-                ip += 1;
-                break;
-            case LVM_Choice:
-                /** Does nothing, just a label */
-                ip += 1;
-                break;
-            case LVM_IndexChoice:
-                /** Does nothing, just a label */
-                ip += 1;
-                break;
             case LVM_Search: {
                 const std::string& msg = staticEnv.decodeString(code[ip + 1]);
                 this->frequencies[msg][this->getIterationNumber()]++;
@@ -731,10 +711,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 ip += 3;
                 break;
             }
-            case LVM_Sequence: {
-                ip += 1;
-                break;
-            }
             case LVM_Parallel: {
                 size_t size = code[ip + 1];
                 size_t end = code[ip + 2];
@@ -747,15 +723,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 }
 
                 ip = end;
-                break;
-            }
-            case LVM_Stop_Parallel: {
-                ip += 2;
-                break;
-            }
-            case LVM_Loop: {
-                /** Does nothing, jus a label */
-                ip += 1;
                 break;
             }
             case LVM_IncIterationNumber: {
@@ -826,10 +793,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                     }
                 }
                 ip += 1;
-                break;
-            }
-            case LVM_Create: {
-                assert(false && "LVM should not create new relation at runtime");
                 break;
             }
             case LVM_Clear: {
@@ -932,10 +895,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 ip += 3;
                 break;
             }
-            case LVM_Query:
-                /** Does nothing, just a label */
-                ip += 1;
-                break;
             case LVM_Goto:
                 ip = code[ip + 1];
                 break;
@@ -951,14 +910,6 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 ip = (val == 0 ? code[ip + 1] : ip + 2);
                 break;
             }
-            case LVM_Aggregate: {
-                ip += 1;
-                break;
-            };
-            case LVM_IndexAggregate: {
-                ip += 1;
-                break;
-            };
             case LVM_Aggregate_COUNT: {
                 RamDomain res = 0;
                 RamDomain idx = code[ip + 1];
@@ -1151,22 +1102,19 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                 ip = joinDest;
                 break;
             }
-            case LVM_ITER_NotAtEnd: {
+            case LVM_ITER_Select: {
+                // Select the tuple if the iterator is within the bound.
+                // Otherwise, jump to the exit location
                 RamDomain idx = code[ip + 1];
                 auto& stream = ctxt.lookUpStream(idx);
                 if (stream.begin() == stream.end()) {
                     ip = code[ip+2];
                 } else {
-                    ip += 3;
+                    RamDomain streamIdx = code[ip + 3];
+                    RamDomain tupleId = code[ip + 4];
+                    ctxt[tupleId] = *ctxt.lookUpStream(streamIdx).begin();
+                    ip += 5;
                 }
-                break;
-            }
-            case LVM_ITER_Select: {
-                RamDomain idx = code[ip + 1];
-                RamDomain tupleId = code[ip + 2];
-                auto& stream = ctxt.lookUpStream(idx);
-                ctxt[tupleId] = *stream.begin();
-                ip += 3;
                 break;
             }
             case LVM_ITER_Inc: {

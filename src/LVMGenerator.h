@@ -606,7 +606,6 @@ protected:
     }
 
     void visitConstraint(const RamConstraint& relOp, size_t exitAddress) override {
-        code.push_back(LVM_Constraint);
         visit(relOp.getLHS(), exitAddress);
         visit(relOp.getRHS(), exitAddress);
         switch (relOp.getOperator()) {
@@ -689,12 +688,10 @@ protected:
 
         // While iterator is not at end
         size_t address_L0 = code.size();
-        code.push_back(LVM_ITER_NotAtEnd);
+        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(lookupAddress(L1));
-
         // Select the tuple pointed by iter
-        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(pscan.getTupleId());
 
@@ -726,12 +723,10 @@ protected:
         // While iterator is not at end
         size_t address_L0 = code.size();
 
-        code.push_back(LVM_ITER_NotAtEnd);
+        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(lookupAddress(L1));
-
         // Select the tuple pointed by iter
-        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(scan.getTupleId());
 
@@ -778,12 +773,10 @@ protected:
 
         // While iterator is not at end
         size_t address_L0 = code.size();
-        code.push_back(LVM_ITER_NotAtEnd);
+        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(lookupAddress(L2));
-
         // Select the tuple pointed by iter
-        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(pchoice.getTupleId());
 
@@ -819,12 +812,10 @@ protected:
 
         // While iterator is not at end
         size_t address_L0 = code.size();
-        code.push_back(LVM_ITER_NotAtEnd);
+        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(lookupAddress(L2));
-
         // Select the tuple pointed by iter
-        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(choice.getTupleId());
 
@@ -893,12 +884,10 @@ protected:
 
         // While iter is not at end
         size_t address_L0 = code.size();
-        code.push_back(LVM_ITER_NotAtEnd);
+        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(lookupAddress(L1));
-
         // Select the tuple pointed by the iter
-        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(piscan.getTupleId());
 
@@ -946,12 +935,10 @@ protected:
 
         // While iter is not at end
         size_t address_L0 = code.size();
-        code.push_back(LVM_ITER_NotAtEnd);
+        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(lookupAddress(L1));
-
         // Select the tuple pointed by the iter
-        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(scan.getTupleId());
 
@@ -1015,12 +1002,10 @@ protected:
 
         // While iter is not at end.
         size_t address_L0 = code.size();
-        code.push_back(LVM_ITER_NotAtEnd);
+        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(lookupAddress(L2));
-
         // Select the tuple pointed by iter
-        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(ichoice.getTupleId());
 
@@ -1072,12 +1057,10 @@ protected:
 
         // While iter is not at end.
         size_t address_L0 = code.size();
-        code.push_back(LVM_ITER_NotAtEnd);
+        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(lookupAddress(L2));
-
         // Select the tuple pointed by iter
-        code.push_back(LVM_ITER_Select);
         code.push_back(counterLabel);
         code.push_back(indexChoice.getTupleId());
 
@@ -1150,12 +1133,10 @@ protected:
             size_t address_L0 = code.size();
 
             // Start the aggregate for loop
-            code.push_back(LVM_ITER_NotAtEnd);
+            code.push_back(LVM_ITER_Select);
             code.push_back(counterLabel);
             code.push_back(lookupAddress(L1));
-
             // Select the element pointed by iter
-            code.push_back(LVM_ITER_Select);
             code.push_back(counterLabel);
             code.push_back(aggregate.getTupleId());
 
@@ -1276,11 +1257,9 @@ protected:
             size_t address_L0 = code.size();
 
             // Start the aggregate for loop
-            code.push_back(LVM_ITER_NotAtEnd);
+            code.push_back(LVM_ITER_Select);
             code.push_back(counterLabel);
             code.push_back(lookupAddress(L1));
-
-            code.push_back(LVM_ITER_Select);
             code.push_back(counterLabel);
             code.push_back(aggregate.getTupleId());
 
@@ -1402,45 +1381,18 @@ protected:
     /** Visit RAM stmt*/
 
     void visitSequence(const RamSequence& seq, size_t exitAddress) override {
-        code.push_back(LVM_Sequence);
         for (const auto& cur : seq.getStatements()) {
             visit(cur, exitAddress);
         }
     }
 
     void visitParallel(const RamParallel& parallel, size_t exitAddress) override {
-        // TODO(xiaowen/#998): Currently parallel execution is suppressed.
-        // All parallel execution will be executed in sequence.
+        // NOTE: disabled since it causes performance losses
 
         auto stmts = parallel.getStatements();
-        size_t size = stmts.size();
-        // Special case when size = 1: run in sequence instead.
-        // Currently all parallel is executed in sequence.
-        if (size == 1 || true) {
-            for (const auto& cur : parallel.getStatements()) {
-                visit(cur, exitAddress);
-            }
-            return;
+        for (const auto& cur : parallel.getStatements()) {
+            visit(cur, exitAddress);
         }
-
-        code.push_back(LVM_Parallel);
-        code.push_back(size);
-        size_t endAddress = getNewAddressLabel();
-        code.push_back(lookupAddress(endAddress));
-        size_t startAddresses[size];
-
-        for (size_t i = 0; i < size; ++i) {
-            startAddresses[i] = getNewAddressLabel();
-            code.push_back(lookupAddress(startAddresses[i]));
-        }
-
-        for (size_t i = 0; i < size; ++i) {
-            setAddress(startAddresses[i], code.size());
-            visit(parallel.getStatements()[i], exitAddress);
-            code.push_back(LVM_Stop_Parallel);
-            code.push_back(LVM_NOP);
-        }
-        setAddress(endAddress, code.size());
     }
 
     void visitLoop(const RamLoop& loop, size_t exitAddress) override {
@@ -1567,6 +1519,13 @@ protected:
         std::vector<const RamCondition*> freeOfView;
         if (const auto* filter = dynamic_cast<const RamFilter*>(&query.getOperation())) {
             next = &filter->getOperation();
+
+            if (profileEnabled == true) {
+                code.push_back(LVM_Filter);
+                // Profile Action
+                code.push_back(staticEnv.encodeString(filter->getProfileText()));
+            }
+
             // Check terms of outer filter operation whether they can be pushed before
             // the view-generation for speed imrovements
             auto conditions = preamble.toConjunctionList(&filter->getCondition());

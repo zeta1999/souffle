@@ -12,3 +12,6 @@ then
   cd tests
 fi
 TESTSUITEFLAGS="-j2 $TESTRANGE" make check -j2
+
+set +e
+set +x

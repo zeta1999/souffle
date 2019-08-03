@@ -18,3 +18,6 @@ g++-8 --version
 
 export CC=gcc-8
 export CXX=g++-8
+
+set +e
+set +x

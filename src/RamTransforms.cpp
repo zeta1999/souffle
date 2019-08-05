@@ -590,15 +590,15 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                 if (!hoist && rla->getLevel(agg) < agg->getTupleId() - 1) {
                     // If all tuple ops between the rla->getLevel(agg) and agg
                     // are aggregates, then we do not transform
-                    bool allAggragates = true;
+                    bool allAggregates = true;
                     for (int i = rla->getLevel(agg) + 1; i <= agg->getTupleId(); i++) {
                         if (!(std::find(aggIds.begin(), aggIds.end(), i) != aggIds.end())) {
                             currLevel = i - 1;
-                            allAggragates = false;
+                            allAggregates = false;
                             break;
                         }
                     }
-                    if (!allAggragates) {
+                    if (!allAggregates) {
                         hoist = true;
                         changed = true;
                         oldLevel = agg->getTupleId();
@@ -618,15 +618,15 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                 if (!hoist && rla->getLevel(agg) < agg->getTupleId() - 1) {
                     // If all tuple ops above agg in the loop nest are also aggregates
                     // then we do not transform
-                    bool allAggragates = true;
+                    bool allAggregates = true;
                     for (int i = rla->getLevel(agg) + 1; i <= agg->getTupleId(); i++) {
                         if (!(std::find(aggIds.begin(), aggIds.end(), i) != aggIds.end())) {
                             currLevel = i - 1;
-                            allAggragates = false;
+                            allAggregates = false;
                             break;
                         }
                     }
-                    if (!allAggragates) {
+                    if (!allAggregates) {
                         hoist = true;
                         changed = true;
                         newIndex = true;
@@ -638,6 +638,8 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                         newExp = dynamic_cast<RamExpression*>(agg->getExpression().clone());
                         newCond = dynamic_cast<RamCondition*>(agg->getCondition().clone());
                         newPattern = agg->getRangePattern();
+                        node->apply(makeLambdaRamMapper(aggRemover));
+                        return std::unique_ptr<RamOperation>(agg->getOperation().clone());
                     }
                 }
             }

@@ -637,9 +637,9 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                         newRef = &agg->getRelation();
                         newExp = dynamic_cast<RamExpression*>(agg->getExpression().clone());
                         newCond = dynamic_cast<RamCondition*>(agg->getCondition().clone());
-			for(const RamExpression *x : agg->getRangePattern()) { 
-				newPattern.push_back(std::unique_ptr<RamExpression>(x->clone()));
-			}
+                        for (const RamExpression* cur : agg->getRangePattern()) {
+                            newPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
+                        }
                         node->apply(makeLambdaRamMapper(aggRemover));
                         return std::unique_ptr<RamOperation>(agg->getOperation().clone());
                     }
@@ -652,7 +652,6 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(aggRemover));
 
         bool added = false;
-
 
         // Adding back the aggregate if one was removed before
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggAdder =

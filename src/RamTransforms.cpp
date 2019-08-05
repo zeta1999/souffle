@@ -573,7 +573,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         const RamRelation* newRef;
         RamExpression* newExp;
         RamCondition* newCond;
-        std::vector<RamExpression*> newPattern;
+        std::vector<std::unique_ptr<RamExpression>> newPattern;
 
         // Tracking aggregates seen to determine whether to
         // hoist or not
@@ -637,7 +637,9 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                         newRef = &agg->getRelation();
                         newExp = dynamic_cast<RamExpression*>(agg->getExpression().clone());
                         newCond = dynamic_cast<RamCondition*>(agg->getCondition().clone());
-                        newPattern = agg->getRangePattern();
+			for(const RamExpression *x : agg->getRangePattern()) { 
+				newPattern.push_back(std::unique_ptr<RamExpression>(x->clone()));
+			}
                         node->apply(makeLambdaRamMapper(aggRemover));
                         return std::unique_ptr<RamOperation>(agg->getOperation().clone());
                     }
@@ -650,6 +652,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(aggRemover));
 
         bool added = false;
+
 
         // Adding back the aggregate if one was removed before
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggAdder =
@@ -666,14 +669,6 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
 
                     if (newIndex) {
                         // RamIndexAggregate
-                        std::vector<std::unique_ptr<RamExpression>> queryPattern;
-                        for (const RamExpression* cur : newPattern) {
-                            if (nullptr != cur) {
-                                queryPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
-                            } else {
-                                queryPattern.push_back(nullptr);
-                            }
-                        }
 
                         node->apply(makeLambdaRamMapper(aggAdder));
 
@@ -681,7 +676,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                                 std::unique_ptr<RamOperation>(op->getOperation().clone()), newFun,
                                 std::make_unique<RamRelationReference>(newRef),
                                 std::unique_ptr<RamExpression>(newExp),
-                                std::unique_ptr<RamCondition>(newCond), std::move(queryPattern), oldLevel);
+                                std::unique_ptr<RamCondition>(newCond), std::move(newPattern), oldLevel);
 
                     } else {
                         // RamAggregate
@@ -704,20 +699,11 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
             if (nullptr != dynamic_cast<RamOperation*>(node.get())) {
                 if (newIndex) {
                     // RamIndexAggregate
-                    std::vector<std::unique_ptr<RamExpression>> queryPattern;
-                    for (const RamExpression* cur : newPattern) {
-                        if (nullptr != cur) {
-                            queryPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
-                        } else {
-                            queryPattern.push_back(nullptr);
-                        }
-                    }
-
                     return std::make_unique<RamIndexAggregate>(
                             std::unique_ptr<RamOperation>(dynamic_cast<RamOperation*>(node.release())),
                             newFun, std::make_unique<RamRelationReference>(newRef),
                             std::unique_ptr<RamExpression>(newExp), std::unique_ptr<RamCondition>(newCond),
-                            std::move(queryPattern), oldLevel);
+                            std::move(newPattern), oldLevel);
                 } else {
                     // RamAggregate
                     return std::make_unique<RamAggregate>(

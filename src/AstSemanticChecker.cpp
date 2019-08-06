@@ -436,19 +436,25 @@ void AstSemanticChecker::checkLiteral(
  * agg1 is dependent on agg2 if agg1 contains a variable which is grounded by agg2, and not by agg1.
  */
 bool AstSemanticChecker::isDependent(const AstClause& agg1, const AstClause& agg2) {
-    auto grounded1 = getGroundedTerms(agg1);
-    auto grounded2 = getGroundedTerms(agg2);
+    auto groundedInAgg1 = getGroundedTerms(agg1);
+    auto groundedInAgg2 = getGroundedTerms(agg2);
     bool dependent = false;
-    visitDepthFirst(agg1, [&](const AstVariable& var) {
-        const AstVariable* var2 = nullptr;
-        visitDepthFirst(agg2, [&](const AstVariable& v2) {
-            if (v2.getName() == var.getName()) {
-                var2 = &v2;
+    // For each variable X in the first aggregate
+    visitDepthFirst(agg1, [&](const AstVariable& searchVar) {
+        // Try to find the corresponding variable X in the second aggregate
+        // by string comparison
+        const AstVariable* matchingVarPtr = nullptr;
+        visitDepthFirst(agg2, [&](const AstVariable& var) {
+            if (var.getName() == searchVar.getName()) {
+                matchingVarPtr = &var;
                 return;
             }
         });
-        if (var2 != nullptr) {
-            if (!grounded1[&var] && grounded2[var2]) dependent = true;
+        // If the variable occurs in both clauses (a match was found)
+        if (matchingVarPtr != nullptr) {
+            if (!groundedInAgg1[&searchVar] && groundedInAgg2[matchingVarPtr]) {
+                dependent = true;
+            }
         }
     });
     return dependent;
@@ -469,26 +475,28 @@ void AstSemanticChecker::checkAggregator(
         report.addError("Unsupported nested aggregate", inner->getSrcLoc());
     }
 
-    AstClause clauseAggregator;
-    // check whether this aggregate 'aggregator' is mutually dependent with
-    // another aggregate contained in this rule. This is disallowed
-    visitDepthFirst(program, [&](const AstLiteral& literal) {
-        visitDepthFirst(literal, [&](const AstAggregator& agg) {
-            if (agg == aggregator) {
-                // make a dummy clause containing the literal in which the aggregate sits
-                clauseAggregator.addToBody(std::unique_ptr<AstLiteral>(literal.clone()));
-                // compare this dummy aggregate clause with every other aggregate clause
-                // to see if there is a mutual dependence
-                visitDepthFirst(program, [&](const AstLiteral& l) {
-                    visitDepthFirst(l, [&](const AstAggregator& a) {
-                        // for each literal l with an aggregate inside of it
-                        AstClause other;
-                        other.addToBody(std::unique_ptr<AstLiteral>(l.clone()));
-                        if (isDependent(clauseAggregator, other) && isDependent(other, clauseAggregator)) {
-                            report.addError("Mutually dependent aggregate", aggregator.getSrcLoc());
-                        }
-                    });
-                });
+    AstClause dummyClauseAggregator;
+
+    visitDepthFirst(program, [&](const AstLiteral& parentLiteral) {
+        visitDepthFirst(parentLiteral, [&](const AstAggregator& candidateAggregate) {
+            if (candidateAggregate != aggregator) {
+                return;
+            }
+            // Get the literal containing the aggregator and put it into a dummy clause
+            // so we can get information about groundedness
+            dummyClauseAggregator.addToBody(std::unique_ptr<AstLiteral>(parentLiteral.clone()));
+        });
+    });
+
+    visitDepthFirst(program, [&](const AstLiteral& parentLiteral) {
+        visitDepthFirst(parentLiteral, [&](const AstAggregator& otherAggregate) {
+            // Create the other aggregate's dummy clause
+            AstClause dummyClauseOther;
+            dummyClauseOther.addToBody(std::unique_ptr<AstLiteral>(parentLiteral.clone()));
+            // Check dependency between the aggregator and this one
+            if (isDependent(dummyClauseAggregator, dummyClauseOther) &&
+                    isDependent(dummyClauseOther, dummyClauseAggregator)) {
+                report.addError("Mutually dependent aggregate", aggregator.getSrcLoc());
             }
         });
     });

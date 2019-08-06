@@ -1,10 +1,10 @@
-.decl A(x:number)
-A(1).
-.decl B(x:number)
-B(y0) :-
-   A( y0),
-   y0 < count : A(_).
-.printsize B
+.decl a(x:number)
+a(1).
+.decl b(x:number)
+b(y0) :-
+   a( y0),
+   y0 < count : a(_).
+.output b
 .decl c(x:number, y:number)
 .decl d(x:number, y:number)
 .decl e(x:number, y:number)
@@ -13,7 +13,7 @@ d(1,1).
 e(1,1).
 .decl f(x:number)
 f(1).
-.printsize c
+.output c
 c(x,y) :-
       d(x,y),
       e(x,z),

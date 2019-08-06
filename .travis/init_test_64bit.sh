@@ -13,3 +13,6 @@ set -x
 ./configure --enable-64bit-domain
 make -j2
 
+
+set +e
+set +x

@@ -564,19 +564,20 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
     // hoist a single aggregate to an outer scope
     // most outer permissible aggregate is hoisted
     visitDepthFirst(program, [&](const RamQuery& query) {
-        // aggregate description
-        int aggLevel = -1;
-        AggregateFunction newFun;
-        const RamRelation* newRef;
-        RamExpression* newExp;
-        RamCondition* newCond;
 
-        // is indexed aggregate operation
-        bool isAggIndexed = false;
-        std::vector<std::unique_ptr<RamExpression>> newPattern;
+        // aggregate description
+        int aggLevel;
+        AggregateFunction aggFun;
+        const RamRelation* aggRelRef;
+        RamExpression* aggExp;
+        RamCondition* aggCond;
+        std::vector<std::unique_ptr<RamExpression>> aggPattern;
+
+        // is it an indexed aggregate operation
+        bool isAggIndexed;
 
         // new level of aggregate
-        int newLevel = -1;
+        int newLevel;
 
         // Tracking aggregates seen to determine whether to
         // hoist or not
@@ -587,7 +588,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         auto checkForAggregates = [&](int start, int end) {
             bool allAggregates = true;
             for (int i = start + 1; i <= end; i++) {
-                if (!(std::find(aggIds.begin(), aggIds.end(), i) != aggIds.end())) {
+                if (std::find(aggIds.begin(), aggIds.end(), i) == aggIds.end()) {
                     allAggregates = false;
                     break;
                 }
@@ -603,17 +604,17 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                         // RamIndexAggregate
                         return std::make_unique<RamIndexAggregate>(
                                 std::unique_ptr<RamOperation>(dynamic_cast<RamOperation*>(node.release())),
-                                newFun, std::make_unique<RamRelationReference>(newRef),
-                                std::unique_ptr<RamExpression>(newExp),
-                                std::unique_ptr<RamCondition>(newCond), std::move(newPattern), aggLevel);
+                                aggFun, std::make_unique<RamRelationReference>(aggRelRef),
+                                std::unique_ptr<RamExpression>(aggExp),
+                                std::unique_ptr<RamCondition>(aggCond), std::move(aggPattern), aggLevel);
 
                     } else {
                         // RamAggregate
                         return std::make_unique<RamAggregate>(
                                 std::unique_ptr<RamOperation>(dynamic_cast<RamOperation*>(node.release())),
-                                newFun, std::make_unique<RamRelationReference>(newRef),
-                                std::unique_ptr<RamExpression>(newExp),
-                                std::unique_ptr<RamCondition>(newCond), aggLevel);
+                                aggFun, std::make_unique<RamRelationReference>(aggRelRef),
+                                std::unique_ptr<RamExpression>(aggExp),
+                                std::unique_ptr<RamCondition>(aggCond), aggLevel);
                     }
                 }
                 return node;
@@ -639,10 +640,13 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
 
                         // copying fields
                         aggLevel = agg->getTupleId();
-                        newFun = agg->getFunction();
-                        newRef = &agg->getRelation();
-                        newExp = dynamic_cast<RamExpression*>(agg->getExpression().clone());
-                        newCond = dynamic_cast<RamCondition*>(agg->getCondition().clone());
+                        aggFun = agg->getFunction();
+                        aggRelRef = &agg->getRelation();
+                        aggExp = dynamic_cast<RamExpression*>(agg->getExpression().clone());
+                        aggCond = dynamic_cast<RamCondition*>(agg->getCondition().clone());
+
+                        // set as indexed aggregate
+                        isAggIndexed = false;
 
                         // return next operation to cut aggregate out
                         return std::unique_ptr<RamOperation>(agg->getOperation().clone());
@@ -660,15 +664,17 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                         newLevel = rla->getLevel(agg);
 
                         // copying fields
-                        isAggIndexed = true;
                         aggLevel = agg->getTupleId();
-                        newFun = agg->getFunction();
-                        newRef = &agg->getRelation();
-                        newExp = dynamic_cast<RamExpression*>(agg->getExpression().clone());
-                        newCond = dynamic_cast<RamCondition*>(agg->getCondition().clone());
+                        aggFun = agg->getFunction();
+                        aggRelRef = &agg->getRelation();
+                        aggExp = dynamic_cast<RamExpression*>(agg->getExpression().clone());
+                        aggCond = dynamic_cast<RamCondition*>(agg->getCondition().clone());
                         for (const RamExpression* cur : agg->getRangePattern()) {
-                            newPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
+                            aggPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
                         }
+
+                        // set as indexed aggregate
+                        isAggIndexed = true;
 
                         // return next operation to cut aggregate out
                         return std::unique_ptr<RamOperation>(agg->getOperation().clone());

@@ -430,11 +430,41 @@ void AstSemanticChecker::checkLiteral(
         }
     }
 }
+/**
+ * agg1, agg2 are clauses which contain no head, and consist of a single literal
+ * that contains an aggregate.
+ * agg1 is dependent on agg2 if agg1 contains a variable which is grounded by agg2, and not by agg1.
+ */
+bool AstSemanticChecker::isDependent(const AstClause& agg1, const AstClause& agg2) {
+    auto groundedInAgg1 = getGroundedTerms(agg1);
+    auto groundedInAgg2 = getGroundedTerms(agg2);
+    bool dependent = false;
+    // For each variable X in the first aggregate
+    visitDepthFirst(agg1, [&](const AstVariable& searchVar) {
+        // Try to find the corresponding variable X in the second aggregate
+        // by string comparison
+        const AstVariable* matchingVarPtr = nullptr;
+        visitDepthFirst(agg2, [&](const AstVariable& var) {
+            if (var == searchVar) {
+                matchingVarPtr = &var;
+                return;
+            }
+        });
+        // If the variable occurs in both clauses (a match was found)
+        if (matchingVarPtr != nullptr) {
+            if (!groundedInAgg1[&searchVar] && groundedInAgg2[matchingVarPtr]) {
+                dependent = true;
+            }
+        }
+    });
+    return dependent;
+}
 
 void AstSemanticChecker::checkAggregator(
         ErrorReport& report, const AstProgram& program, const AstAggregator& aggregator) {
     const AstAggregator* inner = nullptr;
 
+    // check for disallowed nested aggregates
     visitDepthFirst(aggregator, [&](const AstAggregator& innerAgg) {
         if (aggregator != innerAgg) {
             inner = &innerAgg;
@@ -444,6 +474,32 @@ void AstSemanticChecker::checkAggregator(
     if (inner != nullptr) {
         report.addError("Unsupported nested aggregate", inner->getSrcLoc());
     }
+
+    AstClause dummyClauseAggregator;
+
+    visitDepthFirst(program, [&](const AstLiteral& parentLiteral) {
+        visitDepthFirst(parentLiteral, [&](const AstAggregator& candidateAggregate) {
+            if (candidateAggregate != aggregator) {
+                return;
+            }
+            // Get the literal containing the aggregator and put it into a dummy clause
+            // so we can get information about groundedness
+            dummyClauseAggregator.addToBody(std::unique_ptr<AstLiteral>(parentLiteral.clone()));
+        });
+    });
+
+    visitDepthFirst(program, [&](const AstLiteral& parentLiteral) {
+        visitDepthFirst(parentLiteral, [&](const AstAggregator& otherAggregate) {
+            // Create the other aggregate's dummy clause
+            AstClause dummyClauseOther;
+            dummyClauseOther.addToBody(std::unique_ptr<AstLiteral>(parentLiteral.clone()));
+            // Check dependency between the aggregator and this one
+            if (isDependent(dummyClauseAggregator, dummyClauseOther) &&
+                    isDependent(dummyClauseOther, dummyClauseAggregator)) {
+                report.addError("Mutually dependent aggregate", aggregator.getSrcLoc());
+            }
+        });
+    });
 
     for (AstLiteral* literal : aggregator.getBodyLiterals()) {
         checkLiteral(report, program, *literal);

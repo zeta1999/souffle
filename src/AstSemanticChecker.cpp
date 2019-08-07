@@ -445,7 +445,7 @@ bool AstSemanticChecker::isDependent(const AstClause& agg1, const AstClause& agg
         // by string comparison
         const AstVariable* matchingVarPtr = nullptr;
         visitDepthFirst(agg2, [&](const AstVariable& var) {
-            if (var.getName() == searchVar.getName()) {
+            if (var == searchVar) {
                 matchingVarPtr = &var;
                 return;
             }

@@ -1,5 +1,5 @@
 B(x) :-     A(x),    C(x).
-Src locator-: /home/scholz/souffle/tests/profile/recursive/recursive.dl [8:1-8:20]
+Src locator-:recursive.dl [8:1-8:20]
 
   ----- Rule Versions Table -----
    TOT_T  NREC_T   REC_T          TUPLES   VER

@@ -1,5 +1,14 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2018, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Tests the RAM transformer for hoisting aggregates
+
 .decl a(x:number)
 a(1).
+a(2).
 .decl b(x:number)
 b(y0) :-
    a( y0),
@@ -8,7 +17,6 @@ b(y0) :-
 .decl c(x:number, y:number)
 .decl d(x:number, y:number)
 .decl e(x:number, y:number)
-c(1,1).
 d(1,1).
 e(1,1).
 .decl f(x:number)
@@ -18,5 +26,5 @@ c(x,y) :-
       d(x,y),
       e(x,z),
       f(z),
-      3 = count : d(x,_).
+      1 = count : d(x,_).
 

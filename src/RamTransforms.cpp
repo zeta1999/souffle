@@ -564,7 +564,6 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
     // hoist a single aggregate to an outer scope
     // most outer permissible aggregate is hoisted
     visitDepthFirst(program, [&](const RamQuery& query) {
-
         // aggregate description
         int aggLevel;
         AggregateFunction aggFun;

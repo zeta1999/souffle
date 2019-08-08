@@ -764,7 +764,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 } else if (atom->getArgument(pos) != nullptr) {
                     std::unique_ptr<RamExpression> value =
                             translator.translateValue(atom->getArgument(pos), valueIndex);
-                    if (value != nullptr) {
+                    if (value != nullptr && !isRamUndefValue(value.get())) {
                         std::unique_ptr<RamCondition> newCondition =
                                 std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                         std::make_unique<RamTupleElement>(level, pos), std::move(value));

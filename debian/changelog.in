@@ -1,4 +1,10 @@
 souffle (@VERSION@-1) UNRELEASED; urgency=low
+  * Fix transformation of aggregates (b-scholz)
+
+ -- Kostyantyn Vorobyov <k.a.vorobyov@gmail.com>  Fri, 8 Aug 2019 16:44:31 +1100
+
+souffle (1.6.1); urgency=low
+  * Fix builds from GitHub source releases (mmcgr)
 
  -- Kostyantyn Vorobyov <k.a.vorobyov@gmail.com>  Fri, 2 Aug 2019 13:30:33 +1100
 

@@ -29,7 +29,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 dnl Do not set default CFLAGS and CXXFLAGS
 ENV_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS=" -Wall -std=c++11"
+CXXFLAGS=" -Wall -std=c++1z"
 
 # Disable provenance
 AC_ARG_ENABLE(

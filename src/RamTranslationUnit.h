@@ -49,7 +49,7 @@ public:
         auto it = analyses.find(name);
         if (it == analyses.end()) {
             // analysis does not exist yet, create instance and run it.
-            auto analysis = std::make_unique<Analysis>();
+            auto analysis = std::make_unique<Analysis>(Analysis::name);
             analysis->run(*this);
             // Check it hasn't been created by someone else, and insert if not
             std::lock_guard<std::mutex> guard(analysisLock);
@@ -59,6 +59,14 @@ public:
             }
         }
         return dynamic_cast<Analysis*>(analyses[name].get());
+    }
+
+    std::set<const RamAnalysis*> getAliveAnalyses() const {
+        std::set<const RamAnalysis*> result;
+        for (auto const& a : analyses) {
+            result.insert(a.second.get());
+        }
+        return result;
     }
 
     const RamProgram* getProgram() const {
@@ -103,10 +111,13 @@ protected:
     /* The table of symbols encountered in the input program */
     souffle::SymbolTable& symbolTable;
 
+    /* Error report for raising errors and warnings */
     ErrorReport& errorReport;
 
+    /* Debug report for logging information */
     DebugReport& debugReport;
 
+    /* TODO (b-scholz): this should disappear with the new interpreter */
     mutable std::mutex analysisLock;
 };
 

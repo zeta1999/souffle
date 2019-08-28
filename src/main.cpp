@@ -514,7 +514,8 @@ int main(int argc, char** argv) {
             std::make_unique<ExpandFilterTransformer>(), std::make_unique<HoistConditionsTransformer>(),
             std::make_unique<RamConditionalTransformer>(
                     []() -> bool { return std::stoi(Global::config().get("jobs")) > 1; },
-                    std::make_unique<ParallelTransformer>()));
+                    std::make_unique<ParallelTransformer>()),
+            std::make_unique<ReportIndexTransfomer>());
 
     ramTransform->apply(*ramTranslationUnit);
     if (ramTranslationUnit->getErrorReport().getNumIssues() != 0) {

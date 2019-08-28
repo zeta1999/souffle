@@ -43,6 +43,7 @@ public:
 
     virtual ~RamTranslationUnit() = default;
 
+    /* @brief templated method to compute/retrieve an analysis for a translation unit */
     template <class Analysis>
     Analysis* getAnalysis() const {
         std::string name = Analysis::name;
@@ -61,6 +62,7 @@ public:
         return dynamic_cast<Analysis*>(analyses[name].get());
     }
 
+    /* @brief get the set of alive analyses of the translation unit */
     std::set<const RamAnalysis*> getAliveAnalyses() const {
         std::set<const RamAnalysis*> result;
         for (auto const& a : analyses) {
@@ -69,34 +71,42 @@ public:
         return result;
     }
 
-    const RamProgram* getProgram() const {
-        return program.get();
-    }
-
-    RamProgram* getProgram() {
-        return program.get();
-    }
-
-    souffle::SymbolTable& getSymbolTable() const {
-        return symbolTable;
-    }
-
-    ErrorReport& getErrorReport() {
-        return errorReport;
-    }
-
-    const ErrorReport& getErrorReport() const {
-        return errorReport;
-    }
-
+    /* @brief throw away all alive analyses of the translation unit */
     void invalidateAnalyses() {
         analyses.clear();
     }
 
+    /* @brief get the const RAM Program of the translation unit  */
+    const RamProgram* getProgram() const {
+        return program.get();
+    }
+
+    /* @brief get the RAM Program of the translation unit  */
+    RamProgram* getProgram() {
+        return program.get();
+    }
+
+    /* @brief get symbol table  */
+    souffle::SymbolTable& getSymbolTable() const {
+        return symbolTable;
+    }
+
+    /* @brief get error report */
+    ErrorReport& getErrorReport() {
+        return errorReport;
+    }
+
+    /* @brief get error report */
+    const ErrorReport& getErrorReport() const {
+        return errorReport;
+    }
+
+    /* @brief get debug report */
     DebugReport& getDebugReport() {
         return debugReport;
     }
 
+    /* @brief get const debug report */
     const DebugReport& getDebugReport() const {
         return debugReport;
     }

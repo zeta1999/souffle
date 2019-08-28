@@ -30,6 +30,8 @@
 #include "ParserDriver.h"
 #include "RAMI.h"
 #include "RAMIProgInterface.h"
+#include "RamIndexAnalysis.h"
+#include "RamLevelAnalysis.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"

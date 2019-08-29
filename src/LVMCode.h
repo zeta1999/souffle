@@ -100,6 +100,7 @@ enum LVM_Type {
     LVM_Project,
     LVM_ReturnValue,
     LVM_Search,
+    LVM_CreateViews,
 
     // LVM Stmts
     LVM_Sequence,
@@ -130,6 +131,7 @@ enum LVM_Type {
     LVM_Jmpnz,
     LVM_Jmpez,
     LVM_STOP,
+    LVM_ParallelStop,
     LVM_NOP,
 
     // LVM Relation Structure Representation
@@ -139,13 +141,18 @@ enum LVM_Type {
     LVM_DEFAULT,
 
     LVM_ITER_InitFullIndex,
+    LVM_ITER_InitFullIndexParallel,
     LVM_ITER_InitRangeIndex,
+    LVM_ITER_InitRangeIndexParallel,
     LVM_ITER_InitRangeIndexOneArg,
+    LVM_ITER_InitRangeIndexOneArgParallel,
     LVM_ITER_Select,
     LVM_ITER_Inc,
     LVM_ITER_NotAtEnd,
 
 };
+
+class LVMStaticEnvironment;
 
 /**
  * LVMCode is an array of LVM Opcode and operands.
@@ -154,8 +161,6 @@ enum LVM_Type {
  */
 class LVMCode : protected std::vector<RamDomain> {
 public:
-    LVMCode(SymbolTable& symbolTable) : symbolTable(symbolTable) {}
-
     using std::vector<RamDomain>::push_back;
     using std::vector<RamDomain>::clear;
     using std::vector<RamDomain>::size;
@@ -173,32 +178,7 @@ public:
         return std::vector<RamDomain>(begin(), end());
     }
 
-    /** Return IODirectives pool */
-    std::vector<std::vector<IODirectives>>& getIODirectives() {
-        return IODirectivesPool;
-    }
-
-    /** Return size of the IODirectives pool */
-    size_t getIODirectivesSize() const {
-        return IODirectivesPool.size();
-    }
-
-    /** Return SymbolTabel */
-    SymbolTable& getSymbolTable() {
-        return symbolTable;
-    }
-
-    /** Print out the code stream */
-    virtual void print() const;
-
     virtual ~LVMCode() = default;
-
-private:
-    /** Store reference to IODirectives */
-    std::vector<std::vector<IODirectives>> IODirectivesPool;
-
-    /** Class for converting string to number and vice versa */
-    SymbolTable& symbolTable;
 };
 
 }  // End of namespace souffle

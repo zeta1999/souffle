@@ -18,6 +18,7 @@
 #include <cassert>
 #include <limits>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace souffle {
@@ -91,17 +92,13 @@ public:
  */
 LVMRecordMap& getForArity(int arity) {
     // the static container -- filled on demand
-    static map<int, LVMRecordMap> maps;
-
-    // get container if present
+    static unordered_map<int, LVMRecordMap> maps;
     auto pos = maps.find(arity);
-    if (pos != maps.end()) {
-        return pos->second;
+    if (pos == maps.end()) {
+        maps.emplace(arity, arity);
     }
 
-    // create new container if required
-    maps.emplace(arity, arity);
-    return getForArity(arity);
+    return maps.find(arity)->second;
 }
 }  // namespace
 
@@ -121,6 +118,10 @@ RamDomain getNull() {
 
 bool isNull(RamDomain ref) {
     return ref == 0;
+}
+
+void createRecordMap(int arity) {
+    getForArity(arity);
 }
 
 }  // end of namespace souffle

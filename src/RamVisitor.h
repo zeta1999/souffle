@@ -26,6 +26,7 @@
 #include "RamStatement.h"
 
 #include <functional>
+#include <typeindex>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -73,82 +74,83 @@ struct RamVisitor : public ram_visitor_tag {
     virtual R visit(const RamNode& node, Params... args) {
         // dispatch node processing based on dynamic type
 
+        switch (node.kind) {
 #define FORWARD(Kind) \
-    if (const auto* n = dynamic_cast<const Ram##Kind*>(&node)) return visit##Kind(*n, args...);
+    case RK_##Kind:   \
+        return visit##Kind(static_cast<const Ram##Kind&>(node), args...);
 
-        // Relation
-        FORWARD(Relation);
-        FORWARD(RelationReference);
+            // Relation
+            FORWARD(Relation);
+            FORWARD(RelationReference);
 
-        // Expressions
-        FORWARD(TupleElement);
-        FORWARD(Number);
-        FORWARD(IntrinsicOperator);
-        FORWARD(UserDefinedOperator);
-        FORWARD(AutoIncrement);
-        FORWARD(PackRecord);
-        FORWARD(SubroutineArgument);
-        FORWARD(UndefValue);
+            // Expressions
+            FORWARD(TupleElement);
+            FORWARD(Number);
+            FORWARD(IntrinsicOperator);
+            FORWARD(UserDefinedOperator);
+            FORWARD(AutoIncrement);
+            FORWARD(PackRecord);
+            FORWARD(SubroutineArgument);
+            FORWARD(UndefValue);
 
-        // Conditions
-        FORWARD(True);
-        FORWARD(False);
-        FORWARD(EmptinessCheck);
-        FORWARD(ExistenceCheck);
-        FORWARD(ProvenanceExistenceCheck);
-        FORWARD(Conjunction);
-        FORWARD(Negation);
-        FORWARD(Constraint);
+            // Conditions
+            FORWARD(True);
+            FORWARD(False);
+            FORWARD(EmptinessCheck);
+            FORWARD(ExistenceCheck);
+            FORWARD(ProvenanceExistenceCheck);
+            FORWARD(Conjunction);
+            FORWARD(Negation);
+            FORWARD(Constraint);
 
-        // Operations
-        FORWARD(Filter);
-        FORWARD(Break);
-        FORWARD(Project);
-        FORWARD(SubroutineReturnValue);
-        FORWARD(UnpackRecord);
-        FORWARD(ParallelScan);
-        FORWARD(Scan);
-        FORWARD(ParallelIndexScan);
-        FORWARD(IndexScan);
-        FORWARD(ParallelChoice);
-        FORWARD(Choice);
-        FORWARD(ParallelIndexChoice);
-        FORWARD(IndexChoice);
-        FORWARD(Aggregate);
-        FORWARD(IndexAggregate);
+            // Operations
+            FORWARD(Filter);
+            FORWARD(Break);
+            FORWARD(Project);
+            FORWARD(SubroutineReturnValue);
+            FORWARD(UnpackRecord);
+            FORWARD(ParallelScan);
+            FORWARD(Scan);
+            FORWARD(ParallelIndexScan);
+            FORWARD(IndexScan);
+            FORWARD(ParallelChoice);
+            FORWARD(Choice);
+            FORWARD(ParallelIndexChoice);
+            FORWARD(IndexChoice);
+            FORWARD(Aggregate);
+            FORWARD(IndexAggregate);
 
-        // Statements
-        FORWARD(Create);
-        FORWARD(Fact);
-        FORWARD(Load);
-        FORWARD(Store);
-        FORWARD(Query);
-        FORWARD(Clear);
-        FORWARD(Drop);
-        FORWARD(LogSize);
+            // Statements
+            FORWARD(Create);
+            FORWARD(Fact);
+            FORWARD(Load);
+            FORWARD(Store);
+            FORWARD(Query);
+            FORWARD(Clear);
+            FORWARD(Drop);
+            FORWARD(LogSize);
 
-        FORWARD(Merge);
-        FORWARD(Swap);
+            FORWARD(Merge);
+            FORWARD(Swap);
 
-        // Control-flow
-        FORWARD(Program);
-        FORWARD(Sequence);
-        FORWARD(Loop);
-        FORWARD(Parallel);
-        FORWARD(Exit);
-        FORWARD(LogTimer);
-        FORWARD(LogRelationTimer);
-        FORWARD(DebugInfo);
-        FORWARD(Stratum);
-
+            // Control-flow
+            FORWARD(Program);
+            FORWARD(Sequence);
+            FORWARD(Loop);
+            FORWARD(Parallel);
+            FORWARD(Exit);
+            FORWARD(LogTimer);
+            FORWARD(LogRelationTimer);
+            FORWARD(DebugInfo);
+            FORWARD(Stratum);
 #ifdef USE_MPI
-        // mpi
-        FORWARD(Send);
-        FORWARD(Recv);
-        FORWARD(Notify);
-        FORWARD(Wait);
+            // mpi
+            FORWARD(Send);
+            FORWARD(Recv);
+            FORWARD(Notify);
+            FORWARD(Wait);
 #endif
-
+        }
 #undef FORWARD
 
         // did not work ...

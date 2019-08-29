@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "AstVisitor.h"
+#include "LVMGenerator.h"
 #include "RAMIContext.h"
 #include "RAMIInterface.h"
 #include "RAMIRelation.h"
@@ -44,12 +46,146 @@ class RamExpression;
 class SymbolTable;
 
 /**
+ * This class contains functions for views (Hints) analysis and creation.
+ */
+class RAMIPreamble {
+public:
+    /**
+     * Add outer-most filter operation which require a view.
+     */
+    void addOuterFilterOperation(const RamCondition* node) {
+        outerOperations.push_back(node);
+    }
+
+    /**
+     * Add existence check in outer-most filter operation.
+     */
+    void addViewForOuterFilter(const RamNode* node) {
+        assert(dynamic_cast<const RamExistenceCheck*>(node) ||
+                dynamic_cast<const RamProvenanceExistenceCheck*>(node));
+        viewsForFilterOperation.push_back(node);
+    }
+
+    /**
+     * Add nested operation which require a view (Hints).
+     * This node cannot come from the outer-most filter operation.
+     */
+    void addViewForNestedOperation(const RamNode* op) {
+        assert(dynamic_cast<const RamIndexOperation*>(op) || dynamic_cast<const RamExistenceCheck*>(op) ||
+                dynamic_cast<const RamProvenanceExistenceCheck*>(op));
+        viewsForNestedOperation.push_back(op);
+    }
+
+    /**
+     * Add a list of nested operations which require a view.
+     */
+    void addNestedOperationList(const std::vector<const RamNode*>& nodes) {
+        for (auto& node : nodes) {
+            addViewForNestedOperation(node);
+        }
+    }
+
+    /**
+     * Return outer-most filter operations.
+     */
+    const std::vector<const RamCondition*>& getOuterFilterOperation() {
+        return outerOperations;
+    }
+
+    /**
+     * Return views for outer-most filter operations.
+     */
+    const std::vector<const RamNode*>& getViewsInOuterOperation() {
+        return viewsForFilterOperation;
+    }
+
+    /**
+     * Return nested operations
+     */
+    std::vector<const RamNode*> getViewsInNestedOperation() {
+        return viewsForNestedOperation;
+    }
+
+    /**
+     * Find all operations under the root node that require a view.
+     *
+     * In particular, find all index operation and existence check operation.
+     */
+    std::vector<const RamNode*> findAllViews(const RamNode& node) {
+        std::vector<const RamNode*> res;
+        visitDepthFirst(node, [&](const RamNode& node) {
+            if (requireView(&node) == true) {
+                res.push_back(&node);
+            };
+        });
+        return res;
+    }
+
+    /**
+     * Return true if the given operation requires a view.
+     */
+    bool requireView(const RamNode* node) {
+        if (dynamic_cast<const RamExistenceCheck*>(node) != nullptr) {
+            return true;
+        } else if (dynamic_cast<const RamProvenanceExistenceCheck*>(node) != nullptr) {
+            return true;
+        } else if (dynamic_cast<const RamIndexOperation*>(node) != nullptr) {
+            return true;
+        }
+        return false;
+    }
+
+    void reset() {
+        outerOperations.clear();
+        viewsForFilterOperation.clear();
+        viewsForNestedOperation.clear();
+    }
+
+    /**
+     * Same as toConjunctionList defined in RamOperation. But does not clone new node,
+     * only holds a list of raw pointers to the original node.
+     */
+    inline std::vector<const RamCondition*> toConjunctionList(const RamCondition* condition) {
+        std::vector<const RamCondition*> list;
+        std::stack<const RamCondition*> stack;
+        if (condition != nullptr) {
+            stack.push(condition);
+            while (!stack.empty()) {
+                condition = stack.top();
+                stack.pop();
+                if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
+                    stack.push(&ramConj->getLHS());
+                    stack.push(&ramConj->getRHS());
+                } else {
+                    list.emplace_back(condition);
+                }
+            }
+        }
+        return list;
+    }
+
+private:
+    std::vector<const RamCondition*> outerOperations;
+    std::vector<const RamNode*> viewsForFilterOperation;
+    std::vector<const RamNode*> viewsForNestedOperation;
+};
+
+/**
  * Interpreter executing a RAM translation unit
  */
 
 class RAMI : public RAMIInterface {
 public:
-    RAMI(RamTranslationUnit& tUnit) : RAMIInterface(tUnit) {}
+    RAMI(RamTranslationUnit& tUnit)
+            : RAMIInterface(tUnit), profileEnabled(Global::config().has("profile")),
+              isProvenance(Global::config().has("provenance")) {
+        threadsNum = std::stoi(Global::config().get("jobs"));
+#ifdef _OPENMP
+        if (threadsNum > 1) {
+            omp_set_num_threads(threadsNum);
+        }
+#endif
+    }
     ~RAMI() {
         for (auto& x : environment) {
             delete x.second;
@@ -68,13 +204,13 @@ protected:
     RamDomain evalExpr(const RamExpression& value, const RAMIContext& ctxt = RAMIContext());
 
     /** Evaluate operation */
-    void evalOp(const RamOperation& op, const RAMIContext& ctxt = RAMIContext());
+    void evalOp(const RamOperation& op, RAMIContext& ctxt);
 
     /** Evaluate conditions */
-    bool evalCond(const RamCondition& cond, const RAMIContext& ctxt = RAMIContext());
+    bool evalCond(const RamCondition& cond, RAMIContext&);
 
     /** Evaluate statement */
-    void evalStmt(const RamStatement& stmt, const RAMIContext& ctxt = RAMIContext());
+    void evalStmt(const RamStatement& stmt, RAMIContext&);
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
@@ -107,27 +243,62 @@ protected:
     }
 
     void createRelation(const RamRelation& id, const MinIndexSelection* orderSet) {
-        RAMIRelation* res = nullptr;
+        RelationHandle res;
         assert(environment.find(id.getName()) == environment.end());
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = new RAMIEqRelation(id.getArity(), orderSet, id.getName());
+            res = std::make_unique<RAMIEqRelation>(
+                    id.getArity(), id.getName(), std::vector<std::string>(), *orderSet);
         } else {
-            res = new RAMIRelation(id.getArity(), orderSet, id.getName());
+            if (isProvenance == true) {
+                res = std::make_unique<RAMIRelation>(id.getArity(), id.getName(), std::vector<std::string>(),
+                        *orderSet, createBTreeProvenanceIndex);
+            } else {
+                res = std::make_unique<RAMIRelation>(
+                        id.getArity(), id.getName(), std::vector<std::string>(), *orderSet);
+            }
         }
-        environment[id.getName()] = res;
+        environment[id.getName()] = new RelationHandle(std::move(res));
     }
 
+private:
     /** Get relation */
-    RAMIRelation& getRelation(const std::string& name) {
+    RelationHandle& getRelationHandle(const std::string& name) {
         // look up relation
         auto pos = environment.find(name);
         assert(pos != environment.end());
         return *pos->second;
     }
 
+    /** Create views */
+    void createViews(const std::vector<const RamNode*>& nodes, RAMIContext& ctxt) {
+        for (auto node : nodes) {
+            if (auto exists = dynamic_cast<const RamExistenceCheck*>(node)) {
+                auto& rel = getRelation(exists->getRelation());
+                auto indexPos = ctxt.getIndexPos(*exists, isa);
+                ctxt.addNewView(rel.getView(indexPos), exists);
+            } else if (auto provExists = dynamic_cast<const RamProvenanceExistenceCheck*>(node)) {
+                auto& rel = getRelation(provExists->getRelation());
+                auto indexPos = ctxt.getIndexPos(*provExists, isa);
+                ctxt.addNewView(rel.getView(indexPos), provExists);
+            } else if (auto index = dynamic_cast<const RamIndexOperation*>(node)) {
+                auto& rel = getRelation(index->getRelation());
+                auto indexPos = ctxt.getIndexPos(*index, isa);
+                ctxt.addNewView(rel.getView(indexPos), index);
+            } else {
+                assert(false && "Operation does not need a view!");
+            }
+        }
+    }
+
+public:
     /** Get relation */
     inline RAMIRelation& getRelation(const RamRelation& id) {
-        return getRelation(id.getName());
+        if (id.relation != nullptr) {
+            return **static_cast<RelationHandle*>(id.relation);
+        }
+        auto& handle = getRelationHandle(id.getName());
+        id.relation = &handle;
+        return *handle;
     }
 
     /** Drop relation */
@@ -139,20 +310,19 @@ protected:
 
     /** Swap relation */
     void swapRelation(const RamRelation& ramRel1, const RamRelation& ramRel2) {
-        RAMIRelation* rel1 = &getRelation(ramRel1);
-        RAMIRelation* rel2 = &getRelation(ramRel2);
-        environment[ramRel1.getName()] = rel2;
-        environment[ramRel2.getName()] = rel1;
+        RelationHandle& rel1 = getRelationHandle(ramRel1.getName());
+        RelationHandle& rel2 = getRelationHandle(ramRel2.getName());
+        std::swap(rel1, rel2);
     }
 
 private:
     friend RAMIProgInterface;
 
     /** relation environment type */
-    using relation_map = std::map<std::string, RAMIRelation*>;
+    using relation_map = std::map<std::string, RelationHandle*>;
 
     /** Get relation map */
-    virtual std::map<std::string, RAMIRelation*>& getRelationMap() override {
+    virtual std::map<std::string, RelationHandle*>& getRelationMap() override {
         return environment;
     }
 
@@ -163,13 +333,21 @@ private:
     std::map<std::string, std::atomic<size_t>> reads;
 
     /** counter for $ operator */
-    int counter = 0;
+    std::atomic<RamDomain> counter{0};
 
     /** iteration number (in a fix-point calculation) */
     size_t iteration = 0;
 
     /** Relation Environment */
     relation_map environment;
+
+    bool profileEnabled;
+
+    bool isProvenance;
+
+    RAMIPreamble preamble;
+
+    size_t threadsNum;
 };
 
 }  // end of namespace souffle

@@ -229,6 +229,10 @@ public:
 
     Stream() : source(nullptr) {}
 
+    Stream(Stream& other) = delete;
+
+    Stream& operator=(Stream& other) = delete;
+
     Stream(Stream&& other)
             : source(std::move(other.source)), buffer(other.buffer), cur(other.cur), limit(other.limit) {}
 
@@ -316,11 +320,74 @@ private:
 };
 
 /**
+ * A partitioned stream is a list of streams each covering a disjoint subset
+ * of a specific range. The individual subsets may be processed in parallel.
+ */
+class PartitionedStream {
+    // The internally owned list of streams maintaining a partition of the
+    // overall iteration range.
+    std::vector<Stream> streams;
+
+public:
+    using iterator = typename std::vector<Stream>::iterator;
+
+    PartitionedStream(std::vector<Stream>&& streams) : streams(std::move(streams)) {}
+
+    // -- allow PartitionStreams to be processed by for-loops --
+
+    iterator begin() {
+        return streams.begin();
+    }
+
+    iterator end() {
+        return streams.end();
+    }
+};
+
+/**
+ * A view on a relation caching local access patterns (not thread safe!).
+ * Each thread should create and use its own view for accessing relations
+ * to exploit access patterns via operation hints.
+ */
+class IndexView {
+public:
+    /**
+     * Tests whether the given entry is contained in this index.
+     */
+    virtual bool contains(const TupleRef& entry) const = 0;
+
+    /**
+     * Tests whether any element in the given range is contained in this index.
+     */
+    virtual bool contains(const TupleRef& low, const TupleRef& high) const = 0;
+
+    /**
+     * Obtains a stream for the given range within this index.
+     */
+    virtual Stream range(const TupleRef& low, const TupleRef& high) const = 0;
+
+    /**
+     * Return arity size of the index
+     */
+    virtual size_t getArity() const = 0;
+
+    virtual ~IndexView() = default;
+};
+
+// A general handler type for index views.
+using IndexViewPtr = std::unique_ptr<IndexView>;
+
+/**
  * An index is an abstraction of a data structure
  */
 class LVMIndex {
 public:
     virtual ~LVMIndex() = default;
+
+    /**
+     * Requests the creation of a view on this index.
+     */
+    virtual IndexViewPtr createView() const = 0;
 
     /**
      * Obtains the arity of the given index.
@@ -353,19 +420,46 @@ public:
     virtual bool contains(const TupleRef& tuple) const = 0;
 
     /**
+     * Tests whether this index contains any tuple within the given bounds.
+     */
+    virtual bool contains(const TupleRef& low, const TupleRef& high) const = 0;
+
+    /**
      * Returns a stream covering the entire index content.
      */
     virtual Stream scan() const = 0;
 
     /**
-     * Returns a stream covering the elements
+     * Returns a partitioned stream covering the entire index content.
+     */
+    virtual PartitionedStream partitionScan(int partitionCount) const = 0;
+
+    /**
+     * Returns a stream covering elements in the range [low,high)
      */
     virtual Stream range(const TupleRef& low, const TupleRef& high) const = 0;
+
+    /**
+     * Returns a partitioned stream covering elements in the range [low,high)
+     */
+    virtual PartitionedStream partitionRange(
+            const TupleRef& low, const TupleRef& high, int partitionCount) const = 0;
 
     /**
      * Clears the content of this index, turning it empty.
      */
     virtual void clear() = 0;
+
+    /**
+     * Extend another index.
+     *
+     * This should only affect on an EqrelIndex.
+     * Extend this index with another index, expanding this equivalence relation.
+     * The supplied relation is the old knowledge, whilst this relation only contains
+     * explicitly new knowledge. After this operation the "implicitly new tuples" are now
+     * explicitly inserted this relation.
+     */
+    virtual void extend(LVMIndex*) {}
 };
 
 // The type of index factory functions.
@@ -374,10 +468,16 @@ using IndexFactory = std::unique_ptr<LVMIndex> (*)(const Order&);
 // A factory for BTree based index.
 std::unique_ptr<LVMIndex> createBTreeIndex(const Order&);
 
+// A factory for BTree provenance index.
+std::unique_ptr<LVMIndex> createBTreeProvenanceIndex(const Order&);
+
 // A factory for Brie based index.
 std::unique_ptr<LVMIndex> createBrieIndex(const Order&);
 
 // A factory for indirect index.
 std::unique_ptr<LVMIndex> createIndirectIndex(const Order&);
+
+// A factory for Eqrel index.
+std::unique_ptr<LVMIndex> createEqrelIndex(const Order&);
 
 }  // end of namespace souffle

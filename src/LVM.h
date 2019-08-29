@@ -40,6 +40,10 @@
 namespace souffle {
 class LVMProgInterface;
 
+class LVMStack : std::vector<RamDomain> {
+
+};
+
 /**
  * Bytecode Interpreter executing a RAM translation unit.
  *
@@ -51,7 +55,8 @@ class LVM : public LVMInterface {
 public:
     LVM(RamTranslationUnit& tUnit)
             : LVMInterface(tUnit), profile(Global::config().has("profile")),
-              provenance(Global::config().has("provenance")) {}
+              provenance(Global::config().has("provenance")),
+              numOfThreads(std::stoi(Global::config().get("jobs"))) {}
 
     virtual ~LVM() {
         for (auto* timer : timers) {
@@ -84,21 +89,10 @@ public:
             execute(subroutines.at(name), ctxt);
         } else {
             // Parse and cache the program
-            LVMGenerator generator(translationUnit.getSymbolTable(),
-                    translationUnit.getProgram()->getSubroutine(name), relationEncoder);
-            subroutines.emplace(std::make_pair(name, generator.getCodeStream()));
+            LVMGenerator generator(&translationUnit.getProgram()->getSubroutine(name), staticEnv);
+            subroutines.emplace(std::make_pair(name, generator.parseProgram()));
             execute(subroutines.at(name), ctxt);
         }
-    }
-
-    /** Print out the instruction stream */
-    void printMain() {
-        if (mainProgram.get() == nullptr) {
-            LVMGenerator generator(translationUnit.getSymbolTable(), *translationUnit.getProgram()->getMain(),
-                    relationEncoder);
-            mainProgram = generator.getCodeStream();
-        }
-        mainProgram->print();
     }
 
 protected:
@@ -149,25 +143,17 @@ protected:
 
     /** Get a relation */
     LVMRelation* getRelation(size_t id) {
-        return relationEncoder[id].get();
+        return staticEnv.getRelation(id).get();
     }
 
     /** Drop relation */
     void dropRelation(size_t id) {
-        relationEncoder[id].reset(nullptr);
+        staticEnv.getRelation(id).reset(nullptr);
     }
 
     /** Swap relation */
     void swapRelation(size_t relAId, size_t relBId) {
-        relationEncoder[relAId].swap(relationEncoder[relBId]);
-    }
-
-    /** Lookup stream, resize the pool if necessary */
-    Stream& lookUpStream(size_t idx) {
-        if (idx >= streamPool.size()) {
-            streamPool.resize(idx + 1);
-        }
-        return streamPool[idx];
+        staticEnv.getRelation(relAId).swap(staticEnv.getRelation(relBId));
     }
 
     /** Obtain the search columns */
@@ -189,10 +175,6 @@ private:
      * @param ip the instruction pointer start position, default is 0.
      * */
     void execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t ip = 0);
-
-    bool profile;
-
-    bool provenance;
 
     /** subroutines */
     std::map<std::string, std::unique_ptr<LVMCode>> subroutines;
@@ -216,13 +198,22 @@ private:
     std::vector<Logger*> timers;
 
     /** counter for $ operator */
-    int counter = 0;
+    std::atomic<RamDomain> counter{0};
 
     /** iteration number (in a fix-point calculation) */
     size_t iteration = 0;
 
     /** Dynamic library for user-defined functors */
     void* dll = nullptr;
+
+    /** Whether profile is enabled */
+    const bool profile;
+
+    /** Whether we are executing provenance program */
+    const bool provenance;
+
+    /** Number of threads for parallel computing */
+    const size_t numOfThreads;
 };
 
 }  // end of namespace souffle

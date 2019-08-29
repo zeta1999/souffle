@@ -44,9 +44,7 @@ class LVMProgInterface;
  */
 class LVMInterface {
 public:
-    LVMInterface(RamTranslationUnit& tUnit)
-            : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()),
-              relationEncoder(isa, translationUnit) {}
+    LVMInterface(RamTranslationUnit& tUnit) : translationUnit(tUnit), staticEnv(tUnit) {}
 
     virtual ~LVMInterface() = default;
 
@@ -131,20 +129,17 @@ protected:
 
     /** Get relation map */
     relation_map& getRelationMap() {
-        return relationEncoder.getRelationMap();
+        return staticEnv.getRelationMap();
     }
 
     /** RAM translation Unit */
     RamTranslationUnit& translationUnit;
 
-    /** IndexAnalysis */
-    RamIndexAnalysis* isa;
-
     /** Dynamic library for user-defined functors */
     std::vector<void*> dll;
 
     /** Relation Encode */
-    RelationEncoder relationEncoder;
+    LVMStaticEnvironment staticEnv;
 };
 
 }  // end of namespace souffle

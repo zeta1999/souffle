@@ -97,9 +97,6 @@ detail::LambdaRamNodeMapper<Lambda> makeLambdaRamMapper(const Lambda& lambda) {
  */
 class RamNode {
 public:
-    const RamNodeKind kind;
-    RamNode(RamNodeKind kind) : kind(kind) {}
-
     /*
      * @brief A virtual destructor for RAM nodes
      */

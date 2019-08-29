@@ -278,7 +278,7 @@ class RamAbstractExistenceCheck : public RamCondition {
 public:
     RamAbstractExistenceCheck(std::unique_ptr<RamRelationReference> relRef,
             std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamCondition(kind), relationRef(std::move(relRef)), values(std::move(vals)),
+            : relationRef(std::move(relRef)), values(std::move(vals)),
               valuePtr(toPtrVector(values)) {}
 
     /** @brief Get relation */
@@ -341,7 +341,7 @@ class RamExistenceCheck : public RamAbstractExistenceCheck {
 public:
     RamExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            :  std::move(relRef), std::move(vals)) {}
+            :  RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
     void print(std::ostream& os) const override {
         os << "("
@@ -374,7 +374,7 @@ class RamProvenanceExistenceCheck : public RamAbstractExistenceCheck {
 public:
     RamProvenanceExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            : AbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
+            : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
     void print(std::ostream& os) const override {
         os << "("

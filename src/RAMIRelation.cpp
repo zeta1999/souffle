@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file LVMRelation.cpp
+ * @file RAMIRelation.cpp
  *
- * Implement LVM Relations
+ * Implement RAMI Relations
  *
  ***********************************************************************/
 
-#include "LVMRelation.h"
+#include "RAMIRelation.h"
 #include "BTree.h"
 #include "Brie.h"
 #include "EquivalenceRelation.h"
@@ -22,7 +22,7 @@
 
 namespace souffle {
 
-LVMRelation::LVMRelation(std::size_t arity, const std::string& name,
+RAMIRelation::RAMIRelation(std::size_t arity, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet,
         IndexFactory factory)
         : relName(name), arity(arity), attributeTypes(attributeTypes) {
@@ -44,18 +44,18 @@ LVMRelation::LVMRelation(std::size_t arity, const std::string& name,
     main = indexes[0].get();
 }
 
-void LVMRelation::removeIndex(const size_t& indexPos) {
+void RAMIRelation::removeIndex(const size_t& indexPos) {
     // All but one index can be removed, default full index can't be removed.
     assert(indexes.size() > 1 || indexPos != 0);
     indexes[indexPos].reset(nullptr);
 }
 
-IndexViewPtr LVMRelation::getView(const size_t& indexPos) const {
+IndexViewPtr RAMIRelation::getView(const size_t& indexPos) const {
     assert(indexPos < indexes.size());
     return indexes[indexPos]->createView();
 }
 
-bool LVMRelation::insert(const TupleRef& tuple) {
+bool RAMIRelation::insert(const TupleRef& tuple) {
     if (!main->insert(tuple)) return false;
     for (const auto& cur : indexes) {
         if (cur.get() == main) continue;
@@ -64,94 +64,94 @@ bool LVMRelation::insert(const TupleRef& tuple) {
     return true;
 }
 
-void LVMRelation::insert(const LVMRelation& other) {
+void RAMIRelation::insert(const RAMIRelation& other) {
     // TODO: cover this in a smarter way
     for (const auto& cur : other.scan()) {
         insert(cur);
     }
 }
 
-bool LVMRelation::contains(const TupleRef& tuple) const {
+bool RAMIRelation::contains(const TupleRef& tuple) const {
     return main->contains(tuple);
 }
 
-bool LVMRelation::contains(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
+bool RAMIRelation::contains(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
     return indexes[indexPos]->contains(low, high);
 }
 
-Stream LVMRelation::scan() const {
+Stream RAMIRelation::scan() const {
     return main->scan();
 }
 
-PartitionedStream LVMRelation::partitionScan(size_t partitionCount) const {
+PartitionedStream RAMIRelation::partitionScan(size_t partitionCount) const {
     return main->partitionScan(partitionCount);
 }
 
-Stream LVMRelation::range(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
+Stream RAMIRelation::range(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
     auto& pos = indexes[indexPos];
     return pos->range(low, high);
 }
 
-PartitionedStream LVMRelation::partitionRange(
+PartitionedStream RAMIRelation::partitionRange(
         const size_t& indexPos, const TupleRef& low, const TupleRef& high, size_t partitionCount) const {
     auto& pos = indexes[indexPos];
     return pos->partitionRange(low, high, partitionCount);
 }
 
-void LVMRelation::swap(LVMRelation& other) {
+void RAMIRelation::swap(RAMIRelation& other) {
     indexes.swap(other.indexes);
 }
 
-size_t LVMRelation::getLevel() const {
+size_t RAMIRelation::getLevel() const {
     return this->level;
 }
 
-const std::string& LVMRelation::getName() const {
+const std::string& RAMIRelation::getName() const {
     return this->relName;
 }
 
-const std::vector<std::string>& LVMRelation::getAttributeTypeQualifiers() const {
+const std::vector<std::string>& RAMIRelation::getAttributeTypeQualifiers() const {
     return this->attributeTypes;
 }
 
-size_t LVMRelation::size() const {
+size_t RAMIRelation::size() const {
     return main->size();
 }
 
-bool LVMRelation::empty() const {
+bool RAMIRelation::empty() const {
     return main->empty();
 }
 
-void LVMRelation::purge() {
+void RAMIRelation::purge() {
     for (auto& index : indexes) {
         index->clear();
     }
 }
 
-bool LVMRelation::exists(const TupleRef& tuple) const {
+bool RAMIRelation::exists(const TupleRef& tuple) const {
     return main->contains(tuple);
 }
 
-void LVMRelation::extend(const LVMRelation& rel) {}
+void RAMIRelation::extend(const RAMIRelation& rel) {}
 
-LVMEqRelation::LVMEqRelation(size_t arity, const std::string& name,
+RAMIEqRelation::RAMIEqRelation(size_t arity, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
-        : LVMRelation(arity, name, attributeTypes, orderSet, createEqrelIndex) {
+        : RAMIRelation(arity, name, attributeTypes, orderSet, createEqrelIndex) {
     // EqivalenceRelation should have only index.
     assert(this->indexes.size() == 1);
 }
 
-void LVMEqRelation::extend(const LVMRelation& rel) {
-    auto otherEqRel = dynamic_cast<const LVMEqRelation*>(&rel);
+void RAMIEqRelation::extend(const RAMIRelation& rel) {
+    auto otherEqRel = dynamic_cast<const RAMIEqRelation*>(&rel);
     assert(otherEqRel != nullptr && "A eqRel can only merge with another eqRel");
     this->main->extend(otherEqRel->main);
 }
 
-LVMIndirectRelation::LVMIndirectRelation(size_t arity, const std::string& name,
+RAMIIndirectRelation::RAMIIndirectRelation(size_t arity, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
-        : LVMRelation(arity, name, attributeTypes, orderSet, createIndirectIndex) {}
+        : RAMIRelation(arity, name, attributeTypes, orderSet, createIndirectIndex) {}
 
-bool LVMIndirectRelation::insert(const TupleRef& tuple) {
+bool RAMIIndirectRelation::insert(const TupleRef& tuple) {
     if (main->contains(tuple)) {
         return false;
     }
@@ -179,11 +179,11 @@ bool LVMIndirectRelation::insert(const TupleRef& tuple) {
     return true;
 }
 
-bool LVMIndirectRelation::insert(const RamDomain* tuple) {
+bool RAMIIndirectRelation::insert(const RamDomain* tuple) {
     return this->insert(TupleRef(tuple, arity));
 }
 
-void LVMIndirectRelation::purge() {
+void RAMIIndirectRelation::purge() {
     blockList.clear();
     for (auto& cur : indexes) {
         cur->clear();

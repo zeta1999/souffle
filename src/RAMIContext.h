@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "LVMIndex.h"
+#include "RAMIIndex.h"
 #include "RamIndexAnalysis.h"
 #include "RamNode.h"
 #include "RamTypes.h"

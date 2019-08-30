@@ -24,7 +24,7 @@
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
-#include "RAMIIndex.h"
+// #include "RAMIIndex.h"
 #include "RAMIInterface.h"
 #include "RAMIRecords.h"
 #include "RamExpression.h"

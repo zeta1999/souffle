@@ -102,16 +102,9 @@ souffle_sources = \
               RamIndexAnalysis.cpp  RamIndexAnalysis.h  \
               InlineRelationsTransformer.cpp            \
               LogStatement.h                            \
-	       LVM.cpp     LVM.h 			\
-	       LVMCode.h				        \
-	       LVMContext.h                              \
-	       LVMGenerator.h                            \
-	       LVMIndex.h            LVMIndex.cpp	\
-	       LVMInterface.h                            \
-	       LVMProgInterface.h                        \
-	       LVMRecords.h          LVMRecords.cpp      \
-	       LVMRelation.h         LVMRelation.cpp     \
-	       MagicSet.cpp          MagicSet.h          \
+	      LVMIndex.h            LVMIndex.cpp	\
+	      LVMRelation.h         LVMRelation.cpp     \
+	      MagicSet.cpp          MagicSet.h          \
               MinimiseProgramTransformer.cpp            \
               ParserDriver.cpp      ParserDriver.h      \
               PrecedenceGraph.cpp   PrecedenceGraph.h   \

@@ -508,7 +508,7 @@ public:
     /**
      * Act similar to getBoundaries. But non-static.
      * This function should be used ONLY by interpreter,
-     * and its behavior is tightly coupling with LVMIndex.
+     * and its behavior is tightly coupling with RAMIIndex.
      * Do Not rely on this interface outside the interpreter.
      *
      * @param entry the entry to be looking for

@@ -114,7 +114,7 @@ AS_IF([test -z "$MCPP"], [AC_MSG_ERROR([mcpp not found.])])
 # Check for bison
 AC_CHECK_PROG(BISON, bison, bison)
 AS_IF([test -z "$BISON"], [AC_MSG_ERROR([bison not found.])])
-AX_PROG_BISON_VERSION([3.0.2], [], [AC_MSG_ERROR([bison version 3.0.2 is required.])])
+AX_PROG_BISON_VERSION([3.0.4], [], [AC_MSG_ERROR([bison version 3.0.4 is required.])])
 
 
 # Enable packaging option

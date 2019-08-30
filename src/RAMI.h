@@ -17,7 +17,6 @@
 #pragma once
 
 #include "AstVisitor.h"
-#include "LVMGenerator.h"
 #include "RAMIContext.h"
 #include "RAMIInterface.h"
 #include "RAMIRelation.h"
@@ -26,6 +25,7 @@
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
+#include "RamVisitor.h"
 #include "RelationRepresentation.h"
 
 #include <atomic>

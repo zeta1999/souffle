@@ -1348,9 +1348,36 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "0";
 
             out << "}})," << ctxName << ");\n";
-            out << "if (existenceCheck.empty()) return false; else return (*existenceCheck.begin())["
+            out << "if (existenceCheck.empty()) return false; else return ((*existenceCheck.begin())["
                 << arity - numberOfHeights << "] <= ";
+
             visit(*(provExists.getValues()[arity - numberOfHeights]), out);
+            out << ")";
+            if (numberOfHeights > 1) {
+                out << " &&  !("
+                    << "(*existenceCheck.begin())[" << arity - numberOfHeights << "] == ";
+                visit(*(provExists.getValues()[arity - numberOfHeights]), out);
+
+                // out << ")";}
+                out << " && (";
+
+                out << "(*existenceCheck.begin())[" << arity - numberOfHeights + 1 << "] > ";
+                visit(*(provExists.getValues()[arity - numberOfHeights + 1]), out);
+                // out << "))";}
+                for (int i = arity - numberOfHeights + 2; i < (int)arity; i++) {
+                    out << " || (";
+                    for (int j = arity - numberOfHeights + 1; j < i; j++) {
+                        out << "(*existenceCheck.begin())[" << j << "] == ";
+                        visit(*(provExists.getValues()[j]), out);
+                        out << " && ";
+                    }
+                    out << "(*existenceCheck.begin())[" << i << "] > ";
+                    visit(*(provExists.getValues()[i]), out);
+                    out << ")";
+                }
+
+                out << "))";
+            }
             out << ";}()\n";
             PRINT_END_COMMENT(out);
         }

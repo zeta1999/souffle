@@ -102,8 +102,8 @@ souffle_sources = \
               RamIndexAnalysis.cpp  RamIndexAnalysis.h  \
               InlineRelationsTransformer.cpp            \
               LogStatement.h                            \
-	      RAMIIndex.h            RAMIIndex.cpp	\
-	      RAMIRelation.h         RAMIRelation.cpp     \
+	      InterpreterIndex.h            InterpreterIndex.cpp	\
+	      InterpreterRelation.h         InterpreterRelation.cpp     \
 	      MagicSet.cpp          MagicSet.h          \
               MinimiseProgramTransformer.cpp            \
               ParserDriver.cpp      ParserDriver.h      \
@@ -111,12 +111,12 @@ souffle_sources = \
               ProfileEvent.h                            \
               ProvenanceTransformer.cpp                 \
               RamAnalysis.h                             \ 
-	       RAMI.cpp              RAMI.h              \ 
-	       RAMIContext.h                             \
-	       RAMIIndex.h                               \
-	       RAMIInterface.h                           \
-	       RAMIProgInterface.h                       \
-	       RAMIRecords.h         RAMIRecords.cpp     \
+	       Interpreter.cpp              Interpreter.h              \ 
+	       InterpreterContext.h                             \
+	       InterpreterIndex.h                               \
+	       InterpreterInterface.h                           \
+	       InterpreterProgInterface.h                       \
+	       InterpreterRecords.h         InterpreterRecords.cpp     \
               RamLevelAnalysis.cpp  RamLevelAnalysis.h  \
               RamCondition.h                            \
               RamNode.h                                 \

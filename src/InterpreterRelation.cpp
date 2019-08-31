@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file RAMIRelation.cpp
+ * @file InterpreterRelation.cpp
  *
- * Implement RAMI Relations
+ * Implement Interpreter Relations
  *
  ***********************************************************************/
 
-#include "RAMIRelation.h"
+#include "InterpreterRelation.h"
 #include "BTree.h"
 #include "Brie.h"
 #include "EquivalenceRelation.h"
@@ -22,7 +22,7 @@
 
 namespace souffle {
 
-RAMIRelation::RAMIRelation(std::size_t arity, const std::string& name,
+InterpreterRelation::InterpreterRelation(std::size_t arity, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet,
         IndexFactory factory)
         : relName(name), arity(arity), attributeTypes(attributeTypes) {
@@ -44,18 +44,18 @@ RAMIRelation::RAMIRelation(std::size_t arity, const std::string& name,
     main = indexes[0].get();
 }
 
-void RAMIRelation::removeIndex(const size_t& indexPos) {
+void InterpreterRelation::removeIndex(const size_t& indexPos) {
     // All but one index can be removed, default full index can't be removed.
     assert(indexes.size() > 1 || indexPos != 0);
     indexes[indexPos].reset(nullptr);
 }
 
-IndexViewPtr RAMIRelation::getView(const size_t& indexPos) const {
+IndexViewPtr InterpreterRelation::getView(const size_t& indexPos) const {
     assert(indexPos < indexes.size());
     return indexes[indexPos]->createView();
 }
 
-bool RAMIRelation::insert(const TupleRef& tuple) {
+bool InterpreterRelation::insert(const TupleRef& tuple) {
     if (!main->insert(tuple)) return false;
     for (const auto& cur : indexes) {
         if (cur.get() == main) continue;
@@ -64,94 +64,94 @@ bool RAMIRelation::insert(const TupleRef& tuple) {
     return true;
 }
 
-void RAMIRelation::insert(const RAMIRelation& other) {
+void InterpreterRelation::insert(const InterpreterRelation& other) {
     // TODO: cover this in a smarter way
     for (const auto& cur : other.scan()) {
         insert(cur);
     }
 }
 
-bool RAMIRelation::contains(const TupleRef& tuple) const {
+bool InterpreterRelation::contains(const TupleRef& tuple) const {
     return main->contains(tuple);
 }
 
-bool RAMIRelation::contains(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
+bool InterpreterRelation::contains(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
     return indexes[indexPos]->contains(low, high);
 }
 
-Stream RAMIRelation::scan() const {
+Stream InterpreterRelation::scan() const {
     return main->scan();
 }
 
-PartitionedStream RAMIRelation::partitionScan(size_t partitionCount) const {
+PartitionedStream InterpreterRelation::partitionScan(size_t partitionCount) const {
     return main->partitionScan(partitionCount);
 }
 
-Stream RAMIRelation::range(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
+Stream InterpreterRelation::range(const size_t& indexPos, const TupleRef& low, const TupleRef& high) const {
     auto& pos = indexes[indexPos];
     return pos->range(low, high);
 }
 
-PartitionedStream RAMIRelation::partitionRange(
+PartitionedStream InterpreterRelation::partitionRange(
         const size_t& indexPos, const TupleRef& low, const TupleRef& high, size_t partitionCount) const {
     auto& pos = indexes[indexPos];
     return pos->partitionRange(low, high, partitionCount);
 }
 
-void RAMIRelation::swap(RAMIRelation& other) {
+void InterpreterRelation::swap(InterpreterRelation& other) {
     indexes.swap(other.indexes);
 }
 
-size_t RAMIRelation::getLevel() const {
+size_t InterpreterRelation::getLevel() const {
     return this->level;
 }
 
-const std::string& RAMIRelation::getName() const {
+const std::string& InterpreterRelation::getName() const {
     return this->relName;
 }
 
-const std::vector<std::string>& RAMIRelation::getAttributeTypeQualifiers() const {
+const std::vector<std::string>& InterpreterRelation::getAttributeTypeQualifiers() const {
     return this->attributeTypes;
 }
 
-size_t RAMIRelation::size() const {
+size_t InterpreterRelation::size() const {
     return main->size();
 }
 
-bool RAMIRelation::empty() const {
+bool InterpreterRelation::empty() const {
     return main->empty();
 }
 
-void RAMIRelation::purge() {
+void InterpreterRelation::purge() {
     for (auto& index : indexes) {
         index->clear();
     }
 }
 
-bool RAMIRelation::exists(const TupleRef& tuple) const {
+bool InterpreterRelation::exists(const TupleRef& tuple) const {
     return main->contains(tuple);
 }
 
-void RAMIRelation::extend(const RAMIRelation& rel) {}
+void InterpreterRelation::extend(const InterpreterRelation& rel) {}
 
-RAMIEqRelation::RAMIEqRelation(size_t arity, const std::string& name,
+InterpreterEqRelation::InterpreterEqRelation(size_t arity, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
-        : RAMIRelation(arity, name, attributeTypes, orderSet, createEqrelIndex) {
+        : InterpreterRelation(arity, name, attributeTypes, orderSet, createEqrelIndex) {
     // EqivalenceRelation should have only index.
     assert(this->indexes.size() == 1);
 }
 
-void RAMIEqRelation::extend(const RAMIRelation& rel) {
-    auto otherEqRel = dynamic_cast<const RAMIEqRelation*>(&rel);
+void InterpreterEqRelation::extend(const InterpreterRelation& rel) {
+    auto otherEqRel = dynamic_cast<const InterpreterEqRelation*>(&rel);
     assert(otherEqRel != nullptr && "A eqRel can only merge with another eqRel");
     this->main->extend(otherEqRel->main);
 }
 
-RAMIIndirectRelation::RAMIIndirectRelation(size_t arity, const std::string& name,
+InterpreterIndirectRelation::InterpreterIndirectRelation(size_t arity, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
-        : RAMIRelation(arity, name, attributeTypes, orderSet, createIndirectIndex) {}
+        : InterpreterRelation(arity, name, attributeTypes, orderSet, createIndirectIndex) {}
 
-bool RAMIIndirectRelation::insert(const TupleRef& tuple) {
+bool InterpreterIndirectRelation::insert(const TupleRef& tuple) {
     if (main->contains(tuple)) {
         return false;
     }
@@ -179,11 +179,11 @@ bool RAMIIndirectRelation::insert(const TupleRef& tuple) {
     return true;
 }
 
-bool RAMIIndirectRelation::insert(const RamDomain* tuple) {
+bool InterpreterIndirectRelation::insert(const RamDomain* tuple) {
     return this->insert(TupleRef(tuple, arity));
 }
 
-void RAMIIndirectRelation::purge() {
+void InterpreterIndirectRelation::purge() {
     blockList.clear();
     for (auto& cur : indexes) {
         cur->clear();

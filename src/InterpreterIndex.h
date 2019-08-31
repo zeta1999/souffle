@@ -8,9 +8,9 @@
 
 /************************************************************************
  *
- * @file RAMIIndex.h
+ * @file InterpreterIndex.h
  *
- * RAMI index with generic interface.
+ * Interpreter index with generic interface.
  *
  ***********************************************************************/
 #pragma once
@@ -380,9 +380,9 @@ using IndexViewPtr = std::unique_ptr<IndexView>;
 /**
  * An index is an abstraction of a data structure
  */
-class RAMIIndex {
+class InterpreterIndex {
 public:
-    virtual ~RAMIIndex() = default;
+    virtual ~InterpreterIndex() = default;
 
     /**
      * Requests the creation of a view on this index.
@@ -412,7 +412,7 @@ public:
     /**
      * Inserts all elements of the given index.
      */
-    virtual void insert(const RAMIIndex& src) = 0;
+    virtual void insert(const InterpreterIndex& src) = 0;
 
     /**
      * Tests whether the given tuple is present in this index or not.
@@ -459,25 +459,25 @@ public:
      * explicitly new knowledge. After this operation the "implicitly new tuples" are now
      * explicitly inserted this relation.
      */
-    virtual void extend(RAMIIndex*) {}
+    virtual void extend(InterpreterIndex*) {}
 };
 
 // The type of index factory functions.
-using IndexFactory = std::unique_ptr<RAMIIndex> (*)(const Order&);
+using IndexFactory = std::unique_ptr<InterpreterIndex> (*)(const Order&);
 
 // A factory for BTree based index.
-std::unique_ptr<RAMIIndex> createBTreeIndex(const Order&);
+std::unique_ptr<InterpreterIndex> createBTreeIndex(const Order&);
 
 // A factory for BTree provenance index.
-std::unique_ptr<RAMIIndex> createBTreeProvenanceIndex(const Order&);
+std::unique_ptr<InterpreterIndex> createBTreeProvenanceIndex(const Order&);
 
 // A factory for Brie based index.
-std::unique_ptr<RAMIIndex> createBrieIndex(const Order&);
+std::unique_ptr<InterpreterIndex> createBrieIndex(const Order&);
 
 // A factory for indirect index.
-std::unique_ptr<RAMIIndex> createIndirectIndex(const Order&);
+std::unique_ptr<InterpreterIndex> createIndirectIndex(const Order&);
 
 // A factory for Eqrel index.
-std::unique_ptr<RAMIIndex> createEqrelIndex(const Order&);
+std::unique_ptr<InterpreterIndex> createEqrelIndex(const Order&);
 
 }  // end of namespace souffle

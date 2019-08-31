@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file RAMIIndex.cpp
+ * @file InterpreterIndex.cpp
  *
- * RAMI index with generic interface.
+ * Interpreter index with generic interface.
  *
  ***********************************************************************/
 
-#include "RAMIIndex.h"
+#include "InterpreterIndex.h"
 #include "CompiledIndexUtils.h"
 #include "Util.h"
 
@@ -82,7 +82,7 @@ std::ostream& operator<<(std::ostream& out, const Order& order) {
  * An index wrapper for nullary indexes. For those, no complex
  * nested data structure is required.
  */
-class NullaryIndex : public RAMIIndex {
+class NullaryIndex : public InterpreterIndex {
     // indicates whether the one single element is present or not.
     std::atomic<bool> present;
 
@@ -154,7 +154,7 @@ public:
         return res;
     }
 
-    void insert(const RAMIIndex& src) override {
+    void insert(const InterpreterIndex& src) override {
         assert(src.getArity() == 0);
         present = present | !src.empty();
     }
@@ -201,7 +201,7 @@ public:
  * @tparam Structure the structure to be utilized
  */
 template <typename Structure>
-class GenericIndex : public RAMIIndex {
+class GenericIndex : public InterpreterIndex {
 protected:
     using Entry = typename Structure::element_type;
     using Hints = typename Structure::operation_hints;
@@ -317,7 +317,7 @@ public:
         return data.insert(order.encode(tuple.asTuple<Arity>()));
     }
 
-    void insert(const RAMIIndex& src) override {
+    void insert(const InterpreterIndex& src) override {
         // TODO: make smarter
         for (const auto& cur : src.scan()) {
             insert(cur);
@@ -368,7 +368,7 @@ public:
 };
 
 /* B-Tree Indirect indexes */
-class IndirectIndex : public RAMIIndex {
+class IndirectIndex : public InterpreterIndex {
 public:
     /* lexicographical comparison operation on two tuple pointers */
     struct comparator {
@@ -490,7 +490,7 @@ public:
         return set.insert(tuple, operation_hints);
     }
 
-    void insert(const RAMIIndex& src) override {
+    void insert(const InterpreterIndex& src) override {
         for (const auto& cur : src.scan()) {
             insert(cur);
         }
@@ -554,7 +554,7 @@ using t_tuple = typename ram::Tuple<RamDomain, Arity>;
 
 // Updater for Provenance
 template <std::size_t Arity>
-struct RAMIProvenanceUpdater {
+struct InterpreterProvenanceUpdater {
     void update(t_tuple<Arity>& old_t, const t_tuple<Arity>& new_t) {
         old_t[Arity - 2] = new_t[Arity - 2];
         old_t[Arity - 1] = new_t[Arity - 1];
@@ -577,11 +577,11 @@ template <std::size_t Arity>
 class BTreeProvenanceIndex
         : public GenericIndex<btree_set<t_tuple<Arity>, comparator<Arity>, std::allocator<t_tuple<Arity>>,
                   256, typename detail::default_strategy<t_tuple<Arity>>::type, comparator<Arity - 2>,
-                  RAMIProvenanceUpdater<Arity>>> {
+                  InterpreterProvenanceUpdater<Arity>>> {
 public:
     using GenericIndex<btree_set<t_tuple<Arity>, comparator<Arity>, std::allocator<t_tuple<Arity>>, 256,
             typename detail::default_strategy<t_tuple<Arity>>::type, comparator<Arity - 2>,
-            RAMIProvenanceUpdater<Arity>>>::GenericIndex;
+            InterpreterProvenanceUpdater<Arity>>>::GenericIndex;
 };
 
 /**
@@ -600,7 +600,7 @@ class EqrelIndex : public GenericIndex<EquivalenceRelation<t_tuple<2>>> {
 public:
     using GenericIndex<EquivalenceRelation<t_tuple<2>>>::GenericIndex;
 
-    void extend(RAMIIndex* other) override {
+    void extend(InterpreterIndex* other) override {
         auto otherIndex = dynamic_cast<EqrelIndex*>(other);
         assert(otherIndex != nullptr && "Can only extend to EqrelIndex");
         this->data.extend(otherIndex->data);
@@ -614,7 +614,7 @@ protected:
     }
 };
 
-std::unique_ptr<RAMIIndex> createBTreeIndex(const Order& order) {
+std::unique_ptr<InterpreterIndex> createBTreeIndex(const Order& order) {
     switch (order.size()) {
         case 0:
             return std::make_unique<NullaryIndex>();
@@ -647,7 +647,7 @@ std::unique_ptr<RAMIIndex> createBTreeIndex(const Order& order) {
     return {};
 }
 
-std::unique_ptr<RAMIIndex> createBTreeProvenanceIndex(const Order& order) {
+std::unique_ptr<InterpreterIndex> createBTreeProvenanceIndex(const Order& order) {
     switch (order.size()) {
         case 0:
         case 1:
@@ -683,7 +683,7 @@ std::unique_ptr<RAMIIndex> createBTreeProvenanceIndex(const Order& order) {
     return {};
 }
 
-std::unique_ptr<RAMIIndex> createBrieIndex(const Order& order) {
+std::unique_ptr<InterpreterIndex> createBrieIndex(const Order& order) {
     switch (order.size()) {
         case 0:
             return std::make_unique<NullaryIndex>();
@@ -716,12 +716,12 @@ std::unique_ptr<RAMIIndex> createBrieIndex(const Order& order) {
     return {};
 }
 
-std::unique_ptr<RAMIIndex> createIndirectIndex(const Order& order) {
+std::unique_ptr<InterpreterIndex> createIndirectIndex(const Order& order) {
     assert(order.size() != 0 && "IndirectIndex does not work with nullary relation\n");
     return std::make_unique<IndirectIndex>(order.getOrder());
 }
 
-std::unique_ptr<RAMIIndex> createEqrelIndex(const Order& order) {
+std::unique_ptr<InterpreterIndex> createEqrelIndex(const Order& order) {
     assert(order.size() == 2 && "Eqrel index must have tuple of 2 arities");
     return std::make_unique<EqrelIndex>(order);
 }

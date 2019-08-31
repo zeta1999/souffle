@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file RAMIRecords.cpp
+ * @file InterpreterRecords.cpp
  *
- * Utilities for handling records in RAMI
+ * Utilities for handling records in Interpreter
  *
  ***********************************************************************/
 
-#include "RAMIRecords.h"
+#include "InterpreterRecords.h"
 #include <cassert>
 #include <limits>
 #include <map>
@@ -30,7 +30,7 @@ using namespace std;
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
-class RAMIRecordMap {
+class InterpreterRecordMap {
     /** The arity of the stored tuples */
     int arity;
 
@@ -41,7 +41,7 @@ class RAMIRecordMap {
     vector<vector<RamDomain>> i2r;
 
 public:
-    RAMIRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    InterpreterRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -90,9 +90,9 @@ public:
 /**
  * The static access function for record maps of certain arities.
  */
-RAMIRecordMap& getForArity(int arity) {
+InterpreterRecordMap& getForArity(int arity) {
     // the static container -- filled on demand
-    static unordered_map<int, RAMIRecordMap> maps;
+    static unordered_map<int, InterpreterRecordMap> maps;
 #pragma omp critical(find_map)
     {
         auto pos = maps.find(arity);
@@ -104,21 +104,21 @@ RAMIRecordMap& getForArity(int arity) {
 }
 }  // namespace
 
-RamDomain packRAMI(RamDomain* tuple, int arity) {
+RamDomain packInterpreter(RamDomain* tuple, int arity) {
     // conduct the packing
     return getForArity(arity).pack(tuple);
 }
 
-RamDomain* unpackRAMI(RamDomain ref, int arity) {
+RamDomain* unpackInterpreter(RamDomain ref, int arity) {
     // conduct the unpacking
     return getForArity(arity).unpack(ref);
 }
 
-RamDomain getNullRAMI() {
+RamDomain getNullInterpreter() {
     return 0;
 }
 
-bool isNullRAMI(RamDomain ref) {
+bool isNullInterpreter(RamDomain ref) {
     return ref == 0;
 }
 

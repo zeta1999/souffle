@@ -8,17 +8,17 @@
 
 /************************************************************************
  *
- * @file RAMIInterface.h
+ * @file InterpreterInterface.h
  *
- * Declares the interpreter for RAMI
+ * Declares the interpreter for Interpreter
  *
  ***********************************************************************/
 
 #pragma once
 
 #include "Logger.h"
-#include "RAMIContext.h"
-#include "RAMIRelation.h"
+#include "InterpreterContext.h"
+#include "InterpreterRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
@@ -36,19 +36,19 @@
 
 namespace souffle {
 
-class RAMIProgInterface;
+class InterpreterProgInterface;
 
 /**
  * Interpreter Interface
  */
-class RAMIInterface {
+class InterpreterInterface {
 public:
-    using RelationHandle = std::unique_ptr<RAMIRelation>;
+    using RelationHandle = std::unique_ptr<InterpreterRelation>;
 
-    RAMIInterface(RamTranslationUnit& tUnit)
+    InterpreterInterface(RamTranslationUnit& tUnit)
             : translationUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()) {}
 
-    virtual ~RAMIInterface() = default;
+    virtual ~InterpreterInterface() = default;
 
     /** Get translation unit */
     RamTranslationUnit& getTranslationUnit() {
@@ -119,7 +119,7 @@ protected:
         return nullptr;
     }
 
-    friend RAMIProgInterface;
+    friend InterpreterProgInterface;
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {

@@ -8,18 +8,18 @@
 
 /************************************************************************
  *
- * @file RAMI.h
+ * @file Interpreter.h
  *
- * Declares the RAMI (RamInterpreter) class for executing RAM programs.
+ * Declares the Interpreter (RamInterpreter) class for executing RAM programs.
  *
  ***********************************************************************/
 
 #pragma once
 
 #include "AstVisitor.h"
-#include "RAMIContext.h"
-#include "RAMIInterface.h"
-#include "RAMIRelation.h"
+#include "InterpreterContext.h"
+#include "InterpreterInterface.h"
+#include "InterpreterRelation.h"
 #include "RamCondition.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
@@ -48,7 +48,7 @@ class SymbolTable;
 /**
  * This class contains functions for views (Hints) analysis and creation.
  */
-class RAMIPreamble {
+class InterpreterPreamble {
 public:
     /**
      * Add outer-most filter operation which require a view.
@@ -174,10 +174,10 @@ private:
  * Interpreter executing a RAM translation unit
  */
 
-class RAMI : public RAMIInterface {
+class Interpreter : public InterpreterInterface {
 public:
-    RAMI(RamTranslationUnit& tUnit)
-            : RAMIInterface(tUnit), profileEnabled(Global::config().has("profile")),
+    Interpreter(RamTranslationUnit& tUnit)
+            : InterpreterInterface(tUnit), profileEnabled(Global::config().has("profile")),
               isProvenance(Global::config().has("provenance")) {
         threadsNum = std::stoi(Global::config().get("jobs"));
 #ifdef _OPENMP
@@ -186,7 +186,7 @@ public:
         }
 #endif
     }
-    ~RAMI() {
+    ~Interpreter() {
         for (auto& x : environment) {
             delete x.second;
         }
@@ -201,16 +201,16 @@ public:
 
 protected:
     /** Evaluate value */
-    RamDomain evalExpr(const RamExpression& value, const RAMIContext& ctxt = RAMIContext());
+    RamDomain evalExpr(const RamExpression& value, const InterpreterContext& ctxt = InterpreterContext());
 
     /** Evaluate operation */
-    void evalOp(const RamOperation& op, RAMIContext& ctxt);
+    void evalOp(const RamOperation& op, InterpreterContext& ctxt);
 
     /** Evaluate conditions */
-    bool evalCond(const RamCondition& cond, RAMIContext&);
+    bool evalCond(const RamCondition& cond, InterpreterContext&);
 
     /** Evaluate statement */
-    void evalStmt(const RamStatement& stmt, RAMIContext&);
+    void evalStmt(const RamStatement& stmt, InterpreterContext&);
 
     /** Get symbol table */
     SymbolTable& getSymbolTable() {
@@ -246,14 +246,14 @@ protected:
         RelationHandle res;
         assert(environment.find(id.getName()) == environment.end());
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = std::make_unique<RAMIEqRelation>(
+            res = std::make_unique<InterpreterEqRelation>(
                     id.getArity(), id.getName(), std::vector<std::string>(), *orderSet);
         } else {
             if (isProvenance == true) {
-                res = std::make_unique<RAMIRelation>(id.getArity(), id.getName(), std::vector<std::string>(),
+                res = std::make_unique<InterpreterRelation>(id.getArity(), id.getName(), std::vector<std::string>(),
                         *orderSet, createBTreeProvenanceIndex);
             } else {
-                res = std::make_unique<RAMIRelation>(
+                res = std::make_unique<InterpreterRelation>(
                         id.getArity(), id.getName(), std::vector<std::string>(), *orderSet);
             }
         }
@@ -270,7 +270,7 @@ private:
     }
 
     /** Create views */
-    void createViews(const std::vector<const RamNode*>& nodes, RAMIContext& ctxt) {
+    void createViews(const std::vector<const RamNode*>& nodes, InterpreterContext& ctxt) {
         for (auto node : nodes) {
             if (auto exists = dynamic_cast<const RamExistenceCheck*>(node)) {
                 auto& rel = getRelation(exists->getRelation());
@@ -292,7 +292,7 @@ private:
 
 public:
     /** Get relation */
-    inline RAMIRelation& getRelation(const RamRelation& id) {
+    inline InterpreterRelation& getRelation(const RamRelation& id) {
         if (id.relation != nullptr) {
             return **static_cast<RelationHandle*>(id.relation);
         }
@@ -303,7 +303,7 @@ public:
 
     /** Drop relation */
     void dropRelation(const RamRelation& id) {
-        RAMIRelation& rel = getRelation(id);
+        InterpreterRelation& rel = getRelation(id);
         environment.erase(id.getName());
         delete &rel;
     }
@@ -316,7 +316,7 @@ public:
     }
 
 private:
-    friend RAMIProgInterface;
+    friend InterpreterProgInterface;
 
     /** relation environment type */
     using relation_map = std::map<std::string, RelationHandle*>;
@@ -345,7 +345,7 @@ private:
 
     bool isProvenance;
 
-    RAMIPreamble preamble;
+    InterpreterPreamble preamble;
 
     size_t threadsNum;
 };

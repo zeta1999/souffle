@@ -14,3 +14,6 @@ export PATH="/usr/local/opt/bison/bin:$PATH"
 export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig/
 
 rm /Users/travis/Library/Logs/DiagnosticReports/* || true
+
+set +e
+set +x

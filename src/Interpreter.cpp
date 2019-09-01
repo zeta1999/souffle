@@ -611,7 +611,7 @@ void Interpreter::evalOp(const RamOperation& op, InterpreterContext& args) {
             return true;
         }
 
-        bool visitParallelChoice(const RamParallelChoice& pchoice, size_t exitAddress) {
+        bool visitParallelChoice(const RamParallelChoice& pchoice) override {
             auto& preamble = interpreter.preamble;
             // get the targeted relation
             const InterpreterRelation& rel = interpreter.getRelation(pchoice.getRelation());

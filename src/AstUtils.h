@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include <cstddef>
 #include <set>
 #include <vector>
-#include <cstddef>
 
 namespace souffle {
 

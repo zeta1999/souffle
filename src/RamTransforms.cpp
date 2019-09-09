@@ -560,7 +560,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
     // most outer permissible aggregate is hoisted
     visitDepthFirst(program, [&](const RamQuery& query) {
         // new level of aggregate
-        int newLevel;
+        int newLevel = -1;
 
         // new aggregate
         std::unique_ptr<RamNestedOperation> newAgg;

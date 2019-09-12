@@ -90,7 +90,7 @@ public:
     std::chrono::microseconds getRecTime() const {
         std::chrono::microseconds result{};
         for (auto& iter : iterations) {
-            result = iter->getRuntime();
+            result += iter->getRuntime();
         }
         return result;
     }

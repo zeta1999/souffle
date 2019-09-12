@@ -29,7 +29,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 dnl Do not set default CFLAGS and CXXFLAGS
 ENV_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS=" -Wall -std=c++17"
+CXXFLAGS=" -Wall "
 
 # Disable provenance
 AC_ARG_ENABLE(
@@ -87,7 +87,7 @@ AS_IF([test "x$enable_mpi" = "xyes"], [
 AM_CONDITIONAL([MPI], [test "x$enable_mpi" = "xyes"])
 
 AC_PROG_CXX
-AX_CXX_COMPILE_STDCXX(11)
+AX_CXX_COMPILE_STDCXX(17)
 
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET

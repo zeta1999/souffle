@@ -10,7 +10,6 @@ set -x
 
 rm /usr/local/include/c++ || true
 
-# Install gcc instead of gcc-x.x if a current version is preferred
 brew install gcc@9
 
 # Using 'g++' will call the xcode link to clang

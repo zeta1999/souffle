@@ -159,12 +159,12 @@ jobs:
 # Packaging stage
   # Test make install installs a working souffle.
   - <<: *linuxpackage
-    script: docker run -v `pwd`:/souffle ubuntu:xenial /bin/sh -c "cd /souffle && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/test_make_install.sh"
+    script: docker run -v `pwd`:/souffle ubuntu:bionic /bin/sh -c "cd /souffle && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/test_make_install.sh"
     env: "debian-make-install"
   # Make the linux deb packages and if successful upload to github releases and bintray
   # All PRs go to bintray unstable, tagged releases to bintray stable
   - <<: *linuxpackage
-    script: docker run -v `pwd`:/souffle ubuntu:xenial /bin/sh -c "cd /souffle && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/linux/make_package.sh"
+    script: docker run -v `pwd`:/souffle ubuntu:bionic /bin/sh -c "cd /souffle && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/linux/make_package.sh"
     env: "debian-package"
     before_deploy:
       - .travis/bintray_json.sh debian

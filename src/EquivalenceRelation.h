@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <exception>
 #include <set>
+#include <shared_mutex>
 #include <unordered_map>
 #include <utility>
 
@@ -599,7 +600,7 @@ private:
     mutable souffle::SparseDisjointSet<value_type> sds;
 
     // read/write lock on equivalencePartition
-    mutable souffle::shared_mutex statesLock;
+    mutable std::shared_mutex statesLock;
 
     mutable StatesMap equivalencePartition;
     // whether the cache is stale

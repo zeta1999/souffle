@@ -1,10 +1,10 @@
 #!/bin/bash
 
-set -e -u -o pipefail
+set -oue pipefail
 
-if [ $(which clang-format-4.0) ]
+if [ $(which clang-format) ]
 then
-    clang-format-4.0 \
+    clang-format \
             -i \
             -style=file \
             src/*.h \

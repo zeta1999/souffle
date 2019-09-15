@@ -318,6 +318,8 @@ protected:
  */
 class RamIndexAnalysis : public RamAnalysis {
 public:
+    RamIndexAnalysis(const char* id) : RamAnalysis(id) {}
+
     static constexpr const char* name = "index-analysis";
 
     void run(const RamTranslationUnit& translationUnit) override;

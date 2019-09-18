@@ -857,7 +857,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                         IOSystem::getInstance()
                                 // TODO (sarah) fix for extended instrumentation
-                                .getReader(symbolMask, symbolTable, io, Global::config().has("provenance"), relPtr->getNumberOfHeights())
+                                .getReader(symbolMask, symbolTable, io, Global::config().has("provenance"),
+                                        relPtr->getNumberOfHeights())
                                 ->readAll(*relPtr);
                     } catch (std::exception& e) {
                         std::cerr << "Error loading data: " << e.what() << "\n";
@@ -879,7 +880,8 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                         }
                         IOSystem::getInstance()
                                 // TODO (sarah) fix for extended instrumentation
-                                .getWriter(symbolMask, symbolTable, io, Global::config().has("provenance"), relPtr->getNumberOfHeights())
+                                .getWriter(symbolMask, symbolTable, io, Global::config().has("provenance"),
+                                        relPtr->getNumberOfHeights())
                                 ->writeAll(*relPtr);
                     } catch (std::exception& e) {
                         std::cerr << "Error Storing data: " << e.what() << "\n";

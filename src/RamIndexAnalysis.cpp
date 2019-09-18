@@ -341,7 +341,6 @@ MinIndexSelection& RamIndexAnalysis::getIndexes(const RamRelation& rel) {
 }
 
 void RamIndexAnalysis::print(std::ostream& os) const {
-    os << "------ Auto-Index-Generation Report -------\n";
     for (auto& cur : minIndexCover) {
         const RamRelation& rel = *cur.first;
         const MinIndexSelection& indexes = cur.second;
@@ -349,7 +348,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
 
         /* Print searches */
         os << "Relation " << relName << "\n";
-        os << "\tNumber of Search Patterns: " << indexes.getSearches().size() << "\n";
+        os << "\tNumber of Primitive Searches: " << indexes.getSearches().size() << "\n";
 
         /* print searches */
         for (auto& cols : indexes.getSearches()) {
@@ -371,7 +370,6 @@ void RamIndexAnalysis::print(std::ostream& os) const {
             os << "\n";
         }
     }
-    os << "------ End of Auto-Index-Generation Report -------\n";
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* search) const {

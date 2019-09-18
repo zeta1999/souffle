@@ -17,6 +17,7 @@
 #include "Brie.h"
 #include "test.h"
 #include <cstring>
+#include <random>
 
 using namespace souffle;
 
@@ -1268,7 +1269,10 @@ TEST(Trie, Parallel) {
         }
 
         // shuffle data
-        std::random_shuffle(full.begin(), full.end());
+        std::random_device rd;
+        std::mt19937 generator(rd());
+
+        std::shuffle(full.begin(), full.end(), generator);
 
         // now insert all those values into a new set - in parallel
         Trie<2> res;

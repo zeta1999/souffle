@@ -541,11 +541,11 @@ int main(int argc, char** argv) {
         // configure and execute interpreter
         if (Global::config().get("interpreter") == "LVM") {
             /* disable LVM interpreter with subtree height provenance implementation */
-            if (Global::config().get("provenance") == "subtreeHeights") {
+            /*if (Global::config().get("provenance") == "subtreeHeights") {
                 throw std::runtime_error(
                         "provenance instrumentation with subtree heights is currently not supported in LVM "
                         "interpreter");
-            }
+            }*/
             std::unique_ptr<LVMInterface> lvm(std::make_unique<LVM>(*ramTranslationUnit));
             lvm->executeMain();
             // If the profiler was started, join back here once it exits.

@@ -36,6 +36,11 @@
 #include <iterator>
 #include <utility>
 
+#ifdef _WIN32
+#undef max
+#define __sync_synchronize MemoryBarrier
+#endif  // _WIN32
+
 namespace souffle {
 
 namespace detail {

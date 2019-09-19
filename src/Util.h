@@ -59,17 +59,18 @@
 
 #define PATH_MAX 260
 
+#undef min
+#undef max
+
 char* realpath(const char* path, char* resolved_path) {
     return _fullpath(resolved_path, path, PATH_MAX);
 }
 
-unsigned long __inline ctz(unsigned long value) {
-    unsigned long trailing_zero = 0;
-
-    if (_BitScanForward(&trailing_zero, value))
-        return trailing_zero;
-    else
-        return 32;
+constexpr unsigned long ctz(unsigned long value) {
+  unsigned long trailing_zeroes = 0;
+  while((value = value >> 1) ^ 1)
+    ++trailing_zeroes;
+  return trailing_zeroes;
 }
 #define __builtin_ctz ctz
 

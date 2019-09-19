@@ -37,7 +37,6 @@
 #include <utility>
 
 #ifdef _WIN32
-#undef max
 #define __sync_synchronize MemoryBarrier
 #endif  // _WIN32
 
@@ -1789,7 +1788,7 @@ public:
      */
     template <typename... Values>
     bool insert(Values... values) {
-        return static_cast<Derived&>(*this).insert((entry_type){{RamDomain(values)...}});
+        return static_cast<Derived&>(*this).insert(entry_type{{RamDomain(values)...}});
     }
 
     /**
@@ -1797,7 +1796,7 @@ public:
      */
     template <typename... Values>
     bool contains(Values... values) const {
-        return static_cast<const Derived&>(*this).contains((entry_type){{RamDomain(values)...}});
+        return static_cast<const Derived&>(*this).contains(entry_type{{RamDomain(values)...}});
     }
 
     // ---------------------------------------------------------------------

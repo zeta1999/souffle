@@ -67,10 +67,9 @@ char* realpath(const char* path, char* resolved_path) {
 }
 
 constexpr unsigned long ctz(unsigned long value) {
-  unsigned long trailing_zeroes = 0;
-  while((value = value >> 1) ^ 1)
-    ++trailing_zeroes;
-  return trailing_zeroes;
+    unsigned long trailing_zeroes = 0;
+    while ((value = value >> 1) ^ 1) ++trailing_zeroes;
+    return trailing_zeroes;
 }
 #define __builtin_ctz ctz
 

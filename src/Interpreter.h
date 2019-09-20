@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "AstVisitor.h"
 #include "InterpreterContext.h"
 #include "InterpreterInterface.h"
 #include "InterpreterRelation.h"
@@ -44,6 +43,7 @@ class RMAIProgInterface;
 class RamOperation;
 class RamExpression;
 class SymbolTable;
+
 
 /**
  * This class contains functions for views (Hints) analysis and creation.

@@ -24,7 +24,7 @@
 #include "Logger.h"
 #include "ParallelUtils.h"
 #include "ProfileEvent.h"
-// #include "InterpreterIndex.h"
+#include "InterpreterIndex.h"
 #include "InterpreterInterface.h"
 #include "InterpreterRecords.h"
 #include "RamExpression.h"

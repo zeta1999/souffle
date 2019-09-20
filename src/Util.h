@@ -66,6 +66,8 @@ char* realpath(const char* path, char* resolved_path) {
     return _fullpath(resolved_path, path, PATH_MAX);
 }
 
+#define __builtin_popcountll __popcnt64
+
 constexpr unsigned long ctz(unsigned long value) {
     unsigned long trailing_zeroes = 0;
     while ((value = value >> 1) ^ 1) ++trailing_zeroes;

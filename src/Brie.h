@@ -38,6 +38,10 @@
 
 #ifdef _WIN32
 #define __sync_synchronize MemoryBarrier
+#define __sync_bool_compare_and_swap(ptr, oldval, newval) \
+  (InterlockedCompareExchangePointer((void* volatile*)ptr, \
+                                    (void*)newval, \
+                                    (void*)oldval) == (void*)oldval)
 #endif  // _WIN32
 
 namespace souffle {

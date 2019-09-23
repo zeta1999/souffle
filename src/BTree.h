@@ -2234,13 +2234,13 @@ template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
         unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type,
         typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
-class btree_set : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true,
+class btree_set : public souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true,
                           WeakComparator, Updater> {
-    using super = detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator,
-            Updater>;
+    using super = souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true,
+            WeakComparator, Updater>;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true, WeakComparator,
-            Updater>;
+    friend class souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true,
+            WeakComparator, Updater>;
 
 public:
     /**
@@ -2295,13 +2295,13 @@ template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
         unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type,
         typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
-class btree_multiset : public detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false,
-                               WeakComparator, Updater> {
-    using super = detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator,
-            Updater>;
+class btree_multiset : public souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy,
+                               false, WeakComparator, Updater> {
+    using super = souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false,
+            WeakComparator, Updater>;
 
-    friend class detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false, WeakComparator,
-            Updater>;
+    friend class souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false,
+            WeakComparator, Updater>;
 
 public:
     /**

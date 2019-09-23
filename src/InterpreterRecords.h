@@ -41,4 +41,9 @@ RamDomain getNullInterpreter();
  */
 bool isNullInterpreter(RamDomain ref);
 
+/**
+ * Create a record entry with given arity in the static container file InterpreterRecord.cpp
+ */
+void createRecordMap(int arity);
+
 }  // end of namespace souffle

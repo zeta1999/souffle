@@ -93,13 +93,11 @@ public:
 InterpreterRecordMap& getForArity(int arity) {
     // the static container -- filled on demand
     static unordered_map<int, InterpreterRecordMap> maps;
-#pragma omp critical(find_map)
-    {
-        auto pos = maps.find(arity);
-        if (pos == maps.end()) {
-            maps.emplace(arity, arity);
-        }
+    auto pos = maps.find(arity);
+    if (pos == maps.end()) {
+        maps.emplace(arity, arity);
     }
+
     return maps.find(arity)->second;
 }
 }  // namespace
@@ -120,6 +118,10 @@ RamDomain getNullInterpreter() {
 
 bool isNullInterpreter(RamDomain ref) {
     return ref == 0;
+}
+
+void createRecordMap(int arity) {
+    getForArity(arity);
 }
 
 }  // end of namespace souffle

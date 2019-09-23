@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "InterpreterInterface.h"
+#include "InterpreterEngine.h"
 #include "RamVisitor.h"
 #include "SouffleInterface.h"
 
@@ -173,7 +173,7 @@ private:
  */
 class InterpreterProgInterface : public SouffleProgram {
 public:
-    InterpreterProgInterface(InterpreterInterface& interp)
+    InterpreterProgInterface(InterpreterEngine& interp)
             : prog(*interp.getTranslationUnit().getProgram()), exec(interp),
               symTable(interp.getTranslationUnit().getSymbolTable()) {
         uint32_t id = 0;
@@ -183,9 +183,13 @@ public:
         visitDepthFirst(prog, [&](const RamRelation& rel) { map[rel.getName()] = &rel; });
 
         // Build wrapper relations for Souffle's interface
-        for (auto& rel_pair : exec.getRelationMap()) {
-            auto& name = rel_pair.first;
-            auto& interpreterRel = **rel_pair.second;
+        for (auto& rel_ptr : exec.getRelationMap()) {
+            if (rel_ptr == nullptr) {
+                // Skip droped relation.
+                continue;   
+            }
+            auto& name = rel_ptr->getName();
+            auto& interpreterRel = *rel_ptr;
             assert(map[name]);
             const RamRelation& rel = *map[name];
 
@@ -255,7 +259,7 @@ public:
 
 private:
     const RamProgram& prog;
-    InterpreterInterface& exec;
+    InterpreterEngine& exec;
     SymbolTable& symTable;
     std::vector<InterpreterRelInterface*> interfaces;
 };

@@ -21,12 +21,12 @@
 #include "Global.h"
 #include "IODirectives.h"
 #include "IOSystem.h"
-#include "Logger.h"
-#include "ParallelUtils.h"
-#include "ProfileEvent.h"
 #include "InterpreterIndex.h"
 #include "InterpreterInterface.h"
 #include "InterpreterRecords.h"
+#include "Logger.h"
+#include "ParallelUtils.h"
+#include "ProfileEvent.h"
 #include "RamExpression.h"
 #include "RamNode.h"
 #include "RamOperation.h"
@@ -62,7 +62,8 @@ RamDomain Interpreter::evalExpr(const RamExpression& expr, const InterpreterCont
         const InterpreterContext& ctxt;
 
     public:
-        ExpressionEvaluator(Interpreter& interp, const InterpreterContext& ctxt) : interpreter(interp), ctxt(ctxt) {}
+        ExpressionEvaluator(Interpreter& interp, const InterpreterContext& ctxt)
+                : interpreter(interp), ctxt(ctxt) {}
 
         RamDomain visitNumber(const RamNumber& num) override {
             return num.getConstant();

@@ -25,9 +25,9 @@
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
-#include "ParserDriver.h"
-#include "Interpreter.h"
+#include "InterpreterEngine.h"
 #include "InterpreterProgInterface.h"
+#include "ParserDriver.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
@@ -533,7 +533,8 @@ int main(int argc, char** argv) {
         }
 
         // configure and execute interpreter
-        std::unique_ptr<InterpreterInterface> rami(std::make_unique<Interpreter>(*ramTranslationUnit));
+        // std::unique_ptr<InterpreterInterface> rami(std::make_unique<Interpreter>(*ramTranslationUnit));
+        std::unique_ptr<InterpreterEngine> rami(std::make_unique<InterpreterEngine>(*ramTranslationUnit));
         rami->executeMain();
         // If the profiler was started, join back here once it exits.
         if (profiler.joinable()) {

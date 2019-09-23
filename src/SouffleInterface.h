@@ -21,11 +21,11 @@
 
 #include <initializer_list>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
-#include <iterator>
 
 #include <cassert>
 
@@ -402,9 +402,9 @@ public:
 
 #ifdef _MSC_VER
 namespace std {
-  template<>
-  struct iterator_traits<souffle::Relation::iterator> {
+template <>
+struct iterator_traits<souffle::Relation::iterator> {
     typedef std::forward_iterator_tag iterator_category;
-  };
-}
-#endif // _MSC_VER
+};
+}  // namespace std
+#endif  // _MSC_VER

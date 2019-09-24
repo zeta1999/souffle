@@ -685,7 +685,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             PRINT_BEGIN_COMMENT(out);
 
-            out << "const Tuple<RamDomain," << arity << "> key({{";
+            out << "const Tuple<RamDomain," << arity << "> key{{";
             for (size_t i = 0; i < arity; i++) {
                 if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
@@ -696,7 +696,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ",";
                 }
             }
-            out << "}});\n";
+            out << "}};\n";
 
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
@@ -726,7 +726,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             PRINT_BEGIN_COMMENT(out);
 
-            out << "const Tuple<RamDomain," << arity << "> key({{";
+            out << "const Tuple<RamDomain," << arity << "> key{{";
             for (size_t i = 0; i < arity; i++) {
                 if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
@@ -737,7 +737,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ",";
                 }
             }
-            out << "}});\n";
+            out << "}};\n";
             out << "auto range = " << relName
                 << "->"
                 // TODO (b-scholz): context may be missing here?
@@ -770,7 +770,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // check list of keys
             assert(arity > 0 && "AstTranslator failed");
 
-            out << "const Tuple<RamDomain," << arity << "> key({{";
+            out << "const Tuple<RamDomain," << arity << "> key{{";
             for (size_t i = 0; i < arity; i++) {
                 if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
@@ -781,7 +781,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ",";
                 }
             }
-            out << "}});\n";
+            out << "}};\n";
 
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
@@ -820,7 +820,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             PRINT_BEGIN_COMMENT(out);
 
-            out << "const Tuple<RamDomain," << arity << "> key({{";
+            out << "const Tuple<RamDomain," << arity << "> key{{";
             for (size_t i = 0; i < arity; i++) {
                 if (!isRamUndefValue(rangePattern[i])) {
                     visit(rangePattern[i], out);
@@ -831,7 +831,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ",";
                 }
             }
-            out << "}});\n";
+            out << "}};\n";
             out << "auto range = " << relName
                 << "->"
                 // TODO (b-scholz): context may be missing here?
@@ -953,9 +953,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
                 // get index
                 auto index = synthesiser.toIndex(keys);
-                out << "const " << tuple_type << " key({{";
+                out << "const " << tuple_type << " key{{";
                 printKeyTuple();
-                out << "}});\n";
+                out << "}};\n";
                 out << "auto range = " << relName << "->"
                     << "equalRange_" << keys << "(key," << ctxName << ");\n";
 
@@ -1134,10 +1134,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // create projected tuple
             if (project.getValues().empty()) {
-                out << "Tuple<RamDomain," << arity << "> tuple({{}});\n";
+                out << "Tuple<RamDomain," << arity << "> tuple{{}};\n";
             } else {
-                out << "Tuple<RamDomain," << arity << "> tuple({{static_cast<RamDomain>("
-                    << join(project.getValues(), "),static_cast<RamDomain>(", rec) << ")}});\n";
+                out << "Tuple<RamDomain," << arity << "> tuple{{static_cast<RamDomain>("
+                    << join(project.getValues(), "),static_cast<RamDomain>(", rec) << ")}};\n";
             }
 
             // insert tuple
@@ -1288,8 +1288,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // if it is total we use the contains function
             if (isa->isTotalSignature(&exists)) {
                 out << relName << "->"
-                    << "contains(Tuple<RamDomain," << arity << ">({{" << join(exists.getValues(), ",", rec)
-                    << "}})," << ctxName << ")" << after;
+                    << "contains(Tuple<RamDomain," << arity << ">{{" << join(exists.getValues(), ",", rec)
+                    << "}}," << ctxName << ")" << after;
                 PRINT_END_COMMENT(out);
                 return;
             }
@@ -1298,7 +1298,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "!" << relName << "->"
                 << "equalRange";
             out << "_" << isa->getSearchSignature(&exists);
-            out << "(Tuple<RamDomain," << arity << ">({{";
+            out << "(Tuple<RamDomain," << arity << ">{{";
             out << join(exists.getValues(), ",", [&](std::ostream& out, RamExpression* value) {
                 if (!isRamUndefValue(value)) {
                     visit(*value, out);
@@ -1306,7 +1306,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << "0";
                 }
             });
-            out << "}})," << ctxName << ").empty()" << after;
+            out << "}}," << ctxName << ").empty()" << after;
             PRINT_END_COMMENT(out);
         }
 
@@ -1325,7 +1325,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 << "equalRange";
             // out << synthesiser.toIndex(ne.getSearchSignature());
             out << "_" << isa->getSearchSignature(&provExists);
-            out << "(Tuple<RamDomain," << arity << ">({{";
+            out << "(Tuple<RamDomain," << arity << ">{{";
             for (size_t i = 0; i < provExists.getValues().size() - 1; i++) {
                 RamExpression* val = provExists.getValues()[i];
                 if (!isRamUndefValue(val)) {
@@ -1338,7 +1338,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // extra 0 for provenance height annotation
             out << "0";
 
-            out << "}})," << ctxName << ");\n";
+            out << "}}," << ctxName << ");\n";
             out << "if (existenceCheck.empty()) return false; else return (*existenceCheck.begin())["
                 << arity - 1 << "] <= ";
             visit(*(provExists.getValues()[arity - 1]), out);

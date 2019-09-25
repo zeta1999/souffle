@@ -295,6 +295,14 @@ public:
         }
     };
 
+    std::size_t getRelationSize(const std::string& name) const {
+        return getRelation(name)->size();
+    }
+
+    std::string getRelationName(const std::string& name) const {
+        return getRelation(name)->getName();
+    }
+    
     std::vector<Relation*> getOutputRelations() const {
         return outputRelations;
     }

@@ -22,7 +22,9 @@ Options:
   -l           additional shared libraries
   -L           library paths
   -v           verbose output
-  -w           enable warnings\n"
+  -w           enable warnings\n
+  -s <value>   Use SWIG interface to generate into <value> language\n"
+
   exit 1;
 }
 
@@ -43,6 +45,8 @@ error() {
 set -e
 
 ## set environment variables
+SWIGDIR=$(dirname $0)"/swig"
+JAVADIR=$(printenv JAVA_HOME)
 
 # set by autoconf
 CXX="$(printenv CXX || true)"
@@ -83,6 +87,10 @@ while getopts "hwl:L:vg" opt; do
     v) # Verbose output
       set -x
     ;;
+    s) # Set swig language
+      SWIGLANG="${OPTARG}";
+      swig -c++ -$SWIGLANG $SWIGDIR/SwigInterface.i
+    ;;
   esac
 done
 
@@ -106,6 +114,31 @@ error "source file is not a .cpp file: '$1'" $?
 cd "$(dirname $1)"
 dir="$PWD"
 cd "$OLDPWD"
+
+if [ "$SWIGLANG" = "python" ]
+then
+  g++ -std=c++11 -fPIC -c -D__EMBEDDED_SOUFFLE__ $SWIGDIR/SwigInterface.cpp $SWIGDIR/SwigInterface_wrap.cxx $1 $(python3-config --cflags) -I$HEADER_DIR 2>&1
+  mv SwigInterface.o $SWIGDIR
+  mv SwigInterface_wrap.o $SWIGDIR
+  mv $exe.o $dir
+  g++ -shared $SWIGDIR/SwigInterface.o $SWIGDIR/SwigInterface_wrap.o $dir/$exe.o $(python3-config --ldflags) -o $SWIGDIR/_SwigInterface.so -lstdc++
+elif [ "$SWIGLANG" = "java" ]
+then
+  g++ -std=c++11 -fPIC -c -D__EMBEDDED_SOUFFLE__ $SWIGDIR/SwigInterface.cpp $SWIGDIR/SwigInterface_wrap.cxx $1 -I$JAVADIR/include -I$JAVADIR/include/linux  -I$JAVADIR/include/darwin -I/usr/lib/x86_64-linux-gnu/ -I$HEADER_DIR 2>&1
+  mv SwigInterface.o $SWIGDIR
+  mv SwigInterface_wrap.o $SWIGDIR
+  mv $exe.o $dir
+  g++ -shared $SWIGDIR/SwigInterface.o $SWIGDIR/SwigInterface_wrap.o $dir/$exe.o -o $SWIGDIR/libSwigInterface.so -lstdc++
+fi
+
+f [ -n "$SWIGLANG" ]
+then
+  for file in `ls -1 $SWIGDIR | grep -v SwigInterface.i | grep -v SwigInterface.h | grep -v SwigInterface.cpp`
+  do
+    mv $SWIGDIR/$file $dir
+  done
+  exit 0
+fi
 
 # Compile
 rm -f $dir/$exe

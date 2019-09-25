@@ -728,10 +728,10 @@ public:
      */
     value_type lookup(index_type i, op_context& ctxt) const {
         // check whether it is empty
-        if (!unsynced.root) return detail::default_factory<value_type>()();
+        if (!unsynced.root) return souffle::detail::default_factory<value_type>()();
 
         // check boundaries
-        if (!inBoundaries(i)) return detail::default_factory<value_type>()();
+        if (!inBoundaries(i)) return souffle::detail::default_factory<value_type>()();
 
         // check context
         if (ctxt.lastNode && ctxt.lastIndex == (i & ~INDEX_MASK)) {
@@ -752,7 +752,7 @@ public:
             Node* next = node->cell[x].ptr;
 
             // check next step
-            if (!next) return detail::default_factory<value_type>()();
+            if (!next) return souffle::detail::default_factory<value_type>()();
 
             // continue one level below
             node = next;

@@ -736,7 +736,7 @@ struct print_deref : public detail::print<deref<T>> {};
 template <typename Iter, typename Printer>
 detail::joined_sequence<Iter, Printer> join(
         const Iter& a, const Iter& b, const std::string& sep, const Printer& p) {
-    return detail::joined_sequence<Iter, Printer>(a, b, sep, p);
+    return souffle::detail::joined_sequence<Iter, Printer>(a, b, sep, p);
 }
 
 /**

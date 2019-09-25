@@ -69,7 +69,7 @@ public:
     }
 
     std::unique_ptr<TreeNode> explain(std::string relName, std::vector<RamDomain> tuple, int ruleNum,
-            int levelNum, std::vector<int> subtreeLevels, size_t depthLimit) {
+            int levelNum, std::vector<RamDomain> subtreeLevels, size_t depthLimit) {
         std::stringstream joinedArgs;
         joinedArgs << join(numsToArgs(relName, tuple), ", ");
         auto joinedArgsStr = joinedArgs.str();
@@ -170,7 +170,7 @@ public:
 
             tupleCurInd += 2;
 
-            std::vector<int> subsubtreeLevels;
+            std::vector<RamDomain> subsubtreeLevels;
             for (; tupleCurInd < tupleEnd; tupleCurInd++) {
                 subsubtreeLevels.push_back(ret[tupleCurInd]);
             }
@@ -216,11 +216,11 @@ public:
             return std::make_unique<LeafNode>("Relation not found");
         }
 
-        std::tuple<int, int, std::vector<int>> tupleInfo = findTuple(relName, tuple);
+        std::tuple<int, int, std::vector<RamDomain>> tupleInfo = findTuple(relName, tuple);
 
         int ruleNum = std::get<0>(tupleInfo);
         int levelNum = std::get<1>(tupleInfo);
-        std::vector<int> subtreeLevels = std::get<2>(tupleInfo);
+        std::vector<RamDomain> subtreeLevels = std::get<2>(tupleInfo);
 
         if (ruleNum < 0 || levelNum == -1) {
             return std::make_unique<LeafNode>("Tuple not found");
@@ -262,7 +262,7 @@ public:
 
         // check that the tuple actually doesn't exist
 
-        std::tuple<int, int, std::vector<int>> t = findTuple(relName, argsToNums(relName, args));
+        std::tuple<int, int, std::vector<RamDomain>> t = findTuple(relName, argsToNums(relName, args));
         if (std::get<0>(t) != -1 || std::get<1>(t) != -1) {
             // return a sentinel value
             return std::vector<std::string>({"@"});
@@ -553,7 +553,7 @@ public:
             std::vector<RamDomain> subtreeLevels;
 
             for (size_t i = rel->getArity() - rel->getNumberOfHeights() + 1; i < rel->getArity(); i++) {
-                int subLevel;
+                RamDomain subLevel;
                 tuple >> subLevel;
                 subtreeLevels.push_back(subLevel);
             }
@@ -601,11 +601,12 @@ private:
     std::vector<std::string> constraintList = {
             "=", "!=", "<", "<=", ">=", ">", "match", "contains", "not_match", "not_contains"};
 
-    std::tuple<int, int, std::vector<int>> findTuple(const std::string& relName, std::vector<RamDomain> tup) {
+    std::tuple<int, int, std::vector<RamDomain>> findTuple(
+            const std::string& relName, std::vector<RamDomain> tup) {
         auto rel = prog.getRelation(relName);
 
         if (rel == nullptr) {
-            return std::make_tuple(-1, -1, std::vector<int>());
+            return std::make_tuple(-1, -1, std::vector<RamDomain>());
         }
 
         // find correct tuple
@@ -641,7 +642,7 @@ private:
                 std::vector<RamDomain> subtreeLevels;
 
                 for (size_t i = rel->getArity() - rel->getNumberOfHeights() + 1; i < rel->getArity(); i++) {
-                    int subLevel;
+                    RamDomain subLevel;
                     tuple >> subLevel;
                     subtreeLevels.push_back(subLevel);
                 }
@@ -651,7 +652,7 @@ private:
         }
 
         // if no tuple exists
-        return std::make_tuple(-1, -1, std::vector<int>());
+        return std::make_tuple(-1, -1, std::vector<RamDomain>());
     }
 
     void printRelationOutput(

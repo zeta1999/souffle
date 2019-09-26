@@ -211,12 +211,11 @@ dnl the contents of two files are identical
 dnl $1 -- input files regex
 dnl $2 -- directory containing the expected output files
 m4_define([SORTED_SAME_FILES_SWIG],[
-  for i in $2
-  do
-    sort "$i" > "$i.sorted.generated"
-    sort $2/"$i" > "$i.sorted.expected"
-    SAME_FILE(["$i.sorted.generated"], ["$i.sorted.expected"])
-  done
+  m4_foreach([FILE],[$1/*.csv],[
+    m4_esyscmd_s(sort $1/FILE > FILE.sorted.generated)
+    m4_esyscmd_s(sort $2/FILE > FILE.sorted.expected)
+    m4_esyscmd_s(ls $2)
+  ])
 ])
 
 dnl Positive testcase for SWIG given configuration
@@ -243,7 +242,7 @@ m4_define([TEST_EVAL_SWIG],[
   # invoke test script
   m4_esyscmd_s(.SCRIPTDIR/souffle-LANGUAGE-gen.sh PROGRAM)
 
-  SORTED_SAME_FILES[TESTDIR/*.csv, EXPECTEDDIR]
+  SORTED_SAME_FILES_SWIG[TESTDIR, EXPECTEDDIR]
 ])
 
 dnl Positive testcase for SWIG

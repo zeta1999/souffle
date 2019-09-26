@@ -129,14 +129,14 @@ then
   # Checks input language and compiles files with local python3 config or local java_home config
   if [ "$SWIGLANG" = "python" ]
   then
-    g++ -std=c++14 -fPIC -c -D__EMBEDDED_SOUFFLE__ $TMP_DIR/SwigInterface.cpp $TMP_DIR/SwigInterface_wrap.cxx $1 $(python3-config --cflags) -I$HEADER_DIR 2>&1
+    g++ -std=c++17 -fPIC -c -D__EMBEDDED_SOUFFLE__ $TMP_DIR/SwigInterface.cpp $TMP_DIR/SwigInterface_wrap.cxx $1 $(python3-config --cflags) -I$HEADER_DIR 2>&1
     mv SwigInterface.o $TMP_DIR
     mv SwigInterface_wrap.o $TMP_DIR
     mv $exe.o $dir
     g++ -shared $TMP_DIR/SwigInterface.o $TMP_DIR/SwigInterface_wrap.o $dir/$exe.o $(python3-config --ldflags) -o $TMP_DIR/_SwigInterface.so -lstdc++
   elif [ "$SWIGLANG" = "java" ]
   then
-    g++ -std=c++14 -fPIC -c -D__EMBEDDED_SOUFFLE__ $TMP_DIR/SwigInterface.cpp $TMP_DIR/SwigInterface_wrap.cxx $1 -I$JAVADIR/include -I$JAVADIR/include/linux  -I$JAVADIR/include/darwin -I/usr/lib/x86_64-linux-gnu/ -I$HEADER_DIR 2>&1
+    g++ -std=c++17 -fPIC -c -D__EMBEDDED_SOUFFLE__ $TMP_DIR/SwigInterface.cpp $TMP_DIR/SwigInterface_wrap.cxx $1 -I$JAVADIR/include -I$JAVADIR/include/linux  -I$JAVADIR/include/darwin -I/usr/lib/x86_64-linux-gnu/ -I$HEADER_DIR 2>&1
     mv SwigInterface.o $TMP_DIR
     mv SwigInterface_wrap.o $TMP_DIR
     mv $exe.o $dir

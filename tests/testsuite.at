@@ -205,6 +205,20 @@ m4_define([NEGATIVE_TEST],[
 
 m4_define([SWIG_LANGUAGES], [[java]])
 
+dnl Check whether all files matching a regex have identical sorted contents
+dnl to those in the given directory.
+dnl the contents of two files are identical
+dnl $1 -- input files regex
+dnl $2 -- directory containing the expected output files
+m4_define([SORTED_SAME_FILES_SWIG],[
+  for i in $2
+  do
+    sort "$i" > "$i.sorted.generated"
+    sort $2/"$i" > "$i.sorted.expected"
+    SAME_FILE(["$i.sorted.generated"], ["$i.sorted.expected"])
+  done
+])
+
 dnl Positive testcase for SWIG given configuration
 dnl $1 test name
 dnl $2 category
@@ -227,14 +241,9 @@ m4_define([TEST_EVAL_SWIG],[
   m4_esyscmd_s(mv *.csv EXPECTEDDIR)
 
   # invoke test script
-  #m4_esyscmd_s(.SCRIPTDIR/souffle-LANGUAGE-gen.sh PROGRAM)
+  m4_esyscmd_s(.SCRIPTDIR/souffle-LANGUAGE-gen.sh PROGRAM)
 
-  #SORTED_SAME_FILES([TESTDIR/*.csv],[EXPECTEDDIR])
-
-  # throw away error message if folder has no csv files
-  #m4_esyscmd_s(ls TESTDIR/*.csv 2> /dev/null|wc -l >TESTDIR/"num.generated")
-  #m4_esyscmd_s(ls EXPECTEDDIR/*.csv|wc -l >TESTDIR/"num.expected")
-  #SAME_FILE([TESTDIR/num.generated],[TESTDIR/num.expected])
+  SORTED_SAME_FILES[TESTDIR/*.csv, EXPECTEDDIR]
 ])
 
 dnl Positive testcase for SWIG

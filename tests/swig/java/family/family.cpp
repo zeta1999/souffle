@@ -312,35 +312,35 @@ std::atomic<size_t> iter(0);
 /* BEGIN STRATUM 0 */
 [&]() {
 SignalHandler::instance()->setMsg(R"_(father("tom","amy").
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [33:1-33:21])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [33:1-33:21])_");
 rel_1_father->insert(RamDomain(0),RamDomain(1));
 SignalHandler::instance()->setMsg(R"_(father("tom","adam").
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [34:1-34:22])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [34:1-34:22])_");
 rel_1_father->insert(RamDomain(0),RamDomain(2));
 SignalHandler::instance()->setMsg(R"_(father("jack","fred").
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [35:1-35:23])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [35:1-35:23])_");
 rel_1_father->insert(RamDomain(3),RamDomain(4));
 SignalHandler::instance()->setMsg(R"_(father("tony","carolII").
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [36:1-36:26])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [36:1-36:26])_");
 rel_1_father->insert(RamDomain(5),RamDomain(6));
 SignalHandler::instance()->setMsg(R"_(father("fred","carolIII").
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [37:1-37:27])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [37:1-37:27])_");
 rel_1_father->insert(RamDomain(4),RamDomain(7));
 }();
 /* END STRATUM 0 */
 /* BEGIN STRATUM 1 */
 [&]() {
 SignalHandler::instance()->setMsg(R"_(mother("graceI","amy").
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [38:1-38:24])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [38:1-38:24])_");
 rel_2_mother->insert(RamDomain(8),RamDomain(1));
 SignalHandler::instance()->setMsg(R"_(mother("amy","fred").
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [39:1-39:22])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [39:1-39:22])_");
 rel_2_mother->insert(RamDomain(1),RamDomain(4));
 SignalHandler::instance()->setMsg(R"_(mother("carolI","carolII").
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [40:1-40:28])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [40:1-40:28])_");
 rel_2_mother->insert(RamDomain(9),RamDomain(6));
 SignalHandler::instance()->setMsg(R"_(mother("carolII","carolIII").
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [41:1-41:30])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [41:1-41:30])_");
 rel_2_mother->insert(RamDomain(6),RamDomain(7));
 }();
 /* END STRATUM 1 */
@@ -348,9 +348,9 @@ rel_2_mother->insert(RamDomain(6),RamDomain(7));
 [&]() {
 SignalHandler::instance()->setMsg(R"_(parent(X,Y) :- 
    father(X,Y).
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [19:1-19:28])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [19:1-19:28])_");
 if(!(rel_1_father->empty())) {
-{
+[&](){
 CREATE_OP_CONTEXT(rel_1_father_op_ctxt,rel_1_father->createContext());
 CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
 for(const auto& env0 : *rel_1_father) {
@@ -358,20 +358,20 @@ Tuple<RamDomain,2> tuple({{static_cast<RamDomain>(env0[0]),static_cast<RamDomain
 rel_3_parent->insert(tuple,READ_OP_CONTEXT(rel_3_parent_op_ctxt));
 }
 }
-}
+();}
 SignalHandler::instance()->setMsg(R"_(parent(X,Y) :- 
    mother(X,Y).
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [20:1-20:28])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [20:1-20:28])_");
 if(!(rel_2_mother->empty())) {
-{
-CREATE_OP_CONTEXT(rel_2_mother_op_ctxt,rel_2_mother->createContext());
+[&](){
 CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
+CREATE_OP_CONTEXT(rel_2_mother_op_ctxt,rel_2_mother->createContext());
 for(const auto& env0 : *rel_2_mother) {
 Tuple<RamDomain,2> tuple({{static_cast<RamDomain>(env0[0]),static_cast<RamDomain>(env0[1])}});
 rel_3_parent->insert(tuple,READ_OP_CONTEXT(rel_3_parent_op_ctxt));
 }
 }
-}
+();}
 if (performIO) {
 try {std::map<std::string, std::string> directiveMap({{"IO","file"},{"attributeNames","node1\tnode2"},{"filename","./parent.csv"},{"name","parent"}});
 if (!outputDirectory.empty() && directiveMap["IO"] == "file" && directiveMap["filename"].front() != '/') {directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];}
@@ -386,30 +386,30 @@ if (!isHintsProfilingEnabled()&& performIO) rel_1_father->purge();
 [&]() {
 SignalHandler::instance()->setMsg(R"_(ancestor(X,Y) :- 
    parent(X,Y).
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [22:1-22:30])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [22:1-22:30])_");
 if(!(rel_3_parent->empty())) {
-{
-CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
+[&](){
 CREATE_OP_CONTEXT(rel_4_ancestor_op_ctxt,rel_4_ancestor->createContext());
+CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
 for(const auto& env0 : *rel_3_parent) {
 Tuple<RamDomain,2> tuple({{static_cast<RamDomain>(env0[0]),static_cast<RamDomain>(env0[1])}});
 rel_4_ancestor->insert(tuple,READ_OP_CONTEXT(rel_4_ancestor_op_ctxt));
 }
 }
-}
+();}
 rel_5_delta_ancestor->insertAll(*rel_4_ancestor);
 iter = 0;
 for(;;) {
 SignalHandler::instance()->setMsg(R"_(ancestor(X,Y) :- 
    parent(X,Z),
    ancestor(Z,Y).
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [23:1-23:45])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [23:1-23:45])_");
 if(!(rel_5_delta_ancestor->empty()) && !(rel_3_parent->empty())) {
-{
-CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
-CREATE_OP_CONTEXT(rel_4_ancestor_op_ctxt,rel_4_ancestor->createContext());
+[&](){
 CREATE_OP_CONTEXT(rel_5_delta_ancestor_op_ctxt,rel_5_delta_ancestor->createContext());
 CREATE_OP_CONTEXT(rel_6_new_ancestor_op_ctxt,rel_6_new_ancestor->createContext());
+CREATE_OP_CONTEXT(rel_4_ancestor_op_ctxt,rel_4_ancestor->createContext());
+CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
 for(const auto& env0 : *rel_3_parent) {
 const Tuple<RamDomain,2> key({{env0[1],0}});
 auto range = rel_5_delta_ancestor->equalRange_1(key,READ_OP_CONTEXT(rel_5_delta_ancestor_op_ctxt));
@@ -421,7 +421,7 @@ rel_6_new_ancestor->insert(tuple,READ_OP_CONTEXT(rel_6_new_ancestor_op_ctxt));
 }
 }
 }
-}
+();}
 if(rel_6_new_ancestor->empty()) break;
 rel_4_ancestor->insertAll(*rel_6_new_ancestor);
 std::swap(rel_5_delta_ancestor, rel_6_new_ancestor);
@@ -445,12 +445,12 @@ IOSystem::getInstance().getWriter(std::vector<bool>({1,1}), symTable, ioDirectiv
 SignalHandler::instance()->setMsg(R"_(grandmother(X,Y) :- 
    mother(X,Z),
    ancestor(Z,Y).
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [25:1-25:48])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [25:1-25:48])_");
 if(!(rel_4_ancestor->empty()) && !(rel_2_mother->empty())) {
-{
-CREATE_OP_CONTEXT(rel_2_mother_op_ctxt,rel_2_mother->createContext());
-CREATE_OP_CONTEXT(rel_4_ancestor_op_ctxt,rel_4_ancestor->createContext());
+[&](){
 CREATE_OP_CONTEXT(rel_7_grandmother_op_ctxt,rel_7_grandmother->createContext());
+CREATE_OP_CONTEXT(rel_4_ancestor_op_ctxt,rel_4_ancestor->createContext());
+CREATE_OP_CONTEXT(rel_2_mother_op_ctxt,rel_2_mother->createContext());
 for(const auto& env0 : *rel_2_mother) {
 const Tuple<RamDomain,2> key({{env0[1],0}});
 auto range = rel_4_ancestor->equalRange_1(key,READ_OP_CONTEXT(rel_4_ancestor_op_ctxt));
@@ -460,7 +460,7 @@ rel_7_grandmother->insert(tuple,READ_OP_CONTEXT(rel_7_grandmother_op_ctxt));
 }
 }
 }
-}
+();}
 if (performIO) {
 try {std::map<std::string, std::string> directiveMap({{"IO","file"},{"attributeNames","node1\tnode2"},{"filename","./grandmother.csv"},{"name","grandmother"}});
 if (!outputDirectory.empty() && directiveMap["IO"] == "file" && directiveMap["filename"].front() != '/') {directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];}
@@ -477,9 +477,9 @@ SignalHandler::instance()->setMsg(R"_(sibling(X,Y) :-
    parent(Z,X),
    parent(Z,Y),
    X != Y.
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [27:1-27:50])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [27:1-27:50])_");
 if(!(rel_3_parent->empty()) && !(rel_3_parent->empty())) {
-{
+[&](){
 CREATE_OP_CONTEXT(rel_8_sibling_op_ctxt,rel_8_sibling->createContext());
 CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
 for(const auto& env0 : *rel_3_parent) {
@@ -493,7 +493,7 @@ rel_8_sibling->insert(tuple,READ_OP_CONTEXT(rel_8_sibling_op_ctxt));
 }
 }
 }
-}
+();}
 if (performIO) {
 try {std::map<std::string, std::string> directiveMap({{"IO","file"},{"attributeNames","node1\tnode2"},{"filename","./sibling.csv"},{"name","sibling"}});
 if (!outputDirectory.empty() && directiveMap["IO"] == "file" && directiveMap["filename"].front() != '/') {directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];}
@@ -511,13 +511,13 @@ SignalHandler::instance()->setMsg(R"_(cousin(X,Y) :-
    !sibling(X,Y),
    !parent(X,Y),
    X != Y.
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [29:1-29:82])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [29:1-29:82])_");
 if(!(rel_4_ancestor->empty()) && !(rel_4_ancestor->empty())) {
-{
+[&](){
 CREATE_OP_CONTEXT(rel_8_sibling_op_ctxt,rel_8_sibling->createContext());
 CREATE_OP_CONTEXT(rel_9_cousin_op_ctxt,rel_9_cousin->createContext());
-CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
 CREATE_OP_CONTEXT(rel_4_ancestor_op_ctxt,rel_4_ancestor->createContext());
+CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
 for(const auto& env0 : *rel_4_ancestor) {
 const Tuple<RamDomain,2> key({{env0[0],0}});
 auto range = rel_4_ancestor->equalRange_1(key,READ_OP_CONTEXT(rel_4_ancestor_op_ctxt));
@@ -529,7 +529,7 @@ rel_9_cousin->insert(tuple,READ_OP_CONTEXT(rel_9_cousin_op_ctxt));
 }
 }
 }
-}
+();}
 if (performIO) {
 try {std::map<std::string, std::string> directiveMap({{"IO","file"},{"attributeNames","node1\tnode2"},{"filename","./cousin.csv"},{"name","cousin"}});
 if (!outputDirectory.empty() && directiveMap["IO"] == "file" && directiveMap["filename"].front() != '/') {directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];}
@@ -545,11 +545,11 @@ if (!isHintsProfilingEnabled()&& performIO) rel_4_ancestor->purge();
 SignalHandler::instance()->setMsg(R"_(relative(X,Y) :- 
    sibling(X,Z),
    parent(Z,Y).
-in file /Users/chad/git/project19-group5/souffle/tests/swig/java/family/family.dl [31:1-31:43])_");
+in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/family/family.dl [31:1-31:43])_");
 if(!(rel_3_parent->empty()) && !(rel_8_sibling->empty())) {
-{
-CREATE_OP_CONTEXT(rel_8_sibling_op_ctxt,rel_8_sibling->createContext());
+[&](){
 CREATE_OP_CONTEXT(rel_10_relative_op_ctxt,rel_10_relative->createContext());
+CREATE_OP_CONTEXT(rel_8_sibling_op_ctxt,rel_8_sibling->createContext());
 CREATE_OP_CONTEXT(rel_3_parent_op_ctxt,rel_3_parent->createContext());
 for(const auto& env0 : *rel_8_sibling) {
 const Tuple<RamDomain,2> key({{env0[1],0}});
@@ -560,7 +560,7 @@ rel_10_relative->insert(tuple,READ_OP_CONTEXT(rel_10_relative_op_ctxt));
 }
 }
 }
-}
+();}
 if (performIO) {
 try {std::map<std::string, std::string> directiveMap({{"IO","file"},{"attributeNames","node1\tnode2"},{"filename","./relative.csv"},{"name","relative"}});
 if (!outputDirectory.empty() && directiveMap["IO"] == "file" && directiveMap["filename"].front() != '/') {directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];}
@@ -709,7 +709,7 @@ static factory_Sf_family __factory_Sf_family_instance;
 int main(int argc, char** argv)
 {
 try{
-souffle::CmdOptions opt(R"(tests/swig/java/family/family.dl)",
+souffle::CmdOptions opt(R"(swig/java/family/family.dl)",
 R"(.)",
 R"(.)",
 false,

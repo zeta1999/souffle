@@ -7,7 +7,7 @@ else
   then
     echo "Folder already cleaned"
   else
-    for file in `ls -1 $1 | grep -v .dl$ | grep -v driver.java | grep -v facts | grep -v .facts$ | grep -v ^expected`
+    for file in `ls -1 $1 | grep -v .dl$ | grep -v driver.java | grep -v facts | grep -v .facts$`
     do
       rm -rf $1/$file
     done

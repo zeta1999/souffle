@@ -227,14 +227,14 @@ m4_define([TEST_EVAL_SWIG],[
   m4_esyscmd_s(mv *.csv EXPECTEDDIR)
 
   # invoke test script
-  m4_esyscmd_s(.SCRIPTDIR/souffle-LANGUAGE-gen.sh PROGRAM)
+  #m4_esyscmd_s(.SCRIPTDIR/souffle-LANGUAGE-gen.sh PROGRAM)
 
-  SORTED_SAME_FILES([TESTDIR/*.csv],[EXPECTEDDIR])
+  #SORTED_SAME_FILES([TESTDIR/*.csv],[EXPECTEDDIR])
 
   # throw away error message if folder has no csv files
-  m4_esyscmd_s(ls TESTDIR/*.csv 2> /dev/null|wc -l >TESTDIR/"num.generated")
-  m4_esyscmd_s(ls EXPECTEDDIR/*.csv|wc -l >TESTDIR/"num.expected")
-  SAME_FILE([TESTDIR/num.generated],[TESTDIR/num.expected])
+  #m4_esyscmd_s(ls TESTDIR/*.csv 2> /dev/null|wc -l >TESTDIR/"num.generated")
+  #m4_esyscmd_s(ls EXPECTEDDIR/*.csv|wc -l >TESTDIR/"num.expected")
+  #SAME_FILE([TESTDIR/num.generated],[TESTDIR/num.expected])
 ])
 
 dnl Positive testcase for SWIG

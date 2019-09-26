@@ -68,7 +68,7 @@ error "installation error: souffle header files cannot be found" $?
 
 # Options processing via getopts builtin, it is very limiting but on OSX the
 # default getopt is an old BSD getopt, so need this for portability
-while getopts "hwl:L:vg" opt; do
+while getopts "hwl:L:vgs:" opt; do
   case "$opt" in
     h|\?) # Show usage and exit
       usage;
@@ -90,7 +90,6 @@ while getopts "hwl:L:vg" opt; do
     ;;
     s) # Set swig language
       SWIGLANG="${OPTARG}";
-      swig -c++ -$SWIGLANG $SWIGDIR/SwigInterface.i
     ;;
   esac
 done
@@ -127,29 +126,28 @@ then
 
   swig -c++ -$SWIGLANG $TMP_DIR/SwigInterface.i
 
-# Checks input language and compiles files with local python3 config or local java_home config
-if [ "$SWIGLANG" = "python" ]
-then
-  g++ -std=c++11 -fPIC -c -D__EMBEDDED_SOUFFLE__ $SWIGDIR/SwigInterface.cpp $SWIGDIR/SwigInterface_wrap.cxx $1 $(python3-config --cflags) -I$HEADER_DIR 2>&1
-  mv SwigInterface.o $SWIGDIR
-  mv SwigInterface_wrap.o $SWIGDIR
-  mv $exe.o $dir
-  g++ -shared $SWIGDIR/SwigInterface.o $SWIGDIR/SwigInterface_wrap.o $dir/$exe.o $(python3-config --ldflags) -o $SWIGDIR/_SwigInterface.so -lstdc++
-elif [ "$SWIGLANG" = "java" ]
-then
-  g++ -std=c++11 -fPIC -c -D__EMBEDDED_SOUFFLE__ $SWIGDIR/SwigInterface.cpp $SWIGDIR/SwigInterface_wrap.cxx $1 -I$JAVADIR/include -I$JAVADIR/include/linux  -I$JAVADIR/include/darwin -I/usr/lib/x86_64-linux-gnu/ -I$HEADER_DIR 2>&1
-  mv SwigInterface.o $SWIGDIR
-  mv SwigInterface_wrap.o $SWIGDIR
-  mv $exe.o $dir
-  g++ -shared $SWIGDIR/SwigInterface.o $SWIGDIR/SwigInterface_wrap.o $dir/$exe.o -o $SWIGDIR/libSwigInterface.so -lstdc++
-fi
+  # Checks input language and compiles files with local python3 config or local java_home config
+  if [ "$SWIGLANG" = "python" ]
+  then
+    g++ -std=c++11 -fPIC -c -D__EMBEDDED_SOUFFLE__ $TMP_DIR/SwigInterface.cpp $TMP_DIR/SwigInterface_wrap.cxx $1 $(python3-config --cflags) -I$HEADER_DIR 2>&1
+    mv SwigInterface.o $TMP_DIR
+    mv SwigInterface_wrap.o $TMP_DIR
+    mv $exe.o $dir
+    g++ -shared $TMP_DIR/SwigInterface.o $TMP_DIR/SwigInterface_wrap.o $dir/$exe.o $(python3-config --ldflags) -o $TMP_DIR/_SwigInterface.so -lstdc++
+  elif [ "$SWIGLANG" = "java" ]
+  then
+    g++ -std=c++11 -fPIC -c -D__EMBEDDED_SOUFFLE__ $TMP_DIR/SwigInterface.cpp $TMP_DIR/SwigInterface_wrap.cxx $1 -I$JAVADIR/include -I$JAVADIR/include/linux  -I$JAVADIR/include/darwin -I/usr/lib/x86_64-linux-gnu/ -I$HEADER_DIR 2>&1
+    mv SwigInterface.o $TMP_DIR
+    mv SwigInterface_wrap.o $TMP_DIR
+    mv $exe.o $dir
+    g++ -shared $TMP_DIR/SwigInterface.o $TMP_DIR/SwigInterface_wrap.o $dir/$exe.o -o $TMP_DIR/libSwigInterface.so -lstdc++
+  fi
 
-f [ -n "$SWIGLANG" ]
-then
-  for file in `ls -1 $SWIGDIR | grep -v SwigInterface.i | grep -v SwigInterface.h | grep -v SwigInterface.cpp`
+  for file in `ls -1 $TMP_DIR | grep -v SwigInterface.i | grep -v SwigInterface.h | grep -v SwigInterface.cpp`
   do
-    mv $SWIGDIR/$file $dir
+    mv $TMP_DIR/$file $dir
   done
+  
   exit 0
 fi
 

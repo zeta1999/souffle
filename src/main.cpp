@@ -191,6 +191,7 @@ int main(int argc, char** argv) {
                 {"generate", 'g', "FILE", "", false,
                         "Generate C++ source code for the given Datalog program and write it to "
                         "<FILE>."},
+                {"swig", 's', "LANG",  "", false, "Generate SWIG interface for given language."},
                 {"library-dir", 'L', "DIR", "", true, "Specify directory for library files."},
                 {"libraries", 'l', "FILE", "", true, "Specify libraries."},
                 {"no-warn", 'w', "", "", false, "Disable warnings."},
@@ -364,6 +365,13 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
+      /**
+     * Ensure that code generation is enabled if using SWIG interface option.
+     */
+    if (Global::config().has("swig") && !Global::config().has("generate")) {
+        Global::config().set("generate", Global::config().get(""));
+    }
+
     // ------ start souffle -------------
 
     std::string souffleExecutable = which(argv[0]);
@@ -529,7 +537,7 @@ int main(int argc, char** argv) {
     };
 
     if (!Global::config().has("compile") && !Global::config().has("dl-program") &&
-            !Global::config().has("generate")) {
+            !Global::config().has("generate") && !Global::config().has("swig")) {
         // ------- interpreter -------------
 
         std::thread profiler;
@@ -591,6 +599,12 @@ int main(int argc, char** argv) {
                 baseFilename = Global::config().get("dl-program");
             } else if (Global::config().has("generate")) {
                 baseFilename = Global::config().get("generate");
+                
+                // trim .dl extension if it exists
+                if (baseFilename.size() >= 3 && baseFilename.substr(baseFilename.size() - 3) == ".dl") {
+                    baseFilename = baseFilename.substr(0, baseFilename.size() - 3);
+                }
+
                 // trim .cpp extension if it exists
                 if (baseFilename.size() >= 4 && baseFilename.substr(baseFilename.size() - 4) == ".cpp") {
                     baseFilename = baseFilename.substr(0, baseFilename.size() - 4);
@@ -619,7 +633,10 @@ int main(int argc, char** argv) {
                 }
             }
 
-            if (Global::config().has("compile")) {
+            if (Global::config().has("swig")) {
+                compileCmd += "-s " + Global::config().get("swig") + " ";
+                compileToBinary(compileCmd, sourceFilename);
+            } else if (Global::config().has("compile")) {
                 auto start = std::chrono::high_resolution_clock::now();
                 compileToBinary(compileCmd, sourceFilename);
                 /* Report overall run-time in verbose mode */
@@ -629,7 +646,7 @@ int main(int argc, char** argv) {
                               << "sec\n";
                 }
                 // run compiled C++ program if requested.
-                if (!Global::config().has("dl-program")) {
+                if (!Global::config().has("dl-program") && !Global::config().has("swig")) {
                     executeBinary(baseFilename
 #ifdef USE_MPI
                             ,

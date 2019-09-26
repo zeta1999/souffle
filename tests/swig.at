@@ -1,0 +1,5 @@
+POSITIVE_SWIG_TEST([family],[swig])
+POSITIVE_SWIG_TEST([flights],[swig])
+POSITIVE_SWIG_TEST([insert_for],[swig])
+POSITIVE_SWIG_TEST([movies],[swig])
+POSITIVE_SWIG_TEST([paths],[swig])

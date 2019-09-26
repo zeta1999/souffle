@@ -5,9 +5,9 @@
 #include <string>
 #include <map>
 
-#include "../RamTypes.h"
-#include "../SymbolTable.h"
-#include "../SouffleInterface.h"
+#include "souffle/RamTypes.h"
+#include "souffle/SymbolTable.h"
+#include "souffle/SouffleInterface.h"
 
 #pragma once
 

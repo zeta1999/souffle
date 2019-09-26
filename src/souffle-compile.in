@@ -58,6 +58,7 @@ LIBS="$(printenv LIBS || true) @LIBS@"
 
 # set by command flags
 WARNINGS=""
+SWIGLANG=""
 
 # find header files of souffle
 TEST_HEADER="souffle/CompiledRelation.h"
@@ -115,6 +116,18 @@ cd "$(dirname $1)"
 dir="$PWD"
 cd "$OLDPWD"
 
+# Make temp folder and copy relavent files there
+if [ -n "$SWIGLANG" ]
+then
+  TMP_DIR=$(mktemp -d)
+  for file in `ls -1 $SWIGDIR`
+  do
+    cp $SWIGDIR/$file $TMP_DIR
+  done
+
+  swig -c++ -$SWIGLANG $TMP_DIR/SwigInterface.i
+
+# Checks input language and compiles files with local python3 config or local java_home config
 if [ "$SWIGLANG" = "python" ]
 then
   g++ -std=c++11 -fPIC -c -D__EMBEDDED_SOUFFLE__ $SWIGDIR/SwigInterface.cpp $SWIGDIR/SwigInterface_wrap.cxx $1 $(python3-config --cflags) -I$HEADER_DIR 2>&1

@@ -206,21 +206,6 @@ m4_define([NEGATIVE_TEST],[
 m4_define([SWIG_LANGUAGES], [[java],
   [python]])
 
-dnl Check whether all files matching a regex have identical sorted contents
-dnl to those in the given directory.
-dnl the contents of two files are identical
-dnl $1 -- input files regex
-dnl $2 -- directory containing the expected output files
-dnl $3 -- directory containing generated output files
-m4_define([SORTED_SAME_FILES_SWIG],[
-  for i in $1
-  do
-    sort "$i" > "$i.sorted.generated"
-    sort "$2/$(basename $i)" > "$2/$(basename $i).sorted.expected"
-    SAME_FILE(["$i.sorted.generated"], ["$2/$(basename $i).sorted.expected"])
-  done
-])
-
 dnl Positive testcase for SWIG given configuration
 dnl $1 test name
 dnl $2 category
@@ -245,7 +230,8 @@ m4_define([TEST_EVAL_SWIG],[
   # invoke test script
   m4_esyscmd_s(.SCRIPTDIR/souffle-LANGUAGE-gen.sh CATEGORY/LANGUAGE/TESTNAME/TESTNAME.dl)
 
-  SORTED_SAME_FILES_SWIG([TESTDIR/*.csv],[EXPECTEDDIR])
+  cd TESTDIR
+  SORTED_SAME_FILES([*.csv],[EXPECTEDDIR])
 ])
 
 dnl Positive testcase for SWIG

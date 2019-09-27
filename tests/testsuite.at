@@ -203,7 +203,8 @@ m4_define([NEGATIVE_TEST],[
   ])
 ])
 
-m4_define([SWIG_LANGUAGES], [[java]])
+m4_define([SWIG_LANGUAGES], [[java],
+  [python]])
 
 dnl Check whether all files matching a regex have identical sorted contents
 dnl to those in the given directory.

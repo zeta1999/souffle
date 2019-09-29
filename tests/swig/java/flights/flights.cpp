@@ -396,28 +396,28 @@ std::atomic<size_t> iter(0);
 /* BEGIN STRATUM 0 */
 [&]() {
 SignalHandler::instance()->setMsg(R"_(flight("QA","AU","JPN").
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [20:1-20:25])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [20:1-20:25])_");
 rel_1_flight->insert(RamDomain(0),RamDomain(2),RamDomain(4));
 SignalHandler::instance()->setMsg(R"_(flight("QA","JPN","DEN").
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [21:1-21:26])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [21:1-21:26])_");
 rel_1_flight->insert(RamDomain(0),RamDomain(4),RamDomain(5));
 SignalHandler::instance()->setMsg(R"_(flight("QA","JPN","CHI").
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [22:1-22:26])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [22:1-22:26])_");
 rel_1_flight->insert(RamDomain(0),RamDomain(4),RamDomain(3));
 SignalHandler::instance()->setMsg(R"_(flight("QA","AU","CHI").
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [23:1-23:25])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [23:1-23:25])_");
 rel_1_flight->insert(RamDomain(0),RamDomain(2),RamDomain(3));
 SignalHandler::instance()->setMsg(R"_(flight("VA","AU","CHI").
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [24:1-24:25])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [24:1-24:25])_");
 rel_1_flight->insert(RamDomain(1),RamDomain(2),RamDomain(3));
 SignalHandler::instance()->setMsg(R"_(flight("VA","JPN","ZA").
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [25:1-25:25])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [25:1-25:25])_");
 rel_1_flight->insert(RamDomain(1),RamDomain(4),RamDomain(6));
 SignalHandler::instance()->setMsg(R"_(flight("VA","JPN","DEN").
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [26:1-26:26])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [26:1-26:26])_");
 rel_1_flight->insert(RamDomain(1),RamDomain(4),RamDomain(5));
 SignalHandler::instance()->setMsg(R"_(flight("VA","DEN","ZA").
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [27:1-27:25])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [27:1-27:25])_");
 rel_1_flight->insert(RamDomain(1),RamDomain(5),RamDomain(6));
 }();
 /* END STRATUM 0 */
@@ -425,11 +425,11 @@ rel_1_flight->insert(RamDomain(1),RamDomain(5),RamDomain(6));
 [&]() {
 SignalHandler::instance()->setMsg(R"_(QAflies(X,Y) :- 
    flight("QA",X,Y).
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [11:1-11:34])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [11:1-11:34])_");
 if(!(rel_1_flight->empty())) {
 [&](){
-CREATE_OP_CONTEXT(rel_2_QAflies_op_ctxt,rel_2_QAflies->createContext());
 CREATE_OP_CONTEXT(rel_1_flight_op_ctxt,rel_1_flight->createContext());
+CREATE_OP_CONTEXT(rel_2_QAflies_op_ctxt,rel_2_QAflies->createContext());
 const Tuple<RamDomain,3> key({{RamDomain(0),0,0}});
 auto range = rel_1_flight->equalRange_1(key,READ_OP_CONTEXT(rel_1_flight_op_ctxt));
 for(const auto& env0 : range) {
@@ -444,12 +444,12 @@ for(;;) {
 SignalHandler::instance()->setMsg(R"_(QAflies(X,Y) :- 
    flight("QA",X,Z),
    QAflies(Z,Y).
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [12:1-12:48])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [12:1-12:48])_");
 if(!(rel_3_delta_QAflies->empty()) && !(rel_1_flight->empty())) {
 [&](){
-CREATE_OP_CONTEXT(rel_3_delta_QAflies_op_ctxt,rel_3_delta_QAflies->createContext());
-CREATE_OP_CONTEXT(rel_2_QAflies_op_ctxt,rel_2_QAflies->createContext());
 CREATE_OP_CONTEXT(rel_1_flight_op_ctxt,rel_1_flight->createContext());
+CREATE_OP_CONTEXT(rel_2_QAflies_op_ctxt,rel_2_QAflies->createContext());
+CREATE_OP_CONTEXT(rel_3_delta_QAflies_op_ctxt,rel_3_delta_QAflies->createContext());
 CREATE_OP_CONTEXT(rel_4_new_QAflies_op_ctxt,rel_4_new_QAflies->createContext());
 const Tuple<RamDomain,3> key({{RamDomain(0),0,0}});
 auto range = rel_1_flight->equalRange_1(key,READ_OP_CONTEXT(rel_1_flight_op_ctxt));
@@ -487,7 +487,7 @@ IOSystem::getInstance().getWriter(std::vector<bool>({1,1}), symTable, ioDirectiv
 [&]() {
 SignalHandler::instance()->setMsg(R"_(VAflies(X,Y) :- 
    flight("VA",X,Y).
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [14:1-14:34])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [14:1-14:34])_");
 if(!(rel_1_flight->empty())) {
 [&](){
 CREATE_OP_CONTEXT(rel_1_flight_op_ctxt,rel_1_flight->createContext());
@@ -506,13 +506,13 @@ for(;;) {
 SignalHandler::instance()->setMsg(R"_(VAflies(X,Y) :- 
    flight("VA",X,Z),
    VAflies(Z,Y).
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [15:1-15:48])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [15:1-15:48])_");
 if(!(rel_6_delta_VAflies->empty()) && !(rel_1_flight->empty())) {
 [&](){
-CREATE_OP_CONTEXT(rel_7_new_VAflies_op_ctxt,rel_7_new_VAflies->createContext());
 CREATE_OP_CONTEXT(rel_1_flight_op_ctxt,rel_1_flight->createContext());
-CREATE_OP_CONTEXT(rel_6_delta_VAflies_op_ctxt,rel_6_delta_VAflies->createContext());
 CREATE_OP_CONTEXT(rel_5_VAflies_op_ctxt,rel_5_VAflies->createContext());
+CREATE_OP_CONTEXT(rel_6_delta_VAflies_op_ctxt,rel_6_delta_VAflies->createContext());
+CREATE_OP_CONTEXT(rel_7_new_VAflies_op_ctxt,rel_7_new_VAflies->createContext());
 const Tuple<RamDomain,3> key({{RamDomain(1),0,0}});
 auto range = rel_1_flight->equalRange_1(key,READ_OP_CONTEXT(rel_1_flight_op_ctxt));
 for(const auto& env0 : range) {
@@ -551,12 +551,12 @@ if (!isHintsProfilingEnabled()&& performIO) rel_1_flight->purge();
 SignalHandler::instance()->setMsg(R"_(QAonly(X,Y) :- 
    QAflies(X,Y),
    !VAflies(X,Y).
-in file /mnt/c/Users/lnimn/Videos/stufflisa/school/uni/YR3SEM2/COMP3888/CAPSTONE/project19-group5/souffle/tests/swig/java/flights/flights.dl [17:1-17:45])_");
+in file /Users/chad/git/project19-group5/souffle/tests/swig/java/flights/flights.dl [17:1-17:45])_");
 if(!(rel_2_QAflies->empty())) {
 [&](){
 CREATE_OP_CONTEXT(rel_2_QAflies_op_ctxt,rel_2_QAflies->createContext());
-CREATE_OP_CONTEXT(rel_8_QAonly_op_ctxt,rel_8_QAonly->createContext());
 CREATE_OP_CONTEXT(rel_5_VAflies_op_ctxt,rel_5_VAflies->createContext());
+CREATE_OP_CONTEXT(rel_8_QAonly_op_ctxt,rel_8_QAonly->createContext());
 for(const auto& env0 : *rel_2_QAflies) {
 if( !(rel_5_VAflies->contains(Tuple<RamDomain,2>({{env0[0],env0[1]}}),READ_OP_CONTEXT(rel_5_VAflies_op_ctxt)))) {
 Tuple<RamDomain,2> tuple({{static_cast<RamDomain>(env0[0]),static_cast<RamDomain>(env0[1])}});
@@ -572,8 +572,8 @@ IODirectives ioDirectives(directiveMap);
 IOSystem::getInstance().getWriter(std::vector<bool>({1,1}), symTable, ioDirectives, false)->writeAll(*rel_8_QAonly);
 } catch (std::exception& e) {std::cerr << e.what();exit(1);}
 }
-if (!isHintsProfilingEnabled()&& performIO) rel_5_VAflies->purge();
 if (!isHintsProfilingEnabled()&& performIO) rel_2_QAflies->purge();
+if (!isHintsProfilingEnabled()&& performIO) rel_5_VAflies->purge();
 }();
 /* END STRATUM 3 */
 

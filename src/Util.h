@@ -62,7 +62,7 @@
 #undef min
 #undef max
 
-char* realpath(const char* path, char* resolved_path) {
+inline char* realpath(const char* path, char* resolved_path) {
     return _fullpath(resolved_path, path, PATH_MAX);
 }
 
@@ -75,7 +75,7 @@ constexpr unsigned long ctz(unsigned long value) {
 }
 #define __builtin_ctz ctz
 
-unsigned long __inline ctzll(unsigned long long value) {
+inline unsigned long ctzll(unsigned long long value) {
     unsigned long trailing_zero = 0;
 
     if (_BitScanForward64(&trailing_zero, value))
@@ -99,7 +99,7 @@ static const char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
    rules for mk[s]temp (i.e. end in "XXXXXX").  The name constructed
    does not exist at the time of the call to mkstemp.  TMPL is
    overwritten with the result.  */
-int mkstemp(char* tmpl) {
+inline int mkstemp(char* tmpl) {
     int len;
     char* XXXXXX;
     static unsigned long long value;

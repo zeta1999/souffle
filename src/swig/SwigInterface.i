@@ -6,6 +6,7 @@
 namespace std {
     %template(map_string_string) map<string, string>;
 }
+
 void loadInput(const std::map<std::string, std::string> &val, const std::string &prog_ins, const std::string &rel_name, const std::string &rel_name_out);
 
 % {
@@ -47,7 +48,6 @@ void loadInput(const map<string, string> &val, const string &prog_ins, const str
                 // print source and destination node 
                 cout << src << " - " << dest << "\n";
                 }
-    
     prog->printAll(".");
 }
 % } 

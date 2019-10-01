@@ -143,6 +143,7 @@ then
     g++ -shared $TMP_DIR/SwigInterface.o $TMP_DIR/SwigInterface_wrap.o $dir/$exe.o -o $TMP_DIR/libSwigInterface.so -lstdc++
   fi
 
+  # move generated files to same directory as cpp file
   for file in `ls -1 $TMP_DIR | grep -v SwigInterface.i | grep -v SwigInterface.h | grep -v SwigInterface.cpp`
   do
     mv $TMP_DIR/$file $dir

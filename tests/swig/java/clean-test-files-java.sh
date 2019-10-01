@@ -14,4 +14,3 @@ else
     echo "Folder cleaned"
   fi
 fi
- 

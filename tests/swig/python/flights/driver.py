@@ -12,4 +12,3 @@ p.run()
 p.printAll('.')
 p.thisown=1
 del p
-

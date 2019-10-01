@@ -12,4 +12,3 @@ else
   javac *.java
   java -Djava.library.path=$currentpath driver
 fi
-

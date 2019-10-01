@@ -19,13 +19,5 @@ public class driver {
     p.run(); 
     p.printAll(".");
     p.finalize();
-
-
-Map<String, String> dictionary = new HashMap<String, String>();
-dictionary.put("key", "value");  
-
-//  SWIGSouffleProgram x = SwigInterface.map_string_string(dictionary);
-//  SwigInterface.loadInput(x,"insert_for","edge","path");
-    
   }
 }

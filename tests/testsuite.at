@@ -221,14 +221,14 @@ m4_define([TEST_EVAL_SWIG],[
   m4_define([EXPECTEDDIR],[TESTDIR/expected])
 
   # clean files before testing
-  m4_esyscmd_s(.SCRIPTDIR/clean-test-files-LANGUAGE.sh CATEGORY/LANGUAGE/TESTNAME)
+  .SCRIPTDIR/clean-test-files-LANGUAGE.sh CATEGORY/LANGUAGE/TESTNAME
 
   AT_CHECK("$SOUFFLE" -D. -F FACTS PROGRAM)
   mkdir -p EXPECTEDDIR
   mv *.csv EXPECTEDDIR
 
   # invoke test script
-  m4_esyscmd_s(.SCRIPTDIR/souffle-LANGUAGE-gen.sh CATEGORY/LANGUAGE/TESTNAME/TESTNAME.dl)
+  .SCRIPTDIR/souffle-LANGUAGE-gen.sh CATEGORY/LANGUAGE/TESTNAME/TESTNAME.dl
 
   cd TESTDIR
   SORTED_SAME_FILES([*.csv],[EXPECTEDDIR])

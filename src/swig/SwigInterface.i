@@ -1,10 +1,8 @@
- /* SwigInterface.i */
  %module SwigInterface
  %include "std_string.i"
  %include "std_map.i"
  %include <std_vector.i>
 
- //possible to comment out this part without affecting further output
 namespace std {
     %template(map_string_string) map<string, string>;
 }

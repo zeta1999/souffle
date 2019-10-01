@@ -1,0 +1,2 @@
+The code successfully print all the output, unknown error occurs when expected exit is 0,
+the code exit with 1, when expected exit is 1, the code exit with 0. :)

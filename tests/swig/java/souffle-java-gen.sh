@@ -7,8 +7,6 @@ else
   dir=$(dirname $1)
   currentpath=$(pwd)/$dir
   
-
-
   ./../src/souffle -sjava $1
   cd $dir
   javac *.java

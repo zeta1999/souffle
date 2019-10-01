@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
                 {"generate", 'g', "FILE", "", false,
                         "Generate C++ source code for the given Datalog program and write it to "
                         "<FILE>."},
-                {"swig", 's', "LANG",  "", false, "Generate SWIG interface for given language."},
+                {"swig", 's', "LANG", "", false, "Generate SWIG interface for given language."},
                 {"library-dir", 'L', "DIR", "", true, "Specify directory for library files."},
                 {"libraries", 'l', "FILE", "", true, "Specify libraries."},
                 {"no-warn", 'w', "", "", false, "Disable warnings."},
@@ -365,7 +365,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-      /**
+    /**
      * Ensure that code generation is enabled if using SWIG interface option.
      */
     if (Global::config().has("swig") && !Global::config().has("generate")) {
@@ -599,7 +599,7 @@ int main(int argc, char** argv) {
                 baseFilename = Global::config().get("dl-program");
             } else if (Global::config().has("generate")) {
                 baseFilename = Global::config().get("generate");
-                
+
                 // trim .dl extension if it exists
                 if (baseFilename.size() >= 3 && baseFilename.substr(baseFilename.size() - 3) == ".dl") {
                     baseFilename = baseFilename.substr(0, baseFilename.size() - 3);

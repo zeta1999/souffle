@@ -302,7 +302,7 @@ public:
     std::string getRelationName(const std::string& name) const {
         return getRelation(name)->getName();
     }
-    
+
     std::vector<Relation*> getOutputRelations() const {
         return outputRelations;
     }

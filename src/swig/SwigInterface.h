@@ -11,13 +11,11 @@
 
 #pragma once
 
-
 //Abstract base class for generated Datalog programs
 class SWIGSouffleProgram {
    souffle::SouffleProgram *prog;
     
 public:
-     
    SWIGSouffleProgram(souffle::SouffleProgram *p) : prog(p) { 
     std::cout << "SWIG Instance generated.\n";
    }
@@ -41,9 +39,7 @@ public:
 
    // dump output relations 
    void dumpOutputs(std::ostream& out = std::cout) { prog->dumpOutputs(out); }
-
 };
-
 
 //Create instance
 SWIGSouffleProgram *newInstance(const std::string &name);

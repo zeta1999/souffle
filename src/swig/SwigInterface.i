@@ -7,6 +7,13 @@ namespace std {
     %template(map_string_string) map<string, string>;
 }
 
+/**
+ * Enables the reading and writing of the input and output inside a Python program
+ * @param val The input relation given as a dictionary
+ * @param prog_ins The name of the Datalog instance
+ * @param rel_name The name of the Datalog input relation
+ * @param rel_name_out The name of the Datalog output relation
+ */
 void loadInput(const std::map<std::string, std::string> &val, const std::string &prog_ins, const std::string &rel_name, const std::string &rel_name_out);
 
 % {

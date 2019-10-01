@@ -11,8 +11,13 @@
 
 #pragma once
 
-//Abstract base class for generated Datalog programs
+/** 
+ * Abstract base class for generated Datalog programs
+ */
 class SWIGSouffleProgram {
+   /**
+    * pointer to SouffleProgram to invoke functions from SouffleInterface.h
+    */
    souffle::SouffleProgram *prog;
     
 public:
@@ -41,5 +46,5 @@ public:
    void dumpOutputs(std::ostream& out = std::cout) { prog->dumpOutputs(out); }
 };
 
-//Create instance
+// Create instance
 SWIGSouffleProgram *newInstance(const std::string &name);

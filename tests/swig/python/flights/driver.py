@@ -6,7 +6,7 @@ Created on Sun Nov 12 18:09:46 2017
 """
 
 import SwigInterface
-p=SwigInterface.newInstance('flights')
+p = SwigInterface.newInstance('flights')
 p.loadAll('.')
 p.run()
 p.printAll('.')

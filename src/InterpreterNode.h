@@ -23,12 +23,10 @@
 
 #pragma once
 
+#include "InterpreterPreamble.h"
 #include "RamNode.h"
 
 namespace souffle {
-
-/** interpreter node types
- */
 
 enum InterpreterNodeType {
     I_Number,
@@ -92,8 +90,8 @@ enum InterpreterNodeType {
 class InterpreterNode {
 public:
     InterpreterNode(enum InterpreterNodeType ty, const RamNode* sdw,
-            std::vector<std::unique_ptr<InterpreterNode>> chlds = {}, std::vector<void*> dat = {})
-            : type(ty), shadow(sdw), children(std::move(chlds)), data(dat){};
+            std::vector<std::unique_ptr<InterpreterNode>> chlds = {}, std::vector<size_t> data = {})
+            : type(ty), shadow(sdw), children(std::move(chlds)), data(std::move(data)) {}
 
     /** @brief get node type */
     inline enum InterpreterNodeType getType() const {
@@ -111,8 +109,18 @@ public:
     }
 
     /** @brief get data */
-    inline void* getData(std::size_t i) const {
+    inline const size_t getData(std::size_t i) const {
         return data[i];
+    }
+
+    /** @brief get preamble */
+    inline InterpreterPreamble* getPreamble() const {
+        return preamble.get();
+    }
+
+    /** @brief set preamble */
+    inline void setPreamble(const std::shared_ptr<InterpreterPreamble>& p) {
+        preamble = p;
     }
 
     /** @brief get list of all children */
@@ -130,7 +138,10 @@ protected:
     /** children */
     std::vector<std::unique_ptr<InterpreterNode>> children;
 
-    /** data pointers */
-    std::vector<void*> data;    //TODO deleting via a void pointer is undefined behavoir. A better approach?
+    /** Preamble */
+    std::shared_ptr<InterpreterPreamble> preamble = nullptr;
+
+    /** Vector for storing enviroment symbol */
+    std::vector<size_t> data;
 };
 }  // namespace souffle

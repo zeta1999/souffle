@@ -245,6 +245,12 @@ AM_COLOR_TESTS=always
 # init check programs
 check_PROGRAMS =
 
+# profile utilities test
+check_PROGRAMS += test/profile_util_test
+test_profile_util_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
+test_profile_util_test_SOURCES = test/profile_util_test.cpp
+test_profile_util_test_LDADD = libsouffle.la
+
 # utils test
 check_PROGRAMS += test/util_test
 test_util_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test

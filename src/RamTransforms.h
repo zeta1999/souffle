@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "RamIndexAnalysis.h"
 #include "RamLevelAnalysis.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
@@ -518,6 +519,25 @@ public:
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
         return parallelizeOperations(*translationUnit.getProgram());
+    }
+};
+
+/**
+ * @class ReportIndexSetsTransformer
+ * @brief does not transform the program but reports on the index sets
+ *        if the debug-report flag is enabled.
+ *
+ */
+class ReportIndexTransfomer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "ReportIndexTransfomer";
+    }
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        translationUnit.getAnalysis<RamIndexAnalysis>();
+        return false;
     }
 };
 

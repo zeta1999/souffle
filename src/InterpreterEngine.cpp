@@ -1,3 +1,18 @@
+/*
+ * Souffle - A Datalog Compiler
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
+ * Licensed under the Universal Permissive License v 1.0 as shown at:
+ * - https://opensource.org/licenses/UPL
+ * - <souffle root>/licenses/SOUFFLE-UPL.txt
+ */
+
+/************************************************************************
+ *
+ * @file InterpreterEngine.cpp
+ *
+ * Define the Interpreter Engine class.
+ ***********************************************************************/
+
 #include "InterpreterEngine.h"
 #include "IOSystem.h"
 #include "InterpreterGenerator.h"
@@ -193,7 +208,6 @@ void InterpreterEngine::executeSubroutine(const std::string& name, const std::ve
     ctxt.setReturnErrors(err);
     ctxt.setArguments(args);
 
-    // TODO Caching?
     auto entry = generator.generateTree(tUnit.getProgram()->getSubroutine(name));
     execute(entry.get(), ctxt);
 }
@@ -561,7 +575,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         auto preamble = node->getPreamble();
         auto& rel = getRelation(node->getData(0));
 
-        auto pstream = rel.partitionScan(numOfThreads);
+        auto pStream = rel.partitionScan(numOfThreads);
 
         PARALLEL_START;
         InterpreterContext newCtxt(ctxt);
@@ -569,7 +583,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         for (const auto& info : viewInfo) {
             newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
         }
-        pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+        pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
             for (const TupleRef& val : *it) {
                 newCtxt[cur->getTupleId()] = val.getBase();
                 if (!execute(node->getChild(0), newCtxt)) {
@@ -628,7 +642,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
 
         size_t indexPos = node->getData(1);
-        auto pstream = rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
+        auto pStream = rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
         PARALLEL_START;
         InterpreterContext newCtxt(ctxt);
@@ -636,7 +650,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         for (const auto& info : viewInfo) {
             newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
         }
-        pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+        pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
             for (const TupleRef& val : *it) {
                 newCtxt[cur->getTupleId()] = val.getBase();
                 if (!execute(node->getChild(arity), newCtxt)) {
@@ -668,14 +682,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         auto preamble = node->getPreamble();
         auto& rel = getRelation(node->getData(0));
 
-        auto pstream = rel.partitionScan(numOfThreads);
+        auto pStream = rel.partitionScan(numOfThreads);
         auto viewInfo = preamble->getViewInfoForNested();
         PARALLEL_START;
         InterpreterContext newCtxt(ctxt);
         for (const auto& info : viewInfo) {
             newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
         }
-        pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+        pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
             for (const TupleRef& val : *it) {
                 newCtxt[cur->getTupleId()] = val.getBase();
                 if (execute(node->getChild(0), newCtxt)) {
@@ -711,7 +725,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             const RamDomain* data = &ip[0];
             ctxt[cur->getTupleId()] = data;
             if (execute(node->getChild(arity), ctxt)) {
-                execute(node->getChild(arity+ 1), ctxt);  // TODO refactor index pos
+                execute(node->getChild(arity+ 1), ctxt);  
                 break;
             }
         }
@@ -739,14 +753,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
 
         size_t indexPos = node->getData(1);
-        auto pstream = rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
+        auto pStream = rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
         PARALLEL_START;
         InterpreterContext newCtxt(ctxt);
         for (const auto& info : viewInfo) {
             newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
         }
-        pfor(auto it = pstream.begin(); it < pstream.end(); it++) {
+        pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
             for (const TupleRef& val : *it) {
                 newCtxt[cur->getTupleId()] = val.getBase();
                 if (execute(node->getChild(arity), newCtxt)) {

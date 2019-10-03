@@ -1,3 +1,19 @@
+/*
+ * Souffle - A Datalog Compiler
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
+ * Licensed under the Universal Permissive License v 1.0 as shown at:
+ * - https://opensource.org/licenses/UPL
+ * - <souffle root>/licenses/SOUFFLE-UPL.txt
+ */
+
+/************************************************************************
+ *
+ * @file InterpreterEngine.h
+ *
+ * Declares the Interpreter Engine class. The engine takes in an InterpreterNode
+ * representation and execute them.
+ ***********************************************************************/
+
 #include "InterpreterContext.h"
 #include "InterpreterGenerator.h"
 #include "InterpreterNode.h"
@@ -73,29 +89,29 @@ private:
      * */
     std::vector<RelationHandle>& getRelationMap();
 
-    /** @brief Symbol table for relations */
+    /** Symbol table for relations */
     std::vector<RelationHandle> relations;
-    /** @brief If executing a provenance program */
+    /** If executing a provenance program */
     const bool isProvenance;
-    /** @brief If profile is enable in this program */
+    /** If profile is enable in this program */
     const bool profileEnabled;
-    /** @brief Number of threads enabled for this program */
+    /** Number of threads enabled for this program */
     size_t numOfThreads;
-    /** @brief Profile counter */
+    /** Profile counter */
     std::atomic<RamDomain> counter{0};
-    /** @brief Loop iteration counter */
+    /** Loop iteration counter */
     size_t iteration = 0;
-    /** @brief Profile for rule frequencies */
+    /** Profile for rule frequencies */
     std::map<std::string, std::map<size_t, size_t>> frequencies;
-    /** @brief Profile for relation reads */
+    /** Profile for relation reads */
     std::map<std::string, std::atomic<size_t>> reads;
-    /** @brief DLL */
+    /** DLL */
     std::vector<void*> dll;
-    /** @brief Program */
+    /** Program */
     RamTranslationUnit& tUnit;
-    /** @brief RamIndexAnalysis */
+    /** RamIndexAnalysis */
     RamIndexAnalysis* isa;
-    /** @brief Interpreter program generator */
+    /** Interpreter program generator */
     NodeGenerator generator;
 };
 

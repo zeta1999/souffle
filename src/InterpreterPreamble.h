@@ -1,6 +1,25 @@
-#include "RamVisitor.h"
+/*
+ * Souffle - A Datalog Compiler
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
+ * Licensed under the Universal Permissive License v 1.0 as shown at:
+ * - https://opensource.org/licenses/UPL
+ * - <souffle root>/licenses/SOUFFLE-UPL.txt
+ */
+
+/************************************************************************
+ *
+ * @file InterpreterPreamble
+ *
+ * Declares the InterpreterPreamble class. 
+ * Each Query operation has an InterpreterPreamble assoicated with it. 
+ * The preamble contains information about views creation.
+ ***********************************************************************/
 
 #pragma once
+
+#include <array>
+#include <memory>
+#include <vector>
 
 namespace souffle {
 
@@ -62,19 +81,19 @@ public:
         viewInfoForNested.push_back({relId, indexPos, viewPos});
     }
 
-    /** @brief If this preamble is for parallel operation.  */
+    /** If this preamble contains parallel operation.  */
     bool isParallel = false;
 
 private:
-    /** @brief Vector of filter operation, views required */
+    /** Vector of filter operation, views required */
     std::vector<std::unique_ptr<InterpreterNode>> outerFilterViewOps;
-    /** @brief Vector of filter operations, no views required. */
+    /** Vector of filter operations, no views required. */
     std::vector<std::unique_ptr<InterpreterNode>> outerFilterViewFreeOps;
-    /** @brief Vector of nested operations */
+    /** Vector of nested operations */
     std::vector<std::unique_ptr<InterpreterNode>> nestedViewOps;
-    /** @brief Vector of View information in filter operations */
+    /** Vector of View information in filter operations */
     std::vector<std::array<size_t, 3>> viewInfoForFilter;
-    /** @brief Vector of View information in nested operations */
+    /** Vector of View information in nested operations */
     std::vector<std::array<size_t, 3>> viewInfoForNested;
 };
 

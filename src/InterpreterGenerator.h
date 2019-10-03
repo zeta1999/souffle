@@ -1,3 +1,21 @@
+/*
+ * Souffle - A Datalog Compiler
+ * Copyright (c) 2019, The Souffle Developers. All rights reserved.
+ * Licensed under the Universal Permissive License v 1.0 as shown at:
+ * - https://opensource.org/licenses/UPL
+ * - <souffle root>/licenses/SOUFFLE-UPL.txt
+ */
+
+/************************************************************************
+ *
+ * @file InterpreterGenerator.h
+ *
+ * Declares the Interpreter Generator class. The generator takes an entry
+ * of the RAM program and translate it into an executable InterpreterNode representation
+ * with environment symbol binding in each node.
+ ***********************************************************************/
+
+
 #include "InterpreterNode.h"
 #include "InterpreterPreamble.h"
 #include "InterpreterRecords.h"
@@ -28,7 +46,7 @@ public:
         // Encode all relation, indexPos and viewId.
         visitDepthFirst(root, [&](const RamNode& node) {
             if (dynamic_cast<const RamQuery*>(&node)) {
-                newQueryBlock();  // TODO New block after entering parallel statement?
+                newQueryBlock();  
             }
             if (const auto* create = dynamic_cast<const RamCreate*>(&node)) {
                 encodeRelation(create->getRelation());
@@ -179,7 +197,6 @@ public:
 
     NodePtr visitIndexScan(const RamIndexScan& scan) override {
         NodePtrVec children;
-        // TODO: Pattern + NestOperation are put in the same vector. good?
         for (const auto& value : scan.getRangePattern()) {
             children.push_back(visit(value));
         }
@@ -192,7 +209,6 @@ public:
 
     NodePtr visitParallelIndexScan(const RamParallelIndexScan& piscan) override {
         NodePtrVec children;
-        // TODO: Pattern + NestOperation are put in the same vector. good?
         for (const auto& value : piscan.getRangePattern()) {
             children.push_back(visit(value));
         }

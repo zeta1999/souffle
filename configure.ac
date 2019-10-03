@@ -29,7 +29,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 dnl Do not set default CFLAGS and CXXFLAGS
 ENV_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS=" -Wall -std=c++11"
+CXXFLAGS=" -Wall "
 
 # Disable provenance
 AC_ARG_ENABLE(
@@ -87,6 +87,8 @@ AS_IF([test "x$enable_mpi" = "xyes"], [
 AM_CONDITIONAL([MPI], [test "x$enable_mpi" = "xyes"])
 
 AC_PROG_CXX
+AX_CXX_COMPILE_STDCXX(17, noext)
+
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
@@ -114,7 +116,7 @@ AS_IF([test -z "$MCPP"], [AC_MSG_ERROR([mcpp not found.])])
 # Check for bison
 AC_CHECK_PROG(BISON, bison, bison)
 AS_IF([test -z "$BISON"], [AC_MSG_ERROR([bison not found.])])
-AX_PROG_BISON_VERSION([3.0.2], [], [AC_MSG_ERROR([bison version 3.0.2 is required.])])
+AX_PROG_BISON_VERSION([3.0.4], [], [AC_MSG_ERROR([bison version 3.0.4 is required.])])
 
 
 # Enable packaging option

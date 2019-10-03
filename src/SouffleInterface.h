@@ -734,7 +734,7 @@ public:
 
     /**
      * @param instance name (const std::string).
-     * @return the new instance(pointer of Souffle program), or null pointer if the instance not found
+     * @return the new instance(pointer of Souffle program), or null pointer if the instance not found (SouffleProgram*).
      * Create instance by finding the name of the program factory, if the factory is found, create a instance, return nullptr if the instance not found.
      */
     static SouffleProgram* newInstance(const std::string& name) {

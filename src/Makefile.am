@@ -111,13 +111,14 @@ souffle_sources = \
               ProfileEvent.h                            \
               ProvenanceTransformer.cpp                 \
               RamAnalysis.h                             \ 
-	       InterpreterContext.h                             \
-		   InterpreterGenerator.h							\
-		   InterpreterEngine.cpp InterpreterEngine.h		\
-	       InterpreterIndex.h                               \
-	       InterpreterProgInterface.h                       \
-		   InterpreterPreamble.h							\
-	       InterpreterRecords.h         InterpreterRecords.cpp     \
+	      InterpreterContext.h                      \
+	      InterpreterEngine.cpp InterpreterEngine.h \
+	      InterpreterGenerator.h		        \
+	      InterpreterIndex.h                        \
+	      InterpreterNode.h				\
+	      InterpreterProgInterface.h                \
+	      InterpreterPreamble.h			\
+	      InterpreterRecords.h         InterpreterRecords.cpp     \
               RamLevelAnalysis.cpp  RamLevelAnalysis.h  \
               RamCondition.h                            \
               RamNode.h                                 \

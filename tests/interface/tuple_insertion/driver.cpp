@@ -18,6 +18,8 @@
 #include <array>
 #include <string>
 #include <vector>
+#include <iostream>
+
 
 using namespace souffle;
 
@@ -37,6 +39,7 @@ int main(int argc, char** argv) {
     if (SouffleProgram* prog = ProgramFactory::newInstance("tuple_insertion")) {
         // get input relation "edge"
         if (Relation* edge = prog->getRelation("edge")) {
+
             std::vector<std::array<std::string, 2>> myData = {
                     {"A", "B"}, {"B", "C"}, {"C", "D"}, {"D", "E"}, {"E", "F"}, {"F", "A"}};
             for (auto input : myData) {
@@ -44,7 +47,7 @@ int main(int argc, char** argv) {
                 t << input[0] << input[1];
                 edge->insert(t);
             }
-            
+
             if (Relation* line = prog->getRelation("line")) {
                 std::vector<std::array<std::string, 2>> myData = {
                         {"1", "2"}, {"3", "4"}, {"5", "6"}, {"7", "8"}};

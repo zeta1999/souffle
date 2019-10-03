@@ -250,13 +250,13 @@ public:
     virtual std::string getName() const = 0;
     /**
      * Get the attributes type of a relation.
-     * @param the index of element in tuple (size_t)
+     * @param the index of element in tuple (size_t).
      * @return Char pointer to the attributes type of a element in a tuple in a relation.
      */
     virtual const char* getAttrType(size_t) const = 0;
     /**
      * Get the attributes name of a relation.
-     * @param the index of element in tuple (size_t)
+     * @param the index of element in tuple (size_t).
      * @return Char pointer to the attributes name of a element in a tuple a relation.
      */
     virtual const char* getAttrName(size_t) const = 0;
@@ -327,7 +327,7 @@ class tuple {
 
 public:
     /**
-     * /brief Constructor
+     * /brief Constructor.
      * 
      * When given a relation pointer r pointing to an actual relation, it will set the above declared relation to point to this relation. 
      * An dynamic array of space which is equal to the arity of the tuple will be created.
@@ -336,14 +336,14 @@ public:
      */
     tuple(const Relation* r) : relation(*r), array(r->getArity()), pos(0), data(array.data()) {}
     /**
-     * /brief Constructor
+     * /brief Constructor.
      * 
      * When given a tupple, similar to before, same thing will be set according to which relation the tuple belongs to.
      * @param Reference to a tuple object.
      */
     tuple(const tuple& t) : relation(t.relation), array(t.array), pos(t.pos), data(array.data()) {}
     /**
-     * Allows printing using WriteStream
+     * Allows printing using WriteStream.
      */
     const RamDomain* data = nullptr;
     /**
@@ -367,8 +367,9 @@ public:
      * only be used by friendly classes such as
      * iterators; users should not use this interface.
      */
+     
     /** 
-     * /brief Overload the operator []
+     * /brief Overload the operator [].
      * 
      * Return the element in idx position of a tuple. 
      * @param idx This is the idx of element in a tuple (size_t).
@@ -377,7 +378,7 @@ public:
         return array[idx];
     }
     /** 
-     * /brief Overload the operator []
+     * /brief Overload the operator [].
      * 
      * Return the element in idx position of a tuple. The returned element can not be changed.
      * @param idx This is the idx of element in a tuple (size_t).
@@ -395,7 +396,7 @@ public:
 
     /**
      * Place a symbol into the current element of the tuple.
-     * @param str Symbol to be added (std:string).
+     * @param str Symbol to be added (std::string).
      * @return Reference to the tuple.
      */
     tuple& operator<<(const std::string& str) {
@@ -406,7 +407,7 @@ public:
     }
 
     /**
-     * Place a number into the current element of the tuple
+     * Place a number into the current element of the tuple.
      * @param number Number to be added (RamDomain).
      * @return Reference to the tuple.
      */
@@ -419,7 +420,7 @@ public:
     }
 
     /**
-     * Read a symbol from the tuple
+     * Read a symbol from the tuple.
      */
     tuple& operator>>(std::string& str) {
         assert(pos < size() && "exceeded tuple's size");
@@ -429,7 +430,7 @@ public:
     }
 
     /**
-     * Read a number from the tuple
+     * Read a number from the tuple.
      */
     tuple& operator>>(RamDomain& number) {
         assert(pos < size() && "exceeded tuple's size");
@@ -440,14 +441,14 @@ public:
     }
 
     /**
-     * (insert) iterator for direct access to tuple's data (experimental)
+     * (insert) iterator for direct access to tuple's data (experimental).
      */
     decltype(array)::iterator begin() {
         return array.begin();
     }
 
     /**
-     * Direct constructor using initialization list (experimental)
+     * Direct constructor using initialization list (experimental).
      */
     tuple(Relation* r, std::initializer_list<RamDomain> il) : relation(*r), array(il), pos(il.size()) {
         assert(il.size() == r->getArity() && "wrong tuple arity");
@@ -455,7 +456,7 @@ public:
 };
 
 /**
- * Abstract base class for generated Datalog programs
+ * Abstract base class for generated Datalog programs.
  */
 class SouffleProgram {
 private:
@@ -488,10 +489,10 @@ private:
 
 protected:
 	/**
-     * @param name the name of the relation
-     * @param rel a pointer of the relation
-     * @param isInput a bool argument, true if the relation is a input relation, else false
-     * @param isOnput a bool argument, true if the relation is a ouput relation, else false
+     * @param name the name of the relation (std::string).
+     * @param rel a pointer of the relation (std::string).
+     * @param isInput a bool argument, true if the relation is a input relation, else false (bool).
+     * @param isOnput a bool argument, true if the relation is a ouput relation, else false (bool).
 	 * add the relation to relationMap (with its name) and allRelations,
      * depends on the propoties of the relation, if the relation is an input relation, it will be added to 
      * inputRelations, else if the relation is an output relation, it will be added to outputRelations, otherwise
@@ -513,6 +514,8 @@ protected:
 
 public:
 	/**
+     * /brief Destructor.
+     * 
 	 * destructor of SouffleProgram.
 	 */ 
     virtual ~SouffleProgram() = default;
@@ -556,8 +559,8 @@ public:
     virtual void dumpOutputs(std::ostream& out = std::cout) = 0;
 
 	/**
-     * @param name the name of the relation
-     * @return the pointer of the relation, or null pointer if the relation not found
+     * @param name the name of the relation (const std::string).
+     * @return the pointer of the relation, or null pointer if the relation not found (Relation*).
 	 * get Relation by its name from relationMap, if relation not found, return a nullptr.
 	 */ 
     Relation* getRelation(const std::string& name) const {
@@ -570,8 +573,8 @@ public:
     };
     
     /**
-	 * @param name the name of the relation
-     * @return the size of the relation
+	 * @param name the name of the relation (const std::string)
+     * @return the size of the relation (std::size_t)
      * return the size of the relation
 	 */ 
     std::size_t getRelationSize(const std::string& name) const {
@@ -579,24 +582,24 @@ public:
     }
     
     /**
-	 * @param name the name of the relation
-     * @return the name of the relation
-	 * return the name of the relation
+	 * @param name the name of the relation (const std::string).
+     * @return the name of the relation (std::string).
+	 * return the name of the relation.
 	 */ 
     std::string getRelationName(const std::string& name) const {
         return getRelation(name)->getName();
     }
     
     /**
-     * @return outputRelations
-	 * getter of outputRelations
+     * @return outputRelations (std::vector).
+	 * getter of outputRelations.
 	 */ 
     std::vector<Relation*> getOutputRelations() const {
         return outputRelations;
     }
 
     /**
-     * @return iutputRelations
+     * @return iutputRelations (std::vector)
 	 * getter of inputRelations
 	 */ 
     std::vector<Relation*> getInputRelations() const {
@@ -604,16 +607,16 @@ public:
     }
 
     /**
-     * @return internalRelations
-	 * getter of internalRelations
+     * @return internalRelations (std::vector).
+	 * getter of internalRelations.
 	 */ 
     std::vector<Relation*> getInternalRelations() const {
         return internalRelations;
     }
 
     /**
-     * @return allRelations
-	 * getter of allRelations
+     * @return allRelations (std::vector).
+	 * getter of allRelations.
 	 */ 
     std::vector<Relation*> getAllRelations() const {
         return allRelations;
@@ -645,7 +648,7 @@ public:
     }
 
 	/**
-	 * remove all the facts from the internalRelations
+	 * remove all the facts from the internalRelations.
 	 */
     void purgeInternalRelations() {
         for (Relation* relation : internalRelations) relation->purge();
@@ -653,7 +656,7 @@ public:
 };
 
 /**
- * Abstract program factory class
+ * Abstract program factory class.
  */
 class ProgramFactory {
 protected:
@@ -663,17 +666,19 @@ protected:
      * to static initialization order fiasco. The static
      * container needs to be a primitive type such as pointer
      * set to NULL.
-     * link to next factory
+     * link to next factory.
 	 */
     ProgramFactory* link = nullptr;
 	
 	/**
-	 * name of factory
+	 * name of factory.
 	 */
     std::string name;
 
 protected:
     /**
+     * /brief Constructor.
+     * 
      * Constructor adds factory to static singly-linked list
      * for registration.
      */
@@ -683,7 +688,7 @@ protected:
 
 private:
 	/**
-     * @return the factory registration map
+     * @return the factory registration map (std::map).
 	 * Helper method for creating a factory map, which map key is the name of the program factory, map value is 
      * the pointer of the ProgramFactory.
 	 */
@@ -694,7 +699,7 @@ private:
 
 protected:
 	/**
-     * @param pointer of program factory
+     * @param pointer of program factory (ProgramFactory*).
 	 * Create and insert a factory into the factoryReg map.
 	 */
     static inline void registerFactory(ProgramFactory* factory) {  // use of inline reduce the function call overhead
@@ -704,8 +709,8 @@ protected:
     }
 
     /**
-     * @param factory name
-     * @return pointer of the program factory, or null pointer if the program factory not found 
+     * @param factory name (const std::string).
+     * @return pointer of the program factory, or null pointer if the program factory not found (ProgramFactory*).
      * Find a factory by its name, return the fatory if found, return nullptr if the factory not found.
      */
     static inline ProgramFactory* find(const std::string& factoryName) {
@@ -715,18 +720,20 @@ protected:
     }
 
     /**
-     * Create new instance (abstract)
+     * Create new instance (abstract).
      */
     virtual SouffleProgram* newInstance() = 0;
 
 public:
 	/**
+     * /brief Destructor.
+     * 
 	 * Destructor of ProgramFactory.
 	 */
     virtual ~ProgramFactory() = default;
 
     /**
-     * @param instance name
+     * @param instance name (const std::string).
      * @return the new instance(pointer of Souffle program), or null pointer if the instance not found
      * Create instance by finding the name of the program factory, if the factory is found, create a instance, return nullptr if the instance not found.
      */

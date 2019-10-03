@@ -269,6 +269,10 @@ private:
 
 protected:
 	/**
+     * @param name the name of the relation
+     * @param rel a pointer of the relation
+     * @param isInput a bool argument, true if the relation is a input relation, else false
+     * @param isOnput a bool argument, true if the relation is a ouput relation, else false
 	 * add the relation to relationMap (with its name) and allRelations,
      * depends on the propoties of the relation, if the relation is an input relation, it will be added to 
      * inputRelations, else if the relation is an output relation, it will be added to outputRelations, otherwise
@@ -333,6 +337,8 @@ public:
     virtual void dumpOutputs(std::ostream& out = std::cout) = 0;
 
 	/**
+     * @param name the name of the relation
+     * @return the pointer of the relation, or null pointer if the relation not found
 	 * get Relation by its name from relationMap, if relation not found, return a nullptr.
 	 */ 
     Relation* getRelation(const std::string& name) const {
@@ -345,13 +351,17 @@ public:
     };
     
     /**
-	 * return the size of the relation
+	 * @param name the name of the relation
+     * @return the size of the relation
+     * return the size of the relation
 	 */ 
     std::size_t getRelationSize(const std::string& name) const {
         return getRelation(name)->size();
     }
     
     /**
+	 * @param name the name of the relation
+     * @return the name of the relation
 	 * return the name of the relation
 	 */ 
     std::string getRelationName(const std::string& name) const {
@@ -359,6 +369,7 @@ public:
     }
     
     /**
+     * @return outputRelations
 	 * getter of outputRelations
 	 */ 
     std::vector<Relation*> getOutputRelations() const {
@@ -366,6 +377,7 @@ public:
     }
 
     /**
+     * @return iutputRelations
 	 * getter of inputRelations
 	 */ 
     std::vector<Relation*> getInputRelations() const {
@@ -373,6 +385,7 @@ public:
     }
 
     /**
+     * @return internalRelations
 	 * getter of internalRelations
 	 */ 
     std::vector<Relation*> getInternalRelations() const {
@@ -380,6 +393,7 @@ public:
     }
 
     /**
+     * @return allRelations
 	 * getter of allRelations
 	 */ 
     std::vector<Relation*> getAllRelations() const {
@@ -450,7 +464,8 @@ protected:
 
 private:
 	/**
-	 * Helper method for creating a Factory map, which map key is the name of the factory, map value is 
+     * @return the factory registration map
+	 * Helper method for creating a factory map, which map key is the name of the program factory, map value is 
      * the pointer of the ProgramFactory.
 	 */
     static inline std::map<std::string, ProgramFactory*>& getFactoryRegistry() {  // use of inline reduce the function call overhead
@@ -460,6 +475,7 @@ private:
 
 protected:
 	/**
+     * @param pointer of program factory
 	 * Create and insert a factory into the factoryReg map.
 	 */
     static inline void registerFactory(ProgramFactory* factory) {  // use of inline reduce the function call overhead
@@ -469,7 +485,9 @@ protected:
     }
 
     /**
-     * Find a factory by its name, return the fatory if found, else return nullptr.
+     * @param factory name
+     * @return pointer of the program factory, or null pointer if the program factory not found 
+     * Find a factory by its name, return the fatory if found, return nullptr if the factory not found.
      */
     static inline ProgramFactory* find(const std::string& factoryName) {
         const auto& reg = getFactoryRegistry();
@@ -489,7 +507,9 @@ public:
     virtual ~ProgramFactory() = default;
 
     /**
-     * Create instance by finding the name of the program factory, if the factory is found, create a instance, else return nullptr.
+     * @param instance name
+     * @return the new instance(pointer of Souffle program), or null pointer if the instance not found
+     * Create instance by finding the name of the program factory, if the factory is found, create a instance, return nullptr if the instance not found.
      */
     static SouffleProgram* newInstance(const std::string& name) {
         ProgramFactory* factory = find(name);

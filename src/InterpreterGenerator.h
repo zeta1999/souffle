@@ -15,7 +15,6 @@
  * with environment symbol binding in each node.
  ***********************************************************************/
 
-
 #include "InterpreterNode.h"
 #include "InterpreterPreamble.h"
 #include "InterpreterRecords.h"
@@ -46,7 +45,7 @@ public:
         // Encode all relation, indexPos and viewId.
         visitDepthFirst(root, [&](const RamNode& node) {
             if (dynamic_cast<const RamQuery*>(&node)) {
-                newQueryBlock();  
+                newQueryBlock();
             }
             if (const auto* create = dynamic_cast<const RamCreate*>(&node)) {
                 encodeRelation(create->getRelation());

@@ -157,8 +157,7 @@ protected:
  */
 class RamNegation : public RamCondition {
 public:
-    RamNegation(std::unique_ptr<RamCondition> operand)
-            : operand(std::move(operand)) {}
+    RamNegation(std::unique_ptr<RamCondition> operand) : operand(std::move(operand)) {}
 
     /** @brief Get operand of negation */
     const RamCondition& getOperand() const {
@@ -276,10 +275,9 @@ protected:
  */
 class RamAbstractExistenceCheck : public RamCondition {
 public:
-    RamAbstractExistenceCheck(std::unique_ptr<RamRelationReference> relRef,
-            std::vector<std::unique_ptr<RamExpression>> vals)
-            : relationRef(std::move(relRef)), values(std::move(vals)),
-              valuePtr(toPtrVector(values)) {}
+    RamAbstractExistenceCheck(
+            std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
+            : relationRef(std::move(relRef)), values(std::move(vals)), valuePtr(toPtrVector(values)) {}
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {
@@ -341,7 +339,7 @@ class RamExistenceCheck : public RamAbstractExistenceCheck {
 public:
     RamExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            :  RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
+            : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
     void print(std::ostream& os) const override {
         os << "("
@@ -412,8 +410,7 @@ public:
  */
 class RamEmptinessCheck : public RamCondition {
 public:
-    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef)
-            : relationRef(std::move(relRef)) {}
+    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {}
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {

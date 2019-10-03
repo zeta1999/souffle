@@ -10,8 +10,8 @@
  *
  * @file InterpreterPreamble
  *
- * Declares the InterpreterPreamble class. 
- * Each Query operation has an InterpreterPreamble assoicated with it. 
+ * Declares the InterpreterPreamble class.
+ * Each Query operation has an InterpreterPreamble assoicated with it.
  * The preamble contains information about views creation.
  ***********************************************************************/
 

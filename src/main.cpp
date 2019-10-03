@@ -533,7 +533,8 @@ int main(int argc, char** argv) {
         }
 
         // configure and execute interpreter
-        std::unique_ptr<InterpreterEngine> interpreter(std::make_unique<InterpreterEngine>(*ramTranslationUnit));
+        std::unique_ptr<InterpreterEngine> interpreter(
+                std::make_unique<InterpreterEngine>(*ramTranslationUnit));
         interpreter->executeMain();
         // If the profiler was started, join back here once it exits.
         if (profiler.joinable()) {

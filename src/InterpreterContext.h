@@ -76,7 +76,7 @@ public:
         // Return the reference as raw pointer.
         return allocatedDataContainer.back().get();
     }
-    
+
     /** @brief Get subroutine return value */
     std::vector<RamDomain>& getReturnValues() const {
         return *returnValues;

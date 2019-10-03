@@ -60,8 +60,7 @@ public:
     RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers,
             const RelationRepresentation representation)
-            : name(std::move(name)), arity(arity),
-              attributeNames(std::move(attributeNames)),
+            : name(std::move(name)), arity(arity), attributeNames(std::move(attributeNames)),
               attributeTypeQualifiers(std::move(attributeTypeQualifiers)), representation(representation) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());

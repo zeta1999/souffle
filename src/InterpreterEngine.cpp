@@ -26,7 +26,8 @@
 
 namespace souffle {
 
-void InterpreterEngine::createRelation(const RamRelation& id, const MinIndexSelection& orderSet, const size_t& idx) {
+void InterpreterEngine::createRelation(
+        const RamRelation& id, const MinIndexSelection& orderSet, const size_t& idx) {
     RelationHandle res;
     if (relations.size() < idx + 1) {
         relations.resize(idx + 1);
@@ -473,7 +474,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         RamDomain high[arity];
         for (size_t i = 0; i < arity - 2; i++) {
             low[i] = node->getChild(i) ? execute(node->getChild(i), ctxt) : MIN_RAM_DOMAIN;
-            high[i]= node->getChild(i) ? low[i] : MAX_RAM_DOMAIN;
+            high[i] = node->getChild(i) ? low[i] : MAX_RAM_DOMAIN;
         }
 
         low[arity - 2] = MIN_RAM_DOMAIN;
@@ -601,7 +602,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         RamDomain low[arity];
         RamDomain hig[arity];
         for (size_t i = 0; i < arity; i++) {
-            if (node->getChild(i) != nullptr){
+            if (node->getChild(i) != nullptr) {
                 low[i] = execute(node->getChild(i), ctxt);
                 hig[i] = low[i];
             } else {
@@ -616,7 +617,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         // conduct range query
         for (auto data : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
             ctxt[cur->getTupleId()] = &data[0];
-            if (!execute(node->getChild(arity), ctxt)) {  
+            if (!execute(node->getChild(arity), ctxt)) {
                 break;
             }
         }
@@ -632,7 +633,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         RamDomain low[arity];
         RamDomain hig[arity];
         for (size_t i = 0; i < arity; i++) {
-            if (node->getChild(i)){
+            if (node->getChild(i)) {
                 low[i] = execute(node->getChild(i), ctxt);
                 hig[i] = low[i];
             } else {
@@ -708,7 +709,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         RamDomain low[arity];
         RamDomain hig[arity];
         for (size_t i = 0; i < arity; i++) {
-            if (node->getChild(i) != nullptr){
+            if (node->getChild(i) != nullptr) {
                 low[i] = execute(node->getChild(i), ctxt);
                 hig[i] = low[i];
             } else {
@@ -725,7 +726,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             const RamDomain* data = &ip[0];
             ctxt[cur->getTupleId()] = data;
             if (execute(node->getChild(arity), ctxt)) {
-                execute(node->getChild(arity+ 1), ctxt);  
+                execute(node->getChild(arity + 1), ctxt);
                 break;
             }
         }
@@ -743,7 +744,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         RamDomain low[arity];
         RamDomain hig[arity];
         for (size_t i = 0; i < arity; i++) {
-            if (node->getChild(i) != nullptr){
+            if (node->getChild(i) != nullptr) {
                 low[i] = execute(node->getChild(i), ctxt);
                 hig[i] = low[i];
             } else {
@@ -891,7 +892,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         RamDomain hig[arity];
 
         for (size_t i = 0; i < arity; i++) {
-            if (node->getChild(i) != nullptr){
+            if (node->getChild(i) != nullptr) {
                 low[i] = execute(node->getChild(i), ctxt);
                 hig[i] = low[i];
             } else {

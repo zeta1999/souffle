@@ -115,7 +115,6 @@ souffle_sources = \
 		   InterpreterGenerator.h							\
 		   InterpreterEngine.cpp InterpreterEngine.h		\
 	       InterpreterIndex.h                               \
-	       InterpreterInterface.h                           \
 	       InterpreterProgInterface.h                       \
 		   InterpreterPreamble.h							\
 	       InterpreterRecords.h         InterpreterRecords.cpp     \

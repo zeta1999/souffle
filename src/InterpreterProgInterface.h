@@ -48,12 +48,14 @@ public:
 
     /** Iterator to first tuple */
     iterator begin() const override {
-        return InterpreterRelInterface::iterator(new InterpreterRelInterface::iterator_base(id, this, relation.begin()));
+        return InterpreterRelInterface::iterator(
+                new InterpreterRelInterface::iterator_base(id, this, relation.begin()));
     }
 
     /** Iterator to last tuple */
     iterator end() const override {
-        return InterpreterRelInterface::iterator(new InterpreterRelInterface::iterator_base(id, this, relation.end()));
+        return InterpreterRelInterface::iterator(
+                new InterpreterRelInterface::iterator_base(id, this, relation.end()));
     }
 
     /** Get name */
@@ -186,7 +188,7 @@ public:
         for (auto& rel_ptr : exec.getRelationMap()) {
             if (rel_ptr == nullptr) {
                 // Skip droped relation.
-                continue;   
+                continue;
             }
             auto& name = rel_ptr->getName();
             auto& interpreterRel = *rel_ptr;
@@ -203,8 +205,8 @@ public:
                 std::string n = rel.getArg(i);
                 attrNames.push_back(n);
             }
-            auto* interface =
-                    new InterpreterRelInterface(interpreterRel, symTable, rel.getName(), types, attrNames, id);
+            auto* interface = new InterpreterRelInterface(
+                    interpreterRel, symTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);
             bool input;
             bool output;

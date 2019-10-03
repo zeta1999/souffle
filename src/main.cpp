@@ -533,16 +533,15 @@ int main(int argc, char** argv) {
         }
 
         // configure and execute interpreter
-        // std::unique_ptr<InterpreterInterface> rami(std::make_unique<Interpreter>(*ramTranslationUnit));
-        std::unique_ptr<InterpreterEngine> rami(std::make_unique<InterpreterEngine>(*ramTranslationUnit));
-        rami->executeMain();
+        std::unique_ptr<InterpreterEngine> interpreter(std::make_unique<InterpreterEngine>(*ramTranslationUnit));
+        interpreter->executeMain();
         // If the profiler was started, join back here once it exits.
         if (profiler.joinable()) {
             profiler.join();
         }
         // only run explain interface if interpreted
         if (Global::config().has("provenance")) {
-            InterpreterProgInterface interface(*rami);
+            InterpreterProgInterface interface(*interpreter);
             if (Global::config().get("provenance") == "explain") {
                 explain(interface, false);
             } else if (Global::config().get("provenance") == "explore") {

@@ -1,0 +1,192 @@
+\hypertarget{classsouffle_1_1tuple}{}\doxysection{souffle\+::tuple Class Reference}
+\label{classsouffle_1_1tuple}\index{souffle::tuple@{souffle::tuple}}
+
+
+{\ttfamily \#include $<$Souffle\+Interface.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classsouffle_1_1tuple_a4a850c0890de15cdd2eba5c5d8f90bb6}{tuple}} (const \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$r)
+\item 
+\mbox{\hyperlink{classsouffle_1_1tuple_ab6821ad47ca64003a4931731a7ceddf2}{tuple}} (const \mbox{\hyperlink{classsouffle_1_1tuple}{tuple}} \&t)
+\item 
+const \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} \& \mbox{\hyperlink{classsouffle_1_1tuple_a0ab9c3b37d368d4372e7e27fdbf20ee6}{get\+Relation}} () const
+\item 
+size\+\_\+t \mbox{\hyperlink{classsouffle_1_1tuple_ac1e884fd470e139ca8223af684f379bc}{size}} () const
+\item 
+Ram\+Domain \& \mbox{\hyperlink{classsouffle_1_1tuple_aa7ff0d718dbabaa6eab90a1b7615210a}{operator\mbox{[}$\,$\mbox{]}}} (size\+\_\+t idx)
+\item 
+const Ram\+Domain \& \mbox{\hyperlink{classsouffle_1_1tuple_aab1b4561489c7cf69de57d90487119e6}{operator\mbox{[}$\,$\mbox{]}}} (size\+\_\+t idx) const
+\item 
+void \mbox{\hyperlink{classsouffle_1_1tuple_a178e16d502713964b96c2346592255a1}{rewind}} ()
+\item 
+\mbox{\hyperlink{classsouffle_1_1tuple}{tuple}} \& \mbox{\hyperlink{classsouffle_1_1tuple_a043d1084b36f2808d79d5e8aca86d4b8}{operator$<$$<$}} (const std\+::string \&str)
+\item 
+\mbox{\hyperlink{classsouffle_1_1tuple}{tuple}} \& \mbox{\hyperlink{classsouffle_1_1tuple_a52d4b510d904ed1ea7f45d08771cdfbb}{operator$<$$<$}} (Ram\+Domain number)
+\item 
+\mbox{\hyperlink{classsouffle_1_1tuple}{tuple}} \& \mbox{\hyperlink{classsouffle_1_1tuple_a3d1131d74b8b61cf8e445a155adaa046}{operator$>$$>$}} (std\+::string \&str)
+\item 
+\mbox{\hyperlink{classsouffle_1_1tuple}{tuple}} \& \mbox{\hyperlink{classsouffle_1_1tuple_a8a244b8c41ed48f9bb88db305d4b8785}{operator$>$$>$}} (Ram\+Domain \&number)
+\item 
+decltype(array) \+::iterator \mbox{\hyperlink{classsouffle_1_1tuple_a4b74ce0412f8d5aa1ea8614be5ad8579}{begin}} ()
+\item 
+\mbox{\hyperlink{classsouffle_1_1tuple_af61ac98bf7f0e2171ba91e4d394884df}{tuple}} (\mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$r, std\+::initializer\+\_\+list$<$ Ram\+Domain $>$ il)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+const Ram\+Domain $\ast$ \mbox{\hyperlink{classsouffle_1_1tuple_a568f8cdfdd9f6d8a4c638e979a763c13}{data}} = nullptr
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Defines a tuple for the OO interface such that relations with varying columns can be accessed. Tuples are stored in relation. In Souffle, one piece of data is stored as a tuple. For example if we have a relation called dog with attributes name, colour and age which are string, string and interger type respectively. ~\newline
+ A piece of data it is storing can be (mydog, black,3). However, this is not directly stored as a tuple. There will be a symbol table storing the actual content and associate them with numbers. For example, $\vert$1$\vert$mydog$\vert$ $\vert$2$\vert$black$\vert$ $\vert$3$\vert$ 3 $\vert$ And when it stored as a tuple, (1, 2, 3) will be stored. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classsouffle_1_1tuple_a4a850c0890de15cdd2eba5c5d8f90bb6}\label{classsouffle_1_1tuple_a4a850c0890de15cdd2eba5c5d8f90bb6}} 
+\index{souffle::tuple@{souffle::tuple}!tuple@{tuple}}
+\index{tuple@{tuple}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{tuple()}{tuple()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily souffle\+::tuple\+::tuple (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$}]{r }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+/brief Constructor
+
+When given a relation pointer r pointing to an actual relation, it will set the above declared relation to point to this relation. An dynamic array of space which is equal to the arity of the tuple will be created. An pointer called data is pointing to the starting position of array. 
+\begin{DoxyParams}{Parameters}
+{\em r} & \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} pointer pointing to a relation \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classsouffle_1_1tuple_ab6821ad47ca64003a4931731a7ceddf2}\label{classsouffle_1_1tuple_ab6821ad47ca64003a4931731a7ceddf2}} 
+\index{souffle::tuple@{souffle::tuple}!tuple@{tuple}}
+\index{tuple@{tuple}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{tuple()}{tuple()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily souffle\+::tuple\+::tuple (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classsouffle_1_1tuple}{tuple}} \&}]{t }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+/brief Constructor
+
+When given a tupple, similar to before, same thing will be set according to which relation the tuple belongs to. 
+\begin{DoxyParams}{Parameters}
+{\em Reference} & to a tuple object. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classsouffle_1_1tuple_af61ac98bf7f0e2171ba91e4d394884df}\label{classsouffle_1_1tuple_af61ac98bf7f0e2171ba91e4d394884df}} 
+\index{souffle::tuple@{souffle::tuple}!tuple@{tuple}}
+\index{tuple@{tuple}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{tuple()}{tuple()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily souffle\+::tuple\+::tuple (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$}]{r,  }\item[{std\+::initializer\+\_\+list$<$ Ram\+Domain $>$}]{il }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Direct constructor using initialization list (experimental) 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classsouffle_1_1tuple_a4b74ce0412f8d5aa1ea8614be5ad8579}\label{classsouffle_1_1tuple_a4b74ce0412f8d5aa1ea8614be5ad8579}} 
+\index{souffle::tuple@{souffle::tuple}!begin@{begin}}
+\index{begin@{begin}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{begin()}{begin()}}
+{\footnotesize\ttfamily decltype(array) \+::iterator souffle\+::tuple\+::begin (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+(insert) iterator for direct access to tuple\textquotesingle{}s data (experimental) \mbox{\Hypertarget{classsouffle_1_1tuple_a0ab9c3b37d368d4372e7e27fdbf20ee6}\label{classsouffle_1_1tuple_a0ab9c3b37d368d4372e7e27fdbf20ee6}} 
+\index{souffle::tuple@{souffle::tuple}!getRelation@{getRelation}}
+\index{getRelation@{getRelation}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{getRelation()}{getRelation()}}
+{\footnotesize\ttfamily const \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}}\& souffle\+::tuple\+::get\+Relation (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+Get the reference to the relation to which the tuple belongs. \begin{DoxyReturn}{Returns}
+Reference to a relation. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1tuple_a043d1084b36f2808d79d5e8aca86d4b8}\label{classsouffle_1_1tuple_a043d1084b36f2808d79d5e8aca86d4b8}} 
+\index{souffle::tuple@{souffle::tuple}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$()}{operator<<()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classsouffle_1_1tuple}{tuple}}\& souffle\+::tuple\+::operator$<$$<$ (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{str }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Place a symbol into the current element of the tuple. 
+\begin{DoxyParams}{Parameters}
+{\em str} & Symbol to be added (std\+:string). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Reference to the tuple. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1tuple_a52d4b510d904ed1ea7f45d08771cdfbb}\label{classsouffle_1_1tuple_a52d4b510d904ed1ea7f45d08771cdfbb}} 
+\index{souffle::tuple@{souffle::tuple}!operator$<$$<$@{operator$<$$<$}}
+\index{operator$<$$<$@{operator$<$$<$}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{operator$<$$<$()}{operator<<()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classsouffle_1_1tuple}{tuple}}\& souffle\+::tuple\+::operator$<$$<$ (\begin{DoxyParamCaption}\item[{Ram\+Domain}]{number }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Place a number into the current element of the tuple 
+\begin{DoxyParams}{Parameters}
+{\em number} & Number to be added (Ram\+Domain). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Reference to the tuple. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1tuple_a8a244b8c41ed48f9bb88db305d4b8785}\label{classsouffle_1_1tuple_a8a244b8c41ed48f9bb88db305d4b8785}} 
+\index{souffle::tuple@{souffle::tuple}!operator$>$$>$@{operator$>$$>$}}
+\index{operator$>$$>$@{operator$>$$>$}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{operator$>$$>$()}{operator>>()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classsouffle_1_1tuple}{tuple}}\& souffle\+::tuple\+::operator$>$$>$ (\begin{DoxyParamCaption}\item[{Ram\+Domain \&}]{number }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Read a number from the tuple \mbox{\Hypertarget{classsouffle_1_1tuple_a3d1131d74b8b61cf8e445a155adaa046}\label{classsouffle_1_1tuple_a3d1131d74b8b61cf8e445a155adaa046}} 
+\index{souffle::tuple@{souffle::tuple}!operator$>$$>$@{operator$>$$>$}}
+\index{operator$>$$>$@{operator$>$$>$}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{operator$>$$>$()}{operator>>()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classsouffle_1_1tuple}{tuple}}\& souffle\+::tuple\+::operator$>$$>$ (\begin{DoxyParamCaption}\item[{std\+::string \&}]{str }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Read a symbol from the tuple \mbox{\Hypertarget{classsouffle_1_1tuple_aa7ff0d718dbabaa6eab90a1b7615210a}\label{classsouffle_1_1tuple_aa7ff0d718dbabaa6eab90a1b7615210a}} 
+\index{souffle::tuple@{souffle::tuple}!operator\mbox{[}\mbox{]}@{operator[]}}
+\index{operator\mbox{[}\mbox{]}@{operator[]}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{operator[]()}{operator[]()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Ram\+Domain\& souffle\+::tuple\+::operator\mbox{[}$\,$\mbox{]} (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{idx }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+direct access to tuple elements via index T\+O\+DO\+: this interface should be hidden and only be used by friendly classes such as iterators; users should not use this interface. /brief Overload the operator \mbox{[}\mbox{]}
+
+Return the element in idx position of a tuple. 
+\begin{DoxyParams}{Parameters}
+{\em idx} & This is the idx of element in a tuple (size\+\_\+t). \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classsouffle_1_1tuple_aab1b4561489c7cf69de57d90487119e6}\label{classsouffle_1_1tuple_aab1b4561489c7cf69de57d90487119e6}} 
+\index{souffle::tuple@{souffle::tuple}!operator\mbox{[}\mbox{]}@{operator[]}}
+\index{operator\mbox{[}\mbox{]}@{operator[]}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{operator[]()}{operator[]()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily const Ram\+Domain\& souffle\+::tuple\+::operator\mbox{[}$\,$\mbox{]} (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{idx }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+/brief Overload the operator \mbox{[}\mbox{]}
+
+Return the element in idx position of a tuple. The returned element can not be changed. 
+\begin{DoxyParams}{Parameters}
+{\em idx} & This is the idx of element in a tuple (size\+\_\+t). \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classsouffle_1_1tuple_a178e16d502713964b96c2346592255a1}\label{classsouffle_1_1tuple_a178e16d502713964b96c2346592255a1}} 
+\index{souffle::tuple@{souffle::tuple}!rewind@{rewind}}
+\index{rewind@{rewind}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{rewind()}{rewind()}}
+{\footnotesize\ttfamily void souffle\+::tuple\+::rewind (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Reset stream pointer to the first element of a tuple. \mbox{\Hypertarget{classsouffle_1_1tuple_ac1e884fd470e139ca8223af684f379bc}\label{classsouffle_1_1tuple_ac1e884fd470e139ca8223af684f379bc}} 
+\index{souffle::tuple@{souffle::tuple}!size@{size}}
+\index{size@{size}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{size()}{size()}}
+{\footnotesize\ttfamily size\+\_\+t souffle\+::tuple\+::size (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+Return the number of elements in the tuple. \begin{DoxyReturn}{Returns}
+the number of elements in the tuple (size\+\_\+t). 
+\end{DoxyReturn}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classsouffle_1_1tuple_a568f8cdfdd9f6d8a4c638e979a763c13}\label{classsouffle_1_1tuple_a568f8cdfdd9f6d8a4c638e979a763c13}} 
+\index{souffle::tuple@{souffle::tuple}!data@{data}}
+\index{data@{data}!souffle::tuple@{souffle::tuple}}
+\doxysubsubsection{\texorpdfstring{data}{data}}
+{\footnotesize\ttfamily const Ram\+Domain$\ast$ souffle\+::tuple\+::data = nullptr}
+
+Allows printing using Write\+Stream 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/\+Users/hong/\+Desktop/\+C\+O\+M\+P3888/new repo/project19-\/group5/souffle/src/Souffle\+Interface.\+h\end{DoxyCompactItemize}

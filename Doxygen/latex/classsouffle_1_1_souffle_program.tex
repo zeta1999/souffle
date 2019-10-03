@@ -1,0 +1,228 @@
+\hypertarget{classsouffle_1_1_souffle_program}{}\doxysection{souffle\+::Souffle\+Program Class Reference}
+\label{classsouffle_1_1_souffle_program}\index{souffle::SouffleProgram@{souffle::SouffleProgram}}
+
+
+{\ttfamily \#include $<$Souffle\+Interface.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual \mbox{\hyperlink{classsouffle_1_1_souffle_program_ae2f4223a3f80c0239e404ef8da23d669}{$\sim$\+Souffle\+Program}} ()=default
+\item 
+virtual void \mbox{\hyperlink{classsouffle_1_1_souffle_program_a75c26ced8fb9dd2d6f988a1f9110f838}{run}} (size\+\_\+t stratum\+Index=-\/1)
+\item 
+virtual void \mbox{\hyperlink{classsouffle_1_1_souffle_program_abad6822dd2e9ff1a74803821bb39a313}{run\+All}} (std\+::string input\+Directory=\char`\"{}.\char`\"{}, std\+::string output\+Directory=\char`\"{}.\char`\"{}, size\+\_\+t stratum\+Index=-\/1)=0
+\item 
+virtual void \mbox{\hyperlink{classsouffle_1_1_souffle_program_a82608bf8018e98e96d06d285333c8620}{load\+All}} (std\+::string input\+Directory=\char`\"{}.\char`\"{})=0
+\item 
+virtual void \mbox{\hyperlink{classsouffle_1_1_souffle_program_aae47a2083a0d67eb44c9914cb22ab182}{print\+All}} (std\+::string output\+Directory=\char`\"{}.\char`\"{})=0
+\item 
+virtual void \mbox{\hyperlink{classsouffle_1_1_souffle_program_af431ea120ea40662a9c037b9e0f1e1ea}{dump\+Inputs}} (std\+::ostream \&out=std\+::cout)=0
+\item 
+virtual void \mbox{\hyperlink{classsouffle_1_1_souffle_program_a47526ebe874cdb90421e60d86e8b0c53}{dump\+Outputs}} (std\+::ostream \&out=std\+::cout)=0
+\item 
+\mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$ \mbox{\hyperlink{classsouffle_1_1_souffle_program_a8a5b114c5b6c8022c936a533248996e7}{get\+Relation}} (const std\+::string \&name) const
+\item 
+std\+::size\+\_\+t \mbox{\hyperlink{classsouffle_1_1_souffle_program_a729cb758eeef2b2443791d8cd97a5ef2}{get\+Relation\+Size}} (const std\+::string \&name) const
+\item 
+std\+::string \mbox{\hyperlink{classsouffle_1_1_souffle_program_a1aef3ec37477cc54a5ba982d5aaf6ffc}{get\+Relation\+Name}} (const std\+::string \&name) const
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$ $>$ \mbox{\hyperlink{classsouffle_1_1_souffle_program_af7cfe2c44299205ef9b702f7dc4c9357}{get\+Output\+Relations}} () const
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$ $>$ \mbox{\hyperlink{classsouffle_1_1_souffle_program_adea47c2aa44a8cde5bdf0f39f1281eae}{get\+Input\+Relations}} () const
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$ $>$ \mbox{\hyperlink{classsouffle_1_1_souffle_program_a04d4800b89105587fcd3c9bb25ff34f1}{get\+Internal\+Relations}} () const
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$ $>$ \mbox{\hyperlink{classsouffle_1_1_souffle_program_a01a71a487188c98368cf26e4ac2da43d}{get\+All\+Relations}} () const
+\item 
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_ad6101f590d4771ddbe712f9d3f5bbdd1}\label{classsouffle_1_1_souffle_program_ad6101f590d4771ddbe712f9d3f5bbdd1}} 
+virtual void {\bfseries execute\+Subroutine} (std\+::string name, const std\+::vector$<$ Ram\+Domain $>$ \&args, std\+::vector$<$ Ram\+Domain $>$ \&ret, std\+::vector$<$ bool $>$ \&ret\+Err)
+\item 
+virtual Symbol\+Table \& \mbox{\hyperlink{classsouffle_1_1_souffle_program_a90cd5579baa81512a0137fac420a43e0}{get\+Symbol\+Table}} ()=0
+\item 
+void \mbox{\hyperlink{classsouffle_1_1_souffle_program_a1e8153fc0d1467855100d423e0d9f089}{purge\+Output\+Relations}} ()
+\item 
+void \mbox{\hyperlink{classsouffle_1_1_souffle_program_a187e2e268f57646919069ed681dd0bab}{purge\+Input\+Relations}} ()
+\item 
+void \mbox{\hyperlink{classsouffle_1_1_souffle_program_a6fd5245fc40fd948060be332fe60debf}{purge\+Internal\+Relations}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classsouffle_1_1_souffle_program_a76d04bb16509820a91b24867c608bc10}{add\+Relation}} (const std\+::string \&name, \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$rel, bool is\+Input, bool is\+Output)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Abstract base class for generated Datalog programs 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_ae2f4223a3f80c0239e404ef8da23d669}\label{classsouffle_1_1_souffle_program_ae2f4223a3f80c0239e404ef8da23d669}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!````~SouffleProgram@{$\sim$SouffleProgram}}
+\index{````~SouffleProgram@{$\sim$SouffleProgram}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{$\sim$SouffleProgram()}{~SouffleProgram()}}
+{\footnotesize\ttfamily virtual souffle\+::\+Souffle\+Program\+::$\sim$\+Souffle\+Program (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}, {\ttfamily [default]}}
+
+destructor of \mbox{\hyperlink{classsouffle_1_1_souffle_program}{Souffle\+Program}}. 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_a76d04bb16509820a91b24867c608bc10}\label{classsouffle_1_1_souffle_program_a76d04bb16509820a91b24867c608bc10}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!addRelation@{addRelation}}
+\index{addRelation@{addRelation}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{addRelation()}{addRelation()}}
+{\footnotesize\ttfamily void souffle\+::\+Souffle\+Program\+::add\+Relation (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{name,  }\item[{\mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} $\ast$}]{rel,  }\item[{bool}]{is\+Input,  }\item[{bool}]{is\+Output }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [protected]}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & the name of the relation \\
+\hline
+{\em rel} & a pointer of the relation \\
+\hline
+{\em is\+Input} & a bool argument, true if the relation is a input relation, else false \\
+\hline
+{\em is\+Onput} & a bool argument, true if the relation is a ouput relation, else false add the relation to relation\+Map (with its name) and all\+Relations, depends on the propoties of the relation, if the relation is an input relation, it will be added to input\+Relations, else if the relation is an output relation, it will be added to output\+Relations, otherwise will add to internal\+Relations.(a relation could be both input and output at the same time.) \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_af431ea120ea40662a9c037b9e0f1e1ea}\label{classsouffle_1_1_souffle_program_af431ea120ea40662a9c037b9e0f1e1ea}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!dumpInputs@{dumpInputs}}
+\index{dumpInputs@{dumpInputs}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{dumpInputs()}{dumpInputs()}}
+{\footnotesize\ttfamily virtual void souffle\+::\+Souffle\+Program\+::dump\+Inputs (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{out = {\ttfamily std\+:\+:cout} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+dump input relations (for debug purposes). \mbox{\Hypertarget{classsouffle_1_1_souffle_program_a47526ebe874cdb90421e60d86e8b0c53}\label{classsouffle_1_1_souffle_program_a47526ebe874cdb90421e60d86e8b0c53}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!dumpOutputs@{dumpOutputs}}
+\index{dumpOutputs@{dumpOutputs}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{dumpOutputs()}{dumpOutputs()}}
+{\footnotesize\ttfamily virtual void souffle\+::\+Souffle\+Program\+::dump\+Outputs (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{out = {\ttfamily std\+:\+:cout} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+dump output relations (for debug purposes). \mbox{\Hypertarget{classsouffle_1_1_souffle_program_a01a71a487188c98368cf26e4ac2da43d}\label{classsouffle_1_1_souffle_program_a01a71a487188c98368cf26e4ac2da43d}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!getAllRelations@{getAllRelations}}
+\index{getAllRelations@{getAllRelations}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{getAllRelations()}{getAllRelations()}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classsouffle_1_1_relation}{Relation}}$\ast$$>$ souffle\+::\+Souffle\+Program\+::get\+All\+Relations (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\begin{DoxyReturn}{Returns}
+all\+Relations getter of all\+Relations 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_adea47c2aa44a8cde5bdf0f39f1281eae}\label{classsouffle_1_1_souffle_program_adea47c2aa44a8cde5bdf0f39f1281eae}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!getInputRelations@{getInputRelations}}
+\index{getInputRelations@{getInputRelations}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{getInputRelations()}{getInputRelations()}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classsouffle_1_1_relation}{Relation}}$\ast$$>$ souffle\+::\+Souffle\+Program\+::get\+Input\+Relations (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\begin{DoxyReturn}{Returns}
+iutput\+Relations getter of input\+Relations 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_a04d4800b89105587fcd3c9bb25ff34f1}\label{classsouffle_1_1_souffle_program_a04d4800b89105587fcd3c9bb25ff34f1}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!getInternalRelations@{getInternalRelations}}
+\index{getInternalRelations@{getInternalRelations}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{getInternalRelations()}{getInternalRelations()}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classsouffle_1_1_relation}{Relation}}$\ast$$>$ souffle\+::\+Souffle\+Program\+::get\+Internal\+Relations (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\begin{DoxyReturn}{Returns}
+internal\+Relations getter of internal\+Relations 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_af7cfe2c44299205ef9b702f7dc4c9357}\label{classsouffle_1_1_souffle_program_af7cfe2c44299205ef9b702f7dc4c9357}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!getOutputRelations@{getOutputRelations}}
+\index{getOutputRelations@{getOutputRelations}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{getOutputRelations()}{getOutputRelations()}}
+{\footnotesize\ttfamily std\+::vector$<$\mbox{\hyperlink{classsouffle_1_1_relation}{Relation}}$\ast$$>$ souffle\+::\+Souffle\+Program\+::get\+Output\+Relations (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\begin{DoxyReturn}{Returns}
+output\+Relations getter of output\+Relations 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_a8a5b114c5b6c8022c936a533248996e7}\label{classsouffle_1_1_souffle_program_a8a5b114c5b6c8022c936a533248996e7}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!getRelation@{getRelation}}
+\index{getRelation@{getRelation}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{getRelation()}{getRelation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}}$\ast$ souffle\+::\+Souffle\+Program\+::get\+Relation (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{name }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & the name of the relation \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the pointer of the relation, or null pointer if the relation not found get \mbox{\hyperlink{classsouffle_1_1_relation}{Relation}} by its name from relation\+Map, if relation not found, return a nullptr. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_a1aef3ec37477cc54a5ba982d5aaf6ffc}\label{classsouffle_1_1_souffle_program_a1aef3ec37477cc54a5ba982d5aaf6ffc}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!getRelationName@{getRelationName}}
+\index{getRelationName@{getRelationName}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{getRelationName()}{getRelationName()}}
+{\footnotesize\ttfamily std\+::string souffle\+::\+Souffle\+Program\+::get\+Relation\+Name (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{name }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & the name of the relation \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the name of the relation return the name of the relation 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_a729cb758eeef2b2443791d8cd97a5ef2}\label{classsouffle_1_1_souffle_program_a729cb758eeef2b2443791d8cd97a5ef2}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!getRelationSize@{getRelationSize}}
+\index{getRelationSize@{getRelationSize}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{getRelationSize()}{getRelationSize()}}
+{\footnotesize\ttfamily std\+::size\+\_\+t souffle\+::\+Souffle\+Program\+::get\+Relation\+Size (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{name }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & the name of the relation \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the size of the relation return the size of the relation 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_souffle_program_a90cd5579baa81512a0137fac420a43e0}\label{classsouffle_1_1_souffle_program_a90cd5579baa81512a0137fac420a43e0}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!getSymbolTable@{getSymbolTable}}
+\index{getSymbolTable@{getSymbolTable}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{getSymbolTable()}{getSymbolTable()}}
+{\footnotesize\ttfamily virtual Symbol\+Table\& souffle\+::\+Souffle\+Program\+::get\+Symbol\+Table (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+Getter of symbol table. \mbox{\Hypertarget{classsouffle_1_1_souffle_program_a82608bf8018e98e96d06d285333c8620}\label{classsouffle_1_1_souffle_program_a82608bf8018e98e96d06d285333c8620}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!loadAll@{loadAll}}
+\index{loadAll@{loadAll}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{loadAll()}{loadAll()}}
+{\footnotesize\ttfamily virtual void souffle\+::\+Souffle\+Program\+::load\+All (\begin{DoxyParamCaption}\item[{std\+::string}]{input\+Directory = {\ttfamily \char`\"{}.\char`\"{}} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+Read all input relations from the given directory. If no directory is given, the default is to use the current working directory. The implementation of this function occurs in the C++ code generated by Souffle. To view the generated C++ code, run Souffle with the {\ttfamily -\/g} option. \mbox{\Hypertarget{classsouffle_1_1_souffle_program_aae47a2083a0d67eb44c9914cb22ab182}\label{classsouffle_1_1_souffle_program_aae47a2083a0d67eb44c9914cb22ab182}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!printAll@{printAll}}
+\index{printAll@{printAll}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{printAll()}{printAll()}}
+{\footnotesize\ttfamily virtual void souffle\+::\+Souffle\+Program\+::print\+All (\begin{DoxyParamCaption}\item[{std\+::string}]{output\+Directory = {\ttfamily \char`\"{}.\char`\"{}} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+store all output relations. \mbox{\Hypertarget{classsouffle_1_1_souffle_program_a187e2e268f57646919069ed681dd0bab}\label{classsouffle_1_1_souffle_program_a187e2e268f57646919069ed681dd0bab}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!purgeInputRelations@{purgeInputRelations}}
+\index{purgeInputRelations@{purgeInputRelations}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{purgeInputRelations()}{purgeInputRelations()}}
+{\footnotesize\ttfamily void souffle\+::\+Souffle\+Program\+::purge\+Input\+Relations (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+remove all the facts from the input\+Relations. \mbox{\Hypertarget{classsouffle_1_1_souffle_program_a6fd5245fc40fd948060be332fe60debf}\label{classsouffle_1_1_souffle_program_a6fd5245fc40fd948060be332fe60debf}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!purgeInternalRelations@{purgeInternalRelations}}
+\index{purgeInternalRelations@{purgeInternalRelations}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{purgeInternalRelations()}{purgeInternalRelations()}}
+{\footnotesize\ttfamily void souffle\+::\+Souffle\+Program\+::purge\+Internal\+Relations (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+remove all the facts from the internal\+Relations \mbox{\Hypertarget{classsouffle_1_1_souffle_program_a1e8153fc0d1467855100d423e0d9f089}\label{classsouffle_1_1_souffle_program_a1e8153fc0d1467855100d423e0d9f089}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!purgeOutputRelations@{purgeOutputRelations}}
+\index{purgeOutputRelations@{purgeOutputRelations}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{purgeOutputRelations()}{purgeOutputRelations()}}
+{\footnotesize\ttfamily void souffle\+::\+Souffle\+Program\+::purge\+Output\+Relations (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+remove all the facts from the output\+Relations. \mbox{\Hypertarget{classsouffle_1_1_souffle_program_a75c26ced8fb9dd2d6f988a1f9110f838}\label{classsouffle_1_1_souffle_program_a75c26ced8fb9dd2d6f988a1f9110f838}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!run@{run}}
+\index{run@{run}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{run()}{run()}}
+{\footnotesize\ttfamily virtual void souffle\+::\+Souffle\+Program\+::run (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{stratum\+Index = {\ttfamily -\/1} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [virtual]}}
+
+execute the souffle program, without any loads or stores. \mbox{\Hypertarget{classsouffle_1_1_souffle_program_abad6822dd2e9ff1a74803821bb39a313}\label{classsouffle_1_1_souffle_program_abad6822dd2e9ff1a74803821bb39a313}} 
+\index{souffle::SouffleProgram@{souffle::SouffleProgram}!runAll@{runAll}}
+\index{runAll@{runAll}!souffle::SouffleProgram@{souffle::SouffleProgram}}
+\doxysubsubsection{\texorpdfstring{runAll()}{runAll()}}
+{\footnotesize\ttfamily virtual void souffle\+::\+Souffle\+Program\+::run\+All (\begin{DoxyParamCaption}\item[{std\+::string}]{input\+Directory = {\ttfamily \char`\"{}.\char`\"{}},  }\item[{std\+::string}]{output\+Directory = {\ttfamily \char`\"{}.\char`\"{}},  }\item[{size\+\_\+t}]{stratum\+Index = {\ttfamily -\/1} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+execute program, loading inputs and storing outputs as requires. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/\+Users/hong/\+Desktop/\+C\+O\+M\+P3888/new repo/project19-\/group5/souffle/src/Souffle\+Interface.\+h\end{DoxyCompactItemize}

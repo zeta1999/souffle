@@ -1,0 +1,142 @@
+\hypertarget{classsouffle_1_1_relation_1_1iterator__base}{}\doxysection{souffle\+::Relation\+::iterator\+\_\+base Class Reference}
+\label{classsouffle_1_1_relation_1_1iterator__base}\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+
+
+{\ttfamily \#include $<$Souffle\+Interface.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual uint32\+\_\+t \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base_a6ff02f8a975c858f6d31941f19e95f08}{get\+Id}} () const
+\item 
+\mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base_aabfa22b6444822cefcce4a1dcb7b796b}{iterator\+\_\+base}} (uint32\+\_\+t arg\+\_\+id)
+\item 
+virtual \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base_a4ddfcc8daa9eaee6d4863a028c0daf0a}{$\sim$iterator\+\_\+base}} ()=default
+\item 
+virtual void \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base_a915e207e5f5746aa25e11e38ec936147}{operator++}} ()=0
+\item 
+virtual \mbox{\hyperlink{classsouffle_1_1tuple}{tuple}} \& \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base_a71a0320e9781c2ca757978d0e785ab30}{operator$\ast$}} ()=0
+\item 
+bool \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base_a045b6d7b09d4e5494aff9e27d1de7e04}{operator==}} (const \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} \&o) const
+\item 
+virtual \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} $\ast$ \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base_a1cc6a6f4cc59a83375f6d109b4391737}{clone}} () const =0
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual bool \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base_a7436b8e5dcc40cef6ed56684fbbc126e}{equal}} (const \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} \&o) const =0
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base_a43f50972f2975e49d08634ff0af7b664}{id}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+/brief Abstract iterator class.
+
+After tuples are inserted into a relation, they will be stored in consecutive memory space. Intially, the \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} of a relation will point to the first tuple. It can be moved to point to the next tuple until the end. The tuple \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} is pointing to can be accessed. However, users can not use this to access tuples. Instead, they should use iterator which interacts with \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}}. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classsouffle_1_1_relation_1_1iterator__base_aabfa22b6444822cefcce4a1dcb7b796b}\label{classsouffle_1_1_relation_1_1iterator__base_aabfa22b6444822cefcce4a1dcb7b796b}} 
+\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}!iterator\_base@{iterator\_base}}
+\index{iterator\_base@{iterator\_base}!souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+\doxysubsubsection{\texorpdfstring{iterator\_base()}{iterator\_base()}}
+{\footnotesize\ttfamily souffle\+::\+Relation\+::iterator\+\_\+base\+::iterator\+\_\+base (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{arg\+\_\+id }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+/brief Constructor.
+
+Create an instance of \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} and set its ID to be arg\+\_\+id. 
+\begin{DoxyParams}{Parameters}
+{\em arg\+\_\+id} & ID of a iterator object (unit32\+\_\+t). \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classsouffle_1_1_relation_1_1iterator__base_a4ddfcc8daa9eaee6d4863a028c0daf0a}\label{classsouffle_1_1_relation_1_1iterator__base_a4ddfcc8daa9eaee6d4863a028c0daf0a}} 
+\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}!````~iterator\_base@{$\sim$iterator\_base}}
+\index{````~iterator\_base@{$\sim$iterator\_base}!souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+\doxysubsubsection{\texorpdfstring{$\sim$iterator\_base()}{~iterator\_base()}}
+{\footnotesize\ttfamily virtual souffle\+::\+Relation\+::iterator\+\_\+base\+::$\sim$iterator\+\_\+base (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}, {\ttfamily [default]}}
+
+/brief Destructor. 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classsouffle_1_1_relation_1_1iterator__base_a1cc6a6f4cc59a83375f6d109b4391737}\label{classsouffle_1_1_relation_1_1iterator__base_a1cc6a6f4cc59a83375f6d109b4391737}} 
+\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}!clone@{clone}}
+\index{clone@{clone}!souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+\doxysubsubsection{\texorpdfstring{clone()}{clone()}}
+{\footnotesize\ttfamily virtual \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}}$\ast$ souffle\+::\+Relation\+::iterator\+\_\+base\+::clone (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+Clone the \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}}. It has to be defined by the child class. \begin{DoxyReturn}{Returns}
+An \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} pointer. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_relation_1_1iterator__base_a7436b8e5dcc40cef6ed56684fbbc126e}\label{classsouffle_1_1_relation_1_1iterator__base_a7436b8e5dcc40cef6ed56684fbbc126e}} 
+\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}!equal@{equal}}
+\index{equal@{equal}!souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+\doxysubsubsection{\texorpdfstring{equal()}{equal()}}
+{\footnotesize\ttfamily virtual bool souffle\+::\+Relation\+::iterator\+\_\+base\+::equal (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} \&}]{o }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [protected]}, {\ttfamily [pure virtual]}}
+
+Check if the passed-\/in object of o is the the same as the current \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}}. 
+\begin{DoxyParams}{Parameters}
+{\em o} & Reference to an object of the \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} class. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Boolean. True, if they are the same. False, otherwise. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_relation_1_1iterator__base_a6ff02f8a975c858f6d31941f19e95f08}\label{classsouffle_1_1_relation_1_1iterator__base_a6ff02f8a975c858f6d31941f19e95f08}} 
+\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}!getId@{getId}}
+\index{getId@{getId}!souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+\doxysubsubsection{\texorpdfstring{getId()}{getId()}}
+{\footnotesize\ttfamily virtual uint32\+\_\+t souffle\+::\+Relation\+::iterator\+\_\+base\+::get\+Id (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [virtual]}}
+
+Get the ID of the iterator object. \begin{DoxyReturn}{Returns}
+ID of the iterator object (unit32\+\_\+t). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_relation_1_1iterator__base_a71a0320e9781c2ca757978d0e785ab30}\label{classsouffle_1_1_relation_1_1iterator__base_a71a0320e9781c2ca757978d0e785ab30}} 
+\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+\doxysubsubsection{\texorpdfstring{operator$\ast$()}{operator*()}}
+{\footnotesize\ttfamily virtual \mbox{\hyperlink{classsouffle_1_1tuple}{tuple}}\& souffle\+::\+Relation\+::iterator\+\_\+base\+::operator$\ast$ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+/brief Overload the \char`\"{}$\ast$\char`\"{} operator.
+
+Return the tuple that is pointed to by the \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}}. It has to be defined by the child class. \begin{DoxyReturn}{Returns}
+tuple Reference to a tuple object. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_relation_1_1iterator__base_a915e207e5f5746aa25e11e38ec936147}\label{classsouffle_1_1_relation_1_1iterator__base_a915e207e5f5746aa25e11e38ec936147}} 
+\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}!operator++@{operator++}}
+\index{operator++@{operator++}!souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+\doxysubsubsection{\texorpdfstring{operator++()}{operator++()}}
+{\footnotesize\ttfamily virtual void souffle\+::\+Relation\+::iterator\+\_\+base\+::operator++ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+/brief Overload the \char`\"{}++\char`\"{} operator.
+
+Increment the \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} so that it will now point to the next tuple. It has to be defined by the child class. \mbox{\Hypertarget{classsouffle_1_1_relation_1_1iterator__base_a045b6d7b09d4e5494aff9e27d1de7e04}\label{classsouffle_1_1_relation_1_1iterator__base_a045b6d7b09d4e5494aff9e27d1de7e04}} 
+\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}!operator==@{operator==}}
+\index{operator==@{operator==}!souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+\doxysubsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily bool souffle\+::\+Relation\+::iterator\+\_\+base\+::operator== (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} \&}]{o }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+Overload the \char`\"{}==\char`\"{} operator. 
+\begin{DoxyParams}{Parameters}
+{\em o} & Reference to an object of the \mbox{\hyperlink{classsouffle_1_1_relation_1_1iterator__base}{iterator\+\_\+base}} class. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Boolean. True, if the ID of o is the same as the ID of the current object. False, otherwise. 
+\end{DoxyReturn}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classsouffle_1_1_relation_1_1iterator__base_a43f50972f2975e49d08634ff0af7b664}\label{classsouffle_1_1_relation_1_1iterator__base_a43f50972f2975e49d08634ff0af7b664}} 
+\index{souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}!id@{id}}
+\index{id@{id}!souffle::Relation::iterator\_base@{souffle::Relation::iterator\_base}}
+\doxysubsubsection{\texorpdfstring{id}{id}}
+{\footnotesize\ttfamily uint32\+\_\+t souffle\+::\+Relation\+::iterator\+\_\+base\+::id\hspace{0.3cm}{\ttfamily [protected]}}
+
+Required for identifying type of iterator (NB\+: L\+L\+VM has no typeinfo). 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/\+Users/hong/\+Desktop/\+C\+O\+M\+P3888/new repo/project19-\/group5/souffle/src/Souffle\+Interface.\+h\end{DoxyCompactItemize}

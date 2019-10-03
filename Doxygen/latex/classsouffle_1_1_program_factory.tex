@@ -1,0 +1,123 @@
+\hypertarget{classsouffle_1_1_program_factory}{}\doxysection{souffle\+::Program\+Factory Class Reference}
+\label{classsouffle_1_1_program_factory}\index{souffle::ProgramFactory@{souffle::ProgramFactory}}
+
+
+{\ttfamily \#include $<$Souffle\+Interface.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual \mbox{\hyperlink{classsouffle_1_1_program_factory_ad3b0b3fa4b09a6853e95a61d432229ac}{$\sim$\+Program\+Factory}} ()=default
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static \mbox{\hyperlink{classsouffle_1_1_souffle_program}{Souffle\+Program}} $\ast$ \mbox{\hyperlink{classsouffle_1_1_program_factory_a195f94a860a7fc1ba823074070e10fe2}{new\+Instance}} (const std\+::string \&\mbox{\hyperlink{classsouffle_1_1_program_factory_a9dc30a356790b8543aa5dbf285eca4da}{name}})
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classsouffle_1_1_program_factory_a3895c35be3c180fef60ab3ca4311fb72}{Program\+Factory}} (std\+::string \mbox{\hyperlink{classsouffle_1_1_program_factory_a9dc30a356790b8543aa5dbf285eca4da}{name}})
+\item 
+virtual \mbox{\hyperlink{classsouffle_1_1_souffle_program}{Souffle\+Program}} $\ast$ \mbox{\hyperlink{classsouffle_1_1_program_factory_aeeb8c8fa86018f5f19cf6d419acdec54}{new\+Instance}} ()=0
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static void \mbox{\hyperlink{classsouffle_1_1_program_factory_a460cdf1db973dad0daba7b936a741826}{register\+Factory}} (\mbox{\hyperlink{classsouffle_1_1_program_factory}{Program\+Factory}} $\ast$factory)
+\item 
+static \mbox{\hyperlink{classsouffle_1_1_program_factory}{Program\+Factory}} $\ast$ \mbox{\hyperlink{classsouffle_1_1_program_factory_ad2b41c03dbad20406048a9504d89c0c1}{find}} (const std\+::string \&factory\+Name)
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classsouffle_1_1_program_factory}{Program\+Factory}} $\ast$ \mbox{\hyperlink{classsouffle_1_1_program_factory_ac080f0c3db8b720c3c3b47935f75bd17}{link}} = nullptr
+\item 
+std\+::string \mbox{\hyperlink{classsouffle_1_1_program_factory_a9dc30a356790b8543aa5dbf285eca4da}{name}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Abstract program factory class 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classsouffle_1_1_program_factory_a3895c35be3c180fef60ab3ca4311fb72}\label{classsouffle_1_1_program_factory_a3895c35be3c180fef60ab3ca4311fb72}} 
+\index{souffle::ProgramFactory@{souffle::ProgramFactory}!ProgramFactory@{ProgramFactory}}
+\index{ProgramFactory@{ProgramFactory}!souffle::ProgramFactory@{souffle::ProgramFactory}}
+\doxysubsubsection{\texorpdfstring{ProgramFactory()}{ProgramFactory()}}
+{\footnotesize\ttfamily souffle\+::\+Program\+Factory\+::\+Program\+Factory (\begin{DoxyParamCaption}\item[{std\+::string}]{name }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [protected]}}
+
+Constructor adds factory to static singly-\/linked list for registration. \mbox{\Hypertarget{classsouffle_1_1_program_factory_ad3b0b3fa4b09a6853e95a61d432229ac}\label{classsouffle_1_1_program_factory_ad3b0b3fa4b09a6853e95a61d432229ac}} 
+\index{souffle::ProgramFactory@{souffle::ProgramFactory}!````~ProgramFactory@{$\sim$ProgramFactory}}
+\index{````~ProgramFactory@{$\sim$ProgramFactory}!souffle::ProgramFactory@{souffle::ProgramFactory}}
+\doxysubsubsection{\texorpdfstring{$\sim$ProgramFactory()}{~ProgramFactory()}}
+{\footnotesize\ttfamily virtual souffle\+::\+Program\+Factory\+::$\sim$\+Program\+Factory (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}, {\ttfamily [default]}}
+
+Destructor of \mbox{\hyperlink{classsouffle_1_1_program_factory}{Program\+Factory}}. 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classsouffle_1_1_program_factory_ad2b41c03dbad20406048a9504d89c0c1}\label{classsouffle_1_1_program_factory_ad2b41c03dbad20406048a9504d89c0c1}} 
+\index{souffle::ProgramFactory@{souffle::ProgramFactory}!find@{find}}
+\index{find@{find}!souffle::ProgramFactory@{souffle::ProgramFactory}}
+\doxysubsubsection{\texorpdfstring{find()}{find()}}
+{\footnotesize\ttfamily static \mbox{\hyperlink{classsouffle_1_1_program_factory}{Program\+Factory}}$\ast$ souffle\+::\+Program\+Factory\+::find (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{factory\+Name }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}, {\ttfamily [protected]}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em factory} & name \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+pointer of the program factory, or null pointer if the program factory not found Find a factory by its name, return the fatory if found, return nullptr if the factory not found. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_program_factory_aeeb8c8fa86018f5f19cf6d419acdec54}\label{classsouffle_1_1_program_factory_aeeb8c8fa86018f5f19cf6d419acdec54}} 
+\index{souffle::ProgramFactory@{souffle::ProgramFactory}!newInstance@{newInstance}}
+\index{newInstance@{newInstance}!souffle::ProgramFactory@{souffle::ProgramFactory}}
+\doxysubsubsection{\texorpdfstring{newInstance()}{newInstance()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily virtual \mbox{\hyperlink{classsouffle_1_1_souffle_program}{Souffle\+Program}}$\ast$ souffle\+::\+Program\+Factory\+::new\+Instance (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}, {\ttfamily [pure virtual]}}
+
+Create new instance (abstract) \mbox{\Hypertarget{classsouffle_1_1_program_factory_a195f94a860a7fc1ba823074070e10fe2}\label{classsouffle_1_1_program_factory_a195f94a860a7fc1ba823074070e10fe2}} 
+\index{souffle::ProgramFactory@{souffle::ProgramFactory}!newInstance@{newInstance}}
+\index{newInstance@{newInstance}!souffle::ProgramFactory@{souffle::ProgramFactory}}
+\doxysubsubsection{\texorpdfstring{newInstance()}{newInstance()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily static \mbox{\hyperlink{classsouffle_1_1_souffle_program}{Souffle\+Program}}$\ast$ souffle\+::\+Program\+Factory\+::new\+Instance (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{name }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em instance} & name \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the new instance(pointer of Souffle program), or null pointer if the instance not found Create instance by finding the name of the program factory, if the factory is found, create a instance, return nullptr if the instance not found. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classsouffle_1_1_program_factory_a460cdf1db973dad0daba7b936a741826}\label{classsouffle_1_1_program_factory_a460cdf1db973dad0daba7b936a741826}} 
+\index{souffle::ProgramFactory@{souffle::ProgramFactory}!registerFactory@{registerFactory}}
+\index{registerFactory@{registerFactory}!souffle::ProgramFactory@{souffle::ProgramFactory}}
+\doxysubsubsection{\texorpdfstring{registerFactory()}{registerFactory()}}
+{\footnotesize\ttfamily static void souffle\+::\+Program\+Factory\+::register\+Factory (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classsouffle_1_1_program_factory}{Program\+Factory}} $\ast$}]{factory }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}, {\ttfamily [protected]}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em pointer} & of program factory Create and insert a factory into the factory\+Reg map. \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classsouffle_1_1_program_factory_ac080f0c3db8b720c3c3b47935f75bd17}\label{classsouffle_1_1_program_factory_ac080f0c3db8b720c3c3b47935f75bd17}} 
+\index{souffle::ProgramFactory@{souffle::ProgramFactory}!link@{link}}
+\index{link@{link}!souffle::ProgramFactory@{souffle::ProgramFactory}}
+\doxysubsubsection{\texorpdfstring{link}{link}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classsouffle_1_1_program_factory}{Program\+Factory}}$\ast$ souffle\+::\+Program\+Factory\+::link = nullptr\hspace{0.3cm}{\ttfamily [protected]}}
+
+simply linked-\/list to store all program factories Note that S\+TL data-\/structures are not possible due to static initialization order fiasco. The static container needs to be a primitive type such as pointer set to N\+U\+LL. link to next factory \mbox{\Hypertarget{classsouffle_1_1_program_factory_a9dc30a356790b8543aa5dbf285eca4da}\label{classsouffle_1_1_program_factory_a9dc30a356790b8543aa5dbf285eca4da}} 
+\index{souffle::ProgramFactory@{souffle::ProgramFactory}!name@{name}}
+\index{name@{name}!souffle::ProgramFactory@{souffle::ProgramFactory}}
+\doxysubsubsection{\texorpdfstring{name}{name}}
+{\footnotesize\ttfamily std\+::string souffle\+::\+Program\+Factory\+::name\hspace{0.3cm}{\ttfamily [protected]}}
+
+name of factory 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/\+Users/hong/\+Desktop/\+C\+O\+M\+P3888/new repo/project19-\/group5/souffle/src/Souffle\+Interface.\+h\end{DoxyCompactItemize}

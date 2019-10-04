@@ -2325,7 +2325,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     os << "#if defined(_OPENMP) \n";
     os << "obj.setNumThreads(opt.getNumJobs());\n";
-    os << "omp_set_nested(true);\n";
     os << "\n#endif\n";
 
     if (Global::config().has("profile")) {

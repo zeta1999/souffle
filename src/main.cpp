@@ -246,20 +246,18 @@ int main(int argc, char** argv) {
 #ifdef _OPENMP
         if (isNumber(Global::config().get("jobs").c_str())) {
             if (std::stoi(Global::config().get("jobs")) < 1) {
-                throw std::runtime_error(
-                        "Number of jobs in the -j/--jobs options must be greater than zero!");
+                throw std::runtime_error("-j/--jobs may only be set to 'auto' or an integer greater than 0.");
             }
         } else {
             if (!Global::config().has("jobs", "auto")) {
-                throw std::runtime_error(
-                        "Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
+                throw std::runtime_error("-j/--jobs may only be set to 'auto' or an integer greater than 0.");
             }
             Global::config().set("jobs", "0");
         }
 #else
         // Check that -j option has not been changed from the default
         if (Global::config().get("jobs") != "1") {
-            std::cerr << "\nWarning: OpenMP is not enabled\n";
+            std::cerr << "\nThis installation of Souffle does not support concurrent jobs.\n";
         }
 #endif
 
@@ -508,6 +506,7 @@ int main(int argc, char** argv) {
                     std::make_unique<HoistAggregateTransformer>(), std::make_unique<TupleIdTransformer>())),
             std::make_unique<ExpandFilterTransformer>(), std::make_unique<HoistConditionsTransformer>(),
             std::make_unique<RamConditionalTransformer>(
+                    // job count of 0 means all cores are used.
                     []() -> bool { return std::stoi(Global::config().get("jobs")) != 1; },
                     std::make_unique<ParallelTransformer>()),
             std::make_unique<ReportIndexTransfomer>());

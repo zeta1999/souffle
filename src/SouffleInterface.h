@@ -288,12 +288,12 @@ public:
     virtual void dumpOutputs(std::ostream& out = std::cout) = 0;
 
     // Set the number of threads to be used
-    virtual void setNumThreads(std::size_t numThreads) {
+    void setNumThreads(std::size_t numThreads) {
         this->numThreads = numThreads;
     }
 
     // Get the number of threads to be used
-    virtual std::size_t getNumThreads() {
+    std::size_t getNumThreads() {
         return numThreads;
     }
 

@@ -1998,6 +1998,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "std::atomic<size_t> iter(0);\n\n";
 
     // set default threads (in embedded mode)
+    // if this is not set, and omp is used, the default omp setting of number of cores is used.
     os << "#if defined(_OPENMP)\n";
     os << "if (getNumThreads() > 0) {omp_set_num_threads(getNumThreads());}\n";
     os << "#endif\n\n";

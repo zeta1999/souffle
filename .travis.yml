@@ -86,7 +86,7 @@ jobs:
         packages:
         # The formatting may change with different versions of clang-format.
         # Check before modifying!
-        - clang-format-6.0
+        - clang-format-7
     script: ".travis/run_test_format.sh"
 
 # Testing stage (-j8,-c -j8)

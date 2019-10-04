@@ -243,30 +243,25 @@ int main(int argc, char** argv) {
         }
 
         /* for the jobs option, to determine the number of threads used */
-        if (Global::config().has("jobs")) {
 #ifdef _OPENMP
-            if (isNumber(Global::config().get("jobs").c_str())) {
-                if (std::stoi(Global::config().get("jobs")) < 1) {
-                    throw std::runtime_error(
-                            "Number of jobs in the -j/--jobs options must be greater than zero!");
-                }
-            } else {
-                if (!Global::config().has("jobs", "auto")) {
-                    throw std::runtime_error(
-                            "Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
-                }
-                Global::config().set("jobs", "0");
+        if (isNumber(Global::config().get("jobs").c_str())) {
+            if (std::stoi(Global::config().get("jobs")) < 1) {
+                throw std::runtime_error(
+                        "Number of jobs in the -j/--jobs options must be greater than zero!");
             }
-#else
-            // Check that -j option has not been changed from the default
-            if (Global::config().get("jobs") != "1") {
-                std::cerr << "\nWarning: OpenMP is not enabled\n";
-            }
-#endif
         } else {
-            throw std::runtime_error(
-                    "Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
+            if (!Global::config().has("jobs", "auto")) {
+                throw std::runtime_error(
+                        "Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
+            }
+            Global::config().set("jobs", "0");
         }
+#else
+        // Check that -j option has not been changed from the default
+        if (Global::config().get("jobs") != "1") {
+            std::cerr << "\nWarning: OpenMP is not enabled\n";
+        }
+#endif
 
         /* if an output directory is given, check it exists */
         if (Global::config().has("output-dir") && !Global::config().has("output-dir", "-") &&

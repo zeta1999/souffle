@@ -53,7 +53,7 @@ public:
     /** This constructor is used when program enter a new scope.
      * Only Subroutine value needs to be copied */
     InterpreterContext(InterpreterContext& ctxt)
-            : data(0), returnValues(ctxt.returnValues), returnErrors(ctxt.returnErrors), args(ctxt.args) {}
+            : returnValues(ctxt.returnValues), returnErrors(ctxt.returnErrors), args(ctxt.args) {}
     virtual ~InterpreterContext() = default;
 
     const RamDomain*& operator[](size_t index) {
@@ -114,7 +114,7 @@ public:
         args = &a;
     }
 
-    /** @brief Set subroutine Arguments */
+    /** @brief Get subroutine Arguments */
     RamDomain getArgument(size_t i) const {
         assert(args != nullptr && i < args->size() && "argument out of range");
         return (*args)[i];

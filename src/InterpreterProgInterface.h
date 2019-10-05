@@ -185,13 +185,13 @@ public:
         visitDepthFirst(prog, [&](const RamRelation& rel) { map[rel.getName()] = &rel; });
 
         // Build wrapper relations for Souffle's interface
-        for (auto& rel_ptr : exec.getRelationMap()) {
-            if (rel_ptr == nullptr) {
+        for (auto& relPtr : exec.getRelationMap()) {
+            if (relPtr == nullptr) {
                 // Skip droped relation.
                 continue;
             }
-            auto& name = rel_ptr->getName();
-            auto& interpreterRel = *rel_ptr;
+            auto& name = relPtr->getName();
+            auto& interpreterRel = *relPtr;
             assert(map[name]);
             const RamRelation& rel = *map[name];
 

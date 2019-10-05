@@ -16,18 +16,18 @@
 #include "InterpreterEngine.h"
 #include "IOSystem.h"
 #include "InterpreterGenerator.h"
+#include "InterpreterRecords.h"
 #include "Logger.h"
 #include "SignalHandler.h"
+#include <cassert>
 #include <csignal>
 #include <regex>
-#include <InterpreterRecords.h>
-#include <assert.h>
 #include <ffi.h>
 
 namespace souffle {
 
 void InterpreterEngine::createRelation(
-        const RamRelation& id, const MinIndexSelection& orderSet, const size_t& idx) {
+        const RamRelation& id, const MinIndexSelection& orderSet, const size_t idx) {
     RelationHandle res;
     if (relations.size() < idx + 1) {
         relations.resize(idx + 1);
@@ -36,7 +36,7 @@ void InterpreterEngine::createRelation(
         res = std::make_unique<InterpreterEqRelation>(
                 id.getArity(), id.getName(), std::vector<std::string>(), orderSet);
     } else {
-        if (isProvenance == true) {
+        if (isProvenance) {
             res = std::make_unique<InterpreterRelation>(id.getArity(), id.getName(),
                     std::vector<std::string>(), orderSet, createBTreeProvenanceIndex);
         } else {
@@ -47,19 +47,19 @@ void InterpreterEngine::createRelation(
     relations[idx] = std::move(res);
 }
 
-InterpreterRelation& InterpreterEngine::getRelation(const size_t& idx) {
+InterpreterRelation& InterpreterEngine::getRelation(const size_t idx) {
     return *relations[idx].get();
 }
 
-InterpreterEngine::RelationHandle& InterpreterEngine::getRelationHandle(const size_t& idx) {
+InterpreterEngine::RelationHandle& InterpreterEngine::getRelationHandle(const size_t idx) {
     return relations[idx];
 }
 
-void InterpreterEngine::dropRelation(const size_t& relId) {
+void InterpreterEngine::dropRelation(const size_t relId) {
     relations[relId].release();
 }
 
-void InterpreterEngine::swapRelation(const size_t& ramRel1, const size_t& ramRel2) {
+void InterpreterEngine::swapRelation(const size_t ramRel1, const size_t ramRel2) {
     RelationHandle& rel1 = getRelationHandle(ramRel1);
     RelationHandle& rel2 = getRelationHandle(ramRel2);
     std::swap(rel1, rel2);
@@ -219,8 +219,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 #define CASE(Kind)     \
     case (I_##Kind): { \
         const auto* cur = static_cast<const Ram##Kind*>(node->getShadow());
-#define ESAC(Kind)                                                         \
-    assert(false && "Program reach end of the scope but didn't returned"); \
+
+#define CASE_NO_CAST(Kind) case (I_##Kind): {
+#define ESAC(Kind)                                                        \
+    assert(false && "Program reach end of the scope but didn't return."); \
     }
 
     switch (node->getType()) {
@@ -232,7 +234,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return ctxt[cur->getTupleId()][cur->getElement()];
         ESAC(TupleElement)
 
-        CASE(AutoIncrement) return incCounter();
+        CASE_NO_CAST(AutoIncrement)
+        return incCounter();
         ESAC(AutoIncrement)
 
         CASE(IntrinsicOperator)
@@ -415,23 +418,23 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return ctxt.getArgument(cur->getArgument());
         ESAC(SubroutineArgument)
 
-        CASE(True)
+        CASE_NO_CAST(True)
         return true;
         ESAC(True)
 
-        CASE(False)
+        CASE_NO_CAST(False)
         return false;
         ESAC(False)
 
-        CASE(Conjunction)
+        CASE_NO_CAST(Conjunction)
         return execute(node->getChild(0), ctxt) && execute(node->getChild(1), ctxt);
         ESAC(Conjunction)
 
-        CASE(Negation)
+        CASE_NO_CAST(Negation)
         return !execute(node->getChild(0), ctxt);
         ESAC(Negation)
 
-        CASE(EmptinessCheck)
+        CASE_NO_CAST(EmptinessCheck)
         return getRelation(node->getData(0)).empty();
         ESAC(EmptinessCheck)
 
@@ -490,17 +493,17 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Constraint)
         switch (cur->getOperator()) {
             case (BinaryConstraintOp::EQ):
-                return execute(node->getChild(0), ctxt) == execute(node->getChild(1), ctxt);
+                BINARY_OP(==);
             case (BinaryConstraintOp::NE):
-                return execute(node->getChild(0), ctxt) != execute(node->getChild(1), ctxt);
+                BINARY_OP(!=);
             case (BinaryConstraintOp::LT):
-                return execute(node->getChild(0), ctxt) < execute(node->getChild(1), ctxt);
+                BINARY_OP(<);
             case (BinaryConstraintOp::LE):
-                return execute(node->getChild(0), ctxt) <= execute(node->getChild(1), ctxt);
+                BINARY_OP(<=);
             case (BinaryConstraintOp::GT):
-                return execute(node->getChild(0), ctxt) > execute(node->getChild(1), ctxt);
+                BINARY_OP(>);
             case (BinaryConstraintOp::GE):
-                return execute(node->getChild(0), ctxt) >= execute(node->getChild(1), ctxt);
+                BINARY_OP(>=);
             case (BinaryConstraintOp::MATCH): {
                 RamDomain left = execute(node->getChild(0), ctxt);
                 RamDomain right = execute(node->getChild(1), ctxt);
@@ -958,7 +961,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
         ESAC(IndexAggregate)
 
-        CASE(Break)
+        CASE_NO_CAST(Break)
         // check condition
         if (execute(node->getChild(0), ctxt)) {
             return false;
@@ -1005,7 +1008,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(SubroutineReturnValue)
 
-        CASE(Sequence)
+        CASE_NO_CAST(Sequence)
         for (const auto& child : node->getChildren()) {
             if (!execute(child.get(), ctxt)) {
                 return false;
@@ -1014,7 +1017,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(Sequence)
 
-        CASE(Parallel)
+        CASE_NO_CAST(Parallel)
         for (const auto& child : node->getChildren()) {
             if (!execute(child.get(), ctxt)) {
                 return false;
@@ -1023,7 +1026,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(Parallel)
 
-        CASE(Loop)
+        CASE_NO_CAST(Loop)
         resetIterationNumber();
         while (execute(node->getChild(0), ctxt)) {
             incIterationNumber();
@@ -1032,7 +1035,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(Loop)
 
-        CASE(Exit)
+        CASE_NO_CAST(Exit)
         return !execute(node->getChild(0), ctxt);
         ESAC(Exit)
 
@@ -1075,12 +1078,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(Create)
 
-        CASE(Clear)
+        CASE_NO_CAST(Clear)
         getRelation(node->getData(0)).purge();
         return true;
         ESAC(Clear)
 
-        CASE(Drop)
+        CASE_NO_CAST(Drop)
         dropRelation(node->getData(0));
         return true;
         ESAC(Drop)
@@ -1141,7 +1144,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(Fact)
 
-        CASE(Query)
+        CASE_NO_CAST(Query)
         InterpreterPreamble* preamble = node->getPreamble();
 
         // Execute view-free operations in outer filter if any.
@@ -1179,12 +1182,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(Query)
 
-        CASE(Merge)
+        CASE_NO_CAST(Merge)
         // get involved relation
         InterpreterRelation& src = getRelation(node->getData(0));
         InterpreterRelation& trg = getRelation(node->getData(1));
 
-        if (dynamic_cast<InterpreterEqRelation*>(&trg)) {
+        if (dynamic_cast<InterpreterEqRelation*>(&trg) != nullptr) {
             // expand src with the new knowledge generated by insertion.
             src.extend(trg);
         }
@@ -1195,7 +1198,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(Merge)
 
-        CASE(Swap)
+        CASE_NO_CAST(Swap)
         swapRelation(node->getData(0), node->getData(1));
         return true;
         ESAC(Swap)

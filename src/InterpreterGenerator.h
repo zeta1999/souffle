@@ -15,13 +15,14 @@
  * with environment symbol binding in each node.
  ***********************************************************************/
 
+#pragma once
+
 #include "InterpreterNode.h"
 #include "InterpreterPreamble.h"
 #include "InterpreterRecords.h"
 #include "RamIndexAnalysis.h"
 #include "RamVisitor.h"
-
-#pragma once
+#include <memory>
 
 namespace souffle {
 
@@ -44,7 +45,7 @@ public:
     NodePtr generateTree(const RamNode& root) {
         // Encode all relation, indexPos and viewId.
         visitDepthFirst(root, [&](const RamNode& node) {
-            if (dynamic_cast<const RamQuery*>(&node)) {
+            if (dynamic_cast<const RamQuery*>(&node) != nullptr) {
                 newQueryBlock();
             }
             if (const auto* create = dynamic_cast<const RamCreate*>(&node)) {
@@ -80,7 +81,7 @@ public:
     NodePtr visitIntrinsicOperator(const RamIntrinsicOperator& op) override {
         NodePtrVec children;
         for (const auto& arg : op.getArguments()) {
-            children.push_back(std::move(visit(arg)));
+            children.push_back(visit(arg));
         }
         return std::make_unique<InterpreterNode>(I_IntrinsicOperator, &op, std::move(children));
     }
@@ -88,7 +89,7 @@ public:
     NodePtr visitUserDefinedOperator(const RamUserDefinedOperator& op) override {
         NodePtrVec children;
         for (const auto& arg : op.getArguments()) {
-            children.push_back(std::move(visit(arg)));
+            children.push_back(visit(arg));
         }
         return std::make_unique<InterpreterNode>(I_UserDefinedOperator, &op, std::move(children));
     }
@@ -96,7 +97,7 @@ public:
     NodePtr visitPackRecord(const RamPackRecord& pr) override {
         NodePtrVec children;
         for (const auto& arg : pr.getArguments()) {
-            children.push_back(std::move(visit(arg)));
+            children.push_back(visit(arg));
         }
         return std::make_unique<InterpreterNode>(I_PackRecord, &pr, std::move(children));
     }
@@ -619,7 +620,7 @@ private:
         } else if (const RamIndexOperation* index = dynamic_cast<const RamIndexOperation*>(node)) {
             return index->getRelation();
         }
-        assert(false);
+        assert(false && "The RamNode does not require a view.");
     }
 
     /**

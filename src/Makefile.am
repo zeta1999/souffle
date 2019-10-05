@@ -110,7 +110,7 @@ souffle_sources = \
               PrecedenceGraph.cpp   PrecedenceGraph.h   \
               ProfileEvent.h                            \
               ProvenanceTransformer.cpp                 \
-              RamAnalysis.h                             \ 
+              RamAnalysis.h                             \
 	      InterpreterContext.h                      \
 	      InterpreterEngine.cpp InterpreterEngine.h \
 	      InterpreterGenerator.h		        \

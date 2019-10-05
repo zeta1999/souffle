@@ -14,6 +14,8 @@
  * representation and execute them.
  ***********************************************************************/
 
+#pragma once
+
 #include "InterpreterContext.h"
 #include "InterpreterGenerator.h"
 #include "InterpreterNode.h"
@@ -22,8 +24,6 @@
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
 #include <dlfcn.h>
-
-#pragma once
 
 namespace souffle {
 
@@ -39,12 +39,12 @@ class InterpreterEngine {
 
 public:
     InterpreterEngine(RamTranslationUnit& tUnit)
-            : tUnit(tUnit), isa(tUnit.getAnalysis<RamIndexAnalysis>()), generator(isa),
-              isProvenance(Global::config().has("provenance")),
+            : isProvenance(Global::config().has("provenance")),
               profileEnabled(Global::config().has("profile")),
-              numOfThreads(std::stoi(Global::config().get("jobs"))) {
+              numOfThreads(std::stoi(Global::config().get("jobs"))), tUnit(tUnit),
+              isa(tUnit.getAnalysis<RamIndexAnalysis>()), generator(isa) {
 #ifdef _OPENMP
-        if (numOfThreads > 1) {
+        if (numOfThreads > 0) {
             omp_set_num_threads(numOfThreads);
         }
 #endif
@@ -57,15 +57,15 @@ public:
 
 private:
     /** @brief Create a relation */
-    void createRelation(const RamRelation& id, const MinIndexSelection& orderSet, const size_t& idx);
+    void createRelation(const RamRelation& id, const MinIndexSelection& orderSet, const size_t idx);
     /** @brief Remove a relation from the environment */
-    void dropRelation(const size_t& relId);
+    void dropRelation(const size_t relId);
     /** @brief Swap the content of two relations */
-    void swapRelation(const size_t& ramRel1, const size_t& ramRel2);
+    void swapRelation(const size_t ramRel1, const size_t ramRel2);
     /** @brief Return a relation on the given index */
-    InterpreterRelation& getRelation(const size_t& idx);
+    InterpreterRelation& getRelation(const size_t idx);
     /** @brief Return a reference to the relation on the given index */
-    RelationHandle& getRelationHandle(const size_t& idx);
+    RelationHandle& getRelationHandle(const size_t idx);
     /** @brief Return the string symbol table */
     SymbolTable& getSymbolTable();
     /** @brief Return the RamTranslationUnit */
@@ -84,7 +84,7 @@ private:
     void resetIterationNumber();
     /** @brief Increment the counter */
     int incCounter();
-    /** @brief Return the relation maps
+    /** @brief Return the relation map.
      *  There can be nullptrs in the relation map (Dropped relation).
      * */
     std::vector<RelationHandle>& getRelationMap();

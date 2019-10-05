@@ -129,19 +129,10 @@ public:
     }
 
 protected:
-    /** node type */
     enum InterpreterNodeType type;
-
-    /** shadow node */
     const RamNode* shadow;
-
-    /** children */
     std::vector<std::unique_ptr<InterpreterNode>> children;
-
-    /** Preamble */
     std::shared_ptr<InterpreterPreamble> preamble = nullptr;
-
-    /** Vector for storing enviroment symbol */
     std::vector<size_t> data;
 };
 }  // namespace souffle

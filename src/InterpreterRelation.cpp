@@ -56,9 +56,13 @@ IndexViewPtr InterpreterRelation::getView(const size_t& indexPos) const {
 }
 
 bool InterpreterRelation::insert(const TupleRef& tuple) {
-    if (!main->insert(tuple)) return false;
+    if (!main->insert(tuple)) {
+        return false;
+    }
     for (const auto& cur : indexes) {
-        if (cur.get() == main) continue;
+        if (cur.get() == main) {
+            continue;
+        }
         cur->insert(tuple);
     }
     return true;
@@ -156,8 +160,8 @@ bool InterpreterIndirectRelation::insert(const TupleRef& tuple) {
         return false;
     }
 
-    int blockIndex = num_tuples / (BLOCK_SIZE / arity);
-    int tupleIndex = (num_tuples % (BLOCK_SIZE / arity)) * arity;
+    int blockIndex = numTuples / (BLOCK_SIZE / arity);
+    int tupleIndex = (numTuples % (BLOCK_SIZE / arity)) * arity;
 
     if (tupleIndex == 0) {
         blockList.push_back(std::make_unique<RamDomain[]>(BLOCK_SIZE));
@@ -174,7 +178,7 @@ bool InterpreterIndirectRelation::insert(const TupleRef& tuple) {
     }
 
     // increment relation size
-    num_tuples++;
+    numTuples++;
 
     return true;
 }
@@ -188,7 +192,7 @@ void InterpreterIndirectRelation::purge() {
     for (auto& cur : indexes) {
         cur->clear();
     }
-    num_tuples = 0;
+    numTuples = 0;
 }
 
 }  // namespace souffle

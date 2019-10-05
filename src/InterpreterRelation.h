@@ -249,7 +249,7 @@ private:
 
     std::deque<std::unique_ptr<RamDomain[]>> blockList;
 
-    size_t num_tuples = 0;
+    size_t numTuples = 0;
 };
 
 }  // end of namespace souffle

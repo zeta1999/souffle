@@ -17,6 +17,7 @@
 #include "InterpreterIndex.h"
 #include "CompiledIndexUtils.h"
 #include "Util.h"
+#include <atomic>
 
 namespace souffle {
 

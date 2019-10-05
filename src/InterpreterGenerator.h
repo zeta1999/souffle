@@ -152,7 +152,6 @@ public:
             children.push_back(visit(value));
         }
         std::vector<size_t> data;
-        data.push_back((encodeRelation(provExists.getRelation())));
         data.push_back(encodeView(&provExists));
         return std::make_unique<InterpreterNode>(
                 I_ProvenanceExistenceCheck, &provExists, std::move(children), std::move(data));
@@ -202,7 +201,6 @@ public:
         }
         children.push_back(visitTupleOperation(scan));
         std::vector<size_t> data;
-        data.push_back((encodeRelation(scan.getRelation())));
         data.push_back((encodeView(&scan)));
         return std::make_unique<InterpreterNode>(I_IndexScan, &scan, std::move(children), std::move(data));
     }
@@ -251,7 +249,6 @@ public:
         children.push_back(visit(choice.getCondition()));
         children.push_back(visitTupleOperation(choice));
         std::vector<size_t> data;
-        data.push_back((encodeRelation(choice.getRelation())));
         data.push_back((encodeView(&choice)));
         return std::make_unique<InterpreterNode>(
                 I_IndexChoice, &choice, std::move(children), std::move(data));

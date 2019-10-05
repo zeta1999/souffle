@@ -470,7 +470,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(ProvenanceExistenceCheck)
         // construct the pattern tuple
         size_t arity = cur->getRelation().getArity();
-        auto& rel = getRelation(node->getData(0));
 
         // for partial we search for lower and upper boundaries
         RamDomain low[arity];
@@ -486,7 +485,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         high[arity - 1] = MAX_RAM_DOMAIN;
 
         // obtain view
-        size_t viewPos = node->getData(1);
+        size_t viewPos = node->getData(0);
         return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(high, arity));
         ESAC(ProvenanceExistenceCheck)
 
@@ -614,8 +613,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
         }
 
-        auto& rel = getRelation(node->getData(0));
-        size_t viewId = node->getData(1);
+        size_t viewId = node->getData(0);
         auto& view = ctxt.getView(viewId);
         // conduct range query
         for (auto data : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
@@ -721,8 +719,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
         }
 
-        auto& rel = getRelation(node->getData(0));
-        size_t viewId = node->getData(1);
+        size_t viewId = node->getData(0);
         auto& view = ctxt.getView(viewId);
 
         for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
@@ -985,7 +982,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Project)
         size_t arity = cur->getRelation().getArity();
-        const auto& values = cur->getValues();
         RamDomain tuple[arity];
         for (size_t i = 0; i < arity; i++) {
             tuple[i] = execute(node->getChild(i), ctxt);

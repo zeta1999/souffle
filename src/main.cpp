@@ -218,6 +218,7 @@ int main(int argc, char** argv) {
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
                 {"transformed-datalog", '\4', "", "", false, "Output dl after all transformations."},
+                {"parse-errors", '\5', "", "", false, "Show parsing errors, if any, then exit."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
@@ -402,6 +403,11 @@ int main(int argc, char** argv) {
         auto parser_end = std::chrono::high_resolution_clock::now();
         std::cout << "Parse Time: " << std::chrono::duration<double>(parser_end - parser_start).count()
                   << "sec\n";
+    }
+
+    if (Global::config().has("parse-errors")) {
+        std::cout << astTranslationUnit->getErrorReport();
+        return astTranslationUnit->getErrorReport().getNumErrors();
     }
 
     // ------- check for parse errors -------------

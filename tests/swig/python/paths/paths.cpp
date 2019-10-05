@@ -429,7 +429,7 @@ static factory_Sf_paths __factory_Sf_paths_instance;
 int main(int argc, char** argv)
 {
 try{
-souffle::CmdOptions opt(R"(tests/swig/python/paths/paths.dl)",
+souffle::CmdOptions opt(R"(swig/python/paths/paths.dl)",
 R"(.)",
 R"(.)",
 false,

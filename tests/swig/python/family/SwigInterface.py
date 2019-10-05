@@ -314,7 +314,10 @@ class SWIGSouffleProgram(_object):
 SWIGSouffleProgram_swigregister = _SwigInterface.SWIGSouffleProgram_swigregister
 SWIGSouffleProgram_swigregister(SWIGSouffleProgram)
 
+
 def newInstance(name):
     return _SwigInterface.newInstance(name)
 newInstance = _SwigInterface.newInstance
 # This file is compatible with both classic and new-style classes.
+
+

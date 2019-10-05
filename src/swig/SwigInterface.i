@@ -16,7 +16,7 @@ namespace std {
  */
 void loadInput(const std::map<std::string, std::string> &val, const std::string &prog_ins, const std::string &rel_name, const std::string &rel_name_out);
 
-% {
+%{
 #include "SwigInterface.h"
 #include <iostream>
 #include <string>
@@ -57,7 +57,7 @@ void loadInput(const map<string, string> &val, const string &prog_ins, const str
                 }
     prog->printAll(".");
 }
-% } 
+%} 
 
 %include "SwigInterface.h"
 %newobject newInstance;

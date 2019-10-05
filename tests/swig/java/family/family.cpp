@@ -709,7 +709,7 @@ static factory_Sf_family __factory_Sf_family_instance;
 int main(int argc, char** argv)
 {
 try{
-souffle::CmdOptions opt(R"(tests/swig/java/family/family.dl)",
+souffle::CmdOptions opt(R"(swig/java/family/family.dl)",
 R"(.)",
 R"(.)",
 false,

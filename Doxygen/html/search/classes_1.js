@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['programfactory_61',['ProgramFactory',['../classsouffle_1_1_program_factory.html',1,'souffle']]]
+  ['programfactory',['ProgramFactory',['../classsouffle_1_1_program_factory.html',1,'souffle']]]
 ];

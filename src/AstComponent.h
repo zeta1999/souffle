@@ -383,7 +383,7 @@ public:
 
     /** Output to a given output stream */
     void print(std::ostream& os) const override {
-        os << ".comp " << getComponentType() << " ";
+        os << ".comp " << *getComponentType() << " ";
 
         if (!baseComponents.empty()) {
             os << ": " << join(baseComponents, ",", print_deref<std::unique_ptr<AstComponentType>>()) << " ";

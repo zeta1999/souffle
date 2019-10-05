@@ -217,6 +217,7 @@ int main(int argc, char** argv) {
                         "execution engine."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
+                {"transformed-datalog", '\4', "", "", false, "Output dl after all transformations."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
@@ -489,6 +490,11 @@ int main(int argc, char** argv) {
     // Apply all the transformations
     pipeline->apply(*astTranslationUnit);
 
+    // Output the transformed datalog and return
+    if (Global::config().has("transformed-datalog")) {
+        std::cout << *astTranslationUnit->getProgram() << std::endl;
+        return 0;
+    }
     // ------- execution -------------
 
     /* translate AST to RAM */

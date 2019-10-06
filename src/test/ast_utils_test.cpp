@@ -456,7 +456,8 @@ TEST(AstUtils, RemoveRelationCopiesOutput) {
                 .type D = number
                 .decl a(a:D,b:D)
                 .decl b(a:D,b:D)
-                .decl c(a:D,b:D) output
+                .decl c(a:D,b:D)
+                .output c
                 .decl d(a:D,b:D)
 
                 a(1,2).

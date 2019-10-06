@@ -44,7 +44,7 @@ void InterpreterEngine::createRelation(
                     id.getArity(), id.getName(), std::vector<std::string>(), orderSet);
         }
     }
-    relations[idx] = std::move(res);
+    std::swap(relations[idx], res);
 }
 
 InterpreterRelation& InterpreterEngine::getRelation(const size_t idx) {
@@ -56,7 +56,7 @@ InterpreterEngine::RelationHandle& InterpreterEngine::getRelationHandle(const si
 }
 
 void InterpreterEngine::dropRelation(const size_t relId) {
-    relations[relId].release();
+    relations[relId].reset(nullptr);
 }
 
 void InterpreterEngine::swapRelation(const size_t ramRel1, const size_t ramRel2) {

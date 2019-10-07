@@ -23,6 +23,11 @@
 #include "InterpreterRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
+#include <deque>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <dlfcn.h>
 
 namespace souffle {
@@ -102,7 +107,7 @@ private:
     /** Loop iteration counter */
     size_t iteration = 0;
     /** Profile for rule frequencies */
-    std::map<std::string, std::map<size_t, size_t>> frequencies;
+    std::map<std::string, std::deque<std::atomic<size_t>>> frequencies;
     /** Profile for relation reads */
     std::map<std::string, std::atomic<size_t>> reads;
     /** DLL */

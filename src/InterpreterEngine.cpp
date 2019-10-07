@@ -140,7 +140,7 @@ size_t InterpreterEngine::getIterationNumber() const {
     return iteration;
 }
 void InterpreterEngine::incIterationNumber() {
-    iteration++;
+    ++iteration;
 }
 void InterpreterEngine::resetIterationNumber() {
     iteration = 0;
@@ -162,8 +162,9 @@ void InterpreterEngine::executeMain() {
         // Prepare the frequency table for threaded use
         visitDepthFirst(*program, [&](const RamTupleOperation& node) {
             if (!node.getProfileText().empty()) {
-                frequencies.emplace(node.getProfileText(), std::map<size_t, size_t>());
+                frequencies.emplace(node.getProfileText(), std::deque<std::atomic<size_t>>());
             }
+            frequencies[node.getProfileText()].emplace_back(0);
         });
         // Enable profiling for execution of main
         ProfileEventSingleton::instance().startTimer();
@@ -191,8 +192,8 @@ void InterpreterEngine::executeMain() {
         execute(entry.get(), ctxt);
         ProfileEventSingleton::instance().stopTimer();
         for (auto const& cur : frequencies) {
-            for (auto const& iter : cur.second) {
-                ProfileEventSingleton::instance().makeQuantityEvent(cur.first, iter.second, iter.first);
+            for (size_t i = 0; i < cur.second.size(); ++i) {
+                ProfileEventSingleton::instance().makeQuantityEvent(cur.first, cur.second[i], i);
             }
         }
         for (auto const& cur : reads) {
@@ -555,6 +556,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         bool result = execute(node->getChild(0), ctxt);
 
         if (profileEnabled && !cur->getProfileText().empty()) {
+            auto& currentFrequencies = frequencies[cur->getProfileText()];
+            while (currentFrequencies.size() <= getIterationNumber()) {
+                currentFrequencies.emplace_back(0);
+            }
             frequencies[cur->getProfileText()][getIterationNumber()]++;
         }
         return result;
@@ -975,6 +980,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
 
         if (profileEnabled && !cur->getProfileText().empty()) {
+            auto& currentFrequencies = frequencies[cur->getProfileText()];
+            while (currentFrequencies.size() <= getIterationNumber()) {
+                currentFrequencies.emplace_back(0);
+            }
             frequencies[cur->getProfileText()][getIterationNumber()]++;
         }
         return result;

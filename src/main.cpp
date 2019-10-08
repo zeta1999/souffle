@@ -91,13 +91,14 @@ void executeBinary(const std::string& binaryFilename
     } else
 #endif
     {
-        std::string ldPath = "LD_LIBRARY_PATH=";
-        for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
-            ldPath += library + ':';
+        if (Global::config().has("library-dir")) {
+            std::string ldPath;
+            for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
+                ldPath += library + ':';
+            }
+            ldPath.back() = ' ';
+            setenv("LD_LIBRARY_PATH", ldPath.c_str(), true);
         }
-        ldPath.back() = ' ';
-        std::vector<char> ldPathChars(ldPath.begin(), ldPath.end());
-        putenv(&ldPathChars[0]);
 
         exitCode = system(binaryFilename.c_str());
     }

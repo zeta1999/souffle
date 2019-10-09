@@ -70,7 +70,7 @@ class RamAbstractParallel {};
 class RamNestedOperation : public RamOperation {
 public:
     RamNestedOperation(std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamOperation(), nestedOperation(std::move(nested)), profileText(std::move(profileText)) {}
+            : nestedOperation(std::move(nested)), profileText(std::move(profileText)) {}
 
     /** @brief Get nested operation */
     RamOperation& getOperation() const {
@@ -1014,7 +1014,7 @@ class RamProject : public RamOperation {
 public:
     RamProject(std::unique_ptr<RamRelationReference> relRef,
             std::vector<std::unique_ptr<RamExpression>> expressions)
-            : RamOperation(), relationRef(std::move(relRef)), expressions(std::move(expressions)) {}
+            : relationRef(std::move(relRef)), expressions(std::move(expressions)) {}
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {
@@ -1084,7 +1084,7 @@ protected:
 class RamSubroutineReturnValue : public RamOperation {
 public:
     RamSubroutineReturnValue(std::vector<std::unique_ptr<RamExpression>> vals)
-            : RamOperation(), expressions(std::move(vals)) {}
+            : expressions(std::move(vals)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);

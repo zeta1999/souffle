@@ -25,11 +25,9 @@
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
-#include "LVM.h"
-#include "LVMProgInterface.h"
+#include "InterpreterEngine.h"
+#include "InterpreterProgInterface.h"
 #include "ParserDriver.h"
-#include "RAMI.h"
-#include "RAMIProgInterface.h"
 #include "RamIndexAnalysis.h"
 #include "RamLevelAnalysis.h"
 #include "RamProgram.h"
@@ -93,13 +91,14 @@ void executeBinary(const std::string& binaryFilename
     } else
 #endif
     {
-        std::string ldPath = "LD_LIBRARY_PATH=";
-        for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
-            ldPath += library + ':';
+        if (Global::config().has("library-dir")) {
+            std::string ldPath;
+            for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
+                ldPath += library + ':';
+            }
+            ldPath.back() = ' ';
+            setenv("LD_LIBRARY_PATH", ldPath.c_str(), true);
         }
-        ldPath.back() = ' ';
-        std::vector<char> ldPathChars(ldPath.begin(), ldPath.end());
-        putenv(&ldPathChars[0]);
 
         exitCode = system(binaryFilename.c_str());
     }
@@ -214,7 +213,6 @@ int main(int argc, char** argv) {
                         "Enable provenance instrumentation and interaction."},
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
-                {"interpreter", '\1', "[ RAMI | LVM ]", "LVM", false, "Switch interpreter implementation."},
                 {"hostfile", '\2', "FILE", "", false,
                         "Specify --hostfile option for call to mpiexec when using mpi as "
                         "execution engine."},
@@ -547,37 +545,20 @@ int main(int argc, char** argv) {
         }
 
         // configure and execute interpreter
-        if (Global::config().get("interpreter") == "LVM") {
-            std::unique_ptr<LVMInterface> lvm(std::make_unique<LVM>(*ramTranslationUnit));
-            lvm->executeMain();
-            // If the profiler was started, join back here once it exits.
-            if (profiler.joinable()) {
-                profiler.join();
-            }
-            // only run explain interface if interpreted
-            if (Global::config().has("provenance")) {
-                LVMProgInterface interface(*lvm);
-                if (Global::config().get("provenance") == "explain") {
-                    explain(interface, false);
-                } else if (Global::config().get("provenance") == "explore") {
-                    explain(interface, true);
-                }
-            }
-        } else {
-            std::unique_ptr<RAMIInterface> rami(std::make_unique<RAMI>(*ramTranslationUnit));
-            rami->executeMain();
-            // If the profiler was started, join back here once it exits.
-            if (profiler.joinable()) {
-                profiler.join();
-            }
-            // only run explain interface if interpreted
-            if (Global::config().has("provenance")) {
-                RAMIProgInterface interface(*rami);
-                if (Global::config().get("provenance") == "explain") {
-                    explain(interface, false);
-                } else if (Global::config().get("provenance") == "explore") {
-                    explain(interface, true);
-                }
+        std::unique_ptr<InterpreterEngine> interpreter(
+                std::make_unique<InterpreterEngine>(*ramTranslationUnit));
+        interpreter->executeMain();
+        // If the profiler was started, join back here once it exits.
+        if (profiler.joinable()) {
+            profiler.join();
+        }
+        // only run explain interface if interpreted
+        if (Global::config().has("provenance")) {
+            InterpreterProgInterface interface(*interpreter);
+            if (Global::config().get("provenance") == "explain") {
+                explain(interface, false);
+            } else if (Global::config().get("provenance") == "explore") {
+                explain(interface, true);
             }
         }
     } else {

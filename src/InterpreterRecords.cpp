@@ -8,16 +8,17 @@
 
 /************************************************************************
  *
- * @file RAMIRecords.cpp
+ * @file InterpreterRecords.cpp
  *
- * Utilities for handling records in RAMI
+ * Utilities for handling records in Interpreter
  *
  ***********************************************************************/
 
-#include "RAMIRecords.h"
+#include "InterpreterRecords.h"
 #include <cassert>
 #include <limits>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace souffle {
@@ -29,7 +30,7 @@ using namespace std;
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
-class RAMIRecordMap {
+class InterpreterRecordMap {
     /** The arity of the stored tuples */
     int arity;
 
@@ -40,7 +41,7 @@ class RAMIRecordMap {
     vector<vector<RamDomain>> i2r;
 
 public:
-    RAMIRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    InterpreterRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -89,38 +90,38 @@ public:
 /**
  * The static access function for record maps of certain arities.
  */
-RAMIRecordMap& getForArity(int arity) {
+InterpreterRecordMap& getForArity(int arity) {
     // the static container -- filled on demand
-    static map<int, RAMIRecordMap> maps;
-
-    // get container if present
+    static unordered_map<int, InterpreterRecordMap> maps;
     auto pos = maps.find(arity);
-    if (pos != maps.end()) {
-        return pos->second;
+    if (pos == maps.end()) {
+        maps.emplace(arity, arity);
     }
 
-    // create new container if required
-    maps.emplace(arity, arity);
-    return getForArity(arity);
+    return maps.find(arity)->second;
 }
 }  // namespace
 
-RamDomain pack(RamDomain* tuple, int arity) {
+RamDomain packInterpreter(RamDomain* tuple, int arity) {
     // conduct the packing
     return getForArity(arity).pack(tuple);
 }
 
-RamDomain* unpack(RamDomain ref, int arity) {
+RamDomain* unpackInterpreter(RamDomain ref, int arity) {
     // conduct the unpacking
     return getForArity(arity).unpack(ref);
 }
 
-RamDomain getNull() {
+RamDomain getNullInterpreter() {
     return 0;
 }
 
-bool isNull(RamDomain ref) {
+bool isNullInterpreter(RamDomain ref) {
     return ref == 0;
+}
+
+void createRecordMap(int arity) {
+    getForArity(arity);
 }
 
 }  // end of namespace souffle

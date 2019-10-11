@@ -97,12 +97,8 @@ protected:
 class RamIntrinsicOperator : public RamAbstractOperator {
 public:
     template <typename... Args>
-    RamIntrinsicOperator(FunctorOp op, Args... args) : operation(op) {
-        std::unique_ptr<RamExpression> tmp[] = {std::move(args)...};
-        for (auto& cur : tmp) {
-            arguments.push_back(std::move(cur));
-        }
-    }
+    RamIntrinsicOperator(FunctorOp op, Args... args)
+            : RamAbstractOperator({std::move(args)...}), operation(op) {}
 
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamExpression>> args)
             : RamAbstractOperator(std::move(args)), operation(op) {}
@@ -285,8 +281,6 @@ protected:
  */
 class RamAutoIncrement : public RamExpression {
 public:
-    RamAutoIncrement() = default;
-
     void print(std::ostream& os) const override {
         os << "autoinc()";
     }
@@ -304,8 +298,6 @@ public:
  */
 class RamUndefValue : public RamExpression {
 public:
-    RamUndefValue() = default;
-
     void print(std::ostream& os) const override {
         os << "⊥";
     }

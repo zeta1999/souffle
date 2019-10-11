@@ -2,6 +2,8 @@
 # [Soufflé](https://souffle-lang.github.io)
 
 [![Build Status](https://travis-ci.org/souffle-lang/souffle.svg?branch=master)](https://travis-ci.org/souffle-lang/souffle)
+[![codecov](https://codecov.io/gh/souffle-lang/souffle/branch/master/graph/badge.svg)](https://codecov.io/gh/souffle-lang/souffle)
+
 
 Soufflé is a translator of Horn clauses into parallel C++. Soufflé language has similarities to Datalog, and is used as a domain-specific language for analysis problems. 
 

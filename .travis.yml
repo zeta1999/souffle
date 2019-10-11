@@ -78,6 +78,44 @@ jobs:
       - docker exec souf /bin/sh -c ".travis/init_test.sh '--disable-openmp'"
       - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
 
+  - stage: Testing
+    name: "arm-gcc-setup"
+    sudo: false
+    os: linux
+    compiler: gcc
+    language: cpp
+    addons:
+      apt:
+        packages:
+        - automake
+        - autoconf
+        - bison
+        - build-essential
+        - flex
+        - gdb
+        - libffi-dev
+        - libncurses5-dev
+        - libopenmpi-dev
+        - libsqlite3-dev
+        - libtool
+        - lsb-release
+        - mcpp
+        - pkg-config
+        - sqlite3
+        - swig
+        - zlib1g-dev
+        - bash-completion
+        - debhelper
+        - devscripts
+        - doxygen
+        - fakeroot
+        - git
+        - graphviz
+        - make
+    before_script: ".travis/init_test.sh"
+    script: ".travis/run_test.sh"
+    after_failure: ".travis/after_failure.sh"
+    arch: arm64
 # Testing stage without Evaluation tests (-j8,-c -j8)
   - stage: Testing
     <<: *osxgcc

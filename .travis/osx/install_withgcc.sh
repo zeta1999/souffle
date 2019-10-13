@@ -11,6 +11,7 @@ set -x
 rm /usr/local/include/c++ || true
 
 brew install gcc@9
+brew link gcc@9 --force
 
 # Using 'g++' will call the xcode link to clang
 export CC=gcc-9

@@ -15,7 +15,6 @@ brew install gcc@9
 # Using 'g++' will call the xcode link to clang
 export CC=gcc-9
 export CXX=g++-9
-export CPPFLAGS="-I /usr/local/opt/gcc@9/include"
 
 $CXX --version
 $CC --version

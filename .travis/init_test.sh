@@ -10,7 +10,7 @@ set -x
 
 # create configure files
 ./bootstrap
-./configure CC=gcc-9  CPPFLAGS='-I /usr/local/opt/gcc@9/include' CXX=g++-9  --enable-debug
+./configure 
 make -j2
 
 

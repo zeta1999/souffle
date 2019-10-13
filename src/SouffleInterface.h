@@ -43,12 +43,12 @@ protected:
     /**
      * /brief Abstract iterator class.
      *
-     * After tuples are inserted into a relation, they will be stored in consecutive memory space.
+     * After tuples are inserted into a relation, they will be stored contiguously.
      * Intially, the iterator_base of a relation will point to the first tuple.
      * It can be moved to point to the next tuple until the end.
      * The tuple iterator_base is pointing to can be accessed.
-     * However, users can not use this to access tuples.
-     * Instead, they should use iterator which interacts with iterator_base.
+     * However, users can not use this to access tuples since iterator class is protected.
+     * Instead, they should use the public class - iterator which interacts with iterator_base.
      */
     class iterator_base {
     protected:
@@ -70,7 +70,7 @@ protected:
          * /brief Constructor.
          *
          * Create an instance of iterator_base and set its ID to be arg_id.
-         * @param arg_id ID of a iterator object (unit32_t).
+         * @param arg_id ID of an iterator object (unit32_t).
          */
         iterator_base(uint32_t arg_id) : id(arg_id) {}
         /**
@@ -81,14 +81,14 @@ protected:
          * /brief Overload the "++" operator.
          *
          * Increment the iterator_base so that it will now point to the next tuple.
-         * It has to be defined by the child class.
+         * The definition of this overloading has to be defined by the child class.
          */
         virtual void operator++() = 0;
         /**
          * /brief Overload the "*" operator.
          *
          * Return the tuple that is pointed to by the iterator_base.
-         * It has to be defined by the child class.
+         * The definition of this overloading has to be defined by the child class.
          * @return tuple Reference to a tuple object.
          */
         virtual tuple& operator*() = 0;
@@ -101,14 +101,16 @@ protected:
         bool operator==(const iterator_base& o) const {
             return this->getId() == o.getId() && equal(o);
         }
+        // Todo
         /**
          * Clone the iterator_base.
-         * It has to be defined by the child class.
+         * The definition of clone has to be defined by the child class.
          * @return An iterator_base pointer.
          */
         virtual iterator_base* clone() const = 0;
 
     protected:
+        // Todo
         /**
          * Check if the passed-in object of o is the the same as the current iterator_base.
          * @param o Reference to an object of the iterator_base class.
@@ -126,10 +128,11 @@ public:
     /**
      * /brief Wrapper class for abstract iterator.
      *
-     * Iterator can be used by the users to access the tuples stored in a relation.
+     * Users must use iterator class to access the tuples stored in a relation.
      */
     class iterator {
     protected:
+        // TODO
         /*
          * Iterator_base class pointer.
          */
@@ -140,6 +143,7 @@ public:
          * /brief Constructor.
          */
         iterator() = default;
+        // Todo
         /**
          * /brief Constructor.
          *
@@ -194,7 +198,7 @@ public:
         /**
          * /brief Overload the "==" operator.
          *
-         * check if either the iter of o and the iter of current object are the same or the corresponding
+         * Check if either the iter of o and the iter of current object are the same or the corresponding
          * iterator_base objects are the same.
          * @param o Reference to a iterator object.
          * @return Boolean. True, if either of them is true. False, otherwise.
@@ -216,7 +220,7 @@ public:
 
     /**
      * Insert a new tuple into the relation.
-     * It has to be defined by the child class.
+     * The definition of insert function has to be defined by the child class of iterator class.
      * @param t Reference to a tuple class object.
      */
     virtual void insert(const tuple& t) = 0;
@@ -230,7 +234,7 @@ public:
     virtual bool contains(const tuple& t) const = 0;
 
     /**
-     * To access the tuples in a relation, users need iterator.
+     * This iterator is used to access tuples of the relation
      * Begin will return the iterator of a relation.
      * @return Iterator of a relation
      */
@@ -266,7 +270,7 @@ public:
     virtual const char* getAttrName(size_t) const = 0;
     /**
      * Get the arity of a relation.
-     * For example for a tuple(1 2) the arity is 2 and for a tuple (1 2 3) the arity is 3.
+     * For example for a tuple (1 2) the arity is 2 and for a tuple (1 2 3) the arity is 3.
      * @return Arity of a relation (size_t).
      */
     virtual size_t getArity() const = 0;
@@ -397,7 +401,7 @@ public:
     }
 
     /**
-     * Place a symbol into the current element of the tuple.
+     * Set the "current element" of the tuple to the given string, then increment the index giving the current element.
      * @param str Symbol to be added (std::string).
      * @return Reference to the tuple.
      */
@@ -409,7 +413,7 @@ public:
     }
 
     /**
-     * Place a number into the current element of the tuple.
+     * Set the "current element" of the tuple to the given number, then increment the index giving the current element.
      * @param number Number to be added (RamDomain).
      * @return Reference to the tuple.
      */
@@ -422,7 +426,7 @@ public:
     }
 
     /**
-     * Read a symbol from the tuple.
+     * Get the "current element" of the tuple as a string, then increment the index giving the current element.
      */
     tuple& operator>>(std::string& str) {
         assert(pos < size() && "exceeded tuple's size");
@@ -432,7 +436,7 @@ public:
     }
 
     /**
-     * Read a number from the tuple.
+     * Get the "current element" of the tuple as a number, then increment the index giving the current element.
      */
     tuple& operator>>(RamDomain& number) {
         assert(pos < size() && "exceeded tuple's size");
@@ -443,14 +447,14 @@ public:
     }
 
     /**
-     * (insert) iterator for direct access to tuple's data (experimental).
+     * Iterator for direct access to tuple's data.
      */
     decltype(array)::iterator begin() {
         return array.begin();
     }
 
     /**
-     * Direct constructor using initialization list (experimental).
+     * Direct constructor using initialization list.
      */
     tuple(Relation* r, std::initializer_list<RamDomain> il) : relation(*r), array(il), pos(il.size()) {
         assert(il.size() == r->getArity() && "wrong tuple arity");

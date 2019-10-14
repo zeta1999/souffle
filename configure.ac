@@ -330,6 +330,9 @@ AC_CONFIG_LINKS([include/souffle/profile/htmlCssStyle.h:src/profile/htmlCssStyle
 AC_CONFIG_LINKS([include/souffle/profile/htmlJsChartistPlugin.h:src/profile/htmlJsChartistPlugin.h])
 AC_CONFIG_LINKS([include/souffle/profile/htmlJsTableSort.h:src/profile/htmlJsTableSort.h])
 AC_CONFIG_LINKS([include/souffle/profile/htmlMain.h:src/profile/htmlMain.h])
+AC_CONFIG_LINKS([include/souffle/swig/SwigInterface.h:src/swig/SwigInterface.h])
+AC_CONFIG_LINKS([include/souffle/swig/SwigInterface.cpp:src/swig/SwigInterface.cpp])
+AC_CONFIG_LINKS([include/souffle/swig/SwigInterface.i:src/swig/SwigInterface.i])
 AC_CONFIG_LINKS([utilities/bash-completion/completions/souffle:debian/souffle.bash-completion])
 
 AM_MISSING_PROG([AUTOM4TE], [autom4te])

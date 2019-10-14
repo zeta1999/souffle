@@ -44,8 +44,9 @@ error() {
 #Exit on error
 set -e
 
-## set environment variables
-SWIGDIR=$(dirname $0)"/swig"
+# set environment variables
+# directory where swig interface files are in souffle
+SWIGDIR=$(dirname $0)/../include/souffle/swig
 JAVADIR="$(printenv JAVA_HOME)"
 
 # set by autoconf
@@ -123,7 +124,7 @@ then
   do
     cp "$SWIGDIR/$file" "$TMP_DIR"
   done
-
+  
   swig -c++ -"$SWIGLANG" "$TMP_DIR/SwigInterface.i"
 
   # Checks input language and compiles files with local python3 config or local java_home config
@@ -133,18 +134,18 @@ then
     mv "SwigInterface.o" "$TMP_DIR"
     mv "SwigInterface_wrap.o" "$TMP_DIR"
     mv "$exe.o" "$TMP_DIR"
-    g++ -shared $TMP_DIR/SwigInterface.o $TMP_DIR/SwigInterface_wrap.o $TMP_DIR/$exe.o $(python3-config --ldflags) -o $TMP_DIR/_SwigInterface.so -lstdc++
+    $CXX -shared $TMP_DIR/SwigInterface.o $TMP_DIR/SwigInterface_wrap.o $TMP_DIR/$exe.o $(python3-config --ldflags) -o $TMP_DIR/_SwigInterface.so -lstdc++
   elif [ "$SWIGLANG" = "java" ]
   then
     $CXX -fPIC -c -D__EMBEDDED_SOUFFLE__ $TMP_DIR/SwigInterface.cpp $TMP_DIR/SwigInterface_wrap.cxx $1 -I$JAVADIR/include -I$JAVADIR/include/linux  -I$JAVADIR/include/darwin -I/usr/lib/x86_64-linux-gnu/ -I$HEADER_DIR 2>&1
     mv "SwigInterface.o" "$TMP_DIR"
     mv "SwigInterface_wrap.o" "$TMP_DIR"
     mv "$exe.o" "$TMP_DIR"
-    g++ -shared $TMP_DIR/SwigInterface.o $TMP_DIR/SwigInterface_wrap.o $TMP_DIR/$exe.o -o $TMP_DIR/libSwigInterface.so -lstdc++
+    $CXX -shared $TMP_DIR/SwigInterface.o $TMP_DIR/SwigInterface_wrap.o $TMP_DIR/$exe.o -o $TMP_DIR/libSwigInterface.so -lstdc++
   fi
 
   # move generated files to same directory as cpp file
-  for file in `ls -1 $TMP_DIR | grep -v SwigInterface.i | grep -v SwigInterface.h | grep -v SwigInterface.cpp`
+  for file in `ls -1 "$TMP_DIR" | grep -v "SwigInterface.i" | grep -v "SwigInterface.h" | grep -v "SwigInterface.cpp"`
   do
     mv "$TMP_DIR/$file" "$dir"
   done

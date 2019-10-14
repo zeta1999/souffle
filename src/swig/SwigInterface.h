@@ -17,47 +17,62 @@ class SWIGSouffleProgram {
     /**
      * pointer to SouffleProgram to invoke functions from SouffleInterface.h
      */
-    souffle::SouffleProgram* prog;
+    souffle::SouffleProgram* program;
 
 public:
-    SWIGSouffleProgram(souffle::SouffleProgram* p) : prog(p) {
-        std::cout << "SWIG Instance generated.\n";
-    }
+    SWIGSouffleProgram(souffle::SouffleProgram* program) : program(program) {}
+
     virtual ~SWIGSouffleProgram() {
-        delete prog;
-        std::cout << "SWIG Instance deleted.\n";
+        delete program;
     }
 
-    // execute Datalog program
+    /**
+     * Calls the corresponding method souffle::SouffleProgram::run in SouffleInterface.h
+     */
     void run() {
-        prog->run();
+        program->run();
     }
 
-    // execute Datalog program, loading inputs and storing outputs as requires.
+    /**
+     * Calls the corresponding method souffle::SouffleProgram::runAll in SouffleInterface.h
+     */
     void runAll(const std::string& inputDirectory, const std::string& outputDirectory) {
-        prog->runAll(inputDirectory, outputDirectory);
+        program->runAll(inputDirectory, outputDirectory);
     }
 
-    // load all relations
+    /**
+     * Calls the corresponding method souffle::SouffleProgram::loadAll in SouffleInterface.h
+     */
     void loadAll(const std::string& inputDirectory) {
-        prog->loadAll(inputDirectory);
+        program->loadAll(inputDirectory);
     }
 
-    // print all relations
+    /**
+     * Calls the corresponding method souffle::SouffleProgram::printAll in SouffleInterface.h
+     */
     void printAll(const std::string& outputDirectory) {
-        prog->printAll(outputDirectory);
+        program->printAll(outputDirectory);
     }
 
-    // dump input relations
+    /**
+     * Calls the corresponding method souffle::SouffleProgram::dumpInputs in SouffleInterface.h
+     */
     void dumpInputs(std::ostream& out = std::cout) {
-        prog->dumpInputs(out);
+        program->dumpInputs(out);
     }
 
-    // dump output relations
+    /**
+     * Calls the corresponding method souffle::SouffleProgram::dumpOutputs in SouffleInterface.h
+     */
     void dumpOutputs(std::ostream& out = std::cout) {
-        prog->dumpOutputs(out);
+        program->dumpOutputs(out);
     }
 };
 
-// Create instance
+/**
+ * Creates an instance of a SWIG souffle::SouffleProgram that can be called within a program of a supported
+ * language for the SWIG option specified in main.cpp. This enables the program to use this instance and call
+ * the supported souffle::SouffleProgram methods.
+ * @param name Name of the datalog file/ instance to be created
+ */
 SWIGSouffleProgram* newInstance(const std::string& name);

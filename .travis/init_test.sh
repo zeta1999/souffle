@@ -10,7 +10,7 @@ set -x
 
 # create configure files
 ./bootstrap
-./configure 
+./configure
 make -j2
 
 

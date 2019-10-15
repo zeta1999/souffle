@@ -589,7 +589,6 @@ int main(int argc, char** argv) {
                     if (extensionIdx != std::string::npos) {
                         baseFilename = baseFilename.substr(0, extensionIdx);
                     }
-                    
                 }
 
                 // trim .cpp extension if it exists

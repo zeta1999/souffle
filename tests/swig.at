@@ -36,7 +36,7 @@ m4_define([TEST_EVAL_SWIG],[
   m4_define([EXPECTEDDIR],[expected])
   m4_define([CURRENTDIR],[`pwd`])
 
-  for file in ls `ls TESTDIR`
+  for file in `ls TESTDIR`
   do
     cp -R "TESTDIR/$file" .
   done

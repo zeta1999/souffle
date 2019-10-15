@@ -1,14 +1,17 @@
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Iterator;
-import java.util.Set;
+/*
+ * Souffle - A Datalog Compiler
+ * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved
+ * Licensed under the Universal Permissive License v 1.0 as shown at:
+ * - https://opensource.org/licenses/UPL
+ * - <souffle root>/licenses/SOUFFLE-UPL.txt
+ */
 
 public class driver {
   static {
     try {
       System.loadLibrary("SwigInterface");
     } catch (UnsatisfiedLinkError e) {
-      System.load(System.getProperty("java.library.path")+ "/" + "libSwigInterface.so");
+      System.load(System.getProperty("java.library.path") + "/" + "libSwigInterface.so");
     }
 
   }

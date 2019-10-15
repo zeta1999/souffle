@@ -1,3 +1,51 @@
+# Souffle - A Datalog Compiler
+# Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+# Licensed under the Universal Permissive License v 1.0 as shown at:
+# - https://opensource.org/licenses/UPL
+# - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+m4_define([SWIG_LANGUAGES], [[java],
+  [python]])
+
+dnl Positive testcase for invoking souffle with SWIG option given language and test name
+dnl $1 test name
+dnl $2 category
+dnl $3 language
+m4_define([TEST_EVAL_SWIG],[
+  m4_define([TESTNAME],[$1])
+  m4_define([CATEGORY],[$2])
+  m4_define([LANGUAGE],[$3])
+  m4_define([SCRIPTDIR],["$TESTS"/CATEGORY/LANGUAGE])
+  m4_define([TESTDIR],[SCRIPTDIR/TESTNAME])
+  m4_define([PROGRAM],[TESTDIR/TESTNAME.dl])
+  m4_define([FACTS],[TESTDIR/facts])
+  m4_define([EXPECTEDDIR],[TESTDIR/expected])
+
+  # clean files before testing
+  m4_esyscmd_s(.SCRIPTDIR/clean-test-files-LANGUAGE.sh CATEGORY/LANGUAGE/TESTNAME)
+
+  mkdir -p EXPECTEDDIR
+  AT_CHECK("$SOUFFLE" -D EXPECTEDDIR -F FACTS PROGRAM)
+
+  # invoke test script
+  m4_esyscmd_s(.SCRIPTDIR/souffle-LANGUAGE-gen.sh CATEGORY/LANGUAGE/TESTNAME/TESTNAME.dl)
+
+  cd TESTDIR
+  SORTED_SAME_FILES([*.csv],[EXPECTEDDIR])
+])
+
+dnl Positive testcase for SWIG
+dnl $1 test name
+dnl $2 category
+m4_define([POSITIVE_SWIG_TEST],[
+  m4_foreach([LANGUAGE],[SWIG_LANGUAGES],[
+    AT_SETUP([$1 LANGUAGE])
+    TEST_EVAL_SWIG([$1],[$2],LANGUAGE)
+    AT_CLEANUP([])
+    ])
+  ])
+])
+
 POSITIVE_SWIG_TEST([family],[swig])
 POSITIVE_SWIG_TEST([flights],[swig])
 POSITIVE_SWIG_TEST([insert_for],[swig])

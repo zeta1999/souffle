@@ -44,7 +44,7 @@ struct scanner_data {
     SrcLocation yylloc;
 
     /* Stack of parsed files */
-    const char* yyfilename = nullptr;
+    std::string yyfilename;
 };
 
 class ParserDriver {

@@ -33,15 +33,19 @@ namespace souffle {
 class tuple;
 
 /**
- * /brief Object-oriented wrapper class for Souffle's templatized relations.
+ * Object-oriented wrapper class for Souffle's templatized relations.
  *
  * In a relation, tuples can be inserted into it. To access the stored tuples, iterator_base and iteraor are
  * used. A relation is manipulated by the souffle program (create new relation, load input etc).
+ *
+ * A relation stores the master-copy collection of tuples and their 
+ * indices in tables. (check CompiledRelation.h for more details.)
+ * Which table is a single link-list structure. (check Table.h for more details.)
  */
 class Relation {
 protected:
     /**
-     * /brief Abstract iterator class.
+     * Abstract iterator class.
      *
      * After tuples are inserted into a relation, they will be stored contiguously.
      * Intially, the iterator_base of a relation will point to the first tuple.
@@ -67,25 +71,25 @@ protected:
             return id;
         }
         /**
-         * /brief Constructor.
+         * Constructor.
          *
          * Create an instance of iterator_base and set its ID to be arg_id.
          * @param arg_id ID of an iterator object (unit32_t).
          */
         iterator_base(uint32_t arg_id) : id(arg_id) {}
         /**
-         * /brief Destructor.
+         * Destructor.
          */
         virtual ~iterator_base() = default;
         /**
-         * /brief Overload the "++" operator.
+         * Overload the "++" operator.
          *
          * Increment the iterator_base so that it will now point to the next tuple.
          * The definition of this overloading has to be defined by the child class.
          */
         virtual void operator++() = 0;
         /**
-         * /brief Overload the "*" operator.
+         * Overload the "*" operator.
          *
          * Return the tuple that is pointed to by the iterator_base.
          * The definition of this overloading has to be defined by the child class.
@@ -121,12 +125,12 @@ protected:
 
 public:
     /**
-     * /brief Destructor.
+     * Destructor.
      */
     virtual ~Relation() = default;
 
     /**
-     * /brief Wrapper class for abstract iterator.
+     * Wrapper class for abstract iterator.
      *
      * Users must use iterator class to access the tuples stored in a relation.
      */
@@ -140,19 +144,19 @@ public:
 
     public:
         /**
-         * /brief Constructor.
+         * Constructor.
          */
         iterator() = default;
         // Todo
         /**
-         * /brief Constructor.
+         * Constructor.
          *
          * Initialize the iter to be the same as arg.
          * @param arg An iterator_base class pointer.
          */
         iterator(iterator_base* arg) : iter(arg) {}
         /**
-         * /brief Destructor.
+         * Destructor.
          *
          * Delete iter.
          */
@@ -160,14 +164,14 @@ public:
             delete iter;
         }
         /**
-         * /brief Constructor.
+         * Constructor.
          *
          * Initialize the iter to be the clone of arg.
          * @param o Reference to an iterator object.
          */
         iterator(const iterator& o) : iter(o.iter->clone()) {}
         /**
-         * /brief Overload the "=" operator.
+         * Overload the "=" operator.
          */
         iterator& operator=(const iterator& o) {
             delete iter;
@@ -175,7 +179,7 @@ public:
             return *this;
         }
         /**
-         * /brief Overload the "++" operator.
+         * Overload the "++" operator.
          *
          * Increment the iterator_base object that iter is pointing to so that iterator_base object points to
          * next tuple.
@@ -186,7 +190,7 @@ public:
             return *this;
         }
         /**
-         * /brief Overload the "*" operator.
+         * Overload the "*" operator.
          *
          * This will return the tuple that the iterator is pointing to.
          * @return Reference to a tuple object.
@@ -196,7 +200,7 @@ public:
             return *(*iter);
         }
         /**
-         * /brief Overload the "==" operator.
+         * Overload the "==" operator.
          *
          * Check if either the iter of o and the iter of current object are the same or the corresponding
          * iterator_base objects are the same.
@@ -207,7 +211,7 @@ public:
             return (iter == o.iter) || (*iter == *o.iter);
         }
         /**
-         * /brief Overload the "!=" operator.
+         * Overload the "!=" operator.
          *
          * Check if the iterator object o is not the same as the current object.
          * @param o Reference to a iterator object.
@@ -297,6 +301,8 @@ public:
 
     /**
      * Eliminate all the tuples in relation.
+     * When purge() is called, it sets the head and tail of the table to nullptr, and for every elements
+     * in the table, set the next element pointer points to the current element itself. 
      */
     virtual void purge() = 0;
 };
@@ -332,7 +338,7 @@ class tuple {
 
 public:
     /**
-     * /brief Constructor.
+     * Constructor.
      *
      * When given a relation pointer r pointing to an actual relation, it will set the above declared relation
      * to point to this relation. An dynamic array of space which is equal to the arity of the tuple will be
@@ -341,7 +347,7 @@ public:
      */
     tuple(const Relation* r) : relation(*r), array(r->getArity()), pos(0), data(array.data()) {}
     /**
-     * /brief Constructor.
+     * Constructor.
      *
      * When given a tupple, similar to before, same thing will be set according to which relation the tuple
      * belongs to.
@@ -375,7 +381,7 @@ public:
      */
 
     /**
-     * /brief Overload the operator [].
+     * Overload the operator [].
      *
      * Return the element in idx position of a tuple.
      * @param idx This is the idx of element in a tuple (size_t).
@@ -384,7 +390,7 @@ public:
         return array[idx];
     }
     /**
-     * /brief Overload the operator [].
+     * Overload the operator [].
      *
      * Return the element in idx position of a tuple. The returned element can not be changed.
      * @param idx This is the idx of element in a tuple (size_t).
@@ -467,8 +473,8 @@ public:
 class SouffleProgram {
 private:
     /**
-     * Define a relation map for external access, when getRelation() called,
-     * the target relation will search from this relation map,
+     * Define a relation map for external access, when getRelation(name) is called,
+     * the relation with the given name will be returned from this map,
      * relationMap stores all the relations in a map with its name
      * as the key and relation as the value.
      */
@@ -500,10 +506,11 @@ protected:
      * depends on the properties of the relation, if the relation is an input relation, it will be added to
      * inputRelations, else if the relation is an output relation, it will be added to outputRelations,
      * otherwise will add to internalRelations. (a relation could be both input and output at the same time.)
-     * @param name the name of the relation (std::string).
-     * @param rel a pointer to the relation (std::string).
-     * @param isInput a bool argument, true if the relation is a input relation, else false (bool).
-     * @param isOnput a bool argument, true if the relation is a ouput relation, else false (bool).
+     *
+     * @param name the name of the relation (std::string)
+     * @param rel a pointer to the relation (std::string)
+     * @param isInput a bool argument, true if the relation is a input relation, else false (bool)
+     * @param isOnput a bool argument, true if the relation is a ouput relation, else false (bool)
      */
     void addRelation(const std::string& name, Relation* rel, bool isInput, bool isOutput) {
         relationMap[name] = rel;
@@ -521,7 +528,7 @@ protected:
 
 public:
     /**
-     * /brief Destructor.
+     * Destructor
      *
      * Destructor of SouffleProgram.
      */
@@ -572,8 +579,9 @@ public:
 
     /**
      * Get Relation by its name from relationMap, if relation not found, return a nullptr.
-     * @param name The name of the target relation (const std::string).
-     * @return The pointer of the target relation, or null pointer if the relation not found (Relation*).
+     * 
+     * @param name The name of the target relation (const std::string)
+     * @return The pointer of the target relation, or null pointer if the relation not found (Relation*)
      */
     Relation* getRelation(const std::string& name) const {
         auto it = relationMap.find(name);
@@ -586,8 +594,9 @@ public:
 
     /**
      * Return the size of the target relation from relationMap.
-     * @param name The name of the target relation (const std::string).
-     * @return The size of the target relation (std::size_t).
+     * 
+     * @param name The name of the target relation (const std::string)
+     * @return The size of the target relation (std::size_t)
      */
     std::size_t getRelationSize(const std::string& name) const {
         return getRelation(name)->size();
@@ -595,56 +604,57 @@ public:
 
     /**
      * Return the name of the target relation from relationMap.
-     * @param name The name of the target relation (const std::string).
-     * @return The name of the target relation (std::string).
+     * 
+     * @param name The name of the target relation (const std::string)
+     * @return The name of the target relation (std::string)
      */
     std::string getRelationName(const std::string& name) const {
         return getRelation(name)->getName();
     }
 
     /**
-     * /see outputRelations.
-     *
      * Getter of outputRelations, which this vector structure contains all output relations.
-     * @return outputRelations (std::vector).
+     *
+     * @return outputRelations (std::vector)
+     * @see outputRelations
      */
     std::vector<Relation*> getOutputRelations() const {
         return outputRelations;
     }
 
     /**
-     * /see inputRelations.
-     *
      * Getter of inputRelations, which this vector structure contains all input relations.
+     *
      * @return intputRelations (std::vector)
+     * @see inputRelations
      */
     std::vector<Relation*> getInputRelations() const {
         return inputRelations;
     }
 
     /**
-     * /see internalRelations.
-     *
      * Getter of internalRelations, which this vector structure contains all relations
      * that are neither an input relation or an output relation.
-     * @return internalRelations (std::vector).
+     *
+     * @return internalRelations (std::vector)
+     * @see internalRelations
      */
     std::vector<Relation*> getInternalRelations() const {
         return internalRelations;
     }
 
     /**
-     * /see allRelations.
-     *
      * Getter of allRelations, which this vector structure contains all relations.
-     * @return allRelations (std::vector).
+     *
+     * @return allRelations (std::vector)
+     * @see allRelations
      */
     std::vector<Relation*> getAllRelations() const {
         return allRelations;
     }
 
     /**
-     * TODO
+     * TODO (NubKel) : should provide documentation for this method.
      */
     virtual void executeSubroutine(std::string name, const std::vector<RamDomain>& args,
             std::vector<RamDomain>& ret, std::vector<bool>& retErr) {}
@@ -655,12 +665,9 @@ public:
     virtual SymbolTable& getSymbolTable() = 0;
 
     /**
-     * Remove all the tuples from the outputRelations.
-     * A relation stores the master-copy collection of tuples and their 
-     * indices in tables. (check CompiledRelation.h for more details.)
-     * Which table is a single link-list structure. (check Table.h for more details.)
-     * When purge() is called, it sets the head and tail of the table to nullptr, and for every elements
-     * in the table, set the next element pointer points to the current element itself. 
+     * Remove all the tuples from the outputRelations, calling the purge method of each.
+     *
+     * @see Relation::purge()
      */
     void purgeOutputRelations() {
         for (Relation* relation : outputRelations) {
@@ -715,13 +722,13 @@ protected:
     ProgramFactory* link = nullptr;
 
     /**
-     * Name of factory.
+     * The name of factory.
      */
     std::string name;
 
 protected:
     /**
-     * /brief Constructor.
+     * Constructor.
      *
      * Constructor adds factory to static singly-linked list
      * for registration.
@@ -734,7 +741,10 @@ private:
     /**
      * Helper method for creating a factory map, which map key is the name of the program factory, map value
      * is the pointer of the ProgramFactory.
-     * @return the factory registration map (std::map).
+     * 
+     * TODO (NubKel) : improve documentation of use and interaction between inline and static, here and for the whole class.
+     * 
+     * @return The factory registration map (std::map)
      */
     static inline std::map<std::string, ProgramFactory*>&
     getFactoryRegistry() { 
@@ -746,7 +756,8 @@ private:
 protected:
     /**
      * Create and insert a factory into the factoryReg map.
-     * @param factory Pointer of the program factory (ProgramFactory*).
+     * 
+     * @param factory Pointer of the program factory (ProgramFactory*)
      */
     static inline void registerFactory(
             ProgramFactory* factory) {
@@ -758,8 +769,9 @@ protected:
     /**
      * Find a factory by its name, return the fatory if found, return nullptr if the
      * factory not found.
-     * @param factoryName The factory name (const std::string).
-     * @return The pointer of the target program factory, or null pointer if the program factory not found (ProgramFactory*). 
+     * 
+     * @param factoryName The factory name (const std::string)
+     * @return The pointer of the target program factory, or null pointer if the program factory not found (ProgramFactory*)
      */
     static inline ProgramFactory* find(const std::string& factoryName) {
         const auto& reg = getFactoryRegistry();
@@ -776,7 +788,7 @@ protected:
 
 public:
     /**
-     * /brief Destructor.
+     * Destructor.
      *
      * Destructor of ProgramFactory.
      */
@@ -784,8 +796,9 @@ public:
 
     /**
      * Create an instance by finding the name of the program factory, return nullptr if the instance not found.
-     * @param name Instance name (const std::string).
-     * @return The new instance(SouffleProgram*), or null pointer if the instance not found.
+     * 
+     * @param name Instance name (const std::string)
+     * @return The new instance(SouffleProgram*), or null pointer if the instance not found
      */
     static SouffleProgram* newInstance(const std::string& name) {
         ProgramFactory* factory = find(name);

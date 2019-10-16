@@ -1998,11 +1998,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "std::atomic<size_t> iter(0);\n\n";
 
     // set default threads (in embedded mode)
-    if (std::stoi(Global::config().get("jobs")) > 1) {
-        os << "#if defined(__EMBEDDED_SOUFFLE__) && defined(_OPENMP)\n";
-        os << "omp_set_num_threads(" << std::stoi(Global::config().get("jobs")) << ");\n";
-        os << "#endif\n\n";
-    }
+    // if this is not set, and omp is used, the default omp setting of number of cores is used.
+    os << "#if defined(_OPENMP)\n";
+    os << "if (getNumThreads() > 0) {omp_set_num_threads(getNumThreads());}\n";
+    os << "#endif\n\n";
 
     // add actual program body
     os << "// -- query evaluation --\n";
@@ -2317,16 +2316,16 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     os << "if (!opt.parse(argc,argv)) return 1;\n";
 
-    os << "#if defined(_OPENMP) \n";
-    os << "omp_set_nested(true);\n";
-    os << "\n#endif\n";
-
     os << "souffle::";
     if (Global::config().has("profile")) {
         os << classname + " obj(opt.getProfileName());\n";
     } else {
         os << classname + " obj;\n";
     }
+
+    os << "#if defined(_OPENMP) \n";
+    os << "obj.setNumThreads(opt.getNumJobs());\n";
+    os << "\n#endif\n";
 
     if (Global::config().has("profile")) {
         os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("", opt.getSourceFileName());)_"

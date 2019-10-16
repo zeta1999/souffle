@@ -38,7 +38,7 @@ class tuple;
  * Tuples can be inserted into a relation. To access the stored tuples, iterator_base and iteraor are
  * used. A relation is manipulated by the souffle program (create new relation, load input etc).
  *
- * A relation stores the master-copy collection of tuples and their 
+ * A relation stores the master-copy collection of tuples and their
  * indices in tables. (check CompiledRelation.h for more details.)
  * Which table is a single link-list structure. (check Table.h for more details.)
  */
@@ -100,8 +100,8 @@ protected:
         /**
          * Overload the "==" operator.
          * @param o Reference to an object of the iterator_base class.
-         * @return Boolean. True, if the ID of o is the same as the ID of the current object and equal(o) returns true. False,
-         * otherwise.
+         * @return Boolean. True, if the ID of o is the same as the ID of the current object and equal(o)
+         * returns true. False, otherwise.
          */
         bool operator==(const iterator_base& o) const {
             return this->getId() == o.getId() && equal(o);
@@ -245,7 +245,7 @@ public:
     virtual iterator begin() const = 0;
     /**
      * Return an iterator pointing to next to the last tuple of the relation
-     * @return Iterator 
+     * @return Iterator
      */
     virtual iterator end() const = 0;
     /**
@@ -262,14 +262,16 @@ public:
      * Get the attribute type of a relation at the column specified by the parameter.
      * The attribute type is in the form "<primitive type>:<type name>".
      * <primitive type> can be s or n standing for symbol or number which are two primitive types in Souffle.
-     * <type name> is the name given by the user in the Souffle Program after ".type", "symbol_type" or "number_type". For example, for ".type Node", the type name is "Node".
+     * <type name> is the name given by the user in the Souffle Program after ".type", "symbol_type" or
+     * "number_type". For example, for ".type Node", the type name is "Node".
      * @param The index of the column starting starting from 0 (size_t).
      * @return The constant string of the attribute type
      */
     virtual const char* getAttrType(size_t) const = 0;
     /**
      * Get the attribute name of a relation at the column specified by the parameter.
-     * The attribute name is the name given to the type by the user in the .decl statement. For example, for ".decl edge (node1:Node, node2:Node)", the attribute names are node1 and node2.
+     * The attribute name is the name given to the type by the user in the .decl statement. For example, for
+     * ".decl edge (node1:Node, node2:Node)", the attribute names are node1 and node2.
      * @param The index of the column starting starting from 0 (size_t).
      * @return The constant string of the attribute name
      */
@@ -282,19 +284,21 @@ public:
     virtual size_t getArity() const = 0;
     /**
      * Get the symbol table of a relation.
-     * The symbols in a tuple to be stored into a relation are stored and assigned with a number in a table called symbol table.
-     * For example, to insert ("John","Student") to a relation, "John" and "Student" are stored in symbol table and they are assigned with number say 0 and 1.
-     * After this, instead of inserting ("John","Student"), (0, 1) is inserted. 
-     * When accessing this tuple, 0 and 1 will be looked up in the table and replaced by "John" and "Student".
-     * This is done so to save memory space if same symbols are inserted many times.
-     * Symbol table has many rows where each row contains a symbol and its corresponding assigned number.
+     * The symbols in a tuple to be stored into a relation are stored and assigned with a number in a table
+     * called symbol table. For example, to insert ("John","Student") to a relation, "John" and "Student" are
+     * stored in symbol table and they are assigned with number say 0 and 1. After this, instead of inserting
+     * ("John","Student"), (0, 1) is inserted. When accessing this tuple, 0 and 1 will be looked up in the
+     * table and replaced by "John" and "Student". This is done so to save memory space if same symbols are
+     * inserted many times. Symbol table has many rows where each row contains a symbol and its corresponding
+     * assigned number.
      * @return Reference to a symbolTable object.
      */
     virtual SymbolTable& getSymbolTable() const = 0;
     /**
      * Get the signature of a relation.
-     * The signature is in the form <<primitive type 1>:<type name 1>,<primitive type 2>:<type name 2>...> for all the attributes in a relation. For example, <s:Node,s:Node>.
-     * The primitive type and type name are explained in getAttrType.
+     * The signature is in the form <<primitive type 1>:<type name 1>,<primitive type 2>:<type name 2>...> for
+     * all the attributes in a relation. For example, <s:Node,s:Node>. The primitive type and type name are
+     * explained in getAttrType.
      * @return String of the signature of a relation.
      */
     std::string getSignature() {
@@ -323,10 +327,10 @@ public:
  * Tuples are stored in relations.
  * In Souffle, one row of data to be stored into a relation is represented as a tuple.
  * For example if we have a relation called dog with attributes name, colour and age which are string, string
- * and interger type respectively. One row of data a relation to be stored can be (mydog, black, 3). However, this is not
- * directly stored as a tuple. There will be a symbol table storing the actual content and associate them with
- * numbers (For example, |1|mydog| |2|black| |3|3|). And when this row of data is stored as a tuple, (1, 2, 3) will be
- * stored.
+ * and interger type respectively. One row of data a relation to be stored can be (mydog, black, 3). However,
+ * this is not directly stored as a tuple. There will be a symbol table storing the actual content and
+ * associate them with numbers (For example, |1|mydog| |2|black| |3|3|). And when this row of data is stored
+ * as a tuple, (1, 2, 3) will be stored.
  */
 class tuple {
     /**
@@ -339,10 +343,12 @@ class tuple {
     std::vector<RamDomain> array;
     /**
      * pos shows what the current position of a tuple is.
-     * Initially, pos is 0 meaning we are at the head of the tuple. 
-     * If we have an empty tuple and try to insert things, pos lets us know where to insert the element. After the element is inserted, pos will be incremented by 1.
-     * If we have a tuple with content, pos lets us know where to read the element. After we have read one element, pos will be incremented by 1.
-     * pos also helps to make sure we access an insert a tuple within the bound by making sure pos never exceeds the arity of the relation.
+     * Initially, pos is 0 meaning we are at the head of the tuple.
+     * If we have an empty tuple and try to insert things, pos lets us know where to insert the element. After
+     * the element is inserted, pos will be incremented by 1. If we have a tuple with content, pos lets us
+     * know where to read the element. After we have read one element, pos will be incremented by 1. pos also
+     * helps to make sure we access an insert a tuple within the bound by making sure pos never exceeds the
+     * arity of the relation.
      */
     size_t pos;
 
@@ -350,9 +356,14 @@ public:
     /**
      * Constructor.
      *
-     * Tuples are constructed here by passing a relation, then may be subsequently inserted into that same passed relation. 
-     * The passed relation pointer will be stored within the tuple instance, while the arity of the relation will be used to initialize the vector holding the elements of the tuple. Where such an element is of integer type, it will be stored directly within the vector. Otherwise, if the element is of a string type, the index of that string within the associated symbol table will be stored instead.
-     * The tuple also stores the index of some "current" element, referred to as its position. The constructor initially sets this position to the first (zeroth) element of the tuple, while subsequent methods of this class use that position for element access and modification. 
+     * Tuples are constructed here by passing a relation, then may be subsequently inserted into that same
+     * passed relation. The passed relation pointer will be stored within the tuple instance, while the arity
+     * of the relation will be used to initialize the vector holding the elements of the tuple. Where such an
+     * element is of integer type, it will be stored directly within the vector. Otherwise, if the element is
+     * of a string type, the index of that string within the associated symbol table will be stored instead.
+     * The tuple also stores the index of some "current" element, referred to as its position. The constructor
+     * initially sets this position to the first (zeroth) element of the tuple, while subsequent methods of
+     * this class use that position for element access and modification.
      * @param r Relation pointer pointing to a relation
      */
     tuple(const Relation* r) : relation(*r), array(r->getArity()), pos(0), data(array.data()) {}
@@ -361,7 +372,7 @@ public:
      *
      * Tuples are constructed here by passing a tuple.
      * The relation to which the passed tuple belongs to will be stored.
-     * The array of the passed tuple, which stores the elements will be stroed. 
+     * The array of the passed tuple, which stores the elements will be stroed.
      * The pos will be set to be the same as the pos of passed tuple.
      * belongs to.
      * @param Reference to a tuple object.
@@ -417,7 +428,8 @@ public:
         pos = 0;
     }
     /**
-     * Set the "current element" of the tuple to the given string, then increment the index giving the current element.
+     * Set the "current element" of the tuple to the given string, then increment the index giving the current
+     * element.
      * @param str Symbol to be added (std::string).
      * @return Reference to the tuple.
      */
@@ -428,7 +440,8 @@ public:
         return *this;
     }
     /**
-     * Set the "current element" of the tuple to the given number, then increment the index giving the current element.
+     * Set the "current element" of the tuple to the given number, then increment the index giving the current
+     * element.
      * @param number Number to be added (RamDomain).
      * @return Reference to the tuple.
      */
@@ -440,7 +453,8 @@ public:
         return *this;
     }
     /**
-     * Get the "current element" of the tuple as a string, then increment the index giving the current element.
+     * Get the "current element" of the tuple as a string, then increment the index giving the current
+     * element.
      */
     tuple& operator>>(std::string& str) {
         assert(pos < size() && "exceeded tuple's size");
@@ -449,7 +463,8 @@ public:
         return *this;
     }
     /**
-     * Get the "current element" of the tuple as a number, then increment the index giving the current element.
+     * Get the "current element" of the tuple as a number, then increment the index giving the current
+     * element.
      */
     tuple& operator>>(RamDomain& number) {
         assert(pos < size() && "exceeded tuple's size");
@@ -547,10 +562,10 @@ public:
 
     /**
      * Execute program, loading inputs and storing outputs as required.
-     * Read all input relations and store all output relations from the given directory. 
-     * First argument is the input directory, second argument is the output directory, 
-     * if no directory is given, the default is to use the current working directory. 
-     * The implementation of this function occurs in the C++ code generated by Souffle. 
+     * Read all input relations and store all output relations from the given directory.
+     * First argument is the input directory, second argument is the output directory,
+     * if no directory is given, the default is to use the current working directory.
+     * The implementation of this function occurs in the C++ code generated by Souffle.
      * To view the generated C++ code, run Souffle with the `-g` option.
      */
     virtual void runAll(std::string inputDirectory = ".", std::string outputDirectory = ".",
@@ -585,7 +600,7 @@ public:
 
     /**
      * Get Relation by its name from relationMap, if relation not found, return a nullptr.
-     * 
+     *
      * @param name The name of the target relation (const std::string)
      * @return The pointer of the target relation, or null pointer if the relation not found (Relation*)
      */
@@ -600,7 +615,7 @@ public:
 
     /**
      * Return the size of the target relation from relationMap.
-     * 
+     *
      * @param name The name of the target relation (const std::string)
      * @return The size of the target relation (std::size_t)
      */
@@ -610,7 +625,7 @@ public:
 
     /**
      * Return the name of the target relation from relationMap.
-     * 
+     *
      * @param name The name of the target relation (const std::string)
      * @return The name of the target relation (std::string)
      */
@@ -683,11 +698,11 @@ public:
 
     /**
      * Remove all the tuples from the inputRelations.
-     * A relation stores the master-copy collection of tuples and their 
+     * A relation stores the master-copy collection of tuples and their
      * indices in tables. (check CompiledRelation.h for more details.)
      * Which table is a single link-list structure. (check Table.h for more details.)
      * When purge() is called, it sets the head and tail of the table to nullptr, and for every elements
-     * in the table, set the next element pointer points to the current element itself. 
+     * in the table, set the next element pointer points to the current element itself.
      */
     void purgeInputRelations() {
         for (Relation* relation : inputRelations) {
@@ -697,11 +712,11 @@ public:
 
     /**
      * Remove all the tuples from the internalRelations.
-     * A relation stores the master-copy collection of tuples and their 
+     * A relation stores the master-copy collection of tuples and their
      * indices in tables. (check CompiledRelation.h for more details.)
      * Which table is a single link-list structure. (check Table.h for more details.)
      * When purge() is called, it sets the head and tail of the table to nullptr, and for every elements
-     * in the table, set the next element pointer points to the current element itself. 
+     * in the table, set the next element pointer points to the current element itself.
      */
     void purgeInternalRelations() {
         for (Relation* relation : internalRelations) {
@@ -747,26 +762,24 @@ private:
     /**
      * Helper method for creating a factory map, which map key is the name of the program factory, map value
      * is the pointer of the ProgramFactory.
-     * 
-     * TODO (NubKel) : improve documentation of use and interaction between inline and static, here and for the whole class.
-     * 
+     *
+     * TODO (NubKel) : improve documentation of use and interaction between inline and static, here and for
+     * the whole class.
+     *
      * @return The factory registration map (std::map)
      */
-    static inline std::map<std::string, ProgramFactory*>&
-    getFactoryRegistry() { 
-        static std::map<std::string, ProgramFactory*>
-                factoryReg; 
+    static inline std::map<std::string, ProgramFactory*>& getFactoryRegistry() {
+        static std::map<std::string, ProgramFactory*> factoryReg;
         return factoryReg;
     }
 
 protected:
     /**
      * Create and insert a factory into the factoryReg map.
-     * 
+     *
      * @param factory Pointer of the program factory (ProgramFactory*)
      */
-    static inline void registerFactory(
-            ProgramFactory* factory) {
+    static inline void registerFactory(ProgramFactory* factory) {
         auto& entry = getFactoryRegistry()[factory->name];
         assert(!entry && "double-linked/defined souffle analyis");
         entry = factory;
@@ -775,16 +788,15 @@ protected:
     /**
      * Find a factory by its name, return the fatory if found, return nullptr if the
      * factory not found.
-     * 
+     *
      * @param factoryName The factory name (const std::string)
-     * @return The pointer of the target program factory, or null pointer if the program factory not found (ProgramFactory*)
+     * @return The pointer of the target program factory, or null pointer if the program factory not found
+     * (ProgramFactory*)
      */
     static inline ProgramFactory* find(const std::string& factoryName) {
         const auto& reg = getFactoryRegistry();
         auto pos = reg.find(factoryName);
-        return (pos == reg.end())
-                       ? nullptr
-                       : pos->second;
+        return (pos == reg.end()) ? nullptr : pos->second;
     }
 
     /**
@@ -801,15 +813,16 @@ public:
     virtual ~ProgramFactory() = default;
 
     /**
-     * Create an instance by finding the name of the program factory, return nullptr if the instance not found.
-     * 
+     * Create an instance by finding the name of the program factory, return nullptr if the instance not
+     * found.
+     *
      * @param name Instance name (const std::string)
      * @return The new instance(SouffleProgram*), or null pointer if the instance not found
      */
     static SouffleProgram* newInstance(const std::string& name) {
         ProgramFactory* factory = find(name);
-        if (factory != nullptr) { 
-            return factory->newInstance(); 
+        if (factory != nullptr) {
+            return factory->newInstance();
         } else {
             return nullptr;
         }

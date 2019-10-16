@@ -27,6 +27,7 @@
 #include <vector>
 
 #include <cassert>
+#include <cstddef>
 
 namespace souffle {
 
@@ -505,6 +506,7 @@ private:
      * allRelations store all the relation in a vector.
      */
     std::vector<Relation*> allRelations;
+    std::size_t numThreads = 1;
 
 protected:
     /**
@@ -582,6 +584,16 @@ public:
      * Output all the output relations in stdout, without generating any files. (for debug purposes).
      */
     virtual void dumpOutputs(std::ostream& out = std::cout) = 0;
+  
+    // Set the number of threads to be used
+    void setNumThreads(std::size_t numThreads) {
+        this->numThreads = numThreads;
+    }
+
+    // Get the number of threads to be used
+    std::size_t getNumThreads() {
+        return numThreads;
+    }
 
     /**
      * Get Relation by its name from relationMap, if relation not found, return a nullptr.

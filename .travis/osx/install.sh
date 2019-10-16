@@ -6,7 +6,7 @@ set -e
 set -x
 
 # Install requirements of MAC OS X
-brew install md5sha1sum bison libtool mcpp libffi 
+brew install md5sha1sum bison libtool mcpp libffi
 brew link bison --force
 brew link libffi --force
 

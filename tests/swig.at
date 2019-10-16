@@ -1,3 +1,67 @@
+# Souffle - A Datalog Compiler
+# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Licensed under the Universal Permissive License v 1.0 as shown at:
+# - https://opensource.org/licenses/UPL
+# - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+m4_define([SWIG_LANGUAGES], [[java],
+  [python]])
+
+dnl Run driver program for given language to output csv files
+dnl $1 current testsuite directory
+dnl $2 language 
+m4_define([LANGUAGE_TEST],[
+  m4_if($2, java, [
+    javac *.java
+    java -Djava.library.path=$1 driver
+  ])
+  
+  m4_if($2, python, [
+    python3 driver.py
+  ])
+])
+
+dnl Positive testcase for invoking souffle with SWIG option given language and test name
+dnl $1 test name
+dnl $2 category
+dnl $3 language
+m4_define([TEST_EVAL_SWIG],[
+  m4_define([TESTNAME],[$1])
+  m4_define([CATEGORY],[$2])
+  m4_define([LANGUAGE],[$3])
+  m4_define([SCRIPTDIR],["$TESTS"/CATEGORY/LANGUAGE])
+  m4_define([TESTDIR],[SCRIPTDIR/TESTNAME])
+  m4_define([PROGRAM],[TESTDIR/TESTNAME.dl])
+  m4_define([FACTS],[TESTDIR/facts])
+  m4_define([EXPECTEDDIR],[expected])
+  m4_define([CURRENTDIR],[`pwd`])
+
+  for file in `ls TESTDIR`
+  do
+    cp -R "TESTDIR/$file" .
+  done
+
+  mkdir -p EXPECTEDDIR
+  AT_CHECK("$SOUFFLE" -D EXPECTEDDIR -F FACTS TESTNAME.dl)
+  AT_CHECK("$SOUFFLE" -s LANGUAGE TESTNAME.dl)
+
+  LANGUAGE_TEST([CURRENTDIR],[LANGUAGE])
+
+  SORTED_SAME_FILES([*.csv],[EXPECTEDDIR])
+])
+
+dnl Positive testcase for SWIG
+dnl $1 test name
+dnl $2 category
+m4_define([POSITIVE_SWIG_TEST],[
+  m4_foreach([LANGUAGE],[SWIG_LANGUAGES],[
+    AT_SETUP([$1 LANGUAGE])
+    TEST_EVAL_SWIG([$1],[$2],LANGUAGE)
+    AT_CLEANUP([])
+    ])
+  ])
+])
+
 POSITIVE_SWIG_TEST([family],[swig])
 POSITIVE_SWIG_TEST([flights],[swig])
 POSITIVE_SWIG_TEST([insert_for],[swig])

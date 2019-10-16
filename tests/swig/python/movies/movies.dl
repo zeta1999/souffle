@@ -1,9 +1,10 @@
 // Souffle - A Datalog Compiler
-// Copyright (c) 2016, The Souffle Developers. All rights reserved
+// Copyright (c) 2019, The Souffle Developers. All rights reserved
 // Licensed under the Universal Permissive License v 1.0 as shown at:
 // - https://opensource.org/licenses/UPL
 // - <souffle root>/licenses/SOUFFLE-UPL.txt
 
+// example taken from tests/example/movies
 
 .type Text
 
@@ -28,8 +29,6 @@ Actors(1,"John Smith").
 Actors(2,"Joe Bloggs").
 Actors(3,"Francesca Allsworth").
 Actors(4,"Julia Thebest").
-
-
 
 .decl MovieActorsText(title:Text, actorname:Text)
 .output MovieActorsText()

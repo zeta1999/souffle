@@ -599,7 +599,7 @@ public:
      * Output all the output relations in stdout, without generating any files. (for debug purposes).
      */
     virtual void dumpOutputs(std::ostream& out = std::cout) = 0;
-  
+
     // Set the number of threads to be used
     void setNumThreads(std::size_t numThreads) {
         this->numThreads = numThreads;

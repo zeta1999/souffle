@@ -54,7 +54,7 @@ aliases:
   - &osxgcc
     stage: Testing
     os: osx
-    osx_image: xcode10.1
+    osx_image: xcode11.2
     compiler: gcc
     install: ". .travis/osx/install_withgcc.sh"
     before_script: ".travis/init_test.sh"

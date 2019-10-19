@@ -158,7 +158,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstComponentInit*>(&node));
         const auto& other = static_cast<const AstComponentInit&>(node);
-        return instanceName == other.instanceName && componentType == other.componentType;
+        return instanceName == other.instanceName && *componentType == *other.componentType;
     }
 
 private:
@@ -383,7 +383,7 @@ public:
 
     /** Output to a given output stream */
     void print(std::ostream& os) const override {
-        os << ".comp " << getComponentType() << " ";
+        os << ".comp " << *getComponentType() << " ";
 
         if (!baseComponents.empty()) {
             os << ": " << join(baseComponents, ",", print_deref<std::unique_ptr<AstComponentType>>()) << " ";
@@ -428,7 +428,7 @@ protected:
         const auto& other = static_cast<const AstComponent&>(node);
 
         // compare all fields
-        return type == other.type && baseComponents == other.baseComponents &&
+        return *type == *other.type && equal_targets(baseComponents, other.baseComponents) &&
                equal_targets(types, other.types) && equal_targets(relations, other.relations) &&
                equal_targets(clauses, other.clauses) && equal_targets(loads, other.loads) &&
                equal_targets(printSizes, other.printSizes) && equal_targets(stores, other.stores) &&

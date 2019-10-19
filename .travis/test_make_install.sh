@@ -6,7 +6,8 @@
 set -e
 set -x
 
-make -j2 install
+JOBS=$(nproc)
+make -j$JOBS install
 
 #generate a simple program
 A=".decl A()

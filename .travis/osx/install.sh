@@ -6,10 +6,9 @@ set -e
 set -x
 
 # Install requirements of MAC OS X
-brew update-reset
-brew install md5sha1sum bison libtool mcpp libffi
-brew link bison --force
-brew link libffi --force
+brew install bison libtool mcpp libffi || echo "brew install failed"
+brew link bison --force || echo "brew link bison failed"
+brew link libffi --force || echo "brew link libffi failed"
 
 export PATH="/usr/local/opt/bison/bin:$PATH"
 export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig/"

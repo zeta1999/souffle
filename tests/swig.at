@@ -9,15 +9,15 @@ m4_define([SWIG_LANGUAGES], [[java],
 
 dnl Run driver program for given language to output csv files
 dnl $1 current testsuite directory
-dnl $2 language 
+dnl $2 language
 m4_define([LANGUAGE_TEST],[
   m4_if($2, java, [
     javac *.java
-    java -Djava.library.path=$1 driver
+    AT_CHECK([java -Djava.library.path=$1 driver], [0])
   ])
-  
+
   m4_if($2, python, [
-    python3 driver.py
+    AT_CHECK([python3 driver.py], [0])
   ])
 ])
 
@@ -29,25 +29,20 @@ m4_define([TEST_EVAL_SWIG],[
   m4_define([TESTNAME],[$1])
   m4_define([CATEGORY],[$2])
   m4_define([LANGUAGE],[$3])
-  m4_define([SCRIPTDIR],["$TESTS"/CATEGORY/LANGUAGE])
-  m4_define([TESTDIR],[SCRIPTDIR/TESTNAME])
-  m4_define([PROGRAM],[TESTDIR/TESTNAME.dl])
+  m4_define([TESTDIR],["$TESTS"/CATEGORY/LANGUAGE/TESTNAME])
   m4_define([FACTS],[TESTDIR/facts])
-  m4_define([EXPECTEDDIR],[expected])
   m4_define([CURRENTDIR],[`pwd`])
 
-  for file in `ls TESTDIR`
+  for file in `ls TESTDIR | grep -v .csv$`
   do
     cp -R "TESTDIR/$file" .
   done
 
-  mkdir -p EXPECTEDDIR
-  AT_CHECK("$SOUFFLE" -D EXPECTEDDIR -F FACTS TESTNAME.dl)
-  AT_CHECK("$SOUFFLE" -s LANGUAGE TESTNAME.dl)
+  AT_CHECK(["$SOUFFLE" -s LANGUAGE TESTNAME.dl 1>TESTNAME.out 2>TESTNAME.err], [0])
 
   LANGUAGE_TEST([CURRENTDIR],[LANGUAGE])
 
-  SORTED_SAME_FILES([*.csv],[EXPECTEDDIR])
+  SORTED_SAME_FILES([*.csv],[TESTDIR])
 ])
 
 dnl Positive testcase for SWIG

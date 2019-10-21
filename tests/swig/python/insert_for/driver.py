@@ -11,5 +11,5 @@ p = SwigInterface.newInstance('insert_for')
 p.loadAll('facts/.')
 p.run()
 p.printAll('.')
-p.thisown=1
+p.thisown = 1
 del p

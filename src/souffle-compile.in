@@ -44,11 +44,6 @@ error() {
 #Exit on error
 set -e
 
-# set environment variables
-# directory where swig interface files are in souffle
-SWIGDIR=$(dirname $0)/../include/souffle/swig
-JAVADIR="$(printenv JAVA_HOME)"
-
 # set by autoconf
 CXX="$(printenv CXX || true)"
 test -z "$CXX" && CXX="@CXX@"
@@ -119,7 +114,11 @@ cd "$OLDPWD"
 # Make temp folder and copy relavent files there
 if [ -n "$SWIGLANG" ]
 then
+  # set environment variables
+  # directory where swig interface files are in souffle
+  SWIGDIR=$(dirname $0)/../include/souffle/swig
   TMP_DIR="$(mktemp -d)"
+
   for file in `ls -1 "$SWIGDIR"`
   do
     cp "$SWIGDIR/$file" "$TMP_DIR"
@@ -135,6 +134,8 @@ then
     $CXX -shared SwigInterface.o SwigInterface_wrap.o $exe.o $(python3-config --ldflags) -o _SwigInterface.so -lstdc++
   elif [ "$SWIGLANG" = "java" ]
   then
+    JAVADIR="$(printenv JAVA_HOME)" || error "JAVA_HOME environment variable has not been set"
+
     $CXX -fPIC -c -D__EMBEDDED_SOUFFLE__ SwigInterface.cpp SwigInterface_wrap.cxx $dir/$exe.cpp -I$JAVADIR/include -I$JAVADIR/include/linux  -I$JAVADIR/include/darwin -I/usr/lib/x86_64-linux-gnu/ -I$HEADER_DIR 2>&1
     $CXX -shared SwigInterface.o SwigInterface_wrap.o $exe.o -o libSwigInterface.so -lstdc++
   fi

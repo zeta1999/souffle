@@ -86,6 +86,15 @@ AS_IF([test "x$enable_mpi" = "xyes"], [
 ])
 AM_CONDITIONAL([MPI], [test "x$enable_mpi" = "xyes"])
 
+AC_CHECK_PROG(JAVA, java, java)
+AS_IF([test -z "$JAVA"], [AC_MSG_ERROR([java not found.])])
+
+AC_CHECK_PROG(PYTHON3, python3, python3)
+AS_IF([test -z "$PYTHON3"], [AC_MSG_ERROR([python3 not found.])])
+
+AC_CHECK_PROG(SWIG, swig, swig)
+AS_IF([test -z "$SWIG"], [AC_MSG_ERROR([swig not found.])])
+
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX(17, noext)
 

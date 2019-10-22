@@ -146,6 +146,7 @@ then
     mv "$file" "$dir"
   done
   
+  rm -rf "$TMP_DIR"
   exit 0
 fi
 

@@ -58,31 +58,37 @@ protected:
     class iterator_base {
     protected:
         /**
-         * TODO(Honghyw) Provide a clear documentation of what id is used for.
          * Required for identifying type of iterator
          * (NB: LLVM has no typeinfo).
+         * 
+         * TODO (Honghyw) : Provide a clear documentation of what id is used for.
          */
         uint32_t id;
 
     public:
         /**
          * Get the ID of the iterator_base object.
-         * @return ID of the iterator_base object (unit32_t).
+         * 
+         * @return ID of the iterator_base object (unit32_t)
          */
         virtual uint32_t getId() const {
             return id;
         }
+        
         /**
          * Constructor.
          *
          * Create an instance of iterator_base and set its ID to be arg_id.
-         * @param arg_id ID of an iterator object (unit32_t).
+         * 
+         * @param arg_id ID of an iterator object (unit32_t)
          */
         iterator_base(uint32_t arg_id) : id(arg_id) {}
+        
         /**
          * Destructor.
          */
         virtual ~iterator_base() = default;
+        
         /**
          * Overload the "++" operator.
          *
@@ -90,36 +96,44 @@ protected:
          * The definition of this overloading has to be defined by the child class of iterator_base.
          */
         virtual void operator++() = 0;
+        
         /**
          * Overload the "*" operator.
          *
          * Return the tuple that is pointed to by the iterator_base.
          * The definition of this overloading has to be defined by the child class of iterator_base.
-         * @return tuple Reference to a tuple object.
+         *
+         * @return tuple Reference to a tuple object
          */
         virtual tuple& operator*() = 0;
+        
         /**
          * Overload the "==" operator.
-         * @param o Reference to an object of the iterator_base class.
-         * @return Boolean. True, if the ID of o is the same as the ID of the current object and equal(o)
-         * returns true. False, otherwise.
+         * 
+         * @param o Reference to an object of the iterator_base class
+         * @return A boolean value, if the ID of o is the same as the ID of the current object and equal(o)
+         * returns true. Otherwise return false
          */
         bool operator==(const iterator_base& o) const {
             return this->getId() == o.getId() && equal(o);
         }
+        
         /**
          * Clone the iterator_base.
          * The definition of clone has to be defined by the child class of iterator_base.
-         * @return An iterator_base pointer.
+         * 
+         * @return An iterator_base pointer
          */
         virtual iterator_base* clone() const = 0;
 
     protected:
-        // Todo (Honghyw) Provide a clear documentation of what equal function does.
         /**
          * Check if the passed-in object of o is the the same as the current iterator_base.
-         * @param o Reference to an object of the iterator_base class.
-         * @return Boolean. True, if they are the same. False, otherwise.
+         * 
+         * TODO (Honghyw) : Provide a clear documentation of what equal function does.
+         * 
+         * @param o Reference to an object of the iterator_base class
+         * @return A boolean value. If two iterator_base are the same return true. Otherwise return false
          */
         virtual bool equal(const iterator_base& o) const = 0;
     };
@@ -138,8 +152,9 @@ public:
     class iterator {
     protected:
         /*
-         * TODO (Honghyw) provide a documentation that explains why we need to set iter to null prt.
          * Iterator_base class pointer.
+         * 
+         * TODO (Honghyw) : Provide a documentation that explains why we need to set iter to null prt.
          */
         iterator_base* iter = nullptr;
 
@@ -148,14 +163,18 @@ public:
          * Constructor.
          */
         iterator() = default;
+        
         /**
          * Constructor.
          *
-         * Todo (Honghyw) provide a documentation explaining why this is useful.
          * Initialize the iter to be the same as arg.
-         * @param arg An iterator_base class pointer.
+         * 
+         * TODO (Honghyw) : Provide a documentation explaining why this is useful.
+         * 
+         * @param arg An iterator_base class pointer
          */
         iterator(iterator_base* arg) : iter(arg) {}
+        
         /**
          * Destructor.
          *
@@ -164,16 +183,21 @@ public:
         ~iterator() {
             delete iter;
         }
+        
         /**
          * Constructor.
          *
-         * Todo (Honghyw) provide a documentation explaining why this is useful
          * Initialize the iter to be the clone of arg.
-         * @param o Reference to an iterator object.
+         * 
+         * TODO (Honghyw) : Provide a documentation explaining why this is useful
+         * 
+         * @param o Reference to an iterator object
          */
         iterator(const iterator& o) : iter(o.iter->clone()) {}
+        
         /**
          * Overload the "=" operator.
+         * 
          * The original iterator_base instance is destructed.
          */
         iterator& operator=(const iterator& o) {
@@ -181,44 +205,52 @@ public:
             iter = o.iter->clone();
             return *this;
         }
+        
         /**
          * Overload the "++" operator.
-         *
+         * 
          * Increment the iterator_base object that iter is pointing to so that iterator_base object points to
          * next tuple.
-         * @return Reference to the iterator object which points to the next tuple in a relation.
+         * 
+         * @return Reference to the iterator object which points to the next tuple in a relation
          */
         iterator& operator++() {
             ++(*iter);
             return *this;
         }
+        
         /**
          * Overload the "*" operator.
-         *
+         * 
          * This will return the tuple that the iterator is pointing to.
-         * @return Reference to a tuple object.
+         * 
+         * @return Reference to a tuple object
          */
 
         tuple& operator*() const {
             return *(*iter);
         }
+        
         /**
          * Overload the "==" operator.
          *
          * Check if either the iter of o and the iter of current object are the same or the corresponding
          * iterator_base objects are the same.
-         * @param o Reference to a iterator object.
-         * @return Boolean. True, if either of them is true. False, otherwise.
+         *
+         * @param o Reference to a iterator object
+         * @return Boolean. True, if either of them is true. False, otherwise
          */
         bool operator==(const iterator& o) const {
             return (iter == o.iter) || (*iter == *o.iter);
         }
+        
         /**
          * Overload the "!=" operator.
          *
          * Check if the iterator object o is not the same as the current object.
-         * @param o Reference to a iterator object.
-         * @return Boolean. True, if they are not the same. False, otherwise.
+         * 
+         * @param o Reference to a iterator object
+         * @return Boolean. True, if they are not the same. False, otherwise
          */
         bool operator!=(const iterator& o) const {
             return !(*this == o);
@@ -228,61 +260,79 @@ public:
     /**
      * Insert a new tuple into the relation.
      * The definition of insert function has to be defined by the child class of relation class.
-     * @param t Reference to a tuple class object.
+     * 
+     * @param t Reference to a tuple class object
      */
     virtual void insert(const tuple& t) = 0;
+    
     /**
      * Check whether a tuple exists in a relation.
      * The definition of contains has to be defined by the child class of relation class.
-     * @param t Reference to a tuple object.
-     * @return Boolean. True, if the tuple exists. False, otherwise.
+     * 
+     * @param t Reference to a tuple object
+     * @return Boolean. True, if the tuple exists. False, otherwise
      */
     virtual bool contains(const tuple& t) const = 0;
+    
     /**
-     * Return an iterator pointing to the first tuple of the relation
-     * This iterator is used to access the tuples of the relation
+     * Return an iterator pointing to the first tuple of the relation.
+     * This iterator is used to access the tuples of the relation.
+     * 
      * @return Iterator
      */
     virtual iterator begin() const = 0;
+    
     /**
-     * Return an iterator pointing to next to the last tuple of the relation
+     * Return an iterator pointing to next to the last tuple of the relation.
+     * 
      * @return Iterator
      */
     virtual iterator end() const = 0;
+    
     /**
      * Get the number of tuples in a relation.
-     * @return The number of tuples in a relation (std::size_t).
+     * 
+     * @return The number of tuples in a relation (std::size_t)
      */
     virtual std::size_t size() const = 0;
+    
     /**
      * Get the name of a relation.
-     * @return The name of a relation (std::string).
+     * 
+     * @return The name of a relation (std::string)
      */
     virtual std::string getName() const = 0;
+    
     /**
      * Get the attribute type of a relation at the column specified by the parameter.
      * The attribute type is in the form "<primitive type>:<type name>".
      * <primitive type> can be s or n standing for symbol or number which are two primitive types in Souffle.
      * <type name> is the name given by the user in the Souffle Program after ".type", "symbol_type" or
      * "number_type". For example, for ".type Node", the type name is "Node".
-     * @param The index of the column starting starting from 0 (size_t).
+     * 
+     * @param The index of the column starting starting from 0 (size_t)
      * @return The constant string of the attribute type
      */
     virtual const char* getAttrType(size_t) const = 0;
+    
     /**
      * Get the attribute name of a relation at the column specified by the parameter.
      * The attribute name is the name given to the type by the user in the .decl statement. For example, for
      * ".decl edge (node1:Node, node2:Node)", the attribute names are node1 and node2.
-     * @param The index of the column starting starting from 0 (size_t).
+     * 
+     * @param The index of the column starting starting from 0 (size_t)
      * @return The constant string of the attribute name
      */
     virtual const char* getAttrName(size_t) const = 0;
+    
     /**
      * Get the arity of a relation.
      * For example for a tuple (1 2) the arity is 2 and for a tuple (1 2 3) the arity is 3.
-     * @return Arity of a relation (size_t).
+     * 
+     * @return Arity of a relation (size_t)
      */
     virtual size_t getArity() const = 0;
+    
     /**
      * Get the symbol table of a relation.
      * The symbols in a tuple to be stored into a relation are stored and assigned with a number in a table
@@ -292,15 +342,18 @@ public:
      * table and replaced by "John" and "Student". This is done so to save memory space if same symbols are
      * inserted many times. Symbol table has many rows where each row contains a symbol and its corresponding
      * assigned number.
-     * @return Reference to a symbolTable object.
+     * 
+     * @return Reference to a symbolTable object
      */
     virtual SymbolTable& getSymbolTable() const = 0;
+    
     /**
      * Get the signature of a relation.
      * The signature is in the form <<primitive type 1>:<type name 1>,<primitive type 2>:<type name 2>...> for
      * all the attributes in a relation. For example, <s:Node,s:Node>. The primitive type and type name are
      * explained in getAttrType.
-     * @return String of the signature of a relation.
+     * 
+     * @return String of the signature of a relation
      */
     std::string getSignature() {
         if (getArity() == 0) {
@@ -314,8 +367,13 @@ public:
         signature += ">";
         return signature;
     }
+    
     /**
      * Delete all the tuples in relation.
+     *
+     * When purge() is called, it sets the head and tail of the table (table is a 
+     * singly-linked list structure) to nullptr, and for every elements
+     * in the table, set the next element pointer points to the current element itself.
      */
     virtual void purge() = 0;
 };
@@ -323,8 +381,7 @@ public:
 /**
  * Defines a tuple for the OO interface such that
  * relations with varying columns can be accessed.
- */
-/**
+ *
  * Tuples are stored in relations.
  * In Souffle, one row of data to be stored into a relation is represented as a tuple.
  * For example if we have a relation called dog with attributes name, colour and age which are string, string
@@ -338,10 +395,12 @@ class tuple {
      * The relation to which the tuple belongs.
      */
     const Relation& relation;
+    
     /**
      * Dynamic array used to store the elements in a tuple.
      */
     std::vector<RamDomain> array;
+    
     /**
      * pos shows what the current position of a tuple is.
      * Initially, pos is 0 meaning we are at the head of the tuple.
@@ -365,9 +424,11 @@ public:
      * The tuple also stores the index of some "current" element, referred to as its position. The constructor
      * initially sets this position to the first (zeroth) element of the tuple, while subsequent methods of
      * this class use that position for element access and modification.
+     * 
      * @param r Relation pointer pointing to a relation
      */
     tuple(const Relation* r) : relation(*r), array(r->getArity()), pos(0), data(array.data()) {}
+    
     /**
      * Constructor.
      *
@@ -376,63 +437,79 @@ public:
      * The array of the passed tuple, which stores the elements will be stroed.
      * The pos will be set to be the same as the pos of passed tuple.
      * belongs to.
+     * 
      * @param Reference to a tuple object.
      */
     tuple(const tuple& t) : relation(t.relation), array(t.array), pos(t.pos), data(array.data()) {}
+    
     /**
      * Allows printing using WriteStream.
      */
     const RamDomain* data = nullptr;
+    
     /**
      * Get the reference to the relation to which the tuple belongs.
+     * 
      * @return Reference to a relation.
      */
     const Relation& getRelation() const {
         return relation;
     }
+    
     /**
      * Return the number of elements in the tuple.
+     * 
      * @return the number of elements in the tuple (size_t).
      */
     size_t size() const {
         return array.size();
     }
-    /**
-     * direct access to tuple elements via index
-     * TODO: this interface should be hidden and
-     * only be used by friendly classes such as
-     * iterators; users should not use this interface.
-     */
 
     /**
      * Overload the operator [].
      *
-     * Return the element in idx position of a tuple.
+     * Direct access to tuple elements via index and
+     * return the element in idx position of a tuple.
+     * 
+     * TODO (Honghyw) : This interface should be hidden and
+     * only be used by friendly classes such as
+     * iterators; users should not use this interface.
+     *
      * @param idx This is the idx of element in a tuple (size_t).
      */
     RamDomain& operator[](size_t idx) {
         return array[idx];
     }
+    
     /**
      * Overload the operator [].
      *
+     * Direct access to tuple elements via index and
      * Return the element in idx position of a tuple. The returned element can not be changed.
+     * 
+     * TODO (Honghyw) : This interface should be hidden and
+     * only be used by friendly classes such as
+     * iterators; users should not use this interface.
+     *
      * @param idx This is the idx of element in a tuple (size_t).
      */
     const RamDomain& operator[](size_t idx) const {
         return array[idx];
     }
+    
     /**
      * Reset the index giving the "current element" of the tuple to zero.
      */
     void rewind() {
         pos = 0;
     }
+    
     /**
      * Set the "current element" of the tuple to the given string, then increment the index giving the current
      * element.
-     * @param str Symbol to be added (std::string).
-     * @return Reference to the tuple.
+     * 
+     * @param str Symbol to be added (std::string)
+     * @return Reference to the tuple
      */
     tuple& operator<<(const std::string& str) {
         assert(pos < size() && "exceeded tuple's size");
@@ -440,11 +517,13 @@ public:
         array[pos++] = relation.getSymbolTable().lookup(str);
         return *this;
     }
+    
     /**
      * Set the "current element" of the tuple to the given number, then increment the index giving the current
      * element.
-     * @param number Number to be added (RamDomain).
-     * @return Reference to the tuple.
+     * 
+     * @param number Number to be added (RamDomain)
+     * @return Reference to the tuple
      */
     tuple& operator<<(RamDomain number) {
         assert(pos < size() && "exceeded tuple's size");
@@ -453,9 +532,13 @@ public:
         array[pos++] = number;
         return *this;
     }
+    
     /**
      * Get the "current element" of the tuple as a string, then increment the index giving the current
      * element.
+     * 
+     * @param str Symbol to be loaded from the tuple(std::string)
+     * @return Reference to the tuple
      */
     tuple& operator>>(std::string& str) {
         assert(pos < size() && "exceeded tuple's size");
@@ -463,9 +546,13 @@ public:
         str = relation.getSymbolTable().resolve(array[pos++]);
         return *this;
     }
+    
     /**
      * Get the "current element" of the tuple as a number, then increment the index giving the current
      * element.
+     *
+     * @param number Number to be loaded from the tuple (RamDomain)
+     * @return Reference to the tuple
      */
     tuple& operator>>(RamDomain& number) {
         assert(pos < size() && "exceeded tuple's size");
@@ -474,15 +561,20 @@ public:
         number = array[pos++];
         return *this;
     }
+    
     /**
      * Iterator for direct access to tuple's data.
+     * 
+     * @see Relation::iteraor::begin()
      */
     decltype(array)::iterator begin() {
         return array.begin();
     }
+    
     /**
-     * TODO (Honghyw) provide a ducumentation explainning what this is doing.
      * Direct constructor using initialization list.
+     * 
+     * TODO (Honghyw) : Provide a ducumentation explainning what this is doing.
      */
     tuple(Relation* r, std::initializer_list<RamDomain> il) : relation(*r), array(il), pos(il.size()) {
         assert(il.size() == r->getArity() && "wrong tuple arity");
@@ -600,12 +692,16 @@ public:
      */
     virtual void dumpOutputs(std::ostream& out = std::cout) = 0;
 
-    // Set the number of threads to be used
+    /**
+     * Set the number of threads to be used
+     */
     void setNumThreads(std::size_t numThreads) {
         this->numThreads = numThreads;
     }
 
-    // Get the number of threads to be used
+    /**
+     * Get the number of threads to be used
+     */
     std::size_t getNumThreads() {
         return numThreads;
     }
@@ -687,7 +783,7 @@ public:
     }
 
     /**
-     * TODO (NubKel) : should provide documentation for this method.
+     * TODO (NubKel) : Should provide documentation for this method.
      */
     virtual void executeSubroutine(std::string name, const std::vector<RamDomain>& args,
             std::vector<RamDomain>& ret, std::vector<bool>& retErr) {}
@@ -709,12 +805,9 @@ public:
     }
 
     /**
-     * Remove all the tuples from the inputRelations.
-     * A relation stores the master-copy collection of tuples and their
-     * indices in tables. (check CompiledRelation.h for more details.)
-     * Which table is a single link-list structure. (check Table.h for more details.)
-     * When purge() is called, it sets the head and tail of the table to nullptr, and for every elements
-     * in the table, set the next element pointer points to the current element itself.
+     * Remove all the tuples from the inputRelations, calling the purge method of each.
+     *
+     * @see Relation::purge()
      */
     void purgeInputRelations() {
         for (Relation* relation : inputRelations) {
@@ -723,12 +816,9 @@ public:
     }
 
     /**
-     * Remove all the tuples from the internalRelations.
-     * A relation stores the master-copy collection of tuples and their
-     * indices in tables. (check CompiledRelation.h for more details.)
-     * Which table is a single link-list structure. (check Table.h for more details.)
-     * When purge() is called, it sets the head and tail of the table to nullptr, and for every elements
-     * in the table, set the next element pointer points to the current element itself.
+     * Remove all the tuples from the internalRelations, calling the purge method of each.
+     *
+     * @see Relation::purge()
      */
     void purgeInternalRelations() {
         for (Relation* relation : internalRelations) {
@@ -775,7 +865,7 @@ private:
      * Helper method for creating a factory map, which map key is the name of the program factory, map value
      * is the pointer of the ProgramFactory.
      *
-     * TODO (NubKel) : improve documentation of use and interaction between inline and static, here and for
+     * TODO (NubKel) : Improve documentation of use and interaction between inline and static, here and for
      * the whole class.
      *
      * @return The factory registration map (std::map)

@@ -86,14 +86,23 @@ AS_IF([test "x$enable_mpi" = "xyes"], [
 ])
 AM_CONDITIONAL([MPI], [test "x$enable_mpi" = "xyes"])
 
-AC_CHECK_PROG(JAVA, java, java)
-AS_IF([test -z "$JAVA"], [AC_MSG_ERROR([java not found.])])
-
-AC_CHECK_PROG(PYTHON3, python3, python3)
-AS_IF([test -z "$PYTHON3"], [AC_MSG_ERROR([python3 not found.])])
-
-AC_CHECK_PROG(SWIG, swig, swig)
-AS_IF([test -z "$SWIG"], [AC_MSG_ERROR([swig not found.])])
+# @@@TODO
+# Enable SWIG
+STUPID_HACK="NO"
+AC_ARG_ENABLE(
+  [swig],
+  [AS_HELP_STRING([--enable-swig], [Enable SWIG])]
+)
+AS_IF([test "x$enable_swig" = "xyes"], [
+  STUPID_HACK="YES"
+  AC_CHECK_PROG(JAVA, java, java)
+  AS_IF([test -z "$JAVA"], [AC_MSG_ERROR([java not found, required for swig])])
+  AC_CHECK_PROG(PYTHON3, python3, python3)
+  AS_IF([test -z "$PYTHON3"], [AC_MSG_ERROR([python3 not found, required for swig])])
+  AC_CHECK_PROG(SWIG, swig, swig)
+  AS_IF([test -z "$SWIG"], [AC_MSG_ERROR([swig not found])])
+])
+AM_CONDITIONAL([SWIG], [test "x$enable_swig" = "xyes"])
 
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX(17, noext)

@@ -86,15 +86,12 @@ AS_IF([test "x$enable_mpi" = "xyes"], [
 ])
 AM_CONDITIONAL([MPI], [test "x$enable_mpi" = "xyes"])
 
-# @@@TODO
 # Enable SWIG
-STUPID_HACK="NO"
 AC_ARG_ENABLE(
   [swig],
   [AS_HELP_STRING([--enable-swig], [Enable SWIG])]
 )
 AS_IF([test "x$enable_swig" = "xyes"], [
-  STUPID_HACK="YES"
   AC_CHECK_PROG(JAVA, java, java)
   AS_IF([test -z "$JAVA"], [AC_MSG_ERROR([java not found, required for swig])])
   AC_CHECK_PROG(PYTHON3, python3, python3)

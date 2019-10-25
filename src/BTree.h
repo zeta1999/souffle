@@ -2232,8 +2232,9 @@ const SearchStrategy
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type,
-        typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+        unsigned blockSize = 256,
+        typename SearchStrategy = typename souffle::detail::default_strategy<Key>::type,
+        typename WeakComparator = Comparator, typename Updater = souffle::detail::updater<Key>>
 class btree_set : public souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true,
                           WeakComparator, Updater> {
     using super = souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, true,
@@ -2293,8 +2294,9 @@ public:
  */
 template <typename Key, typename Comparator = detail::comparator<Key>,
         typename Allocator = std::allocator<Key>,  // is ignored so far
-        unsigned blockSize = 256, typename SearchStrategy = typename detail::default_strategy<Key>::type,
-        typename WeakComparator = Comparator, typename Updater = detail::updater<Key>>
+        unsigned blockSize = 256,
+        typename SearchStrategy = typename souffle::detail::default_strategy<Key>::type,
+        typename WeakComparator = Comparator, typename Updater = souffle::detail::updater<Key>>
 class btree_multiset : public souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy,
                                false, WeakComparator, Updater> {
     using super = souffle::detail::btree<Key, Comparator, Allocator, blockSize, SearchStrategy, false,

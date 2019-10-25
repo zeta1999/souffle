@@ -124,7 +124,7 @@ inline int mkstemp(char* tmpl) {
     unsigned int attempts = ATTEMPTS_MIN;
 #endif
 
-    len = strlen(tmpl);
+    len = static_cast<int>(strlen(tmpl));
     if (len < 6 || strcmp(&tmpl[len - 6], "XXXXXX")) {
         errno = EINVAL;
         return -1;
@@ -620,7 +620,7 @@ public:
     }
     int overflow(int c) override {
         for (auto stream : streams) {
-            stream->put(c);
+            stream->put(static_cast<char>(c));
         }
         return c;
     }
@@ -1084,12 +1084,12 @@ inline time_point now() {
 
 // a shortcut for obtaining the time difference in milliseconds
 inline long duration_in_us(const time_point& start, const time_point& end) {
-    return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    return static_cast<long>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
 }
 
 // a shortcut for obtaining the time difference in nanoseconds
 inline long duration_in_ns(const time_point& start, const time_point& end) {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    return static_cast<long>(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
 }
 
 // -------------------------------------------------------------------------------
@@ -1190,7 +1190,7 @@ inline std::string absPath(const std::string& path) {
  *  Join two paths together; note that this does not resolve overlaps or relative paths.
  */
 inline std::string pathJoin(const std::string& first, const std::string& second) {
-    unsigned firstPos = first.size() - 1;
+    unsigned firstPos = static_cast<unsigned>(first.size()) - 1;
     while (first.at(firstPos) == '/') firstPos--;
     unsigned secondPos = 0;
     while (second.at(secondPos) == '/') secondPos++;
@@ -1231,7 +1231,7 @@ inline std::string baseName(const std::string& filename) {
 
     size_t lastSlashBeforeBasename = filename.find_last_of('/', lastNotSlash - 1);
     if (lastSlashBeforeBasename == std::string::npos) {
-        lastSlashBeforeBasename = -1;
+        lastSlashBeforeBasename = static_cast<size_t>(-1);
     }
     return filename.substr(lastSlashBeforeBasename + 1, lastNotSlash - lastSlashBeforeBasename);
 }

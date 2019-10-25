@@ -28,7 +28,7 @@ class ReadStream {
 public:
     ReadStream(const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const bool prov)
             : symbolMask(symbolMask), symbolTable(symbolTable), isProvenance(prov),
-              arity(symbolMask.size() - (prov ? 2 : 0)) {}
+              arity(static_cast<uint8_t>(symbolMask.size()) - (prov ? 2 : 0)) {}
     template <typename T>
     void readAll(T& relation) {
         auto lease = symbolTable.acquireLock();

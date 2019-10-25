@@ -655,13 +655,13 @@ private:
                         // fast over-approximation of whether a update is necessary
                         if (off < unsynced.firstOffset) {
                             // update first reference if this one is the smallest
-                            auto info = getFirstInfo();
-                            while (off < info.offset) {
-                                info.node = next;
-                                info.offset = off;
-                                if (!tryUpdateFirstInfo(info)) {
+                            auto first_info = getFirstInfo();
+                            while (off < first_info.offset) {
+                                first_info.node = next;
+                                first_info.offset = off;
+                                if (!tryUpdateFirstInfo(first_info)) {
                                     // there was some concurrent update => check again
-                                    info = getFirstInfo();
+                                    first_info = getFirstInfo();
                                 }
                             }
                         }
@@ -1131,7 +1131,7 @@ public:
                 i = i & getLevelMask(level);
 
                 // find next higher value
-                i += (1 << (BITS * level));
+                i += static_cast<unsigned long>(1 << (BITS * level));
 
             } else {
                 if (level == 0) {
@@ -1409,7 +1409,7 @@ class SparseBitMap {
 
     // some constants for manipulating stored values
     static const short BITS_PER_ENTRY = sizeof(value_t) * 8;
-    static const short LEAF_INDEX_WIDTH = __builtin_ctz(BITS_PER_ENTRY);
+    static const short LEAF_INDEX_WIDTH = static_cast<short>(__builtin_ctz(BITS_PER_ENTRY));
     static const uint64_t LEAF_INDEX_MASK = BITS_PER_ENTRY - 1;
 
 public:
@@ -3071,7 +3071,7 @@ public:
         if (this->empty()) return res;
 
         // use top-level elements for partitioning
-        int step = std::max(map.size() / chunks, size_t(1));
+        int step = static_cast<int>(std::max(map.size() / chunks, size_t(1)));
 
         int c = 1;
         auto priv = begin();

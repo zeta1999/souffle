@@ -69,7 +69,7 @@ inline souffle::SouffleProgram* getInstance(const char* p) {
  * Relation wrapper used internally in the generated Datalog program
  */
 template <uint32_t id, class RelType, class TupleType, size_t Arity>
-class RelationWrapper : public Relation {
+class RelationWrapper : public souffle::Relation {
 private:
     RelType& relation;
     SymbolTable& symTable;

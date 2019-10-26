@@ -246,10 +246,9 @@ m4_ifblank(m4_join([],ENV_CATEGORIES), [
 m4_foreach(current, [CATEGORIES],
 [
   AT_BANNER([current])
+  
   m4_if(current, Swig, [
-    m4_if("$SWIG_FALSE", [#], [
-      m4_include([swig.at])   
-    ])
+    m4_ifval([$SWIG_FALSE], [m4_include([swig.at])], [])
   ])
 
   m4_if(current, Syntactic, [

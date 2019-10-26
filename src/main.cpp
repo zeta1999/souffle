@@ -364,7 +364,7 @@ int main(int argc, char** argv) {
      * Ensure that code generation is enabled if using SWIG interface option.
      */
     if (Global::config().has("swig") && !Global::config().has("generate")) {
-        Global::config().set("generate", Global::config().get(""));
+        Global::config().set("generate", simpleName(Global::config().get("")));
     }
 
     // ------ start souffle -------------
@@ -588,14 +588,6 @@ int main(int argc, char** argv) {
                 baseFilename = Global::config().get("dl-program");
             } else if (Global::config().has("generate")) {
                 baseFilename = Global::config().get("generate");
-
-                // trim extension of datalog file if it exists for SWIG option
-                if (Global::config().has("swig")) {
-                    std::string::size_type extensionIdx = baseFilename.rfind('.');
-                    if (extensionIdx != std::string::npos) {
-                        baseFilename = baseFilename.substr(0, extensionIdx);
-                    }
-                }
 
                 // trim .cpp extension if it exists
                 if (baseFilename.size() >= 4 && baseFilename.substr(baseFilename.size() - 4) == ".cpp") {

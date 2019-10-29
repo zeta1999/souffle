@@ -92,8 +92,8 @@ AC_ARG_ENABLE(
   [AS_HELP_STRING([--enable-swig], [Enable SWIG])]
 )
 AS_IF([test "x$enable_swig" = "xyes"], [
-  AC_CHECK_PROG(JAVA, java, java)
-  AS_IF([test -z "$JAVA"], [AC_MSG_ERROR([java not found, required for swig])])
+  AC_CHECK_PROG(JAVAC, javac, javac)
+  AS_IF([test -z "$JAVAC"], [AC_MSG_ERROR([javac not found, required for swig])])
   AC_CHECK_PROG(PYTHON3, python3, python3)
   AS_IF([test -z "$PYTHON3"], [AC_MSG_ERROR([python3 not found, required for swig])])
   AC_CHECK_PROG(SWIG, swig, swig)

@@ -223,8 +223,7 @@ m4_ifblank(m4_join([],ENV_CONFS), [
   m4_define([CONFS], [ENV_CONFS])
 ])
 
-m4_define([DEFAULT_CATEGORIES], [[Swig], 
-  [Syntactic],
+m4_define([DEFAULT_CATEGORIES], [[Syntactic],
   [Semantic],
   [Evaluation],
   [Interface],
@@ -248,7 +247,7 @@ m4_foreach(current, [CATEGORIES],
   AT_BANNER([current])
   
   m4_if(current, Swig, [
-    m4_ifval([$SWIG_FALSE], [m4_include([swig.at])], [])
+    m4_include([swig.at])
   ])
 
   m4_if(current, Syntactic, [

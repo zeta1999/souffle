@@ -864,7 +864,7 @@ public:
     /**
      * The iterator type to be utilized to iterate over the non-default elements of this array.
      */
-    class iterator : public std::iterator<std::forward_iterator_tag, std::pair<index_type, value_type>> {
+    class iterator {
         using pair_type = std::pair<index_type, value_type>;
 
         // a pointer to the leaf node currently processed or null (end)

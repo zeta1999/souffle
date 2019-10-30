@@ -376,28 +376,24 @@ public:
      * in the table, set the next element pointer points to the current element itself.
      */
     virtual void purge() = 0;
-    
+
     /**
      * Helper function for the wrapper function
      */
-    template<typename Tuple, size_t N>
-    struct tuple_insert
-    {
-        static void add(const Tuple& t, souffle::tuple& t1)
-        {
-            tuple_insert<Tuple, N-1>::add(t, t1);
-            t1 << std::get<N-1>(t);
+    template <typename Tuple, size_t N>
+    struct tuple_insert {
+        static void add(const Tuple& t, souffle::tuple& t1) {
+            tuple_insert<Tuple, N - 1>::add(t, t1);
+            t1 << std::get<N - 1>(t);
         }
     };
 
     /**
      * Helper function for the wrapper function in the first element
      */
-    template<typename Tuple>
-    struct tuple_insert<Tuple, 1>
-    {
-        static void add(const Tuple& t, souffle::tuple& t1)
-        {
+    template <typename Tuple>
+    struct tuple_insert<Tuple, 1> {
+        static void add(const Tuple& t, souffle::tuple& t1) {
             t1 << std::get<0>(t);
         }
     };
@@ -407,9 +403,8 @@ public:
      *
      * @see Relation::insert()
      */
-    template<typename... Args>
-    void insert(const std::tuple<Args...>& t)
-    {
+    template <typename... Args>
+    void insert(const std::tuple<Args...>& t) {
         tuple t1(this);
         tuple_insert<decltype(t), sizeof...(Args)>::add(t, t1);
         this->insert(t1);
@@ -417,12 +412,11 @@ public:
 
     /**
      * Contains function with std::tuple as input (wrapper)
-     * 
+     *
      * @see Relation::contains()
      */
-    template<typename... Args>
-    bool contains(const std::tuple<Args...>& t)
-    {
+    template <typename... Args>
+    bool contains(const std::tuple<Args...>& t) {
         tuple t1(this);
         tuple_insert<decltype(t), sizeof...(Args)>::add(t, t1);
         return this->contains(t1);

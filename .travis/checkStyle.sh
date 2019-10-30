@@ -14,9 +14,6 @@ for f in $(git diff --name-only --diff-filter=ACMRTUXB $1); do
   if ! echo "$f" | egrep -q "[.](cpp|h)$"; then
     continue
   fi
-  if ! echo "$f" | egrep -q "^src/"; then
-    continue
-  fi
   d=$(diff -u0 "$f" <($CLANGFORMAT -style=file "$f")) || true
   if [ -n "$d" ]; then
     echo "!!! $f not compliant to coding style. A suggested fix is below."

@@ -54,7 +54,6 @@ int main(int argc, char** argv) {
             
             // Output the symbol table
             std::cout << people->getSymbolTable() << "\n";
-            
         
         } else {
             error("cannot find relation people");

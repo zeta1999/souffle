@@ -378,7 +378,7 @@ public:
     virtual void purge() = 0;
 
     /**
-     * Helper function for the wrapper function
+     * Helper function for the wrapper function insert() and contains().
      */
     template <typename Tuple, size_t N>
     struct tuple_insert {
@@ -389,7 +389,8 @@ public:
     };
 
     /**
-     * Helper function for the wrapper function in the first element
+     * Helper function for the wrapper function insert() and contains() for the 
+     * first element of the tuple.
      */
     template <typename Tuple>
     struct tuple_insert<Tuple, 1> {

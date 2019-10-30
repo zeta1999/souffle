@@ -21,8 +21,6 @@
 
 using namespace souffle;
 
-
-
 /**
  * Error handler
  */
@@ -50,7 +48,7 @@ int main(int argc, char** argv) {
                 // write elements into tuple
                 t << input[0] << input[1];
 
-                // insert tuple 
+                // insert tuple
                 edge->insert(t);
             }
             
@@ -58,7 +56,7 @@ int main(int argc, char** argv) {
             
             std::tuple<std::string,std::string> t2("X","Z");
             
-            // Check if "edge" contain a tuple {"F", "A"} using "tuple" from std lib 
+            // Check if "edge" contain a tuple {"F", "A"} using "tuple" from std lib
             if (edge->contains(t1)) {
                 // If {"F", "A"} exists, insert {"X", "Z"} using "tuple" from std lib
                 edge->insert(t2);
@@ -70,7 +68,7 @@ int main(int argc, char** argv) {
             tuple t4(edge);
             t4 << "J" << "K";
             
-            // Check if "edge" contain a tuple {"X", "Z"} using "tuple" from Souffle 
+            // Check if "edge" contain a tuple {"X", "Z"} using "tuple" from Souffle
             if (edge->contains(t3)) {
                 // If {"F", "A"} exists, insert {"J", "K"} using "tuple" from Souffle
                 edge->insert(t4);

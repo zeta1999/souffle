@@ -21,7 +21,6 @@
 #include <iostream>
 #include <signal.h>
 
-
 using namespace souffle;
 
 /**
@@ -44,7 +43,6 @@ void handler(int n) {
  * Main program
  */
 int main(int argc, char** argv) {
-
 
     // create an instance of program "tuple_insertion_diff_relation"
     if (SouffleProgram* prog = ProgramFactory::newInstance("tuple_insertion_diff_relation")) {
@@ -94,7 +92,6 @@ int main(int argc, char** argv) {
             } else{
                 error("cannot find relation line");
             }
-
         } else {
             error("cannot find relation edge");
         }

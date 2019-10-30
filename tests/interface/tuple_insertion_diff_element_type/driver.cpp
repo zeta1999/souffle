@@ -21,7 +21,6 @@
 #include <iostream>
 #include <signal.h>
 
-
 using namespace souffle;
 
 /**
@@ -45,7 +44,6 @@ void handler(int n) {
  */
 int main(int argc, char** argv) {
 
-
     // create an instance of program "tuple_insertion_diff_element_type"
     if (SouffleProgram* prog = ProgramFactory::newInstance("tuple_insertion_diff_element_type")) {
         // get input relation "edge"
@@ -60,19 +58,6 @@ int main(int argc, char** argv) {
             }
 
             if (Relation* line = prog->getRelation("line")) {
-                /*
-                std::vector<std::array<std::string, 2>> myData = {
-                        {"1", "2"}, {"3", "4"}, {"5", "6"}, {"7", "8"}};
-                for (auto input : myData) {
-                    tuple t(line);
-                    t << input[0] << input[1];
-                    line->insert(t);
-                }
-                for (auto input : myData) {
-                    tuple t(line);
-                    t << input[0] << input[1];
-                    edge->insert(t);
-                }*/
                 
                 // set default signal  for SIGINT signal
                 signal(SIGABRT, handler);
@@ -97,7 +82,6 @@ int main(int argc, char** argv) {
             } else{
                 error("cannot find relation line");
             }
-
         } else {
             error("cannot find relation edge");
         }

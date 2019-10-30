@@ -389,7 +389,7 @@ public:
     };
 
     /**
-     * Helper function for the wrapper function insert() and contains() for the 
+     * Helper function for the wrapper function insert() and contains() for the
      * first element of the tuple.
      */
     template <typename Tuple>

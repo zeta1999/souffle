@@ -214,12 +214,6 @@ public:
         input_dir = fact_dir;
         output_dir = out_dir;
 
-#ifdef _OPENMP
-        if (num_jobs > 0) {
-            omp_set_num_threads(num_jobs);
-        }
-#endif
-
         // return success state
         return ok;
     }

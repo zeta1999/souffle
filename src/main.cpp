@@ -25,11 +25,9 @@
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
-#include "LVM.h"
-#include "LVMProgInterface.h"
+#include "InterpreterEngine.h"
+#include "InterpreterProgInterface.h"
 #include "ParserDriver.h"
-#include "RAMI.h"
-#include "RAMIProgInterface.h"
 #include "RamIndexAnalysis.h"
 #include "RamLevelAnalysis.h"
 #include "RamProgram.h"
@@ -93,13 +91,14 @@ void executeBinary(const std::string& binaryFilename
     } else
 #endif
     {
-        std::string ldPath = "LD_LIBRARY_PATH=";
-        for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
-            ldPath += library + ':';
+        if (Global::config().has("library-dir")) {
+            std::string ldPath;
+            for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
+                ldPath += library + ':';
+            }
+            ldPath.back() = ' ';
+            setenv("LD_LIBRARY_PATH", ldPath.c_str(), true);
         }
-        ldPath.back() = ' ';
-        std::vector<char> ldPathChars(ldPath.begin(), ldPath.end());
-        putenv(&ldPathChars[0]);
 
         exitCode = system(binaryFilename.c_str());
     }
@@ -191,6 +190,9 @@ int main(int argc, char** argv) {
                 {"generate", 'g', "FILE", "", false,
                         "Generate C++ source code for the given Datalog program and write it to "
                         "<FILE>."},
+                {"swig", 's', "LANG", "", false,
+                        "Generate SWIG interface for given language. The values <LANG> accepts is java and "
+                        "python. "},
                 {"library-dir", 'L', "DIR", "", true, "Specify directory for library files."},
                 {"libraries", 'l', "FILE", "", true, "Specify libraries."},
                 {"no-warn", 'w', "", "", false, "Disable warnings."},
@@ -213,12 +215,13 @@ int main(int argc, char** argv) {
                         "Enable provenance instrumentation and interaction."},
                 {"engine", 'e', "[ file | mpi ]", "", false,
                         "Specify communication engine for distributed execution."},
-                {"interpreter", '\1', "[ RAMI | LVM ]", "LVM", false, "Switch interpreter implementation."},
                 {"hostfile", '\2', "FILE", "", false,
                         "Specify --hostfile option for call to mpiexec when using mpi as "
                         "execution engine."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
+                {"transformed-datalog", '\4', "", "", false, "Output dl after all transformations."},
+                {"parse-errors", '\5', "", "", false, "Show parsing errors, if any, then exit."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
@@ -245,30 +248,23 @@ int main(int argc, char** argv) {
         }
 
         /* for the jobs option, to determine the number of threads used */
-        if (Global::config().has("jobs")) {
 #ifdef _OPENMP
-            if (isNumber(Global::config().get("jobs").c_str())) {
-                if (std::stoi(Global::config().get("jobs")) < 1) {
-                    throw std::runtime_error(
-                            "Number of jobs in the -j/--jobs options must be greater than zero!");
-                }
-            } else {
-                if (!Global::config().has("jobs", "auto")) {
-                    throw std::runtime_error(
-                            "Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
-                }
-                Global::config().set("jobs", "0");
+        if (isNumber(Global::config().get("jobs").c_str())) {
+            if (std::stoi(Global::config().get("jobs")) < 1) {
+                throw std::runtime_error("-j/--jobs may only be set to 'auto' or an integer greater than 0.");
             }
-#else
-            // Check that -j option has not been changed from the default
-            if (Global::config().get("jobs") != "1") {
-                std::cerr << "\nWarning: OpenMP is not enabled\n";
-            }
-#endif
         } else {
-            throw std::runtime_error(
-                    "Wrong parameter " + Global::config().get("jobs") + " for option -j/--jobs!");
+            if (!Global::config().has("jobs", "auto")) {
+                throw std::runtime_error("-j/--jobs may only be set to 'auto' or an integer greater than 0.");
+            }
+            Global::config().set("jobs", "0");
         }
+#else
+        // Check that -j option has not been changed from the default
+        if (Global::config().get("jobs") != "1") {
+            std::cerr << "\nThis installation of Souffle does not support concurrent jobs.\n";
+        }
+#endif
 
         /* if an output directory is given, check it exists */
         if (Global::config().has("output-dir") && !Global::config().has("output-dir", "-") &&
@@ -364,6 +360,13 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
+    /**
+     * Ensure that code generation is enabled if using SWIG interface option.
+     */
+    if (Global::config().has("swig") && !Global::config().has("generate")) {
+        Global::config().set("generate", simpleName(Global::config().get("")));
+    }
+
     // ------ start souffle -------------
 
     std::string souffleExecutable = which(argv[0]);
@@ -410,6 +413,11 @@ int main(int argc, char** argv) {
         auto parser_end = std::chrono::high_resolution_clock::now();
         std::cout << "Parse Time: " << std::chrono::duration<double>(parser_end - parser_start).count()
                   << "sec\n";
+    }
+
+    if (Global::config().has("parse-errors")) {
+        std::cout << astTranslationUnit->getErrorReport();
+        return astTranslationUnit->getErrorReport().getNumErrors();
     }
 
     // ------- check for parse errors -------------
@@ -498,6 +506,11 @@ int main(int argc, char** argv) {
     // Apply all the transformations
     pipeline->apply(*astTranslationUnit);
 
+    // Output the transformed datalog and return
+    if (Global::config().has("transformed-datalog")) {
+        std::cout << *astTranslationUnit->getProgram() << std::endl;
+        return 0;
+    }
     // ------- execution -------------
 
     /* translate AST to RAM */
@@ -515,7 +528,8 @@ int main(int argc, char** argv) {
                     std::make_unique<HoistAggregateTransformer>(), std::make_unique<TupleIdTransformer>())),
             std::make_unique<ExpandFilterTransformer>(), std::make_unique<HoistConditionsTransformer>(),
             std::make_unique<RamConditionalTransformer>(
-                    []() -> bool { return std::stoi(Global::config().get("jobs")) > 1; },
+                    // job count of 0 means all cores are used.
+                    []() -> bool { return std::stoi(Global::config().get("jobs")) != 1; },
                     std::make_unique<ParallelTransformer>()),
             std::make_unique<ReportIndexTransfomer>());
 
@@ -529,7 +543,7 @@ int main(int argc, char** argv) {
     };
 
     if (!Global::config().has("compile") && !Global::config().has("dl-program") &&
-            !Global::config().has("generate")) {
+            !Global::config().has("generate") && !Global::config().has("swig")) {
         // ------- interpreter -------------
 
         std::thread profiler;
@@ -539,45 +553,21 @@ int main(int argc, char** argv) {
         }
 
         // configure and execute interpreter
-        if (Global::config().get("interpreter") == "LVM") {
-            /* disable LVM interpreter with subtree height provenance implementation */
-            /*if (Global::config().get("provenance") == "subtreeHeights") {
-                throw std::runtime_error(
-                        "provenance instrumentation with subtree heights is currently not supported in LVM "
-                        "interpreter");
-            }*/
-            std::unique_ptr<LVMInterface> lvm(std::make_unique<LVM>(*ramTranslationUnit));
-            lvm->executeMain();
-            // If the profiler was started, join back here once it exits.
-            if (profiler.joinable()) {
-                profiler.join();
-            }
-            // only run explain interface if interpreted
-            if (Global::config().has("provenance")) {
-                LVMProgInterface interface(*lvm);
-                if (Global::config().get("provenance") == "explain" ||
-                        Global::config().get("provenance") == "subtreeHeights") {
-                    explain(interface, false, Global::config().get("provenance") == "subtreeHeights");
-                } else if (Global::config().get("provenance") == "explore") {
-                    explain(interface, true, false);
-                }
-            }
-        } else {
-            std::unique_ptr<RAMIInterface> rami(std::make_unique<RAMI>(*ramTranslationUnit));
-            rami->executeMain();
-            // If the profiler was started, join back here once it exits.
-            if (profiler.joinable()) {
-                profiler.join();
-            }
-            // only run explain interface if interpreted
-            if (Global::config().has("provenance")) {
-                RAMIProgInterface interface(*rami);
-                if (Global::config().get("provenance") == "explain" ||
-                        Global::config().get("provenance") == "subtreeHeights") {
-                    explain(interface, false, Global::config().get("provenance") == "subtreeHeights");
-                } else if (Global::config().get("provenance") == "explore") {
-                    explain(interface, true, false);
-                }
+        std::unique_ptr<InterpreterEngine> interpreter(
+                std::make_unique<InterpreterEngine>(*ramTranslationUnit));
+        interpreter->executeMain();
+        // If the profiler was started, join back here once it exits.
+        if (profiler.joinable()) {
+            profiler.join();
+        }
+        // only run explain interface if interpreted
+        if (Global::config().has("provenance")) {
+            InterpreterProgInterface interface(*interpreter);
+            if (Global::config().get("provenance") == "explain" ||
+                    Global::config().get("provenance") == "subtreeHeights") {
+                explain(interface, false, Global::config().get("provenance") == "subtreeHeights");
+            } else if (Global::config().get("provenance") == "explore") {
+                explain(interface, true, false);
             }
         }
     } else {
@@ -599,6 +589,7 @@ int main(int argc, char** argv) {
                 baseFilename = Global::config().get("dl-program");
             } else if (Global::config().has("generate")) {
                 baseFilename = Global::config().get("generate");
+
                 // trim .cpp extension if it exists
                 if (baseFilename.size() >= 4 && baseFilename.substr(baseFilename.size() - 4) == ".cpp") {
                     baseFilename = baseFilename.substr(0, baseFilename.size() - 4);
@@ -627,7 +618,10 @@ int main(int argc, char** argv) {
                 }
             }
 
-            if (Global::config().has("compile")) {
+            if (Global::config().has("swig")) {
+                compileCmd += "-s " + Global::config().get("swig") + " ";
+                compileToBinary(compileCmd, sourceFilename);
+            } else if (Global::config().has("compile")) {
                 auto start = std::chrono::high_resolution_clock::now();
                 compileToBinary(compileCmd, sourceFilename);
                 /* Report overall run-time in verbose mode */
@@ -637,7 +631,7 @@ int main(int argc, char** argv) {
                               << "sec\n";
                 }
                 // run compiled C++ program if requested.
-                if (!Global::config().has("dl-program")) {
+                if (!Global::config().has("dl-program") && !Global::config().has("swig")) {
                     executeBinary(baseFilename
 #ifdef USE_MPI
                             ,

@@ -97,8 +97,6 @@ detail::LambdaRamNodeMapper<Lambda> makeLambdaRamMapper(const Lambda& lambda) {
  */
 class RamNode {
 public:
-    RamNode() = default;
-
     /*
      * @brief A virtual destructor for RAM nodes
      */

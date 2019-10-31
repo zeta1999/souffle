@@ -176,9 +176,6 @@ public:
 #define ASSERT_TRUE(a) fatal(a, #a, LOC)
 #define ASSERT_LE(a, b) fatal((a) <= (b), "LE(" #a "," #b ")", LOC)
 
-#ifdef USE_MPI
-#include <mpi.h>
-#endif
 
 /**
  * Main program of a unit test

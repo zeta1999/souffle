@@ -39,12 +39,6 @@
 #include "Util.h"
 #include "config.h"
 #include "profile/Tui.h"
-
-#ifdef USE_MPI
-#include "Mpi.h"
-#include "PrecedenceGraph.h"
-#endif
-
 #include <cassert>
 #include <chrono>
 #include <cstdio>

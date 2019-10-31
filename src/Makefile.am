@@ -51,9 +51,6 @@ if SQLITE
 sqlite_sources = ReadStreamSQLite.h WriteStreamSQLite.h
 endif
 
-if MPI
-mpi_sources = Mpi.h
-endif
 
 souffle_sources = \
               AstAnalysis.h                             \

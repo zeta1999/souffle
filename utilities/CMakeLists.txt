@@ -89,7 +89,6 @@ ADD_EXECUTABLE(souffle
         ./src/Interpreter.h
         ./src/RamTransformer.h
         ./src/RamVisitor.h
-        ./src/Mpi.h
         ./src/EventProcessor.h
         ./src/InterpreterContext.h
         ./src/AstTranslationUnit.h

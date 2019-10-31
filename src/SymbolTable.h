@@ -19,12 +19,6 @@
 #include "ParallelUtils.h"
 #include "RamTypes.h"
 #include "Util.h"
-
-#ifdef USE_MPI
-#include "Mpi.h"
-#include <thread>
-#endif
-
 #include <cassert>
 #include <deque>
 #include <initializer_list>

@@ -57,9 +57,9 @@ int main(int argc, char** argv) {
             std::tuple<std::string,std::string> t2("X","Z");
             
             // Check if "edge" contain a tuple {"F", "A"} using "tuple" from std lib
-            if (edge->contains(t1)) {
+            if (prog->contains(t1,edge)) {
                 // If {"F", "A"} exists, insert {"X", "Z"} using "tuple" from std lib
-                edge->insert(t2);
+                prog->insert(t2,edge);
             }
             
             tuple t3(edge);

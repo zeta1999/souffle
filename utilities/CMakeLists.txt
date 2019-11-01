@@ -2,6 +2,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.6)
 PROJECT(souffle)
 SET(CMAKE_CXX_STANDARD 11)
 ADD_EXECUTABLE(souffle
+        ./src/swig/SwigInterface.h
+        ./src/swig/SwigInterface.cpp
+        ./src/swig/SwigInterface.i
         ./src/CompiledIndexUtils.h
         ./src/ProfileEvent.h
         ./src/CompiledRecord.h

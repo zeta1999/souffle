@@ -112,6 +112,7 @@ public:
     }
     void insert(const tuple& arg) override {
         TupleType t;
+        assert(&arg.getRelation() == this && "wrong relation");
         assert(arg.size() == Arity && "wrong tuple arity");
         for (size_t i = 0; i < Arity; i++) {
             t[i] = arg[i];

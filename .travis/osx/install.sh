@@ -6,12 +6,12 @@ set -e
 set -x
 
 # Install requirements of MAC OS X
-brew install bison libtool mcpp libffi || echo "brew install failed"
+brew install bison libtool mcpp libffi swig || echo "brew install failed"
 brew link bison --force || echo "brew link bison failed"
 brew link libffi --force || echo "brew link libffi failed"
 
 export PATH="/usr/local/opt/bison/bin:$PATH"
-export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig/
+export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig/"
 
 rm /Users/travis/Library/Logs/DiagnosticReports/* || true
 

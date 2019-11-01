@@ -80,7 +80,6 @@ AC_ARG_ENABLE(
   [AS_HELP_STRING([--enable-mpi], [Enable MPI])]
 )
 AS_IF([test "x$enable_mpi" = "xyes"], [
-    AS_VAR_APPEND(CXXFLAGS, [" -DUSE_MPI "])
     AS_VAR_APPEND(CXXFLAGS, [" $(mpiCC --showme:compile) "])
     AS_VAR_APPEND(LDFLAGS, [" $(mpiCC --showme:link) "])
 ])

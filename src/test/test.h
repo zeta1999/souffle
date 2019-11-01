@@ -181,10 +181,6 @@ public:
  * Main program of a unit test
  */
 int main(int argc, char** argv) {
-#ifdef USE_MPI
-    MPI_Init(&argc, &argv);
-#endif
-
     // add all groups to a set
     std::set<std::string> groups;
     for (TestCase* p = base; p != nullptr; p = p->nextTestCase()) {
@@ -209,9 +205,6 @@ int main(int argc, char** argv) {
         }
     }
 
-#ifdef USE_MPI
-    MPI_Finalize();
-#endif
 
     if (failure != 0) {
         std::cerr << "Tests failed.\n";

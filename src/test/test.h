@@ -176,7 +176,6 @@ public:
 #define ASSERT_TRUE(a) fatal(a, #a, LOC)
 #define ASSERT_LE(a, b) fatal((a) <= (b), "LE(" #a "," #b ")", LOC)
 
-
 /**
  * Main program of a unit test
  */
@@ -204,7 +203,6 @@ int main(int argc, char** argv) {
             }
         }
     }
-
 
     if (failure != 0) {
         std::cerr << "Tests failed.\n";

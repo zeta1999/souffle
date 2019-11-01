@@ -18,7 +18,7 @@ public class driver {
 
   public static void main(String argv[]) {
     SWIGSouffleProgram p = SwigInterface.newInstance("insert_for");
-    p.loadAll("facts/.");
+    p.loadAll(argv[0]);
     p.run(); 
     p.printAll(".");
     p.finalize();

@@ -305,7 +305,7 @@ int main(int argc, char** argv) {
             if (engine != "file" && engine != "mpi") {
                 throw std::invalid_argument("Error: Use of engine '" + engine + "' is not supported.");
             }
-            if (engine != "mpi" && Global::config().has("hostfile")) {
+            if (Global::config().has("hostfile")) {
                 throw std::invalid_argument(
                         "Error: Use of hostfile option requires execution engine '" + engine + "'.");
             }

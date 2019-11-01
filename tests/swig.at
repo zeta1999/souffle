@@ -34,10 +34,9 @@ m4_define([TEST_EVAL_SWIG],[
   m4_define([FACTS],[TESTDIR/facts])
   m4_define([CURRENTDIR],[`pwd`])
 
-  for file in `ls TESTDIR | grep -v .csv$`
-  do
-    cp -R "TESTDIR/$file" .
-  done
+  AS_IF([test -d FACTS],[cp -R FACTS .],[])
+  cp TESTDIR/driver.* .
+  cp "TESTDIR/TESTNAME.dl" .
 
   AT_CHECK(["$SOUFFLE" -s LANGUAGE TESTNAME.dl 1>TESTNAME.out 2>TESTNAME.err], [0])
 
@@ -70,10 +69,9 @@ m4_define([TEST_EVAL_SWIG_WITH_STDOUT],[
   m4_define([FACTS],[TESTDIR/facts])
   m4_define([CURRENTDIR],[`pwd`])
 
-  for file in `ls TESTDIR | grep -v .out$`
-  do
-    cp -R "TESTDIR/$file" .
-  done
+  AS_IF([test -d FACTS],[cp -R FACTS .],[])
+  cp TESTDIR/driver.* .
+  cp "TESTDIR/TESTNAME.dl" .
 
   AT_CHECK(["$SOUFFLE" -s LANGUAGE TESTNAME.dl 1>TESTNAME.out 2>TESTNAME.err], [0])
 

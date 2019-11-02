@@ -7,8 +7,9 @@ Licensed under the Universal Permissive License v 1.0 as shown at:
 """
 
 import SwigInterface
+import sys
 p = SwigInterface.newInstance('dump_input')
-p.loadAll('facts/.')
+p.loadAll(sys.argv[1])
 p.dumpInputs()
 p.thisown = 1
 del p

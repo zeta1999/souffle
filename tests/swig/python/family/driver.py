@@ -7,8 +7,9 @@ Licensed under the Universal Permissive License v 1.0 as shown at:
 """
 
 import SwigInterface
+import sys
 p = SwigInterface.newInstance('family')
-p.loadAll('.')
+p.loadAll(sys.argv[1])
 p.run()
 p.printAll('.')
 p.thisown = 1

@@ -79,10 +79,10 @@ if [ -n "$TEST_ROOT" ]; then
         gdb -batch -ex 'bt' ./src/souffle "$TEST_ROOT/$CANDIDATE/core"
     fi
 
-elif [ -f "src/testsuite-log" ]
+elif [ -f "src/test-suite.log" ]
 then
     pretty_print "Display unit test log"
-    cat "src/testsuite-log"
+    cat "src/test-suite.log"
 
 else
     pretty_print "No test logs found"

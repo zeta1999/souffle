@@ -34,6 +34,7 @@
 #include "RamTransformer.h"
 #include "RamTransforms.h"
 #include "RamTranslationUnit.h"
+#include "RamTypes.h"
 #include "SymbolTable.h"
 #include "Synthesiser.h"
 #include "Util.h"
@@ -190,6 +191,9 @@ int main(int argc, char** argv) {
                 {"generate", 'g', "FILE", "", false,
                         "Generate C++ source code for the given Datalog program and write it to "
                         "<FILE>."},
+                {"swig", 's', "LANG", "", false,
+                        "Generate SWIG interface for given language. The values <LANG> accepts is java and "
+                        "python. "},
                 {"library-dir", 'L', "DIR", "", true, "Specify directory for library files."},
                 {"libraries", 'l', "FILE", "", true, "Specify libraries."},
                 {"no-warn", 'w', "", "", false, "Disable warnings."},
@@ -357,6 +361,13 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
+    /**
+     * Ensure that code generation is enabled if using SWIG interface option.
+     */
+    if (Global::config().has("swig") && !Global::config().has("generate")) {
+        Global::config().set("generate", simpleName(Global::config().get("")));
+    }
+
     // ------ start souffle -------------
 
     std::string souffleExecutable = which(argv[0]);
@@ -376,6 +387,8 @@ int main(int argc, char** argv) {
     if (Global::config().has("macro")) {
         cmd += " " + Global::config().get("macro");
     }
+    // Add RamDomain size as a macro
+    cmd += " -DRAM_DOMAIN_SIZE=" + std::to_string(RAM_DOMAIN_SIZE);
     cmd += " " + Global::config().get("");
     FILE* in = popen(cmd.c_str(), "r");
 
@@ -533,7 +546,7 @@ int main(int argc, char** argv) {
     };
 
     if (!Global::config().has("compile") && !Global::config().has("dl-program") &&
-            !Global::config().has("generate")) {
+            !Global::config().has("generate") && !Global::config().has("swig")) {
         // ------- interpreter -------------
 
         std::thread profiler;
@@ -578,6 +591,7 @@ int main(int argc, char** argv) {
                 baseFilename = Global::config().get("dl-program");
             } else if (Global::config().has("generate")) {
                 baseFilename = Global::config().get("generate");
+
                 // trim .cpp extension if it exists
                 if (baseFilename.size() >= 4 && baseFilename.substr(baseFilename.size() - 4) == ".cpp") {
                     baseFilename = baseFilename.substr(0, baseFilename.size() - 4);
@@ -606,7 +620,10 @@ int main(int argc, char** argv) {
                 }
             }
 
-            if (Global::config().has("compile")) {
+            if (Global::config().has("swig")) {
+                compileCmd += "-s " + Global::config().get("swig") + " ";
+                compileToBinary(compileCmd, sourceFilename);
+            } else if (Global::config().has("compile")) {
                 auto start = std::chrono::high_resolution_clock::now();
                 compileToBinary(compileCmd, sourceFilename);
                 /* Report overall run-time in verbose mode */
@@ -616,7 +633,7 @@ int main(int argc, char** argv) {
                               << "sec\n";
                 }
                 // run compiled C++ program if requested.
-                if (!Global::config().has("dl-program")) {
+                if (!Global::config().has("dl-program") && !Global::config().has("swig")) {
                     executeBinary(baseFilename
 #ifdef USE_MPI
                             ,

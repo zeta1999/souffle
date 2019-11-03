@@ -38,6 +38,11 @@ souffle_profile_sources = \
                           profile/htmlMain.h                \
                           profile/HtmlGenerator.h
 
+souffle_swig_sources = \
+                    swig/SwigInterface.h                 \
+                    swig/SwigInterface.cpp               \
+                    swig/SwigInterface.i                    
+
 DIR := ${CURDIR}
 
 # ... which should no go to distribution
@@ -220,6 +225,10 @@ soufflepublic_HEADERS = \
 souffleprofiledir = $(soufflepublicdir)/profile
 
 souffleprofile_HEADERS = $(souffle_profile_sources)
+
+souffleswigdir = $(soufflepublicdir)/swig
+
+souffleswig_HEADERS = $(souffle_swig_sources)
 
 # files to clean
 CLEANFILES = $(BUILT_SOURCES)  parser.cc scanner.cc parser.hh stack.hh

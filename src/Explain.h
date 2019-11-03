@@ -195,6 +195,42 @@ public:
             // close file stream so that output is actually written to file
             printPrompt("Exiting explain\n");
             return false;
+        } else if (command[0] == "query") {
+            // if there is no given relations, return directly
+            if (command.size() != 2) {
+                printError("Usage: query <relation1>(<element1>, <element2>, ...), "
+                           "<relation2>(<element1>, <element2>, ...), ...\n");
+            }
+            // vector rels stores command, args pair parsed by parseQueryTuple()
+            std::vector<std::pair<std::string, std::vector<std::string>>> rels;
+            std::regex varRegex("[a-zA-Z_][a-zA-Z_0-9]*", std::regex_constants::extended);
+            std::regex symbolRegex("\"([^\"]*)\"", std::regex_constants::extended);
+            std::regex numberRegex("[0-9]+", std::regex_constants::extended);
+            std::regex relRegex(
+                    "([a-zA-Z0-9_.-]*)[[:blank:]]*\\(([[:blank:]]*([0-9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*)([[:blank:]]*,[[:blank:]]*(["
+                    "0-"
+                    "9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*))*)?\\)",
+                    std::regex_constants::extended);
+            std::smatch relMatcher;
+            std::smatch argsMatcher;
+            std::string relStr = command[1];
+            // split the relations in the relation product string
+            while (std::regex_search(relStr, relMatcher, relRegex)) {
+                rels.push_back(parseQueryTuple(relMatcher[0]));
+                if (rels.back().first.size() == 0 || rels.back().second.size() == 0) {
+                    printError("Usage: query <relation1>(<element1>, <element2>, ...), "
+                               "<relation2>(<element1>, <element2>, ...), ...\n");
+                    return true;
+                }
+                relStr = relMatcher.suffix().str();
+            }
+            if (rels.size() == 0) {
+                printError("Usage: query <relation1>(<element1>, <element2>, ...), "
+                           "<relation2>(<element1>, <element2>, ...), ...\n");
+                return true;
+            }
+
+            std::cout << prov.queryProcess(rels) << std::flush;
         } else {
             printError(
                     "\n----------\n"

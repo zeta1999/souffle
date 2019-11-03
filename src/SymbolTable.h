@@ -36,7 +36,6 @@ namespace souffle {
  * SymbolTable stores Datalog symbols and converts them to numbers and vice versa.
  */
 class SymbolTable {
-
 private:
     /** A lock to synchronize parallel accesses */
     mutable Lock access;
@@ -137,7 +136,7 @@ public:
     /** Find the index of a symbol in the table, inserting a new symbol if it does not exist there
      * already. */
     RamDomain unsafeLookup(const std::string& symbol) {
-            return newSymbolOfIndex(symbol);
+        return newSymbolOfIndex(symbol);
     }
 
     /** Find a symbol in the table by its index, note that this gives an error if the index is out of
@@ -158,12 +157,12 @@ public:
     }
 
     const std::string& unsafeResolve(const RamDomain index) const {
-            return numToStr[static_cast<size_t>(index)];
+        return numToStr[static_cast<size_t>(index)];
     }
 
     /* Return the size of the symbol table, being the number of symbols it currently holds. */
     size_t size() const {
-            return numToStr.size();
+        return numToStr.size();
     }
 
     /** Bulk insert symbols into the table, note that this operation is more efficient than repeated

@@ -116,7 +116,7 @@ public:
         return arity;
     }
 
-    /* @brief Get arity of relation */
+    /* @brief Get number of height parameters of relation */
     unsigned getNumberOfHeights() const {
         return numberOfHeights;
     }

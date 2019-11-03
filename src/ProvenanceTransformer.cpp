@@ -391,8 +391,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                 }
                 for (size_t j = clause->getAtoms().size(); j < relation->numberOfHeightParameters() - 1;
                         j++) {
-                    clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(
-                            -1));  // which value to use for encoding empty height parameter?
+                    clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(-1));
                 }
             }
         }

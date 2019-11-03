@@ -1339,7 +1339,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ",";
             }
             // extra 0 for provenance height annotations
-            for (int i = 0; i < (int)(numberOfHeights - 1); i++) {
+            for (size_t i = 0; i < numberOfHeights - 1; i++) {
                 out << "0,";
             }
             out << "0";

@@ -856,7 +856,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                             symbolMask.push_back(cur[0] == 's');
                         }
                         IOSystem::getInstance()
-                                // TODO (sarah) fix for extended instrumentation
+                                // TODO (sarah): fix for extended instrumentation
                                 .getReader(symbolMask, symbolTable, io, Global::config().has("provenance"),
                                         relPtr->getNumberOfHeights())
                                 ->readAll(*relPtr);
@@ -879,7 +879,7 @@ void LVM::execute(std::unique_ptr<LVMCode>& codeStream, LVMContext& ctxt, size_t
                             symbolMask.push_back(cur[0] == 's');
                         }
                         IOSystem::getInstance()
-                                // TODO (sarah) fix for extended instrumentation
+                                // TODO (sarah): fix for extended instrumentation
                                 .getWriter(symbolMask, symbolTable, io, Global::config().has("provenance"),
                                         relPtr->getNumberOfHeights())
                                 ->writeAll(*relPtr);

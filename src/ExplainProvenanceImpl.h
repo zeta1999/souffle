@@ -59,7 +59,7 @@ public:
                     bodyLiterals.push_back(bodyLit);
                 }
 
-                std::string rule;  // clause representation
+                std::string rule;
                 tuple >> rule;
 
                 info.insert({std::make_pair(name.substr(0, name.find(".@info")), ruleNum), bodyLiterals});
@@ -86,8 +86,8 @@ public:
             tuple.push_back(ruleNum);
             tuple.push_back(levelNum);
 
-            for (auto l : subtreeLevels) {
-                tuple.push_back(l);
+            for (auto subtreeLevel : subtreeLevels) {
+                tuple.push_back(subtreeLevel);
             }
 
             // find if subproof exists already
@@ -112,11 +112,12 @@ public:
 
         if (useSublevels)
             // add subtree level numbers to tuple
-            for (auto l : subtreeLevels) {
-                tuple.push_back(l);
+            for (auto subtreeLevel : subtreeLevels) {
+                tuple.push_back(subtreeLevel);
             }
-        else
+        else {
             tuple.push_back(levelNum);
+        }
 
         // execute subroutine to get subproofs
         prog.executeSubroutine(relName + "_" + std::to_string(ruleNum) + "_subproof", tuple, ret, err);
@@ -261,9 +262,9 @@ public:
         std::vector<std::string> variables;
 
         // check that the tuple actually doesn't exist
-
-        std::tuple<int, int, std::vector<RamDomain>> t = findTuple(relName, argsToNums(relName, args));
-        if (std::get<0>(t) != -1 || std::get<1>(t) != -1) {
+        std::tuple<int, int, std::vector<RamDomain>> foundTuple =
+                findTuple(relName, argsToNums(relName, args));
+        if (std::get<0>(foundTuple) != -1 || std::get<1>(foundTuple) != -1) {
             // return a sentinel value
             return std::vector<std::string>({"@"});
         }
@@ -524,11 +525,10 @@ public:
         for (auto& tuple : *rel) {
             auto tupleStart = std::chrono::high_resolution_clock::now();
 
-            // measure for all tuples
-            /*if (numTuples % skip != 0) {
+            if (numTuples % skip != 0) {
                 numTuples++;
                 continue;
-            }*/
+            }
 
             std::vector<RamDomain> currentTuple;
             for (size_t i = 0; i < rel->getArity() - 1 - rel->getNumberOfHeights(); i++) {

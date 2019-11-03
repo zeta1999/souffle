@@ -127,7 +127,9 @@ void SynthesiserDirectRelation::computeIndices() {
                 // add provenance annotations to the index but in reverse order
                 // add height columns if not already contained
                 for (size_t i = getArity() - relation.getNumberOfHeights(); i < getArity(); i++) {
-                    if (curIndexElems.find(i) == curIndexElems.end()) ind.push_back(i);
+                    if (curIndexElems.find(i) == curIndexElems.end()) {
+                        ind.push_back(i);
+                    }
                 }
 
                 // remove rule annotation if already in the index order

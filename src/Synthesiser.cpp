@@ -1756,7 +1756,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // declare symbol table
     os << "// -- initialize symbol table --\n";
-    
+
     os << "SymbolTable symTable\n";
     if (symTable.size() > 0) {
         os << "{\n";
@@ -1766,7 +1766,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "}";
     }
     os << ";";
-    
+
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;

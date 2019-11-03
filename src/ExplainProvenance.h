@@ -80,6 +80,35 @@ private:
 
 };
 
+/* const constraints for values in query command */
+class ConstConstr {
+
+public:
+    ConstConstr() = default;
+    ~ConstConstr() = default;
+    void push_back(std::pair<std::pair<size_t, size_t>, RamDomain> constr) {
+        constConstrs.push_back(constr);
+    }
+    
+    // verify if the query product satisifies constant constraint
+    bool verify(const std::vector<tuple>& product) const {
+        for (auto constr : constConstrs) {
+            if (product[constr.first.first][constr.first.second] != constr.second) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    std::vector<std::pair<std::pair<size_t, size_t>, RamDomain>>& getConstrs() {
+        return constConstrs;
+    }
+
+private:
+    std::vector<std::pair<std::pair<size_t, size_t>, RamDomain>> constConstrs;
+
+};
+
 /** utility function to split a string */
 inline std::vector<std::string> split(const std::string& s, char delim, int times = -1) {
     std::vector<std::string> v;

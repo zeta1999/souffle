@@ -201,6 +201,7 @@ public:
                 printError(
                         "Usage: query <relation1>(<element1>, <element2>, ...), "
                         "<relation2>(<element1>, <element2>, ...), ...\n");
+                return true;
             }
             // vector rels stores command, args pair parsed by parseQueryTuple()
             std::vector<std::pair<std::string, std::vector<std::string>>> rels;

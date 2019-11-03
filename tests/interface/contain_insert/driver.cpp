@@ -37,7 +37,8 @@ int main(int argc, char** argv) {
     if (SouffleProgram* prog = ProgramFactory::newInstance("contain_insert")) {
         // get input relation "edge"
         if (Relation* edge = prog->getRelation("edge")) {
-            // load data into relation "edge"
+            
+            // load data into relation "edge" using "tuple"
             std::vector<std::array<std::string, 2>> myData = {
                     {"A", "B"}, {"B", "C"}, {"C", "D"}, {"D", "E"}, {"E", "F"}, {"F", "A"}};
             for (auto input : myData) {
@@ -51,15 +52,26 @@ int main(int argc, char** argv) {
                 edge->insert(t);
             }
             
-            // Check if "edge" contain a tuple {"F", "A"}
-            tuple test(edge);
-            test << "F" << "A";
+            std::tuple<std::string,std::string> t1("F","A");
             
-            tuple in(edge);
-            in << "X" << "Z";
+            std::tuple<std::string,std::string> t2("X","Z");
             
-            if (edge->contains(test)) {
-                edge->insert(in);
+            // Check if "edge" contain a tuple {"F", "A"} using "tuple" from std lib
+            if (prog->contains(t1,edge)) {
+                // If {"F", "A"} exists, insert {"X", "Z"} using "tuple" from std lib
+                prog->insert(t2,edge);
+            }
+            
+            tuple t3(edge);
+            t3 << "X" << "Z";
+            
+            tuple t4(edge);
+            t4 << "J" << "K";
+            
+            // Check if "edge" contain a tuple {"X", "Z"} using "tuple" from Souffle
+            if (edge->contains(t3)) {
+                // If {"F", "A"} exists, insert {"J", "K"} using "tuple" from Souffle
+                edge->insert(t4);
             }
 
             // run program

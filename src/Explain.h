@@ -246,6 +246,7 @@ public:
                     "output <filename>: Write output into a file, or provide empty filename to\n"
                     "    disable output\n"
                     "format <json|proof>: switch format between json and proof-trees\n"
+                    "query <relation1>(<element1>, <element2>, ...), <relation2>(<element1>, <element2>), ... : check existence of tuple(s) or find solution for the given relation tuple(s) if tuple(s) contain variable\n"
                     "exit: Exits this interface\n\n");
         }
 

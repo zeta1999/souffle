@@ -156,6 +156,8 @@ public:
 
     virtual void printRulesJSON(std::ostream& os) = 0;
 
+    virtual std::string queryProcess(std::vector<std::pair<std::string, std::vector<std::string>>>& rels) = 0;
+    
     virtual std::string getRelationOutput(const std::string& relName) {
         auto rel = prog.getRelation(relName);
         if (rel == nullptr) {

@@ -34,11 +34,11 @@ public:
     Equivalence(char t, std::string s, std::pair<size_t, size_t> idx) : type(t), symbol(s) {
         indices.push_back(idx);
     }
-    
+
     Equivalence(const Equivalence& o) = default;
-    
+
     Equivalence& operator=(const Equivalence& o) = default;
-    
+
     void push_back(std::pair<size_t, size_t> idx) {
         indices.push_back(idx);
     }
@@ -46,14 +46,15 @@ public:
     // verify if elements at the indices are equivalent in the given product
     bool verify(const std::vector<tuple>& product) const {
         for (size_t i = 1; i < indices.size(); ++i) {
-            if (product[indices[i].first][indices[i].second] != product[indices[i-1].first][indices[i-1].second]) {
+            if (product[indices[i].first][indices[i].second] !=
+                    product[indices[i - 1].first][indices[i - 1].second]) {
                 return false;
             }
         }
         return true;
     }
 
-    // extract index of the first occurrence of the varible 
+    // extract index of the first occurrence of the varible
     std::pair<size_t, size_t> getFirstIdx() {
         return indices[0];
     }
@@ -67,7 +68,7 @@ public:
     char getType() {
         return type;
     }
-    
+
     // get the symbol of variable
     std::string getSymbol() {
         return symbol;
@@ -76,20 +77,18 @@ public:
 private:
     char type;
     std::string symbol;
-    std::vector<std::pair<size_t, size_t>> indices; 
-
+    std::vector<std::pair<size_t, size_t>> indices;
 };
 
 /* const constraints for values in query command */
 class ConstConstr {
-
 public:
     ConstConstr() = default;
     ~ConstConstr() = default;
     void push_back(std::pair<std::pair<size_t, size_t>, RamDomain> constr) {
         constConstrs.push_back(constr);
     }
-    
+
     // verify if the query product satisifies constant constraint
     bool verify(const std::vector<tuple>& product) const {
         for (auto constr : constConstrs) {
@@ -106,7 +105,6 @@ public:
 
 private:
     std::vector<std::pair<std::pair<size_t, size_t>, RamDomain>> constConstrs;
-
 };
 
 /** utility function to split a string */
@@ -157,7 +155,7 @@ public:
     virtual void printRulesJSON(std::ostream& os) = 0;
 
     virtual std::string queryProcess(std::vector<std::pair<std::string, std::vector<std::string>>>& rels) = 0;
-    
+
     virtual std::string getRelationOutput(const std::string& relName) {
         auto rel = prog.getRelation(relName);
         if (rel == nullptr) {

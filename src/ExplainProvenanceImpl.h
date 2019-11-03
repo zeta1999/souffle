@@ -24,10 +24,10 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <regex>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <regex>
 
 namespace souffle {
 
@@ -547,48 +547,49 @@ public:
     }
 
     virtual std::string queryProcess(std::vector<std::pair<std::string, std::vector<std::string>>>& rels) {
-
         std::string queryResult = "";
         std::regex varRegex("[a-zA-Z_][a-zA-Z_0-9]*", std::regex_constants::extended);
         std::regex symbolRegex("\"([^\"]*)\"", std::regex_constants::extended);
         std::regex numberRegex("[0-9]+", std::regex_constants::extended);
 
         std::smatch argsMatcher;
-        
+
         // map for variable name and corresponding equivalence class
         std::map<std::string, Equivalence> varMap;
-        
+
         // const constraints that solution must satisfy
         ConstConstr cc;
-        
+
         // varRels stores relation of tuples that need to resolve which contains at least one variable
         std::vector<Relation*> varRels;
-        
+
         // counter for adding element to varRels
         size_t idx = 0;
-        
+
         for (size_t i = 0; i < rels.size(); ++i) {
             Relation* r = prog.getRelation(rels[i].first);
             std::vector<RamDomain> constTuple;
             // query relation does not exist
             if (r == nullptr) {
-                queryResult +=  "Relation <" + rels[i].first + "> does not exist\n";
+                queryResult += "Relation <" + rels[i].first + "> does not exist\n";
                 return queryResult;
             }
             // airty error
             if (r->getArity() - 2 != rels[i].second.size()) {
-                queryResult += "<" + rels[i].first + "> has arity of " + std::to_string(r->getArity() - 2) + "\n";
+                queryResult +=
+                        "<" + rels[i].first + "> has arity of " + std::to_string(r->getArity() - 2) + "\n";
                 return queryResult;
             }
-            
+
             // check if tuple contain variable
             bool containVar = false;
             for (size_t j = 0; j < rels[i].second.size(); ++j) {
                 if (std::regex_match(rels[i].second[j], argsMatcher, varRegex)) {
                     containVar = true;
-                    auto mapIt =  varMap.find(argsMatcher[0]);
+                    auto mapIt = varMap.find(argsMatcher[0]);
                     if (mapIt == varMap.end()) {
-                        varMap.insert({argsMatcher[0], Equivalence(*(r->getAttrType(j)), argsMatcher[0], std::make_pair(idx, j))});
+                        varMap.insert({argsMatcher[0],
+                                Equivalence(*(r->getAttrType(j)), argsMatcher[0], std::make_pair(idx, j))});
                     } else {
                         mapIt->second.push_back(std::make_pair(idx, j));
                     }
@@ -614,7 +615,7 @@ public:
                     }
                 }
             }
-            
+
             // if tuple does not contain any variable, check if relation contains this tuple
             if (!containVar) {
                 bool containTuple = false;
@@ -637,9 +638,9 @@ public:
                     for (size_t l = 0; l < rels[i].second.size() - 1; ++l) {
                         queryResult += rels[i].second[l] + ", ";
                     }
-                    queryResult += rels[i].second.back() +  ") exists\n";
+                    queryResult += rels[i].second.back() + ") exists\n";
                     cc.getConstrs().erase(cc.getConstrs().end() - r->getArity() + 2, cc.getConstrs().end());
-                } else { // otherwise, there is no solution for given query
+                } else {  // otherwise, there is no solution for given query
                     queryResult += "Tuple " + rels[i].first + "(";
                     for (size_t l = 0; l < rels[i].second.size() - 1; ++l) {
                         queryResult += rels[i].second[l] + ", ";
@@ -652,7 +653,7 @@ public:
                 ++idx;
             }
         }
-        
+
         // if varRels size is 0, all given tuples only contain constant and exist, no variable to resolve
         if (varRels.size() == 0) {
             return queryResult;
@@ -671,7 +672,7 @@ public:
             // the vector that contains the tuples the iterators currently points to
             std::vector<tuple> element;
             for (auto it : qpIt) {
-               element.push_back(*it);
+                element.push_back(*it);
             }
             // check if the tuples satisifies variable equivalence
             for (auto var : varMap) {
@@ -692,7 +693,8 @@ public:
                     // check the number of the solution
                     size_t solution_width;
                     if (var.second.getType() == 's') {
-                        solution_width = prog.getSymbolTable().resolve(element[idx.first][idx.second]).length();
+                        solution_width =
+                                prog.getSymbolTable().resolve(element[idx.first][idx.second]).length();
                     } else {
                         solution_width = std::to_string(element[idx.first][idx.second]).length();
                     }
@@ -737,9 +739,11 @@ public:
             for (auto var : varMap) {
                 std::string solu(slot_width, ' ');
                 if (var.second.getType() == 'i') {
-                    solu.replace(0, std::to_string(solutions[i][j]).length(), std::to_string(solutions[i][j]));
+                    solu.replace(
+                            0, std::to_string(solutions[i][j]).length(), std::to_string(solutions[i][j]));
                 } else {
-                    solu.replace(0, prog.getSymbolTable().resolve(solutions[i][j]).length(), prog.getSymbolTable().resolve(solutions[i][j]));
+                    solu.replace(0, prog.getSymbolTable().resolve(solutions[i][j]).length(),
+                            prog.getSymbolTable().resolve(solutions[i][j]));
                 }
                 queryResult += solu + "|";
                 ++j;

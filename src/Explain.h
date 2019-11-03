@@ -198,8 +198,9 @@ public:
         } else if (command[0] == "query") {
             // if there is no given relations, return directly
             if (command.size() != 2) {
-                printError("Usage: query <relation1>(<element1>, <element2>, ...), "
-                           "<relation2>(<element1>, <element2>, ...), ...\n");
+                printError(
+                        "Usage: query <relation1>(<element1>, <element2>, ...), "
+                        "<relation2>(<element1>, <element2>, ...), ...\n");
             }
             // vector rels stores command, args pair parsed by parseQueryTuple()
             std::vector<std::pair<std::string, std::vector<std::string>>> rels;
@@ -207,7 +208,8 @@ public:
             std::regex symbolRegex("\"([^\"]*)\"", std::regex_constants::extended);
             std::regex numberRegex("[0-9]+", std::regex_constants::extended);
             std::regex relRegex(
-                    "([a-zA-Z0-9_.-]*)[[:blank:]]*\\(([[:blank:]]*([0-9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*)([[:blank:]]*,[[:blank:]]*(["
+                    "([a-zA-Z0-9_.-]*)[[:blank:]]*\\(([[:blank:]]*([0-9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*)("
+                    "[[:blank:]]*,[[:blank:]]*(["
                     "0-"
                     "9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*))*)?\\)",
                     std::regex_constants::extended);
@@ -218,15 +220,17 @@ public:
             while (std::regex_search(relStr, relMatcher, relRegex)) {
                 rels.push_back(parseQueryTuple(relMatcher[0]));
                 if (rels.back().first.size() == 0 || rels.back().second.size() == 0) {
-                    printError("Usage: query <relation1>(<element1>, <element2>, ...), "
-                               "<relation2>(<element1>, <element2>, ...), ...\n");
+                    printError(
+                            "Usage: query <relation1>(<element1>, <element2>, ...), "
+                            "<relation2>(<element1>, <element2>, ...), ...\n");
                     return true;
                 }
                 relStr = relMatcher.suffix().str();
             }
             if (rels.size() == 0) {
-                printError("Usage: query <relation1>(<element1>, <element2>, ...), "
-                           "<relation2>(<element1>, <element2>, ...), ...\n");
+                printError(
+                        "Usage: query <relation1>(<element1>, <element2>, ...), "
+                        "<relation2>(<element1>, <element2>, ...), ...\n");
                 return true;
             }
 
@@ -246,7 +250,9 @@ public:
                     "output <filename>: Write output into a file, or provide empty filename to\n"
                     "    disable output\n"
                     "format <json|proof>: switch format between json and proof-trees\n"
-                    "query <relation1>(<element1>, <element2>, ...), <relation2>(<element1>, <element2>), ... : check existence of tuple(s) or find solution for the given relation tuple(s) if tuple(s) contain variable\n"
+                    "query <relation1>(<element1>, <element2>, ...), <relation2>(<element1>, <element2>), "
+                    "... : check existence of tuple(s) or find solution for the given relation tuple(s) if "
+                    "tuple(s) contain variable\n"
                     "exit: Exits this interface\n\n");
         }
 
@@ -314,7 +320,7 @@ private:
 
         return std::make_pair(relName, args);
     }
-    
+
     /**
      * Parse tuple for query, split into relation name and args
      * @param str The string to parse, should be in form "R(x1, x2, x3, ...)"
@@ -325,7 +331,8 @@ private:
         // regex for matching tuples
         // values matches numbers or strings enclosed in quotation marks
         std::regex relRegex(
-                "([a-zA-Z0-9_.-]*)[[:blank:]]*\\(([[:blank:]]*([0-9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*)([[:blank:]]*,[[:blank:]]*(["
+                "([a-zA-Z0-9_.-]*)[[:blank:]]*\\(([[:blank:]]*([0-9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*)([[:"
+                "blank:]]*,[[:blank:]]*(["
                 "0-"
                 "9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*))*)?\\)",
                 std::regex_constants::extended);

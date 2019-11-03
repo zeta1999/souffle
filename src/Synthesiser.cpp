@@ -1756,17 +1756,17 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // declare symbol table
     os << "// -- initialize symbol table --\n";
-    {
-        os << "SymbolTable symTable\n";
-        if (symTable.size() > 0) {
-            os << "{\n";
-            for (size_t i = 0; i < symTable.size(); i++) {
-                os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
-            }
-            os << "}";
+    
+    os << "SymbolTable symTable\n";
+    if (symTable.size() > 0) {
+        os << "{\n";
+        for (size_t i = 0; i < symTable.size(); i++) {
+            os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
         }
-        os << ";";
+        os << "}";
     }
+    os << ";";
+    
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
@@ -2237,7 +2237,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("version", ")_"
            << Global::config().get("version") << R"_(");)_" << '\n';
     }
-    { os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n"; }
+    os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
 
     if (Global::config().get("provenance") == "explain") {
         os << "explain(obj, false);\n";

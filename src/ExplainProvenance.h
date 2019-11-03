@@ -27,6 +27,59 @@
 
 namespace souffle {
 
+/* Equivalence class for variables in query command */
+class Equivalence {
+public:
+    ~Equivalence() = default;
+    Equivalence(char t, std::string s, std::pair<size_t, size_t> idx) : type(t), symbol(s) {
+        indices.push_back(idx);
+    }
+    
+    Equivalence(const Equivalence& o) = default;
+    
+    Equivalence& operator=(const Equivalence& o) = default;
+    
+    void push_back(std::pair<size_t, size_t> idx) {
+        indices.push_back(idx);
+    }
+
+    // verify if elements at the indices are equivalent in the given product
+    bool verify(const std::vector<tuple>& product) const {
+        for (size_t i = 1; i < indices.size(); ++i) {
+            if (product[indices[i].first][indices[i].second] != product[indices[i-1].first][indices[i-1].second]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // extract index of the first occurrence of the varible 
+    std::pair<size_t, size_t> getFirstIdx() {
+        return indices[0];
+    }
+
+    // get hte indices of the varible
+    std::vector<std::pair<size_t, size_t>> getIndices() {
+        return indices;
+    }
+
+    // return type of the variable of the equivalence class, 'i' for RamDomain, 's' for symbol
+    char getType() {
+        return type;
+    }
+    
+    // get the symbol of variable
+    std::string getSymbol() {
+        return symbol;
+    }
+
+private:
+    char type;
+    std::string symbol;
+    std::vector<std::pair<size_t, size_t>> indices; 
+
+};
+
 /** utility function to split a string */
 inline std::vector<std::string> split(const std::string& s, char delim, int times = -1) {
     std::vector<std::string> v;

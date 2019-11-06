@@ -1179,8 +1179,8 @@ inline std::string tempFile() {
     std::string templ;
     std::FILE* f = nullptr;
     while (!f) {
-      templ = std::tmpnam(nullptr);
-      f = fopen(templ.c_str(), "wx");
+        templ = std::tmpnam(nullptr);
+        f = fopen(templ.c_str(), "wx");
     }
     fclose(f);
     return templ;

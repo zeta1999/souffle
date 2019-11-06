@@ -34,6 +34,7 @@
 #include "RamTransformer.h"
 #include "RamTransforms.h"
 #include "RamTranslationUnit.h"
+#include "RamTypes.h"
 #include "SymbolTable.h"
 #include "Synthesiser.h"
 #include "Util.h"
@@ -345,6 +346,8 @@ int main(int argc, char** argv) {
     if (Global::config().has("macro")) {
         cmd += " " + Global::config().get("macro");
     }
+    // Add RamDomain size as a macro
+    cmd += " -DRAM_DOMAIN_SIZE=" + std::to_string(RAM_DOMAIN_SIZE);
     cmd += " " + Global::config().get("");
     FILE* in = popen(cmd.c_str(), "r");
 

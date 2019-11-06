@@ -86,6 +86,21 @@ AS_IF([test "x$enable_mpi" = "xyes"], [
 ])
 AM_CONDITIONAL([MPI], [test "x$enable_mpi" = "xyes"])
 
+# Enable SWIG
+AC_ARG_ENABLE(
+  [swig],
+  [AS_HELP_STRING([--enable-swig], [Enable SWIG])]
+)
+AS_IF([test "x$enable_swig" = "xyes"], [
+  AC_CHECK_PROG(JAVAC, javac, javac)
+  AS_IF([test -z "$JAVAC"], [AC_MSG_ERROR([javac not found, required for swig])])
+  AC_CHECK_PROG(PYTHON3, python3, python3)
+  AS_IF([test -z "$PYTHON3"], [AC_MSG_ERROR([python3 not found, required for swig])])
+  AC_CHECK_PROG(SWIG, swig, swig)
+  AS_IF([test -z "$SWIG"], [AC_MSG_ERROR([swig not found])])
+])
+AM_CONDITIONAL([SWIG], [test "x$enable_swig" = "xyes"])
+
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX(17, noext)
 
@@ -330,6 +345,9 @@ AC_CONFIG_LINKS([include/souffle/profile/htmlCssStyle.h:src/profile/htmlCssStyle
 AC_CONFIG_LINKS([include/souffle/profile/htmlJsChartistPlugin.h:src/profile/htmlJsChartistPlugin.h])
 AC_CONFIG_LINKS([include/souffle/profile/htmlJsTableSort.h:src/profile/htmlJsTableSort.h])
 AC_CONFIG_LINKS([include/souffle/profile/htmlMain.h:src/profile/htmlMain.h])
+AC_CONFIG_LINKS([include/souffle/swig/SwigInterface.h:src/swig/SwigInterface.h])
+AC_CONFIG_LINKS([include/souffle/swig/SwigInterface.cpp:src/swig/SwigInterface.cpp])
+AC_CONFIG_LINKS([include/souffle/swig/SwigInterface.i:src/swig/SwigInterface.i])
 AC_CONFIG_LINKS([utilities/bash-completion/completions/souffle:debian/souffle.bash-completion])
 
 AM_MISSING_PROG([AUTOM4TE], [autom4te])

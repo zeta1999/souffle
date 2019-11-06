@@ -14,6 +14,7 @@ aliases:
     - libtool
     - lsb-release
     - mcpp
+    - swig
   - &linuxgcc
     stage: Testing
     sudo: false
@@ -54,7 +55,7 @@ aliases:
   - &osxgcc
     stage: Testing
     os: osx
-    osx_image: xcode10.1
+    osx_image: xcode11.2
     compiler: gcc
     install: ". .travis/osx/install_withgcc.sh"
     before_script: ".travis/init_test.sh"
@@ -86,7 +87,7 @@ jobs:
         packages:
         # The formatting may change with different versions of clang-format.
         # Check before modifying!
-        - clang-format-6.0
+        - clang-format-7
     script: ".travis/run_test_format.sh"
 
 # Testing stage (-j8,-c -j8)
@@ -111,13 +112,26 @@ jobs:
     - "clang-setup"
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
 
-# Testing stage with 64bit RamDomains (-j8,-c -j8, skipping the 32bit Semantic tests)
+# Testing stage with 64bit RamDomains (-j8,-c -j8)
   - <<: *linuxgcc
     before_script: ".travis/init_test_64bit.sh"
     env:
     - "gcc-64bit-setup"
     - *gcc_environment
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
+
+    # Testing stage with Swig tests enabled (-j8,-c -j8)
+  - <<: *linuxgcc
+    before_script: ".travis/init_test_swig.sh"
+    env:
+    - "gcc-setup"
+    - *gcc_environment
+    - SOUFFLE_CATEGORY=Unit,Swig,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
+  - <<: *osxgcc
+    before_script: ".travis/init_test_swig.sh"
+    env:
+    - "gcc-setup"
+    - SOUFFLE_CATEGORY=Unit,Swig,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
 
 # Testing stage with engine option (-c -j8 -efile, FastEvaluation and select others)
   - <<: *linuxgcc

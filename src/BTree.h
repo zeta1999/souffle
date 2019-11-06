@@ -1727,6 +1727,10 @@ public:
      * @param num .. the number of chunks requested
      * @return a list of chunks partitioning this tree
      */
+    std::vector<chunk> partition(size_type num) const {
+        return getChunks(num);
+    }
+
     std::vector<chunk> getChunks(size_type num) const {
         std::vector<chunk> res;
         if (empty()) {

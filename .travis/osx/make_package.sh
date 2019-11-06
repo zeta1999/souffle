@@ -8,7 +8,8 @@ set -x
 # create deployment directory
 mkdir deploy
 
-make -j2 package
+JOBS=$(sysctl -n hw.ncpu)
+make -j$JOBS package
 
 # compute md5 for package &
 # copy files to deploy directory

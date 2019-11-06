@@ -338,7 +338,7 @@ private:
     /* A utility to check whether a certain index is covered by this relation. */
     template <typename Index>
     struct covered {
-        enum { value = indices_t::template is_covered<Index>::value };
+        static constexpr size_t value = indices_t::template is_covered<Index>::value;
     };
 
 public:

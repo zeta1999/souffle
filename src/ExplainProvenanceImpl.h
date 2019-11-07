@@ -546,7 +546,7 @@ public:
         os << "\n]\n";
     }
 
-    virtual std::string queryProcess(std::vector<std::pair<std::string, std::vector<std::string>>>& rels) {
+    std::string queryProcess(std::vector<std::pair<std::string, std::vector<std::string>>>& rels) override {
         std::string queryResult = "";
         std::regex varRegex("[a-zA-Z_][a-zA-Z_0-9]*", std::regex_constants::extended);
         std::regex symbolRegex("\"([^\"]*)\"", std::regex_constants::extended);

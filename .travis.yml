@@ -10,7 +10,6 @@ aliases:
     - flex
     - libffi-dev
     - libncurses5-dev
-    - libopenmpi-dev
     - libtool
     - lsb-release
     - mcpp
@@ -45,10 +44,6 @@ aliases:
     os: linux
     services: docker
     sudo: false
-  - &linuxmpi
-    <<: *docker
-    stage: Testing
-    script: ".travis/run_docker.sh"
   - &linuxpackage
     <<: *docker
     stage: Packaging
@@ -139,18 +134,6 @@ jobs:
     - "gcc-efile"
     - *gcc_environment
     - SOUFFLE_CATEGORY=FastEvaluation,Interface,Profile SOUFFLE_CONFS="-c -j8 -efile"
-
-# Testing stage with mpi (-c -j8 -empi, FastEvaluation and select others)
-  - <<: *linuxmpi
-    env:
-    - "gcc-empi"
-    - *gcc_environment
-    - SOUFFLE_DOCKER_BASE_IMAGE="souffle/ubuntu:bionic-base"
-    # TODO (lyndonhenry): should get this working with Interface, Profile, and Provenance (it does work already with Syntactic and Semantic)
-    - SOUFFLE_CATEGORY="Unit,FastEvaluation"
-    - SOUFFLE_CONFIGURE_OPTIONS="--enable-mpi"
-    - SOUFFLE_CONFS="-c -j8 -empi"
-    - SOUFFLE_MAKE_JOBS="2"
 
 # Testing stage (-j8,-c -j8)
   - <<: *linuxgcc

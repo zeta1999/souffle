@@ -1655,76 +1655,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
         }
 
-#ifdef USE_MPI
-
-        // -- mpi statements --
-
-        void visitRecv(const RamRecv& recv, std::ostream& os) override {
-            os << "\n#ifdef USE_MPI\n";
-            os << "{";
-            os << "auto status = souffle::mpi::probe(";
-            // source
-            os << recv.getSourceStratum() + 1 << ", ";
-            // tag
-            os << "tag_" << synthesiser.getRelationName(recv.getRelation());
-            os << ");";
-            os << "souffle::mpi::recv<RamDomain>(";
-            // data
-            os << "*" << synthesiser.getRelationName(recv.getRelation()) << ", ";
-            // arity
-            os << recv.getRelation().getArity() << ", ";
-            // status
-            os << "status";
-            os << ");";
-            os << "}";
-            os << "\n#endif\n";
-        }
-
-        void visitSend(const RamSend& send, std::ostream& os) override {
-            os << "\n#ifdef USE_MPI\n";
-            os << "{";
-            os << "souffle::mpi::send<RamDomain>(";
-            // data
-            os << "*" << synthesiser.getRelationName(send.getRelation()) << ", ";
-            // arity
-            os << send.getRelation().getArity() << ", ";
-            // destinations
-            const auto& destinationStrata = send.getDestinationStrata();
-            auto it = destinationStrata.begin();
-            os << "std::set<int>(";
-            if (it != destinationStrata.end()) {
-                os << "{" << *it + 1;
-                ++it;
-                while (it != destinationStrata.end()) {
-                    os << ", " << *it + 1;
-                    ++it;
-                }
-                os << "}";
-            } else {
-                os << "0";
-            }
-            os << "), ";
-            // tag
-            os << "tag_" << synthesiser.getRelationName(send.getRelation());
-            os << ");";
-            os << "}";
-            os << "\n#endif\n";
-        }
-
-        void visitNotify(const RamNotify&, std::ostream& os) override {
-            os << "\n#ifdef USE_MPI\n";
-            os << "mpi::send(0, SymbolTable::exitTag());";
-            os << "mpi::recv(0, SymbolTable::exitTag());";
-            os << "\n#endif\n";
-        }
-
-        void visitWait(const RamWait& wait, std::ostream& os) override {
-            os << "\n#ifdef USE_MPI\n";
-            os << "symTable.handleMpiMessages(" << wait.getCount() << ");";
-            os << "\n#endif\n";
-        }
-
-#endif
         // -- safety net --
 
         void visitUndefValue(const RamUndefValue& undef, std::ostream& /*out*/) override {
@@ -1756,13 +1686,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     withSharedLibrary = false;
 
     std::string classname = "Sf_" + id;
-
-#ifdef USE_MPI
-    // turn off mpi support if not enabled as the execution engine
-    if (Global::config().get("engine") != "mpi") {
-        os << "#undef USE_MPI\n";
-    }
-#endif
 
     // generate C++ program
     os << "\n#include \"souffle/CompiledSouffle.h\"\n";
@@ -1858,31 +1781,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "   } return result;\n";
     os << "}\n";
 
-// if using mpi...
-#ifdef USE_MPI
-    if (Global::config().get("engine") == "mpi") {
-        os << "\n#ifdef USE_MPI\n";
-
-        // create an enum of message tags, one for each relation
-        {
-            os << "private:\n";
-            os << "enum {";
-            {
-                int tag = SymbolTable::numberOfTags();
-                visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
-                    if (tag != SymbolTable::numberOfTags()) {
-                        os << ", ";
-                    }
-                    os << "tag_" << getRelationName(create.getRelation()) << " = " << tag;
-                    ++tag;
-                });
-            }
-            os << "};";
-        }
-        os << "\n#endif\n";
-    }
-#endif
-
     if (Global::config().has("profile")) {
         os << "std::string profiling_fname;\n";
     }
@@ -1891,17 +1789,17 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // declare symbol table
     os << "// -- initialize symbol table --\n";
-    {
-        os << "SymbolTable symTable\n";
-        if (symTable.size() > 0) {
-            os << "{\n";
-            for (size_t i = 0; i < symTable.size(); i++) {
-                os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
-            }
-            os << "}";
+
+    os << "SymbolTable symTable\n";
+    if (symTable.size() > 0) {
+        os << "{\n";
+        for (size_t i = 0; i < symTable.size(); i++) {
+            os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
         }
-        os << ";";
+        os << "}";
     }
+    os << ";";
+
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
@@ -2398,20 +2296,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("version", ")_"
            << Global::config().get("version") << R"_(");)_" << '\n';
     }
-#ifdef USE_MPI
-    if (Global::config().get("engine") == "mpi") {
-        os << "\n#ifdef USE_MPI\n";
-        os << "souffle::mpi::init(argc, argv);";
-        os << "int rank = souffle::mpi::commRank();";
-        os << "int stratum = (rank == 0) ? " << std::numeric_limits<int>::max() << " : rank - 1;";
-        os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), stratum);\n";
-        os << "souffle::mpi::finalize();";
-        os << "\n#endif\n";
-    } else
-#endif
-    {
-        os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
-    }
+    os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
 
     if (Global::config().get("provenance") == "explain") {
         os << "explain(obj, false, false);\n";

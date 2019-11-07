@@ -176,18 +176,10 @@ public:
 #define ASSERT_TRUE(a) fatal(a, #a, LOC)
 #define ASSERT_LE(a, b) fatal((a) <= (b), "LE(" #a "," #b ")", LOC)
 
-#ifdef USE_MPI
-#include <mpi.h>
-#endif
-
 /**
  * Main program of a unit test
  */
 int main(int argc, char** argv) {
-#ifdef USE_MPI
-    MPI_Init(&argc, &argv);
-#endif
-
     // add all groups to a set
     std::set<std::string> groups;
     for (TestCase* p = base; p != nullptr; p = p->nextTestCase()) {
@@ -211,10 +203,6 @@ int main(int argc, char** argv) {
             }
         }
     }
-
-#ifdef USE_MPI
-    MPI_Finalize();
-#endif
 
     if (failure != 0) {
         std::cerr << "Tests failed.\n";

@@ -40,12 +40,6 @@
 #include "Util.h"
 #include "config.h"
 #include "profile/Tui.h"
-
-#ifdef USE_MPI
-#include "Mpi.h"
-#include "PrecedenceGraph.h"
-#endif
-
 #include <cassert>
 #include <chrono>
 #include <cstdio>
@@ -64,12 +58,7 @@ namespace souffle {
 /**
  * Executes a binary file.
  */
-void executeBinary(const std::string& binaryFilename
-#ifdef USE_MPI
-        ,
-        const int numberOfProcesses
-#endif
-) {
+void executeBinary(const std::string& binaryFilename) {
     assert(!binaryFilename.empty() && "binary filename cannot be blank");
 
     // check whether the executable exists
@@ -79,18 +68,6 @@ void executeBinary(const std::string& binaryFilename
 
     // run the executable
     int exitCode;
-#ifdef USE_MPI
-    if (Global::config().get("engine") == "mpi") {
-        std::stringstream ss;
-        ss << "mpiexec";
-        if (Global::config().has("hostfile")) {
-            ss << " --hostfile " << Global::config().get("hostfile");
-        }
-        ss << " -n " << std::to_string(numberOfProcesses);
-        ss << " " << binaryFilename;
-        exitCode = system(ss.str().c_str());
-    } else
-#endif
     {
         if (Global::config().has("library-dir")) {
             std::string ldPath;
@@ -147,13 +124,6 @@ void compileToBinary(std::string compileCmd, const std::string& sourceFilename) 
 int main(int argc, char** argv) {
     /* Time taking for overall runtime */
     auto souffle_start = std::chrono::high_resolution_clock::now();
-
-#ifdef USE_MPI
-    mpi::init(argc, argv);
-    if (mpi::commRank() != 0) {
-        throw std::runtime_error("Error: Souffle can only be run with one MPI process.");
-    }
-#endif
 
     /* have all to do with command line arguments in its own scope, as these are accessible through the global
      * configuration only */
@@ -336,21 +306,10 @@ int main(int argc, char** argv) {
             if (engine != "file" && engine != "mpi") {
                 throw std::invalid_argument("Error: Use of engine '" + engine + "' is not supported.");
             }
-#ifndef USE_MPI
-            if (engine == "mpi") {
-                throw std::invalid_argument("Error: Use of engine '" + engine +
-                                            "' requires configure option '--enable-" + engine + "'.");
-            }
             if (Global::config().has("hostfile")) {
-                throw std::invalid_argument(
-                        "Error: Use of hostfile option requires configure option '--enable-" + engine + "'.");
-            }
-#else
-            if (engine != "mpi" && Global::config().has("hostfile")) {
                 throw std::invalid_argument(
                         "Error: Use of hostfile option requires execution engine '" + engine + "'.");
             }
-#endif
         }
 
         if (Global::config().has("live-profile") && !Global::config().has("profile")) {
@@ -634,12 +593,7 @@ int main(int argc, char** argv) {
                 }
                 // run compiled C++ program if requested.
                 if (!Global::config().has("dl-program") && !Global::config().has("swig")) {
-                    executeBinary(baseFilename
-#ifdef USE_MPI
-                            ,
-                            ((int)astTranslationUnit->getAnalysis<SCCGraph>()->getNumberOfSCCs()) + 1
-#endif
-                    );
+                    executeBinary(baseFilename);
                 }
             }
         } catch (std::exception& e) {
@@ -647,11 +601,6 @@ int main(int argc, char** argv) {
             std::exit(1);
         }
     }
-
-// finalize mpi, this is necessary for the symbol table
-#ifdef USE_MPI
-    mpi::finalize();
-#endif
 
     /* Report overall run-time in verbose mode */
     if (Global::config().has("verbose")) {

@@ -639,15 +639,14 @@ public:
                         queryResult += rels[i].second[l] + ", ";
                     }
                     queryResult += rels[i].second.back() + ") exists\n";
-                    cc.getConstrs().erase(cc.getConstrs().end() - r->getArity() + 2, cc.getConstrs().end());
                 } else {  // otherwise, there is no solution for given query
                     queryResult += "Tuple " + rels[i].first + "(";
                     for (size_t l = 0; l < rels[i].second.size() - 1; ++l) {
                         queryResult += rels[i].second[l] + ", ";
                     }
                     queryResult += rels[i].second.back() + ") does not exist\n";
-                    return queryResult;
                 }
+                cc.getConstrs().erase(cc.getConstrs().end() - r->getArity() + 2, cc.getConstrs().end());
             } else {
                 varRels.push_back(r);
                 ++idx;

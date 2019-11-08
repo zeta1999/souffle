@@ -293,11 +293,12 @@ private:
 
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity,
-            const std::vector<std::string> attributeNames,
+            const size_t numberOfHeights, const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation structure);
 
     /** create a reference to a RAM relation */
-    std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity);
+    std::unique_ptr<RamRelationReference> createRelationReference(
+            const std::string name, const size_t arity, const size_t numberOfHeights);
 
     /** a utility to translate atoms to relations */
     std::unique_ptr<RamRelationReference> translateRelation(const AstAtom* atom);
@@ -381,6 +382,9 @@ private:
 
     /** translate RAM code for subroutine to get subproofs */
     std::unique_ptr<RamStatement> makeSubproofSubroutine(const AstClause& clause);
+
+    /** translate RAM code for subroutine to get subproofs */
+    std::unique_ptr<RamStatement> makeSubproofSubroutineOpt(const AstClause& clause);
 
     /** translate RAM code for subroutine to get subproofs for non-existence of a tuple */
     std::unique_ptr<RamStatement> makeNegationSubproofSubroutine(const AstClause& clause);

@@ -26,9 +26,11 @@ namespace souffle {
 
 class ReadStream {
 public:
-    ReadStream(const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const bool prov)
+    ReadStream(const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const bool prov,
+            const size_t numberOfHeights)
             : symbolMask(symbolMask), symbolTable(symbolTable), isProvenance(prov),
-              arity(symbolMask.size() - (prov ? 2 : 0)) {}
+              arity(symbolMask.size() - (prov ? (numberOfHeights + 1) : 0)),
+              numberOfHeights(numberOfHeights) {}
     template <typename T>
     void readAll(T& relation) {
         auto lease = symbolTable.acquireLock();
@@ -47,12 +49,14 @@ protected:
     SymbolTable& symbolTable;
     const bool isProvenance;
     const uint8_t arity;
+    const size_t numberOfHeights;
 };
 
 class ReadStreamFactory {
 public:
     virtual std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance) = 0;
+            SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
+            const size_t number) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~ReadStreamFactory() = default;
 };

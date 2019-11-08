@@ -248,6 +248,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
+                out << ", " << load.getRelation().getNumberOfHeights();
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
                 out << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -276,6 +277,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
+                out << ", " << store.getRelation().getNumberOfHeights();
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
             }
@@ -1318,6 +1320,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto arity = rel.getArity();
+            auto numberOfHeights = rel.getNumberOfHeights();
 
             // provenance not exists is never total, conduct a range query
             out << "[&]() -> bool {\n";
@@ -1326,7 +1329,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // out << synthesiser.toIndex(ne.getSearchSignature());
             out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">({{";
-            for (size_t i = 0; i < provExists.getValues().size() - 1; i++) {
+            for (size_t i = 0; i < provExists.getValues().size() - numberOfHeights; i++) {
                 RamExpression* val = provExists.getValues()[i];
                 if (!isRamUndefValue(val)) {
                     visit(*val, out);
@@ -1335,13 +1338,43 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 out << ",";
             }
-            // extra 0 for provenance height annotation
+            // extra 0 for provenance height annotations
+            for (size_t i = 0; i < numberOfHeights - 1; i++) {
+                out << "0,";
+            }
             out << "0";
 
             out << "}})," << ctxName << ");\n";
-            out << "if (existenceCheck.empty()) return false; else return (*existenceCheck.begin())["
-                << arity - 1 << "] <= ";
-            visit(*(provExists.getValues()[arity - 1]), out);
+            out << "if (existenceCheck.empty()) return false; else return ((*existenceCheck.begin())["
+                << arity - numberOfHeights << "] <= ";
+
+            visit(*(provExists.getValues()[arity - numberOfHeights]), out);
+            out << ")";
+            if (numberOfHeights > 1) {
+                out << " &&  !("
+                    << "(*existenceCheck.begin())[" << arity - numberOfHeights << "] == ";
+                visit(*(provExists.getValues()[arity - numberOfHeights]), out);
+
+                // out << ")";}
+                out << " && (";
+
+                out << "(*existenceCheck.begin())[" << arity - numberOfHeights + 1 << "] > ";
+                visit(*(provExists.getValues()[arity - numberOfHeights + 1]), out);
+                // out << "))";}
+                for (int i = arity - numberOfHeights + 2; i < (int)arity; i++) {
+                    out << " || (";
+                    for (int j = arity - numberOfHeights + 1; j < i; j++) {
+                        out << "(*existenceCheck.begin())[" << j << "] == ";
+                        visit(*(provExists.getValues()[j]), out);
+                        out << " && ";
+                    }
+                    out << "(*existenceCheck.begin())[" << i << "] > ";
+                    visit(*(provExists.getValues()[i]), out);
+                    out << ")";
+                }
+
+                out << "))";
+            }
             out << ";}()\n";
             PRINT_END_COMMENT(out);
         }
@@ -1622,76 +1655,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
         }
 
-#ifdef USE_MPI
-
-        // -- mpi statements --
-
-        void visitRecv(const RamRecv& recv, std::ostream& os) override {
-            os << "\n#ifdef USE_MPI\n";
-            os << "{";
-            os << "auto status = souffle::mpi::probe(";
-            // source
-            os << recv.getSourceStratum() + 1 << ", ";
-            // tag
-            os << "tag_" << synthesiser.getRelationName(recv.getRelation());
-            os << ");";
-            os << "souffle::mpi::recv<RamDomain>(";
-            // data
-            os << "*" << synthesiser.getRelationName(recv.getRelation()) << ", ";
-            // arity
-            os << recv.getRelation().getArity() << ", ";
-            // status
-            os << "status";
-            os << ");";
-            os << "}";
-            os << "\n#endif\n";
-        }
-
-        void visitSend(const RamSend& send, std::ostream& os) override {
-            os << "\n#ifdef USE_MPI\n";
-            os << "{";
-            os << "souffle::mpi::send<RamDomain>(";
-            // data
-            os << "*" << synthesiser.getRelationName(send.getRelation()) << ", ";
-            // arity
-            os << send.getRelation().getArity() << ", ";
-            // destinations
-            const auto& destinationStrata = send.getDestinationStrata();
-            auto it = destinationStrata.begin();
-            os << "std::set<int>(";
-            if (it != destinationStrata.end()) {
-                os << "{" << *it + 1;
-                ++it;
-                while (it != destinationStrata.end()) {
-                    os << ", " << *it + 1;
-                    ++it;
-                }
-                os << "}";
-            } else {
-                os << "0";
-            }
-            os << "), ";
-            // tag
-            os << "tag_" << synthesiser.getRelationName(send.getRelation());
-            os << ");";
-            os << "}";
-            os << "\n#endif\n";
-        }
-
-        void visitNotify(const RamNotify&, std::ostream& os) override {
-            os << "\n#ifdef USE_MPI\n";
-            os << "mpi::send(0, SymbolTable::exitTag());";
-            os << "mpi::recv(0, SymbolTable::exitTag());";
-            os << "\n#endif\n";
-        }
-
-        void visitWait(const RamWait& wait, std::ostream& os) override {
-            os << "\n#ifdef USE_MPI\n";
-            os << "symTable.handleMpiMessages(" << wait.getCount() << ");";
-            os << "\n#endif\n";
-        }
-
-#endif
         // -- safety net --
 
         void visitUndefValue(const RamUndefValue& undef, std::ostream& /*out*/) override {
@@ -1723,13 +1686,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     withSharedLibrary = false;
 
     std::string classname = "Sf_" + id;
-
-#ifdef USE_MPI
-    // turn off mpi support if not enabled as the execution engine
-    if (Global::config().get("engine") != "mpi") {
-        os << "#undef USE_MPI\n";
-    }
-#endif
 
     // generate C++ program
     os << "\n#include \"souffle/CompiledSouffle.h\"\n";
@@ -1825,31 +1781,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "   } return result;\n";
     os << "}\n";
 
-// if using mpi...
-#ifdef USE_MPI
-    if (Global::config().get("engine") == "mpi") {
-        os << "\n#ifdef USE_MPI\n";
-
-        // create an enum of message tags, one for each relation
-        {
-            os << "private:\n";
-            os << "enum {";
-            {
-                int tag = SymbolTable::numberOfTags();
-                visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
-                    if (tag != SymbolTable::numberOfTags()) {
-                        os << ", ";
-                    }
-                    os << "tag_" << getRelationName(create.getRelation()) << " = " << tag;
-                    ++tag;
-                });
-            }
-            os << "};";
-        }
-        os << "\n#endif\n";
-    }
-#endif
-
     if (Global::config().has("profile")) {
         os << "std::string profiling_fname;\n";
     }
@@ -1858,17 +1789,17 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // declare symbol table
     os << "// -- initialize symbol table --\n";
-    {
-        os << "SymbolTable symTable\n";
-        if (symTable.size() > 0) {
-            os << "{\n";
-            for (size_t i = 0; i < symTable.size(); i++) {
-                os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
-            }
-            os << "}";
+
+    os << "SymbolTable symTable\n";
+    if (symTable.size() > 0) {
+        os << "{\n";
+        for (size_t i = 0; i < symTable.size(); i++) {
+            os << "\tR\"_(" << symTable.resolve(i) << ")_\",\n";
         }
-        os << ";";
+        os << "}";
     }
+    os << ";";
+
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
@@ -1896,6 +1827,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         // get some table details
         const auto& rel = create.getRelation();
         int arity = rel.getArity();
+        int numberOfHeights = rel.getNumberOfHeights();
         const std::string& raw_name = rel.getName();
         const std::string& name = getRelationName(rel);
 
@@ -1917,7 +1849,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << relCtr++ << ",";
             os << type << ",";
             os << "Tuple<RamDomain," << arity << ">,";
-            os << arity;
+            os << arity << ",";
+            os << numberOfHeights;
             os << "> wrapper_" << name << ";\n";
 
             // construct types
@@ -2139,6 +2072,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "IOSystem::getInstance().getWriter(";
                 os << "std::vector<bool>({" << join(symbolMask) << "})";
                 os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
+                os << ", " << store->getRelation().getNumberOfHeights();
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
                 os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2184,6 +2118,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "std::vector<bool>({" << join(symbolMask) << "})";
             os << ", symTable, ioDirectives";
             os << ", " << (Global::config().has("provenance") ? "true" : "false");
+            os << ", " << load.getRelation().getNumberOfHeights();
             os << ")->readAll(*" << getRelationName(load.getRelation());
             os << ");\n";
             os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -2193,7 +2128,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of loadAll() method
 
     // issue dump methods
-    auto dumpRelation = [&](const std::string& name, const std::vector<std::string>& mask, size_t arity) {
+    auto dumpRelation = [&](const std::string& name, const std::vector<std::string>& mask, size_t arity,
+                                size_t numberOfHeights) {
         auto relName = name;
         std::vector<bool> symbolMask;
         for (auto& cur : mask) {
@@ -2207,6 +2143,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "IOSystem::getInstance().getWriter(";
         os << "std::vector<bool>({" << join(symbolMask) << "})";
         os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
+        os << ", " << numberOfHeights;
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
     };
@@ -2218,7 +2155,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         auto& name = getRelationName(load.getRelation());
         auto& mask = load.getRelation().getAttributeTypeQualifiers();
         size_t arity = load.getRelation().getArity();
-        dumpRelation(name, mask, arity);
+        dumpRelation(name, mask, arity, load.getRelation().getNumberOfHeights());
     });
     os << "}\n";  // end of dumpInputs() method
 
@@ -2229,7 +2166,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         auto& name = getRelationName(store.getRelation());
         auto& mask = store.getRelation().getAttributeTypeQualifiers();
         size_t arity = store.getRelation().getArity();
-        dumpRelation(name, mask, arity);
+        dumpRelation(name, mask, arity, store.getRelation().getNumberOfHeights());
     });
     os << "}\n";  // end of dumpOutputs() method
 
@@ -2240,6 +2177,26 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // TODO: generate code for subroutines
     if (Global::config().has("provenance")) {
+        if (Global::config().get("provenance") == "subtreeHeights") {
+            // method that populates provenance indices
+            os << "void copyIndex() {\n";
+            visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+                // get some table details
+                const auto& rel = create.getRelation();
+                const std::string& name = getRelationName(rel);
+                const std::string& raw_name = rel.getName();
+
+                bool isProvInfo = raw_name.find("@info") != std::string::npos;
+                auto relationType = SynthesiserRelation::getSynthesiserRelation(
+                        rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+
+                if (!relationType->getProvenenceIndexNumbers().empty()) {
+                    os << name << "->copyIndex();\n";
+                }
+            });
+            os << "}\n";
+        }
+
         // generate subroutine adapter
         os << "void executeSubroutine(std::string name, const std::vector<RamDomain>& args, "
               "std::vector<RamDomain>& ret, std::vector<bool>& err) override {\n";
@@ -2339,25 +2296,15 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("version", ")_"
            << Global::config().get("version") << R"_(");)_" << '\n';
     }
-#ifdef USE_MPI
-    if (Global::config().get("engine") == "mpi") {
-        os << "\n#ifdef USE_MPI\n";
-        os << "souffle::mpi::init(argc, argv);";
-        os << "int rank = souffle::mpi::commRank();";
-        os << "int stratum = (rank == 0) ? " << std::numeric_limits<int>::max() << " : rank - 1;";
-        os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), stratum);\n";
-        os << "souffle::mpi::finalize();";
-        os << "\n#endif\n";
-    } else
-#endif
-    {
-        os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
-    }
+    os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
 
     if (Global::config().get("provenance") == "explain") {
-        os << "explain(obj, false);\n";
+        os << "explain(obj, false, false);\n";
+    } else if (Global::config().get("provenance") == "subtreeHeights") {
+        os << "obj.copyIndex();\n";
+        os << "explain(obj, false, true);\n";
     } else if (Global::config().get("provenance") == "explore") {
-        os << "explain(obj, true);\n";
+        os << "explain(obj, true, false);\n";
     }
     os << "return 0;\n";
     os << "} catch(std::exception &e) { souffle::SignalHandler::instance()->error(e.what());}\n";

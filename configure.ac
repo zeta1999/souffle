@@ -80,7 +80,6 @@ AC_ARG_ENABLE(
   [AS_HELP_STRING([--enable-mpi], [Enable MPI])]
 )
 AS_IF([test "x$enable_mpi" = "xyes"], [
-    AS_VAR_APPEND(CXXFLAGS, [" -DUSE_MPI "])
     AS_VAR_APPEND(CXXFLAGS, [" $(mpiCC --showme:compile) "])
     AS_VAR_APPEND(LDFLAGS, [" $(mpiCC --showme:link) "])
 ])
@@ -318,7 +317,6 @@ AC_CONFIG_LINKS([include/souffle/Util.h:src/Util.h])
 AC_CONFIG_LINKS([include/souffle/WriteStream.h:src/WriteStream.h])
 AC_CONFIG_LINKS([include/souffle/WriteStreamCSV.h:src/WriteStreamCSV.h])
 AC_CONFIG_LINKS([include/souffle/WriteStreamSQLite.h:src/WriteStreamSQLite.h])
-AC_CONFIG_LINKS([include/souffle/Mpi.h:src/Mpi.h])
 AC_CONFIG_LINKS([include/souffle/gzfstream.h:src/gzfstream.h])
 AC_CONFIG_LINKS([include/souffle/json11.h:src/json11.h])
 AC_CONFIG_LINKS([include/souffle/profile/Cell.h:src/profile/Cell.h])

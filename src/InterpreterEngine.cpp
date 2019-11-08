@@ -34,14 +34,14 @@ void InterpreterEngine::createRelation(
     }
     if (id.getRepresentation() == RelationRepresentation::EQREL) {
         res = std::make_unique<InterpreterEqRelation>(
-                id.getArity(), id.getName(), std::vector<std::string>(), orderSet);
+                id.getArity(), id.getNumberOfHeights(), id.getName(), std::vector<std::string>(), orderSet);
     } else {
         if (isProvenance) {
-            res = std::make_unique<InterpreterRelation>(id.getArity(), id.getName(),
+            res = std::make_unique<InterpreterRelation>(id.getArity(), id.getNumberOfHeights(), id.getName(),
                     std::vector<std::string>(), orderSet, createBTreeProvenanceIndex);
         } else {
-            res = std::make_unique<InterpreterRelation>(
-                    id.getArity(), id.getName(), std::vector<std::string>(), orderSet);
+            res = std::make_unique<InterpreterRelation>(id.getArity(), id.getNumberOfHeights(), id.getName(),
+                    std::vector<std::string>(), orderSet);
         }
     }
     std::swap(relations[idx], res);
@@ -1110,7 +1110,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 IOSystem::getInstance()
                         .getReader(symbolMask, getSymbolTable(), ioDirectives,
-                                Global::config().has("provenance"))
+                                Global::config().has("provenance"), relation.getNumberOfHeights())
                         ->readAll(relation);
             } catch (std::exception& e) {
                 std::cerr << "Error loading data: " << e.what() << "\n";
@@ -1128,7 +1128,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 IOSystem::getInstance()
                         .getWriter(symbolMask, getSymbolTable(), ioDirectives,
-                                Global::config().has("provenance"))
+                                Global::config().has("provenance"), cur->getRelation().getNumberOfHeights())
                         ->writeAll(getRelation(node->getData(0)));
             } catch (std::exception& e) {
                 std::cerr << e.what();

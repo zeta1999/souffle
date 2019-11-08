@@ -333,6 +333,8 @@ public:
      */
     virtual size_t getArity() const = 0;
 
+    virtual size_t getNumberOfHeights() const = 0;
+
     /**
      * Get the symbol table of a relation.
      * The symbols in a tuple to be stored into a relation are stored and assigned with a number in a table

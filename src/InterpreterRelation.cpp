@@ -22,10 +22,10 @@
 
 namespace souffle {
 
-InterpreterRelation::InterpreterRelation(std::size_t arity, const std::string& name,
-        const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet,
-        IndexFactory factory)
-        : relName(name), arity(arity), attributeTypes(attributeTypes) {
+InterpreterRelation::InterpreterRelation(std::size_t arity, std::size_t numberOfHeights,
+        const std::string& name, const std::vector<std::string>& attributeTypes,
+        const MinIndexSelection& orderSet, IndexFactory factory)
+        : relName(name), arity(arity), numberOfHeights(numberOfHeights), attributeTypes(attributeTypes) {
     for (auto order : orderSet.getAllOrders()) {
         // Expand the order to a total order
         std::set<int> set;
@@ -118,6 +118,10 @@ const std::vector<std::string>& InterpreterRelation::getAttributeTypeQualifiers(
     return this->attributeTypes;
 }
 
+size_t InterpreterRelation::getNumberOfHeights() const {
+    return numberOfHeights;
+}
+
 size_t InterpreterRelation::size() const {
     return main->size();
 }
@@ -138,9 +142,9 @@ bool InterpreterRelation::exists(const TupleRef& tuple) const {
 
 void InterpreterRelation::extend(const InterpreterRelation& rel) {}
 
-InterpreterEqRelation::InterpreterEqRelation(size_t arity, const std::string& name,
+InterpreterEqRelation::InterpreterEqRelation(size_t arity, size_t numberOfHeights, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
-        : InterpreterRelation(arity, name, attributeTypes, orderSet, createEqrelIndex) {
+        : InterpreterRelation(arity, numberOfHeights, name, attributeTypes, orderSet, createEqrelIndex) {
     // EqivalenceRelation should have only index.
     assert(this->indexes.size() == 1);
 }
@@ -151,9 +155,10 @@ void InterpreterEqRelation::extend(const InterpreterRelation& rel) {
     this->main->extend(otherEqRel->main);
 }
 
-InterpreterIndirectRelation::InterpreterIndirectRelation(size_t arity, const std::string& name,
-        const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
-        : InterpreterRelation(arity, name, attributeTypes, orderSet, createIndirectIndex) {}
+InterpreterIndirectRelation::InterpreterIndirectRelation(size_t arity, size_t numberOfHeights,
+        const std::string& name, const std::vector<std::string>& attributeTypes,
+        const MinIndexSelection& orderSet)
+        : InterpreterRelation(arity, numberOfHeights, name, attributeTypes, orderSet, createIndirectIndex) {}
 
 bool InterpreterIndirectRelation::insert(const TupleRef& tuple) {
     if (main->contains(tuple)) {

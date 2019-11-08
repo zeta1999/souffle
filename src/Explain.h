@@ -527,8 +527,8 @@ private:
 };
 #endif
 
-inline void explain(SouffleProgram& prog, bool ncurses = false) {
-    ExplainProvenanceImpl prov(prog);
+inline void explain(SouffleProgram& prog, bool ncurses, bool useSubtreelevels) {
+    ExplainProvenanceImpl prov(prog, useSubtreelevels);
 
     if (ncurses) {
 #ifdef USE_NCURSES

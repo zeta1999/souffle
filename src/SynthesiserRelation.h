@@ -45,6 +45,10 @@ public:
         return computedIndices;
     }
 
+    std::set<int> getProvenenceIndexNumbers() const {
+        return provenanceIndexNumbers;
+    }
+
     /** Get stored MinIndexSelection */
     const MinIndexSelection& getMinIndexSelection() const {
         return indices;
@@ -77,6 +81,9 @@ protected:
 
     /** The final list of indices used */
     MinIndexSelection::OrderCollection computedIndices;
+
+    /** The list of indices added for provenance computation */
+    std::set<int> provenanceIndexNumbers;
 
     /** The number of the master index */
     size_t masterIndex = -1;

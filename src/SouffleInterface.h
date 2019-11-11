@@ -696,8 +696,8 @@ public:
     /**
      * Set the number of threads to be used
      */
-    void setNumThreads(std::size_t numThreads) {
-        this->numThreads = numThreads;
+    void setNumThreads(std::size_t numThreadsValue) {
+        this->numThreads = numThreadsValue;
     }
 
     /**

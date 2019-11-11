@@ -979,13 +979,6 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
 
 void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram& program) {
     auto checkIODirective = [&](const AstIO* directive) {
-#ifdef USE_MPI
-        // TODO (lyndonhenry): should permit sqlite as an io directive for use with mpi
-        auto it = directive->getIODirectiveMap().find("IO");
-        if (it != directive->getIODirectiveMap().end() && it->second == "sqlite") {
-            Global::config().unset("engine");
-        }
-#endif
         auto* r = program.getRelation(directive->getName());
         if (r == nullptr) {
             report.addError("Undefined relation " + toString(directive->getName()), directive->getSrcLoc());

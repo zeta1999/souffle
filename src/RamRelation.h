@@ -44,6 +44,9 @@ protected:
     /** Arity, i.e., number of attributes */
     const size_t arity;
 
+    /** Number of height parameters for provenance */
+    const size_t numberOfHeights;
+
     /** Name of attributes */
     const std::vector<std::string> attributeNames;
 
@@ -57,10 +60,12 @@ public:
     /** Used by Interpreter only */
     mutable void* relation = nullptr;
 
-    RamRelation(const std::string name, const size_t arity, const std::vector<std::string> attributeNames,
+    RamRelation(const std::string name, const size_t arity, const size_t numberOfHeights,
+            const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers,
             const RelationRepresentation representation)
-            : name(std::move(name)), arity(arity), attributeNames(std::move(attributeNames)),
+            : name(std::move(name)), arity(arity), numberOfHeights(numberOfHeights),
+              attributeNames(std::move(attributeNames)),
               attributeTypeQualifiers(std::move(attributeTypeQualifiers)), representation(representation) {
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
@@ -111,6 +116,11 @@ public:
         return arity;
     }
 
+    /* @brief Get number of height parameters of relation */
+    unsigned getNumberOfHeights() const {
+        return numberOfHeights;
+    }
+
     /* @brief Compare two relations via their name */
     bool operator<(const RamRelation& other) const {
         return name < other.name;
@@ -132,7 +142,8 @@ public:
     }
 
     RamRelation* clone() const override {
-        return new RamRelation(name, arity, attributeNames, attributeTypeQualifiers, representation);
+        return new RamRelation(
+                name, arity, numberOfHeights, attributeNames, attributeTypeQualifiers, representation);
     }
 
 protected:

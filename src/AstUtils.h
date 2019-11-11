@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <set>
 #include <vector>
 
@@ -78,6 +79,14 @@ std::vector<const AstRecordInit*> getRecords(const AstNode* root);
  * @return relation referenced by the atom
  */
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program);
+
+/**
+ * Returns the number of height parameters of the relation referenced by the given atom.
+ * @param atom the atom
+ * @param program the program containing the relations
+ * @return number of height parameters of the relation referenced by the atom
+ */
+const size_t getNumberOfHeights(const AstAtom* atom, const AstProgram* program);
 
 /**
  * Returns the relation referenced by the head of the given clause.

@@ -184,7 +184,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 
             if (Global::config().has("provenance")) {
                 std::vector<std::string> originalAttributeNames(
-                        attributeNames.begin(), attributeNames.end() - 2);
+                        attributeNames.begin(), attributeNames.end() - 1 - rel->numberOfHeightParameters());
                 ioDirective.set("attributeNames", toString(join(originalAttributeNames, delimiter)));
             } else {
                 ioDirective.set("attributeNames", toString(join(attributeNames, delimiter)));
@@ -196,12 +196,12 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
-        const size_t arity, const std::vector<std::string> attributeNames,
+        const size_t arity, const size_t numberOfHeights, const std::vector<std::string> attributeNames,
         const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation representation) {
     const RamRelation* ramRel = ramProg->getRelation(name);
     if (ramRel == nullptr) {
         ramProg->addRelation(std::make_unique<RamRelation>(
-                name, arity, attributeNames, attributeTypeQualifiers, representation));
+                name, arity, numberOfHeights, attributeNames, attributeTypeQualifiers, representation));
         ramRel = ramProg->getRelation(name);
         assert(ramRel != nullptr && "cannot find relation");
     }
@@ -209,15 +209,16 @@ std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(con
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(
-        const std::string name, const size_t arity) {
-    return createRelationReference(name, arity, {}, {}, {});
+        const std::string name, const size_t arity, const size_t numberOfHeights) {
+    return createRelationReference(name, arity, numberOfHeights, {}, {}, {});
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const AstAtom* atom) {
     if (const auto rel = getAtomRelation(atom, program)) {
         return translateRelation(rel);
     } else {
-        return createRelationReference(getRelationName(atom->getName()), atom->getArity());
+        return createRelationReference(
+                getRelationName(atom->getName()), atom->getArity(), getNumberOfHeights(atom, program));
     }
 }
 
@@ -234,7 +235,8 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
     }
 
     return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
-            attributeNames, attributeTypeQualifiers, rel->getRepresentation());
+            rel->numberOfHeightParameters(), attributeNames, attributeTypeQualifiers,
+            rel->getRepresentation());
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {
@@ -344,10 +346,14 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             // get contained atom
             const auto* atom = neg.getAtom();
             auto arity = atom->getArity();
+            auto numberOfHeightParameters = getNumberOfHeights(atom, translator.program);
 
-            // account for two extra provenance columns
+            // account for extra provenance columns
             if (Global::config().has("provenance")) {
-                arity -= 2;
+                // rule number
+                arity -= 1;
+                // height parameters
+                arity -= numberOfHeightParameters;
             }
 
             std::vector<std::unique_ptr<RamExpression>> values;
@@ -359,7 +365,9 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
                 values.push_back(std::make_unique<RamUndefValue>());
-                values.push_back(std::make_unique<RamUndefValue>());
+                for (size_t h = 0; h < numberOfHeightParameters; h++) {
+                    values.push_back(std::make_unique<RamUndefValue>());
+                }
             }
 
             // add constraint
@@ -376,10 +384,14 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             // get contained atom
             const AstAtom* atom = neg.getAtom();
             auto arity = atom->getArity();
+            auto numberOfHeightParameters = getNumberOfHeights(atom, translator.program);
 
-            // account for two extra provenance columns
+            // account for extra provenance columns
             if (Global::config().has("provenance")) {
-                arity -= 2;
+                // rule number
+                arity -= 1;
+                // level numbers
+                arity -= numberOfHeightParameters;
             }
 
             std::vector<std::unique_ptr<RamExpression>> values;
@@ -394,7 +406,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             if (Global::config().has("provenance")) {
                 values.push_back(std::make_unique<RamUndefValue>());
                 // add the height annotation for provenanceNotExists
-                values.push_back(translator.translateValue(atom->getArgument(arity + 1), index));
+                for (size_t h = 0; h < numberOfHeightParameters; h++)
+                    values.push_back(translator.translateValue(atom->getArgument(arity + h + 1), index));
             }
 
             // add constraint
@@ -544,7 +557,9 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     if (Global::config().has("provenance") &&
             ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
                     !Global::config().has("generate")))) {
-        auto arity = head->getArity() - 2;
+        size_t numberOfHeights = getNumberOfHeights(head, translator.program);
+
+        auto arity = head->getArity() - 1 - numberOfHeights;
 
         std::vector<std::unique_ptr<RamExpression>> values;
 
@@ -558,9 +573,11 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
             values.push_back(translator.translateValue(arg, valueIndex));
         }
 
-        // add two unnamed args for provenance columns
+        // add unnamed args for provenance columns
         values.push_back(std::make_unique<RamUndefValue>());
-        values.push_back(std::make_unique<RamUndefValue>());
+        for (size_t h = 0; h < numberOfHeights; h++) {
+            values.push_back(std::make_unique<RamUndefValue>());
+        }
 
         if (isVolatile) {
             return std::make_unique<RamFilter>(
@@ -592,12 +609,17 @@ std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createO
             values.push_back(translator.translateValue(con->getLHS(), valueIndex));
             values.push_back(translator.translateValue(con->getRHS(), valueIndex));
         } else if (auto neg = dynamic_cast<AstProvenanceNegation*>(lit)) {
-            for (size_t i = 0; i < neg->getAtom()->getArguments().size() - 2; ++i) {
+            size_t numberOfHeights = getNumberOfHeights(neg->getAtom(), translator.program);
+
+            // non provenance arguments
+            for (size_t i = 0; i < neg->getAtom()->getArguments().size() - 1 - numberOfHeights; ++i) {
                 auto arg = neg->getAtom()->getArguments()[i];
                 values.push_back(translator.translateValue(arg, valueIndex));
             }
-            values.push_back(std::make_unique<RamNumber>(-1));
-            values.push_back(std::make_unique<RamNumber>(-1));
+
+            // provenance annotation arguments
+            for (size_t i = 0; i < numberOfHeights + 1; ++i)
+                values.push_back(std::make_unique<RamNumber>(-1));
         }
     }
 
@@ -1203,7 +1225,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
     // add constraint for each argument in head of atom
     AstAtom* head = intermediateClause->getHead();
-    for (size_t i = 0; i < head->getArguments().size() - 2; i++) {
+    size_t numberOfHeights = program->getRelation(head->getName())->numberOfHeightParameters();
+    for (size_t i = 0; i < head->getArguments().size() - 1 - numberOfHeights; i++) {
         auto arg = head->getArgument(i);
 
         if (auto var = dynamic_cast<AstVariable*>(arg)) {
@@ -1218,22 +1241,43 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
         }
     }
 
-    // index of level argument in argument list
-    size_t levelIndex = head->getArguments().size() - 2;
+    if (Global::config().get("provenance") == "subtreeHeights") {
+        // starting index of subtree level arguments in argument list
+        // starts immediately after original arguments as height and rulenumber of tuple are not passed to
+        // subroutine
+        size_t levelIndex = head->getArguments().size() - numberOfHeights - 1;
 
-    // add level constraints
-    for (size_t i = 0; i < intermediateClause->getBodyLiterals().size(); i++) {
-        auto lit = intermediateClause->getBodyLiteral(i);
-        if (auto atom = dynamic_cast<AstAtom*>(lit)) {
-            auto arity = atom->getArity();
+        // add level constraints
+        for (size_t i = 0; i < intermediateClause->getBodyLiterals().size(); i++) {
+            auto lit = intermediateClause->getBodyLiteral(i);
+            if (auto atom = dynamic_cast<AstAtom*>(lit)) {
+                auto arity = atom->getArity();
+                auto literalHeights = program->getRelation(atom->getName())->numberOfHeightParameters();
+                auto literalLevelIndex = arity - literalHeights;
 
-            // arity - 1 is the level number in body atoms
-            intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::LT,
-                    std::unique_ptr<AstArgument>(atom->getArgument(arity - 1)->clone()),
-                    std::make_unique<AstSubroutineArgument>(levelIndex)));
+                intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                        std::unique_ptr<AstArgument>(atom->getArgument(literalLevelIndex)->clone()),
+                        std::make_unique<AstSubroutineArgument>(levelIndex)));
+            }
+            levelIndex++;
+        }
+    } else {
+        // index of level argument in argument list
+        size_t levelIndex = head->getArguments().size() - numberOfHeights - 1;
+
+        // add level constraints
+        for (size_t i = 0; i < intermediateClause->getBodyLiterals().size(); i++) {
+            auto lit = intermediateClause->getBodyLiteral(i);
+            if (auto atom = dynamic_cast<AstAtom*>(lit)) {
+                auto arity = atom->getArity();
+
+                // arity - 1 is the level number in body atoms
+                intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::LT,
+                        std::unique_ptr<AstArgument>(atom->getArgument(arity - 1)->clone()),
+                        std::make_unique<AstSubroutineArgument>(levelIndex)));
+            }
         }
     }
-
     return ProvenanceClauseTranslator(*this).translateClause(*intermediateClause, clause);
 }
 
@@ -1319,6 +1363,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     size_t litNumber = 0;
     for (const auto& lit : newClause->getBodyLiterals()) {
         if (auto atom = dynamic_cast<AstAtom*>(lit)) {
+            size_t numberOfHeights = program->getRelation(atom->getName())->numberOfHeightParameters();
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
 
@@ -1330,14 +1375,16 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             atom->apply(varsToArgs);
 
             // add each value (subroutine argument) to the search query
-            for (size_t i = 0; i < atom->getArity() - 2; i++) {
+            for (size_t i = 0; i < atom->getArity() - 1 - numberOfHeights; i++) {
                 auto arg = atom->getArgument(i);
                 query.push_back(translateValue(arg, ValueIndex()));
             }
 
             // fill up query with nullptrs for the provenance columns
             query.push_back(std::make_unique<RamUndefValue>());
-            query.push_back(std::make_unique<RamUndefValue>());
+            for (size_t h = 0; h < numberOfHeights; h++) {
+                query.push_back(std::make_unique<RamUndefValue>());
+            }
 
             // ensure the length of query tuple is correct
             assert(query.size() == atom->getArity() && "wrong query tuple size");
@@ -1358,7 +1405,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             std::vector<std::unique_ptr<RamExpression>> returnAtom;
             returnAtom.push_back(std::make_unique<RamUndefValue>());
             // the actual atom
-            for (size_t i = 0; i < atom->getArity() - 2; i++) {
+            for (size_t i = 0; i < atom->getArity() - 1 - numberOfHeights; i++) {
                 returnAtom.push_back(translateValue(atom->getArgument(i), ValueIndex()));
             }
 
@@ -1395,7 +1442,9 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
                 returnLit.push_back(translateValue(binaryConstraint->getRHS(), ValueIndex()));
             } else if (auto negation = dynamic_cast<AstNegation*>(con)) {
                 auto vals = negation->getAtom()->getArguments();
-                for (size_t i = 0; i < vals.size() - 2; i++) {
+                auto numberOfHeights =
+                        program->getRelation(negation->getAtom()->getName())->numberOfHeightParameters();
+                for (size_t i = 0; i < vals.size() - 1 - numberOfHeights; i++) {
                     returnLit.push_back(translateValue(vals[i], ValueIndex()));
                 }
             }
@@ -1477,26 +1526,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         appendStmt(current, std::make_unique<RamDrop>(translateRelation(relation)));
     };
 
-#ifdef USE_MPI
-    const auto& makeRamSend = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
-                                      const std::set<size_t> destinationStrata) {
-        appendStmt(current, std::make_unique<RamSend>(translateRelation(relation), destinationStrata));
-    };
-
-    const auto& makeRamRecv = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
-                                      const size_t sourceStrata) {
-        appendStmt(current, std::make_unique<RamRecv>(translateRelation(relation), sourceStrata));
-    };
-
-    const auto& makeRamNotify = [&](std::unique_ptr<RamStatement>& current) {
-        appendStmt(current, std::make_unique<RamNotify>());
-    };
-
-    const auto& makeRamWait = [&](std::unique_ptr<RamStatement>& current, const size_t count) {
-        appendStmt(current, std::make_unique<RamWait>(count));
-    };
-#endif
-
     // maintain the index of the SCC within the topological order
     size_t indexOfScc = 0;
 
@@ -1537,21 +1566,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             }
         }
 
-#ifdef USE_MPI
-        const auto& externPreds = sccGraph.getExternalPredecessorRelations(scc);
-        const auto& internsWithExternSuccs = sccGraph.getInternalRelationsWithExternalSuccessors(scc);
-        // note that the order of receives is first by relation then second destination
-        if (Global::config().get("engine") == "mpi") {
-            // first, recv all internal input relations from the master process
-            for (const auto& relation : internIns) {
-                makeRamRecv(current, relation, (size_t)-1);
-            }
-            // second, recv all predecessor relations from their source slave process
-            for (const auto& relation : externPreds) {
-                makeRamRecv(current, relation, sccOrder.indexOfScc(sccGraph.getSCC(relation)));
-            }
-        } else
-#endif
         {
             // load all internal input relations from the facts dir with a .facts extension
             for (const auto& relation : internIns) {
@@ -1578,22 +1592,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
                                          *((const AstRelation*)*allInterns.begin()), recursiveClauses)
                                : translateRecursiveRelation(allInterns, recursiveClauses);
         appendStmt(current, std::move(bodyStatement));
-#ifdef USE_MPI
-        // note that the order of sends is first by relation then second destination
-        if (Global::config().get("engine") == "mpi") {
-            // first, send all internal relations with external successors to their destination slave
-            // processes
-            for (const auto& relation : internsWithExternSuccs) {
-                makeRamSend(current, relation, sccOrder.indexOfScc(sccGraph.getSuccessorSCCs(relation)));
-            }
-            // notify the master process
-            makeRamNotify(current);
-            // second, send all internal output relations to the master process
-            for (const auto& relation : internOuts) {
-                makeRamSend(current, relation, std::set<size_t>({(size_t)-1}));
-            }
-        } else
-#endif
         {
             // if a communication engine is enabled...
             if (Global::config().has("engine")) {
@@ -1642,60 +1640,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             indexOfScc++;
         }
     }
-
-#ifdef USE_MPI
-    if (Global::config().get("engine") == "mpi") {
-        // make a new ram statement for the master process
-        std::unique_ptr<RamStatement> current;
-
-        // load all internal input relations from fact-dir with a .facts extension
-        indexOfScc = 0;
-        for (const auto scc : sccOrder.order()) {
-            for (const auto& relation : sccGraph.getInternalInputRelations(scc)) {
-                makeRamLoad(current, relation, "fact-dir", ".facts");
-            }
-            ++indexOfScc;
-        }
-
-        // send all internal input relations to their slave processes
-        indexOfScc = 0;
-        for (const auto scc : sccOrder.order()) {
-            for (const auto& relation : sccGraph.getInternalInputRelations(scc)) {
-                // note that the order of sends is first by relation then second destination
-                const auto destinations = std::set<size_t>({indexOfScc});
-                makeRamSend(current, relation, destinations);
-                makeRamDrop(current, relation);
-            }
-            ++indexOfScc;
-        }
-
-        // wait for notifications from all slaves
-        makeRamWait(current, sccGraph.getNumberOfSCCs());
-
-        // recv all internal output relations from their slave processes
-        indexOfScc = 0;
-        for (const auto scc : sccOrder.order()) {
-            for (const auto& relation : sccGraph.getInternalOutputRelations(scc)) {
-                // note that the order of receives is first by relation then second destination
-                makeRamRecv(current, relation, indexOfScc);
-            }
-            ++indexOfScc;
-        }
-
-        // write to output-dir with .csv extension
-        indexOfScc = 0;
-        for (const auto scc : sccOrder.order()) {
-            for (const auto& relation : sccGraph.getInternalOutputRelations(scc)) {
-                makeRamStore(current, relation, "output-dir", ".csv");
-                makeRamDrop(current, relation);
-            }
-            ++indexOfScc;
-        }
-
-        // append the master process as a stratum with index of the max int
-        appendStmt(res, std::make_unique<RamStratum>(std::move(current), std::numeric_limits<int>::max()));
-    }
-#endif
 
     // add main timer if profiling
     if (res && Global::config().has("profile")) {

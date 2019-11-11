@@ -35,10 +35,6 @@
 #include "souffle/Logger.h"
 #include "souffle/ProfileEvent.h"
 #endif
-#ifdef USE_MPI
-#include "souffle/Mpi.h"
-#endif
-
 #include <array>
 #include <atomic>
 #include <cassert>
@@ -68,7 +64,7 @@ inline souffle::SouffleProgram* getInstance(const char* p) {
 /**
  * Relation wrapper used internally in the generated Datalog program
  */
-template <uint32_t id, class RelType, class TupleType, size_t Arity>
+template <uint32_t id, class RelType, class TupleType, size_t Arity, size_t NumberOfHeights>
 class RelationWrapper : public souffle::Relation {
 private:
     RelType& relation;
@@ -149,6 +145,9 @@ public:
     }
     size_t getArity() const override {
         return Arity;
+    }
+    size_t getNumberOfHeights() const override {
+        return NumberOfHeights;
     }
     SymbolTable& getSymbolTable() const override {
         return symTable;

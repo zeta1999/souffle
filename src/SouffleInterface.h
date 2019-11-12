@@ -152,11 +152,10 @@ public:
     class iterator {
     protected:
         /*
-         * Iterator_base class pointer.
+         * iterator_base class pointer.
          *
-         * TODO (Honghyw) : Provide a documentation that explains why we need to set iter to null prt.
          */
-        iterator_base* iter = nullptr;
+        std::unique_ptr<iterator_base> iter = nullptr;
 
     public:
         /**
@@ -165,11 +164,20 @@ public:
         iterator() = default;
 
         /**
+         * Move constructor.
+         *
+         * The new iterator now has ownerhsip of the iterator base.
+         *
+         * @param arg lvalue reference to an iterator object
+         */
+        iterator(iterator&& arg) = default;
+
+        /**
          * Constructor.
          *
-         * Initialize the iter to be the same as arg.
+         * Initialise this iterator with a given iterator base
          *
-         * TODO (Honghyw) : Provide a documentation explaining why this is useful.
+         * The new iterator has ownership of the iterator base.
          *
          * @param arg An iterator_base class pointer
          */
@@ -180,16 +188,12 @@ public:
          *
          * The iterator_base instance iter is pointing is destructed.
          */
-        ~iterator() {
-            delete iter;
-        }
+        ~iterator() = default;
 
         /**
          * Constructor.
          *
-         * Initialize the iter to be the clone of arg.
-         *
-         * TODO (Honghyw) : Provide a documentation explaining why this is useful
+         * Initialise the iter to be the clone of arg.
          *
          * @param o Reference to an iterator object
          */
@@ -201,8 +205,12 @@ public:
          * The original iterator_base instance is destructed.
          */
         iterator& operator=(const iterator& o) {
-            delete iter;
-            iter = o.iter->clone();
+            iter.reset(o.iter->clone());
+            return *this;
+        }
+
+        iterator& operator=(iterator&& o) {
+            iter.swap(o.iter);
             return *this;
         }
 
@@ -574,12 +582,11 @@ public:
     }
 
     /**
-     * Direct constructor using initialization list.
-     *
-     * TODO (Honghyw) : Provide a ducumentation explainning what this is doing.
+     * Construct using initialisation list.
      */
-    tuple(Relation* r, std::initializer_list<RamDomain> il) : relation(*r), array(il), pos(il.size()) {
-        assert(il.size() == r->getArity() && "wrong tuple arity");
+    tuple(const Relation* relation, std::initializer_list<RamDomain> tupleList)
+            : relation(*relation), array(tupleList), pos(tupleList.size()), data(array.data()) {
+        assert(tupleList.size() == relation->getArity() && "tuple arity does not match relation arity");
     }
 };
 

@@ -316,6 +316,12 @@ test_compiled_relation_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/s
 test_compiled_relation_test_SOURCES = test/compiled_relation_test.cpp
 test_compiled_relation_test_LDADD = libsouffle.la
 
+# interpreter relation test
+check_PROGRAMS += test/interpreter_relation_test
+test_interpreter_relation_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test
+test_interpreter_relation_test_SOURCES = test/interpreter_relation_test.cpp
+test_interpreter_relation_test_LDADD = libsouffle.la
+
 # type system test
 check_PROGRAMS += test/type_system_test
 test_type_system_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test

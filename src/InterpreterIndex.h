@@ -60,7 +60,7 @@ public:
  */
 class TupleRef {
     // The address of the first component of the tuple.
-    const RamDomain* base{};
+    const RamDomain* base = nullptr;
 
     // The size of the tuple.
     std::size_t arity = 0;
@@ -211,7 +211,7 @@ public:
 
 private:
     // the source to read data from
-    std::unique_ptr<Source> source;
+    std::unique_ptr<Source> source = nullptr;
 
     // an internal buffer for decoded elements
     std::array<TupleRef, BUFFER_SIZE> buffer{};
@@ -227,7 +227,7 @@ public:
         loadNext();
     }
 
-    Stream() : source(nullptr) {}
+    Stream() = default;
 
     Stream(Stream& other) = delete;
 
@@ -303,10 +303,10 @@ public:
 
     // support for ranged based for loops
     Iterator begin() {
-        return *this;
+        return Iterator(*this);
     }
     Iterator end() const {
-        return {};
+        return Iterator();
     }
 
 private:

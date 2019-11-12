@@ -70,7 +70,7 @@ public:
     };
 
     Iterator begin() const {
-        return *this;
+        return Iterator(*this);
     }
 
     Iterator end() const {

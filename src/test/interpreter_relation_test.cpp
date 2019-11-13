@@ -19,9 +19,6 @@
 #include "SouffleInterface.h"
 #include "test.h"
 
-#include <fstream>
-#include <memory>
-
 using namespace souffle;
 
 namespace test {
@@ -81,7 +78,9 @@ TEST(Basic, Iteration) {
     Relation::iterator it = relInt.begin();
     std::size_t count = 0;
     while (it != relInt.end()) {
+        // Check the 'deref' doesn't crash
         auto value = (*it)[0];
+        (void)value;
         ++it;
         ++count;
     }
@@ -116,7 +115,7 @@ TEST(Independence, Iteration) {
     EXPECT_EQ(1, (*it3)[0]);
 }
 
-TEST(IndepedentMoving, Iteration) {
+TEST(IndependentMoving, Iteration) {
     // create a table
     SymbolTable symbolTable;
     MinIndexSelection order{};

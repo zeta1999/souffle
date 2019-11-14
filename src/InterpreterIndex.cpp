@@ -104,7 +104,7 @@ class NullaryIndex : public InterpreterIndex {
         }
 
         std::unique_ptr<Stream::Source> clone() override {
-            return std::unique_ptr<Stream::Source>(new Source(present));
+            return std::make_unique<Source>(present);
         }
     };
 

@@ -251,7 +251,7 @@ protected:
 
         int reload(TupleRef* out, int max) override {
             int c = 0;
-            max = std::max(max, Stream::BUFFER_SIZE);
+            max = std::min(max, Stream::BUFFER_SIZE);
             while (c < max) {
                 out[c] = buffer[c];
                 ++c;
@@ -454,7 +454,7 @@ public:
 
         int reload(TupleRef* out, int max) override {
             int c = 0;
-            max = std::max(max, Stream::BUFFER_SIZE);
+            max = std::min(max, Stream::BUFFER_SIZE);
             while (c < max) {
                 out[c] = buffer[c];
                 ++c;

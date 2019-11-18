@@ -10,7 +10,7 @@
  *
  * @file interpreter_relation_test.h
  *
- * Tests InterpreterRelation
+ * Tests InterpreterRelInterface
  *
  ***********************************************************************/
 
@@ -134,6 +134,29 @@ TEST(IndependentMoving, Iteration) {
         Relation::iterator it2(relInt.begin());
         EXPECT_EQ(1, (*it2)[0]);
         it = std::move(it2);
+    }
+    EXPECT_EQ(1, (*it)[0]);
+}
+
+TEST(IndependentCopying, Iteration) {
+    // create a table
+    SymbolTable symbolTable;
+    MinIndexSelection order{};
+    order.insertDefaultTotalIndex(1);
+    InterpreterRelation rel(1, 0, "test", {"i"}, order);
+    InterpreterRelInterface relInt(rel, symbolTable, "test", {"i"}, {"i"}, 0);
+
+    // add a value
+    relInt.insert(tuple(&relInt, {1}));
+
+    Relation::iterator it = relInt.begin();
+    EXPECT_EQ(1, (*it)[0]);
+
+    // Make a new iterator, copy it to the first iterator, then let the new iterator go out of scope
+    {
+        Relation::iterator it2(relInt.begin());
+        EXPECT_EQ(1, (*it2)[0]);
+        it = it2;
     }
     EXPECT_EQ(1, (*it)[0]);
 }

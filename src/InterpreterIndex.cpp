@@ -103,8 +103,16 @@ class NullaryIndex : public InterpreterIndex {
             return 1;
         }
 
+        int reload(TupleRef* buffer, int max) override {
+            if (!present) {
+                return 0;
+            }
+            buffer[0] = TupleRef(nullptr, 0);
+            return 1;
+        }
+
         std::unique_ptr<Stream::Source> clone() override {
-            return std::unique_ptr<Stream::Source>(new Source(present));
+            return std::make_unique<Source>(present);
         }
     };
 
@@ -241,10 +249,20 @@ protected:
             return c;
         }
 
+        int reload(TupleRef* out, int max) override {
+            int c = 0;
+            max = std::min(max, Stream::BUFFER_SIZE);
+            while (c < max) {
+                out[c] = buffer[c];
+                ++c;
+            }
+            return c;
+        }
+
         std::unique_ptr<Stream::Source> clone() override {
-            Source* source = new Source(order, cur, end);
+            auto source = std::make_unique<Source>(order, cur, end);
             source->buffer = this->buffer;
-            return std::unique_ptr<Stream::Source>(source);
+            return source;
         }
     };
 
@@ -429,6 +447,16 @@ public:
                 buffer[c] = *cur;
                 out[c] = buffer[c];
                 ++cur;
+                ++c;
+            }
+            return c;
+        }
+
+        int reload(TupleRef* out, int max) override {
+            int c = 0;
+            max = std::min(max, Stream::BUFFER_SIZE);
+            while (c < max) {
+                out[c] = buffer[c];
                 ++c;
             }
             return c;

@@ -142,7 +142,7 @@ protected:
         /** Check equivalence */
         bool equal(const Relation::iterator_base& o) const override {
             try {
-                auto iter = dynamic_cast<const InterpreterRelInterface::iterator_base&>(o);
+                auto& iter = dynamic_cast<const InterpreterRelInterface::iterator_base&>(o);
                 return ramRelationInterface == iter.ramRelationInterface && it == iter.it;
             } catch (const std::bad_cast& e) {
                 return false;

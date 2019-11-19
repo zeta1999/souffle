@@ -1131,7 +1131,7 @@ public:
                 i = i & getLevelMask(level);
 
                 // find next higher value
-                i += static_cast<unsigned long>(1 << (BITS * level));
+                i += 1ull << (BITS * level);
 
             } else {
                 if (level == 0) {

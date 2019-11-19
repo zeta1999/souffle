@@ -70,7 +70,9 @@ inline char* realpath(const char* path, char* resolved_path) {
 
 constexpr unsigned long ctz(unsigned long value) {
     unsigned long trailing_zeroes = 0;
-    while ((value = value >> 1) ^ 1) ++trailing_zeroes;
+    while ((value = value >> 1) ^ 1) {
+        ++trailing_zeroes;
+    }
     return trailing_zeroes;
 }
 #define __builtin_ctz ctz
@@ -78,10 +80,11 @@ constexpr unsigned long ctz(unsigned long value) {
 inline unsigned long ctzll(unsigned long long value) {
     unsigned long trailing_zero = 0;
 
-    if (_BitScanForward64(&trailing_zero, value))
+    if (_BitScanForward64(&trailing_zero, value)) {
         return trailing_zero;
-    else
+    } else {
         return 64;
+    }
 }
 #define __builtin_ctzll ctzll
 

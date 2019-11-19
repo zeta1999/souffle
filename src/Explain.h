@@ -203,39 +203,44 @@ public:
                         "<relation2>(<element1>, <element2>, ...), ...\n");
                 return true;
             }
-            // vector rels stores command, args pair parsed by parseQueryTuple()
-            std::vector<std::pair<std::string, std::vector<std::string>>> rels;
-            std::regex varRegex("[a-zA-Z_][a-zA-Z_0-9]*", std::regex_constants::extended);
-            std::regex symbolRegex("\"([^\"]*)\"", std::regex_constants::extended);
-            std::regex numberRegex("[0-9]+", std::regex_constants::extended);
-            std::regex relRegex(
+            // vector relations stores relation name, args pair parsed by parseQueryTuple()
+            std::vector<std::pair<std::string, std::vector<std::string>>> relations;
+            // regex for relation string
+            std::regex relationRegex(
                     "([a-zA-Z0-9_.-]*)[[:blank:]]*\\(([[:blank:]]*([0-9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*)("
                     "[[:blank:]]*,[[:blank:]]*(["
                     "0-"
                     "9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*))*)?\\)",
                     std::regex_constants::extended);
-            std::smatch relMatcher;
+            std::smatch relationMatcher;
             std::smatch argsMatcher;
-            std::string relStr = command[1];
-            // split the relations in the relation product string
-            while (std::regex_search(relStr, relMatcher, relRegex)) {
-                rels.push_back(parseQueryTuple(relMatcher[0]));
-                if (rels.back().first.size() == 0 || rels.back().second.size() == 0) {
+            std::string relationStr = command[1];
+            // use relationRegex to match each relation string and call parseQueryTuple() to parse the
+            // relation name and arguments
+            while (std::regex_search(relationStr, relationMatcher, relationRegex)) {
+                relations.push_back(parseQueryTuple(relationMatcher[0]));
+
+                // check return value for parseQueryTuple, return if relation name is empty string or argument
+                // tuple is empty
+                if (relations.back().first.size() == 0 || relations.back().second.size() == 0) {
                     printError(
                             "Usage: query <relation1>(<element1>, <element2>, ...), "
                             "<relation2>(<element1>, <element2>, ...), ...\n");
                     return true;
                 }
-                relStr = relMatcher.suffix().str();
+                relationStr = relationMatcher.suffix().str();
             }
-            if (rels.size() == 0) {
+
+            // is no valid relation can be identified, return directly
+            if (relations.size() == 0) {
                 printError(
                         "Usage: query <relation1>(<element1>, <element2>, ...), "
                         "<relation2>(<element1>, <element2>, ...), ...\n");
                 return true;
             }
 
-            std::cout << prov.queryProcess(rels) << std::flush;
+            // call queryProcess function to process relations
+            std::cout << prov.queryProcess(relations) << std::flush;
         } else {
             printError(
                     "\n----------\n"
@@ -289,7 +294,7 @@ private:
 
         // regex for matching tuples
         // values matches numbers or strings enclosed in quotation marks
-        std::regex relRegex(
+        std::regex relationRegex(
                 "([a-zA-Z0-9_.-]*)[[:blank:]]*\\(([[:blank:]]*([0-9]+|\"[^\"]*\")([[:blank:]]*,[[:blank:]]*(["
                 "0-"
                 "9]+|\"[^\"]*\"))*)?\\)",
@@ -298,7 +303,7 @@ private:
 
         // first check that format matches correctly
         // and extract relation name
-        if (!std::regex_match(str, relMatch, relRegex) || relMatch.size() < 3) {
+        if (!std::regex_match(str, relMatch, relationRegex) || relMatch.size() < 3) {
             return std::make_pair(relName, args);
         }
 
@@ -323,7 +328,8 @@ private:
     }
 
     /**
-     * Parse tuple for query, split into relation name and args
+     * Parse tuple for query, split into relation name and args, additionally allow varaible as argument in
+     * relation tuple
      * @param str The string to parse, should be in form "R(x1, x2, x3, ...)"
      */
     std::pair<std::string, std::vector<std::string>> parseQueryTuple(const std::string& str) {
@@ -331,16 +337,16 @@ private:
         std::vector<std::string> args;
         // regex for matching tuples
         // values matches numbers or strings enclosed in quotation marks
-        std::regex relRegex(
+        std::regex relationRegex(
                 "([a-zA-Z0-9_.-]*)[[:blank:]]*\\(([[:blank:]]*([0-9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*)([[:"
                 "blank:]]*,[[:blank:]]*(["
                 "0-"
                 "9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*))*)?\\)",
                 std::regex_constants::extended);
         std::smatch relMatch;
-        // first check that format matches correctly
-        // and extract relation name
-        if (!std::regex_match(str, relMatch, relRegex) || relMatch.size() < 3) {
+
+        // if the given string does not match relationRegex, return a pair of empty string and empty vector
+        if (!std::regex_match(str, relMatch, relationRegex) || relMatch.size() < 3) {
             return std::make_pair(relName, args);
         }
 

@@ -1181,7 +1181,7 @@ inline std::string tempFile() {
 #ifdef _WIN32
     std::string templ;
     std::FILE* f = nullptr;
-    while (!f) {
+    while (f == nullptr) {
         templ = std::tmpnam(nullptr);
         f = fopen(templ.c_str(), "wx");
     }

@@ -8,15 +8,18 @@
 #include <list>
 
 #ifdef _WIN32
-unsigned long __inline clzll(unsigned long long value) {
-    unsigned long trailing_zero = 0;
+/**
+ * MSVC does not provide a builtin for counting leading zeroes like gcc,
+ * so we have to implement it ourselves.
+ */
+unsigned long __inline __builtin_clzll(unsigned long long value) {
+    unsigned long msb = 0;
 
-    if (_BitScanReverse64(&trailing_zero, value))
-        return 63 - trailing_zero;
+    if (_BitScanReverse64(&msb, value))
+        return 63 - msb;
     else
         return 64;
 }
-#define __builtin_clzll clzll
 #endif  // _WIN32
 
 using std::size_t;

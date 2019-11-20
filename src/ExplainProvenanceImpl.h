@@ -636,13 +636,13 @@ public:
             for (size_t j = 0; j < rels[i].second.size(); ++j) {
                 if (std::regex_match(rels[i].second[j], argsMatcher, varRegex)) {
                     containVar = true;
-                    auto mapIt = nameToEquivalence.find(argsMatcher[0]);
-                    if (mapIt == nameToEquivalence.end()) {
+                    auto nameToEquivalenceIter = nameToEquivalence.find(argsMatcher[0]);
+                    if (nameToEquivalenceIter == nameToEquivalence.end()) {
                         nameToEquivalence.insert(
                                 {argsMatcher[0], Equivalence(*(relation->getAttrType(j)), argsMatcher[0],
                                                          std::make_pair(idx, j))});
                     } else {
-                        mapIt->second.push_back(std::make_pair(idx, j));
+                        nameToEquivalenceIter->second.push_back(std::make_pair(idx, j));
                     }
                 } else if (std::regex_match(rels[i].second[j], argsMatcher, symbolRegex)) {
                     if (*(relation->getAttrType(j)) != 's') {

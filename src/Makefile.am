@@ -140,7 +140,6 @@ souffle_sources = \
               ResolveAliasesTransformer.cpp             \
               SignalHandler.h                           \
               SrcLocation.cpp    SrcLocation.h          \
-              StringPool.h                              \
               Synthesiser.cpp       Synthesiser.h       \
               SynthesiserRelation.cpp                   \
               SynthesiserRelation.h                     \

@@ -985,12 +985,3 @@ public:
     }
 };
 }  // namespace souffle
-
-#ifdef _MSC_VER
-namespace std {
-template <>
-struct iterator_traits<souffle::Relation::iterator> {
-    typedef std::forward_iterator_tag iterator_category;
-};
-}  // namespace std
-#endif  // _MSC_VER

@@ -608,7 +608,7 @@ public:
         std::map<std::string, Equivalence> nameToEquivalence;
 
         // const constraints that solution must satisfy
-        ConstConstraint cc;
+        ConstConstraint constConstraints;
 
         // varRels stores relation of tuples that need to resolve which contains at least one variable
         std::vector<Relation*> varRels;
@@ -649,7 +649,7 @@ public:
                         return queryResult;
                     }
                     RamDomain rd = prog.getSymbolTable().lookup(argsMatcher[1]);
-                    cc.push_back(std::make_pair(std::make_pair(idx, j), rd));
+                    constConstraints.push_back(std::make_pair(std::make_pair(idx, j), rd));
                     if (!containVar) {
                         constTuple.push_back(rd);
                     }
@@ -659,7 +659,7 @@ public:
                         return queryResult;
                     }
                     RamDomain rd = std::stoi(argsMatcher[0]);
-                    cc.push_back(std::make_pair(std::make_pair(idx, j), rd));
+                    constConstraints.push_back(std::make_pair(std::make_pair(idx, j), rd));
                     if (!containVar) {
                         constTuple.push_back(rd);
                     }
@@ -696,8 +696,9 @@ public:
                     }
                     queryResult += rels[i].second.back() + ") does not exist\n";
                 }
-                cc.getConstraints().erase(
-                        cc.getConstraints().end() - r->getArity() + 2, cc.getConstraints().end());
+                constConstraints.getConstraints().erase(
+                        constConstraints.getConstraints().end() - r->getArity() + 2,
+                        constConstraints.getConstraints().end());
             } else {
                 varRels.push_back(r);
                 ++idx;
@@ -733,7 +734,7 @@ public:
             }
             if (isSolution) {
                 // check if tuple satisifies const constraints
-                isSolution = cc.verify(element);
+                isSolution = constConstraints.verify(element);
             }
             if (isSolution) {
                 std::vector<RamDomain> solution;

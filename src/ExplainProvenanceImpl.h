@@ -617,17 +617,17 @@ public:
         size_t idx = 0;
 
         for (size_t i = 0; i < rels.size(); ++i) {
-            Relation* r = prog.getRelation(rels[i].first);
+            Relation* relation = prog.getRelation(rels[i].first);
             std::vector<RamDomain> constTuple;
             // query relation does not exist
-            if (r == nullptr) {
+            if (relation == nullptr) {
                 queryResult += "Relation <" + rels[i].first + "> does not exist\n";
                 return queryResult;
             }
             // airty error
-            if (r->getArity() - 2 != rels[i].second.size()) {
-                queryResult +=
-                        "<" + rels[i].first + "> has arity of " + std::to_string(r->getArity() - 2) + "\n";
+            if (relation->getArity() - 2 != rels[i].second.size()) {
+                queryResult += "<" + rels[i].first + "> has arity of " +
+                               std::to_string(relation->getArity() - 2) + "\n";
                 return queryResult;
             }
 
@@ -638,13 +638,14 @@ public:
                     containVar = true;
                     auto mapIt = nameToEquivalence.find(argsMatcher[0]);
                     if (mapIt == nameToEquivalence.end()) {
-                        nameToEquivalence.insert({argsMatcher[0],
-                                Equivalence(*(r->getAttrType(j)), argsMatcher[0], std::make_pair(idx, j))});
+                        nameToEquivalence.insert(
+                                {argsMatcher[0], Equivalence(*(relation->getAttrType(j)), argsMatcher[0],
+                                                         std::make_pair(idx, j))});
                     } else {
                         mapIt->second.push_back(std::make_pair(idx, j));
                     }
                 } else if (std::regex_match(rels[i].second[j], argsMatcher, symbolRegex)) {
-                    if (*(r->getAttrType(j)) != 's') {
+                    if (*(relation->getAttrType(j)) != 's') {
                         queryResult += argsMatcher.str(0) + " does not match type defined in relation\n";
                         return queryResult;
                     }
@@ -654,7 +655,7 @@ public:
                         constTuple.push_back(rd);
                     }
                 } else if (std::regex_match(rels[i].second[j], argsMatcher, numberRegex)) {
-                    if (*(r->getAttrType(j)) != 'i') {
+                    if (*(relation->getAttrType(j)) != 'i') {
                         queryResult += argsMatcher.str(0) + " does not match type defined in relation\n";
                         return queryResult;
                     }
@@ -669,7 +670,7 @@ public:
             // if tuple does not contain any variable, check if relation contains this tuple
             if (!containVar) {
                 bool containTuple = false;
-                for (auto it = r->begin(); it != r->end(); ++it) {
+                for (auto it = relation->begin(); it != relation->end(); ++it) {
                     bool eq = true;
                     for (size_t j = 0; j < constTuple.size(); ++j) {
                         if (constTuple[j] != (*it)[j]) {
@@ -697,10 +698,10 @@ public:
                     queryResult += rels[i].second.back() + ") does not exist\n";
                 }
                 constConstraints.getConstraints().erase(
-                        constConstraints.getConstraints().end() - r->getArity() + 2,
+                        constConstraints.getConstraints().end() - relation->getArity() + 2,
                         constConstraints.getConstraints().end());
             } else {
-                varRels.push_back(r);
+                varRels.push_back(relation);
                 ++idx;
             }
         }
@@ -712,8 +713,8 @@ public:
         // vector of iterators for relations in varRels
         std::vector<Relation::iterator> qpIt;
         std::vector<std::vector<RamDomain>> solutions;
-        for (auto r : varRels) {
-            qpIt.push_back(r->begin());
+        for (auto relation : varRels) {
+            qpIt.push_back(relation->begin());
         }
 
         // the width of the slot to print solution properly

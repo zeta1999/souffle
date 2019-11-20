@@ -317,7 +317,7 @@ LambdaRamVisitor<R, N> makeLambdaRamVisitor(const std::function<R(const N&)>& fu
  */
 template <typename T>
 struct is_ram_visitor {
-    enum { value = std::is_base_of<ram_visitor_tag, T>::value };
+    static constexpr size_t value = std::is_base_of<ram_visitor_tag, T>::value;
 };
 
 template <typename T>

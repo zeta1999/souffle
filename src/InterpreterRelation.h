@@ -206,7 +206,7 @@ protected:
     std::string relName;
 
     // Relation Arity
-    size_t arity;
+    const size_t arity;
 
     // Number of height parameters of relation
     size_t numberOfHeights;

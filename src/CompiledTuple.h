@@ -34,7 +34,7 @@ template <typename Domain, std::size_t _arity>
 struct Tuple {
     // some features for template meta programming
     using value_type = Domain;
-    enum { arity = _arity };
+    static constexpr size_t arity = _arity;
 
     // the stored data
     Domain data[arity];

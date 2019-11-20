@@ -81,10 +81,10 @@ private:
 };
 
 /* const constraints for values in query command */
-class ConstConstr {
+class ConstConstraint {
 public:
-    ConstConstr() = default;
-    ~ConstConstr() = default;
+    ConstConstraint() = default;
+    ~ConstConstraint() = default;
     void push_back(std::pair<std::pair<size_t, size_t>, RamDomain> constr) {
         constConstrs.push_back(constr);
     }

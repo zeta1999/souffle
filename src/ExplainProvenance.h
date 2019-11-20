@@ -99,7 +99,8 @@ public:
         return true;
     }
 
-    std::vector<std::pair<std::pair<size_t, size_t>, RamDomain>>& getConstrs() {
+    // get the const constraint vector
+    std::vector<std::pair<std::pair<size_t, size_t>, RamDomain>>& getConstraints() {
         return constConstrs;
     }
 

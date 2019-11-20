@@ -607,7 +607,7 @@ public:
         std::map<std::string, Equivalence> varMap;
 
         // const constraints that solution must satisfy
-        ConstConstr cc;
+        ConstConstraint cc;
 
         // varRels stores relation of tuples that need to resolve which contains at least one variable
         std::vector<Relation*> varRels;
@@ -695,7 +695,8 @@ public:
                     }
                     queryResult += rels[i].second.back() + ") does not exist\n";
                 }
-                cc.getConstrs().erase(cc.getConstrs().end() - r->getArity() + 2, cc.getConstrs().end());
+                cc.getConstraints().erase(
+                        cc.getConstraints().end() - r->getArity() + 2, cc.getConstraints().end());
             } else {
                 varRels.push_back(r);
                 ++idx;

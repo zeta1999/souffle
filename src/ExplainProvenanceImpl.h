@@ -595,7 +595,6 @@ public:
         os << "\n]\n";
     }
 
-
     std::string queryProcess(
             const std::vector<std::pair<std::string, std::vector<std::string>>>& rels) override {
         std::string queryResult = "";
@@ -641,7 +640,8 @@ public:
                 if (std::regex_match(rels[i].second[j], argsMatcher, varRegex)) {
                     containVar = true;
                     auto nameToEquivalenceIter = nameToEquivalence.find(argsMatcher[0]);
-                    // if varaible has not shown up before, create an equivalence class for it and add it to map, otherwise add its indices to corresponding equivalence class
+                    // if varaible has not shown up before, create an equivalence class for it and add it to
+                    // map, otherwise add its indices to corresponding equivalence class
                     if (nameToEquivalenceIter == nameToEquivalence.end()) {
                         nameToEquivalence.insert(
                                 {argsMatcher[0], Equivalence(*(relation->getAttrType(j)), argsMatcher[0],
@@ -649,7 +649,7 @@ public:
                     } else {
                         nameToEquivalenceIter->second.push_back(std::make_pair(idx, j));
                     }
-                // arg is a symbol
+                    // arg is a symbol
                 } else if (std::regex_match(rels[i].second[j], argsMatcher, symbolRegex)) {
                     if (*(relation->getAttrType(j)) != 's') {
                         queryResult += argsMatcher.str(0) + " does not match type defined in relation\n";
@@ -661,7 +661,7 @@ public:
                     if (!containVar) {
                         constTuple.push_back(rd);
                     }
-                // arg is number
+                    // arg is number
                 } else if (std::regex_match(rels[i].second[j], argsMatcher, numberRegex)) {
                     if (*(relation->getAttrType(j)) != 'i') {
                         queryResult += argsMatcher.str(0) + " does not match type defined in relation\n";
@@ -679,7 +679,7 @@ public:
             // if tuple does not contain any variable, check if existence of the tuple
             if (!containVar) {
                 bool tupleExist = containsTuple(relation, constTuple);
-                
+
                 // if relation contains this tuple, remove all related constraints and output tuple exits
                 if (tupleExist) {
                     queryResult += "Tuple " + rels[i].first + "(";
@@ -708,14 +708,14 @@ public:
         if (varRels.size() == 0) {
             return queryResult;
         }
-        
+
         // the width of the slot to print solution properly, default width is 8
         size_t slotWidth = 8;
         std::vector<std::vector<RamDomain>> solutions;
-        
+
         // find solution for parametrised query
         findQuerySolution(varRels, nameToEquivalence, constConstraints, solutions, slotWidth);
-        
+
         // change slotWidth if any varaible name length is greater than slotWidth
         for (auto var : nameToEquivalence) {
             if (var.first.length() > slotWidth) {
@@ -725,7 +725,7 @@ public:
 
         // form string of solution
         std::string solutionString = getSolutionString(solutions, nameToEquivalence, slotWidth);
-       
+
         queryResult += solutionString;
         return queryResult;
     }
@@ -797,18 +797,21 @@ private:
                 .getWriter(symMask, prog.getSymbolTable(), ioDir, true, rel.getNumberOfHeights())
                 ->writeAll(rel);
     }
-    
+
     /*
-     * find solution for parametrised query satisify constant constraints and equivalence constraints, also modify the width of slot to print 
-     * solutions properly.
-     * @param varRels, reference to vector of relation of tuple contains at least one variable in its arguments
+     * find solution for parametrised query satisify constant constraints and equivalence constraints, also
+     * modify the width of slot to print solutions properly.
+     * @param varRels, reference to vector of relation of tuple contains at least one variable in its
+     * arguments
      * @param nameToEquivalence, reference to variable name and corresponding equivalence class
      * @param constConstraints, reference to const constraints must be satisfied
      * @solutions, reference to vector stores solutions
      * @slotWidth, reference to width to print solution properly
      * */
-    void findQuerySolution(const std::vector<Relation*>& varRels, const std::map<std::string, Equivalence>& nameToEquivalence, const ConstConstraint& constConstraints, std::vector<std::vector<RamDomain>>& solutions, size_t& slotWidth) {
-
+    void findQuerySolution(const std::vector<Relation*>& varRels,
+            const std::map<std::string, Equivalence>& nameToEquivalence,
+            const ConstConstraint& constConstraints, std::vector<std::vector<RamDomain>>& solutions,
+            size_t& slotWidth) {
         // vector of iterators for relations in varRels
         std::vector<Relation::iterator> varRelationIterators;
         for (auto relation : varRels) {
@@ -835,7 +838,8 @@ private:
                 isSolution = constConstraints.verify(element);
             }
 
-            // if current tuple safisfies both equivalence and constant constraint, store variable values in solutions
+            // if current tuple safisfies both equivalence and constant constraint, store variable values in
+            // solutions
             if (isSolution) {
                 std::vector<RamDomain> solution;
                 for (auto var : nameToEquivalence) {
@@ -873,9 +877,10 @@ private:
         }
     }
 
-    // get the solution string with given solutions, map of varaible name and their equivalence class and slotWidth
-    std::string getSolutionString(std::vector<std::vector<RamDomain>>& solutions, std::map<std::string, Equivalence> nameToEquivalence, size_t slotWidth) {
-        
+    // get the solution string with given solutions, map of varaible name and their equivalence class and
+    // slotWidth
+    std::string getSolutionString(std::vector<std::vector<RamDomain>>& solutions,
+            std::map<std::string, Equivalence> nameToEquivalence, size_t slotWidth) {
         std::string solutionString = "";
         // use '|' to delimit each variable
         solutionString += "|";
@@ -891,8 +896,7 @@ private:
             for (auto var : nameToEquivalence) {
                 std::string s(slotWidth, ' ');
                 if (var.second.getType() == 'i') {
-                    s.replace(
-                            0, std::to_string(solutions[i][j]).length(), std::to_string(solutions[i][j]));
+                    s.replace(0, std::to_string(solutions[i][j]).length(), std::to_string(solutions[i][j]));
                 } else {
                     s.replace(0, prog.getSymbolTable().resolve(solutions[i][j]).length(),
                             prog.getSymbolTable().resolve(solutions[i][j]));
@@ -904,10 +908,9 @@ private:
         }
 
         return solutionString;
-
     }
 
-    // check if constTuple exists in relation 
+    // check if constTuple exists in relation
     bool containsTuple(Relation* relation, const std::vector<RamDomain>& constTuple) {
         bool tupleExist = false;
         for (auto it = relation->begin(); it != relation->end(); ++it) {

@@ -53,7 +53,6 @@ ADD_EXECUTABLE(souffle
         ./src/InterpreterRelation.h
         ./src/InterpreterIndex.h
         ./src/SignalHandler.h
-        ./src/StringPool.h
         ./src/WriteStreamSQLite.h
         ./src/AstTranslator.h
         ./src/ReadStreamCSV.h

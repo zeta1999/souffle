@@ -605,7 +605,7 @@ public:
         std::smatch argsMatcher;
 
         // map for variable name and corresponding equivalence class
-        std::map<std::string, Equivalence> varMap;
+        std::map<std::string, Equivalence> nameToEquivalence;
 
         // const constraints that solution must satisfy
         ConstConstraint cc;
@@ -636,9 +636,9 @@ public:
             for (size_t j = 0; j < rels[i].second.size(); ++j) {
                 if (std::regex_match(rels[i].second[j], argsMatcher, varRegex)) {
                     containVar = true;
-                    auto mapIt = varMap.find(argsMatcher[0]);
-                    if (mapIt == varMap.end()) {
-                        varMap.insert({argsMatcher[0],
+                    auto mapIt = nameToEquivalence.find(argsMatcher[0]);
+                    if (mapIt == nameToEquivalence.end()) {
+                        nameToEquivalence.insert({argsMatcher[0],
                                 Equivalence(*(r->getAttrType(j)), argsMatcher[0], std::make_pair(idx, j))});
                     } else {
                         mapIt->second.push_back(std::make_pair(idx, j));
@@ -725,7 +725,7 @@ public:
                 element.push_back(*it);
             }
             // check if the tuples satisifies variable equivalence
-            for (auto var : varMap) {
+            for (auto var : nameToEquivalence) {
                 if (!var.second.verify(element)) {
                     isSolution = false;
                     break;
@@ -737,7 +737,7 @@ public:
             }
             if (isSolution) {
                 std::vector<RamDomain> solution;
-                for (auto var : varMap) {
+                for (auto var : nameToEquivalence) {
                     auto idx = var.second.getFirstIdx();
                     solution.push_back(element[idx.first][idx.second]);
                     // check the number of the solution
@@ -770,14 +770,14 @@ public:
                 break;
             }
         }
-        for (auto var : varMap) {
+        for (auto var : nameToEquivalence) {
             if (var.first.length() > slot_width) {
                 slot_width = var.first.length();
             }
         }
         // use '|' to delimit each variable
         queryResult += "|";
-        for (auto var : varMap) {
+        for (auto var : nameToEquivalence) {
             std::string s(slot_width, ' ');
             s.replace(0, var.first.length(), var.first);
             queryResult += s + "|";
@@ -786,7 +786,7 @@ public:
         for (size_t i = 0; i < solutions.size(); ++i) {
             size_t j = 0;
             queryResult += "|";
-            for (auto var : varMap) {
+            for (auto var : nameToEquivalence) {
                 std::string solu(slot_width, ' ');
                 if (var.second.getType() == 'i') {
                     solu.replace(

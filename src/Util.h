@@ -53,31 +53,46 @@
 #include <stdlib.h>
 #include <windows.h>
 
-#define X_OK 1 /* execute permission - unsupported in windows*/
-
-#define access _access
-
-#define PATH_MAX 260
-
+/**
+ * Windows headers define these and they interfere with the standard library
+ * functions.
+ */
 #undef min
 #undef max
 
+#define X_OK 1 /* execute permission - unsupported in windows*/
+
+#define PATH_MAX 260
+
+/**
+ * access and realpath are missing on windows, we use their windows equivalents
+ * as work-arounds.
+ */
+#define access _access
 inline char* realpath(const char* path, char* resolved_path) {
     return _fullpath(resolved_path, path, PATH_MAX);
 }
 
+/**
+ * On windows, the following gcc builtins are missing.
+ *
+ * In the case of popcountll, __popcnt64 is the windows equivalent.
+ *
+ * For ctz and ctzll, BitScanForward and BitScanForward64 are the respective
+ * windows equivalents.  However ctz is used in a constexpr context, and we can't
+ * use BitScanForward, so we implement it ourselves.
+ */
 #define __builtin_popcountll __popcnt64
 
-constexpr unsigned long ctz(unsigned long value) {
+constexpr unsigned long  __builtin_ctz(unsigned long value) {
     unsigned long trailing_zeroes = 0;
     while ((value = value >> 1) ^ 1) {
         ++trailing_zeroes;
     }
     return trailing_zeroes;
 }
-#define __builtin_ctz ctz
 
-inline unsigned long ctzll(unsigned long long value) {
+inline unsigned long __builtin_ctzll(unsigned long long value) {
     unsigned long trailing_zero = 0;
 
     if (_BitScanForward64(&trailing_zero, value)) {
@@ -86,8 +101,6 @@ inline unsigned long ctzll(unsigned long long value) {
         return 64;
     }
 }
-#define __builtin_ctzll ctzll
-
 #endif
 
 /**

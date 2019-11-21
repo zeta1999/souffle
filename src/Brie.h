@@ -122,9 +122,9 @@ class SparseArray {
     using key_type = uint64_t;
 
     // some internal constants
-    static const int BIT_PER_STEP = BITS;
-    static const int NUM_CELLS = 1 << BIT_PER_STEP;
-    static const key_type INDEX_MASK = NUM_CELLS - 1;
+    static constexpr int BIT_PER_STEP = BITS;
+    static constexpr int NUM_CELLS = 1 << BIT_PER_STEP;
+    static constexpr key_type INDEX_MASK = NUM_CELLS - 1;
 
 public:
     // the type utilized for indexing contained elements
@@ -1412,9 +1412,9 @@ class SparseBitMap {
     using atomic_value_t = typename data_store_t::atomic_value_type;
 
     // some constants for manipulating stored values
-    static const short BITS_PER_ENTRY = sizeof(value_t) * 8;
-    static const short LEAF_INDEX_WIDTH = static_cast<short>(__builtin_ctz(BITS_PER_ENTRY));
-    static const uint64_t LEAF_INDEX_MASK = BITS_PER_ENTRY - 1;
+    static constexpr short BITS_PER_ENTRY = sizeof(value_t) * 8;
+    static constexpr short LEAF_INDEX_WIDTH = static_cast<short>(__builtin_ctz(BITS_PER_ENTRY));
+    static constexpr uint64_t LEAF_INDEX_MASK = BITS_PER_ENTRY - 1;
 
 public:
     // the type to address individual entries

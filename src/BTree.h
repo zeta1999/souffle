@@ -359,18 +359,16 @@ protected:
      * for both, inner and leaf nodes.
      */
     struct node : public base {
-        enum {
+        /**
+         * The number of keys/node desired by the user.
+         */
+        static constexpr size_t desiredNumKeys =
+                ((blockSize > sizeof(base)) ? blockSize - sizeof(base) : 0) / sizeof(Key);
 
-            /**
-             * The number of keys/node desired by the user.
-             */
-            desiredNumKeys = ((blockSize > sizeof(base)) ? blockSize - sizeof(base) : 0) / sizeof(Key),
-
-            /**
-             * The actual number of keys/node corrected by functional requirements.
-             */
-            maxKeys = (desiredNumKeys > 3) ? desiredNumKeys : 3
-        };
+        /**
+         * The actual number of keys/node corrected by functional requirements.
+         */
+        static constexpr size_t maxKeys = (desiredNumKeys > 3) ? desiredNumKeys : 3;
 
         // the keys stored in this node
         Key keys[maxKeys];
@@ -1238,10 +1236,8 @@ protected:
     mutable hint_statistics hint_stats;
 
 public:
-    enum {
-        // the maximum number of keys stored per node
-        max_keys_per_node = node::maxKeys
-    };
+    // the maximum number of keys stored per node
+    static constexpr size_t max_keys_per_node = node::maxKeys;
 
     // -- ctors / dtors --
 

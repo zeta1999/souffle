@@ -42,7 +42,7 @@ public:
               delimiter(getDelimiter(ioDirectives)), file(file), lineNumber(0),
               inputMap(getInputColumnMap(ioDirectives, arity)) {
         while (inputMap.size() < arity) {
-            int size = inputMap.size();
+            int size = static_cast<int>(inputMap.size());
             inputMap[size] = size;
         }
     }
@@ -119,30 +119,30 @@ protected:
         return "\t";
     }
 
-    std::map<int, int> getInputColumnMap(const IODirectives& ioDirectives, const unsigned arity) const {
+    std::map<int, int> getInputColumnMap(const IODirectives& ioDirectives, const unsigned arity_) const {
         std::string columnString = "";
         if (ioDirectives.has("columns")) {
             columnString = ioDirectives.get("columns");
         }
-        std::map<int, int> inputMap;
+        std::map<int, int> inputColumnMap;
 
         if (!columnString.empty()) {
             std::istringstream iss(columnString);
             std::string mapping;
             int index = 0;
             while (std::getline(iss, mapping, ':')) {
-                inputMap[stoi(mapping)] = index++;
+                inputColumnMap[stoi(mapping)] = index++;
             }
-            if (inputMap.size() < arity) {
+            if (inputColumnMap.size() < arity_) {
                 throw std::invalid_argument("Invalid column set was given: <" + columnString + ">");
             }
         } else {
-            while (inputMap.size() < arity) {
-                int size = inputMap.size();
-                inputMap[size] = size;
+            while (inputColumnMap.size() < arity_) {
+                int size = static_cast<int>(inputColumnMap.size());
+                inputColumnMap[size] = size;
             }
         }
-        return inputMap;
+        return inputColumnMap;
     }
 
     const std::string delimiter;

@@ -36,6 +36,16 @@
 #include <iterator>
 #include <utility>
 
+#ifdef _WIN32
+/**
+ * When compiling for windows, redefine the gcc builtins which are used to
+ * their equivalents on the windows platform.
+ */
+#define __sync_synchronize MemoryBarrier
+#define __sync_bool_compare_and_swap(ptr, oldval, newval) \
+    (InterlockedCompareExchangePointer((void* volatile*)ptr, (void*)newval, (void*)oldval) == (void*)oldval)
+#endif  // _WIN32
+
 namespace souffle {
 
 namespace detail {
@@ -649,13 +659,13 @@ private:
                         // fast over-approximation of whether a update is necessary
                         if (off < unsynced.firstOffset) {
                             // update first reference if this one is the smallest
-                            auto info = getFirstInfo();
-                            while (off < info.offset) {
-                                info.node = next;
-                                info.offset = off;
-                                if (!tryUpdateFirstInfo(info)) {
+                            auto first_info = getFirstInfo();
+                            while (off < first_info.offset) {
+                                first_info.node = next;
+                                first_info.offset = off;
+                                if (!tryUpdateFirstInfo(first_info)) {
                                     // there was some concurrent update => check again
-                                    info = getFirstInfo();
+                                    first_info = getFirstInfo();
                                 }
                             }
                         }
@@ -722,10 +732,10 @@ public:
      */
     value_type lookup(index_type i, op_context& ctxt) const {
         // check whether it is empty
-        if (!unsynced.root) return detail::default_factory<value_type>()();
+        if (!unsynced.root) return souffle::detail::default_factory<value_type>()();
 
         // check boundaries
-        if (!inBoundaries(i)) return detail::default_factory<value_type>()();
+        if (!inBoundaries(i)) return souffle::detail::default_factory<value_type>()();
 
         // check context
         if (ctxt.lastNode && ctxt.lastIndex == (i & ~INDEX_MASK)) {
@@ -746,7 +756,7 @@ public:
             Node* next = node->cell[x].ptr;
 
             // check next step
-            if (!next) return detail::default_factory<value_type>()();
+            if (!next) return souffle::detail::default_factory<value_type>()();
 
             // continue one level below
             node = next;
@@ -858,7 +868,7 @@ public:
     /**
      * The iterator type to be utilized to iterate over the non-default elements of this array.
      */
-    class iterator : public std::iterator<std::forward_iterator_tag, std::pair<index_type, value_type>> {
+    class iterator {
         using pair_type = std::pair<index_type, value_type>;
 
         // a pointer to the leaf node currently processed or null (end)
@@ -1125,7 +1135,7 @@ public:
                 i = i & getLevelMask(level);
 
                 // find next higher value
-                i += (1 << (BITS * level));
+                i += 1ull << (BITS * level);
 
             } else {
                 if (level == 0) {
@@ -1403,7 +1413,7 @@ class SparseBitMap {
 
     // some constants for manipulating stored values
     static constexpr short BITS_PER_ENTRY = sizeof(value_t) * 8;
-    static constexpr short LEAF_INDEX_WIDTH = __builtin_ctz(BITS_PER_ENTRY);
+    static constexpr short LEAF_INDEX_WIDTH = static_cast<short>(__builtin_ctz(BITS_PER_ENTRY));
     static constexpr uint64_t LEAF_INDEX_MASK = BITS_PER_ENTRY - 1;
 
 public:
@@ -1784,7 +1794,7 @@ public:
      */
     template <typename... Values>
     bool insert(Values... values) {
-        return static_cast<Derived&>(*this).insert((entry_type){{RamDomain(values)...}});
+        return static_cast<Derived&>(*this).insert(entry_type{{RamDomain(values)...}});
     }
 
     /**
@@ -1792,7 +1802,7 @@ public:
      */
     template <typename... Values>
     bool contains(Values... values) const {
-        return static_cast<const Derived&>(*this).contains((entry_type){{RamDomain(values)...}});
+        return static_cast<const Derived&>(*this).contains(entry_type{{RamDomain(values)...}});
     }
 
     // ---------------------------------------------------------------------
@@ -3081,7 +3091,7 @@ public:
         if (this->empty()) return res;
 
         // use top-level elements for partitioning
-        int step = std::max(map.size() / chunks, size_t(1));
+        int step = static_cast<int>(std::max(map.size() / chunks, size_t(1)));
 
         int c = 1;
         auto priv = begin();

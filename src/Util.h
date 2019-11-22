@@ -42,9 +42,66 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
-#include <libgen.h>
 #include <sys/stat.h>
+
+#ifndef _WIN32
+#include <libgen.h>
 #include <unistd.h>
+#else
+#include <fcntl.h>
+#include <io.h>
+#include <stdlib.h>
+#include <windows.h>
+
+/**
+ * Windows headers define these and they interfere with the standard library
+ * functions.
+ */
+#undef min
+#undef max
+
+#define X_OK 1 /* execute permission - unsupported in windows*/
+
+#define PATH_MAX 260
+
+/**
+ * access and realpath are missing on windows, we use their windows equivalents
+ * as work-arounds.
+ */
+#define access _access
+inline char* realpath(const char* path, char* resolved_path) {
+    return _fullpath(resolved_path, path, PATH_MAX);
+}
+
+/**
+ * On windows, the following gcc builtins are missing.
+ *
+ * In the case of popcountll, __popcnt64 is the windows equivalent.
+ *
+ * For ctz and ctzll, BitScanForward and BitScanForward64 are the respective
+ * windows equivalents.  However ctz is used in a constexpr context, and we can't
+ * use BitScanForward, so we implement it ourselves.
+ */
+#define __builtin_popcountll __popcnt64
+
+constexpr unsigned long __builtin_ctz(unsigned long value) {
+    unsigned long trailing_zeroes = 0;
+    while ((value = value >> 1) ^ 1) {
+        ++trailing_zeroes;
+    }
+    return trailing_zeroes;
+}
+
+inline unsigned long __builtin_ctzll(unsigned long long value) {
+    unsigned long trailing_zero = 0;
+
+    if (_BitScanForward64(&trailing_zero, value)) {
+        return trailing_zero;
+    } else {
+        return 64;
+    }
+}
+#endif
 
 /**
  * Converts a string to a number
@@ -484,7 +541,7 @@ public:
     }
     int overflow(int c) override {
         for (auto stream : streams) {
-            stream->put(c);
+            stream->put(static_cast<char>(c));
         }
         return c;
     }
@@ -600,7 +657,7 @@ struct print_deref : public detail::print<deref<T>> {};
 template <typename Iter, typename Printer>
 detail::joined_sequence<Iter, Printer> join(
         const Iter& a, const Iter& b, const std::string& sep, const Printer& p) {
-    return detail::joined_sequence<Iter, Printer>(a, b, sep, p);
+    return souffle::detail::joined_sequence<Iter, Printer>(a, b, sep, p);
 }
 
 /**
@@ -948,12 +1005,12 @@ inline time_point now() {
 
 // a shortcut for obtaining the time difference in milliseconds
 inline long duration_in_us(const time_point& start, const time_point& end) {
-    return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    return static_cast<long>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
 }
 
 // a shortcut for obtaining the time difference in nanoseconds
 inline long duration_in_ns(const time_point& start, const time_point& end) {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    return static_cast<long>(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
 }
 
 // -------------------------------------------------------------------------------
@@ -1054,7 +1111,7 @@ inline std::string absPath(const std::string& path) {
  *  Join two paths together; note that this does not resolve overlaps or relative paths.
  */
 inline std::string pathJoin(const std::string& first, const std::string& second) {
-    unsigned firstPos = first.size() - 1;
+    unsigned firstPos = static_cast<unsigned>(first.size()) - 1;
     while (first.at(firstPos) == '/') firstPos--;
     unsigned secondPos = 0;
     while (second.at(secondPos) == '/') secondPos++;
@@ -1095,7 +1152,7 @@ inline std::string baseName(const std::string& filename) {
 
     size_t lastSlashBeforeBasename = filename.find_last_of('/', lastNotSlash - 1);
     if (lastSlashBeforeBasename == std::string::npos) {
-        lastSlashBeforeBasename = -1;
+        lastSlashBeforeBasename = static_cast<size_t>(-1);
     }
     return filename.substr(lastSlashBeforeBasename + 1, lastNotSlash - lastSlashBeforeBasename);
 }
@@ -1134,9 +1191,20 @@ inline std::string fileExtension(const std::string& path) {
  * Generate temporary file.
  */
 inline std::string tempFile() {
+#ifdef _WIN32
+    std::string templ;
+    std::FILE* f = nullptr;
+    while (f == nullptr) {
+        templ = std::tmpnam(nullptr);
+        f = fopen(templ.c_str(), "wx");
+    }
+    fclose(f);
+    return templ;
+#else
     char templ[40] = "./souffleXXXXXX";
     close(mkstemp(templ));
     return std::string(templ);
+#endif
 }
 
 /**

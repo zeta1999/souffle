@@ -20,13 +20,13 @@ Use git to obtain the source code of Soufflé.
 
     $ git clone git://github.com/souffle-lang/souffle.git
     
-Build instructions can be found [here](http://souffle-lang.github.io/build).
+Build instructions can be found [here](https://souffle-lang.github.io/build).
 
-## [Home Page](http://souffle-lang.github.io)
+## [Home Page](https://souffle-lang.github.io)
 
-## [Documentation](http://souffle-lang.github.io/docs/home)
+## [Documentation](https://souffle-lang.github.io/docs.html)
 
-## [Contributors](http://souffle-lang.github.io/docs/contributors/)
+## [Contributors](https://souffle-lang.github.io/contributors)
 
 ## [Issues](https://github.com/souffle-lang/souffle/issues)
 

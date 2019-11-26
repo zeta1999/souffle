@@ -90,11 +90,11 @@ jobs:
     env:
     - "gcc-setup"
     - *gcc_environment
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
   - <<: *osxgcc
     env:
     - "gcc-setup"
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
 
 # Testing stage for clang without OpenMP (,-c)
   - <<: *linuxclang
@@ -113,7 +113,7 @@ jobs:
     env:
     - "gcc-64bit-setup"
     - *gcc_environment
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
 
     # Testing stage with Swig tests enabled (-j8,-c -j8)
   - <<: *linuxgcc
@@ -121,12 +121,12 @@ jobs:
     env:
     - "gcc-setup"
     - *gcc_environment
-    - SOUFFLE_CATEGORY=Unit,Swig,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Unit,Swig,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
   - <<: *osxgcc
     before_script: ".travis/init_test_swig.sh"
     env:
     - "gcc-setup"
-    - SOUFFLE_CATEGORY=Unit,Swig,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Unit,Swig,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
 
 # Testing stage with engine option (-c -j8 -efile, FastEvaluation and select others)
   - <<: *linuxgcc

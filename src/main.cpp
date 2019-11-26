@@ -504,47 +504,52 @@ int main(int argc, char** argv) {
         return 0;
     };
 
-    if (!Global::config().has("compile") && !Global::config().has("dl-program") &&
-            !Global::config().has("generate") && !Global::config().has("swig")) {
-        // ------- interpreter -------------
+    try {
+        if (!Global::config().has("compile") && !Global::config().has("dl-program") &&
+                !Global::config().has("generate") && !Global::config().has("swig")) {
+            // ------- interpreter -------------
 
-        std::thread profiler;
-        // Start up profiler if needed
-        if (Global::config().has("live-profile") && !Global::config().has("compile")) {
-            profiler = std::thread([]() { profile::Tui().runProf(); });
-        }
-
-        // configure and execute interpreter
-        std::unique_ptr<InterpreterEngine> interpreter(
-                std::make_unique<InterpreterEngine>(*ramTranslationUnit));
-        interpreter->executeMain();
-        // If the profiler was started, join back here once it exits.
-        if (profiler.joinable()) {
-            profiler.join();
-        }
-        // only run explain interface if interpreted
-        if (Global::config().has("provenance")) {
-            InterpreterProgInterface interface(*interpreter);
-            if (Global::config().get("provenance") == "explain" ||
-                    Global::config().get("provenance") == "subtreeHeights") {
-                explain(interface, false, Global::config().get("provenance") == "subtreeHeights");
-            } else if (Global::config().get("provenance") == "explore") {
-                explain(interface, true, false);
+            std::thread profiler;
+            // Start up profiler if needed
+            if (Global::config().has("live-profile") && !Global::config().has("compile")) {
+                profiler = std::thread([]() { profile::Tui().runProf(); });
             }
-        }
-    } else {
-        // ------- compiler -------------
 
-        std::string compileCmd = ::findTool("souffle-compile", souffleExecutable, ".");
-        /* Fail if a souffle-compile executable is not found */
-        if (!isExecutable(compileCmd)) {
-            throw std::runtime_error("failed to locate souffle-compile");
-        }
-        compileCmd += " ";
+            // configure and execute interpreter
+            std::unique_ptr<InterpreterEngine> interpreter(
+                    std::make_unique<InterpreterEngine>(*ramTranslationUnit));
+            interpreter->executeMain();
+            // If the profiler was started, join back here once it exits.
+            if (profiler.joinable()) {
+                profiler.join();
+            }
+            if (Global::config().has("provenance")) {
+                // Test for bugged combination of provenance, interpreted souffle, and concurrency
+                if (Global::config().get("jobs") != "1") {
+                    throw std::runtime_error("Provenance is not supported with parallel interpreted mode");
+                }
 
-        std::unique_ptr<Synthesiser> synthesiser = std::make_unique<Synthesiser>(*ramTranslationUnit);
+                // only run explain interface if interpreted
+                InterpreterProgInterface interface(*interpreter);
+                if (Global::config().get("provenance") == "explain" ||
+                        Global::config().get("provenance") == "subtreeHeights") {
+                    explain(interface, false, Global::config().get("provenance") == "subtreeHeights");
+                } else if (Global::config().get("provenance") == "explore") {
+                    explain(interface, true, false);
+                }
+            }
+        } else {
+            // ------- compiler -------------
 
-        try {
+            std::string compileCmd = ::findTool("souffle-compile", souffleExecutable, ".");
+            /* Fail if a souffle-compile executable is not found */
+            if (!isExecutable(compileCmd)) {
+                throw std::runtime_error("failed to locate souffle-compile");
+            }
+            compileCmd += " ";
+
+            std::unique_ptr<Synthesiser> synthesiser = std::make_unique<Synthesiser>(*ramTranslationUnit);
+
             // Find the base filename for code generation and execution
             std::string baseFilename;
             if (Global::config().has("dl-program")) {
@@ -597,10 +602,10 @@ int main(int argc, char** argv) {
                     executeBinary(baseFilename);
                 }
             }
-        } catch (std::exception& e) {
-            std::cerr << e.what() << std::endl;
-            std::exit(1);
         }
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        std::exit(1);
     }
 
     /* Report overall run-time in verbose mode */

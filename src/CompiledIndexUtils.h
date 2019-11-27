@@ -48,12 +48,12 @@ struct contains;
 
 template <unsigned E>
 struct contains<E> {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 template <unsigned E, unsigned F, unsigned... Rest>
 struct contains<E, F, Rest...> {
-    enum { value = (E == F) || contains<E, Rest...>::value };
+    static constexpr size_t value = (E == F) || contains<E, Rest...>::value;
 };
 
 // -- check uniqueness of a list of integer values --
@@ -63,12 +63,12 @@ struct unique;
 
 template <>
 struct unique<> {
-    enum { value = true };
+    static constexpr size_t value = true;
 };
 
 template <unsigned E, unsigned... Rest>
 struct unique<E, Rest...> {
-    enum { value = !contains<E, Rest...>::value && unique<Rest...>::value };
+    static constexpr size_t value = !contains<E, Rest...>::value && unique<Rest...>::value;
 };
 
 }  // end namespace column_utils
@@ -184,11 +184,11 @@ struct index {
     // enables to check whether the given column is covered by this index or not
     template <unsigned Col>
     struct covers {
-        enum { value = column_utils::contains<Col, Columns...>::value };
+        static constexpr size_t value = column_utils::contains<Col, Columns...>::value;
     };
 
     // the length of the index
-    enum { size = sizeof...(Columns) };
+    static constexpr size_t size = sizeof...(Columns);
 
     // enables instances of this class to be printed (for printing relation-structure descriptions)
     friend std::ostream& operator<<(std::ostream& out, const index& index) {
@@ -209,17 +209,17 @@ namespace index_utils {
 
 template <typename... Index>
 struct all_indices {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 template <>
 struct all_indices<> {
-    enum { value = true };
+    static constexpr size_t value = true;
 };
 
 template <unsigned... Columns, typename... Rest>
 struct all_indices<index<Columns...>, Rest...> {
-    enum { value = all_indices<Rest...>::value };
+    static constexpr size_t value = all_indices<Rest...>::value;
 };
 
 // -- checks whether a list of typed contains a certain type --
@@ -229,17 +229,17 @@ struct contains;
 
 template <typename E>
 struct contains<E> {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 template <typename E, typename F, typename... Rest>
 struct contains<E, F, Rest...> {
-    enum { value = contains<E, Rest...>::value };
+    static constexpr size_t value = contains<E, Rest...>::value;
 };
 
 template <typename E, typename... Rest>
 struct contains<E, E, Rest...> {
-    enum { value = true };
+    static constexpr size_t value = true;
 };
 
 // -- check whether a given list is a list of unique indices --
@@ -249,29 +249,29 @@ struct unique;
 
 template <>
 struct unique<> {
-    enum { value = true };
+    static constexpr size_t value = true;
 };
 
 template <typename First, typename... Rest>
 struct unique<First, Rest...> {
-    enum { value = all_indices<First, Rest...>::value && !contains<First, Rest...>::value };
+    static constexpr size_t value = all_indices<First, Rest...>::value && !contains<First, Rest...>::value;
 };
 
 // -- check whether the columns of an index are not exceeding a given arity --
 
 template <unsigned arity, typename Index>
 struct check_index_arity {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 template <unsigned arity>
 struct check_index_arity<arity, index<>> {
-    enum { value = true };
+    static constexpr size_t value = true;
 };
 
 template <unsigned arity, unsigned F, unsigned... Rest>
 struct check_index_arity<arity, index<F, Rest...>> {
-    enum { value = (F < arity) && check_index_arity<arity, index<Rest...>>::value };
+    static constexpr size_t value = (F < arity) && check_index_arity<arity, index<Rest...>>::value;
 };
 
 // -- check whether the columns of a list of indices are not exceeding a given arity --
@@ -281,22 +281,20 @@ struct check_arity;
 
 template <unsigned arity>
 struct check_arity<arity> {
-    enum { value = true };
+    static constexpr size_t value = true;
 };
 
 template <unsigned arity, typename F, typename... Rest>
 struct check_arity<arity, F, Rest...> {
-    enum { value = check_index_arity<arity, F>::value && check_arity<arity, Rest...>::value };
+    static constexpr size_t value = check_index_arity<arity, F>::value && check_arity<arity, Rest...>::value;
 };
 
 // -- checks the validity of a given list of indices --
 
 template <unsigned arity, typename... Indices>
 struct check {
-    enum {
-        value = unique<Indices...>::value &&           // indices need to be unique
-                check_arity<arity, Indices...>::value  // and valid
-    };
+    // indices need to be unique and valid
+    static constexpr size_t value = unique<Indices...>::value && check_arity<arity, Indices...>::value;
 };
 
 // -- a utility extending a given index by another column --
@@ -357,17 +355,17 @@ struct extend_to_full_index : public detail::extend_to_full_index_aux<0, arity, 
 
 template <typename I1, typename I2>
 struct is_prefix {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 template <unsigned... Rest>
 struct is_prefix<index<>, index<Rest...>> {
-    enum { value = true };
+    static constexpr size_t value = true;
 };
 
 template <unsigned F, unsigned... Ra, unsigned... Rb>
 struct is_prefix<index<F, Ra...>, index<F, Rb...>> {
-    enum { value = is_prefix<index<Ra...>, index<Rb...>>::value };
+    static constexpr size_t value = is_prefix<index<Ra...>, index<Rb...>>::value;
 };
 
 // -- obtains the prefix of an index --
@@ -405,32 +403,31 @@ struct get_prefix<L, index<Rest...>> {
 
 template <typename I1, typename I2>
 struct is_subset_of {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 template <unsigned First, unsigned... Rest, unsigned... Full>
 struct is_subset_of<index<First, Rest...>, index<Full...>> {
-    enum {
-        value = column_utils::contains<First, Full...>::value &&
-                is_subset_of<index<Rest...>, index<Full...>>::value
-    };
+    static constexpr size_t value = column_utils::contains<First, Full...>::value &&
+                                    is_subset_of<index<Rest...>, index<Full...>>::value;
 };
 
 template <unsigned... Full>
 struct is_subset_of<index<>, index<Full...>> {
-    enum { value = true };
+    static constexpr size_t value = true;
 };
 
 // -- checks whether one index is a permutation of another index --
 
 template <typename I1, typename I2>
 struct is_permutation {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 template <unsigned... C1, unsigned... C2>
 struct is_permutation<index<C1...>, index<C2...>> {
-    enum { value = sizeof...(C1) == sizeof...(C2) && is_subset_of<index<C1...>, index<C2...>>::value };
+    static constexpr size_t value =
+            sizeof...(C1) == sizeof...(C2) && is_subset_of<index<C1...>, index<C2...>>::value;
 };
 
 // -- checks whether one index is an extension of another index --
@@ -439,37 +436,37 @@ namespace detail {
 
 template <typename P1, typename R1, typename P2, typename R2>
 struct is_compatible_with_aux {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 template <unsigned... A1, unsigned A, unsigned... A2, unsigned... B1, unsigned B, unsigned... B2>
 struct is_compatible_with_aux<index<A1...>, index<A, A2...>, index<B1...>, index<B, B2...>> {
-    enum {
-        value = is_compatible_with_aux<index<A1..., A>, index<A2...>, index<B1..., B>, index<B2...>>::value
-    };
+    static constexpr size_t value =
+            is_compatible_with_aux<index<A1..., A>, index<A2...>, index<B1..., B>, index<B2...>>::value;
 };
 
 template <unsigned... A, unsigned... B, unsigned... R>
 struct is_compatible_with_aux<index<A...>, index<>, index<B...>, index<R...>> {
-    enum { value = is_permutation<index<A...>, index<B...>>::value };
+    static constexpr size_t value = is_permutation<index<A...>, index<B...>>::value;
 };
 }  // namespace detail
 
 template <typename I1, typename I2>
 struct is_compatible_with {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 template <unsigned... C1, unsigned... C2>
 struct is_compatible_with<index<C1...>, index<C2...>> {
-    enum { value = detail::is_compatible_with_aux<index<>, index<C1...>, index<>, index<C2...>>::value };
+    static constexpr size_t value =
+            detail::is_compatible_with_aux<index<>, index<C1...>, index<>, index<C2...>>::value;
 };
 
 // -- checks whether an index is a full index --
 
 template <unsigned arity, typename Index>
 struct is_full_index {
-    enum { value = Index::size == arity };
+    static constexpr size_t value = Index::size == arity;
 };
 
 // -- check whether there is a full index in a list of indices --
@@ -479,12 +476,13 @@ struct contains_full_index;
 
 template <unsigned arity, typename First, typename... Rest>
 struct contains_full_index<arity, First, Rest...> {
-    enum { value = is_full_index<arity, First>::value || contains_full_index<arity, Rest...>::value };
+    static constexpr size_t value =
+            is_full_index<arity, First>::value || contains_full_index<arity, Rest...>::value;
 };
 
 template <unsigned arity>
 struct contains_full_index<arity> {
-    enum { value = false };
+    static constexpr size_t value = false;
 };
 
 // -- get first full index from a list of indices --
@@ -1244,7 +1242,7 @@ template <typename T, template <typename V, typename I, bool> class IndexFactory
         typename... Rest>
 class Indices<T, IndexFactory, First, Rest...> {
     // exposes the arity of the stored tuples
-    enum { arity = T::arity };
+    static constexpr size_t arity = T::arity;
 
     // determines the type of the index of this level
     using index_t = typename IndexFactory<T, First, (int)First::size == (int)arity>::type;
@@ -1290,7 +1288,8 @@ public:
     // a utility to verify whether a given index is covered or not
     template <typename I>
     struct is_covered {
-        enum { value = is_compatible_with<I, First>::value || nested_indices::template is_covered<I>::value };
+        static constexpr size_t value =
+                is_compatible_with<I, First>::value || nested_indices::template is_covered<I>::value;
     };
 
     void insert(const T& tuple, operation_context& c) {
@@ -1409,7 +1408,7 @@ public:
 
     template <typename I>
     struct is_covered {
-        enum { value = false };
+        static constexpr size_t value = false;
     };
 
     void insert(const T&, operation_context&) {}

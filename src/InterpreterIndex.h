@@ -204,6 +204,15 @@ public:
         virtual int load(TupleRef* trg, int max) = 0;
 
         /**
+         * Fill the target array in the first parameter with references to the current set of elements.
+         * This is useful for cloning references to this Source. The second parameter limits the range
+         * copied.
+         *
+         * @return the number of elements retrieved, 0 if end has reached.
+         */
+        virtual int reload(TupleRef* trg, int max) = 0;
+
+        /**
          * Clone a source with the exact same state
          */
         virtual std::unique_ptr<Source> clone() = 0;
@@ -254,7 +263,7 @@ public:
             return std::make_unique<Stream>();
         }
         auto newStream = std::make_unique<Stream>(source->clone());
-        newStream->buffer = buffer;
+        newStream->source->reload(&newStream->buffer[0], limit);
         newStream->cur = cur;
         newStream->limit = limit;
         return newStream;

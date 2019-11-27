@@ -35,7 +35,6 @@
     #include <cstring>
 
     #include "AstProgram.h"
-    #include "StringPool.h"
 
     #include "SrcLocation.h"
     #define YYLTYPE SrcLocation
@@ -45,9 +44,6 @@
     #include "parser.hh"
 
     #define register
-
-    /* String Pool declarations */
-    StringPool::hashentry *StringPool::hashtab[HASH_SIZE];
 
 #define yylloc yyget_extra(yyscanner)->yylloc
 
@@ -139,7 +135,7 @@
 "<"                                   { return yy::parser::make_LT(yylloc); }
 ">"                                   { return yy::parser::make_GT(yylloc); }
 ":-"                                  { return yy::parser::make_IF(yylloc); }
-(!=|>=|<=)                            { return yy::parser::make_RELOP(SLOOKUP(yytext), yylloc); }
+(!=|>=|<=)                            { return yy::parser::make_RELOP(yytext, yylloc); }
 [0-9]+"."[0-9]+"."[0-9]+"."[0-9]+     {
                                         try {
                                         char *token = std::strtok(yytext, ".");
@@ -186,11 +182,11 @@
                                         }
                                       }
 [\?a-zA-Z]|[_\?a-zA-Z][_\?a-zA-Z0-9]+ {
-                                        return yy::parser::make_IDENT(SLOOKUP(yytext), yylloc);
+                                        return yy::parser::make_IDENT(yytext, yylloc);
                                       }
 \"(\\.|[^"\\])*\"                     {
                                         yytext[strlen(yytext)-1]=0;
-                                        return yy::parser::make_STRING(SLOOKUP(&yytext[1]), yylloc);
+                                        return yy::parser::make_STRING(&yytext[1], yylloc);
                                       }
 \#.*$                                 {
                                         char fname[yyleng+1];
@@ -199,12 +195,12 @@
                                           assert(strlen(fname) > 0 && "failed conversion");
                                           fname[strlen(fname)]='\0';
                                           yycolumn = 1; yylineno = lineno-1;
-                                          yyfilename = SLOOKUP(fname);
+                                          yyfilename = fname;
                                         } else if(sscanf(yytext,"#line %d \"%[^\"]",&lineno,fname)>=2) {
                                           assert(strlen(fname) > 0 && "failed conversion");
                                           fname[strlen(fname)]='\0';
                                           yycolumn = 1; yylineno = lineno-1;
-                                          yyfilename = SLOOKUP(fname);
+                                          yyfilename = fname;
                                         }
                                       }
 "//".*$                               { }

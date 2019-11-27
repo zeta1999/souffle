@@ -265,7 +265,7 @@ LambdaAstVisitor<R, N> makeLambdaAstVisitor(const std::function<R(const N&)>& fu
  */
 template <typename T>
 struct is_ast_visitor {
-    enum { value = std::is_base_of<ast_visitor_tag, T>::value };
+    static constexpr size_t value = std::is_base_of<ast_visitor_tag, T>::value;
 };
 
 template <typename T>

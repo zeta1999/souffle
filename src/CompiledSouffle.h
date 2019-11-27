@@ -18,21 +18,23 @@
 
 #include "souffle/Brie.h"
 #include "souffle/CompiledIndexUtils.h"
-#include "souffle/CompiledOptions.h"
 #include "souffle/CompiledRecord.h"
 #include "souffle/CompiledRelation.h"
 #include "souffle/CompiledTuple.h"
 #include "souffle/IODirectives.h"
 #include "souffle/IOSystem.h"
-#include "souffle/Logger.h"
 #include "souffle/ParallelUtils.h"
-#include "souffle/ProfileEvent.h"
 #include "souffle/RamTypes.h"
 #include "souffle/SignalHandler.h"
 #include "souffle/SouffleInterface.h"
 #include "souffle/SymbolTable.h"
 #include "souffle/Util.h"
 #include "souffle/WriteStream.h"
+#ifndef __EMBEDDED_SOUFFLE__
+#include "souffle/CompiledOptions.h"
+#include "souffle/Logger.h"
+#include "souffle/ProfileEvent.h"
+#endif
 #include <array>
 #include <atomic>
 #include <cassert>
@@ -63,7 +65,7 @@ inline souffle::SouffleProgram* getInstance(const char* p) {
  * Relation wrapper used internally in the generated Datalog program
  */
 template <uint32_t id, class RelType, class TupleType, size_t Arity, size_t NumberOfHeights>
-class RelationWrapper : public Relation {
+class RelationWrapper : public souffle::Relation {
 private:
     RelType& relation;
     SymbolTable& symTable;
@@ -134,11 +136,11 @@ public:
         return name;
     }
     const char* getAttrType(size_t arg) const override {
-        assert(false <= arg && arg < Arity && "attribute out of bound");
+        assert(arg < Arity && "attribute out of bound");
         return tupleType[arg];
     }
     const char* getAttrName(size_t arg) const override {
-        assert(false <= arg && arg < Arity && "attribute out of bound");
+        assert(arg < Arity && "attribute out of bound");
         return tupleName[arg];
     }
     size_t getArity() const override {

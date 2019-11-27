@@ -71,6 +71,55 @@ protected:
 };
 
 /**
+ * @class ReorderConditionsTransformer
+ * @brief Reorders conjunctive terms depending on cost, i.e.,
+ *        cheap terms should be executed first. 
+ *
+ * For example ..
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    IF C(1) /\ C(2) /\ ... /\ C(N) then
+ *     ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * will be rewritten to
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *    IF C(i(1)) /\ C(i(2)) /\ ... /\ C(i(N)) then 
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * 
+ *  where C(i(1)) <= C(i(2)) <= ....   <= C(i(N)).  
+ *
+ * The terms are sorted according to their complexity class.  
+ * 
+ */
+class ReorderConditionsTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "ReoderConditionsTransformer";
+    }
+
+    /**
+     * @brief Reorder conjunctive terms in filter operations
+     * @param program Program that is transformed
+     * @return Flag showing whether the program has been changed 
+     *         by the transformation
+     */
+    bool reorderConditions(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return reorderConditions(*translationUnit.getProgram());
+    }
+};
+
+
+/**
  * @class CollapseFiltersTransformer
  * @brief Transforms consecutive filters into a single filter containing a conjunction
  *

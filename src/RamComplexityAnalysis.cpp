@@ -46,7 +46,8 @@ int RamComplexityAnalysis::getComplexity(const RamNode* node) const {
 
         // emptiness check
         int visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
-            return 1;
+            // emptiness check for nullary relations is for free; others have weight one
+            return (emptiness.getRelation().getArity()> 0)? 1:0;
         }
 
         // default rule

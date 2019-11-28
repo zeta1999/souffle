@@ -98,6 +98,7 @@ protected:
  * The terms are sorted according to their complexity class.  
  * 
  */
+
 class ReorderConditionsTransformer : public RamTransformer {
 public:
     std::string getName() const override {
@@ -113,7 +114,10 @@ public:
     bool reorderConditions(RamProgram& program);
 
 protected:
+    RamComplexityAnalysis* rca{nullptr};
+
     bool transform(RamTranslationUnit& translationUnit) override {
+        rca = translationUnit.getAnalysis<RamComplexityAnalysis>();
         return reorderConditions(*translationUnit.getProgram());
     }
 };

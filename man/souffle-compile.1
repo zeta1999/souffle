@@ -1,4 +1,4 @@
-.TH SOUFFLE-COMPILE 1 2017-03-30
+.TH SOUFFLE-COMPILE 1 2019-11-27
 
 .SH NAME
 .B souffle-compile
@@ -8,28 +8,36 @@
 .I options
 ]
 .I files
-.SH DESCRIPTION
-.B Long description of souffle-compile
 .SH OPTIONS
 .TP
 .B -h
-show usage.
-.B  -s
-compile a program with OpenMP support
+Show usage
+.TP
+.B  -g
+Build in debug mode
+.TP
+.B  -L <DIR>
+Specify library paths
+.TP
+.B  -l <LIBS>
+Specify additional libraries
+.TP
+.B  -s <LANG>
+USe SWIG interface to generate bindings for <LANG>
 .TP
 .B  -v
-verbose output
+Enable verbose output
 .TP
 .B  -w
-enable warnings
+Enable warnings
 .TP
 .SH EXAMPLES
 souffle-compile [options] <FILE>.cpp
 .SH VERSION
-1.1
+1.7.0
 
 .SH LICENSE
 Copyright (c) 2016 Oracle and/or its affiliates. All Rights reserved.
 
 .SH SEE ALSO
-\fBg++\fP(1), \fBjava\fP(1)
+\fBg++\fP(1),\fBswig\fP(1),

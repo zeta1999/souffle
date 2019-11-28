@@ -1,4 +1,4 @@
-.TH SOUFFLE 1 2017-03-30
+.TH SOUFFLE 1 2019-11-27
 
 .SH NAME
 .B souffle
@@ -16,43 +16,78 @@ high-performance C++ code that can be compiled with the native compiler on the
 target machine.
 .SH OPTIONS
 .TP
-.B -h, --help
-show a help page
-.TP
-.B -v, --verbose
-verbose output
-.TP
-.B -F\fI<DIR>\fP, --fact-dir=\fI<DIR>\fP
-specify directory for fact files
-.TP
 .B -D\fI<DIR>\fP, --output-dir=\fI<DIR>\fP
 Specify directory for output relations (if \fI<DIR>\fP is -, all output is written to stdout)
 .TP
-.B -j\fI<N>\fP, --jobs=\fI<N>\fP
-run interpreter/compiler in parallel using N threads, N=auto for system default
+.B -F\fI<DIR>\fP, --fact-dir=\fI<DIR>\fP
+Specify directory for fact files
 .TP
+
 .B -c, --compile
-compile datalog (translating to C++)
+Compile and execute the datalog (translating to C++)
 .TP
-.B --auto-schedule
-switch on automated clause scheduling for compiler
+.B -g \fI<FILE>\fP, --generate=\fI<FILE>\fP
+Generate C++ source code from the given datalog file
+.TP
+.B -h, --help
+Show this help text
+.TP
+.B -I\fI<DIR>\fP, --include-dir=\fI<DIR>\fP
+Specify directory for include files
+.TP
+.B -j\fI<N>\fP, --jobs=\fI<N>\fP
+Run interpreter/compiler in parallel using N threads, N=auto for system default
+.TP
+.B -L\fI<DIR>\fP, --library-dir=\fI<DIR>\fP
+Specify directory for library files
+.TP
+.B -l\fI<LIBRARIES>\fP, --libraries=\fI<LIBRARIES>\fP
+Specify libraries to be included for user defined functors
+.TP
+.B -M\fI<OPTIONS>\fP, --macro=\fI<OPTIONS>\fP
+Set macro definitions for the pre-processor
+.TP
+.B -m\fI<RELATIONS>\fP, --magic-transform=\fI<RELATIONS>\fP
+Enable magic set transformation changes on the given relations, use '*' for all
 .TP
 .B -o \fI<FILE>\fP, --dl-program=\fI<FILE>\fP
-write executable program to \fI<FILE>\fP (without executing it)
+Write executable program to \fI<FILE>\fP (without executing it)
 .TP
 .B -p\fI<FILE>\fP, --profile=\fI<FILE>\fP
-enable profiling and write profile data to \fI<FILE>\fP
+Enable profiling and write profile data to \fI<FILE>\fP
 .TP
-.B -d, --debug
-enable debug mode
+.B -r\fI<FILE>\fP, --debug-report=\fI<FILE>\fP
+Generate an HTML debug report and write it to \fI<FILE>\fP
 .TP
-.B --debug-report=\fI<FILE>\fP
-write debugging output to HTML report
+.B -s \fI<LANG>\fP, --swig=\fI<LANG>\fP
+Generate SWIG interface for the specified language. Possible values for \fI<LANG>\fP are java and python.
+.TP
+.B -t\fI<none|explain|explore|subtreeHeights>\fP, --provenance=\fI<none|explain|explore|subtreeHeights>\fP
+Enable provenance instrumentation and interaction
+.TP
+.B -P\fI<OPTIONS>\fP, --pragma=\fI<OPTIONS>\fP
+Set pragma options
+.TP
+.B -v, --verbose
+Verbose output
+.TP
+.B --version
+Print version information
+.TP
+.B -w, --no-warn
+Disable warnings
+.TP
+.B -z\fI<TRANSFORMERS>\fP, --disable-transformers=\fI<TRANSFORMERS>\fP
+Disable the given transformer
+
 .SH EXAMPLES
 souffle program.dl
+.TP
+souffle -c program.dl -Ffacts -D- -j20
+
 .SH VERSION
-1.1
+1.7.0
 .SH LICENSE
 Copyright (c) 2016 Oracle and/or its affiliates. All Rights reserved.
 .SH SEE ALSO
-\fBg++\fP(1), \fBjava\fP(1)
+\fBg++\fP(1),\fBmcpp\fP(1),\fBswig\fP(1)

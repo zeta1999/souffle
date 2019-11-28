@@ -1,4 +1,20 @@
 souffle (@VERSION@-1) UNRELEASED; urgency=low
+  * Rewrote Interpreter for enhanced performance (XiaowenHu96,HerbertJordan)
+  * Add SWIG interface (detljh,chadgavin,honghyw)
+  * Improved C++ interface and documentation (detljh,chadgavin,honghyw)
+  * C++ interface allows specification of thread count (mmcgr)
+  * Added RAM analysis to debug report (b-scholz)
+  * New provenance instrumentation storing subproof heights (ssallinger)
+  * Compiles with MSVC (brianfairservice)
+  * Provenance interface supports querying results (yuli6313)
+  * Removed mpi support
+  * C++17 used for synthesised code
+  * Performance enhancements
+  * Bug fixes
+
+ -- Kostyantyn Vorobyov <k.a.vorobyov@gmail.com>  Thu, 28 Nov 2019 13:34:20 +1100
+
+souffle (1.6.2); urgency=low
   * Fix transformation of aggregates (b-scholz)
 
  -- Kostyantyn Vorobyov <k.a.vorobyov@gmail.com>  Fri, 8 Aug 2019 16:44:31 +1100

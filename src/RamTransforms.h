@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "RamComplexityAnalysis.h"
 #include "RamIndexAnalysis.h"
 #include "RamLevelAnalysis.h"
 #include "RamTransformer.h"
@@ -73,7 +74,7 @@ protected:
 /**
  * @class ReorderConditionsTransformer
  * @brief Reorders conjunctive terms depending on cost, i.e.,
- *        cheap terms should be executed first. 
+ *        cheap terms should be executed first.
  *
  * For example ..
  *
@@ -89,14 +90,14 @@ protected:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  QUERY
  *   ...
- *    IF C(i(1)) /\ C(i(2)) /\ ... /\ C(i(N)) then 
+ *    IF C(i(1)) /\ C(i(2)) /\ ... /\ C(i(N)) then
  *      ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * 
- *  where C(i(1)) <= C(i(2)) <= ....   <= C(i(N)).  
  *
- * The terms are sorted according to their complexity class.  
- * 
+ *  where C(i(1)) <= C(i(2)) <= ....   <= C(i(N)).
+ *
+ * The terms are sorted according to their complexity class.
+ *
  */
 
 class ReorderConditionsTransformer : public RamTransformer {
@@ -108,7 +109,7 @@ public:
     /**
      * @brief Reorder conjunctive terms in filter operations
      * @param program Program that is transformed
-     * @return Flag showing whether the program has been changed 
+     * @return Flag showing whether the program has been changed
      *         by the transformation
      */
     bool reorderConditions(RamProgram& program);
@@ -121,7 +122,6 @@ protected:
         return reorderConditions(*translationUnit.getProgram());
     }
 };
-
 
 /**
  * @class CollapseFiltersTransformer

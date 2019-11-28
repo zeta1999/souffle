@@ -16,6 +16,7 @@
 
 #include "RamTransforms.h"
 #include "BinaryConstraintOps.h"
+#include "RamComplexityAnalysis.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
 #include "RamNode.h"
@@ -24,12 +25,11 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
-#include "RamComplexityAnalysis.h"
 #include "RamVisitor.h"
+#include <algorithm>
+#include <list>
 #include <utility>
 #include <vector>
-#include <list>
-#include <algorithm>
 
 namespace souffle {
 
@@ -80,20 +80,21 @@ bool ReorderConditionsTransformer::reorderConditions(RamProgram& program) {
             if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition* condition = &filter->getCondition();
                 std::vector<std::unique_ptr<RamCondition>> condList = toConjunctionList(condition);
-                std::vector<const RamCondition *> sortedConds;
-                for (auto& cond : condList){
+                std::vector<const RamCondition*> sortedConds;
+                for (auto& cond : condList) {
                     sortedConds.push_back(cond.get());
                 }
-                std::sort (sortedConds.begin(), sortedConds.end(),
-                  [&](const RamCondition *a, const RamCondition *b) {
-                        return rca->getComplexity(a) < rca->getComplexity(b);});
+                std::sort(sortedConds.begin(), sortedConds.end(),
+                        [&](const RamCondition* a, const RamCondition* b) {
+                            return rca->getComplexity(a) < rca->getComplexity(b);
+                        });
 
-                if(!std::equal(sortedConds.begin(), sortedConds.end(), condList.begin(), [](const RamCondition *a, 
-                     const auto &b) { return *a == *b; })) {
-                  changed = true;
-                  node = std::make_unique<RamFilter>(
-                             std::unique_ptr<RamCondition>(toCondition(sortedConds)),
-                             std::unique_ptr<RamOperation>(filter->getOperation().clone()));
+                if (!std::equal(sortedConds.begin(), sortedConds.end(), condList.begin(),
+                            [](const RamCondition* a, const auto& b) { return *a == *b; })) {
+                    changed = true;
+                    node = std::make_unique<RamFilter>(
+                            std::unique_ptr<RamCondition>(toCondition(sortedConds)),
+                            std::unique_ptr<RamOperation>(filter->getOperation().clone()));
                 }
             }
             node->apply(makeLambdaRamMapper(filterRewriter));

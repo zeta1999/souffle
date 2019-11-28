@@ -10,10 +10,10 @@
  *
  * @file RamComplexityAnalysis.h
  *
- * Get the complexity of an expression/condition in terms of 
- * database operations. The number of emptiness checks / existence 
+ * Get the complexity of an expression/condition in terms of
+ * database operations. The number of emptiness checks / existence
  * checks are added and summed up. An emptiness check is given the
- * weight of one and existence checks is given the weight two.  
+ * weight of one and existence checks is given the weight two.
  *
  ***********************************************************************/
 
@@ -26,8 +26,8 @@ namespace souffle {
 
 /**
  * @class RamComplexityAnalysis
- * @brief A Ram Analysis for determining the number of relational 
- *        operations in a condition / expression. 
+ * @brief A Ram Analysis for determining the number of relational
+ *        operations in a condition / expression.
  *
  *
  */

@@ -24,7 +24,6 @@ int RamComplexityAnalysis::getComplexity(const RamNode* node) const {
     // visitor
     class ValueComplexityVisitor : public RamVisitor<int> {
     public:
-
         // conjunction
         int visitConjunction(const RamConjunction& conj) override {
             return visit(conj.getLHS()) + visit(conj.getRHS());
@@ -47,7 +46,7 @@ int RamComplexityAnalysis::getComplexity(const RamNode* node) const {
 
         // emptiness check
         int visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
-            return 1; 
+            return 1;
         }
 
         // default rule

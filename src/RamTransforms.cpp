@@ -682,9 +682,6 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
 
     // parallelize the most outer loop only
     // most outer loops can be scan/choice/indexScan/indexChoice
-    //
-    // TODO (b-scholz): renumbering may be necessary since some operations
-    // may have reduced a loop to a filter operation.
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> parallelRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {

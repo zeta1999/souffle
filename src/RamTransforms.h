@@ -103,7 +103,7 @@ protected:
 class ReorderConditionsTransformer : public RamTransformer {
 public:
     std::string getName() const override {
-        return "ReoderConditionsTransformer";
+        return "ReorderConditionsTransformer";
     }
 
     /**

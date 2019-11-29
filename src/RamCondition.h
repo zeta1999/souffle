@@ -492,4 +492,20 @@ inline std::unique_ptr<RamCondition> toCondition(const std::vector<const RamCond
     return result;
 }
 
+/**
+ * @brief Convert list of conditions to a conjunction
+ * @param A list of RAM conditions
+ * @param A RAM condition
+ *
+ * Convert a list {C1, C2, ..., Cn} to a condition of
+ * the format C1 /\ C2 /\ ... /\ Cn.
+ */
+inline std::unique_ptr<RamCondition> toCondition(const std::vector<std::unique_ptr<RamCondition>>& list) {
+    std::vector<const RamCondition*> args;
+    for (const auto& cur : list) {
+        args.push_back(cur.get());
+    }
+    return toCondition(args);
+}
+
 }  // end of namespace souffle

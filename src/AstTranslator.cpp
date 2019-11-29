@@ -835,8 +835,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
             // check whether all arguments are unnamed variables
             bool isAllArgsUnnamed = true;
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
-                if (dynamic_cast<AstUnnamedVariable*>(atom->getArgument(pos)) == nullptr) {
+            for (auto* argument : atom->getArguments()) {
+                if (dynamic_cast<AstUnnamedVariable*>(argument) == nullptr) {
                     isAllArgsUnnamed = false;
                 }
             }

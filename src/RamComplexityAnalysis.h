@@ -11,13 +11,13 @@
  * @file RamComplexityAnalysis.h
  *
  * Get the complexity of an expression/condition in terms of
- * database operations. The number of emptiness checks / existence
- * checks are added and summed up. An emptiness check is given the
- * weight of one and existence checks is given the weight two.
- *
+ * database operations. The complexity of an expression/condition is a 
+ * weighted sum. The weights express the complexity of the terms. 
  ***********************************************************************/
 
 #pragma once
+
+class RamNode; 
 
 #include "RamAnalysis.h"
 #include "RamNode.h"

@@ -833,6 +833,14 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 }
             }
 
+            // check whether all arguments are unnamed variables
+            bool isAllArgsUnnamed = true;
+            for (auto* argument : atom->getArguments()) {
+                if (dynamic_cast<AstUnnamedVariable*>(argument) == nullptr) {
+                    isAllArgsUnnamed = false;
+                }
+            }
+
             // add check for emptiness for an atom
             op = std::make_unique<RamFilter>(
                     std::make_unique<RamNegation>(
@@ -840,7 +848,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                     std::move(op));
 
             // add a scan level
-            if (atom->getArity() != 0) {
+            if (atom->getArity() != 0 && !isAllArgsUnnamed) {
                 if (head->getArity() == 0) {
                     op = std::make_unique<RamBreak>(
                             std::make_unique<RamNegation>(

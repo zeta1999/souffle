@@ -11,18 +11,17 @@
  * @file RamComplexityAnalysis.h
  *
  * Get the complexity of an expression/condition in terms of
- * database operations. The complexity of an expression/condition is a 
- * weighted sum. The weights express the complexity of the terms. 
+ * database operations. The complexity of an expression/condition is a
+ * weighted sum. The weights express the complexity of the terms.
  ***********************************************************************/
 
 #pragma once
 
-class RamNode; 
-
 #include "RamAnalysis.h"
-#include "RamNode.h"
 
 namespace souffle {
+
+class RamNode;
 
 /**
  * @class RamComplexityAnalysis

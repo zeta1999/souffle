@@ -16,6 +16,7 @@
 
 #include "RamTransforms.h"
 #include "BinaryConstraintOps.h"
+#include "RamComplexityAnalysis.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
 #include "RamNode.h"
@@ -25,6 +26,8 @@
 #include "RamStatement.h"
 #include "RamTypes.h"
 #include "RamVisitor.h"
+#include <algorithm>
+#include <list>
 #include <utility>
 #include <vector>
 
@@ -57,6 +60,41 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
                         }
                     }
                     node = std::move(filters.back());
+                }
+            }
+            node->apply(makeLambdaRamMapper(filterRewriter));
+            return node;
+        };
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(filterRewriter));
+    });
+    return changed;
+}
+
+bool ReorderConditionsTransformer::reorderConditions(RamProgram& program) {
+    // flag to determine whether the RAM program has changed
+    bool changed = false;
+
+    visitDepthFirst(program, [&](const RamQuery& query) {
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
+                const RamCondition* condition = &filter->getCondition();
+                std::vector<std::unique_ptr<RamCondition>> condList = toConjunctionList(condition);
+                std::vector<const RamCondition*> sortedConds;
+                for (auto& cond : condList) {
+                    sortedConds.push_back(cond.get());
+                }
+                std::sort(sortedConds.begin(), sortedConds.end(),
+                        [&](const RamCondition* a, const RamCondition* b) {
+                            return rca->getComplexity(a) < rca->getComplexity(b);
+                        });
+
+                if (!std::equal(sortedConds.begin(), sortedConds.end(), condList.begin(),
+                            [](const RamCondition* a, const auto& b) { return *a == *b; })) {
+                    changed = true;
+                    node = std::make_unique<RamFilter>(
+                            std::unique_ptr<RamCondition>(toCondition(sortedConds)),
+                            std::unique_ptr<RamOperation>(filter->getOperation().clone()));
                 }
             }
             node->apply(makeLambdaRamMapper(filterRewriter));
@@ -644,9 +682,6 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
 
     // parallelize the most outer loop only
     // most outer loops can be scan/choice/indexScan/indexChoice
-    //
-    // TODO (b-scholz): renumbering may be necessary since some operations
-    // may have reduced a loop to a filter operation.
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> parallelRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {

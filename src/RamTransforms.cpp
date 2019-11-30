@@ -34,9 +34,7 @@
 namespace souffle {
 
 bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
-    // flag to determine whether the RAM program has changed
     bool changed = false;
-
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
@@ -71,9 +69,7 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
 }
 
 bool ReorderConditionsTransformer::reorderConditions(RamProgram& program) {
-    // flag to determine whether the RAM program has changed
     bool changed = false;
-
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
@@ -106,9 +102,7 @@ bool ReorderConditionsTransformer::reorderConditions(RamProgram& program) {
 }
 
 bool CollapseFiltersTransformer::collapseFilters(RamProgram& program) {
-    // flag to determine whether the RAM program has changed
     bool changed = false;
-
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
@@ -143,8 +137,39 @@ bool CollapseFiltersTransformer::collapseFilters(RamProgram& program) {
     return changed;
 }
 
+bool EliminateDuplicatesTransformer::eliminateDuplicates(RamProgram& program) {
+    bool changed = false;
+    visitDepthFirst(program, [&](const RamQuery& query) {
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> filterRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
+                const RamCondition* condition = &filter->getCondition();
+                std::vector<std::unique_ptr<RamCondition>> conds = toConjunctionList(condition);
+                bool eliminatedDuplicate = false;
+                for (std::size_t i = 0; i < conds.size(); i++) {
+                    for (std::size_t j = i + 1; j < conds.size(); j++) {
+                        if (*conds[i] == *conds[j]) {
+                            conds.erase(conds.begin() + j);
+                            i = -1;
+                            eliminatedDuplicate = true;
+                            break;
+                        }
+                    }
+                }
+                if (eliminatedDuplicate) {
+                    changed = true;
+                    node = std::make_unique<RamFilter>(std::unique_ptr<RamCondition>(toCondition(conds)),
+                            std::unique_ptr<RamOperation>(filter->getOperation().clone()));
+                }
+            }
+            node->apply(makeLambdaRamMapper(filterRewriter));
+            return node;
+        };
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(filterRewriter));
+    });
+    return changed;
+}
 bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
-    // flag to determine whether the RAM program has changed
     bool changed = false;
 
     // helper for collecting conditions from filter operations
@@ -580,9 +605,7 @@ bool ChoiceConversionTransformer::convertScans(RamProgram& program) {
 }
 
 bool TupleIdTransformer::reorderOperations(RamProgram& program) {
-    // flag to determine whether the RAM program has changed
     bool changed = false;
-
     visitDepthFirst(program, [&](const RamQuery& query) {
         // Maps old tupleIds to new tupleIds
         std::map<int, int> reorder;
@@ -616,7 +639,6 @@ bool TupleIdTransformer::reorderOperations(RamProgram& program) {
 }
 
 bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
-    // flag to determine whether the RAM program has changed
     bool changed = false;
 
     // hoist a single aggregate to an outer scope
@@ -702,7 +724,6 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
 }
 
 bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
-    // flag to determine whether the RAM program has changed
     bool changed = false;
 
     // parallelize the most outer loop only

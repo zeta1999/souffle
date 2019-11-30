@@ -145,18 +145,18 @@ bool EliminateDuplicatesTransformer::eliminateDuplicates(RamProgram& program) {
             if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition* condition = &filter->getCondition();
                 std::vector<std::unique_ptr<RamCondition>> conds = toConjunctionList(condition);
-                bool duplicatedElim = false;
+                bool eliminatedDuplicate = false;
                 for (std::size_t i = 0; i < conds.size(); i++) {
                     for (std::size_t j = i + 1; j < conds.size(); j++) {
                         if (*conds[i] == *conds[j]) {
                             conds.erase(conds.begin() + j);
                             i = -1;
-                            duplicatedElim = true;
+                            eliminatedDuplicate = true;
                             break;
                         }
                     }
                 }
-                if (duplicatedElim) {
+                if (eliminatedDuplicate) {
                     changed = true;
                     node = std::make_unique<RamFilter>(std::unique_ptr<RamCondition>(toCondition(conds)),
                             std::unique_ptr<RamOperation>(filter->getOperation().clone()));

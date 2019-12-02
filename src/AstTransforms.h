@@ -294,6 +294,21 @@ private:
 };
 
 /**
+ * Transformation pass to replace unnamed variables
+ * with singletons.
+ * E.g.: a() :- b(_). -> a() :- b(x).
+ */
+class NameUnnamedVariablesTransformer : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "NameUnnamedVariablesTransformer";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+};
+
+/**
  * Transformation pass to reorder body literals.
  */
 class ReorderLiteralsTransformer : public AstTransformer {

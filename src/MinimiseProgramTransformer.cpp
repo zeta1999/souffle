@@ -379,7 +379,7 @@ bool reduceSingletonRelations(AstProgram& program) {
     // Find all singleton relations to consider
     std::vector<AstClause*> singletonRelationClauses;
     for (AstRelation* rel : program.getRelations()) {
-        if (rel->getClauses().size() == 1) {
+        if (!isIORelation(*rel) && rel->getClauses().size() == 1) {
             AstClause* clause = rel->getClauses()[0];
             singletonRelationClauses.push_back(clause);
         }
@@ -407,16 +407,44 @@ bool reduceSingletonRelations(AstProgram& program) {
                 AstRelationIdentifier firstName = first->getHead()->getName();
                 AstRelationIdentifier secondName = second->getHead()->getName();
                 redundantClauses.insert(second);
-                canonicalName.insert(std::pair(firstName, secondName));
+                canonicalName.insert(std::pair(secondName, firstName));
             }
         }
     }
 
     // Remove redundant relation definitions
-    // TODO
+    for (AstClause* clause : redundantClauses) {
+        auto relName = clause->getHead()->getName();
+        AstRelation* rel = program.getRelation(relName);
+        assert(rel != nullptr && "relation does not exist in program");
+        program.removeClause(clause);
+        program.removeRelation(relName);
+    }
 
     // Replace each redundant relation appearance with its canonical name
-    // TODO
+    struct replaceRedundantRelations : public AstNodeMapper {
+        const std::map<AstRelationIdentifier, AstRelationIdentifier>& canonicalName;
+
+        replaceRedundantRelations(const std::map<AstRelationIdentifier, AstRelationIdentifier>& canonicalName) : canonicalName(canonicalName) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // Remove appearances from children nodes
+            node->apply(*this);
+
+            if (auto* atom = dynamic_cast<AstAtom*>(node.get())) {
+                auto pos = canonicalName.find(atom->getName());
+                if (pos != canonicalName.end()) {
+                    auto newAtom = std::unique_ptr<AstAtom>(atom->clone());
+                    newAtom->setName(pos->second);
+                    return std::move(newAtom);
+                }
+            }
+
+            return node;
+        }
+    };
+    replaceRedundantRelations update(canonicalName);
+    program.apply(update);
 
     // Program was changed iff a relation was replaced
     return !canonicalName.empty();

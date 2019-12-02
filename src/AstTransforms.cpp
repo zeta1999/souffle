@@ -1036,7 +1036,7 @@ bool NameUnnamedVariablesTransformer::transform(AstTranslationUnit& translationU
         nameVariables() : changed(false), count(0) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
-            if (dynamic_cast<AstUnnamedVariable*>(node.get())) {
+            if (dynamic_cast<AstUnnamedVariable*>(node.get()) != nullptr) {
                 changed = true;
                 std::stringstream name;
                 name << boundPrefix << "_" << count++;

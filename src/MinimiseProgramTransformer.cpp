@@ -22,6 +22,7 @@
 #include "AstRelationIdentifier.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
 #include "AstVisitor.h"
 #include <map>
 #include <memory>
@@ -358,18 +359,6 @@ bool reduceLocallyEquivalentClauses(AstProgram& program) {
 }
 
 bool reduceEquivalentRelations(AstProgram& program) {
-    // TODO: move to some utils thing
-    auto isRecursiveClause = [&](const AstClause& clause) {
-        AstRelationIdentifier relationName = clause.getHead()->getName();
-        bool recursive = false;
-        visitDepthFirst(clause.getBodyLiterals(), [&](const AstAtom& atom) {
-            if (atom.getName() == relationName) {
-                recursive = true;
-            }
-        });
-        return recursive;
-    };
-
     std::vector<AstClause*> singletonRelationClauses;
     for (AstRelation* rel : program.getRelations()) {
         if (rel->getClauses().size() == 1) {

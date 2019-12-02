@@ -317,13 +317,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // outline each search operation to improve compilation time
-#ifdef __clang__
-#if __clang_major > 3
             out << "[&]()";
-#endif
-#else
-            out << "[&]()";
-#endif
             // enclose operation in its own scope
             out << "{\n";
 
@@ -372,13 +366,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             out << "}\n";
-#ifdef __clang__
-#if __clang_major > 3
             out << "();";  // call lambda
-#endif
-#else
-            out << "();";  // call lambda
-#endif
+
             if (freeOfCtx.size() > 0) {
                 out << "}\n";
             }

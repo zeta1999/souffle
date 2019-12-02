@@ -318,6 +318,13 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
     return false;
 }
 
+/**
+ * Reduces locally-redundant clauses.
+ * A clause is locally-redundant if there is another clause within the same relation
+ * that computes the same set of tuples.
+ * @param program the program to transform
+ * @return true iff the program was changed
+ */
 bool reduceLocallyEquivalentClauses(AstProgram& program) {
     std::vector<AstClause*> clausesToDelete;
 
@@ -358,41 +365,61 @@ bool reduceLocallyEquivalentClauses(AstProgram& program) {
     return !clausesToDelete.empty();
 }
 
-bool reduceEquivalentRelations(AstProgram& program) {
+/**
+ * Removes redundant singleton relations.
+ * Singleton relations are relations with a single clause. A singleton relation is redundant
+ * if there exists another singleton relation that computes the same set of tuples.
+ * @param program the program to transform
+ * @return true iff the program was changed
+ */
+bool reduceSingletonRelations(AstProgram& program) {
+    // Note: This reduction is particularly useful in conjunction with the
+    // body-partitioning transformation
+
+    // Find all singleton relations to consider
     std::vector<AstClause*> singletonRelationClauses;
     for (AstRelation* rel : program.getRelations()) {
         if (rel->getClauses().size() == 1) {
             AstClause* clause = rel->getClauses()[0];
-            if (isRecursiveClause(*clause)) {
-                continue;
-            }
             singletonRelationClauses.push_back(clause);
         }
     }
 
-    // TODO: make a map here
+    // Keep track of clauses found to be redundant
     std::set<AstClause*> redundantClauses;
-    std::map<AstRelationIdentifier, AstRelationIdentifier> replacementRelation;
+
+    // Keep track of canonical relation name for each redundant clause
+    std::map<AstRelationIdentifier, AstRelationIdentifier> canonicalName;
+
+    // Check pairwise equivalence of each singleton relation
     for (size_t i = 0; i < singletonRelationClauses.size(); i++) {
         AstClause* first = singletonRelationClauses[i];
         if (redundantClauses.find(first) != redundantClauses.end()) {
+            // Already found to be redundant, no need to check
             continue;
         }
 
-        for (size_t j = i+1; j < singletonRelationClauses.size(); j++) {
+        for (size_t j = i + 1; j < singletonRelationClauses.size(); j++) {
             AstClause* second = singletonRelationClauses[j];
+
+            // Note: Bijective-equivalence check does not care about the head relation name
             if (areBijectivelyEquivalent(first, second)) {
                 AstRelationIdentifier firstName = first->getHead()->getName();
                 AstRelationIdentifier secondName = second->getHead()->getName();
-                std::cout << firstName << " is equivalent to " << secondName << std::endl;
                 redundantClauses.insert(second);
-                replacementRelation.insert(std::pair(firstName, secondName));
+                canonicalName.insert(std::pair(firstName, secondName));
             }
         }
     }
 
-    std::cout << replacementRelation << std::endl;
-    return !replacementRelation.empty();
+    // Remove redundant relation definitions
+    // TODO
+
+    // Replace each redundant relation appearance with its canonical name
+    // TODO
+
+    // Program was changed iff a relation was replaced
+    return !canonicalName.empty();
 }
 
 bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) {
@@ -400,7 +427,7 @@ bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) 
 
     bool changed = false;
     changed |= reduceLocallyEquivalentClauses(program);
-    changed |= reduceEquivalentRelations(program);
+    changed |= reduceSingletonRelations(program);
     return changed;
 }
 

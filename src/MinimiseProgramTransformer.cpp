@@ -287,6 +287,11 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
         return false;
     }
 
+    // head atoms must have the same arity
+    if (left->getHead()->getArity() != right->getHead()->getArity()) {
+        return false;
+    }
+
     // set up the n x n permutation matrix, where n is the number of
     // atoms in the clause, including the head atom
     size_t size = left->getBodyLiterals().size() + 1;

@@ -1026,6 +1026,39 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
     return changed;
 }
 
+bool NameUnnamedVariablesTransformer::transform(AstTranslationUnit& translationUnit) {
+    bool changed = false;
+    static constexpr const char* boundPrefix = "+underscore";
+
+    struct nameVariables : public AstNodeMapper {
+        mutable bool changed;
+        mutable size_t count;
+        nameVariables() : changed(false), count(0) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            if (dynamic_cast<AstUnnamedVariable*>(node.get())) {
+                changed = true;
+                std::stringstream name;
+                name << boundPrefix << "_" << count++;
+                return std::make_unique<AstVariable>(name.str());
+            }
+            node->apply(*this);
+            return node;
+        }
+    };
+
+    AstProgram& program = *translationUnit.getProgram();
+    for (AstRelation* rel : program.getRelations()) {
+        for (AstClause* clause : rel->getClauses()) {
+            nameVariables update;
+            clause->apply(update);
+            changed |= update.changed;
+        }
+    }
+
+    return changed;
+}
+
 bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUnit) {
     struct ReplaceSumWithCount : public AstNodeMapper {
         ReplaceSumWithCount() {}

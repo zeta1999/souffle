@@ -430,7 +430,8 @@ bool reduceSingletonRelations(AstProgram& program) {
     struct replaceRedundantRelations : public AstNodeMapper {
         const std::map<AstRelationIdentifier, AstRelationIdentifier>& canonicalName;
 
-        replaceRedundantRelations(const std::map<AstRelationIdentifier, AstRelationIdentifier>& canonicalName) : canonicalName(canonicalName) {}
+        replaceRedundantRelations(const std::map<AstRelationIdentifier, AstRelationIdentifier>& canonicalName)
+                : canonicalName(canonicalName) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // Remove appearances from children nodes

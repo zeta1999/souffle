@@ -124,9 +124,7 @@ bool isRecursiveClause(const AstClause& clause) {
 
 bool isIORelation(const AstRelation& relation) {
     int qualifier = relation.getQualifier();
-    if ((qualifier & INPUT_RELATION) ||
-            (qualifier & OUTPUT_RELATION) ||
-            (qualifier & PRINTSIZE_RELATION)) {
+    if ((qualifier & INPUT_RELATION) || (qualifier & OUTPUT_RELATION) || (qualifier & PRINTSIZE_RELATION)) {
         return true;
     }
     return false;

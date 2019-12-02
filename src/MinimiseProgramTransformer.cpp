@@ -295,8 +295,9 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
     }
 
     // create permutation matrix
-    for (size_t i = 0; i < size; i++) {
-        for (size_t j = 0; j < size; j++) {
+    permutationMatrix[0][0] = 1;
+    for (size_t i = 1; i < size; i++) {
+        for (size_t j = 1; j < size; j++) {
             if (isValidMove(left, i, right, j)) {
                 permutationMatrix[i][j] = 1;
             }
@@ -357,7 +358,52 @@ bool reduceLocallyEquivalentClauses(AstProgram& program) {
 }
 
 bool reduceEquivalentRelations(AstProgram& program) {
-    return false;
+    // TODO: move to some utils thing
+    auto isRecursiveClause = [&](const AstClause& clause) {
+        AstRelationIdentifier relationName = clause.getHead()->getName();
+        bool recursive = false;
+        visitDepthFirst(clause.getBodyLiterals(), [&](const AstAtom& atom) {
+            if (atom.getName() == relationName) {
+                recursive = true;
+            }
+        });
+        return recursive;
+    };
+
+    std::vector<AstClause*> singletonRelationClauses;
+    for (AstRelation* rel : program.getRelations()) {
+        if (rel->getClauses().size() == 1) {
+            AstClause* clause = rel->getClauses()[0];
+            if (isRecursiveClause(*clause)) {
+                continue;
+            }
+            singletonRelationClauses.push_back(clause);
+        }
+    }
+
+    // TODO: make a map here
+    std::set<AstClause*> redundantClauses;
+    std::map<AstRelationIdentifier, AstRelationIdentifier> replacementRelation;
+    for (size_t i = 0; i < singletonRelationClauses.size(); i++) {
+        AstClause* first = singletonRelationClauses[i];
+        if (redundantClauses.find(first) != redundantClauses.end()) {
+            continue;
+        }
+
+        for (size_t j = i+1; j < singletonRelationClauses.size(); j++) {
+            AstClause* second = singletonRelationClauses[j];
+            if (areBijectivelyEquivalent(first, second)) {
+                AstRelationIdentifier firstName = first->getHead()->getName();
+                AstRelationIdentifier secondName = second->getHead()->getName();
+                std::cout << firstName << " is equivalent to " << secondName << std::endl;
+                redundantClauses.insert(second);
+                replacementRelation.insert(std::pair(firstName, secondName));
+            }
+        }
+    }
+
+    std::cout << replacementRelation << std::endl;
+    return !replacementRelation.empty();
 }
 
 bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) {

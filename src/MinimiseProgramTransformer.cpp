@@ -316,12 +316,10 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
     return false;
 }
 
-bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) {
-    AstProgram& program = *translationUnit.getProgram();
-
+bool reduceLocallyEquivalentClauses(AstProgram& program) {
     std::vector<AstClause*> clausesToDelete;
 
-    // split up each relation's rules into equivalene classes
+    // split up each relation's rules into equivalence classes
     // TODO (azreika): consider turning this into an ast analysis instead
     for (AstRelation* rel : program.getRelations()) {
         std::vector<std::vector<AstClause*>> equivalenceClasses;
@@ -356,6 +354,19 @@ bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) 
 
     // changed iff any clauses were deleted
     return !clausesToDelete.empty();
+}
+
+bool reduceEquivalentRelations(AstProgram& program) {
+    return false;
+}
+
+bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) {
+    AstProgram& program = *translationUnit.getProgram();
+
+    bool changed = false;
+    changed |= reduceLocallyEquivalentClauses(program);
+    changed |= reduceEquivalentRelations(program);
+    return changed;
 }
 
 }  // namespace souffle

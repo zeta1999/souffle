@@ -1,4 +1,10 @@
 souffle (@VERSION@-1) UNRELEASED; urgency=low
+  * Enhance program minimiser (azreika)
+  * Fix re-ordering of conjunctive terms
+
+ -- Kostyantyn Vorobyov <k.a.vorobyov@gmail.com>  Wed, 04 Dec 2019 09:31:23 +1100
+
+souffle (1.7.0); urgency=low
   * Rewrote Interpreter for enhanced performance (XiaowenHu96,HerbertJordan)
   * Add SWIG interface (detljh,chadgavin,honghyw)
   * Improved C++ interface and documentation (detljh,chadgavin,honghyw)

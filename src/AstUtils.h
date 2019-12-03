@@ -125,4 +125,11 @@ bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation
 bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelation* aggRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral);
 
+/**
+ * Returns whether the given clause is recursive.
+ * @param clause the clause to check
+ * @return true iff the clause is recursive
+ */
+bool isRecursiveClause(const AstClause& clause);
+
 }  // end of namespace souffle

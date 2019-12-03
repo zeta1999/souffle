@@ -796,18 +796,6 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
 bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
 
-    // Checks whether a given clause is recursive
-    auto isRecursiveClause = [&](const AstClause& clause) {
-        AstRelationIdentifier relationName = clause.getHead()->getName();
-        bool recursive = false;
-        visitDepthFirst(clause.getBodyLiterals(), [&](const AstAtom& atom) {
-            if (atom.getName() == relationName) {
-                recursive = true;
-            }
-        });
-        return recursive;
-    };
-
     // Checks whether an atom is of the form a(_,_,...,_)
     auto isExistentialAtom = [&](const AstAtom& atom) {
         for (AstArgument* arg : atom.getArguments()) {

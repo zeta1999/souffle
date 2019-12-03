@@ -111,4 +111,15 @@ bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelat
     return false;
 }
 
+bool isRecursiveClause(const AstClause& clause) {
+    AstRelationIdentifier relationName = clause.getHead()->getName();
+    bool recursive = false;
+    visitDepthFirst(clause.getBodyLiterals(), [&](const AstAtom& atom) {
+        if (atom.getName() == relationName) {
+            recursive = true;
+        }
+    });
+    return recursive;
+}
+
 }  // end of namespace souffle

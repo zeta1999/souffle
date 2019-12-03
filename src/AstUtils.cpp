@@ -122,12 +122,4 @@ bool isRecursiveClause(const AstClause& clause) {
     return recursive;
 }
 
-bool isIORelation(const AstRelation& relation) {
-    int qualifier = relation.getQualifier();
-    if ((qualifier & INPUT_RELATION) || (qualifier & OUTPUT_RELATION) || (qualifier & PRINTSIZE_RELATION)) {
-        return true;
-    }
-    return false;
-}
-
 }  // end of namespace souffle

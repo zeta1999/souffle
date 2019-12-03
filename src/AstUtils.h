@@ -132,11 +132,4 @@ bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelat
  */
 bool isRecursiveClause(const AstClause& clause);
 
-/**
- * Returns whether the given relation is IO.
- * @param relation the relation to check
- * @return true iff the relation is an input or output relation
- */
-bool isIORelation(const AstRelation& relation);
-
 }  // end of namespace souffle

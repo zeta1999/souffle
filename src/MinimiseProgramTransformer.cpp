@@ -16,6 +16,8 @@
 
 #include "AstArgument.h"
 #include "AstClause.h"
+#include "AstIO.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
@@ -327,10 +329,11 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
  * Reduces locally-redundant clauses.
  * A clause is locally-redundant if there is another clause within the same relation
  * that computes the same set of tuples.
- * @param program the program to transform
  * @return true iff the program was changed
  */
-bool reduceLocallyEquivalentClauses(AstProgram& program) {
+bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
+    AstProgram& program = *translationUnit.getProgram();
+
     std::vector<AstClause*> clausesToDelete;
 
     // split up each relation's rules into equivalence classes
@@ -374,17 +377,18 @@ bool reduceLocallyEquivalentClauses(AstProgram& program) {
  * Removes redundant singleton relations.
  * Singleton relations are relations with a single clause. A singleton relation is redundant
  * if there exists another singleton relation that computes the same set of tuples.
- * @param program the program to transform
  * @return true iff the program was changed
  */
-bool reduceSingletonRelations(AstProgram& program) {
+bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     // Note: This reduction is particularly useful in conjunction with the
     // body-partitioning transformation
+    AstProgram& program = *translationUnit.getProgram();
+    auto* ioTypes = translationUnit.getAnalysis<IOType>();
 
     // Find all singleton relations to consider
     std::vector<AstClause*> singletonRelationClauses;
     for (AstRelation* rel : program.getRelations()) {
-        if (!isIORelation(*rel) && rel->getClauses().size() == 1) {
+        if (!ioTypes->isIO(rel) && rel->getClauses().size() == 1) {
             AstClause* clause = rel->getClauses()[0];
             singletonRelationClauses.push_back(clause);
         }
@@ -457,11 +461,9 @@ bool reduceSingletonRelations(AstProgram& program) {
 }
 
 bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) {
-    AstProgram& program = *translationUnit.getProgram();
-
     bool changed = false;
-    changed |= reduceLocallyEquivalentClauses(program);
-    changed |= reduceSingletonRelations(program);
+    changed |= reduceLocallyEquivalentClauses(translationUnit);
+    changed |= reduceSingletonRelations(translationUnit);
     return changed;
 }
 

@@ -687,7 +687,7 @@ public:
                         queryResult += rels[i].second[l] + ", ";
                     }
                     queryResult += rels[i].second.back() + ") exists\n";
-                // otherwise, there is no solution for given query
+                    // otherwise, there is no solution for given query
                 } else {
                     queryResult += "Tuple " + rels[i].first + "(";
                     for (size_t l = 0; l < rels[i].second.size() - 1; ++l) {

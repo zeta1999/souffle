@@ -59,7 +59,7 @@ public:
         return indices[0];
     }
 
-    // get hte indices of the varible
+    // get the indices vector of variable
     std::vector<std::pair<size_t, size_t>> getIndices() {
         return indices;
     }
@@ -89,7 +89,7 @@ public:
         constConstrs.push_back(constr);
     }
 
-    // verify if the query product satisifies constant constraint
+    // verify if the query product satisfies constant constraint
     bool verify(const std::vector<tuple>& product) const {
         for (auto constr : constConstrs) {
             if (product[constr.first.first][constr.first.second] != constr.second) {
@@ -99,7 +99,7 @@ public:
         return true;
     }
 
-    // get the const constraint vector
+    // get the constant constraint vector
     std::vector<std::pair<std::pair<size_t, size_t>, RamDomain>>& getConstraints() {
         return constConstrs;
     }
@@ -156,7 +156,7 @@ public:
 
     virtual void printRulesJSON(std::ostream& os) = 0;
 
-    virtual std::string queryProcess(
+    virtual void queryProcess(
             const std::vector<std::pair<std::string, std::vector<std::string>>>& rels) = 0;
 
     virtual std::string getRelationOutput(const std::string& relName) {

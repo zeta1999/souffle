@@ -1,5 +1,1 @@
-|x       |y       |
-|b       |d       |
-|b       |e       |
-|c       |f       |
-|c       |g       |
+x = b, y = d x = b, y = e x = c, y = f x = c, y = g .

@@ -240,7 +240,7 @@ public:
             }
 
             // call queryProcess function to process query
-            std::cout << prov.queryProcess(relations) << std::flush;
+            prov.queryProcess(relations);
         } else {
             printError(
                     "\n----------\n"
@@ -381,7 +381,6 @@ public:
         while (true) {
             printPrompt("Enter command > ");
             std::string line = getInput();
-
             // a return value of false indicates that an exit/q command has been processed
             if (processCommand(line) == false) {
                 break;

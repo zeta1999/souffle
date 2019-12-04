@@ -220,8 +220,7 @@ public:
             while (std::regex_search(relationStr, relationMatcher, relationRegex)) {
                 relations.push_back(parseQueryTuple(relationMatcher[0]));
 
-                // check return value for parseQueryTuple, return if relation name is empty string or argument
-                // tuple is empty
+                // check return value for parseQueryTuple, return if relation name is empty string or tuple arguments is empty
                 if (relations.back().first.size() == 0 || relations.back().second.size() == 0) {
                     printError(
                             "Usage: query <relation1>(<element1>, <element2>, ...), "
@@ -239,7 +238,7 @@ public:
                 return true;
             }
 
-            // call queryProcess function to process relations
+            // call queryProcess function to process query
             std::cout << prov.queryProcess(relations) << std::flush;
         } else {
             printError(

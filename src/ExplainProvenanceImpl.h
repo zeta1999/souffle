@@ -597,8 +597,7 @@ public:
         os << "\n]\n";
     }
 
-    void queryProcess(
-            const std::vector<std::pair<std::string, std::vector<std::string>>>& rels) override {
+    void queryProcess(const std::vector<std::pair<std::string, std::vector<std::string>>>& rels) override {
         std::regex varRegex("[a-zA-Z_][a-zA-Z_0-9]*", std::regex_constants::extended);
         std::regex symbolRegex("\"([^\"]*)\"", std::regex_constants::extended);
         std::regex numberRegex("[0-9]+", std::regex_constants::extended);
@@ -629,7 +628,8 @@ public:
             }
             // arity error
             if (relation->getArity() - 2 != rels[i].second.size()) {
-                std::cout << "<" + rels[i].first << "> has arity of " << std::to_string(relation->getArity() - 2) << std::endl;
+                std::cout << "<" + rels[i].first << "> has arity of "
+                          << std::to_string(relation->getArity() - 2) << std::endl;
                 return;
             }
 
@@ -652,7 +652,8 @@ public:
                     // arg is a symbol
                 } else if (std::regex_match(rels[i].second[j], argsMatcher, symbolRegex)) {
                     if (*(relation->getAttrType(j)) != 's') {
-                        std::cout << argsMatcher.str(0) << " does not match type defined in relation" << std::endl;
+                        std::cout << argsMatcher.str(0) << " does not match type defined in relation"
+                                  << std::endl;
                         return;
                     }
                     // find index of symbol and add indices pair to constConstraints
@@ -664,7 +665,8 @@ public:
                     // arg is number
                 } else if (std::regex_match(rels[i].second[j], argsMatcher, numberRegex)) {
                     if (*(relation->getAttrType(j)) != 'i') {
-                        std::cout << argsMatcher.str(0) << " does not match type defined in relation" << std::endl;
+                        std::cout << argsMatcher.str(0) << " does not match type defined in relation"
+                                  << std::endl;
                         return;
                     }
                     // convert number string to number and add index, number pair to constConstraints
@@ -685,7 +687,7 @@ public:
                     constConstraints.getConstraints().erase(
                             constConstraints.getConstraints().end() - relation->getArity() + 2,
                             constConstraints.getConstraints().end());
-                // otherwise, there is no solution for given query
+                    // otherwise, there is no solution for given query
                 } else {
                     std::cout << "false." << std::endl;
                     std::cout << "Tuple " << rels[i].first << "(";
@@ -701,7 +703,8 @@ public:
             }
         }
 
-        // if varRels size is 0, all given tuples only contain constant args and exist, no variable to resolve, output true and return
+        // if varRels size is 0, all given tuples only contain constant args and exist, no variable to
+        // resolve, output true and return
         if (varRels.size() == 0) {
             std::cout << "true." << std::endl;
             return;
@@ -709,7 +712,6 @@ public:
 
         // find solution for parameterised query
         findQuerySolution(varRels, nameToEquivalence, constConstraints);
-
     }
 
 private:
@@ -798,7 +800,7 @@ private:
 
         size_t solutionCount = 0;
         std::string solution = "";
-        
+
         // iterate through the vector of iterators to find solution
         while (true) {
             bool isSolution = true;
@@ -828,9 +830,11 @@ private:
                     for (auto var : nameToEquivalence) {
                         auto idx = var.second.getFirstIdx();
                         if (var.second.getType() == 'i') {
-                            solution += var.second.getSymbol() + " = " + std::to_string(element[idx.first][idx.second]); 
+                            solution += var.second.getSymbol() + " = " +
+                                        std::to_string(element[idx.first][idx.second]);
                         } else {
-                            solution += var.second.getSymbol() + " = " + prog.getSymbolTable().resolve(element[idx.first][idx.second]);
+                            solution += var.second.getSymbol() + " = " +
+                                        prog.getSymbolTable().resolve(element[idx.first][idx.second]);
                         }
                         if (++c < nameToEquivalence.size()) {
                             solution += ", ";
@@ -838,7 +842,7 @@ private:
                             solution += " ";
                         }
                     }
-                // query has more than one solution
+                    // query has more than one solution
                 } else {
                     // print previous solution
                     std::cout << solution;
@@ -848,9 +852,11 @@ private:
                     for (auto var : nameToEquivalence) {
                         auto idx = var.second.getFirstIdx();
                         if (var.second.getType() == 'i') {
-                            solution += var.second.getSymbol() + " = " + std::to_string(element[idx.first][idx.second]); 
+                            solution += var.second.getSymbol() + " = " +
+                                        std::to_string(element[idx.first][idx.second]);
                         } else {
-                            solution += var.second.getSymbol() + " = " + prog.getSymbolTable().resolve(element[idx.first][idx.second]);
+                            solution += var.second.getSymbol() + " = " +
+                                        prog.getSymbolTable().resolve(element[idx.first][idx.second]);
                         }
                         if (++c < nameToEquivalence.size()) {
                             solution += ", ";
@@ -866,7 +872,8 @@ private:
                         } else if (input == ".") {
                             return;
                         } else {
-                            std::cout << "use ; to find next solution, use . to break from current query" << std::endl;
+                            std::cout << "use ; to find next solution, use . to break from current query"
+                                      << std::endl;
                         }
                     }
                 }
@@ -888,7 +895,7 @@ private:
                 // if there is no solution, output false
                 if (solutionCount == 0) {
                     std::cout << "false." << std::endl;
-                // otherwise print the last solution
+                    // otherwise print the last solution
                 } else {
                     std::cout << solution << "." << std::endl;
                 }

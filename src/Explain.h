@@ -256,9 +256,11 @@ public:
                     "output <filename>: Write output into a file, or provide empty filename to\n"
                     "    disable output\n"
                     "format <json|proof>: switch format between json and proof-trees\n"
-                    "query <relation1>(<element1>, <element2>, ...), <relation2>(<element1>, <element2>), ... :\n"
-                    "check existence of tuple(s) or find solutions for parameterised relation tuple(s)\n"
-                    "for parameterised query, use semicolon to find next solution and dot to break from query\n"
+                    "query <relation1>(<element1>, <element2>, ...), <relation2>(<element1>, <element2>), "
+                    "... :\n"
+                    "check existence of constant tuple(s) or find solutions for parameterised tuple(s)\n"
+                    "for parameterised query, use semicolon to find next solution and dot to break from "
+                    "query\n"
                     "exit: Exits this interface\n\n");
         }
 

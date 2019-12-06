@@ -604,7 +604,7 @@ public:
 
         std::smatch argsMatcher;
 
-        // map for varaible name and corresponding equivalence class
+        // map for variable name and corresponding equivalence class
         std::map<std::string, Equivalence> nameToEquivalence;
 
         // const constraints that solution must satisfy
@@ -636,11 +636,11 @@ public:
             // check if args contain variable
             bool containVar = false;
             for (size_t j = 0; j < rels[i].second.size(); ++j) {
-                // arg is a varaible
+                // arg is a variable
                 if (std::regex_match(rels[i].second[j], argsMatcher, varRegex)) {
                     containVar = true;
                     auto nameToEquivalenceIter = nameToEquivalence.find(argsMatcher[0]);
-                    // if varaible has not shown up before, create an equivalence class for add it to
+                    // if variable has not shown up before, create an equivalence class for add it to
                     // nameToEquivalence map, otherwise add its indices to corresponding equivalence class
                     if (nameToEquivalenceIter == nameToEquivalence.end()) {
                         nameToEquivalence.insert(

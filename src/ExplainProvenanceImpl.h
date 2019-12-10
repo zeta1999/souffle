@@ -610,7 +610,7 @@ public:
         // const constraints that solution must satisfy
         ConstConstraint constConstraints;
 
-        // varRels stores relation of tuples contains variables
+        // relations of tuples containing variables
         std::vector<Relation*> varRels;
 
         // counter for adding element to varRels
@@ -619,7 +619,7 @@ public:
         // parse arguments in each relation Tuple
         for (size_t i = 0; i < rels.size(); ++i) {
             Relation* relation = prog.getRelation(rels[i].first);
-            // constTulpe stores number or index of symbol for constant arguments in tuple
+            // number/symbol index for constant arguments in tuple
             std::vector<RamDomain> constTuple;
             // relation does not exist
             if (relation == nullptr) {
@@ -627,9 +627,10 @@ public:
                 return;
             }
             // arity error
-            if (relation->getArity() - 2 != rels[i].second.size()) {
+            if (relation->getArity() - 1 - relation->getNumberOfHeights() != rels[i].second.size()) {
                 std::cout << "<" + rels[i].first << "> has arity of "
-                          << std::to_string(relation->getArity() - 2) << std::endl;
+                          << std::to_string(relation->getArity() - 1 - relation->getNumberOfHeights())
+                          << std::endl;
                 return;
             }
 
@@ -684,8 +685,9 @@ public:
 
                 // if relation contains this tuple, remove all related constraints
                 if (tupleExist) {
-                    constConstraints.getConstraints().erase(
-                            constConstraints.getConstraints().end() - relation->getArity() + 2,
+                    constConstraints.getConstraints().erase(constConstraints.getConstraints().end() -
+                                                                    relation->getArity() + 1 +
+                                                                    relation->getNumberOfHeights(),
                             constConstraints.getConstraints().end());
                     // otherwise, there is no solution for given query
                 } else {
@@ -704,7 +706,7 @@ public:
         }
 
         // if varRels size is 0, all given tuples only contain constant args and exist, no variable to
-        // resolve, output true and return
+        // resolve, Output true and return
         if (varRels.size() == 0) {
             std::cout << "true." << std::endl;
             return;
@@ -783,7 +785,7 @@ private:
     }
 
     /*
-     * find solution for parameterised query satisfy constant constraints and equivalence constraints
+     * Find solution for parameterised query satisfying constant constraints and equivalence constraints
      * @param varRels, reference to vector of relation of tuple contains at least one variable in its
      * arguments
      * @param nameToEquivalence, reference to variable name and corresponding equivalence class
@@ -799,7 +801,7 @@ private:
         }
 
         size_t solutionCount = 0;
-        std::string solution = "";
+        std::stringstream solution;
 
         // iterate through the vector of iterators to find solution
         while (true) {
@@ -830,38 +832,38 @@ private:
                     for (auto var : nameToEquivalence) {
                         auto idx = var.second.getFirstIdx();
                         if (var.second.getType() == 'i') {
-                            solution += var.second.getSymbol() + " = " +
-                                        std::to_string(element[idx.first][idx.second]);
+                            solution << var.second.getSymbol() << " = "
+                                     << std::to_string(element[idx.first][idx.second]);
                         } else {
-                            solution += var.second.getSymbol() + " = " +
-                                        prog.getSymbolTable().resolve(element[idx.first][idx.second]);
+                            solution << var.second.getSymbol() << " = "
+                                     << prog.getSymbolTable().resolve(element[idx.first][idx.second]);
                         }
                         if (++c < nameToEquivalence.size()) {
-                            solution += ", ";
+                            solution << ", ";
                         } else {
-                            solution += " ";
+                            solution << " ";
                         }
                     }
                     // query has more than one solution
                 } else {
                     // print previous solution
-                    std::cout << solution;
+                    std::cout << solution.str();
                     // store the current solution
-                    solution = "";
+                    solution.str(std::string());
                     size_t c = 0;
                     for (auto var : nameToEquivalence) {
                         auto idx = var.second.getFirstIdx();
                         if (var.second.getType() == 'i') {
-                            solution += var.second.getSymbol() + " = " +
-                                        std::to_string(element[idx.first][idx.second]);
+                            solution << var.second.getSymbol() << " = "
+                                     << std::to_string(element[idx.first][idx.second]);
                         } else {
-                            solution += var.second.getSymbol() + " = " +
-                                        prog.getSymbolTable().resolve(element[idx.first][idx.second]);
+                            solution << var.second.getSymbol() << " = "
+                                     << prog.getSymbolTable().resolve(element[idx.first][idx.second]);
                         }
                         if (++c < nameToEquivalence.size()) {
-                            solution += ", ";
+                            solution << ", ";
                         } else {
-                            solution += " ";
+                            solution << " ";
                         }
                     }
                     std::string input;
@@ -897,7 +899,7 @@ private:
                     std::cout << "false." << std::endl;
                     // otherwise print the last solution
                 } else {
-                    std::cout << solution << "." << std::endl;
+                    std::cout << solution.str() << "." << std::endl;
                 }
                 break;
             }

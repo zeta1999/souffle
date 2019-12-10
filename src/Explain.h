@@ -258,7 +258,7 @@ public:
                     "format <json|proof>: switch format between json and proof-trees\n"
                     "query <relation1>(<element1>, <element2>, ...), <relation2>(<element1>, <element2>), "
                     "... :\n"
-                    "check existence of constant tuple(s) or find solutions for parameterised tuple(s)\n"
+                    "check existence of constant tuples or find solutions for parameterised tuples\n"
                     "for parameterised query, use semicolon to find next solution and dot to break from "
                     "query\n"
                     "exit: Exits this interface\n\n");

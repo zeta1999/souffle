@@ -59,7 +59,7 @@ public:
         return indices[0];
     }
 
-    // get the indices vector of variable
+    // get indices of equivalent variables
     std::vector<std::pair<size_t, size_t>> getIndices() {
         return indices;
     }
@@ -156,6 +156,10 @@ public:
 
     virtual void printRulesJSON(std::ostream& os) = 0;
 
+    /**
+     * Process query with given arguments
+     * @param rels, vector of relation, argument pairs
+     * */
     virtual void queryProcess(const std::vector<std::pair<std::string, std::vector<std::string>>>& rels) = 0;
 
     virtual std::string getRelationOutput(const std::string& relName) {

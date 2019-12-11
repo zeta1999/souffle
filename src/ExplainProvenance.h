@@ -27,23 +27,34 @@
 
 namespace souffle {
 
-/* Equivalence class for variables in query command */
+/** Equivalence class for variables in query command */
 class Equivalence {
 public:
+    /** Destructor */
     ~Equivalence() = default;
+
+    /**
+     * Constructor for Equvialence class
+     * @param t, type of the variable
+     * @param s, symbol of the variable
+     * @param idx, first occurence of the variable
+     * */
     Equivalence(char t, std::string s, std::pair<size_t, size_t> idx) : type(t), symbol(s) {
         indices.push_back(idx);
     }
 
+    /** Copy constructor */
     Equivalence(const Equivalence& o) = default;
 
+    /** Copy assignment operator */
     Equivalence& operator=(const Equivalence& o) = default;
 
+    /** Add index at the end of indices vector */
     void push_back(std::pair<size_t, size_t> idx) {
         indices.push_back(idx);
     }
 
-    // verify if elements at the indices are equivalent in the given product
+    /** Verify if elements at the indices are equivalent in the given product */
     bool verify(const std::vector<tuple>& product) const {
         for (size_t i = 1; i < indices.size(); ++i) {
             if (product[indices[i].first][indices[i].second] !=
@@ -54,22 +65,22 @@ public:
         return true;
     }
 
-    // extract index of the first occurrence of the varible
+    /** Extract index of the first occurrence of the varible */
     std::pair<size_t, size_t> getFirstIdx() {
         return indices[0];
     }
 
-    // get hte indices of the varible
+    /** Get indices of equivalent variables */
     std::vector<std::pair<size_t, size_t>> getIndices() {
         return indices;
     }
 
-    // return type of the variable of the equivalence class, 'i' for RamDomain, 's' for symbol
+    /** Get type of the variable of the equivalence class, 'i' for RamDomain, 's' for symbol */
     char getType() {
         return type;
     }
 
-    // get the symbol of variable
+    /** Get the symbol of variable */
     std::string getSymbol() {
         return symbol;
     }
@@ -80,16 +91,21 @@ private:
     std::vector<std::pair<size_t, size_t>> indices;
 };
 
-/* const constraints for values in query command */
+/** Constant constraints for values in query command */
 class ConstConstraint {
 public:
+    /** Constructor */
     ConstConstraint() = default;
+
+    /** Destructor */
     ~ConstConstraint() = default;
+
+    /** Add constant constraint at the end of constConstrs vector */
     void push_back(std::pair<std::pair<size_t, size_t>, RamDomain> constr) {
         constConstrs.push_back(constr);
     }
 
-    // verify if the query product satisifies constant constraint
+    /** Verify if the query product satisfies constant constraint */
     bool verify(const std::vector<tuple>& product) const {
         for (auto constr : constConstrs) {
             if (product[constr.first.first][constr.first.second] != constr.second) {
@@ -99,7 +115,7 @@ public:
         return true;
     }
 
-    // get the const constraint vector
+    /** Get the constant constraint vector */
     std::vector<std::pair<std::pair<size_t, size_t>, RamDomain>>& getConstraints() {
         return constConstrs;
     }
@@ -156,8 +172,11 @@ public:
 
     virtual void printRulesJSON(std::ostream& os) = 0;
 
-    virtual std::string queryProcess(
-            const std::vector<std::pair<std::string, std::vector<std::string>>>& rels) = 0;
+    /**
+     * Process query with given arguments
+     * @param rels, vector of relation, argument pairs
+     * */
+    virtual void queryProcess(const std::vector<std::pair<std::string, std::vector<std::string>>>& rels) = 0;
 
     virtual std::string getRelationOutput(const std::string& relName) {
         auto rel = prog.getRelation(relName);

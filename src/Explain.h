@@ -220,8 +220,8 @@ public:
             while (std::regex_search(relationStr, relationMatcher, relationRegex)) {
                 relations.push_back(parseQueryTuple(relationMatcher[0]));
 
-                // check return value for parseQueryTuple, return if relation name is empty string or argument
-                // tuple is empty
+                // check return value for parseQueryTuple, return if relation name is empty string or tuple
+                // arguments is empty
                 if (relations.back().first.size() == 0 || relations.back().second.size() == 0) {
                     printError(
                             "Usage: query <relation1>(<element1>, <element2>, ...), "
@@ -239,8 +239,8 @@ public:
                 return true;
             }
 
-            // call queryProcess function to process relations
-            std::cout << prov.queryProcess(relations) << std::flush;
+            // call queryProcess function to process query
+            prov.queryProcess(relations);
         } else {
             printError(
                     "\n----------\n"
@@ -257,8 +257,10 @@ public:
                     "    disable output\n"
                     "format <json|proof>: switch format between json and proof-trees\n"
                     "query <relation1>(<element1>, <element2>, ...), <relation2>(<element1>, <element2>), "
-                    "... : check existence of tuple(s) or find solution for the given relation tuple(s) if "
-                    "tuple(s) contain variable\n"
+                    "... :\n"
+                    "check existence of constant tuples or find solutions for parameterised tuples\n"
+                    "for parameterised query, use semicolon to find next solution and dot to break from "
+                    "query\n"
                     "exit: Exits this interface\n\n");
         }
 
@@ -381,7 +383,6 @@ public:
         while (true) {
             printPrompt("Enter command > ");
             std::string line = getInput();
-
             // a return value of false indicates that an exit/q command has been processed
             if (processCommand(line) == false) {
                 break;

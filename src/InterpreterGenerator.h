@@ -628,22 +628,22 @@ private:
      * to a list {C1, C2, ..., Cn}.
      */
     inline std::vector<const RamCondition*> toConjunctionList(const RamCondition* condition) {
-        std::vector<const RamCondition*> list;
-        std::queue<const RamCondition*> queue;
+        std::vector<const RamCondition*> conditionList;
+        std::queue<const RamCondition*> conditionsToProcess;
         if (condition != nullptr) {
-            queue.push(condition);
-            while (!queue.empty()) {
-                condition = queue.front();
-                queue.pop();
+            conditionsToProcess.push(condition);
+            while (!conditionsToProcess.empty()) {
+                condition = conditionsToProcess.front();
+                conditionsToProcess.pop();
                 if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
-                    queue.push(&ramConj->getLHS());
-                    queue.push(&ramConj->getRHS());
+                    conditionsToProcess.push(&ramConj->getLHS());
+                    conditionsToProcess.push(&ramConj->getRHS());
                 } else {
-                    list.emplace_back(condition);
+                    conditionList.emplace_back(condition);
                 }
             }
         }
-        return list;
+        return conditionList;
     }
 };
 }  // namespace souffle

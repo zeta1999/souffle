@@ -23,6 +23,7 @@
 #include "RamIndexAnalysis.h"
 #include "RamVisitor.h"
 #include <memory>
+#include <queue>
 
 namespace souffle {
 
@@ -627,22 +628,22 @@ private:
      * to a list {C1, C2, ..., Cn}.
      */
     inline std::vector<const RamCondition*> toConjunctionList(const RamCondition* condition) {
-        std::vector<const RamCondition*> list;
-        std::stack<const RamCondition*> stack;
+        std::vector<const RamCondition*> conditionList;
+        std::queue<const RamCondition*> conditionsToProcess;
         if (condition != nullptr) {
-            stack.push(condition);
-            while (!stack.empty()) {
-                condition = stack.top();
-                stack.pop();
+            conditionsToProcess.push(condition);
+            while (!conditionsToProcess.empty()) {
+                condition = conditionsToProcess.front();
+                conditionsToProcess.pop();
                 if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
-                    stack.push(&ramConj->getLHS());
-                    stack.push(&ramConj->getRHS());
+                    conditionsToProcess.push(&ramConj->getLHS());
+                    conditionsToProcess.push(&ramConj->getRHS());
                 } else {
-                    list.emplace_back(condition);
+                    conditionList.emplace_back(condition);
                 }
             }
         }
-        return list;
+        return conditionList;
     }
 };
 }  // namespace souffle

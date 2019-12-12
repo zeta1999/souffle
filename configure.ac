@@ -74,17 +74,6 @@ if test "$BUILD_TYPE" == "Debug" ; then
   CXXFLAGS="$CXXFLAGS -O0 -g3"
 fi
 
-# Enable MPI
-AC_ARG_ENABLE(
-  [mpi],
-  [AS_HELP_STRING([--enable-mpi], [Enable MPI])]
-)
-AS_IF([test "x$enable_mpi" = "xyes"], [
-    AS_VAR_APPEND(CXXFLAGS, [" $(mpiCC --showme:compile) "])
-    AS_VAR_APPEND(LDFLAGS, [" $(mpiCC --showme:link) "])
-])
-AM_CONDITIONAL([MPI], [test "x$enable_mpi" = "xyes"])
-
 # Enable SWIG
 AC_ARG_ENABLE(
   [swig],

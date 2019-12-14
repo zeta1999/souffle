@@ -14,8 +14,12 @@ A(@goo("1234",2)) :- true.
 
 .output A
 
+.decl I(x:number)
+I(1) :- 1 < 5.
+
 .decl B(x:symbol)
 B(@hoo()) :- true.
+B("Inlined!") :- I(x).
 
 .output B
 

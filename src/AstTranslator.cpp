@@ -1561,19 +1561,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         // make a variable for all relations that are expired at the current SCC
         const auto& internExps = expirySchedule.at(indexOfScc).expired();
 
-        // create all internal relations of the current scc
-        for (const auto& relation : allInterns) {
-            appendStmt(current, std::make_unique<RamCreate>(
-                                        std::unique_ptr<RamRelationReference>(translateRelation(relation))));
-            // create new and delta relations if required
-            if (isRecursive) {
-                appendStmt(current, std::make_unique<RamCreate>(std::unique_ptr<RamRelationReference>(
-                                            translateDeltaRelation(relation))));
-                appendStmt(current, std::make_unique<RamCreate>(std::unique_ptr<RamRelationReference>(
-                                            translateNewRelation(relation))));
-            }
-        }
-
         {
             // load all internal input relations from the facts dir with a .facts extension
             for (const auto& relation : internIns) {

@@ -68,7 +68,6 @@ enum InterpreterNodeType {
     I_LogTimer,
     I_DebugInfo,
     I_Stratum,
-    I_Create,
     I_Clear,
     I_Drop,
     I_LogSize,

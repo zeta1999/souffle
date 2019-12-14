@@ -49,9 +49,6 @@ public:
             if (dynamic_cast<const RamQuery*>(&node) != nullptr) {
                 newQueryBlock();
             }
-            if (const auto* create = dynamic_cast<const RamCreate*>(&node)) {
-                encodeRelation(create->getRelation());
-            }
             if (const auto* indexSearch = dynamic_cast<const RamIndexOperation*>(&node)) {
                 encodeIndexPos(*indexSearch);
                 encodeView(indexSearch);
@@ -392,12 +389,6 @@ public:
         NodePtrVec children;
         children.push_back(visit(stratum.getBody()));
         return std::make_unique<InterpreterNode>(I_Stratum, &stratum, std::move(children));
-    }
-
-    NodePtr visitCreate(const RamCreate& create) override {
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(create.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Create, &create, NodePtrVec{}, std::move(data));
     }
 
     NodePtr visitClear(const RamClear& clear) override {

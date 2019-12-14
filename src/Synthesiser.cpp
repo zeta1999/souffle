@@ -215,11 +215,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- relation statements --
 
-        void visitCreate(const RamCreate& /*create*/, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            PRINT_END_COMMENT(out);
-        }
-
         void visitFact(const RamFact& fact, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << synthesiser.getRelationName(fact.getRelation()) << "->"
@@ -1722,9 +1717,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
 
-    visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
-        // get some table details
-        const RamRelation& rel = create.getRelation();
+    // synthesise data-structures for relations 
+    for(const auto &entry: prog.getAllRelations()) {
+        const RamRelation& rel = entry.second;
         const std::string& raw_name = rel.getName();
 
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
@@ -1732,7 +1727,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
 
         generateRelationTypeStruct(os, std::move(relationType));
-    });
+    }
     os << '\n';
 
     os << "class " << classname << " : public SouffleProgram {\n";
@@ -1794,10 +1789,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         size_t numFreq = 0;
         visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
-        size_t numRead = 0;
-        visitDepthFirst(*(prog.getMain()), [&](const RamCreate& node) {
-            if (!node.getRelation().isTemp()) numRead++;
-        });
+        size_t numRead = prog.getAllRelations().size(); 
         os << "  size_t reads[" << numRead << "]{};\n";
     }
 
@@ -1812,9 +1804,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
     visitDepthFirst(*(prog.getMain()),
             [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
-    visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+
+    for(const auto &entry: prog.getAllRelations()) {
         // get some table details
-        const auto& rel = create.getRelation();
+        const auto& rel = entry.second; 
         int arity = rel.getArity();
         int numberOfHeights = rel.getNumberOfHeights();
         const std::string& raw_name = rel.getName();
@@ -1871,7 +1864,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             registerRel += (storeRelations.count(rel.getName()) > 0) ? "true" : "false";
             registerRel += ");\n";
         }
-    });
+    }
 
     os << "public:\n";
 
@@ -1934,9 +1927,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
         // Store count of relations
         size_t relationCount = 0;
-        visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
-            if (create.getRelation().getName()[0] != '@') ++relationCount;
-        });
+        for(const auto &entry: prog.getAllRelations()) { 
+            if (entry.second.getName()[0] != '@') ++relationCount;
+        }
         // Store configuration
         os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"
            << relationCount << "));";

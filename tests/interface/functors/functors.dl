@@ -14,7 +14,7 @@ A(@goo("1234",2)) :- true.
 
 .output A
 
-.decl I(x:number)
+.decl I(x:number) inline
 I(1) :- 1 < 5.
 
 .decl B(x:symbol)

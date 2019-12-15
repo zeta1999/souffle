@@ -7,6 +7,7 @@
 .functor foo(number, symbol):number
 .functor goo(symbol, number):number
 .functor hoo():symbol
+.functor ioo(number):symbol
 
 .decl A(x:number)
 A(@foo(1,"123")) :- true.
@@ -19,7 +20,9 @@ I(1) :- 1 < 5.
 
 .decl B(x:symbol)
 B(@hoo()) :- true.
-B("Inlined!") :- I(x).
+
+// Test functor use with inlined relations
+B(@ioo(x)) :- I(x), I(@foo(x, @ioo(x))).
 
 .output B
 

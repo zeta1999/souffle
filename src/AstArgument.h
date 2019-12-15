@@ -415,7 +415,7 @@ public:
 
     /** set argument */
     void setArg(size_t idx, std::unique_ptr<AstArgument> arg) {
-        assert(idx >= 0 && idx < args.size() && "wrong argument");
+        assert(idx >= 0 && idx < args.size() && "argument index out of bounds");
         args[idx] = std::move(arg);
     }
 

@@ -632,8 +632,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
         } else if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
             for (size_t i = 0; i < udf->getArgCount(); i++) {
                 // try inlining each argument from left to right
-                NullableVector<AstArgument*> argumentVersions =
-                        getInlinedArgument(program, udf->getArg(i));
+                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, udf->getArg(i));
                 if (argumentVersions.isValid()) {
                     changed = true;
                     for (AstArgument* newArgVersion : argumentVersions.getVector()) {

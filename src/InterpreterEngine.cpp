@@ -294,7 +294,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 BINARY_OP(|);
             }
             case FunctorOp::BXOR: {
-                BINARY_OP (^);
+                BINARY_OP(^);
             }
             case FunctorOp::LAND: {
                 BINARY_OP(&&);

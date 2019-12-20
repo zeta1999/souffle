@@ -376,5 +376,11 @@ test_parallel_utils_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/
 test_parallel_utils_test_SOURCES = test/parallel_utils_test.cpp
 test_parallel_utils_test_LDADD = libsouffle.la
 
+# interpreter relation test
+check_PROGRAMS += test/ram_condition_equal_clone_test
+test_ram_condition_equal_clone_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_ram_condition_equal_clone_test_SOURCES = test/ram_condition_equal_clone_test.cpp
+test_ram_condition_equal_clone_test_LDADD = libsouffle.la
+
 # make all check-programs tests
 TESTS = $(check_PROGRAMS)

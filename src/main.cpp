@@ -184,11 +184,7 @@ int main(int argc, char** argv) {
                 {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
                 {"provenance", 't', "[ none | explain | explore | subtreeHeights ]", "", false,
                         "Enable provenance instrumentation and interaction."},
-                {"engine", 'e', "[ file | mpi ]", "", false,
-                        "Specify communication engine for distributed execution."},
-                {"hostfile", '\2', "FILE", "", false,
-                        "Specify --hostfile option for call to mpiexec when using mpi as "
-                        "execution engine."},
+                {"engine", 'e', "[ file ]", "", false, "Alternative evaluation strategies."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
                 {"transformed-datalog", '\4', "", "", false, "Output dl after all transformations."},
@@ -201,7 +197,7 @@ int main(int argc, char** argv) {
         /* for the version option, if given print the version text then exit */
         if (Global::config().has("version")) {
             std::cout << "Souffle: " << PACKAGE_VERSION << "" << std::endl;
-            std::cout << "Copyright (c) 2016-18 The Souffle Developers." << std::endl;
+            std::cout << "Copyright (c) 2016-19 The Souffle Developers." << std::endl;
             std::cout << "Copyright (c) 2013-16 Oracle and/or its affiliates." << std::endl;
             return 0;
         }
@@ -303,12 +299,8 @@ int main(int argc, char** argv) {
                 throw std::invalid_argument("Error: Use of engine option not yet available for interpreter.");
             }
             const auto& engine = Global::config().get("engine");
-            if (engine != "file" && engine != "mpi") {
+            if (engine != "file") {
                 throw std::invalid_argument("Error: Use of engine '" + engine + "' is not supported.");
-            }
-            if (Global::config().has("hostfile")) {
-                throw std::invalid_argument(
-                        "Error: Use of hostfile option requires execution engine '" + engine + "'.");
             }
         }
 

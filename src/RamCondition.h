@@ -24,8 +24,8 @@
 #include "SymbolTable.h"
 
 #include <algorithm>
+#include <queue>
 #include <sstream>
-#include <stack>
 #include <string>
 
 #include <cstdlib>
@@ -453,22 +453,22 @@ protected:
  * to a list {C1, C2, ..., Cn}.
  */
 inline std::vector<std::unique_ptr<RamCondition>> toConjunctionList(const RamCondition* condition) {
-    std::vector<std::unique_ptr<RamCondition>> list;
-    std::stack<const RamCondition*> stack;
+    std::vector<std::unique_ptr<RamCondition>> conditionList;
+    std::queue<const RamCondition*> conditionsToProcess;
     if (condition != nullptr) {
-        stack.push(condition);
-        while (!stack.empty()) {
-            condition = stack.top();
-            stack.pop();
+        conditionsToProcess.push(condition);
+        while (!conditionsToProcess.empty()) {
+            condition = conditionsToProcess.front();
+            conditionsToProcess.pop();
             if (const auto* ramConj = dynamic_cast<const RamConjunction*>(condition)) {
-                stack.push(&ramConj->getLHS());
-                stack.push(&ramConj->getRHS());
+                conditionsToProcess.push(&ramConj->getLHS());
+                conditionsToProcess.push(&ramConj->getRHS());
             } else {
-                list.emplace_back(condition->clone());
+                conditionList.emplace_back(condition->clone());
             }
         }
     }
-    return list;
+    return conditionList;
 }
 
 /**

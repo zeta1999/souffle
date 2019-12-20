@@ -294,7 +294,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 BINARY_OP(|);
             }
             case FunctorOp::BXOR: {
-                BINARY_OP(^);
+                BINARY_OP (^);
             }
             case FunctorOp::LAND: {
                 BINARY_OP(&&);
@@ -443,7 +443,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         // construct the pattern tuple
         size_t arity = cur->getRelation().getArity();
 
-        auto& rel = getRelation(node->getData(0));
+        size_t viewPos = node->getData(0);
 
         if (profileEnabled && !cur->getRelation().isTemp()) {
             reads[cur->getRelation().getName()]++;
@@ -454,7 +454,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (size_t i = 0; i < arity; i++) {
                 tuple[i] = execute(node->getChild(i), ctxt);
             }
-            return rel.contains(TupleRef(tuple, arity));
+            return ctxt.getView(viewPos)->contains(TupleRef(tuple, arity));
         }
 
         // for partial we search for lower and upper boundaries
@@ -464,7 +464,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             low[i] = node->getChild(i) != nullptr ? execute(node->getChild(i), ctxt) : MIN_RAM_DOMAIN;
             high[i] = node->getChild(i) != nullptr ? low[i] : MAX_RAM_DOMAIN;
         }
-        size_t viewPos = node->getData(1);
         return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(high, arity));
         ESAC(ExistenceCheck)
 

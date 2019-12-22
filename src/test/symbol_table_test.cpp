@@ -99,8 +99,10 @@ TEST(SymbolTable, Inserts) {
     using T = unsigned long long;
     time_point start, end;
 
-    T n = 0;         // counter
-    T N = 10000000;  // number of symbols to insert
+    T n = 0;        // counter
+    T N = 1000000;  // number of symbols to insert
+    // T N = 10000000;   // larger tables for debugging/timing
+    // T N = 100000000;  // larger tables for debugging/timing
 
     SymbolTable X;
     std::string x;
@@ -110,12 +112,14 @@ TEST(SymbolTable, Inserts) {
 
     for (T i = 0; i < N; ++i) {
         x = std::to_string(i) + "string";
-        start = now();
-        X.insert(x);  // insert one at a time
-        end = now();
-        n += duration_in_ns(start, end);  // record the time
-        A.push_back(x);                   // also put in the array
+        A.push_back(x);
     }
+    start = now();
+    for (T i = 0; i < N; ++i) {
+        X.insert(A[i]);  // insert one at a time
+    }
+    end = now();
+    n = duration_in_ns(start, end);  // record the time
 
     if (ECHO_TIME)
         std::cout << "Time to insert single element: " << n / N << " ns"
@@ -128,6 +132,8 @@ TEST(SymbolTable, Inserts) {
     n = duration_in_ns(start, end);
 
     if (ECHO_TIME) std::cout << "Time to insert " << N << " existing elements: " << n << " ns" << std::endl;
+
+    A.clear();
 
     SymbolTable Y;
 

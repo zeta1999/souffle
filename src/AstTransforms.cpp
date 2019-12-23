@@ -1019,9 +1019,9 @@ bool NameUnnamedVariablesTransformer::transform(AstTranslationUnit& translationU
     static constexpr const char* boundPrefix = "+underscore";
 
     struct nameVariables : public AstNodeMapper {
-        mutable bool changed;
-        mutable size_t count;
-        nameVariables() : changed(false), count(0) {}
+        mutable bool changed = false;
+        mutable size_t count = 0;
+        nameVariables() = default;
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             if (dynamic_cast<AstUnnamedVariable*>(node.get()) != nullptr) {
@@ -1049,7 +1049,7 @@ bool NameUnnamedVariablesTransformer::transform(AstTranslationUnit& translationU
 
 bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUnit) {
     struct ReplaceSumWithCount : public AstNodeMapper {
-        ReplaceSumWithCount() {}
+        ReplaceSumWithCount() = default;
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // Apply to all aggregates of the form

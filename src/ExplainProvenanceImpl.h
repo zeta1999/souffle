@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace souffle {
 
@@ -617,18 +617,18 @@ public:
         size_t idx = 0;
 
         // parse arguments in each relation Tuple
-        for (size_t i = 0; i < rels.size(); ++i) {
-            Relation* relation = prog.getRelation(rels[i].first);
+        for (const auto& rel : rels) {
+            Relation* relation = prog.getRelation(rel.first);
             // number/symbol index for constant arguments in tuple
             std::vector<RamDomain> constTuple;
             // relation does not exist
             if (relation == nullptr) {
-                std::cout << "Relation <" << rels[i].first << "> does not exist" << std::endl;
+                std::cout << "Relation <" << rel.first << "> does not exist" << std::endl;
                 return;
             }
             // arity error
-            if (relation->getArity() - 1 - relation->getNumberOfHeights() != rels[i].second.size()) {
-                std::cout << "<" + rels[i].first << "> has arity of "
+            if (relation->getArity() - 1 - relation->getNumberOfHeights() != rel.second.size()) {
+                std::cout << "<" + rel.first << "> has arity of "
                           << std::to_string(relation->getArity() - 1 - relation->getNumberOfHeights())
                           << std::endl;
                 return;
@@ -636,9 +636,9 @@ public:
 
             // check if args contain variable
             bool containVar = false;
-            for (size_t j = 0; j < rels[i].second.size(); ++j) {
+            for (size_t j = 0; j < rel.second.size(); ++j) {
                 // arg is a variable
-                if (std::regex_match(rels[i].second[j], argsMatcher, varRegex)) {
+                if (std::regex_match(rel.second[j], argsMatcher, varRegex)) {
                     containVar = true;
                     auto nameToEquivalenceIter = nameToEquivalence.find(argsMatcher[0]);
                     // if variable has not shown up before, create an equivalence class for add it to
@@ -651,7 +651,7 @@ public:
                         nameToEquivalenceIter->second.push_back(std::make_pair(idx, j));
                     }
                     // arg is a symbol
-                } else if (std::regex_match(rels[i].second[j], argsMatcher, symbolRegex)) {
+                } else if (std::regex_match(rel.second[j], argsMatcher, symbolRegex)) {
                     if (*(relation->getAttrType(j)) != 's') {
                         std::cout << argsMatcher.str(0) << " does not match type defined in relation"
                                   << std::endl;
@@ -664,7 +664,7 @@ public:
                         constTuple.push_back(rd);
                     }
                     // arg is number
-                } else if (std::regex_match(rels[i].second[j], argsMatcher, numberRegex)) {
+                } else if (std::regex_match(rel.second[j], argsMatcher, numberRegex)) {
                     if (*(relation->getAttrType(j)) != 'i') {
                         std::cout << argsMatcher.str(0) << " does not match type defined in relation"
                                   << std::endl;
@@ -692,11 +692,11 @@ public:
                     // otherwise, there is no solution for given query
                 } else {
                     std::cout << "false." << std::endl;
-                    std::cout << "Tuple " << rels[i].first << "(";
-                    for (size_t l = 0; l < rels[i].second.size() - 1; ++l) {
-                        std::cout << rels[i].second[l] << ", ";
+                    std::cout << "Tuple " << rel.first << "(";
+                    for (size_t l = 0; l < rel.second.size() - 1; ++l) {
+                        std::cout << rel.second[l] << ", ";
                     }
-                    std::cout << rels[i].second.back() << ") does not exist" << std::endl;
+                    std::cout << rel.second.back() << ") does not exist" << std::endl;
                     return;
                 }
             } else {

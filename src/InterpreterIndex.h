@@ -150,7 +150,7 @@ public:
 
     template <std::size_t Arity>
     ram::Tuple<RamDomain, Arity> encode(const ram::Tuple<RamDomain, Arity>& entry) const {
-        ram::Tuple<RamDomain, Arity> res;
+        ram::Tuple<RamDomain, Arity> res{};
         for (std::size_t i = 0; i < Arity; ++i) {
             res[i] = entry[order[i]];
         }
@@ -159,7 +159,7 @@ public:
 
     template <std::size_t Arity>
     ram::Tuple<RamDomain, Arity> decode(const ram::Tuple<RamDomain, Arity>& entry) const {
-        ram::Tuple<RamDomain, Arity> res;
+        ram::Tuple<RamDomain, Arity> res{};
         for (std::size_t i = 0; i < Arity; ++i) {
             res[order[i]] = entry[i];
         }

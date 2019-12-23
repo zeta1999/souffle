@@ -85,7 +85,7 @@ std::ostream& operator<<(std::ostream& out, const Order& order) {
  */
 class NullaryIndex : public InterpreterIndex {
     // indicates whether the one single element is present or not.
-    std::atomic<bool> present;
+    std::atomic<bool> present = false;
 
     // a source adaptation, iterating through the optionally present
     // entry in this relation.
@@ -236,7 +236,8 @@ protected:
         std::array<Entry, Stream::BUFFER_SIZE> buffer;
 
     public:
-        Source(const Order& order, iter begin, iter end) : order(order), cur(begin), end(end) {}
+        Source(const Order& order, iter begin, iter end)
+                : order(order), cur(std::move(begin)), end(std::move(end)) {}
 
         int load(TupleRef* out, int max) override {
             int c = 0;
@@ -314,7 +315,7 @@ protected:
     };
 
 public:
-    GenericIndex(const Order& order) : order(order) {}
+    GenericIndex(Order order) : order(std::move(order)) {}
 
     IndexViewPtr createView() const override {
         return std::make_unique<GenericIndexView>(*this);
@@ -463,7 +464,7 @@ public:
         }
 
         std::unique_ptr<Stream::Source> clone() override {
-            Source* source = new Source(cur, end);
+            auto* source = new Source(cur, end);
             source->buffer = this->buffer;
             return std::unique_ptr<Stream::Source>(source);
         }
@@ -636,8 +637,7 @@ public:
     }
 
 protected:
-    virtual souffle::range<iter> bounds(
-            const TupleRef& low, const TupleRef& high, Hints& hints) const override {
+    souffle::range<iter> bounds(const TupleRef& low, const TupleRef& high, Hints& hints) const override {
         Entry a = order.encode(low.asTuple<Arity>());
         return {data.lower_bound(a, hints), data.end()};
     }

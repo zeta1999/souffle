@@ -138,7 +138,6 @@ public:
             children.push_back(visit(value));
         }
         std::vector<size_t> data;
-        data.push_back(encodeRelation(exists.getRelation()));
         data.push_back(encodeView(&exists));
         return std::make_unique<InterpreterNode>(
                 I_ExistenceCheck, &exists, std::move(children), std::move(data));

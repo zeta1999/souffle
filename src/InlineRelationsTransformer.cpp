@@ -629,9 +629,22 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     break;
                 }
             }
-        } else if (dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-            // TODO (azreika): extend to handle user-defined functors
-            assert(false && "unhandled argument: AstUserDefinedFunctor");
+        } else if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+            for (size_t i = 0; i < udf->getArgCount(); i++) {
+                // try inlining each argument from left to right
+                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, udf->getArg(i));
+                if (argumentVersions.isValid()) {
+                    changed = true;
+                    for (AstArgument* newArgVersion : argumentVersions.getVector()) {
+                        // same functor but with new argument version
+                        AstUserDefinedFunctor* newFunctor = udf->clone();
+                        newFunctor->setArg(i, std::unique_ptr<AstArgument>(newArgVersion));
+                        versions.push_back(newFunctor);
+                    }
+                    // only one step at a time
+                    break;
+                }
+            }
         }
     } else if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {
         NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, cast->getValue());

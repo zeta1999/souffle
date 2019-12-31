@@ -64,6 +64,17 @@ public:
         return visit(root);
     }
 
+    /** @brief Encode and return the relation id */
+    size_t encodeRelation(const RamRelation& rel) {
+        auto pos = relTable.find(&rel);
+        if (pos != relTable.end()) {
+            return pos->second;
+        }
+        size_t id = getNewRelId();
+        relTable[&rel] = id;
+        return id;
+    }
+
     NodePtr visitNumber(const RamNumber& num) override {
         return std::make_unique<InterpreterNode>(I_Number, &num);
     }
@@ -561,16 +572,6 @@ private:
         return id;
     }
 
-    /** @brief Encode and return the relation id */
-    size_t encodeRelation(const RamRelation& rel) {
-        auto pos = relTable.find(&rel);
-        if (pos != relTable.end()) {
-            return pos->second;
-        }
-        size_t id = getNewRelId();
-        relTable[&rel] = id;
-        return id;
-    }
 
     /**
      * @brief Find all operations under the root node that requires a view.

@@ -1718,13 +1718,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "using namespace ram;\n";
 
     // synthesise data-structures for relations 
-    for(const auto &entry: prog.getAllRelations()) {
-        const RamRelation& rel = entry.second;
-        const std::string& raw_name = rel.getName();
+    for(auto rel: prog.getAllRelations()) {
+        const std::string& raw_name = rel->getName();
 
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
-                rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+                *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
 
         generateRelationTypeStruct(os, std::move(relationType));
     }
@@ -1805,28 +1804,27 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     visitDepthFirst(*(prog.getMain()),
             [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
 
-    for(const auto &entry: prog.getAllRelations()) {
+    for(auto rel: prog.getAllRelations()) {
         // get some table details
-        const auto& rel = entry.second; 
-        int arity = rel.getArity();
-        int numberOfHeights = rel.getNumberOfHeights();
-        const std::string& raw_name = rel.getName();
-        const std::string& name = getRelationName(rel);
+        int arity = rel->getArity();
+        int numberOfHeights = rel->getNumberOfHeights();
+        const std::string& raw_name = rel->getName();
+        const std::string& name = getRelationName(*rel);
 
         // TODO: make this correct
         // ensure that the type of the new knowledge is the same as that of the delta knowledge
-        bool isDelta = rel.isTemp() && raw_name.find("@delta") != std::string::npos;
+        bool isDelta = rel->isTemp() && raw_name.find("@delta") != std::string::npos;
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
-                rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+                *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
         tempType = isDelta ? relationType->getTypeName() : tempType;
-        const std::string& type = (rel.isTemp()) ? tempType : relationType->getTypeName();
+        const std::string& type = (rel->isTemp()) ? tempType : relationType->getTypeName();
 
         // defining table
         os << "// -- Table: " << raw_name << "\n";
 
         os << "std::unique_ptr<" << type << "> " << name << " = std::make_unique<" << type << ">();\n";
-        if (!rel.isTemp()) {
+        if (!rel->isTemp()) {
             os << "souffle::RelationWrapper<";
             os << relCtr++ << ",";
             os << type << ",";
@@ -1839,15 +1837,15 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             std::string tupleType = "std::array<const char *," + std::to_string(arity) + ">{{";
             std::string tupleName = "std::array<const char *," + std::to_string(arity) + ">{{";
 
-            if (rel.getArity()) {
-                tupleType += "\"" + rel.getArgTypeQualifier(0) + "\"";
+            if (rel->getArity()) {
+                tupleType += "\"" + rel->getArgTypeQualifier(0) + "\"";
                 for (int i = 1; i < arity; i++) {
-                    tupleType += ",\"" + rel.getArgTypeQualifier(i) + "\"";
+                    tupleType += ",\"" + rel->getArgTypeQualifier(i) + "\"";
                 }
 
-                tupleName += "\"" + rel.getArg(0) + "\"";
+                tupleName += "\"" + rel->getArg(0) + "\"";
                 for (int i = 1; i < arity; i++) {
-                    tupleName += ",\"" + rel.getArg(i) + "\"";
+                    tupleName += ",\"" + rel->getArg(i) + "\"";
                 }
             }
             tupleType += "}}";
@@ -1859,9 +1857,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             initCons += "\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
                         tupleType + "," + tupleName + ")";
             registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + ",";
-            registerRel += (loadRelations.count(rel.getName()) > 0) ? "true" : "false";
+            registerRel += (loadRelations.count(rel->getName()) > 0) ? "true" : "false";
             registerRel += ",";
-            registerRel += (storeRelations.count(rel.getName()) > 0) ? "true" : "false";
+            registerRel += (storeRelations.count(rel->getName()) > 0) ? "true" : "false";
             registerRel += ");\n";
         }
     }
@@ -1927,8 +1925,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
         // Store count of relations
         size_t relationCount = 0;
-        for(const auto &entry: prog.getAllRelations()) { 
-            if (entry.second.getName()[0] != '@') ++relationCount;
+        for(auto rel: prog.getAllRelations()) { 
+            if (rel->getName()[0] != '@') ++relationCount;
         }
         // Store configuration
         os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"
@@ -1939,9 +1937,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         // Record relations created in each stratum
         visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
             std::map<std::string, size_t> relNames;
-            visitDepthFirst(stratum, [&](const RamCreate& create) {
-                relNames[create.getRelation().getName()] = create.getRelation().getArity();
-            });
+            for(auto rel: prog.getAllRelations()) {
+                relNames[rel->getName()] = rel->getArity();
+            }
             for (const auto& cur : relNames) {
                 // Skip temporary relations, marked with '@'
                 if (cur.first[0] == '@') {
@@ -2007,12 +2005,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "\n// -- relation hint statistics --\n";
     os << "if(isHintsProfilingEnabled()) {\n";
     os << "std::cout << \" -- Operation Hint Statistics --\\n\";\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
-        auto name = getRelationName(create.getRelation());
+    for(auto rel: prog.getAllRelations()) {
+        auto name = getRelationName(*rel);
         os << "std::cout << \"Relation " << name << ":\\n\";\n";
         os << name << "->printHintStatistics(std::cout,\"  \");\n";
         os << "std::cout << \"\\n\";\n";
-    });
+    }
     os << "}\n";
 
     os << "SignalHandler::instance()->reset();\n";
@@ -2162,20 +2160,19 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         if (Global::config().get("provenance") == "subtreeHeights") {
             // method that populates provenance indices
             os << "void copyIndex() {\n";
-            visitDepthFirst(*(prog.getMain()), [&](const RamCreate& create) {
+            for(auto rel: prog.getAllRelations()) {
                 // get some table details
-                const auto& rel = create.getRelation();
-                const std::string& name = getRelationName(rel);
-                const std::string& raw_name = rel.getName();
+                const std::string& name = getRelationName(*rel);
+                const std::string& raw_name = rel->getName();
 
                 bool isProvInfo = raw_name.find("@info") != std::string::npos;
                 auto relationType = SynthesiserRelation::getSynthesiserRelation(
-                        rel, idxAnalysis->getIndexes(rel), Global::config().has("provenance") && !isProvInfo);
+                        *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
 
                 if (!relationType->getProvenenceIndexNumbers().empty()) {
                     os << name << "->copyIndex();\n";
                 }
-            });
+            }
             os << "}\n";
         }
 

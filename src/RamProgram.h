@@ -101,12 +101,12 @@ public:
     }
 
     /** @brief Get relations map */
-    const std::vector<const RamRelation *> getAllRelations() const {
-       std::vector<const RamRelation *> result; 
-       for(auto &entry: relations) { 
-          result.push_back(entry.second.get());
-       }
-       return result;
+    const std::vector<const RamRelation*> getAllRelations() const {
+        std::vector<const RamRelation*> result;
+        for (auto& entry : relations) {
+            result.push_back(entry.second.get());
+        }
+        return result;
     }
 
     /** @brief Add subroutine */

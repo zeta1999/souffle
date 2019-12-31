@@ -1717,8 +1717,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
 
-    // synthesise data-structures for relations 
-    for(auto rel: prog.getAllRelations()) {
+    // synthesise data-structures for relations
+    for (auto rel : prog.getAllRelations()) {
         const std::string& raw_name = rel->getName();
 
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
@@ -1789,7 +1789,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
-        for(auto rel: prog.getAllRelations()) {
+        for (auto rel : prog.getAllRelations()) {
             if (!rel->isTemp()) numRead++;
         }
         os << "  size_t reads[" << numRead << "]{};\n";
@@ -1806,15 +1806,15 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     visitDepthFirst(*(prog.getMain()),
             [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
 
-    for(auto rel: prog.getAllRelations()) {
+    for (auto rel : prog.getAllRelations()) {
         // get some table details
         int arity = rel->getArity();
         int numberOfHeights = rel->getNumberOfHeights();
         const std::string& raw_name = rel->getName();
         const std::string& name = getRelationName(*rel);
 
-	// TODO(b-scholz): we need a qualifier for info relations used by the provenance system
-	// this would permit a more efficient storage of relations (no indexes!!)
+        // TODO(b-scholz): we need a qualifier for info relations used by the provenance system
+        // this would permit a more efficient storage of relations (no indexes!!)
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
@@ -1925,7 +1925,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
         // Store count of relations
         size_t relationCount = 0;
-        for(auto rel: prog.getAllRelations()) { 
+        for (auto rel : prog.getAllRelations()) {
             if (rel->getName()[0] != '@') ++relationCount;
         }
         // Store configuration
@@ -1937,7 +1937,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         // Record relations created in each stratum
         visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
             std::map<std::string, size_t> relNames;
-            for(auto rel: prog.getAllRelations()) {
+            for (auto rel : prog.getAllRelations()) {
                 relNames[rel->getName()] = rel->getArity();
             }
             for (const auto& cur : relNames) {
@@ -2005,7 +2005,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "\n// -- relation hint statistics --\n";
     os << "if(isHintsProfilingEnabled()) {\n";
     os << "std::cout << \" -- Operation Hint Statistics --\\n\";\n";
-    for(auto rel: prog.getAllRelations()) {
+    for (auto rel : prog.getAllRelations()) {
         auto name = getRelationName(*rel);
         os << "std::cout << \"Relation " << name << ":\\n\";\n";
         os << name << "->printHintStatistics(std::cout,\"  \");\n";
@@ -2160,14 +2160,14 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         if (Global::config().get("provenance") == "subtreeHeights") {
             // method that populates provenance indices
             os << "void copyIndex() {\n";
-            for(auto rel: prog.getAllRelations()) {
+            for (auto rel : prog.getAllRelations()) {
                 // get some table details
                 const std::string& name = getRelationName(*rel);
                 const std::string& raw_name = rel->getName();
 
                 bool isProvInfo = raw_name.find("@info") != std::string::npos;
-                auto relationType = SynthesiserRelation::getSynthesiserRelation(
-                        *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
+                auto relationType = SynthesiserRelation::getSynthesiserRelation(*rel,
+                        idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
 
                 if (!relationType->getProvenenceIndexNumbers().empty()) {
                     os << name << "->copyIndex();\n";

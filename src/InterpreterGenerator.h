@@ -572,7 +572,6 @@ private:
         return id;
     }
 
-
     /**
      * @brief Find all operations under the root node that requires a view.
      * Return a list of InterpreterNodes.

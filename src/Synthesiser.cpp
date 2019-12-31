@@ -1799,7 +1799,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     std::string initCons;     // initialization of constructor
     std::string registerRel;  // registration of relations
     int relCtr = 0;
-    std::string tempType;  // string to hold the type of the temporary relations
     std::set<std::string> storeRelations;
     std::set<std::string> loadRelations;
     visitDepthFirst(*(prog.getMain()),
@@ -1814,14 +1813,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         const std::string& raw_name = rel->getName();
         const std::string& name = getRelationName(*rel);
 
-        // TODO: make this correct
-        // ensure that the type of the new knowledge is the same as that of the delta knowledge
-        bool isDelta = rel->isTemp() && raw_name.find("@delta") != std::string::npos;
+	// TODO(b-scholz): we need a qualifier for info relations used by the provenance system
+	// this would permit a more efficient storage of relations (no indexes!!)
         bool isProvInfo = raw_name.find("@info") != std::string::npos;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
-        tempType = isDelta ? relationType->getTypeName() : tempType;
-        const std::string& type = (rel->isTemp()) ? tempType : relationType->getTypeName();
+        const std::string& type = relationType->getTypeName();
 
         // defining table
         os << "// -- Table: " << raw_name << "\n";

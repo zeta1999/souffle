@@ -190,7 +190,7 @@ public:
 
     /** Output to a given output stream */
     void print(std::ostream& os) const override {
-        os << ".output ";
+        os << ".input ";
         AstIO::print(os);
     }
 

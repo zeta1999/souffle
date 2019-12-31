@@ -1788,7 +1788,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         size_t numFreq = 0;
         visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
-        size_t numRead = prog.getAllRelations().size(); 
+        size_t numRead = 0;
+        for(auto rel: prog.getAllRelations()) {
+            if (!rel->isTemp()) numRead++;
+        }
         os << "  size_t reads[" << numRead << "]{};\n";
     }
 

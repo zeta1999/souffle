@@ -657,13 +657,13 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             // identify hoistable aggregates
             if (nullptr != dynamic_cast<RamAggregate*>(node.get())) {
-                RamTupleOperation *tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
+                RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
                 assert(tupleOp != nullptr && "aggregate conversion to tuple operation failed");
                 if (rla->getLevel(tupleOp) == -1 && lastTupleOp != -1) {
                     changed = true;
                     newAgg = std::unique_ptr<RamNestedOperation>(
-                          dynamic_cast<RamNestedOperation *>(tupleOp->clone()));
-                    assert(newAgg != nullptr && "failed to make a clone"); 
+                            dynamic_cast<RamNestedOperation*>(tupleOp->clone()));
+                    assert(newAgg != nullptr && "failed to make a clone");
                     return std::unique_ptr<RamOperation>(tupleOp->getOperation().clone());
                 }
             } else if (RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get())) {
@@ -699,8 +699,8 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             // identify hoistable aggregates
             if (nullptr != dynamic_cast<RamAbstractAggregate*>(node.get())) {
-                RamTupleOperation *tupleOp = dynamic_cast<RamTupleOperation*>(node.get()); 
-                assert(tupleOp != nullptr && "aggregate conversion to nested operation failed"); 
+                RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
+                assert(tupleOp != nullptr && "aggregate conversion to nested operation failed");
                 int dataDepLevel = rla->getLevel(tupleOp);
                 if (dataDepLevel != -1 && dataDepLevel < tupleOp->getTupleId() - 1) {
                     // If all tuple ops between the data-dependence level and agg
@@ -710,8 +710,8 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                         changed = true;
                         newLevel = dataDepLevel;
                         newAgg = std::unique_ptr<RamNestedOperation>(
-                             dynamic_cast<RamNestedOperation *>(tupleOp->clone()));
-                        assert(newAgg != nullptr && "failed to make a clone"); 
+                                dynamic_cast<RamNestedOperation*>(tupleOp->clone()));
+                        assert(newAgg != nullptr && "failed to make a clone");
                         return std::unique_ptr<RamOperation>(tupleOp->getOperation().clone());
                     }
                 }

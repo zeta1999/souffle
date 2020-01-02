@@ -641,9 +641,9 @@ bool TupleIdTransformer::reorderOperations(RamProgram& program) {
 bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
     bool changed = false;
 
-    // hoist a single aggregate to an outer scope that 
-    // is data-dependent on an operation, i.e., its level 
-    // is not -1 (=independent). 
+    // hoist a single aggregate to an outer scope that
+    // is data-dependent on an operation, i.e., its level
+    // is not -1 (=independent).
     visitDepthFirst(program, [&](const RamQuery& query) {
         // new level of aggregate
         int newLevel = -1;
@@ -652,7 +652,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         // level of last non-aggregate
         int lastNonAggLevel = -1;
 
-        // The rewriter has two tasks: (1) identify a single aggregate that 
+        // The rewriter has two tasks: (1) identify a single aggregate that
         // can be hoisted and (2) insert it at the outermost level.
         // We assume all RamOperations are renumbered for this transformation.
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggRewriter =
@@ -662,8 +662,8 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                 int dataDepLevel = rla->getLevel(agg);
                 if (dataDepLevel != -1 && dataDepLevel < agg->getTupleId() - 1) {
                     // If all tuple ops between the data-dependence level and agg
-                    // are aggregates, then we do not hoist, i.e., we would 
-                    // continuously swap there positions. 
+                    // are aggregates, then we do not hoist, i.e., we would
+                    // continuously swap there positions.
                     if (dataDepLevel != lastNonAggLevel) {
                         changed = true;
                         newLevel = dataDepLevel;

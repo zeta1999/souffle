@@ -651,7 +651,7 @@ public:
             std::unique_ptr<RamCondition> condition)
             : function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
-    virtual ~RamAbstractAggregate() { } 
+    virtual ~RamAbstractAggregate() {}
 
     /** @brief Get condition */
     const RamCondition& getCondition() const {

@@ -248,7 +248,7 @@ private:
         std::cerr << "                                    (or each in order if omitted)\n";
         std::cerr << "    -h                           -- prints this help page.\n";
         std::cerr << "--------------------------------------------------------------------\n";
-        std::cout << " Copyright (c) 2016-19 The Souffle Developers." << std::endl;
+        std::cout << " Copyright (c) 2016-20 The Souffle Developers." << std::endl;
         std::cout << " Copyright (c) 2013-16 Oracle and/or its affiliates." << std::endl;
         std::cerr << " All rights reserved.\n";
         std::cerr << "====================================================================\n";

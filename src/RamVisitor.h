@@ -119,7 +119,6 @@ struct RamVisitor : public ram_visitor_tag {
 
         // Statements
         FORWARD(Create);
-        FORWARD(Fact);
         FORWARD(Load);
         FORWARD(Store);
         FORWARD(Query);
@@ -162,7 +161,6 @@ protected:
 
     // -- statements --
     LINK(Create, RelationStatement);
-    LINK(Fact, RelationStatement);
     LINK(Load, AbstractLoadStore);
     LINK(Store, AbstractLoadStore);
     LINK(AbstractLoadStore, RelationStatement);

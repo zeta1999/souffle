@@ -429,16 +429,6 @@ public:
         return std::make_unique<InterpreterNode>(I_Store, &store, NodePtrVec{}, std::move(data));
     }
 
-    NodePtr visitFact(const RamFact& fact) override {
-        NodePtrVec children;
-        for (auto& val : fact.getValues()) {
-            children.push_back(visit(val));
-        }
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(fact.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Fact, &fact, std::move(children), std::move(data));
-    }
-
     NodePtr visitQuery(const RamQuery& query) override {
         std::shared_ptr<InterpreterPreamble> preamble = std::make_shared<InterpreterPreamble>();
         parentQueryPreamble = preamble;

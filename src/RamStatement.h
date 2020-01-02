@@ -391,67 +391,6 @@ protected:
 };
 
 /**
- * @class RamFact
- * @brief Insert a fact into a relation
- *
- * For example, inserting the number 100 into the
- * relation lim:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * INSERT (number(100)) INTO lim
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-class RamFact : public RamRelationStatement {
-public:
-    RamFact(std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>>&& v)
-            : RamRelationStatement(std::move(relRef)), values(std::move(v)) {}
-
-    /** @brief Get arguments of fact */
-    std::vector<RamExpression*> getValues() const {
-        return toPtrVector(values);
-    }
-
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "INSERT (" << join(values, ",", print_deref<std::unique_ptr<RamExpression>>()) << ") INTO "
-           << getRelation().getName();
-        os << std::endl;
-    };
-
-    std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res = RamRelationStatement::getChildNodes();
-        for (const auto& cur : values) {
-            res.push_back(cur.get());
-        }
-        return res;
-    }
-
-    RamFact* clone() const override {
-        auto* res = new RamFact(std::unique_ptr<RamRelationReference>(relationRef->clone()), {});
-        for (auto& cur : values) {
-            res->values.emplace_back(cur->clone());
-        }
-        return res;
-    }
-
-    void apply(const RamNodeMapper& map) override {
-        RamRelationStatement::apply(map);
-        for (auto& val : values) {
-            val = map(std::move(val));
-        }
-    }
-
-protected:
-    /** Arguments of fact */
-    std::vector<std::unique_ptr<RamExpression>> values;
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamFact*>(&node));
-        const auto& other = static_cast<const RamFact&>(node);
-        return RamRelationStatement::equal(other) && equal_targets(values, other.values);
-    }
-};
-
-/**
  * @class RamQuery
  * @brief A relational algebra query
  *

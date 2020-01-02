@@ -642,10 +642,10 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
     bool changed = false;
 
     // There are two cases: aggregates that have no data-dependencies on
-    // other RamOperations and aggregates that have data-dependencies. 
+    // other RAM operations, and aggregates that have data-dependencies.
 
     // Hoist a single aggregate to an outer scope that
-    // has no data-dependency on an outer RAM operation. 
+    // has no data-dependency.
     visitDepthFirst(program, [&](const RamQuery& query) {
         // new level of aggregate
         int newLevel = -1;
@@ -670,7 +670,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                 }
             } else if (const RamIndexAggregate* agg = dynamic_cast<RamIndexAggregate*>(node.get())) {
                 int dataDepLevel = rla->getLevel(agg);
-                if (dataDepLevel != -1 && lastNonAggLevel != -1) {
+                if (dataDepLevel == -1 && lastNonAggLevel != -1) {
                         changed = true;
                         newLevel = dataDepLevel;
                         newAgg = std::unique_ptr<RamNestedOperation>(agg->clone());

@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
         footer << "----------------------------------------------------------------------------" << std::endl;
         footer << "Version: " << PACKAGE_VERSION << "" << std::endl;
         footer << "----------------------------------------------------------------------------" << std::endl;
-        footer << "Copyright (c) 2016-18 The Souffle Developers." << std::endl;
+        footer << "Copyright (c) 2016-20 The Souffle Developers." << std::endl;
         footer << "Copyright (c) 2013-16 Oracle and/or its affiliates." << std::endl;
         footer << "All rights reserved." << std::endl;
         footer << "============================================================================" << std::endl;
@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
                 {"dl-program", 'o', "FILE", "", false,
                         "Generate C++ source code, written to <FILE>, and compile this to a "
                         "binary executable (without executing it)."},
-                {"live-profile", '\4', "", "", false, "Enable live profiling."},
+                {"live-profile", '\2', "", "", false, "Enable live profiling."},
                 {"profile", 'p', "FILE", "", false, "Enable profiling, and write profile data to <FILE>."},
                 {"profile-use", 'u', "FILE", "", false,
                         "Use profile log-file <FILE> for profile-guided optimization."},
@@ -188,6 +188,7 @@ int main(int argc, char** argv) {
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
                 {"transformed-datalog", '\4', "", "", false, "Output dl after all transformations."},
+                {"transformed-ram", '\6', "", "", false, "Output ram program after all transformations."},
                 {"parse-errors", '\5', "", "", false, "Show parsing errors, if any, then exit."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
@@ -504,6 +505,12 @@ int main(int argc, char** argv) {
     if (!ramTranslationUnit->getProgram()->getMain()) {
         return 0;
     };
+
+    // Output the transformed RAM program and return
+    if (Global::config().has("transformed-ram")) {
+        std::cout << *ramTranslationUnit->getProgram();
+        return 0;
+    }
 
     try {
         if (!Global::config().has("compile") && !Global::config().has("dl-program") &&

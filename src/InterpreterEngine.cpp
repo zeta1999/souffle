@@ -1128,17 +1128,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(Store)
 
-        CASE(Fact)
-        size_t arity = cur->getRelation().getArity();
-        RamDomain tuple[arity];
-
-        for (size_t i = 0; i < arity; ++i) {
-            tuple[i] = execute(node->getChild(i), ctxt);
-        }
-        getRelation(node->getData(0)).insert(tuple);
-        return true;
-        ESAC(Fact)
-
         CASE_NO_CAST(Query)
         InterpreterPreamble* preamble = node->getPreamble();
 

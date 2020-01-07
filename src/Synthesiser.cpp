@@ -1712,9 +1712,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // synthesise data-structures for relations
     for (auto rel : prog.getAllRelations()) {
-        const std::string& raw_name = rel->getName();
+        const std::string& datalogName = rel->getName();
 
-        bool isProvInfo = raw_name.find("@info") != std::string::npos;
+        bool isProvInfo = datalogName.find("@info") != std::string::npos;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
 
@@ -1803,20 +1803,20 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         // get some table details
         int arity = rel->getArity();
         int numberOfHeights = rel->getNumberOfHeights();
-        const std::string& raw_name = rel->getName();
-        const std::string& name = getRelationName(*rel);
+        const std::string& datalogName = rel->getName();
+        const std::string& cppName = getRelationName(*rel);
 
         // TODO(b-scholz): we need a qualifier for info relations used by the provenance system
         // this would permit a more efficient storage of relations (no indexes!!)
-        bool isProvInfo = raw_name.find("@info") != std::string::npos;
+        bool isProvInfo = datalogName.find("@info") != std::string::npos;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
         const std::string& type = relationType->getTypeName();
 
         // defining table
-        os << "// -- Table: " << raw_name << "\n";
+        os << "// -- Table: " << datalogName << "\n";
 
-        os << "std::unique_ptr<" << type << "> " << name << " = std::make_unique<" << type << ">();\n";
+        os << "std::unique_ptr<" << type << "> " << cppName << " = std::make_unique<" << type << ">();\n";
         if (!rel->isTemp()) {
             os << "souffle::RelationWrapper<";
             os << relCtr++ << ",";
@@ -1824,7 +1824,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "Tuple<RamDomain," << arity << ">,";
             os << arity << ",";
             os << numberOfHeights;
-            os << "> wrapper_" << name << ";\n";
+            os << "> wrapper_" << cppName << ";\n";
 
             // construct types
             std::string tupleType = "std::array<const char *," + std::to_string(arity) + ">{{";
@@ -1847,9 +1847,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             if (!initCons.empty()) {
                 initCons += ",\n";
             }
-            initCons += "\nwrapper_" + name + "(" + "*" + name + ",symTable,\"" + raw_name + "\"," +
+            initCons += "\nwrapper_" + cppName + "(" + "*" + cppName + ",symTable,\"" + datalogName + "\"," +
                         tupleType + "," + tupleName + ")";
-            registerRel += "addRelation(\"" + raw_name + "\",&wrapper_" + name + ",";
+            registerRel += "addRelation(\"" + datalogName + "\",&wrapper_" + cppName + ",";
             registerRel += (loadRelations.count(rel->getName()) > 0) ? "true" : "false";
             registerRel += ",";
             registerRel += (storeRelations.count(rel->getName()) > 0) ? "true" : "false";
@@ -2155,15 +2155,15 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "void copyIndex() {\n";
             for (auto rel : prog.getAllRelations()) {
                 // get some table details
-                const std::string& name = getRelationName(*rel);
-                const std::string& raw_name = rel->getName();
+                const std::string& cppName = getRelationName(*rel);
+                const std::string& datalogName = rel->getName();
 
-                bool isProvInfo = raw_name.find("@info") != std::string::npos;
+                bool isProvInfo = datalogName.find("@info") != std::string::npos;
                 auto relationType = SynthesiserRelation::getSynthesiserRelation(*rel,
                         idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
 
                 if (!relationType->getProvenenceIndexNumbers().empty()) {
-                    os << name << "->copyIndex();\n";
+                    os << cppName << "->copyIndex();\n";
                 }
             }
             os << "}\n";

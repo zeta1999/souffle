@@ -69,7 +69,6 @@ enum InterpreterNodeType {
     I_DebugInfo,
     I_Stratum,
     I_Clear,
-    I_Drop,
     I_LogSize,
     I_Load,
     I_Store,

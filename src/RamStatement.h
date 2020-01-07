@@ -212,31 +212,6 @@ public:
 };
 
 /**
- * @class RamDrop
- * @brief Drop relation, i.e., delete it from memory
- *
- * For example:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * DROP A
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-class RamDrop : public RamRelationStatement {
-public:
-    RamDrop(std::unique_ptr<RamRelationReference> relRef) : RamRelationStatement(std::move(relRef)) {}
-
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "DROP " << rel.getName();
-        os << std::endl;
-    }
-
-    RamDrop* clone() const override {
-        return new RamDrop(std::unique_ptr<RamRelationReference>(relationRef->clone()));
-    }
-};
-
-/**
  * @class RamBinRelationStatement
  * @brief Abstract class for a binary relation
  *

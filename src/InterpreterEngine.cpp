@@ -55,10 +55,6 @@ InterpreterEngine::RelationHandle& InterpreterEngine::getRelationHandle(const si
     return relations[idx];
 }
 
-void InterpreterEngine::dropRelation(const size_t relId) {
-    relations[relId].reset(nullptr);
-}
-
 void InterpreterEngine::swapRelation(const size_t ramRel1, const size_t ramRel2) {
     RelationHandle& rel1 = getRelationHandle(ramRel1);
     RelationHandle& rel2 = getRelationHandle(ramRel2);
@@ -1086,11 +1082,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         getRelation(node->getData(0)).purge();
         return true;
         ESAC(Clear)
-
-        CASE_NO_CAST(Drop)
-        dropRelation(node->getData(0));
-        return true;
-        ESAC(Drop)
 
         CASE(LogSize)
         const InterpreterRelation& rel = getRelation(node->getData(0));

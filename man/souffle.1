@@ -1,20 +1,32 @@
-.TH SOUFFLE 1 2019-11-27
+.TH SOUFFLE 1 2020-01-07
 
 .SH NAME
 .B souffle
 \- translator of declarative Datalog programs into the C++ language.
+
+
 .SH SYNOPSIS
 .B souffle
 [
 .I options
 ]
 .I files
+[
+.I options
+]
+
+
 .SH DESCRIPTION
 Souffle is used as a domain-specific language for static program analysis over
 large code bases with millions of lines of code. Souffle aims to produce
 high-performance C++ code that can be compiled with the native compiler on the
 target machine.
+
+
 .SH OPTIONS
+.TP
+.B -c, --compile
+Compile and execute the datalog (translating to C++)
 .TP
 .B -D\fI<DIR>\fP, --output-dir=\fI<DIR>\fP
 Specify directory for output relations (if \fI<DIR>\fP is -, all output is written to stdout)
@@ -22,9 +34,8 @@ Specify directory for output relations (if \fI<DIR>\fP is -, all output is writt
 .B -F\fI<DIR>\fP, --fact-dir=\fI<DIR>\fP
 Specify directory for fact files
 .TP
-
-.B -c, --compile
-Compile and execute the datalog (translating to C++)
+.B -e[=\fI<FILE>\fP], --engine[=\fI<FILE>\fP]
+Alternative evaluation strategies
 .TP
 .B -g \fI<FILE>\fP, --generate=\fI<FILE>\fP
 Generate C++ source code from the given datalog file
@@ -44,6 +55,9 @@ Specify directory for library files
 .B -l\fI<LIBRARIES>\fP, --libraries=\fI<LIBRARIES>\fP
 Specify libraries to be included for user defined functors
 .TP
+.B --live-profile
+Enable live profiling
+.TP
 .B -M\fI<OPTIONS>\fP, --macro=\fI<OPTIONS>\fP
 Set macro definitions for the pre-processor
 .TP
@@ -53,20 +67,32 @@ Enable magic set transformation changes on the given relations, use '*' for all
 .B -o \fI<FILE>\fP, --dl-program=\fI<FILE>\fP
 Write executable program to \fI<FILE>\fP (without executing it)
 .TP
+.B -P\fI<OPTIONS>\fP, --pragma=\fI<OPTIONS>\fP
+Set pragma options
+.TP
 .B -p\fI<FILE>\fP, --profile=\fI<FILE>\fP
 Enable profiling and write profile data to \fI<FILE>\fP
+.TP
+.B --parse-errors
+Show parsing errors, if any, then exit
 .TP
 .B -r\fI<FILE>\fP, --debug-report=\fI<FILE>\fP
 Generate an HTML debug report and write it to \fI<FILE>\fP
 .TP
 .B -s \fI<LANG>\fP, --swig=\fI<LANG>\fP
-Generate SWIG interface for the specified language. Possible values for \fI<LANG>\fP are java and python.
+Generate SWIG interface for the specified language. Possible values for \fI<LANG>\fP are java and python
 .TP
 .B -t\fI<none|explain|explore|subtreeHeights>\fP, --provenance=\fI<none|explain|explore|subtreeHeights>\fP
 Enable provenance instrumentation and interaction
 .TP
-.B -P\fI<OPTIONS>\fP, --pragma=\fI<OPTIONS>\fP
-Set pragma options
+.B --transformed-datalog
+Output datalog after all transformations
+.TP
+.B --transformed-ram
+Output ram program after all transformations
+.TP
+.B -u\fI<FILE>\fP, --profile-use=\fI<FILE>\fP
+Use profile log-file \fI<FILE>\fP for profile-guided optimization
 .TP
 .B -v, --verbose
 Verbose output
@@ -86,8 +112,10 @@ souffle program.dl
 souffle -c program.dl -Ffacts -D- -j20
 
 .SH VERSION
-1.7.0
+1.7.1
+
 .SH LICENSE
 Copyright (c) 2016 Oracle and/or its affiliates. All Rights reserved.
+
 .SH SEE ALSO
 \fBg++\fP(1),\fBmcpp\fP(1),\fBswig\fP(1)

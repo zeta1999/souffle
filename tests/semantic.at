@@ -85,8 +85,9 @@ m4_define([POSITIVE_TEST_SQLITE3],[
 
 ##########################################################################
 
-NEGATIVE_TEST([agg_checks2],[semantic])
 NEGATIVE_TEST([agg_checks],[semantic])
+NEGATIVE_TEST([agg_checks2],[semantic])
+POSITIVE_TEST([agg_checks3],[semantic])
 POSITIVE_TEST([aggregate1],[semantic])
 POSITIVE_TEST([aggregate2],[semantic])
 POSITIVE_TEST([aggregate3],[semantic])

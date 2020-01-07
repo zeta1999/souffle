@@ -651,6 +651,8 @@ public:
             std::unique_ptr<RamCondition> condition)
             : function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
+    virtual ~RamAbstractAggregate() {}
+
     /** @brief Get condition */
     const RamCondition& getCondition() const {
         assert(condition != nullptr && "Condition of aggregate is a null-pointer");

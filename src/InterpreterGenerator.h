@@ -405,12 +405,6 @@ public:
         return std::make_unique<InterpreterNode>(I_Clear, &clear, NodePtrVec{}, std::move(data));
     }
 
-    NodePtr visitDrop(const RamDrop& drop) override {
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(drop.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Drop, &drop, NodePtrVec{}, std::move(data));
-    }
-
     NodePtr visitLogSize(const RamLogSize& size) override {
         std::vector<size_t> data;
         data.push_back((encodeRelation(size.getRelation())));

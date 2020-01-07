@@ -89,9 +89,7 @@ private:
     void resetIterationNumber();
     /** @brief Increment the counter */
     int incCounter();
-    /** @brief Return the relation map.
-     *  There can be nullptrs in the relation map (Dropped relation).
-     * */
+    /** @brief Return the relation map. */
     std::vector<RelationHandle>& getRelationMap();
 
     /** Symbol table for relations */

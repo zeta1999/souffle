@@ -70,7 +70,6 @@ enum InterpreterNodeType {
     I_Stratum,
     I_Create,
     I_Clear,
-    I_Drop,
     I_LogSize,
     I_Load,
     I_Store,

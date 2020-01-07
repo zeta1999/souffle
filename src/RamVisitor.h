@@ -119,12 +119,10 @@ struct RamVisitor : public ram_visitor_tag {
 
         // Statements
         FORWARD(Create);
-        FORWARD(Fact);
         FORWARD(Load);
         FORWARD(Store);
         FORWARD(Query);
         FORWARD(Clear);
-        FORWARD(Drop);
         FORWARD(LogSize);
 
         FORWARD(Merge);
@@ -162,13 +160,11 @@ protected:
 
     // -- statements --
     LINK(Create, RelationStatement);
-    LINK(Fact, RelationStatement);
     LINK(Load, AbstractLoadStore);
     LINK(Store, AbstractLoadStore);
     LINK(AbstractLoadStore, RelationStatement);
     LINK(Query, Statement);
     LINK(Clear, RelationStatement);
-    LINK(Drop, RelationStatement);
     LINK(LogSize, RelationStatement);
 
     LINK(RelationStatement, Statement);

@@ -55,10 +55,6 @@ InterpreterEngine::RelationHandle& InterpreterEngine::getRelationHandle(const si
     return relations[idx];
 }
 
-void InterpreterEngine::dropRelation(const size_t relId) {
-    relations[relId].reset(nullptr);
-}
-
 void InterpreterEngine::swapRelation(const size_t ramRel1, const size_t ramRel2) {
     RelationHandle& rel1 = getRelationHandle(ramRel1);
     RelationHandle& rel2 = getRelationHandle(ramRel2);
@@ -1087,11 +1083,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return true;
         ESAC(Clear)
 
-        CASE_NO_CAST(Drop)
-        dropRelation(node->getData(0));
-        return true;
-        ESAC(Drop)
-
         CASE(LogSize)
         const InterpreterRelation& rel = getRelation(node->getData(0));
         ProfileEventSingleton::instance().makeQuantityEvent(
@@ -1136,17 +1127,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
         return true;
         ESAC(Store)
-
-        CASE(Fact)
-        size_t arity = cur->getRelation().getArity();
-        RamDomain tuple[arity];
-
-        for (size_t i = 0; i < arity; ++i) {
-            tuple[i] = execute(node->getChild(i), ctxt);
-        }
-        getRelation(node->getData(0)).insert(tuple);
-        return true;
-        ESAC(Fact)
 
         CASE_NO_CAST(Query)
         InterpreterPreamble* preamble = node->getPreamble();

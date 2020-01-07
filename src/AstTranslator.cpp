@@ -663,7 +663,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
 
         // create a fact statement
-        return std::make_unique<RamFact>(translator.translateRelation(head), std::move(values));
+        return std::make_unique<RamQuery>(
+                std::make_unique<RamProject>(translator.translateRelation(head), std::move(values)));
     }
 
     // the rest should be rules
@@ -1067,9 +1068,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
         /* drop temporary tables after recursion */
         appendStmt(postamble, std::make_unique<RamSequence>(
-                                      std::make_unique<RamDrop>(
+                                      std::make_unique<RamClear>(
                                               std::unique_ptr<RamRelationReference>(relDelta[rel]->clone())),
-                                      std::make_unique<RamDrop>(
+                                      std::make_unique<RamClear>(
                                               std::unique_ptr<RamRelationReference>(relNew[rel]->clone()))));
 
         /* Generate code for non-recursive part of relation */
@@ -1530,8 +1531,8 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     };
 
     // a function to drop relations
-    const auto& makeRamDrop = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
-        appendStmt(current, std::make_unique<RamDrop>(translateRelation(relation)));
+    const auto& makeRamClear = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
+        appendStmt(current, std::make_unique<RamClear>(translateRelation(relation)));
     };
 
     // maintain the index of the SCC within the topological order
@@ -1622,20 +1623,20 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             if (Global::config().has("engine")) {
                 // drop all internal relations
                 for (const auto& relation : allInterns) {
-                    makeRamDrop(current, relation);
+                    makeRamClear(current, relation);
                 }
                 // drop external output predecessor relations
                 for (const auto& relation : externOutPreds) {
-                    makeRamDrop(current, relation);
+                    makeRamClear(current, relation);
                 }
                 // drop external non-output predecessor relations
                 for (const auto& relation : externNonOutPreds) {
-                    makeRamDrop(current, relation);
+                    makeRamClear(current, relation);
                 }
             } else {
                 // otherwise, drop all  relations expired as per the topological order
                 for (const auto& relation : internExps) {
-                    makeRamDrop(current, relation);
+                    makeRamClear(current, relation);
                 }
             }
         }

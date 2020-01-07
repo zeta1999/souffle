@@ -641,65 +641,85 @@ bool TupleIdTransformer::reorderOperations(RamProgram& program) {
 bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
     bool changed = false;
 
-    // hoist a single aggregate to an outer scope
-    // most outer permissible aggregate is hoisted
+    // There are two cases: aggregates that have no data-dependencies on
+    // other RAM operations, and aggregates that have data-dependencies.
+
+    // Hoist a single aggregate to an outer scope that
+    // has no data-dependency.
+    visitDepthFirst(program, [&](const RamQuery& query) {
+        std::unique_ptr<RamNestedOperation> newAgg;
+        int lastTupleOp = -1;
+
+        // The rewriter has two tasks: (1) identify a single aggregate that
+        // can be hoisted and (2) insert it at the outermost level.
+        // We assume all RamOperations are renumbered for this transformation.
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+            // identify hoistable aggregates
+            if (nullptr != dynamic_cast<RamAggregate*>(node.get())) {
+                RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
+                assert(tupleOp != nullptr && "aggregate conversion to tuple operation failed");
+                if (rla->getLevel(tupleOp) == -1 && lastTupleOp != -1) {
+                    changed = true;
+                    newAgg = std::unique_ptr<RamNestedOperation>(
+                            dynamic_cast<RamNestedOperation*>(tupleOp->clone()));
+                    assert(newAgg != nullptr && "failed to make a clone");
+                    return std::unique_ptr<RamOperation>(tupleOp->getOperation().clone());
+                }
+            } else if (RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get())) {
+                // tuple operation that is a non-aggregate
+                lastTupleOp = tupleOp->getTupleId();
+            }
+            node->apply(makeLambdaRamMapper(aggRewriter));
+            return node;
+        };
+        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(aggRewriter));
+        if (newAgg != nullptr) {
+            newAgg->rewrite(
+                    &newAgg->getOperation(), std::unique_ptr<RamOperation>(query.getOperation().clone()));
+            const_cast<RamQuery*>(&query)->rewrite(&query.getOperation(), std::move(newAgg));
+        }
+    });
+
+    // hoist a single aggregate to an outer scope that
+    // is data-dependent on an operation, i.e., its data dependence level
+    // is not -1 (=independent).
     visitDepthFirst(program, [&](const RamQuery& query) {
         // new level of aggregate
         int newLevel = -1;
-
         // new aggregate
         std::unique_ptr<RamNestedOperation> newAgg;
-
         // level of last non-aggregate
-        int lastNonAggLevel = -1;
+        int lastTupleOp = -1;
 
-        // The rewriter has two tasks: (1) identify a single aggregate that can be hoisted
-        // and (2) insert it at the outermost level if there is a dependency.
+        // The rewriter has two tasks: (1) identify a single aggregate that
+        // can be hoisted and (2) insert it at the outermost level.
+        // We assume all RamOperations are renumbered for this transformation.
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
-            // identify whether it is an aggregate that can be hoisted
-            if (const RamAggregate* agg = dynamic_cast<RamAggregate*>(node.get())) {
-                // assuming that RamTupleOperations have monotonic increasing tupleIds
-                if (rla->getLevel(agg) < agg->getTupleId() - 1) {
-                    // If all tuple ops between the rla->getLevel(agg) and agg
-                    // are aggregates, then we do not transform
-                    if (rla->getLevel(agg) != lastNonAggLevel) {
+            // identify hoistable aggregates
+            if (nullptr != dynamic_cast<RamAbstractAggregate*>(node.get())) {
+                RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
+                assert(tupleOp != nullptr && "aggregate conversion to nested operation failed");
+                int dataDepLevel = rla->getLevel(tupleOp);
+                if (dataDepLevel != -1 && dataDepLevel < tupleOp->getTupleId() - 1) {
+                    // If all tuple ops between the data-dependence level and agg
+                    // are aggregates, then we do not hoist, i.e., we would
+                    // continuously swap there positions.
+                    if (dataDepLevel != lastTupleOp) {
                         changed = true;
-
-                        // set insertion position
-                        newLevel = rla->getLevel(agg);
-
-                        // copy aggregate
-                        newAgg = std::unique_ptr<RamNestedOperation>(agg->clone());
-
-                        // cut out aggregate
-                        return std::unique_ptr<RamOperation>(agg->getOperation().clone());
+                        newLevel = dataDepLevel;
+                        newAgg = std::unique_ptr<RamNestedOperation>(
+                                dynamic_cast<RamNestedOperation*>(tupleOp->clone()));
+                        assert(newAgg != nullptr && "failed to make a clone");
+                        return std::unique_ptr<RamOperation>(tupleOp->getOperation().clone());
                     }
                 }
-            } else if (const RamIndexAggregate* agg = dynamic_cast<RamIndexAggregate*>(node.get())) {
-                if (rla->getLevel(agg) < agg->getTupleId() - 1) {
-                    // If all tuple ops above agg in the loop nest are also aggregates
-                    // then we do not transform
-                    if (rla->getLevel(agg) != lastNonAggLevel) {
-                        changed = true;
-
-                        // set insertion position
-                        newLevel = rla->getLevel(agg);
-
-                        // copy aggregate
-                        newAgg = std::unique_ptr<RamNestedOperation>(agg->clone());
-
-                        // cut aggregate out
-                        return std::unique_ptr<RamOperation>(agg->getOperation().clone());
-                    }
-                }
-            } else if (const RamTupleOperation* nested = dynamic_cast<RamIndexAggregate*>(node.get())) {
-                lastNonAggLevel = nested->getTupleId();
+            } else if (const RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get())) {
+                lastTupleOp = tupleOp->getTupleId();
             }
-
             node->apply(makeLambdaRamMapper(aggRewriter));
-
-            // insert aggregate at the outermost level
+            // hoist aggregate
             if (RamTupleOperation* search = dynamic_cast<RamTupleOperation*>(node.get())) {
                 if (newAgg != nullptr && search->getTupleId() == newLevel) {
                     newAgg->rewrite(&newAgg->getOperation(),
@@ -707,18 +727,9 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                     search->rewrite(&search->getOperation(), std::move(newAgg));
                 }
             }
-
             return node;
         };
-
         const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(aggRewriter));
-
-        // aggregate has no dependencies at outermost level
-        if (newLevel == -1 && changed) {
-            newAgg->rewrite(
-                    &newAgg->getOperation(), std::unique_ptr<RamOperation>(query.getOperation().clone()));
-            const_cast<RamQuery*>(&query)->rewrite(&query.getOperation(), std::move(newAgg));
-        }
     });
     return changed;
 }

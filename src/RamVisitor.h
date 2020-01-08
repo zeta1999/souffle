@@ -118,7 +118,6 @@ struct RamVisitor : public ram_visitor_tag {
         FORWARD(IndexAggregate);
 
         // Statements
-        FORWARD(Fact);
         FORWARD(Load);
         FORWARD(Store);
         FORWARD(Query);
@@ -159,7 +158,6 @@ protected:
     }
 
     // -- statements --
-    LINK(Fact, RelationStatement);
     LINK(Load, AbstractLoadStore);
     LINK(Store, AbstractLoadStore);
     LINK(AbstractLoadStore, RelationStatement);

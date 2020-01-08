@@ -14,6 +14,9 @@ AC_INIT(souffle, SOUFFLE_VERSION, [souffle-talk@googlegroups.com])
 AC_PREREQ(2.68)
 AC_COPYRIGHT(['2013-15 Oracle and/or its affiliates'])
 
+ISODATE=$(date +%Y-%m-%d)
+AC_SUBST([ISODATE])
+
 #LT_PREREQ([2.4])
 LT_INIT([dlopen])
 
@@ -348,6 +351,6 @@ AC_SUBST(SOUFFLE_CXXFLAGS)
 CXXFLAGS="$CXXFLAGS $ENV_CXXFLAGS"
 
 AC_OUTPUT(
-  [ src/souffle-compile src/souffle-config debian/changelog ],
+  [ src/souffle-compile src/souffle-config debian/changelog man/souffle.1 man/souffle-compile.1 man/souffle-config.1 man/souffle-profile.1],
   [ chmod +x src/souffle-compile src/souffle-config ]
 )

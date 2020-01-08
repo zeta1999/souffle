@@ -72,7 +72,6 @@ enum InterpreterNodeType {
     I_LogSize,
     I_Load,
     I_Store,
-    I_Fact,
     I_Query,
     I_Merge,
     I_Swap,

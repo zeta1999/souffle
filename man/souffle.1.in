@@ -1,4 +1,4 @@
-.TH SOUFFLE 1 2020-01-07
+.TH SOUFFLE 1 @ISODATE@
 
 .SH NAME
 .B souffle
@@ -92,7 +92,7 @@ Output datalog after all transformations
 Output ram program after all transformations
 .TP
 .B -u\fI<FILE>\fP, --profile-use=\fI<FILE>\fP
-Use profile log-file \fI<FILE>\fP for profile-guided optimization
+Use profile log-file \fI<FILE>\fP for profile-guided optimisation
 .TP
 .B -v, --verbose
 Verbose output
@@ -112,7 +112,7 @@ souffle program.dl
 souffle -c program.dl -Ffacts -D- -j20
 
 .SH VERSION
-1.7.1
+@PACKAGE_VERSION@
 
 .SH LICENSE
 Copyright (c) 2016 Oracle and/or its affiliates. All Rights reserved.

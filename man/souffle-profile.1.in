@@ -1,4 +1,4 @@
-.TH SOUFFLE-PROFILE 1 2017-03-30
+.TH SOUFFLE-PROFILE 1 @ISODATE@
 
 .SH NAME
 .B souffle-profile 
@@ -41,7 +41,7 @@ enable profiling of a running program
 .B souffle-profile -v | -h | <log-file> [ -c <command> | -j | -l ]
 
 .SH VERSION
-1.7.1
+@PACKAGE_VERSION@
 
 .SH LICENSE
 Copyright (c) 2016 Oracle and/or its affiliates. All Rights reserved.

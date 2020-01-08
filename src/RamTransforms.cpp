@@ -663,7 +663,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                     assert(newAgg != nullptr && "failed to make a clone");
                     return std::unique_ptr<RamOperation>(tupleOp->getOperation().clone());
                 }
-            } else if (RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get())) {
+            } else if (nullptr != dynamic_cast<RamTupleOperation*>(node.get())) {
                 // tuple operation that is a non-aggregate
                 priorTupleOp = true;
             }
@@ -679,7 +679,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
     });
 
     // hoist a single aggregate to an outer scope that is data-dependent on a prior operation.
-    visitDepthFirst(program, [&](const RamQuery& query) 
+    visitDepthFirst(program, [&](const RamQuery& query) {
         int newLevel = -1;
         std::unique_ptr<RamNestedOperation> newAgg;
         int priorOpLevel = -1;

@@ -686,39 +686,39 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
 
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
-        if (nullptr != dynamic_cast<RamAbstractAggregate*>(node.get())) {
-            RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
-            assert(tupleOp != nullptr && "aggregate conversion to nested operation failed");
-            int dataDepLevel = rla->getLevel(tupleOp);
-            if (dataDepLevel != -1 && dataDepLevel < tupleOp->getTupleId() - 1) {
-                // If all tuple ops between the data-dependence level and agg
-                // are aggregates, then we do not hoist, i.e., we would
-                // continuously swap their positions.
-                if (dataDepLevel != priorOpLevel) {
-                    changed = true;
-                    newLevel = dataDepLevel;
-                    newAgg = std::unique_ptr<RamNestedOperation>(
-                            dynamic_cast<RamNestedOperation*>(tupleOp->clone()));
-                    assert(newAgg != nullptr && "failed to make a clone");
-                    return std::unique_ptr<RamOperation>(tupleOp->getOperation().clone());
+            if (nullptr != dynamic_cast<RamAbstractAggregate*>(node.get())) {
+                RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
+                assert(tupleOp != nullptr && "aggregate conversion to nested operation failed");
+                int dataDepLevel = rla->getLevel(tupleOp);
+                if (dataDepLevel != -1 && dataDepLevel < tupleOp->getTupleId() - 1) {
+                    // If all tuple ops between the data-dependence level and agg
+                    // are aggregates, then we do not hoist, i.e., we would
+                    // continuously swap their positions.
+                    if (dataDepLevel != priorOpLevel) {
+                        changed = true;
+                        newLevel = dataDepLevel;
+                        newAgg = std::unique_ptr<RamNestedOperation>(
+                                dynamic_cast<RamNestedOperation*>(tupleOp->clone()));
+                        assert(newAgg != nullptr && "failed to make a clone");
+                        return std::unique_ptr<RamOperation>(tupleOp->getOperation().clone());
+                    }
+                }
+            } else if (const RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get())) {
+                priorOpLevel = tupleOp->getTupleId();
+            }
+            node->apply(makeLambdaRamMapper(aggRewriter));
+            if (RamTupleOperation* search = dynamic_cast<RamTupleOperation*>(node.get())) {
+                if (newAgg != nullptr && search->getTupleId() == newLevel) {
+                    newAgg->rewrite(&newAgg->getOperation(),
+                            std::unique_ptr<RamOperation>(search->getOperation().clone()));
+                    search->rewrite(&search->getOperation(), std::move(newAgg));
                 }
             }
-        } else if (const RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get())) {
-            priorOpLevel = tupleOp->getTupleId();
-        }
-        node->apply(makeLambdaRamMapper(aggRewriter));
-        if (RamTupleOperation* search = dynamic_cast<RamTupleOperation*>(node.get())) {
-            if (newAgg != nullptr && search->getTupleId() == newLevel) {
-                newAgg->rewrite(&newAgg->getOperation(),
-                        std::unique_ptr<RamOperation>(search->getOperation().clone()));
-                search->rewrite(&search->getOperation(), std::move(newAgg));
-            }
-        }
-        return node;
+            return node;
         };
         const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(aggRewriter));
-});
-return changed;
+    });
+    return changed;
 }  // namespace souffle
 
 bool ParallelTransformer::parallelizeOperations(RamProgram& program) {

@@ -1,4 +1,4 @@
-.TH SOUFFLE-CONFIG 1 2017-03-30
+.TH SOUFFLE-CONFIG 1 @ISODATE@
 
 .SH NAME
 .B souffle-config - short description of souffle-config
@@ -22,7 +22,7 @@ show a help page.
 list the libraries needed to compile with souffle.
 
 .SH VERSION
-1.7.1
+@PACKAGE_VERSION@
 
 .SH LICENSE
 Copyright (c) 2016 Oracle and/or its affiliates. All Rights reserved.

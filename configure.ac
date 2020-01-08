@@ -14,6 +14,9 @@ AC_INIT(souffle, SOUFFLE_VERSION, [souffle-talk@googlegroups.com])
 AC_PREREQ(2.68)
 AC_COPYRIGHT(['2013-15 Oracle and/or its affiliates'])
 
+ISODATE=$(date +%Y-%m-%d)
+AC_SUBST([ISODATE])
+
 #LT_PREREQ([2.4])
 LT_INIT([dlopen])
 

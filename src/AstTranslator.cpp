@@ -663,7 +663,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
 
         // create a fact statement
-        return std::make_unique<RamFact>(translator.translateRelation(head), std::move(values));
+        return std::make_unique<RamQuery>(
+                std::make_unique<RamProject>(translator.translateRelation(head), std::move(values)));
     }
 
     // the rest should be rules

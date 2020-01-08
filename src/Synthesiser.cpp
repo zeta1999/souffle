@@ -375,19 +375,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitMerge(const RamMerge& merge, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            if (merge.getTargetRelation().getRepresentation() == RelationRepresentation::EQREL) {
-                out << synthesiser.getRelationName(merge.getSourceRelation()) << "->"
-                    << "extend("
-                    << "*" << synthesiser.getRelationName(merge.getTargetRelation()) << ");\n";
-            }
-            out << synthesiser.getRelationName(merge.getTargetRelation()) << "->"
-                << "insertAll("
-                << "*" << synthesiser.getRelationName(merge.getSourceRelation()) << ");\n";
-            PRINT_END_COMMENT(out);
-        }
-
         void visitClear(const RamClear& clear, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << synthesiser.getRelationName(clear.getRelation()) << "->"

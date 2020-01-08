@@ -314,50 +314,6 @@ protected:
 };
 
 /**
- * @class RamMerge
- * @brief Merge tuples from a source into target relation.
- *
- * Note that semantically uniqueness of tuples is not checked.
- *
- * The following example merges A into B:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * MERGE B WITH A
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-class RamMerge : public RamBinRelationStatement {
-public:
-    RamMerge(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
-            : RamBinRelationStatement(std::move(sRef), std::move(tRef)) {}
-
-    /** @brief Get source relation */
-    const RamRelation& getSourceRelation() const {
-        return getFirstRelation();
-    }
-
-    /** @brief Get target relation */
-    const RamRelation& getTargetRelation() const {
-        return getSecondRelation();
-    }
-
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "MERGE " << getTargetRelation().getName() << " WITH " << getSourceRelation().getName();
-        os << std::endl;
-    }
-
-    RamMerge* clone() const override {
-        auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(first->clone()),
-                std::unique_ptr<RamRelationReference>(second->clone()));
-        return res;
-    }
-
-protected:
-    bool equal(const RamNode& node) const override {
-        return RamBinRelationStatement::equal(node);
-    }
-};
-
-/**
  * @class RamSwap
  * @brief Swap operation with respect to two relations
  *

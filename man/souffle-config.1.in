@@ -22,7 +22,7 @@ show a help page.
 list the libraries needed to compile with souffle.
 
 .SH VERSION
-1.7
+1.7.1
 
 .SH LICENSE
 Copyright (c) 2016 Oracle and/or its affiliates. All Rights reserved.

@@ -38,7 +38,7 @@ Enable warnings
 souffle-compile [options] <FILE>.cpp
 
 .SH VERSION
-1.7.1
+@PACKAGE_VERSION@
 
 .SH LICENSE
 Copyright (c) 2016 Oracle and/or its affiliates. All Rights reserved.

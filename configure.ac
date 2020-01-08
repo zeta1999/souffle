@@ -348,6 +348,6 @@ AC_SUBST(SOUFFLE_CXXFLAGS)
 CXXFLAGS="$CXXFLAGS $ENV_CXXFLAGS"
 
 AC_OUTPUT(
-  [ src/souffle-compile src/souffle-config debian/changelog ],
+  [ src/souffle-compile src/souffle-config debian/changelog man/souffle.1 man/souffle-compile.1 man/souffle-config.1 man/souffle-profile.1],
   [ chmod +x src/souffle-compile src/souffle-config ]
 )

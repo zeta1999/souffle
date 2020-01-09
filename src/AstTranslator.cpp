@@ -1335,7 +1335,6 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     struct VariablesToArguments : public AstNodeMapper {
         const std::vector<const AstVariable*>& uniqueVariables;
 
-        VariablesToArguments() = default;
         VariablesToArguments(const std::vector<const AstVariable*>& uniqueVariables)
                 : uniqueVariables(uniqueVariables) {}
 

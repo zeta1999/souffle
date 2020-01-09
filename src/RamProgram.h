@@ -46,7 +46,7 @@ public:
         std::vector<const RamNode*> children;
         children = main->getChildNodes();
         for (auto& r : relations) {
-            children.push_back(r.second.get());
+            children.push_back(r.get());
         }
         for (auto& s : subroutines) {
             children.push_back(s.second.get());
@@ -58,9 +58,7 @@ public:
         out << "PROGRAM" << std::endl;
         out << " DECLARATION" << std::endl;
         for (const auto& rel : relations) {
-            out << "  ";
-            rel.second->print(out);
-            out << std::endl;
+            out << "  " << *rel << std::endl;
         }
         out << " END DECLARATION" << std::endl;
         for (const auto& subroutine : subroutines) {
@@ -85,24 +83,27 @@ public:
         return main.get();
     }
 
-    /** @brief Add relation */
-    void addRelation(std::unique_ptr<RamRelation> rel) {
-        relations.insert(std::make_pair(rel->getName(), std::move(rel)));
-    }
-
     /** @brief Get relation */
     const RamRelation* getRelation(const std::string& name) const {
-        auto it = relations.find(name);
-        if (it != relations.end()) {
-            return it->second.get();
-        } else {
-            return nullptr;
+        for (const auto& rel : relations) {
+            if (rel->getName() == name) {
+                return rel.get();
+            }
         }
+        return nullptr;
     }
 
-    /** @brief Get relations map */
-    const std::map<std::string, std::unique_ptr<RamRelation>>& getAllRelations() const {
-        return this->relations;
+    /* TODO(b-scholz): remove add method and have a relations parameter for constructor */
+
+    /** @brief Add relation */
+    void addRelation(std::unique_ptr<RamRelation> rel) {
+        assert(getRelation(rel->getName()) == nullptr && "relation exists");
+        relations.push_back(std::move(rel));
+    }
+
+    /** @brief Get all relations of program  */
+    std::vector<RamRelation*> getAllRelations() const {
+        return toPtrVector(relations);
     }
 
     /** @brief Add subroutine */
@@ -128,9 +129,7 @@ public:
         std::map<const RamRelation*, const RamRelation*> refMap;
         auto* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
         for (auto& cur : relations) {
-            RamRelation* newRel = cur.second->clone();
-            refMap[cur.second.get()] = newRel;
-            res->addRelation(std::unique_ptr<RamRelation>(newRel));
+            res->relations.push_back(std::unique_ptr<RamRelation>(cur->clone()));
         }
         for (auto& cur : subroutines) {
             res->addSubroutine(cur.first, std::unique_ptr<RamStatement>(cur.second->clone()));
@@ -151,7 +150,7 @@ public:
     void apply(const RamNodeMapper& map) override {
         main = map(std::move(main));
         for (auto& cur : relations) {
-            cur.second = map(std::move(cur.second));
+            cur = map(std::move(cur));
         }
         for (auto& cur : subroutines) {
             cur.second = map(std::move(cur.second));
@@ -160,7 +159,7 @@ public:
 
 protected:
     /** Relations of RAM program */
-    std::map<std::string, std::unique_ptr<RamRelation>> relations;
+    std::vector<std::unique_ptr<RamRelation>> relations;
 
     /** Main program */
     std::unique_ptr<RamStatement> main;
@@ -179,10 +178,10 @@ protected:
                 return false;
             }
         }
+        if (other.relations.size() != relations.size()) return false;
         for (auto& cur : relations) {
-            if (other.getRelation(cur.first) != getRelation(cur.first)) {
-                return false;
-            }
+            const RamRelation* otherRel = other.getRelation(cur->getName());
+            if (otherRel == nullptr || *otherRel != *cur) return false;
         }
         return getMain() == other.getMain();
     }

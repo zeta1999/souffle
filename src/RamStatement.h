@@ -82,30 +82,6 @@ protected:
 };
 
 /**
- * @class RamCreate
- * @brief Create new RAM relation
- *
- * The following example creates the relation A:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * CREATE A
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-class RamCreate : public RamRelationStatement {
-public:
-    RamCreate(std::unique_ptr<RamRelationReference> relRef) : RamRelationStatement(std::move(relRef)) {}
-
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "CREATE " << rel.getName() << " " << rel.getRepresentation() << std::endl;
-    };
-
-    RamCreate* clone() const override {
-        return new RamCreate(std::unique_ptr<RamRelationReference>(relationRef->clone()));
-    }
-};
-
-/**
  * @class RamAbstractLoadStore
  * @brief Abstract class for load/store for a relation
  *

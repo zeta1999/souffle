@@ -4,6 +4,10 @@
 // - https://opensource.org/licenses/UPL
 // - <souffle root>/licenses/SOUFFLE-UPL.txt
 
+// This is a functional test for the RAM transformer HoistAggregate.
+// It contains an aggregate that depends on another RAM operation and
+// and aggregate that is data-independent. 
+
 .decl R1(a:symbol)
 R1("a").
 R1("b").

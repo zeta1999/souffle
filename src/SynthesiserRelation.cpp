@@ -315,8 +315,9 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
     out << "void insertAll(" << getTypeName() << "& other) {\n";
     for (size_t i = 0; i < numIndexes; i++) {
-        if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end())
+        if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end()) {
             out << "ind_" << i << ".insertAll(other.ind_" << i << ");\n";
+        }
     }
     out << "}\n";  // end of insertAll(relationType& other)
 

@@ -159,7 +159,9 @@ public:
         const auto scc = relationToScc.at(relation);
         for (const auto& successor : precedenceGraph->graph().successors(relation)) {
             const auto successorScc = relationToScc.at(successor);
-            if (successorScc != scc) successorSccs.insert(successorScc);
+            if (successorScc != scc) {
+                successorSccs.insert(successorScc);
+            }
         }
         return successorSccs;
     }
@@ -170,7 +172,9 @@ public:
         const auto scc = relationToScc.at(relation);
         for (const auto& predecessor : precedenceGraph->graph().predecessors(relation)) {
             const auto predecessorScc = relationToScc.at(predecessor);
-            if (predecessorScc != scc) predecessorSccs.insert(predecessorScc);
+            if (predecessorScc != scc) {
+                predecessorSccs.insert(predecessorScc);
+            }
         }
         return predecessorSccs;
     }

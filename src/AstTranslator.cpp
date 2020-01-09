@@ -408,8 +408,9 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             if (Global::config().has("provenance")) {
                 values.push_back(std::make_unique<RamUndefValue>());
                 // add the height annotation for provenanceNotExists
-                for (size_t h = 0; h < numberOfHeightParameters; h++)
+                for (size_t h = 0; h < numberOfHeightParameters; h++) {
                     values.push_back(translator.translateValue(atom->getArgument(arity + h + 1), index));
+                }
             }
 
             // add constraint
@@ -620,8 +621,9 @@ std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createO
             }
 
             // provenance annotation arguments
-            for (size_t i = 0; i < numberOfHeights + 1; ++i)
+            for (size_t i = 0; i < numberOfHeights + 1; ++i) {
                 values.push_back(std::make_unique<RamNumber>(-1));
+            }
         }
     }
 
@@ -1129,9 +1131,10 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                     r1->addToBody(std::make_unique<AstProvenanceNegation>(
                             std::unique_ptr<AstAtom>(cl->getHead()->clone())));
                 } else {
-                    if (r1->getHead()->getArity() > 0)
+                    if (r1->getHead()->getArity() > 0) {
                         r1->addToBody(std::make_unique<AstNegation>(
                                 std::unique_ptr<AstAtom>(cl->getHead()->clone())));
+                    }
                 }
 
                 // replace wildcards with variables (reduces indices when wildcards are used in recursive
@@ -1212,7 +1215,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     /* construct fixpoint loop  */
     std::unique_ptr<RamStatement> res;
-    if (preamble) appendStmt(res, std::move(preamble));
+    if (preamble) {
+        appendStmt(res, std::move(preamble));
+    }
     if (!loopSeq->getStatements().empty() && exitCond && updateTable) {
         appendStmt(res, std::make_unique<RamLoop>(std::move(loopSeq),
                                 std::make_unique<RamExit>(std::move(exitCond)), std::move(updateTable)));

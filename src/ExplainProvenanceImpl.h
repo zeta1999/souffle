@@ -113,12 +113,12 @@ public:
         std::vector<RamDomain> ret;
         std::vector<bool> err;
 
-        if (useSublevels)
+        if (useSublevels) {
             // add subtree level numbers to tuple
             for (auto subtreeLevel : subtreeLevels) {
                 tuple.push_back(subtreeLevel);
             }
-        else {
+        } else {
             tuple.push_back(levelNum);
         }
 
@@ -517,7 +517,9 @@ public:
         auto size = rel->size();
         int skip = size / 10;
 
-        if (skip == 0) skip = 1;
+        if (skip == 0) {
+            skip = 1;
+        }
 
         std::stringstream ss;
 
@@ -587,10 +589,11 @@ public:
         os << "\"rules\": [\n";
         bool first = true;
         for (auto const& cur : rules) {
-            if (first)
+            if (first) {
                 first = false;
-            else
+            } else {
                 os << ",\n";
+            }
             os << "\t{ \"rule-number\": \"(R" << cur.first.second << ")\", \"rule\": \""
                << stringify(cur.second) << "\"}";
         }

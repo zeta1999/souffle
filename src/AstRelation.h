@@ -185,7 +185,9 @@ public:
             size_t maxNrOfPremises = 0;
             for (auto& cur : clauses) {
                 size_t numberOfAtoms = cur->getAtoms().size();
-                if (numberOfAtoms > maxNrOfPremises) maxNrOfPremises = numberOfAtoms;
+                if (numberOfAtoms > maxNrOfPremises) {
+                    maxNrOfPremises = numberOfAtoms;
+                }
             }
             return maxNrOfPremises + 1;
         } else {

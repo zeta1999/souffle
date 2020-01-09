@@ -522,7 +522,9 @@ template <unsigned F, unsigned... R, unsigned... M, RamDomain value>
 struct mask<index<F, R...>, index<M...>, value> {
     template <typename T>
     void operator()(T& t) const {
-        if (!column_utils::contains<F, M...>::value) t[F] = value;
+        if (!column_utils::contains<F, M...>::value) {
+            t[F] = value;
+        }
         mask<index<R...>, index<M...>, value>()(t);
     }
 };

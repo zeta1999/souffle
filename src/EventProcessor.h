@@ -127,8 +127,9 @@ private:
         for (size_t i = 0; i < str.size(); i++) {
             if (repeat) {
                 if (str.at(i) == split_str.at(0)) {
-                    while (str.at(++i) == split_str.at(0))
+                    while (str.at(++i) == split_str.at(0)) {
                         ;  // set i to be at the end of the search string
+                    }
                     elems.push_back(temp);
                     temp = "";
                 }

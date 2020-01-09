@@ -1661,8 +1661,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // produce external definitions for user-defined functors
     std::map<std::string, std::string> functors;
     visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
-        if (functors.find(op.getName()) == functors.end())
+        if (functors.find(op.getName()) == functors.end()) {
             functors.insert(std::make_pair(op.getName(), op.getType()));
+        }
         withSharedLibrary = true;
     });
     os << "extern \"C\" {\n";
@@ -1765,7 +1766,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
         for (auto rel : prog.getRelations()) {
-            if (!rel->isTemp()) numRead++;
+            if (!rel->isTemp()) {
+                numRead++;
+            }
         }
         os << "  size_t reads[" << numRead << "]{};\n";
     }
@@ -1901,7 +1904,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         // Store count of relations
         size_t relationCount = 0;
         for (auto rel : prog.getRelations()) {
-            if (rel->getName()[0] != '@') ++relationCount;
+            if (rel->getName()[0] != '@') {
+                ++relationCount;
+            }
         }
         // Store configuration
         os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"

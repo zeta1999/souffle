@@ -352,8 +352,9 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
             // if fact, level number is 0
             if (clause->isFact()) {
                 clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
-                for (size_t i = 0; i < relation->numberOfHeightParameters(); i++)
+                for (size_t i = 0; i < relation->numberOfHeightParameters(); i++) {
                     clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
+                }
             } else {
                 std::vector<AstArgument*> bodyLevels;
 

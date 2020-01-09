@@ -2094,9 +2094,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of loadAll() method
 
     // issue dump methods
-    auto dumpRelation = [&](const std::string& name, const std::vector<std::string>& mask, size_t arity,
-                                size_t numberOfHeights) {
-        auto relName = name;
+    auto dumpRelation = [&](const RamRelation& ramRelation) {
+        auto& relName = getRelationName(ramRelation);
+        auto& name = ramRelation.getName();
+        auto& mask = ramRelation.getAttributeTypeQualifiers();
+        size_t numberOfHeights = ramRelation.getNumberOfHeights();
+
         std::vector<bool> symbolMask;
         for (auto& cur : mask) {
             symbolMask.push_back(cur[0] == 's');
@@ -2117,23 +2120,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // dump inputs
     os << "public:\n";
     os << "void dumpInputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) {
-        auto& name = getRelationName(load.getRelation());
-        auto& mask = load.getRelation().getAttributeTypeQualifiers();
-        size_t arity = load.getRelation().getArity();
-        dumpRelation(name, mask, arity, load.getRelation().getNumberOfHeights());
-    });
+    visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) { dumpRelation(load.getRelation()); });
     os << "}\n";  // end of dumpInputs() method
 
     // dump outputs
     os << "public:\n";
     os << "void dumpOutputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamStore& store) {
-        auto& name = getRelationName(store.getRelation());
-        auto& mask = store.getRelation().getAttributeTypeQualifiers();
-        size_t arity = store.getRelation().getArity();
-        dumpRelation(name, mask, arity, store.getRelation().getNumberOfHeights());
-    });
+    visitDepthFirst(*(prog.getMain()), [&](const RamStore& store) { dumpRelation(store.getRelation()); });
     os << "}\n";  // end of dumpOutputs() method
 
     os << "public:\n";

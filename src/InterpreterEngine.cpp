@@ -150,6 +150,11 @@ void InterpreterEngine::executeMain() {
     auto* program = tUnit.getProgram()->getMain();
     auto entry = generator.generateTree(*program);
     InterpreterContext ctxt;
+
+    for (auto rel : tUnit.getProgram()->getAllRelations()) {
+        createRelation(*rel, isa->getIndexes(*rel), generator.encodeRelation(*rel));
+    }
+
     if (!profileEnabled) {
         InterpreterContext ctxt;
         execute(entry.get(), ctxt);
@@ -171,12 +176,12 @@ void InterpreterEngine::executeMain() {
         }
         // Store count of relations
         size_t relationCount = 0;
-        visitDepthFirst(*program, [&](const RamCreate& create) {
-            if (create.getRelation().getName()[0] != '@') {
+        for (auto rel : tUnit.getProgram()->getAllRelations()) {
+            if (rel->getName()[0] != '@') {
                 ++relationCount;
-                reads[create.getRelation().getName()] = 0;
+                reads[rel->getName()] = 0;
             }
-        });
+        }
         ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string(relationCount));
 
         // Store count of rules
@@ -1058,9 +1063,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Stratum)
         if (profileEnabled) {
             std::map<std::string, size_t> relNames;
-            visitDepthFirst(*cur, [&](const RamCreate& create) {
-                relNames[create.getRelation().getName()] = create.getRelation().getArity();
-            });
+            for (auto rel : tUnit.getProgram()->getAllRelations()) {
+                relNames[rel->getName()] = rel->getArity();
+            }
             for (const auto& rel : relNames) {
                 // Skip temporary relations, marked with '@'
                 if (rel.first[0] == '@') {
@@ -1072,11 +1077,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
         return execute(node->getChild(0), ctxt);
         ESAC(Stratum)
-
-        CASE(Create)
-        createRelation(cur->getRelation(), isa->getIndexes(cur->getRelation()), node->getData(0));
-        return true;
-        ESAC(Create)
 
         CASE_NO_CAST(Clear)
         getRelation(node->getData(0)).purge();

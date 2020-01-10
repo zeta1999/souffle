@@ -1642,7 +1642,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     }
 
     // done for main prog
-    ramProg->setMain(std::move(res));
+    ramMain = std::move(res);
 
     // add subroutines for each clause
     if (Global::config().has("provenance")) {

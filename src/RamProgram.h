@@ -84,18 +84,8 @@ public:
         return *main.get();
     }
 
-    /** @brief Get relation */
-    const RamRelation* getRelation(const std::string& name) const {
-        for (const auto& rel : relations) {
-            if (rel->getName() == name) {
-                return rel.get();
-            }
-        }
-        return nullptr;
-    }
-
     /** @brief Get all relations of RAM program  */
-    std::vector<RamRelation*> getAllRelations() const {
+    std::vector<RamRelation*> getRelations() const {
         return toPtrVector(relations);
     }
 
@@ -166,11 +156,7 @@ protected:
                 return false;
             }
         }
-        for (auto& rel : relations) {
-            const RamRelation* otherRel = other.getRelation(rel->getName());
-            if (otherRel == nullptr || *otherRel != *rel) return false;
-        }
-        return getMain() == other.getMain();
+        return getMain() == other.getMain() && equal_targets(relations, other.relations);
     }
 };
 

@@ -151,7 +151,7 @@ void InterpreterEngine::executeMain() {
     auto entry = generator.generateTree(program);
     InterpreterContext ctxt;
 
-    for (auto rel : tUnit.getProgram()->getAllRelations()) {
+    for (auto rel : tUnit.getProgram()->getRelations()) {
         createRelation(*rel, isa->getIndexes(*rel), generator.encodeRelation(*rel));
     }
 
@@ -176,7 +176,7 @@ void InterpreterEngine::executeMain() {
         }
         // Store count of relations
         size_t relationCount = 0;
-        for (auto rel : tUnit.getProgram()->getAllRelations()) {
+        for (auto rel : tUnit.getProgram()->getRelations()) {
             if (rel->getName()[0] != '@') {
                 ++relationCount;
                 reads[rel->getName()] = 0;
@@ -1063,7 +1063,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Stratum)
         if (profileEnabled) {
             std::map<std::string, size_t> relNames;
-            for (auto rel : tUnit.getProgram()->getAllRelations()) {
+            for (auto rel : tUnit.getProgram()->getRelations()) {
                 relNames[rel->getName()] = rel->getArity();
             }
             for (const auto& rel : relNames) {

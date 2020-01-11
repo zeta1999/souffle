@@ -147,7 +147,7 @@ void InterpreterEngine::executeMain() {
     if (Global::config().has("verbose")) {
         SignalHandler::instance()->enableLogging();
     }
-    RamStatement &program = tUnit.getProgram()->getMain();
+    RamStatement& program = tUnit.getProgram()->getMain();
     auto entry = generator.generateTree(program);
     InterpreterContext ctxt;
 

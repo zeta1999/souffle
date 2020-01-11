@@ -198,15 +198,14 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
         const size_t arity, const size_t numberOfHeights, const std::vector<std::string> attributeNames,
         const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation representation) {
-     
-    auto it = ramRels.find(name); 
-    if(it == ramRels.end()) {  
+    auto it = ramRels.find(name);
+    if (it == ramRels.end()) {
         ramRels[name] = std::make_unique<RamRelation>(
                 name, arity, numberOfHeights, attributeNames, attributeTypeQualifiers, representation);
-       it = ramRels.find(name); 
+        it = ramRels.find(name);
     }
-    assert(it != ramRels.end() && "relation name not found"); 
-   
+    assert(it != ramRels.end() && "relation name not found");
+
     const RamRelation* relation = it->second.get();
     return std::make_unique<RamRelationReference>(relation);
 }
@@ -1661,7 +1660,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
             std::string negationSubroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_negation_subproof";
-            ramSubs[negationSubroutineLabel] =  makeNegationSubproofSubroutine(clause);
+            ramSubs[negationSubroutineLabel] = makeNegationSubproofSubroutine(clause);
         });
     }
 }
@@ -1673,15 +1672,15 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     SymbolTable& symTab = tu.getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
-    std::vector<std::unique_ptr<RamRelation>> rels; 
-    for(auto &cur: ramRels) { 
-       rels.push_back(std::move(cur.second)); 
-    } 
-    if (nullptr == ramMain) { 
-       ramMain = std::make_unique<RamSequence>();
-    } 
-    std::unique_ptr<RamProgram> ramProg = std::make_unique<RamProgram>(
-     std::move(rels), std::move(ramMain), std::move(ramSubs)); 
+    std::vector<std::unique_ptr<RamRelation>> rels;
+    for (auto& cur : ramRels) {
+        rels.push_back(std::move(cur.second));
+    }
+    if (nullptr == ramMain) {
+        ramMain = std::make_unique<RamSequence>();
+    }
+    std::unique_ptr<RamProgram> ramProg =
+            std::make_unique<RamProgram>(std::move(rels), std::move(ramMain), std::move(ramSubs));
     if (!Global::config().get("debug-report").empty()) {
         if (ramProg) {
             auto ram_end = std::chrono::high_resolution_clock::now();

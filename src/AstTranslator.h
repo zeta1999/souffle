@@ -69,10 +69,10 @@ private:
     /** RAM program */
     std::unique_ptr<RamStatement> ramMain;
 
-    /** Subroutines */ 
+    /** Subroutines */
     std::map<std::string, std::unique_ptr<RamStatement>> ramSubs;
 
-    /** RAM relations */ 
+    /** RAM relations */
     std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
 
     /**

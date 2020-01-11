@@ -17,9 +17,9 @@
 #pragma once
 
 #include "RamStatement.h"
+#include <map>
 #include <memory>
 #include <vector>
-#include <map>
 
 namespace souffle {
 
@@ -41,15 +41,12 @@ namespace souffle {
  */
 class RamProgram : public RamNode {
 private:
-    RamProgram(std::unique_ptr<RamStatement> main) : main(std::move(main)) {
-    } 
+    RamProgram(std::unique_ptr<RamStatement> main) : main(std::move(main)) {}
+
 public:
-    RamProgram(std::vector<std::unique_ptr<RamRelation>> rels,
-               std::unique_ptr<RamStatement> main,
-               std::map<std::string, std::unique_ptr<RamStatement>> subs) :
-                 relations(std::move(rels)), 
-                 main(std::move(main)),
-                 subroutines(std::move(subs)) {}
+    RamProgram(std::vector<std::unique_ptr<RamRelation>> rels, std::unique_ptr<RamStatement> main,
+            std::map<std::string, std::unique_ptr<RamStatement>> subs)
+            : relations(std::move(rels)), main(std::move(main)), subroutines(std::move(subs)) {}
 
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> children;

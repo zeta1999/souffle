@@ -1789,8 +1789,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     std::set<std::string> loadRelations;
     visitDepthFirst(prog.getMain(),
             [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
-    visitDepthFirst(prog.getMain(),
-            [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
+    visitDepthFirst(
+            prog.getMain(), [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
 
     for (auto rel : prog.getAllRelations()) {
         // get some table details

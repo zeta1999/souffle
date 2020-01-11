@@ -189,8 +189,7 @@ protected:
  */
 class RamTupleElement : public RamExpression {
 public:
-    RamTupleElement(size_t ident, size_t elem) 
-            : identifier(ident), element(elem) {}
+    RamTupleElement(size_t ident, size_t elem) : identifier(ident), element(elem) {}
 
     void print(std::ostream& os) const override {
         os << "t" << identifier << "." << element;

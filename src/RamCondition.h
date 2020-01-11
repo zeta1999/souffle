@@ -278,7 +278,7 @@ public:
     RamAbstractExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : relationRef(std::move(relRef)), values(std::move(vals)) {
-        assert(relationRef != nullptr && "Relation reference is a nullptr"); 
+        assert(relationRef != nullptr && "Relation reference is a nullptr");
     }
 
     /** @brief Get relation */
@@ -321,7 +321,7 @@ public:
         for (auto& val : values) {
             val = map(std::move(val));
         }
-        assert(relationRef != nullptr && "Relation reference is a nullptr"); 
+        assert(relationRef != nullptr && "Relation reference is a nullptr");
     }
 
 protected:
@@ -405,8 +405,8 @@ public:
 class RamEmptinessCheck : public RamCondition {
 public:
     RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {
-        assert(relationRef != nullptr && "Relation reference is a nullptr"); 
-    } 
+        assert(relationRef != nullptr && "Relation reference is a nullptr");
+    }
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {
@@ -427,7 +427,7 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
-        assert(relationRef != nullptr && "Relation reference is a nullptr"); 
+        assert(relationRef != nullptr && "Relation reference is a nullptr");
     }
 
 protected:

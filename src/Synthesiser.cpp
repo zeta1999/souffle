@@ -1371,7 +1371,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitIntrinsicOperator(const RamIntrinsicOperator& op, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            auto args = op.getArguments(); 
+            auto args = op.getArguments();
             switch (op.getOperator()) {
                 /** Unary Functor Operators */
                 case FunctorOp::ORD: {
@@ -1529,7 +1529,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // strings
                 case FunctorOp::CAT: {
                     out << "symTable.lookup(";
-                    size_t i = 0; 
+                    size_t i = 0;
                     while (i < args.size() - 1) {
                         out << "symTable.resolve(";
                         visit(args[i], out);
@@ -1568,7 +1568,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const std::string& name = op.getName();
             const std::string& type = op.getType();
             size_t arity = type.length() - 1;
-            auto args = op.getArguments(); 
+            auto args = op.getArguments();
 
             if (type[arity] == 'S') {
                 out << "symTable.lookup(";

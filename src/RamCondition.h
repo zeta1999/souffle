@@ -287,6 +287,19 @@ public:
         return toPtrVector(values);
     }
 
+    void print(std::ostream& os) const override {
+        os << "("
+           << join(values, ",",
+                      [](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
+                          if (!value) {
+                              out << "_";
+                          } else {
+                              out << *value;
+                          }
+                      })
+           << ") ∈ " << getRelation().getName();
+    }
+
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res = {relationRef.get()};
         for (const auto& cur : values) {
@@ -334,19 +347,6 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
-    void print(std::ostream& os) const override {
-        os << "("
-           << join(values, ",",
-                      [](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
-                          if (!value) {
-                              out << "_";
-                          } else {
-                              out << *value;
-                          }
-                      })
-           << ") ∈ " << getRelation().getName();
-    }
-
     RamExistenceCheck* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : values) {
@@ -368,16 +368,8 @@ public:
             : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
     void print(std::ostream& os) const override {
-        os << "("
-           << join(values, ",",
-                      [](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
-                          if (!value) {
-                              out << "_";
-                          } else {
-                              out << *value;
-                          }
-                      })
-           << ") prov∈ " << getRelation().getName();
+        os << "prov";
+        RamAbstractExistenceCheck::print(os);
     }
 
     RamProvenanceExistenceCheck* clone() const override {

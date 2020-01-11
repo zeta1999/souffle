@@ -54,17 +54,6 @@ public:
         return toPtrVector(arguments);
     }
 
-    /** @brief Get i-th argument value */
-    const RamExpression& getArgument(size_t i) const {
-        assert(i >= 0 && i < arguments.size() && "argument index out of bounds");
-        return *arguments[i];
-    }
-
-    /** @brief Get number of arguments */
-    size_t getArgCount() const {
-        return arguments.size();
-    }
-
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         for (const auto& cur : arguments) {
@@ -200,7 +189,7 @@ protected:
  */
 class RamTupleElement : public RamExpression {
 public:
-    RamTupleElement(size_t ident, size_t elem, std::unique_ptr<RamRelationReference> relRef = nullptr)
+    RamTupleElement(size_t ident, size_t elem) 
             : identifier(ident), element(elem) {}
 
     void print(std::ostream& os) const override {

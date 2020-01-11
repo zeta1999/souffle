@@ -18,6 +18,8 @@
 
 #include "RamStatement.h"
 #include <memory>
+#include <vector>
+#include <map>
 
 namespace souffle {
 
@@ -38,10 +40,13 @@ namespace souffle {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamProgram : public RamNode {
+private:
+    RamProgram(std::unique_ptr<RamStatement> main) : main(std::move(main)) {
+    } 
 public:
-    RamProgram(std::vector<std::unique_ptr<RamRelation> rels,
+    RamProgram(std::vector<std::unique_ptr<RamRelation>> rels,
                std::unique_ptr<RamStatement> main,
-               std::maps<std::string, std::unique_ptr<RamStatement> subs) :
+               std::map<std::string, std::unique_ptr<RamStatement>> subs) :
                  relations(std::move(rels)), 
                  main(std::move(main)),
                  subroutines(std::move(subs)) {}
@@ -79,7 +84,7 @@ public:
     /** @brief Get main program */
     RamStatement& getMain() const {
         assert(main && "Program has no main routine");
-        return main.get();
+        return *main.get();
     }
 
     /** @brief Get relation */
@@ -117,7 +122,7 @@ public:
             res->relations.push_back(std::unique_ptr<RamRelation>(rel->clone()));
         }
         for (auto& sub : subroutines) {
-            res->addSubroutine(sub.first, std::unique_ptr<RamStatement>(sub.second->clone()));
+            res->subroutines[sub.first] = std::unique_ptr<RamStatement>(sub.second->clone());
         }
         std::map<const RamRelation*, const RamRelation*> refMap;
         res->apply(makeLambdaRamMapper([&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
@@ -159,13 +164,11 @@ protected:
         if (relations.size() != other.relations.size() || subroutines.size() != other.subroutines.size()) {
             return false;
         }
-        if (other.subroutines.size() != subroutine.size()) return false;
         for (auto& sub : subroutines) {
             if (other.getSubroutine(sub.first) != getSubroutine(sub.first)) {
                 return false;
             }
         }
-        if (other.relations.size() != relations.size()) return false;
         for (auto& rel : relations) {
             const RamRelation* otherRel = other.getRelation(rel->getName());
             if (otherRel == nullptr || *otherRel != *rel) return false;

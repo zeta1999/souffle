@@ -1772,7 +1772,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
-        visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) { numFreq++; });
+        visitDepthFirst(prog.getMain(), [&](const RamStatement& node) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
         for (auto rel : prog.getAllRelations()) {
@@ -1787,9 +1787,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     int relCtr = 0;
     std::set<std::string> storeRelations;
     std::set<std::string> loadRelations;
-    visitDepthFirst(*(prog.getMain()),
+    visitDepthFirst(prog.getMain(),
             [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
-    visitDepthFirst(*(prog.getMain()),
+    visitDepthFirst(prog.getMain(),
             [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
 
     for (auto rel : prog.getAllRelations()) {
@@ -1888,7 +1888,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
 
     bool hasIncrement = false;
-    visitDepthFirst(*(prog.getMain()), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
+    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
     // initialize counter
     if (hasIncrement) {
         os << "// -- initialize counter --\n";
@@ -1921,7 +1921,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "[](){\n";
 
         // Record relations created in each stratum
-        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+        visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
             std::map<std::string, size_t> relNames;
             for (auto rel : prog.getAllRelations()) {
                 relNames[rel->getName()] = rel->getArity();
@@ -1943,7 +1943,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("engine")) {
         std::stringstream ss;
         bool hasAtLeastOneStrata = false;
-        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+        visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
             hasAtLeastOneStrata = true;
             // go to stratum of index in switch
             auto i = stratum.getIndex();
@@ -1961,7 +1961,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
 
     // Set up stratum
-    visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+    visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
         os << "/* BEGIN STRATUM " << stratum.getIndex() << " */\n";
         if (Global::config().has("engine")) {
             // go to the stratum with the max value for int as a suffix if calling the master stratum
@@ -2021,7 +2021,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue printAll method
     os << "public:\n";
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) {
+    visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
             std::vector<bool> symbolMask;
             for (auto& cur : store->getRelation().getAttributeTypeQualifiers()) {
@@ -2065,7 +2065,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue loadAll method
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) {
+    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
         // get some table details
         std::vector<bool> symbolMask;
         for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
@@ -2120,13 +2120,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // dump inputs
     os << "public:\n";
     os << "void dumpInputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) { dumpRelation(load.getRelation()); });
+    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) { dumpRelation(load.getRelation()); });
     os << "}\n";  // end of dumpInputs() method
 
     // dump outputs
     os << "public:\n";
     os << "void dumpOutputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamStore& store) { dumpRelation(store.getRelation()); });
+    visitDepthFirst(prog.getMain(), [&](const RamStore& store) { dumpRelation(store.getRelation()); });
     os << "}\n";  // end of dumpOutputs() method
 
     os << "public:\n";

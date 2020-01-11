@@ -70,10 +70,10 @@ private:
     std::unique_ptr<RamStatement> ramMain;
 
     /** Subroutines */ 
-    std::map<std::string, std::unique_ptr<RamSubroutine>> ramSubs;
+    std::map<std::string, std::unique_ptr<RamStatement>> ramSubs;
 
     /** RAM relations */ 
-    std::vector<std::unique_ptr<RamRelation>> ramRels;
+    std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
 
     /**
      * Concrete attribute

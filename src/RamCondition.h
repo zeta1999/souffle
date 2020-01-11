@@ -127,6 +127,8 @@ public:
     void apply(const RamNodeMapper& map) override {
         lhs = map(std::move(lhs));
         rhs = map(std::move(rhs));
+        assert(lhs != nullptr && "left-hand side of conjunction is a nullptr");
+        assert(rhs != nullptr && "right-hand side of conjunction is a nullptr");
     }
 
 protected:
@@ -154,11 +156,12 @@ protected:
  */
 class RamNegation : public RamCondition {
 public:
-    RamNegation(std::unique_ptr<RamCondition> operand) : operand(std::move(operand)) {}
+    RamNegation(std::unique_ptr<RamCondition> op) : operand(std::move(op)) {
+        assert(nullptr != operand && "operand of negation is a null-pointer");
+    }
 
     /** @brief Get operand of negation */
     const RamCondition& getOperand() const {
-        assert(nullptr != operand && "operand of negation is a null-pointer");
         return *operand;
     }
 
@@ -176,6 +179,7 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         operand = map(std::move(operand));
+        assert(nullptr != operand && "operand of negation is a null-pointer");
     }
 
 protected:
@@ -243,6 +247,8 @@ public:
     void apply(const RamNodeMapper& map) override {
         lhs = map(std::move(lhs));
         rhs = map(std::move(rhs));
+        assert(lhs != nullptr && "left-hand side of constraint is a null-pointer");
+        assert(rhs != nullptr && "right-hand side of constraint is a null-pointer");
     }
 
 protected:
@@ -271,7 +277,9 @@ class RamAbstractExistenceCheck : public RamCondition {
 public:
     RamAbstractExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            : relationRef(std::move(relRef)), values(std::move(vals)) {}
+            : relationRef(std::move(relRef)), values(std::move(vals)) {
+        assert(relationRef != nullptr && "Relation reference is a nullptr"); 
+    }
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {
@@ -313,6 +321,7 @@ public:
         for (auto& val : values) {
             val = map(std::move(val));
         }
+        assert(relationRef != nullptr && "Relation reference is a nullptr"); 
     }
 
 protected:
@@ -395,7 +404,9 @@ public:
  */
 class RamEmptinessCheck : public RamCondition {
 public:
-    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {}
+    RamEmptinessCheck(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {
+        assert(relationRef != nullptr && "Relation reference is a nullptr"); 
+    } 
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {
@@ -416,6 +427,7 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
+        assert(relationRef != nullptr && "Relation reference is a nullptr"); 
     }
 
 protected:

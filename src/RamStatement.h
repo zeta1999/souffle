@@ -54,11 +54,12 @@ public:
  */
 class RamRelationStatement : public RamStatement {
 public:
-    RamRelationStatement(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {}
+    RamRelationStatement(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {
+        assert(relationRef != nullptr && "Relation reference is a null-pointer");
+    }
 
     /** @brief Get RAM relation */
     const RamRelation& getRelation() const {
-        assert(relationRef != nullptr && "Relation reference is a null-pointer");
         return *relationRef->get();
     }
 
@@ -226,17 +227,17 @@ public:
             assert(first->get()->getArgTypeQualifier(i) == second->get()->getArgTypeQualifier(i) &&
                     "mismatching type");
         }
+        assert(first != nullptr && "First relation is a null-pointer");
+        assert(second != nullptr && "Second relation is a null-pointer");
     }
 
     /** @brief Get first relation */
     const RamRelation& getFirstRelation() const {
-        assert(first != nullptr && "First relation is a null-pointer");
         return *first->get();
     }
 
     /** @brief Get second relation */
     const RamRelation& getSecondRelation() const {
-        assert(second != nullptr && "Second relation is a null-pointer");
         return *second->get();
     }
 
@@ -357,11 +358,12 @@ protected:
  */
 class RamQuery : public RamStatement {
 public:
-    RamQuery(std::unique_ptr<RamOperation> o) : operation(std::move(o)) {}
+    RamQuery(std::unique_ptr<RamOperation> o) : operation(std::move(o)) {
+        assert(operation && "operation is a nullptr");
+    }
 
     /** @brief Get RAM operation */
     const RamOperation& getOperation() const {
-        assert(operation);
         return *operation;
     }
 
@@ -457,7 +459,7 @@ public:
         }
         for (const auto& cur : statements) {
             (void)cur;
-            assert(cur);
+            assert(cur && "statement is a nullptr");
         }
     }
 
@@ -539,7 +541,9 @@ protected:
  */
 class RamLoop : public RamStatement {
 public:
-    RamLoop(std::unique_ptr<RamStatement> b) : body(std::move(b)) {}
+    RamLoop(std::unique_ptr<RamStatement> b) : body(std::move(b)) {
+        assert(body != nullptr && "Loop body is a null-pointer");
+    }
 
     template <typename... Stmts>
     RamLoop(std::unique_ptr<RamStatement> f, std::unique_ptr<RamStatement> s, std::unique_ptr<Stmts>... rest)
@@ -547,7 +551,6 @@ public:
 
     /** @brief Get loop body */
     const RamStatement& getBody() const {
-        assert(body != nullptr && "Loop body is a null-pointer");
         return *body;
     }
 
@@ -594,11 +597,12 @@ protected:
  */
 class RamExit : public RamStatement {
 public:
-    RamExit(std::unique_ptr<RamCondition> c) : condition(std::move(c)) {}
+    RamExit(std::unique_ptr<RamCondition> c) : condition(std::move(c)) {
+        assert(condition && "condition is a nullptr");
+    }
 
     /** @brief Get exit condition */
     const RamCondition& getCondition() const {
-        assert(condition);
         return *condition;
     }
 
@@ -639,7 +643,7 @@ class RamAbstractLog {
 public:
     RamAbstractLog(std::unique_ptr<RamStatement> stmt, std::string msg)
             : statement(std::move(stmt)), message(std::move(msg)) {
-        assert(statement);
+        assert(statement && "log statement is a nullptr");
     }
 
     std::vector<const RamNode*> getChildNodes() const {
@@ -653,7 +657,6 @@ public:
 
     /** @brief Get logging statement */
     const RamStatement& getStatement() const {
-        assert(statement);
         return *statement;
     }
 
@@ -841,11 +844,12 @@ protected:
  */
 class RamStratum : public RamStatement {
 public:
-    RamStratum(std::unique_ptr<RamStatement> b, const int i) : body(std::move(b)), index(i) {}
+    RamStratum(std::unique_ptr<RamStatement> b, const int i) : body(std::move(b)), index(i) {
+        assert(body != nullptr && "Body of stratum is a null-pointer");
+    }
 
     /** @brief Get stratum body */
     const RamStatement& getBody() const {
-        assert(body != nullptr && "Body of stratum is a null-pointer");
         return *body;
     }
 

@@ -53,7 +53,6 @@ public:
             auto analysis = std::make_unique<Analysis>(Analysis::name);
             analysis->run(*this);
             // Check it hasn't been created by someone else, and insert if not
-            std::lock_guard<std::mutex> guard(analysisLock);
             it = analyses.find(name);
             if (it == analyses.end()) {
                 analyses[name] = std::move(analysis);
@@ -126,9 +125,6 @@ protected:
 
     /* Debug report for logging information */
     DebugReport& debugReport;
-
-    /* TODO (b-scholz): this should disappear with the new interpreter */
-    mutable std::mutex analysisLock;
 };
 
 }  // end of namespace souffle

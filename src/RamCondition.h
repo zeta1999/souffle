@@ -96,26 +96,23 @@ public:
 class RamConjunction : public RamCondition {
 public:
     RamConjunction(std::unique_ptr<RamCondition> l, std::unique_ptr<RamCondition> r)
-            : lhs(std::move(l)), rhs(std::move(r)) {}
+            : lhs(std::move(l)), rhs(std::move(r)) {
+        assert(lhs != nullptr && "left-hand side of conjunction is a nullptr");
+        assert(rhs != nullptr && "right-hand side of conjunction is a nullptr");
+    }
 
     /** @brief Get left-hand side of conjunction */
     const RamCondition& getLHS() const {
-        assert(lhs != nullptr && "left-hand side of conjunction is a nullptr");
         return *lhs;
     }
 
     /** @brief Get right-hand side of conjunction */
     const RamCondition& getRHS() const {
-        assert(rhs != nullptr && "right-hand side of conjunction is a nullptr");
         return *rhs;
     }
 
     void print(std::ostream& os) const override {
-        os << "(";
-        lhs->print(os);
-        os << " AND ";
-        rhs->print(os);
-        os << ")";
+        os << "(" << *lhs << " AND " << *rhs << ")";
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
@@ -166,9 +163,7 @@ public:
     }
 
     void print(std::ostream& os) const override {
-        os << "(NOT ";
-        operand->print(os);
-        os << ")";
+        os << "(NOT " << *operand << ")";
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
@@ -210,25 +205,24 @@ protected:
 class RamConstraint : public RamCondition {
 public:
     RamConstraint(BinaryConstraintOp op, std::unique_ptr<RamExpression> l, std::unique_ptr<RamExpression> r)
-            : op(op), lhs(std::move(l)), rhs(std::move(r)) {}
+            : op(op), lhs(std::move(l)), rhs(std::move(r)) {
+        assert(lhs != nullptr && "left-hand side of constraint is a null-pointer");
+        assert(rhs != nullptr && "right-hand side of constraint is a null-pointer");
+    }
 
     void print(std::ostream& os) const override {
-        os << "(";
-        lhs->print(os);
-        os << " " << toBinaryConstraintSymbol(op) << " ";
-        rhs->print(os);
-        os << ")";
+        os << "(" << *lhs << " ";
+        os << toBinaryConstraintSymbol(op);
+        os << " " << *rhs << ")";
     }
 
     /** @brief Get left-hand side */
     const RamExpression& getLHS() const {
-        assert(lhs != nullptr && "left-hand side of constraint is a null-pointer");
         return *lhs;
     }
 
     /** @brief Get right-hand side */
     const RamExpression& getRHS() const {
-        assert(rhs != nullptr && "right-hand side of constraint is a null-pointer");
         return *rhs;
     }
 
@@ -277,16 +271,20 @@ class RamAbstractExistenceCheck : public RamCondition {
 public:
     RamAbstractExistenceCheck(
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
-            : relationRef(std::move(relRef)), values(std::move(vals)), valuePtr(toPtrVector(values)) {}
+            : relationRef(std::move(relRef)), values(std::move(vals)) {}
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {
         return *relationRef->get();
     }
 
-    /** @brief Get arguments of the tuple/pattern */
-    const std::vector<RamExpression*>& getValues() const {
-        return valuePtr;
+    /**
+     *  @brief Get arguments of the tuple/pattern
+     *  A null pointer element in the vector denotes an unspecified
+     *  pattern for a tuple element.
+     */
+    const std::vector<RamExpression*> getValues() const {
+        return toPtrVector(values);
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
@@ -302,10 +300,7 @@ public:
         for (auto& val : values) {
             val = map(std::move(val));
         }
-        valuePtr = toPtrVector(values);
     }
-
-    mutable int isTotal = 0;
 
 protected:
     /** Relation */
@@ -313,8 +308,6 @@ protected:
 
     /** Pattern -- nullptr if undefined */
     std::vector<std::unique_ptr<RamExpression>> values;
-
-    std::vector<RamExpression*> valuePtr;
 
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAbstractExistenceCheck*>(&node));

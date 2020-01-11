@@ -70,11 +70,12 @@ class RamAbstractParallel {};
 class RamNestedOperation : public RamOperation {
 public:
     RamNestedOperation(std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : nestedOperation(std::move(nested)), profileText(std::move(profileText)) {}
+            : nestedOperation(std::move(nested)), profileText(std::move(profileText)) {
+        assert(nullptr != nestedOperation);
+    }
 
     /** @brief Get nested operation */
     RamOperation& getOperation() const {
-        assert(nullptr != nestedOperation);
         return *nestedOperation;
     }
 
@@ -93,6 +94,7 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         nestedOperation = map(std::move(nestedOperation));
+        assert(nullptr != nestedOperation);
     }
 
 protected:

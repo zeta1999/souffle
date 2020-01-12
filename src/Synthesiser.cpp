@@ -1704,7 +1704,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "using namespace ram;\n";
 
     // synthesise data-structures for relations
-    for (auto rel : prog.getAllRelations()) {
+    for (auto rel : prog.getRelations()) {
         const std::string& datalogName = rel->getName();
 
         bool isProvInfo = datalogName.find("@info") != std::string::npos;
@@ -1772,10 +1772,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
-        visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) { numFreq++; });
+        visitDepthFirst(prog.getMain(), [&](const RamStatement& node) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
-        for (auto rel : prog.getAllRelations()) {
+        for (auto rel : prog.getRelations()) {
             if (!rel->isTemp()) numRead++;
         }
         os << "  size_t reads[" << numRead << "]{};\n";
@@ -1787,12 +1787,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     int relCtr = 0;
     std::set<std::string> storeRelations;
     std::set<std::string> loadRelations;
-    visitDepthFirst(*(prog.getMain()),
+    visitDepthFirst(prog.getMain(),
             [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
-    visitDepthFirst(*(prog.getMain()),
-            [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
+    visitDepthFirst(
+            prog.getMain(), [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
 
-    for (auto rel : prog.getAllRelations()) {
+    for (auto rel : prog.getRelations()) {
         // get some table details
         int arity = rel->getArity();
         int numberOfHeights = rel->getNumberOfHeights();
@@ -1888,7 +1888,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
 
     bool hasIncrement = false;
-    visitDepthFirst(*(prog.getMain()), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
+    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
     // initialize counter
     if (hasIncrement) {
         os << "// -- initialize counter --\n";
@@ -1911,7 +1911,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
         // Store count of relations
         size_t relationCount = 0;
-        for (auto rel : prog.getAllRelations()) {
+        for (auto rel : prog.getRelations()) {
             if (rel->getName()[0] != '@') ++relationCount;
         }
         // Store configuration
@@ -1921,9 +1921,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "[](){\n";
 
         // Record relations created in each stratum
-        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+        visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
             std::map<std::string, size_t> relNames;
-            for (auto rel : prog.getAllRelations()) {
+            for (auto rel : prog.getRelations()) {
                 relNames[rel->getName()] = rel->getArity();
             }
             for (const auto& cur : relNames) {
@@ -1943,7 +1943,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("engine")) {
         std::stringstream ss;
         bool hasAtLeastOneStrata = false;
-        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+        visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
             hasAtLeastOneStrata = true;
             // go to stratum of index in switch
             auto i = stratum.getIndex();
@@ -1961,7 +1961,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
 
     // Set up stratum
-    visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+    visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
         os << "/* BEGIN STRATUM " << stratum.getIndex() << " */\n";
         if (Global::config().has("engine")) {
             // go to the stratum with the max value for int as a suffix if calling the master stratum
@@ -1991,7 +1991,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "\n// -- relation hint statistics --\n";
     os << "if(isHintsProfilingEnabled()) {\n";
     os << "std::cout << \" -- Operation Hint Statistics --\\n\";\n";
-    for (auto rel : prog.getAllRelations()) {
+    for (auto rel : prog.getRelations()) {
         auto name = getRelationName(*rel);
         os << "std::cout << \"Relation " << name << ":\\n\";\n";
         os << name << "->printHintStatistics(std::cout,\"  \");\n";
@@ -2021,7 +2021,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue printAll method
     os << "public:\n";
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) {
+    visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
             std::vector<bool> symbolMask;
             for (auto& cur : store->getRelation().getAttributeTypeQualifiers()) {
@@ -2065,7 +2065,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue loadAll method
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) {
+    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
         // get some table details
         std::vector<bool> symbolMask;
         for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
@@ -2120,13 +2120,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // dump inputs
     os << "public:\n";
     os << "void dumpInputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) { dumpRelation(load.getRelation()); });
+    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) { dumpRelation(load.getRelation()); });
     os << "}\n";  // end of dumpInputs() method
 
     // dump outputs
     os << "public:\n";
     os << "void dumpOutputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamStore& store) { dumpRelation(store.getRelation()); });
+    visitDepthFirst(prog.getMain(), [&](const RamStore& store) { dumpRelation(store.getRelation()); });
     os << "}\n";  // end of dumpOutputs() method
 
     os << "public:\n";
@@ -2139,7 +2139,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         if (Global::config().get("provenance") == "subtreeHeights") {
             // method that populates provenance indices
             os << "void copyIndex() {\n";
-            for (auto rel : prog.getAllRelations()) {
+            for (auto rel : prog.getRelations()) {
                 // get some table details
                 const std::string& cppName = getRelationName(*rel);
                 const std::string& datalogName = rel->getName();

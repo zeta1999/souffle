@@ -147,11 +147,11 @@ void InterpreterEngine::executeMain() {
     if (Global::config().has("verbose")) {
         SignalHandler::instance()->enableLogging();
     }
-    auto* program = tUnit.getProgram()->getMain();
-    auto entry = generator.generateTree(*program);
+    RamStatement& program = tUnit.getProgram()->getMain();
+    auto entry = generator.generateTree(program);
     InterpreterContext ctxt;
 
-    for (auto rel : tUnit.getProgram()->getAllRelations()) {
+    for (auto rel : tUnit.getProgram()->getRelations()) {
         createRelation(*rel, isa->getIndexes(*rel), generator.encodeRelation(*rel));
     }
 
@@ -161,7 +161,7 @@ void InterpreterEngine::executeMain() {
     } else {
         ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
         // Prepare the frequency table for threaded use
-        visitDepthFirst(*program, [&](const RamTupleOperation& node) {
+        visitDepthFirst(program, [&](const RamTupleOperation& node) {
             if (!node.getProfileText().empty()) {
                 frequencies.emplace(node.getProfileText(), std::deque<std::atomic<size_t>>());
             }
@@ -176,7 +176,7 @@ void InterpreterEngine::executeMain() {
         }
         // Store count of relations
         size_t relationCount = 0;
-        for (auto rel : tUnit.getProgram()->getAllRelations()) {
+        for (auto rel : tUnit.getProgram()->getRelations()) {
             if (rel->getName()[0] != '@') {
                 ++relationCount;
                 reads[rel->getName()] = 0;
@@ -186,7 +186,7 @@ void InterpreterEngine::executeMain() {
 
         // Store count of rules
         size_t ruleCount = 0;
-        visitDepthFirst(*program, [&](const RamQuery& rule) { ++ruleCount; });
+        visitDepthFirst(program, [&](const RamQuery& rule) { ++ruleCount; });
         ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
 
         InterpreterContext ctxt;
@@ -1063,7 +1063,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Stratum)
         if (profileEnabled) {
             std::map<std::string, size_t> relNames;
-            for (auto rel : tUnit.getProgram()->getAllRelations()) {
+            for (auto rel : tUnit.getProgram()->getRelations()) {
                 relNames[rel->getName()] = rel->getArity();
             }
             for (const auto& rel : relNames) {

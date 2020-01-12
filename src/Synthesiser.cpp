@@ -106,25 +106,9 @@ const std::string Synthesiser::convertRamIdent(const std::string& name) {
     return id;
 }
 
-/** check whether indexes are disabled */
-bool Synthesiser::areIndexesDisabled() {
-    bool flag = std::getenv("SOUFFLE_USE_NO_INDEX");
-    static bool first = true;
-    if (first && flag) {
-        std::cout << "WARNING: indexes are ignored!\n";
-        first = false;
-    }
-    return flag;
-}
-
 /** Get relation name */
 const std::string Synthesiser::getRelationName(const RamRelation& rel) {
     return "rel_" + convertRamIdent(rel.getName());
-}
-
-/** Get relation name via string */
-const std::string Synthesiser::getRelationName(const std::string& relName) {
-    return "rel_" + convertRamIdent(relName);
 }
 
 /** Get context name */

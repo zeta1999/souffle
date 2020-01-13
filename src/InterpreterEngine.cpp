@@ -358,7 +358,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             exit(1);
         }
         // prepare dynamic call environment
-        size_t arity = cur->getArgCount();
+        size_t arity = cur->getArguments().size();
         ffi_cif cif;
         ffi_type* args[arity];
         void* values[arity];

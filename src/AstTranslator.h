@@ -67,7 +67,13 @@ private:
     const TypeEnvironment* typeEnv = nullptr;
 
     /** RAM program */
-    std::unique_ptr<RamProgram> ramProg;
+    std::unique_ptr<RamStatement> ramMain;
+
+    /** Subroutines */
+    std::map<std::string, std::unique_ptr<RamStatement>> ramSubs;
+
+    /** RAM relations */
+    std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
 
     /**
      * Concrete attribute

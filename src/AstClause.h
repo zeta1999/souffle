@@ -360,7 +360,7 @@ public:
     AstClause* clone() const override {
         auto res = new AstClause();
         res->setSrcLoc(getSrcLoc());
-        if (getExecutionPlan()) {
+        if (getExecutionPlan() != nullptr) {
             res->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(plan->clone()));
         }
         res->head = (head) ? std::unique_ptr<AstAtom>(head->clone()) : nullptr;
@@ -403,7 +403,7 @@ public:
         auto* clone = new AstClause();
         clone->setSrcLoc(getSrcLoc());
         clone->setHead(std::unique_ptr<AstAtom>(getHead()->clone()));
-        if (getExecutionPlan()) {
+        if (getExecutionPlan() != nullptr) {
             clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(getExecutionPlan()->clone()));
         }
         clone->setFixedExecutionPlan(hasFixedExecutionPlan());

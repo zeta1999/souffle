@@ -250,7 +250,7 @@ protected:
         }
 
         for (size_t i = 0; i < nums.size(); i++) {
-            if (err && (*err)[i]) {
+            if ((err != nullptr) && (*err)[i]) {
                 args.push_back("_");
             } else {
                 if (*rel->getAttrType(i) == 's') {

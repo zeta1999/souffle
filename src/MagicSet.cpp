@@ -160,11 +160,11 @@ bool isBindingConstraint(AstArgument* lhs, AstArgument* rhs, std::set<std::strin
     std::string rhs_name = getString(rhs);
 
     // only want to check variables we have not bound yet
-    if (dynamic_cast<AstVariable*>(lhs) && (boundArgs.find(lhs_name) == boundArgs.end())) {
+    if ((dynamic_cast<AstVariable*>(lhs) != nullptr) && (boundArgs.find(lhs_name) == boundArgs.end())) {
         // return true if the rhs is a bound variable or a constant
-        if (dynamic_cast<AstVariable*>(rhs) && (boundArgs.find(rhs_name) != boundArgs.end())) {
+        if ((dynamic_cast<AstVariable*>(rhs) != nullptr) && (boundArgs.find(rhs_name) != boundArgs.end())) {
             return true;
-        } else if (dynamic_cast<AstConstant*>(rhs)) {
+        } else if (dynamic_cast<AstConstant*>(rhs) != nullptr) {
             return true;
         }
     }
@@ -1185,7 +1185,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // set the name of each IDB pred in the clause to be the adorned version
             int atomsSeen = 0;
             for (AstLiteral* lit : newClause->getBodyLiterals()) {
-                if (dynamic_cast<AstAtom*>(lit)) {
+                if (dynamic_cast<AstAtom*>(lit) != nullptr) {
                     auto* bodyAtom = dynamic_cast<AstAtom*>(lit);
                     AstRelationIdentifier atomName = bodyAtom->getName();
                     // note that all atoms in the original clause were adorned,
@@ -1214,7 +1214,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 AstLiteral* currentLiteral = body[i];
 
                 // only care about atoms in the body
-                if (dynamic_cast<AstAtom*>(currentLiteral)) {
+                if (dynamic_cast<AstAtom*>(currentLiteral) != nullptr) {
                     auto* atom = dynamic_cast<AstAtom*>(currentLiteral);
                     AstRelationIdentifier atomName = atom->getName();
 

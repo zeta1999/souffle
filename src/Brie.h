@@ -783,14 +783,14 @@ private:
      */
     static void merge(const Node* parent, Node*& trg, const Node* src, int levels) {
         // if other side is null => done
-        if (!src) {
+        if (src == nullptr) {
             return;
         }
 
         // if the trg sub-tree is empty, clone the corresponding branch
         if (trg == nullptr) {
             trg = clone(src, levels);
-            if (trg) {
+            if (trg != nullptr) {
                 trg->parent = parent;
             }
             return;  // done
@@ -958,7 +958,7 @@ public:
             while (level > 0 && node) {
                 // search for next child
                 while (x < NUM_CELLS) {
-                    if (node->cell[x].ptr) {
+                    if (node->cell[x].ptr != nullptr) {
                         break;
                     }
                     x++;
@@ -984,7 +984,7 @@ public:
             }
 
             // check whether it is the end of range
-            if (!node) {
+            if (node == nullptr) {
                 return *this;
             }
 
@@ -1253,7 +1253,7 @@ private:
      */
     static Node* clone(const Node* node, int level) {
         // support null-pointers
-        if (!node) {
+        if (node == nullptr) {
             return nullptr;
         }
 
@@ -1272,7 +1272,7 @@ private:
         // for inner nodes clone each child
         for (int i = 0; i < NUM_CELLS; i++) {
             auto cur = clone(node->cell[i].ptr, level - 1);
-            if (cur) {
+            if (cur != nullptr) {
                 cur->parent = res;
             }
             res->cell[i].ptr = cur;
@@ -1504,7 +1504,7 @@ public:
 #endif
 
         value_t old = val.fetch_or(bit, std::memory_order::memory_order_relaxed);
-        return !(old & bit);
+        return (old & bit) == 0u;
     }
 
     /**

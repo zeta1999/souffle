@@ -62,7 +62,7 @@ void MainConfig::processArgs(int argc, char** argv, const std::string& header, c
             // print the short form name and the argument parameter
             length = 0;
             ss << "\t";
-            if (isalpha(opt.shortName)) {
+            if (isalpha(opt.shortName) != 0) {
                 ss << "-" << opt.shortName;
                 if (!opt.argument.empty()) {
                     ss << "<" << opt.argument << ">";
@@ -127,7 +127,7 @@ void MainConfig::processArgs(int argc, char** argv, const std::string& header, c
                 continue;
             }
             // convert the main option to a plain old getopt option and put it in the array
-            longNames[i] = (option){opt.longName.c_str(), (!opt.argument.empty()), nullptr, opt.shortName};
+            longNames[i] = {opt.longName.c_str(), opt.argument.empty() ? 0 : 1, nullptr, opt.shortName};
             // append the short name of the option to the string of short names
             shortNames += opt.shortName;
             // indicating with a ':' if it takes an argument
@@ -138,7 +138,7 @@ void MainConfig::processArgs(int argc, char** argv, const std::string& header, c
             ++i;
         }
         // the terminal option, needs to be null
-        longNames[i] = {nullptr, false, nullptr, 0};
+        longNames[i] = {nullptr, 0, nullptr, 0};
 
         // use getopt to process the arguments given to the command line, with the parameters being the
         // short and long names from above
@@ -155,7 +155,7 @@ void MainConfig::processArgs(int argc, char** argv, const std::string& header, c
             assert(iter != optionTable.end() && "unexpected case in getopt");
             // define the value for the option in the global configuration as its argument or an empty string
             //  if no argument exists
-            std::string arg = (optarg) ? std::string(optarg) : std::string();
+            std::string arg = optarg != nullptr ? std::string(optarg) : std::string();
             // if the option allows multiple arguments
             if (iter->second->takesMany) {
                 // set the value of the option in the global config to the concatenation of its previous

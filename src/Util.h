@@ -125,8 +125,8 @@ inline bool isNumber(const char* str) {
         return false;
     }
 
-    while (*str) {
-        if (!isdigit(*str)) {
+    while (*str != 0) {
+        if (isdigit(*str) == 0) {
             return false;
         }
         str++;
@@ -1049,7 +1049,7 @@ inline bool existDir(const std::string& name) {
  * Check whether a given file exists and it is an executable
  */
 inline bool isExecutable(const std::string& name) {
-    return existFile(name) && !access(name.c_str(), X_OK);
+    return existFile(name) && (access(name.c_str(), X_OK) == 0);
 }
 
 /**
@@ -1057,7 +1057,7 @@ inline bool isExecutable(const std::string& name) {
  */
 inline std::string which(const std::string& name) {
     char buf[PATH_MAX];
-    if (::realpath(name.c_str(), buf) && isExecutable(buf)) {
+    if ((::realpath(name.c_str(), buf) != nullptr) && isExecutable(buf)) {
         return buf;
     }
     const char* syspath = ::getenv("PATH");
@@ -1069,7 +1069,7 @@ inline std::string which(const std::string& name) {
     std::string sub;
     while (std::getline(sstr, sub, ':')) {
         std::string path = sub + "/" + name;
-        if (isExecutable(path) && realpath(path.c_str(), buf)) {
+        if (isExecutable(path) && (realpath(path.c_str(), buf) != nullptr)) {
             return buf;
         }
     }
@@ -1257,7 +1257,7 @@ inline std::string stringify(const std::string& input) {
 /** Valid C++ identifier, note that this does not ensure the uniqueness of identifiers returned. */
 inline std::string identifier(std::string id) {
     for (size_t i = 0; i < id.length(); i++) {
-        if ((!isalpha(id[i]) && i == 0) || (!isalnum(id[i]) && id[i] != '_')) {
+        if (((isalpha(id[i]) == 0) && i == 0) || ((isalnum(id[i]) == 0) && id[i] != '_')) {
             id[i] = '_';
         }
     }
@@ -1480,7 +1480,7 @@ public:
  * disabled;
  */
 inline bool isHintsProfilingEnabled() {
-    return std::getenv("SOUFFLE_PROFILE_HINTS");
+    return std::getenv("SOUFFLE_PROFILE_HINTS") != nullptr;
 }
 
 /**

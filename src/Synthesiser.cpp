@@ -83,14 +83,14 @@ const std::string Synthesiser::convertRamIdent(const std::string& name) {
     // strip leading numbers
     unsigned int i;
     for (i = 0; i < name.length(); ++i) {
-        if (isalnum(name.at(i)) || name.at(i) == '_') {
+        if ((isalnum(name.at(i)) != 0) || name.at(i) == '_') {
             break;
         }
     }
     std::string id;
     for (auto ch : std::to_string(identifiers.size() + 1) + '_' + name.substr(i)) {
         // alphanumeric characters are allowed
-        if (isalnum(ch)) {
+        if (isalnum(ch) != 0) {
             id += ch;
         }
         // all other characters are replaced by an underscore, except when
@@ -136,7 +136,7 @@ std::string Synthesiser::toIndex(SearchSignature key) {
     tmp << "<";
     int i = 0;
     while (key != 0) {
-        if (key % 2) {
+        if ((key % 2) != 0u) {
             tmp << i;
             if (key > 1) {
                 tmp << ",";
@@ -1815,7 +1815,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             std::string tupleType = "std::array<const char *," + std::to_string(arity) + ">{{";
             std::string tupleName = "std::array<const char *," + std::to_string(arity) + ">{{";
 
-            if (rel->getArity()) {
+            if (rel->getArity() != 0u) {
                 tupleType += "\"" + rel->getArgTypeQualifier(0) + "\"";
                 for (int i = 1; i < arity; i++) {
                     tupleType += ",\"" + rel->getArgTypeQualifier(i) + "\"";

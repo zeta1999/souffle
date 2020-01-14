@@ -25,30 +25,59 @@ enum class FunctorOp {
     /** Unary Functor Operators */
     ORD,       // ordinal number of a string
     STRLEN,    // length of a string
-    NEG,       // numeric negation
-    BNOT,      // bitwise negation
+    NEG,       // Signed numeric negation
+    FNEG,      // Float numeric negation
+    BNOT,      // Signed bitwise negation
+    UBNOT,     // Unsigned bitwise negation
     LNOT,      // logical negation
     TONUMBER,  // convert string to number
     TOSTRING,  // convert number to string
-
+    ITOU,      // convert signed number to unsigned
+    UTOI,      // convert unsigned number to signed
+    ITOF,      // convert signed number to float
+    FTOI,      // convert float number to signed number.
+    UTOF,      // convert unsigned number to a float.
+    FTOU,      // convert float to unsigned number.
+    
     /** Binary Functor Operators */
     ADD,   // addition
     SUB,   // subtraction
     MUL,   // multiplication
     DIV,   // division
     EXP,   // exponent
+    MAX,   // max of two numbers
+    MIN,   // min of two numbers
     MOD,   // modulus
     BAND,  // bitwise and
     BOR,   // bitwise or
     BXOR,  // bitwise exclusive or
     LAND,  // logical and
     LOR,   // logical or
-    MAX,   // max of two numbers
-    MIN,   // min of two numbers
+    UADD,   // addition 
+    USUB,   // subtraction
+    UMUL,   // multiplication
+    UDIV,   // division
+    UEXP,   // exponent
+    UMAX,   // max of two numbers
+    UMIN,   // min of two numbers
+    UMOD,   // modulus
+    UBAND,  // bitwise and
+    UBOR,   // bitwise or
+    UBXOR,  // bitwise exclusive or
+    ULAND,  // logical and
+    ULOR,   // logical or
+    FADD,   // addition
+    FSUB,   // subtraction
+    FMUL,   // multiplication
+    FDIV,   // division
+    FEXP,   // exponent
+    FMAX,   // max of two floats
+    FMIN,   // min of two floats
+    
     CAT,   // string concatenation
 
     /** Ternary Functor Operators */
-    SUBSTR,  // addition
+    SUBSTR,  // substring
 
     /** Undefined */
     __UNDEFINED__,  // undefined operator
@@ -63,10 +92,18 @@ inline bool isValidFunctorOpArity(FunctorOp op, size_t arity) {
         case FunctorOp::ORD:
         case FunctorOp::STRLEN:
         case FunctorOp::NEG:
+        case FunctorOp::FNEG:
         case FunctorOp::BNOT:
+        case FunctorOp::UBNOT:
         case FunctorOp::LNOT:
         case FunctorOp::TONUMBER:
         case FunctorOp::TOSTRING:
+        case FunctorOp::ITOU:
+        case FunctorOp::UTOI:
+        case FunctorOp::ITOF:
+        case FunctorOp::FTOI:
+        case FunctorOp::UTOF:
+        case FunctorOp::FTOU:
             return arity == 1;
 
         /** Binary Functor Operators */
@@ -81,6 +118,22 @@ inline bool isValidFunctorOpArity(FunctorOp op, size_t arity) {
         case FunctorOp::BXOR:
         case FunctorOp::LAND:
         case FunctorOp::LOR:
+        case FunctorOp::UADD:
+        case FunctorOp::USUB:
+        case FunctorOp::UMUL:
+        case FunctorOp::UDIV:
+        case FunctorOp::UEXP:
+        case FunctorOp::UMOD:
+        case FunctorOp::UBAND:
+        case FunctorOp::UBOR:
+        case FunctorOp::UBXOR:
+        case FunctorOp::ULAND:
+        case FunctorOp::ULOR:
+        case FunctorOp::FADD:
+        case FunctorOp::FSUB:
+        case FunctorOp::FMUL:
+        case FunctorOp::FDIV:
+        case FunctorOp::FEXP:
             return arity == 2;
 
         /** Ternary Functor Operators */
@@ -90,6 +143,10 @@ inline bool isValidFunctorOpArity(FunctorOp op, size_t arity) {
         /** Non-fixed */
         case FunctorOp::MAX:
         case FunctorOp::MIN:
+        case FunctorOp::UMAX:
+        case FunctorOp::UMIN:
+        case FunctorOp::FMAX:
+        case FunctorOp::FMIN:            
         case FunctorOp::CAT:
             return arity >= 2;
 

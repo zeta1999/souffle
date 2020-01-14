@@ -272,13 +272,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
             case FunctorOp::TOSTRING:
                 return getSymbolTable().lookup(std::to_string(execute(node->getChild(0), ctxt)));
+                
             case FunctorOp::ITOU: // TODO
             case FunctorOp::UTOI: 
             case FunctorOp::ITOF:
             case FunctorOp::FTOI:
             case FunctorOp::UTOF:
             case FunctorOp::FTOU:
-                assert(false && "TODO");
+                assert(false && "TODO - not implemented");
                 
             /** Binary Functor Operators */
             case FunctorOp::ADD:

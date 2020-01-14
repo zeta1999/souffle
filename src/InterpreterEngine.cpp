@@ -250,14 +250,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             case FunctorOp::STRLEN:
                 return getSymbolTable().resolve(execute(node->getChild(0), ctxt)).size();
             case FunctorOp::NEG:
-                return -execute(node->getChild(0), ctxt);
             case FunctorOp::FNEG:
                 return -execute(node->getChild(0), ctxt);
             case FunctorOp::BNOT:
-                return ~execute(node->getChild(0), ctxt);
             case FunctorOp::UBNOT:
                 return ~execute(node->getChild(0), ctxt);
             case FunctorOp::LNOT:
+            case FunctorOp::ULNOT:
                 return !execute(node->getChild(0), ctxt);
             case FunctorOp::TONUMBER: {
                 RamDomain result = 0;

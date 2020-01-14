@@ -29,7 +29,8 @@ enum class FunctorOp {
     FNEG,      // Float numeric negation
     BNOT,      // Signed bitwise negation
     UBNOT,     // Unsigned bitwise negation
-    LNOT,      // logical negation
+    LNOT,      // Signed logical negation
+    ULNOT,     // Unsigned logical negation
     TONUMBER,  // convert string to number
     TOSTRING,  // convert number to string
     ITOU,      // convert signed number to unsigned

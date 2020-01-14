@@ -251,7 +251,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return getSymbolTable().resolve(execute(node->getChild(0), ctxt)).size();
             case FunctorOp::NEG:
                 return -execute(node->getChild(0), ctxt);
+            case FunctorOp::FNEG:
+                return -execute(node->getChild(0), ctxt);
             case FunctorOp::BNOT:
+                return ~execute(node->getChild(0), ctxt);
+            case FunctorOp::UBNOT:
                 return ~execute(node->getChild(0), ctxt);
             case FunctorOp::LNOT:
                 return !execute(node->getChild(0), ctxt);
@@ -269,48 +273,76 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
             case FunctorOp::TOSTRING:
                 return getSymbolTable().lookup(std::to_string(execute(node->getChild(0), ctxt)));
+            case FunctorOp::ITOU: // TODO
+            case FunctorOp::UTOI: 
+            case FunctorOp::ITOF:
+            case FunctorOp::FTOI:
+            case FunctorOp::UTOF:
+            case FunctorOp::FTOU:
+                assert(false && "TODO");
+                
             /** Binary Functor Operators */
-            case FunctorOp::ADD: {
+            case FunctorOp::ADD:
+            case FunctorOp::UADD:
+            case FunctorOp::FADD:{
                 BINARY_OP(+);
             }
-            case FunctorOp::SUB: {
+            case FunctorOp::SUB:
+            case FunctorOp::USUB:
+            case FunctorOp::FSUB: {
                 BINARY_OP(-);
             }
-            case FunctorOp::MUL: {
+            case FunctorOp::MUL:
+            case FunctorOp::UMUL:
+            case FunctorOp::FMUL: {
                 BINARY_OP(*);
             }
-            case FunctorOp::DIV: {
+            case FunctorOp::DIV:
+            case FunctorOp::UDIV:
+            case FunctorOp::FDIV: {
                 BINARY_OP(/);
             }
-            case FunctorOp::EXP: {
+            case FunctorOp::EXP:
+            case FunctorOp::UEXP:
+            case FunctorOp::FEXP: {
                 return std::pow(execute(node->getChild(0), ctxt), execute(node->getChild(1), ctxt));
             }
-            case FunctorOp::MOD: {
+            case FunctorOp::MOD:
+            case FunctorOp::UMOD: {
                 BINARY_OP(%);
             }
-            case FunctorOp::BAND: {
+            case FunctorOp::BAND:
+            case FunctorOp::UBAND: {
                 BINARY_OP(&);
             }
-            case FunctorOp::BOR: {
+            case FunctorOp::BOR:
+            case FunctorOp::UBOR: {
                 BINARY_OP(|);
             }
-            case FunctorOp::BXOR: {
+            case FunctorOp::BXOR:
+            case FunctorOp::UBXOR:{
                 BINARY_OP(^);
             }
-            case FunctorOp::LAND: {
+            case FunctorOp::LAND:
+            case FunctorOp::ULAND:{
                 BINARY_OP(&&);
             }
-            case FunctorOp::LOR: {
+            case FunctorOp::LOR:
+            case FunctorOp::ULOR: {
                 BINARY_OP(||);
             }
-            case FunctorOp::MAX: {
+            case FunctorOp::MAX:
+            case FunctorOp::UMAX:
+            case FunctorOp::FMAX: {
                 auto result = execute(node->getChild(0), ctxt);
                 for (size_t i = 1; i < args.size(); i++) {
                     result = std::max(result, execute(node->getChild(i), ctxt));
                 }
                 return result;
             }
-            case FunctorOp::MIN: {
+            case FunctorOp::MIN:
+            case FunctorOp::UMIN:
+            case FunctorOp::FMIN: {
                 auto result = execute(node->getChild(0), ctxt);
                 for (size_t i = 1; i < args.size(); i++) {
                     result = std::min(result, execute(node->getChild(i), ctxt));

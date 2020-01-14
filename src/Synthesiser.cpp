@@ -27,6 +27,7 @@
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamTranslationUnit.h"
+#include "RamUtils.h"
 #include "RamVisitor.h"
 #include "RelationRepresentation.h"
 #include "SymbolTable.h"

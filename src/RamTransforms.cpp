@@ -25,6 +25,7 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
+#include "RamUtils.h"
 #include "RamVisitor.h"
 #include <algorithm>
 #include <list>
@@ -75,18 +76,20 @@ bool ReorderConditionsTransformer::reorderConditions(RamProgram& program) {
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition* condition = &filter->getCondition();
-                std::vector<std::unique_ptr<RamCondition>> condList = toConjunctionList(condition);
-                std::vector<const RamCondition*> sortedConds;
+                std::vector<std::unique_ptr<RamCondition>> sortedConds,
+                        condList = toConjunctionList(condition);
                 for (auto& cond : condList) {
-                    sortedConds.push_back(cond.get());
+                    sortedConds.emplace_back(cond.get());
                 }
                 std::sort(sortedConds.begin(), sortedConds.end(),
-                        [&](const RamCondition* a, const RamCondition* b) {
-                            return rca->getComplexity(a) < rca->getComplexity(b);
+                        [&](std::unique_ptr<RamCondition>& a, std::unique_ptr<RamCondition>& b) {
+                            return rca->getComplexity(a.get()) < rca->getComplexity(b.get());
                         });
 
                 if (!std::equal(sortedConds.begin(), sortedConds.end(), condList.begin(),
-                            [](const RamCondition* a, const auto& b) { return *a == *b; })) {
+                            [](std::unique_ptr<RamCondition>& a, std::unique_ptr<RamCondition>& b) {
+                                return *a == *b;
+                            })) {
                     changed = true;
                     node = std::make_unique<RamFilter>(
                             std::unique_ptr<RamCondition>(toCondition(sortedConds)),
@@ -111,13 +114,13 @@ bool CollapseFiltersTransformer::collapseFilters(RamProgram& program) {
                 bool canCollapse = false;
 
                 // storing conditions for collapsing
-                std::vector<const RamCondition*> conditions;
+                std::vector<std::unique_ptr<RamCondition>> conditions;
 
                 const RamFilter* prevFilter = filter;
-                conditions.emplace_back(&filter->getCondition());
+                conditions.emplace_back((RamCondition*)&filter->getCondition());
                 while (auto* nextFilter = dynamic_cast<RamFilter*>(&prevFilter->getOperation())) {
                     canCollapse = true;
-                    conditions.emplace_back(&nextFilter->getCondition());
+                    conditions.emplace_back((RamCondition*)&nextFilter->getCondition());
                     prevFilter = nextFilter;
                 }
 

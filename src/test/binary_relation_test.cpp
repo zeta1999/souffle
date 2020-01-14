@@ -492,8 +492,8 @@ TEST(EqRelTest, IterPartition) {
     EXPECT_TRUE(chunks.size() > 0);
 
     for (auto chunk : chunks) {
-        for (auto x = chunk.begin(); x != chunk.end(); ++x) {
-            values.push_back(std::make_pair((*x)[0], (*x)[1]));
+        for (auto x : chunk) {
+            values.push_back(std::make_pair(x[0], x[1]));
         }
     }
 
@@ -511,8 +511,8 @@ TEST(EqRelTest, IterPartition) {
 
     chunks = br.partition(400);
     for (auto chunk : chunks) {
-        for (auto x = chunk.begin(); x != chunk.end(); ++x) {
-            values.push_back(std::make_pair((*x)[0], (*x)[1]));
+        for (auto x : chunk) {
+            values.push_back(std::make_pair(x[0], x[1]));
         }
     }
 

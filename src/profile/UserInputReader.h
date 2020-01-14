@@ -202,7 +202,7 @@ public:
     void addHistory(std::string hist) {
         if (history.size() > 0) {
             // only add to history if the last command wasn't the same
-            if (hist.compare(history.at(history.size() - 1)) == 0) {
+            if (hist == history.at(history.size() - 1)) {
                 return;
             }
         }

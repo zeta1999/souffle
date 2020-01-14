@@ -118,7 +118,7 @@ private:
     /** split string */
     static std::vector<std::string> split(std::string str, std::string split_str) {
         // repeat value when splitting so "a   b" -> ["a","b"] not ["a","","","","b"]
-        bool repeat = (split_str.compare(" ") == 0);
+        bool repeat = (split_str == " ");
 
         std::vector<std::string> elems;
 

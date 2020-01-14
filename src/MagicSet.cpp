@@ -41,7 +41,7 @@ class SymbolTable;
 // checks whether the adorned version of two predicates is equal
 bool isEqualAdornment(const AstRelationIdentifier& pred1, const std::string& adorn1,
         const AstRelationIdentifier& pred2, const std::string& adorn2) {
-    return ((pred1 == pred2) && (adorn1.compare(adorn2) == 0));
+    return ((pred1 == pred2) && (adorn1 == adorn2));
 }
 
 // checks whether an element is contained within a set
@@ -63,7 +63,7 @@ bool contains(std::set<AdornedPredicate> adornedPredicates, const AstRelationIde
 
 // checks whether a string begins with a given string
 bool hasPrefix(const std::string& str, const std::string& prefix) {
-    if (str.substr(0, prefix.size()).compare(prefix) == 0) {
+    if (str.substr(0, prefix.size()) == prefix) {
         return true;
     }
     return false;

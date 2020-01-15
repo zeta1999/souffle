@@ -27,6 +27,7 @@
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamTranslationUnit.h"
+#include "RamUtils.h"
 #include "RamVisitor.h"
 #include "RelationRepresentation.h"
 #include "SymbolTable.h"
@@ -283,7 +284,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // discharge conditions that do not require a context
                 if (freeOfCtx.size() > 0) {
                     out << "if(";
-                    visit(*toCondition(toConstPtrVector(freeOfCtx)), out);
+                    visit(*toCondition(freeOfCtx), out);
                     out << ") {\n";
                 }
             }
@@ -313,7 +314,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (isParallel) {
                 if (requireCtx.size() > 0) {
                     preamble << "if(";
-                    visit(*toCondition(toConstPtrVector(requireCtx)), preamble);
+                    visit(*toCondition(requireCtx), preamble);
                     preamble << ") {\n";
                     visit(*next, out);
                     out << "}\n";
@@ -324,7 +325,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << preamble.str();
                 if (requireCtx.size() > 0) {
                     out << "if(";
-                    visit(*toCondition(toConstPtrVector(requireCtx)), out);
+                    visit(*toCondition(requireCtx), out);
                     out << ") {\n";
                     visit(*next, out);
                     out << "}\n";

@@ -295,11 +295,6 @@ public:
     }
 };
 
-/** @brief Determines if an expression is undefined */
-inline bool isRamUndefValue(const RamExpression* expr) {
-    return nullptr != dynamic_cast<const RamUndefValue*>(expr);
-}
-
 /**
  * @class RamPackRecord
  * @brief Packs a record's arguments into a reference

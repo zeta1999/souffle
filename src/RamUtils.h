@@ -28,6 +28,11 @@ inline bool isRamUndefValue(const RamExpression* expr) {
     return nullptr != dynamic_cast<const RamUndefValue*>(expr);
 }
 
+/** @brief Determines if a condition represents true */
+inline bool isRamTrue(const RamCondition* cond) {
+    return nullptr != dynamic_cast<const RamTrue*>(cond);
+}
+
 /**
  * @brief Convert terms of a conjunction to a list
  * @param conds A RAM condition

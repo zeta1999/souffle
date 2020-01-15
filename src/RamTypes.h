@@ -19,6 +19,7 @@
 #include <limits>
 
 #include <cstdint>
+#include <cstring>
 #include <type_traits>
 
 namespace souffle {
@@ -54,7 +55,48 @@ static_assert(std::is_integral<RamUnsigned>::value && !std::is_signed<RamUnsigne
               "RamUnsigned must be represented by an unsigned type.");
 static_assert(std::is_floating_point<RamFloat>::value
               && sizeof(RamFloat) * 8 == RAM_DOMAIN_SIZE,
-              "RamFloat must be represented by a floating point and have the same size as other types.");    
+              "RamFloat must be represented by a floating point and have the same size as other types.");
+
+
+/** 
+In C++20 there will be a new way to cast between types by reinterpreting bits (std::bit_cast), but as of January 2020 it is not yet supported by any compiler.
+**/
+// Conversions: Signed <-> Unsigned
+
+
+template <class From, class To>
+To RamBitCast (From RamElement) {
+    To elementAfterConversion;
+    std::memcpy(&elementAfterConversion, &RamElement, sizeof(To));
+    return elementAfterConversion;
+}
+
+inline RamUnsigned RamSingnedToUnsigned(RamSigned num) {
+    return *(reinterpret_cast<RamUnsigned*>(&num));
+}
+inline RamSigned RamUnsignedToSigned(RamUnsigned num) {
+    return *(reinterpret_cast<RamSigned*>(&num));
+}
+
+// Conversions: Unsigned <-> Float
+inline RamFloat RamUnsignedToFloat(RamUnsigned num) {
+    return *(reinterpret_cast<RamFloat*>(&num));
+}
+inline RamUnsigned RamFloatToUnsigned(RamFloat num) {
+    return *(reinterpret_cast<RamUnsigned*>(&num));
+}
+
+// Conversions: Float <-> Signed
+inline RamFloat RamSignedToFloat(RamSigned num) {
+    return *(reinterpret_cast<RamFloat*>(&num));
+}
+
+inline RamSigned RamFloatToSigned(RamFloat num) {
+    return *(reinterpret_cast<RamSigned*>(&num));
+}
+
+
+
     
 /** lower and upper boundaries for the ram domain **/
 #define MIN_RAM_DOMAIN (std::numeric_limits<RamDomain>::min())

@@ -101,6 +101,7 @@ souffle_sources = \
               GraphUtils.h                              \
               IODirectives.h                            \
               IOSystem.h                                \
+              RamIndexAnalysis.cpp  RamIndexAnalysis.h  \
               InlineRelationsTransformer.cpp            \
               LogStatement.h                            \
 	      InterpreterIndex.h            InterpreterIndex.cpp	\
@@ -111,6 +112,7 @@ souffle_sources = \
               PrecedenceGraph.cpp   PrecedenceGraph.h   \
               ProfileEvent.h                            \
               ProvenanceTransformer.cpp                 \
+              RamAnalysis.h                             \
 	      InterpreterContext.h                      \
 	      InterpreterEngine.cpp InterpreterEngine.h \
 	      InterpreterGenerator.h		        \
@@ -119,13 +121,10 @@ souffle_sources = \
 	      InterpreterProgInterface.h                \
 	      InterpreterPreamble.h			\
 	      InterpreterRecords.h         InterpreterRecords.cpp     \
-              RamAnalysis.h                             \
               RamComplexityAnalysis.cpp  RamComplexityAnalysis.h  \
-              RamCondition.h                            \
-              RamExpression.h                           \
-              RamIndexAnalysis.cpp  RamIndexAnalysis.h  \
-              RamNode.h                                 \
               RamLevelAnalysis.cpp  RamLevelAnalysis.h  \
+              RamCondition.h                            \
+              RamNode.h                                 \
               RamOperation.h                            \
               RamProgram.h                              \
               RamRelation.h                             \
@@ -133,7 +132,7 @@ souffle_sources = \
               RamTransformer.cpp    RamTransformer.h    \
               RamTransforms.cpp     RamTransforms.h     \
               RamTranslationUnit.h                      \
-              RamTypes.h                                \
+              RamExpression.h                           \
               RamUtils.h                                \
               RamVisitor.h                              \
               ReadStream.h                              \
@@ -198,6 +197,7 @@ soufflepublic_HEADERS = \
                         PiggyList.h             \
                         ProfileDatabase.h       \
                         ProfileEvent.h          \
+                        RamTypes.h              \
                         ReadStream.h            \
                         ReadStreamCSV.h         \
                         SignalHandler.h         \

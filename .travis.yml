@@ -101,11 +101,11 @@ jobs:
     env:
     - "clang-setup"
     - *clang_environment
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
+    - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
   - <<: *osxclang
     env:
     - "clang-setup"
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
+    - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
 
 # Testing stage with 64bit RamDomains (-j8,-c -j8)
   - <<: *linuxgcc
@@ -119,14 +119,14 @@ jobs:
   - <<: *linuxgcc
     before_script: ".travis/init_test_swig.sh"
     env:
-    - "gcc-setup"
+    - "gcc-swig"
     - *gcc_environment
-    - SOUFFLE_CATEGORY=Unit,Swig,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Swig SOUFFLE_CONFS="-j8,-c -j8"
   - <<: *osxgcc
     before_script: ".travis/init_test_swig.sh"
     env:
-    - "gcc-setup"
-    - SOUFFLE_CATEGORY=Unit,Swig,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
+    - "gcc-swig"
+    - SOUFFLE_CATEGORY=Swig SOUFFLE_CONFS="-j8,-c -j8"
 
 # Testing stage with engine option (-c -j8 -efile, FastEvaluation and select others)
   - <<: *linuxgcc

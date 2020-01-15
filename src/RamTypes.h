@@ -58,41 +58,28 @@ static_assert(std::is_floating_point<RamFloat>::value
               "RamFloat must be represented by a floating point and have the same size as other types.");
 
 
+
+template<typename T>
+constexpr bool isRamType = (std::is_same<T, RamDomain>::value
+                            || std::is_same<T, RamSigned>::value
+                            || std::is_same<T, RamUnsigned>::value
+                            || std::is_same<T, RamFloat>::value);
+
 /** 
-In C++20 there will be a new way to cast between types by reinterpreting bits (std::bit_cast), but as of January 2020 it is not yet supported by any compiler.
+In C++20 there will be a new way to cast between types by reinterpreting bits (std::bit_cast), 
+but as of January 2020 it is not yet supported.
+
+reinterpret_cast won't work here, because integral <-> float conversions are unsafe.
 **/
-// Conversions: Signed <-> Unsigned
 
-
-template <class From, class To>
-To RamBitCast (From RamElement) {
+template <typename From, typename To>
+inline To RamBitCast(From RamElement) {
+    static_assert(isRamType<From> && isRamType<To>,
+                  "Bit casting should only be used on Ram Types.");
+    
     To elementAfterConversion;
     std::memcpy(&elementAfterConversion, &RamElement, sizeof(To));
     return elementAfterConversion;
-}
-
-inline RamUnsigned RamSingnedToUnsigned(RamSigned num) {
-    return *(reinterpret_cast<RamUnsigned*>(&num));
-}
-inline RamSigned RamUnsignedToSigned(RamUnsigned num) {
-    return *(reinterpret_cast<RamSigned*>(&num));
-}
-
-// Conversions: Unsigned <-> Float
-inline RamFloat RamUnsignedToFloat(RamUnsigned num) {
-    return *(reinterpret_cast<RamFloat*>(&num));
-}
-inline RamUnsigned RamFloatToUnsigned(RamFloat num) {
-    return *(reinterpret_cast<RamUnsigned*>(&num));
-}
-
-// Conversions: Float <-> Signed
-inline RamFloat RamSignedToFloat(RamSigned num) {
-    return *(reinterpret_cast<RamFloat*>(&num));
-}
-
-inline RamSigned RamFloatToSigned(RamFloat num) {
-    return *(reinterpret_cast<RamSigned*>(&num));
 }
 
 

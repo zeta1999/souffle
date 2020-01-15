@@ -138,20 +138,20 @@ jobs:
 # Testing stage (-j8,-c -j8)
   - <<: *linuxgcc
     env:
-    - "gcc-evaluation"
+    - "gcc-fast-evaluation"
     - *gcc_environment
-    - SOUFFLE_CATEGORY=Evaluation SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
 
 # Testing stage for clang without OpenMP (,-c)
   - <<: *linuxclang
     env:
-    - "clang-evaluation"
+    - "clang-fast-evaluation"
     - *clang_environment
-    - SOUFFLE_CATEGORY=Evaluation SOUFFLE_CONFS=",-c"
+    - SOUFFLE_CATEGORY=FastEvaluation SOUFFLE_CONFS=",-c"
   - <<: *osxclang
     env:
-    - "clang-evaluation"
-    - SOUFFLE_CATEGORY=Evaluation SOUFFLE_CONFS=",-c"
+    - "clang-fast-evaluation"
+    - SOUFFLE_CATEGORY=FastEvaluation SOUFFLE_CONFS=",-c"
 
 # Packaging stage
   # Test make install installs a working souffle.

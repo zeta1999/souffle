@@ -133,6 +133,7 @@ souffle_sources = \
               RamTransforms.cpp     RamTransforms.h     \
               RamTranslationUnit.h                      \
               RamExpression.h                           \
+              RamUtils.h                                \
               RamVisitor.h                              \
               ReadStream.h                              \
               ReadStreamCSV.h                           \

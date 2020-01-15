@@ -79,7 +79,7 @@ bool ReorderConditionsTransformer::reorderConditions(RamProgram& program) {
                 std::vector<std::unique_ptr<RamCondition>> sortedConds,
                         condList = toConjunctionList(condition);
                 for (auto& cond : condList) {
-                    sortedConds.emplace_back(cond.get());
+                    sortedConds.emplace_back(cond->clone());
                 }
                 std::sort(sortedConds.begin(), sortedConds.end(),
                         [&](std::unique_ptr<RamCondition>& a, std::unique_ptr<RamCondition>& b) {
@@ -117,10 +117,10 @@ bool CollapseFiltersTransformer::collapseFilters(RamProgram& program) {
                 std::vector<std::unique_ptr<RamCondition>> conditions;
 
                 const RamFilter* prevFilter = filter;
-                conditions.emplace_back((RamCondition*)&filter->getCondition());
+                conditions.emplace_back(filter->getCondition().clone());
                 while (auto* nextFilter = dynamic_cast<RamFilter*>(&prevFilter->getOperation())) {
                     canCollapse = true;
-                    conditions.emplace_back((RamCondition*)&nextFilter->getCondition());
+                    conditions.emplace_back(nextFilter->getCondition().clone());
                     prevFilter = nextFilter;
                 }
 

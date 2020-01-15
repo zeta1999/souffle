@@ -375,5 +375,11 @@ test_ram_condition_equal_clone_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_t
 test_ram_condition_equal_clone_test_SOURCES = test/ram_condition_equal_clone_test.cpp
 test_ram_condition_equal_clone_test_LDADD = libsouffle.la
 
+# test
+check_PROGRAMS += test/ram_arithmetic_test
+test_ram_arithmetic_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_ram_arithmetic_test_SOURCES = test/ram_arithmetic_test.cpp
+test_ram_arithmetic_test_LDADD = libsouffle.la
+
 # make all check-programs tests
 TESTS = $(check_PROGRAMS)

@@ -21,6 +21,7 @@
 #include "RamNode.h"
 #include "RamRelation.h"
 #include "RamTypes.h"
+#include "RamUtils.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>

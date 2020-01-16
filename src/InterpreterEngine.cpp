@@ -438,7 +438,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             case FunctorOp::ULAND: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                return ramBitCast(first && second);
+                // Extra casting required (from bool)
+                return ramBitCast(static_cast<RamUnsigned>(first && second));
             }
                 
             case FunctorOp::LOR: {
@@ -448,7 +449,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             case FunctorOp::ULOR: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                return ramBitCast(first || second);
+                // Extra casting required (from bool)
+                return ramBitCast(static_cast<RamUnsigned>(first || second));
             }
                 
             case FunctorOp::MAX:{

@@ -30,13 +30,10 @@
 #include <string>
 #include <vector>
 
-namespace souffle {
+namespace souffle::test {
 
-namespace test {
-
-TEST(RamNumber, ArithmeticEvaluation) {
-    std::unique_ptr<RamExpression> expression = std::make_unique<RamNumber>(4711);
-
+/** Function to evaluate a single RamExpression. */
+RamDomain evalExpression(std::unique_ptr<RamExpression> expression) {
     // Set up RamProgram and translation unit
     std::vector<std::unique_ptr<RamExpression>> returnValues;
     returnValues.emplace_back(std::move(expression));
@@ -66,8 +63,23 @@ TEST(RamNumber, ArithmeticEvaluation) {
 
     interpreter->executeSubroutine(name, {}, ret, errs);
 
-    EXPECT_EQ(ret.at(0), 4711);
+    return ret.at(0);
 }
 
-}  // end namespace test
-}  // end namespace souffle
+TEST(RamNumber, ArithmeticEvaluation) {
+    RamDomain num = 42;
+    std::unique_ptr<RamExpression> expression = std::make_unique<RamNumber>(num);
+    RamDomain result = evalExpression(std::move(expression));
+    EXPECT_EQ(result, num);
+}
+
+TEST(RamNumber, NN) {
+    std::unique_ptr<RamExpression> expression = std::make_unique<RamIntrinsicOperator>(
+            FunctorOp::ADD, std::make_unique<RamNumber>(1), std::make_unique<RamNumber>(1));
+
+    RamDomain result = evalExpression(std::move(expression));
+
+    EXPECT_EQ(result, 2);
+}
+
+}  // namespace souffle::test

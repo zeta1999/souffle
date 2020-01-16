@@ -121,42 +121,6 @@ void MinIndexSelection::solve() {
         return;
     }
 
-    // check whether one of the naive indexers should be used
-    // two conditions: either set by environment or relation is a hash map
-    static const char ENV_NAIVE_INDEX[] = "SOUFFLE_USE_NAIVE_INDEX";
-    if (std::getenv(ENV_NAIVE_INDEX)) {
-        static bool first = true;
-        // print a warning - only the first time
-        if (first) {
-            std::cout << "WARNING: auto index selection disabled, naive indexes are utilized!!\n";
-            first = false;
-        }
-
-        // every search pattern gets its naive index
-        for (SearchSignature cur : searches) {
-            // obtain order
-            LexOrder order;
-            SearchSignature mask = cur;
-            for (int i = 0; mask != 0; i++) {
-                if (!(1 << i & mask)) {
-                    continue;
-                }
-                order.push_back(i);
-                // clear bit
-                mask &= ~(1 << i);
-            }
-
-            // add new order
-            orders.push_back(order);
-
-            // register pseudo chain
-            chainToOrder.push_back(Chain());
-            chainToOrder.back().insert(cur);
-        }
-
-        return;
-    }
-
     // Construct the matching poblem
     for (auto search : searches) {
         // For this node check if other nodes are strict subsets
@@ -414,16 +378,11 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) 
 }
 
 bool RamIndexAnalysis::isTotalSignature(const RamAbstractExistenceCheck* existCheck) const {
-    if (existCheck->isTotal != 0) {
-        return existCheck->isTotal == 1;
-    }
     for (const auto& cur : existCheck->getValues()) {
         if (isRamUndefValue(cur)) {
-            existCheck->isTotal = 2;
             return false;
         }
     }
-    existCheck->isTotal = 1;
     return true;
 }
 

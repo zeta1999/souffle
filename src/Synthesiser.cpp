@@ -27,6 +27,7 @@
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamTranslationUnit.h"
+#include "RamUtils.h"
 #include "RamVisitor.h"
 #include "RelationRepresentation.h"
 #include "SymbolTable.h"
@@ -106,25 +107,9 @@ const std::string Synthesiser::convertRamIdent(const std::string& name) {
     return id;
 }
 
-/** check whether indexes are disabled */
-bool Synthesiser::areIndexesDisabled() {
-    bool flag = std::getenv("SOUFFLE_USE_NO_INDEX");
-    static bool first = true;
-    if (first && flag) {
-        std::cout << "WARNING: indexes are ignored!\n";
-        first = false;
-    }
-    return flag;
-}
-
 /** Get relation name */
 const std::string Synthesiser::getRelationName(const RamRelation& rel) {
     return "rel_" + convertRamIdent(rel.getName());
-}
-
-/** Get relation name via string */
-const std::string Synthesiser::getRelationName(const std::string& relName) {
-    return "rel_" + convertRamIdent(relName);
 }
 
 /** Get context name */
@@ -299,7 +284,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // discharge conditions that do not require a context
                 if (freeOfCtx.size() > 0) {
                     out << "if(";
-                    visit(*toCondition(toConstPtrVector(freeOfCtx)), out);
+                    visit(*toCondition(freeOfCtx), out);
                     out << ") {\n";
                 }
             }
@@ -329,7 +314,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (isParallel) {
                 if (requireCtx.size() > 0) {
                     preamble << "if(";
-                    visit(*toCondition(toConstPtrVector(requireCtx)), preamble);
+                    visit(*toCondition(requireCtx), preamble);
                     preamble << ") {\n";
                     visit(*next, out);
                     out << "}\n";
@@ -340,7 +325,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << preamble.str();
                 if (requireCtx.size() > 0) {
                     out << "if(";
-                    visit(*toCondition(toConstPtrVector(requireCtx)), out);
+                    visit(*toCondition(requireCtx), out);
                     out << ") {\n";
                     visit(*next, out);
                     out << "}\n";
@@ -1371,45 +1356,46 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitIntrinsicOperator(const RamIntrinsicOperator& op, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
+            auto args = op.getArguments();
             switch (op.getOperator()) {
                 /** Unary Functor Operators */
                 case FunctorOp::ORD: {
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     break;
                 }
                 case FunctorOp::STRLEN: {
                     out << "static_cast<RamDomain>(symTable.resolve(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ").size())";
                     break;
                 }
                 case FunctorOp::NEG: {
                     out << "(-(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << "))";
                     break;
                 }
                 case FunctorOp::BNOT: {
                     out << "(~(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << "))";
                     break;
                 }
                 case FunctorOp::LNOT: {
                     out << "(!(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << "))";
                     break;
                 }
                 case FunctorOp::TOSTRING: {
                     out << "symTable.lookup(std::to_string(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << "))";
                     break;
                 }
                 case FunctorOp::TONUMBER: {
                     out << "(wrapper_tonumber(symTable.resolve((size_t)";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ")))";
                     break;
                 }
@@ -1418,33 +1404,33 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // arithmetic
                 case FunctorOp::ADD: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") + (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::SUB: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") - (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::MUL: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") * (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::DIV: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") / (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
@@ -1452,63 +1438,63 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     // Cast as int64, then back to RamDomain of int32 to avoid wrapping to negative
                     // when using int32 RamDomains
                     out << "static_cast<int64_t>(std::pow(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ",";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << "))";
                     break;
                 }
                 case FunctorOp::MOD: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") % (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::BAND: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") & (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::BOR: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") | (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::BXOR: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") ^ (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::LAND: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") && (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::LOR: {
                     out << "(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << ") || (";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << ")";
                     break;
                 }
                 case FunctorOp::MAX: {
                     out << "std::max({";
-                    for (auto& cur : op.getArguments()) {
+                    for (auto& cur : args) {
                         visit(cur, out);
                         out << ", ";
                     }
@@ -1517,7 +1503,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 case FunctorOp::MIN: {
                     out << "std::min({";
-                    for (auto& cur : op.getArguments()) {
+                    for (auto& cur : args) {
                         visit(cur, out);
                         out << ", ";
                     }
@@ -1528,13 +1514,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // strings
                 case FunctorOp::CAT: {
                     out << "symTable.lookup(";
-                    for (size_t i = 0; i < op.getArgCount() - 1; i++) {
+                    size_t i = 0;
+                    while (i < args.size() - 1) {
                         out << "symTable.resolve(";
-                        visit(op.getArgument(i), out);
+                        visit(args[i], out);
                         out << ") + ";
+                        i++;
                     }
                     out << "symTable.resolve(";
-                    visit(op.getArgument(op.getArgCount() - 1), out);
+                    visit(args[i], out);
                     out << "))";
                     break;
                 }
@@ -1543,11 +1531,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case FunctorOp::SUBSTR: {
                     out << "symTable.lookup(";
                     out << "substr_wrapper(symTable.resolve(";
-                    visit(op.getArgument(0), out);
+                    visit(args[0], out);
                     out << "),(";
-                    visit(op.getArgument(1), out);
+                    visit(args[1], out);
                     out << "),(";
-                    visit(op.getArgument(2), out);
+                    visit(args[2], out);
                     out << ")))";
                     break;
                 }
@@ -1565,6 +1553,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const std::string& name = op.getName();
             const std::string& type = op.getType();
             size_t arity = type.length() - 1;
+            auto args = op.getArguments();
 
             if (type[arity] == 'S') {
                 out << "symTable.lookup(";
@@ -1577,11 +1566,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 if (type[i] == 'N') {
                     out << "((RamDomain)";
-                    visit(op.getArgument(i), out);
+                    visit(args[i], out);
                     out << ")";
                 } else {
                     out << "symTable.resolve((RamDomain)";
-                    visit(op.getArgument(i), out);
+                    visit(args[i], out);
                     out << ").c_str()";
                 }
             }
@@ -1704,7 +1693,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "using namespace ram;\n";
 
     // synthesise data-structures for relations
-    for (auto rel : prog.getAllRelations()) {
+    for (auto rel : prog.getRelations()) {
         const std::string& datalogName = rel->getName();
 
         bool isProvInfo = datalogName.find("@info") != std::string::npos;
@@ -1772,10 +1761,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
-        visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) { numFreq++; });
+        visitDepthFirst(prog.getMain(), [&](const RamStatement& node) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
-        for (auto rel : prog.getAllRelations()) {
+        for (auto rel : prog.getRelations()) {
             if (!rel->isTemp()) numRead++;
         }
         os << "  size_t reads[" << numRead << "]{};\n";
@@ -1787,12 +1776,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     int relCtr = 0;
     std::set<std::string> storeRelations;
     std::set<std::string> loadRelations;
-    visitDepthFirst(*(prog.getMain()),
+    visitDepthFirst(prog.getMain(),
             [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
-    visitDepthFirst(*(prog.getMain()),
-            [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
+    visitDepthFirst(
+            prog.getMain(), [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
 
-    for (auto rel : prog.getAllRelations()) {
+    for (auto rel : prog.getRelations()) {
         // get some table details
         int arity = rel->getArity();
         int numberOfHeights = rel->getNumberOfHeights();
@@ -1888,7 +1877,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
 
     bool hasIncrement = false;
-    visitDepthFirst(*(prog.getMain()), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
+    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
     // initialize counter
     if (hasIncrement) {
         os << "// -- initialize counter --\n";
@@ -1911,7 +1900,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
            << R"_(Logger logger("@runtime;", 0);)_" << '\n';
         // Store count of relations
         size_t relationCount = 0;
-        for (auto rel : prog.getAllRelations()) {
+        for (auto rel : prog.getRelations()) {
             if (rel->getName()[0] != '@') ++relationCount;
         }
         // Store configuration
@@ -1921,9 +1910,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "[](){\n";
 
         // Record relations created in each stratum
-        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+        visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
             std::map<std::string, size_t> relNames;
-            for (auto rel : prog.getAllRelations()) {
+            for (auto rel : prog.getRelations()) {
                 relNames[rel->getName()] = rel->getArity();
             }
             for (const auto& cur : relNames) {
@@ -1943,7 +1932,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("engine")) {
         std::stringstream ss;
         bool hasAtLeastOneStrata = false;
-        visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+        visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
             hasAtLeastOneStrata = true;
             // go to stratum of index in switch
             auto i = stratum.getIndex();
@@ -1961,7 +1950,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
 
     // Set up stratum
-    visitDepthFirst(*(prog.getMain()), [&](const RamStratum& stratum) {
+    visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
         os << "/* BEGIN STRATUM " << stratum.getIndex() << " */\n";
         if (Global::config().has("engine")) {
             // go to the stratum with the max value for int as a suffix if calling the master stratum
@@ -1991,7 +1980,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "\n// -- relation hint statistics --\n";
     os << "if(isHintsProfilingEnabled()) {\n";
     os << "std::cout << \" -- Operation Hint Statistics --\\n\";\n";
-    for (auto rel : prog.getAllRelations()) {
+    for (auto rel : prog.getRelations()) {
         auto name = getRelationName(*rel);
         os << "std::cout << \"Relation " << name << ":\\n\";\n";
         os << name << "->printHintStatistics(std::cout,\"  \");\n";
@@ -2021,7 +2010,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue printAll method
     os << "public:\n";
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamStatement& node) {
+    visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
             std::vector<bool> symbolMask;
             for (auto& cur : store->getRelation().getAttributeTypeQualifiers()) {
@@ -2065,7 +2054,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue loadAll method
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) {
+    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
         // get some table details
         std::vector<bool> symbolMask;
         for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
@@ -2120,13 +2109,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // dump inputs
     os << "public:\n";
     os << "void dumpInputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamLoad& load) { dumpRelation(load.getRelation()); });
+    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) { dumpRelation(load.getRelation()); });
     os << "}\n";  // end of dumpInputs() method
 
     // dump outputs
     os << "public:\n";
     os << "void dumpOutputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(*(prog.getMain()), [&](const RamStore& store) { dumpRelation(store.getRelation()); });
+    visitDepthFirst(prog.getMain(), [&](const RamStore& store) { dumpRelation(store.getRelation()); });
     os << "}\n";  // end of dumpOutputs() method
 
     os << "public:\n";
@@ -2139,7 +2128,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         if (Global::config().get("provenance") == "subtreeHeights") {
             // method that populates provenance indices
             os << "void copyIndex() {\n";
-            for (auto rel : prog.getAllRelations()) {
+            for (auto rel : prog.getRelations()) {
                 // get some table details
                 const std::string& cppName = getRelationName(*rel);
                 const std::string& datalogName = rel->getName();

@@ -502,10 +502,6 @@ int main(int argc, char** argv) {
         std::cerr << ramTranslationUnit->getErrorReport();
     }
 
-    if (!ramTranslationUnit->getProgram()->getMain()) {
-        return 0;
-    };
-
     // Output the transformed RAM program and return
     if (Global::config().has("transformed-ram")) {
         std::cout << *ramTranslationUnit->getProgram();

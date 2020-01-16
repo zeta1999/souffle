@@ -160,8 +160,6 @@ ADD_EXECUTABLE(souffle
         ./src/AstTransforms.cpp
         ./src/AstPragma.cpp
         ./src/RamOperation.cpp
-        ./src/souffle2bdd.cpp
-        ./src/souffle2lb.cpp
         ./src/TypeSystem.cpp
         ./src/AstComponentChecker.cpp
         ./src/AstParserUtils.cpp

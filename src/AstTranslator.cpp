@@ -198,14 +198,16 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
         const size_t arity, const size_t numberOfHeights, const std::vector<std::string> attributeNames,
         const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation representation) {
-    const RamRelation* ramRel = ramProg->getRelation(name);
-    if (ramRel == nullptr) {
-        ramProg->addRelation(std::make_unique<RamRelation>(
-                name, arity, numberOfHeights, attributeNames, attributeTypeQualifiers, representation));
-        ramRel = ramProg->getRelation(name);
-        assert(ramRel != nullptr && "cannot find relation");
+    auto it = ramRels.find(name);
+    if (it == ramRels.end()) {
+        ramRels[name] = std::make_unique<RamRelation>(
+                name, arity, numberOfHeights, attributeNames, attributeTypeQualifiers, representation);
+        it = ramRels.find(name);
     }
-    return std::make_unique<RamRelationReference>(ramRel);
+    assert(it != ramRels.end() && "relation name not found");
+
+    const RamRelation* relation = it->second.get();
+    return std::make_unique<RamRelationReference>(relation);
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(
@@ -1493,9 +1495,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // start with an empty sequence of ram statements
     std::unique_ptr<RamStatement> res = std::make_unique<RamSequence>();
 
-    // start with an empty program
-    ramProg = std::make_unique<RamProgram>(std::make_unique<RamSequence>());
-
     // handle the case of an empty SCC graph
     if (sccGraph.getNumberOfSCCs() == 0) return;
 
@@ -1642,7 +1641,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     }
 
     // done for main prog
-    ramProg->setMain(std::move(res));
+    ramMain = std::move(res);
 
     // add subroutines for each clause
     if (Global::config().has("provenance")) {
@@ -1657,11 +1656,11 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
             std::string subroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_subproof";
-            ramProg->addSubroutine(subroutineLabel, makeSubproofSubroutine(clause));
+            ramSubs[subroutineLabel] = makeSubproofSubroutine(clause);
 
             std::string negationSubroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_negation_subproof";
-            ramProg->addSubroutine(negationSubroutineLabel, makeNegationSubproofSubroutine(clause));
+            ramSubs[negationSubroutineLabel] = makeNegationSubproofSubroutine(clause);
         });
     }
 }
@@ -1673,6 +1672,15 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     SymbolTable& symTab = tu.getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
+    std::vector<std::unique_ptr<RamRelation>> rels;
+    for (auto& cur : ramRels) {
+        rels.push_back(std::move(cur.second));
+    }
+    if (nullptr == ramMain) {
+        ramMain = std::make_unique<RamSequence>();
+    }
+    std::unique_ptr<RamProgram> ramProg =
+            std::make_unique<RamProgram>(std::move(rels), std::move(ramMain), std::move(ramSubs));
     if (!Global::config().get("debug-report").empty()) {
         if (ramProg) {
             auto ram_end = std::chrono::high_resolution_clock::now();

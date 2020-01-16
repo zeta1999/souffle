@@ -37,13 +37,13 @@ namespace souffle {
 
 #if RAM_DOMAIN_SIZE == 64
 using RamDomain = int64_t;
-using RamSigned = int64_t;
+using RamSigned = RamDomain;
 using RamUnsigned = uint64_t;
 // There is not standard fixed size double/float.
 using RamFloat = double;
 #else
 using RamDomain = int32_t;
-using RamSigned = int32_t;
+using RamSigned = RamDomain;
 using RamUnsigned = uint32_t;
 // There is no standard - fixed size double/float.
 using RamFloat = float;
@@ -72,8 +72,8 @@ but as of January 2020 it is not yet supported.
 reinterpret_cast won't work here, because integral <-> float conversions are unsafe.
 **/
 
-template <typename From, typename To>
-inline To RamBitCast(From RamElement) {
+template <typename To = RamDomain, typename From>
+inline To ramBitCast(From RamElement) {
     static_assert(isRamType<From> && isRamType<To>,
                   "Bit casting should only be used on Ram Types.");
     

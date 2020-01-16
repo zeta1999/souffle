@@ -73,13 +73,29 @@ TEST(RamNumber, ArithmeticEvaluation) {
     EXPECT_EQ(result, num);
 }
 
-TEST(RamNumber, NN) {
-    std::unique_ptr<RamExpression> expression = std::make_unique<RamIntrinsicOperator>(
-            FunctorOp::ADD, std::make_unique<RamNumber>(1), std::make_unique<RamNumber>(1));
+TEST(RamNumber, SimpleAdd) {
+    std::vector<std::unique_ptr<RamExpression>> Args;
+    Args.push_back(std::make_unique<RamNumber>(1));
+    Args.push_back(std::make_unique<RamNumber>(1));
+
+    std::unique_ptr<RamExpression> expression =
+            std::make_unique<RamIntrinsicOperator>(FunctorOp::ADD, std::move(Args));
 
     RamDomain result = evalExpression(std::move(expression));
 
     EXPECT_EQ(result, 2);
+}
+
+TEST(RamNumber, Neg) {
+    std::vector<std::unique_ptr<RamExpression>> Args;
+    Args.push_back(std::make_unique<RamNumber>(1));
+
+    std::unique_ptr<RamExpression> expression =
+            std::make_unique<RamIntrinsicOperator>(FunctorOp::ADD, std::move(Args));
+
+    RamDomain result = evalExpression(std::move(expression));
+
+    EXPECT_EQ(result, -1)
 }
 
 }  // namespace souffle::test

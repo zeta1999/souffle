@@ -39,22 +39,22 @@ enum class FunctorOp {
     FTOI,      // convert float number to signed number.
     UTOF,      // convert unsigned number to a float.
     FTOU,      // convert float to unsigned number.
-    
+
     /** Binary Functor Operators */
-    ADD,   // addition
-    SUB,   // subtraction
-    MUL,   // multiplication
-    DIV,   // division
-    EXP,   // exponent
-    MAX,   // max of two numbers
-    MIN,   // min of two numbers
-    MOD,   // modulus
-    BAND,  // bitwise and
-    BOR,   // bitwise or
-    BXOR,  // bitwise exclusive or
-    LAND,  // logical and
-    LOR,   // logical or
-    UADD,   // addition 
+    ADD,    // addition
+    SUB,    // subtraction
+    MUL,    // multiplication
+    DIV,    // division
+    EXP,    // exponent
+    MAX,    // max of two numbers
+    MIN,    // min of two numbers
+    MOD,    // modulus
+    BAND,   // bitwise and
+    BOR,    // bitwise or
+    BXOR,   // bitwise exclusive or
+    LAND,   // logical and
+    LOR,    // logical or
+    UADD,   // addition
     USUB,   // subtraction
     UMUL,   // multiplication
     UDIV,   // division
@@ -74,8 +74,8 @@ enum class FunctorOp {
     FEXP,   // exponent
     FMAX,   // max of two floats
     FMIN,   // min of two floats
-    
-    CAT,   // string concatenation
+
+    CAT,  // string concatenation
 
     /** Ternary Functor Operators */
     SUBSTR,  // substring
@@ -147,7 +147,7 @@ inline bool isValidFunctorOpArity(FunctorOp op, size_t arity) {
         case FunctorOp::UMAX:
         case FunctorOp::UMIN:
         case FunctorOp::FMAX:
-        case FunctorOp::FMIN:            
+        case FunctorOp::FMIN:
         case FunctorOp::CAT:
             return arity >= 2;
 

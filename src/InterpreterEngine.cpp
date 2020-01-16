@@ -254,24 +254,21 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return -execute(node->getChild(0), ctxt);
             case FunctorOp::FNEG: {
                 RamDomain result = execute(node->getChild(0), ctxt);
-                return ramBitCast(
-                    -ramBitCast<float>(result));
+                return ramBitCast(-ramBitCast<float>(result));
             }
             case FunctorOp::BNOT:
                 return ~execute(node->getChild(0), ctxt);
             case FunctorOp::UBNOT: {
                 RamDomain result = execute(node->getChild(0), ctxt);
-                return ramBitCast(
-                    ~ramBitCast<RamUnsigned>(result));
+                return ramBitCast(~ramBitCast<RamUnsigned>(result));
             }
             case FunctorOp::LNOT:
                 return !execute(node->getChild(0), ctxt);
-                
+
             case FunctorOp::ULNOT: {
                 RamDomain result = execute(node->getChild(0), ctxt);
                 // Casting is a bit tricky here, since ! returns a boolean.
-                return ramBitCast(
-                    static_cast<RamDomain>(!ramBitCast<RamUnsigned>(result)));
+                return ramBitCast(static_cast<RamDomain>(!ramBitCast<RamUnsigned>(result)));
             }
             case FunctorOp::TONUMBER: {
                 RamDomain result = 0;
@@ -289,7 +286,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return getSymbolTable().lookup(std::to_string(execute(node->getChild(0), ctxt)));
 
             /** The following are the default C++ conversions. They probably should be modified. */
-            case FunctorOp::ITOU:{
+            case FunctorOp::ITOU: {
                 auto result = execute(node->getChild(0), ctxt);
                 return ramBitCast(static_cast<RamUnsigned>(result));
             }
@@ -305,11 +302,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                 return static_cast<RamSigned>(result);
             }
-            case FunctorOp::UTOF: {                
+            case FunctorOp::UTOF: {
                 auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 return ramBitCast(static_cast<RamFloat>(result));
             }
-                
+
             case FunctorOp::FTOU: {
                 auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                 return ramBitCast(static_cast<RamUnsigned>(result));
@@ -324,13 +321,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first + second);
             }
-                
+
             case FunctorOp::FADD: {
                 auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first + second);
             }
-                
+
             case FunctorOp::SUB: {
                 BINARY_OP(-);
             }
@@ -344,11 +341,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first - second);
             }
-                
+
             case FunctorOp::MUL: {
                 BINARY_OP(*);
             }
-                
+
             case FunctorOp::UMUL: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
@@ -359,7 +356,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first * second);
             }
-                
+
             case FunctorOp::UDIV: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
@@ -370,32 +367,31 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first / second);
             }
-                
+
             case FunctorOp::DIV: {
                 BINARY_OP(/);
             }
             case FunctorOp::EXP: {
                 return std::pow(execute(node->getChild(0), ctxt), execute(node->getChild(1), ctxt));
             }
-                
+
             case FunctorOp::UEXP: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
                 // Extra casting required: pow returns a floating point.
-                return ramBitCast(
-                    static_cast<RamUnsigned>(std::pow(first, second)));
+                return ramBitCast(static_cast<RamUnsigned>(std::pow(first, second)));
             }
-                
+
             case FunctorOp::FEXP: {
                 auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
                 return ramBitCast(std::pow(first, second));
             }
-                
+
             case FunctorOp::MOD: {
                 BINARY_OP(%);
             }
-                
+
             case FunctorOp::UMOD: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
@@ -404,64 +400,64 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             case FunctorOp::BAND: {
                 BINARY_OP(&);
             }
-                
+
             case FunctorOp::UBAND: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first & second);
             }
-                
+
             case FunctorOp::BOR: {
                 BINARY_OP(|);
             }
-                
+
             case FunctorOp::UBOR: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first | second);
             }
-                
-            case FunctorOp::BXOR:{
+
+            case FunctorOp::BXOR: {
                 BINARY_OP(^);
             }
-                
+
             case FunctorOp::UBXOR: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first ^ second);
             }
-                
-            case FunctorOp::LAND:{
+
+            case FunctorOp::LAND: {
                 BINARY_OP(&&);
             }
-                
+
             case FunctorOp::ULAND: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
                 // Extra casting required (from bool)
                 return ramBitCast(static_cast<RamUnsigned>(first && second));
             }
-                
+
             case FunctorOp::LOR: {
                 BINARY_OP(||);
             }
-                
+
             case FunctorOp::ULOR: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
                 // Extra casting required (from bool)
                 return ramBitCast(static_cast<RamUnsigned>(first || second));
             }
-                
-            case FunctorOp::MAX:{
+
+            case FunctorOp::MAX: {
                 auto result = execute(node->getChild(0), ctxt);
                 for (size_t i = 1; i < args.size(); i++) {
                     result = std::max(result, execute(node->getChild(i), ctxt));
                 }
                 return result;
             }
-                
-            case FunctorOp::UMAX: // {
+
+            case FunctorOp::UMAX:  // {
             //     auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
             //     for (size_t i = 1; i < args.size(); i++) {
             //         auto element = ramBitCast<RamUnsigned>(execute(node->getChild(i), ctxt));
@@ -470,7 +466,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             //     return ramBitCast(result);
             // }
             case FunctorOp::FMAX:
-                
+
             case FunctorOp::MIN: {
                 auto result = execute(node->getChild(0), ctxt);
                 for (size_t i = 1; i < args.size(); i++) {
@@ -478,11 +474,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 return result;
             }
-                
+
             case FunctorOp::UMIN:
             case FunctorOp::FMIN:
 
-                
             case FunctorOp::CAT: {
                 std::stringstream ss;
                 for (size_t i = 0; i < args.size(); i++) {

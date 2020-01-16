@@ -50,23 +50,18 @@ using RamFloat = float;
 #endif
 
 static_assert(std::is_integral<RamSigned>::value && std::is_signed<RamSigned>::value,
-              "RamSigned must be represented by a signed type.");
+        "RamSigned must be represented by a signed type.");
 static_assert(std::is_integral<RamUnsigned>::value && !std::is_signed<RamUnsigned>::value,
-              "RamUnsigned must be represented by an unsigned type.");
-static_assert(std::is_floating_point<RamFloat>::value
-              && sizeof(RamFloat) * 8 == RAM_DOMAIN_SIZE,
-              "RamFloat must be represented by a floating point and have the same size as other types.");
+        "RamUnsigned must be represented by an unsigned type.");
+static_assert(std::is_floating_point<RamFloat>::value && sizeof(RamFloat) * 8 == RAM_DOMAIN_SIZE,
+        "RamFloat must be represented by a floating point and have the same size as other types.");
 
+template <typename T>
+constexpr bool isRamType = (std::is_same<T, RamDomain>::value || std::is_same<T, RamSigned>::value ||
+                            std::is_same<T, RamUnsigned>::value || std::is_same<T, RamFloat>::value);
 
-
-template<typename T>
-constexpr bool isRamType = (std::is_same<T, RamDomain>::value
-                            || std::is_same<T, RamSigned>::value
-                            || std::is_same<T, RamUnsigned>::value
-                            || std::is_same<T, RamFloat>::value);
-
-/** 
-In C++20 there will be a new way to cast between types by reinterpreting bits (std::bit_cast), 
+/**
+In C++20 there will be a new way to cast between types by reinterpreting bits (std::bit_cast),
 but as of January 2020 it is not yet supported.
 
 reinterpret_cast won't work here, because integral <-> float conversions are unsafe.
@@ -74,17 +69,13 @@ reinterpret_cast won't work here, because integral <-> float conversions are uns
 
 template <typename To = RamDomain, typename From>
 inline To ramBitCast(From RamElement) {
-    static_assert(isRamType<From> && isRamType<To>,
-                  "Bit casting should only be used on Ram Types.");
-    
+    static_assert(isRamType<From> && isRamType<To>, "Bit casting should only be used on Ram Types.");
+
     To elementAfterConversion;
     std::memcpy(&elementAfterConversion, &RamElement, sizeof(To));
     return elementAfterConversion;
 }
 
-
-
-    
 /** lower and upper boundaries for the ram domain **/
 #define MIN_RAM_DOMAIN (std::numeric_limits<RamDomain>::min())
 #define MAX_RAM_DOMAIN (std::numeric_limits<RamDomain>::max())

@@ -183,8 +183,7 @@ void InterpreterEngine::executeSubroutine(const std::string& name, const std::ve
     ctxt.setReturnErrors(err);
     ctxt.setArguments(args);
 
-    auto* program = tUnit.getProgram()->getMain();
-    auto entry = generator.generateTree(*program);
+    auto entry = generator.generateTree(tUnit.getProgram()->getSubroutine(name));
     execute(entry.get(), ctxt);
 }
 

@@ -44,8 +44,7 @@ class InterpreterEngine {
 
 public:
     InterpreterEngine(RamTranslationUnit& tUnit)
-            : isProvenance(Global::config().has("provenance")),
-              profileEnabled(Global::config().has("profile")),
+            : profileEnabled(Global::config().has("profile")),
               numOfThreads(std::stoi(Global::config().get("jobs"))), tUnit(tUnit),
               isa(tUnit.getAnalysis<RamIndexAnalysis>()), generator(isa) {
 #ifdef _OPENMP
@@ -61,14 +60,10 @@ public:
             std::vector<RamDomain>& ret, std::vector<bool>& err);
 
 private:
-    /** @brief Create a relation */
-    void createRelation(const RamRelation& id, const MinIndexSelection& orderSet, const size_t idx);
     /** @brief Remove a relation from the environment */
     void dropRelation(const size_t relId);
     /** @brief Swap the content of two relations */
     void swapRelation(const size_t ramRel1, const size_t ramRel2);
-    /** @brief Return a relation on the given index */
-    InterpreterRelation& getRelation(const size_t idx);
     /** @brief Return a reference to the relation on the given index */
     RelationHandle& getRelationHandle(const size_t idx);
     /** @brief Return the string symbol table */
@@ -90,12 +85,8 @@ private:
     /** @brief Increment the counter */
     int incCounter();
     /** @brief Return the relation map. */
-    std::vector<RelationHandle>& getRelationMap();
+    std::vector<std::unique_ptr<RelationHandle>>& getRelationMap();
 
-    /** Symbol table for relations */
-    std::vector<RelationHandle> relations;
-    /** If executing a provenance program */
-    const bool isProvenance;
     /** If profile is enable in this program */
     const bool profileEnabled;
     /** Number of threads enabled for this program */

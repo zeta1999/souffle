@@ -285,7 +285,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             case FunctorOp::TOSTRING:
                 return getSymbolTable().lookup(std::to_string(execute(node->getChild(0), ctxt)));
 
-            /** The following are the default C++ conversions. They probably should be modified. */
+            /** The following are the default C++ conversions. */
             case FunctorOp::ITOU: {
                 auto result = execute(node->getChild(0), ctxt);
                 return ramBitCast(static_cast<RamUnsigned>(result));
@@ -385,7 +385,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             case FunctorOp::FEXP: {
                 auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
-                return ramBitCast(std::pow(first, second));
+                return ramBitCast(static_cast<RamFloat>(std::pow(first, second)));
             }
 
             case FunctorOp::MOD: {

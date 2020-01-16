@@ -457,15 +457,23 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return result;
             }
 
-            case FunctorOp::UMAX:  // {
-            //     auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-            //     for (size_t i = 1; i < args.size(); i++) {
-            //         auto element = ramBitCast<RamUnsigned>(execute(node->getChild(i), ctxt));
-            //         result = std::max(result, element);
-            //     }
-            //     return ramBitCast(result);
-            // }
-            case FunctorOp::FMAX:
+            case FunctorOp::UMAX: {
+                auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                for (size_t i = 1; i < args.size(); i++) {
+                    auto element = ramBitCast<RamUnsigned>(execute(node->getChild(i), ctxt));
+                    result = std::max(result, element);
+                }
+                return ramBitCast(result);
+            }
+
+            case FunctorOp::FMAX: {
+                auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                for (size_t i = 1; i < args.size(); i++) {
+                    auto element = ramBitCast<RamFloat>(execute(node->getChild(i), ctxt));
+                    result = std::max(result, element);
+                }
+                return ramBitCast(result);
+            }
 
             case FunctorOp::MIN: {
                 auto result = execute(node->getChild(0), ctxt);
@@ -475,8 +483,23 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return result;
             }
 
-            case FunctorOp::UMIN:
-            case FunctorOp::FMIN:
+            case FunctorOp::UMIN: {
+                auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                for (size_t i = 1; i < args.size(); i++) {
+                    auto element = ramBitCast<RamUnsigned>(execute(node->getChild(i), ctxt));
+                    result = std::min(result, element);
+                }
+                return ramBitCast(result);
+            }
+
+            case FunctorOp::FMIN: {
+                auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                for (size_t i = 1; i < args.size(); i++) {
+                    auto element = ramBitCast<RamFloat>(execute(node->getChild(i), ctxt));
+                    result = std::min(result, element);
+                }
+                return ramBitCast(result);
+            }
 
             case FunctorOp::CAT: {
                 std::stringstream ss;

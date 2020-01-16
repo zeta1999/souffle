@@ -91,11 +91,36 @@ TEST(RamNumber, Neg) {
     Args.push_back(std::make_unique<RamNumber>(1));
 
     std::unique_ptr<RamExpression> expression =
-            std::make_unique<RamIntrinsicOperator>(FunctorOp::ADD, std::move(Args));
+            std::make_unique<RamIntrinsicOperator>(FunctorOp::NEG, std::move(Args));
 
     RamDomain result = evalExpression(std::move(expression));
 
-    EXPECT_EQ(result, -1)
+    EXPECT_EQ(result, -1);
+}
+
+TEST(RamNumber, FloatNeg) {
+    std::vector<std::unique_ptr<RamExpression>> Args;
+    Args.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(1))));
+
+    std::unique_ptr<RamExpression> expression =
+            std::make_unique<RamIntrinsicOperator>(FunctorOp::FNEG, std::move(Args));
+
+    RamDomain result = evalExpression(std::move(expression));
+
+    EXPECT_EQ(ramBitCast<RamFloat>(result), -static_cast<RamFloat>(1));
+}
+
+TEST(RamNumber, FloatNeg2) {
+    RamFloat arg = -0.27;
+    std::vector<std::unique_ptr<RamExpression>> Args;
+    Args.push_back(std::make_unique<RamNumber>(ramBitCast(arg)));
+
+    std::unique_ptr<RamExpression> expression =
+            std::make_unique<RamIntrinsicOperator>(FunctorOp::FNEG, std::move(Args));
+
+    RamDomain result = evalExpression(std::move(expression));
+
+    EXPECT_EQ(ramBitCast<RamFloat>(result), -arg);
 }
 
 }  // namespace souffle::test

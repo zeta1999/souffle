@@ -27,10 +27,14 @@
 #include "test.h"
 
 #include <map>
+#include <random>
 #include <string>
 #include <vector>
 
 namespace souffle::test {
+
+#define TESTS_PER_OPERATION 20
+#define MAGIC_GENERATOR_SEED 3  // seed to random number generator
 
 /** Function to evaluate a single RamExpression. */
 RamDomain evalExpression(std::unique_ptr<RamExpression> expression) {
@@ -66,6 +70,27 @@ RamDomain evalExpression(std::unique_ptr<RamExpression> expression) {
     return ret.at(0);
 }
 
+RamDomain evalUnary(FunctorOp functor, RamDomain arg) {
+    std::vector<std::unique_ptr<RamExpression>> Args;
+    Args.push_back(std::make_unique<RamNumber>(arg));
+
+    std::unique_ptr<RamExpression> expression =
+            std::make_unique<RamIntrinsicOperator>(functor, std::move(Args));
+
+    return evalExpression(std::move(expression));
+}
+
+RamDomain evalBinary(FunctorOp functor, RamDomain arg1, RamDomain arg2) {
+    std::vector<std::unique_ptr<RamExpression>> Args;
+    Args.push_back(std::make_unique<RamNumber>(arg1));
+    Args.push_back(std::make_unique<RamNumber>(arg2));
+
+    std::unique_ptr<RamExpression> expression =
+            std::make_unique<RamIntrinsicOperator>(functor, std::move(Args));
+
+    return evalExpression(std::move(expression));
+}
+
 TEST(RamNumber, ArithmeticEvaluation) {
     RamDomain num = 42;
     std::unique_ptr<RamExpression> expression = std::make_unique<RamNumber>(num);
@@ -73,54 +98,117 @@ TEST(RamNumber, ArithmeticEvaluation) {
     EXPECT_EQ(result, num);
 }
 
-TEST(RamNumber, SimpleAdd) {
-    std::vector<std::unique_ptr<RamExpression>> Args;
-    Args.push_back(std::make_unique<RamNumber>(1));
-    Args.push_back(std::make_unique<RamNumber>(1));
+// TEST(RamNumber, SimpleAdd) {
+//     std::vector<std::unique_ptr<RamExpression>> Args;
+//     Args.push_back(std::make_unique<RamNumber>(1));
+//     Args.push_back(std::make_unique<RamNumber>(1));
 
-    std::unique_ptr<RamExpression> expression =
-            std::make_unique<RamIntrinsicOperator>(FunctorOp::ADD, std::move(Args));
+//     std::unique_ptr<RamExpression> expression =
+//             std::make_unique<RamIntrinsicOperator>(FunctorOp::ADD, std::move(Args));
 
-    RamDomain result = evalExpression(std::move(expression));
+//     RamDomain result = evalExpression(std::move(expression));
 
-    EXPECT_EQ(result, 2);
+//     EXPECT_EQ(result, 2);
+// }
+
+TEST(Unary, Neg) {
+    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
+    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+
+    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
+        RamDomain randomNumber = dist(randomGenerator);
+        EXPECT_EQ(evalUnary(FunctorOp::NEG, randomNumber), -randomNumber);
+    }
 }
 
-TEST(RamNumber, Neg) {
-    std::vector<std::unique_ptr<RamExpression>> Args;
-    Args.push_back(std::make_unique<RamNumber>(1));
+TEST(Unary, FloatNeg) {
+    RamDomain result;
 
-    std::unique_ptr<RamExpression> expression =
-            std::make_unique<RamIntrinsicOperator>(FunctorOp::NEG, std::move(Args));
+    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
+    std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
 
-    RamDomain result = evalExpression(std::move(expression));
-
-    EXPECT_EQ(result, -1);
+    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
+        RamFloat randomNumber = dist(randomGenerator);
+        result = evalUnary(FunctorOp::FNEG, ramBitCast(randomNumber));
+        EXPECT_EQ(ramBitCast<RamFloat>(result), -randomNumber);
+    }
 }
 
-TEST(RamNumber, FloatNeg) {
-    std::vector<std::unique_ptr<RamExpression>> Args;
-    Args.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(1))));
+TEST(Unary, BinaryNot) {
+    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
+    std::uniform_int_distribution<RamDomain> dist(-100, 100);
 
-    std::unique_ptr<RamExpression> expression =
-            std::make_unique<RamIntrinsicOperator>(FunctorOp::FNEG, std::move(Args));
-
-    RamDomain result = evalExpression(std::move(expression));
-
-    EXPECT_EQ(ramBitCast<RamFloat>(result), -static_cast<RamFloat>(1));
+    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
+        RamDomain randomNumber = dist(randomGenerator);
+        EXPECT_EQ(evalUnary(FunctorOp::BNOT, randomNumber), ~randomNumber);
+    }
 }
 
-TEST(RamNumber, FloatNeg2) {
-    RamFloat arg = -0.27;
-    std::vector<std::unique_ptr<RamExpression>> Args;
-    Args.push_back(std::make_unique<RamNumber>(ramBitCast(arg)));
+TEST(Unary, UnsignedBinaryNot) {
+    FunctorOp func = FunctorOp::UBNOT;
+    RamDomain result;
 
-    std::unique_ptr<RamExpression> expression =
-            std::make_unique<RamIntrinsicOperator>(FunctorOp::FNEG, std::move(Args));
+    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
+    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
 
-    RamDomain result = evalExpression(std::move(expression));
+    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
+        RamUnsigned randomNumber = dist(randomGenerator);
+        result = evalUnary(func, ramBitCast(randomNumber));
+        EXPECT_EQ(ramBitCast<RamUnsigned>(result), ~randomNumber);
+    }
+}
 
-    EXPECT_EQ(ramBitCast<RamFloat>(result), -arg);
+TEST(Unary, LogicalNeg) {
+    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
+    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+
+    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
+        RamDomain randomNumber = dist(randomGenerator);
+        EXPECT_EQ(evalUnary(FunctorOp::LNOT, randomNumber), !randomNumber);
+    }
+}
+
+TEST(Unary, UnsignedLogicalNeg) {
+    FunctorOp func = FunctorOp::ULNOT;
+    RamDomain result;
+
+    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
+    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+
+    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
+        RamUnsigned randomNumber = dist(randomGenerator);
+        result = evalUnary(func, ramBitCast(randomNumber));
+        EXPECT_EQ(ramBitCast<RamUnsigned>(result), !randomNumber);
+    }
+}
+
+// TEST(Unary, SingedTpUnsigned) {
+//     FunctorOp func = FunctorOp::ULNOT;
+//     RamDomain result;
+
+//     std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
+//     std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+
+//     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
+//         RamUnsigned randomNumber = dist(randomGenerator);
+//         result = evalUnary(func, ramBitCast(randomNumber));
+//         EXPECT_EQ(ramBitCast<RamUnsigned>(result), !randomNumber);
+//     }
+// }
+
+TEST(Binary, ADD) {
+    FunctorOp func = FunctorOp::ADD;
+    RamDomain result;
+
+    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
+    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+
+    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
+        RamDomain arg1 = dist(randomGenerator);
+        RamDomain arg2 = dist(randomGenerator);
+        result = evalBinary(func, arg1, arg2);
+        EXPECT_EQ(result, arg1 + arg2);
+    }
 }
 
 }  // namespace souffle::test

@@ -1000,7 +1000,7 @@ AstArgument* extractConstant(SymbolTable& symbolTable, const std::string& normal
         return new AstStringConstant(symbolTable, stringRep);
     } else if (indicatorChar == 'n') {
         // numeric argument
-        return new AstNumberConstant(stoi(stringRep));
+        return new AstNumberConstant(static_cast<RamDomain>(stoll(stringRep)));
     } else {
         // invalid format
         return nullptr;

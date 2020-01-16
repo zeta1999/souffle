@@ -22,7 +22,7 @@ namespace souffle::test {
 
 #define NUMBER_OF_CONVERSION_TESTS 100
 
-TEST(Conversions, RamSigned) {
+TEST(randomConversions, RamSigned) {
     std::mt19937 randomGenerator(3);
     std::uniform_int_distribution<RamDomain> dist(-100, 100);
 
@@ -37,7 +37,7 @@ TEST(Conversions, RamSigned) {
     }
 }
 
-TEST(Conversions, RamUnsigned) {
+TEST(randomConversions, RamUnsigned) {
     std::mt19937 randomGenerator(3);
     std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
 
@@ -52,7 +52,7 @@ TEST(Conversions, RamUnsigned) {
     }
 }
 
-TEST(Conversions, RamFloat) {
+TEST(randomConversions, RamFloat) {
     std::mt19937 randomGenerator(3);
     std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
 

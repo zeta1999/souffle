@@ -67,13 +67,16 @@ but as of January 2020 it is not yet supported.
 reinterpret_cast won't work here, because integral <-> float conversions are unsafe.
 **/
 
+// Cast a type by reinterpreting the bits.
 template <typename To = RamDomain, typename From>
 inline To ramBitCast(From RamElement) {
     static_assert(isRamType<From> && isRamType<To>, "Bit casting should only be used on Ram Types.");
-
-    To elementAfterConversion;
-    std::memcpy(&elementAfterConversion, &RamElement, sizeof(To));
-    return elementAfterConversion;
+    union {
+        From source;
+        To destination;
+    } Union;
+    Union.source = RamElement;
+    return Union.destination;
 }
 
 /** lower and upper boundaries for the ram domain **/

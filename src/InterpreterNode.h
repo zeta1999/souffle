@@ -92,7 +92,8 @@ public:
     InterpreterNode(enum InterpreterNodeType ty, const RamNode* sdw,
             std::vector<std::unique_ptr<InterpreterNode>> chlds = {}, RelationHandle* relHandle = nullptr,
             std::vector<size_t> data = {})
-            : type(ty), shadow(sdw), children(std::move(chlds)), relHandle(relHandle), data(std::move(data)) {}
+            : type(ty), shadow(sdw), children(std::move(chlds)), relHandle(relHandle), data(std::move(data)) {
+    }
 
     /** @brief get node type */
     inline enum InterpreterNodeType getType() const {

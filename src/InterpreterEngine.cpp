@@ -254,7 +254,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return -execute(node->getChild(0), ctxt);
             case FunctorOp::FNEG: {
                 RamDomain result = execute(node->getChild(0), ctxt);
-                return ramBitCast(-ramBitCast<float>(result));
+                return ramBitCast(-ramBitCast<RamFloat>(result));
             }
             case FunctorOp::BNOT:
                 return ~execute(node->getChild(0), ctxt);

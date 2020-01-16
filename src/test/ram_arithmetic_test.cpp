@@ -71,25 +71,27 @@ RamDomain evalExpression(std::unique_ptr<RamExpression> expression) {
     return ret.at(0);
 }
 
-RamDomain evalUnary(FunctorOp functor, RamDomain arg) {
-    std::vector<std::unique_ptr<RamExpression>> Args;
-    Args.push_back(std::make_unique<RamNumber>(arg));
-
+RamDomain evalMultiArg(FunctorOp functor, std::vector<std::unique_ptr<RamExpression>> args) {
     std::unique_ptr<RamExpression> expression =
-            std::make_unique<RamIntrinsicOperator>(functor, std::move(Args));
-
+            std::make_unique<RamIntrinsicOperator>(functor, std::move(args));
     return evalExpression(std::move(expression));
 }
 
+/** Evaluate a single argument expression */
+RamDomain evalUnary(FunctorOp functor, RamDomain arg1) {
+    std::vector<std::unique_ptr<RamExpression>> args;
+    args.push_back(std::make_unique<RamNumber>(arg1));
+
+    return evalMultiArg(functor, std::move(args));
+}
+
+/** Evaluate a binary operator */
 RamDomain evalBinary(FunctorOp functor, RamDomain arg1, RamDomain arg2) {
-    std::vector<std::unique_ptr<RamExpression>> Args;
-    Args.push_back(std::make_unique<RamNumber>(arg1));
-    Args.push_back(std::make_unique<RamNumber>(arg2));
+    std::vector<std::unique_ptr<RamExpression>> args;
+    args.push_back(std::make_unique<RamNumber>(arg1));
+    args.push_back(std::make_unique<RamNumber>(arg2));
 
-    std::unique_ptr<RamExpression> expression =
-            std::make_unique<RamIntrinsicOperator>(functor, std::move(Args));
-
-    return evalExpression(std::move(expression));
+    return evalMultiArg(functor, std::move(args));
 }
 
 TEST(RamNumber, ArithmeticEvaluation) {
@@ -98,19 +100,6 @@ TEST(RamNumber, ArithmeticEvaluation) {
     RamDomain result = evalExpression(std::move(expression));
     EXPECT_EQ(result, num);
 }
-
-// TEST(RamNumber, SimpleAdd) {
-//     std::vector<std::unique_ptr<RamExpression>> Args;
-//     Args.push_back(std::make_unique<RamNumber>(1));
-//     Args.push_back(std::make_unique<RamNumber>(1));
-
-//     std::unique_ptr<RamExpression> expression =
-//             std::make_unique<RamIntrinsicOperator>(FunctorOp::ADD, std::move(Args));
-
-//     RamDomain result = evalExpression(std::move(expression));
-
-//     EXPECT_EQ(result, 2);
-// }
 
 TEST(Unary, Neg) {
     std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
@@ -679,6 +668,90 @@ TEST(Binary, UnsignedLogicalOr) {
         result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 || arg2);
     }
+}
+
+TEST(MultiArg, Max) {
+    FunctorOp functor = FunctorOp::MAX;
+    std::vector<std::unique_ptr<souffle::RamExpression>> args;
+    RamDomain result;
+
+    for (RamDomain i = 0; i <= 50; ++i) {
+        args.push_back(std::make_unique<RamNumber>(i));
+    }
+
+    result = evalMultiArg(functor, std::move(args));
+
+    EXPECT_EQ(result, 50);
+}
+
+TEST(MultiArg, UnsignedMax) {
+    FunctorOp functor = FunctorOp::UMAX;
+    std::vector<std::unique_ptr<souffle::RamExpression>> args;
+    RamDomain result;
+
+    for (RamUnsigned i = 0; i <= 100; ++i) {
+        args.push_back(std::make_unique<RamNumber>(ramBitCast(i)));
+    }
+
+    result = evalMultiArg(functor, std::move(args));
+
+    EXPECT_EQ(ramBitCast<RamUnsigned>(result), 100);
+}
+
+TEST(MultiArg, FloatMax) {
+    FunctorOp functor = FunctorOp::FMAX;
+    std::vector<std::unique_ptr<souffle::RamExpression>> args;
+    RamDomain result;
+
+    for (RamDomain i = -100; i <= 100; ++i) {
+        args.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(i))));
+    }
+
+    result = evalMultiArg(functor, std::move(args));
+
+    EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(100));
+}
+
+TEST(MultiArg, Min) {
+    FunctorOp functor = FunctorOp::MIN;
+    std::vector<std::unique_ptr<souffle::RamExpression>> args;
+    RamDomain result;
+
+    for (RamDomain i = 0; i <= 50; ++i) {
+        args.push_back(std::make_unique<RamNumber>(i));
+    }
+
+    result = evalMultiArg(functor, std::move(args));
+
+    EXPECT_EQ(result, 0);
+}
+
+TEST(MultiArg, UnsignedMin) {
+    FunctorOp functor = FunctorOp::UMIN;
+    std::vector<std::unique_ptr<souffle::RamExpression>> args;
+    RamDomain result;
+
+    for (RamUnsigned i = 0; i <= 100; ++i) {
+        args.push_back(std::make_unique<RamNumber>(ramBitCast(i)));
+    }
+
+    result = evalMultiArg(functor, std::move(args));
+
+    EXPECT_EQ(ramBitCast<RamUnsigned>(result), 0);
+}
+
+TEST(MultiArg, FloatMin) {
+    FunctorOp functor = FunctorOp::FMIN;
+    std::vector<std::unique_ptr<souffle::RamExpression>> args;
+    RamDomain result;
+
+    for (RamDomain i = -100; i <= 100; ++i) {
+        args.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(i))));
+    }
+
+    result = evalMultiArg(functor, std::move(args));
+
+    EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(-100));
 }
 
 }  // namespace souffle::test

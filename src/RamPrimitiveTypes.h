@@ -29,7 +29,7 @@ enum class RamPrimitiveType {
 };
 
 /** Convert a char to RamPrimitiveType */
-RamPrimitiveType RamPrimitiveFromChar(char c) {
+inline RamPrimitiveType RamPrimitiveFromChar(char c) {
     RamPrimitiveType t;
     switch (c) {
         case 's':
@@ -50,7 +50,7 @@ RamPrimitiveType RamPrimitiveFromChar(char c) {
     return t;
 }
 
-inline std::ostream& operator<<(std::ostream& os, RamPrimitiveType& T) {
+inline std::ostream& operator<<(std::ostream& os, RamPrimitiveType T) {
     switch (T) {
         case RamPrimitiveType::String:
             os << "RamPrimitiveType::String";

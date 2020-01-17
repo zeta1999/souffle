@@ -6,9 +6,12 @@
 set -e
 set -x
 
+JOBS=$(nproc || sysctl -n hw.ncpu || echo 2)
+
 # create configure files
 ./bootstrap
 ./configure --enable-swig
+make -j$JOBS
 
 
 set +e

@@ -18,16 +18,46 @@
 
 #include <limits>
 
+#include <cassert>
 #include <cstdint>
-#include <cstring>
 #include <type_traits>
 
 namespace souffle {
 
+// TODO: Can this stay here?
+enum class RamPrimitiveType {
+    String,
+    Signed,    // Signed number
+    Unsigned,  // Unsigned number
+    Float,     // Floating point number.
+};
+
+inline RamPrimitiveType RamPrimitiveFromChar(char c) {
+    RamPrimitiveType t;
+    switch (c) {
+        case 's':
+            t = RamPrimitiveType::String;
+            break;
+        case 'i':
+            t = RamPrimitiveType::Signed;
+            break;
+        case 'f':
+            t = RamPrimitiveType::Float;
+            break;
+        case 'u':
+            t = RamPrimitiveType::Unsigned;
+            break;
+        default:
+            assert(false && "Invalid conversion to ram primitive type");
+    }
+
+    return t;
+}
+
 /**
- * Type of an element in a tuple.
+ * Types of elements in a tuple.
  *
- * Default type is int32_t; may be overridden by user
+ * Default domain has size of 32 bits; may be overridden by user
  * defining RAM_DOMAIN_TYPE.
  */
 
@@ -67,7 +97,7 @@ but as of January 2020 it is not yet supported.
 reinterpret_cast won't work here, because integral <-> float conversions are unsafe.
 **/
 
-// Cast a type by reinterpreting the bits.
+/** Cast a type by reinterpreting its bits. Domain is restricted to Ram Types only. */
 template <typename To = RamDomain, typename From>
 inline To ramBitCast(From RamElement) {
     static_assert(isRamType<From> && isRamType<To>, "Bit casting should only be used on Ram Types.");

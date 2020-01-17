@@ -18,6 +18,7 @@
 #include "InterpreterGenerator.h"
 #include "InterpreterRecords.h"
 #include "Logger.h"
+#include "RamPrimitiveTypes.h"
 #include "RamTypes.h"
 #include "SignalHandler.h"
 #include <cassert>
@@ -1250,9 +1251,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         for (IODirectives ioDirectives : cur->getIODirectives()) {
             try {
                 InterpreterRelation& relation = *node->getRelation();
-                std::vector<bool> symbolMask;
+                std::vector<RamPrimitiveType> symbolMask;
                 for (auto& cur : cur->getRelation().getAttributeTypeQualifiers()) {
-                    symbolMask.push_back(cur[0] == 's');
+                    symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }
                 IOSystem::getInstance()
                         .getReader(symbolMask, getSymbolTable(), ioDirectives,
@@ -1268,9 +1269,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Store)
         for (IODirectives ioDirectives : cur->getIODirectives()) {
             try {
-                std::vector<bool> symbolMask;
+                std::vector<RamPrimitiveType> symbolMask;
                 for (auto& cur : cur->getRelation().getAttributeTypeQualifiers()) {
-                    symbolMask.push_back(cur[0] == 's');
+                    symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }
                 IOSystem::getInstance()
                         .getWriter(symbolMask, getSymbolTable(), ioDirectives,

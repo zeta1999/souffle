@@ -15,6 +15,7 @@
 #pragma once
 
 #include "IODirectives.h"
+#include "RamPrimitiveTypes.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
 
@@ -26,7 +27,7 @@ namespace souffle {
 
 class ReadStream {
 public:
-    ReadStream(const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const bool prov,
+    ReadStream(const std::vector<RamPrimitiveType>& symbolMask, SymbolTable& symbolTable, const bool prov,
             const size_t numberOfHeights)
             : symbolMask(symbolMask), symbolTable(symbolTable), isProvenance(prov),
               arity(static_cast<uint8_t>(symbolMask.size() - (prov ? (numberOfHeights + 1) : 0))),
@@ -45,7 +46,7 @@ public:
 
 protected:
     virtual std::unique_ptr<RamDomain[]> readNextTuple() = 0;
-    const std::vector<bool>& symbolMask;
+    const std::vector<RamPrimitiveType>& symbolMask;
     SymbolTable& symbolTable;
     const bool isProvenance;
     const uint8_t arity;
@@ -54,7 +55,7 @@ protected:
 
 class ReadStreamFactory {
 public:
-    virtual std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask,
+    virtual std::unique_ptr<ReadStream> getReader(const std::vector<RamPrimitiveType>& symbolMask,
             SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
             const size_t number) = 0;
     virtual const std::string& getName() const = 0;

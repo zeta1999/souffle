@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "RamPrimitiveTypes.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
 
@@ -29,8 +30,8 @@ namespace souffle {
 class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<bool>& symbolMask, const SymbolTable& symbolTable, const bool provenance,
-            const size_t numberOfHeights)
+            const std::vector<RamPrimitiveType>& symbolMask, const SymbolTable& symbolTable,
+            const bool provenance, const size_t numberOfHeights)
             : WriteStream(symbolMask, symbolTable, provenance, numberOfHeights), dbFilename(dbFilename),
               relationName(relationName) {
         openDB();
@@ -52,7 +53,9 @@ protected:
     void writeNextTuple(const RamDomain* tuple) override {
         for (size_t i = 0; i < arity; i++) {
             RamDomain value;
-            if (symbolMask.at(i)) {
+            // Check if this makes sense. Should we cast before saving?
+            // Anyway, this should work before float goodies.
+            if (symbolMask.at(i) == RamPrimitiveType::String) {
                 value = getSymbolTableID(tuple[i]);
             } else {
                 value = tuple[i];
@@ -215,7 +218,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (!symbolMask.at(i)) {
+            if (!(symbolMask.at(i) != RamPrimitiveType::String)) {
                 projectionClause << "'_" << relationName << "'.'" << columnName << "'";
             } else {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
@@ -256,7 +259,7 @@ private:
 
 class WriteSQLiteFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& symbolMask,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<RamPrimitiveType>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
             const size_t numberOfHeights) override {
         std::string dbName = ioDirectives.get("dbname");

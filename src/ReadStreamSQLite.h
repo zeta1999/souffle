@@ -31,8 +31,8 @@ namespace souffle {
 class ReadStreamSQLite : public ReadStream {
 public:
     ReadStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const size_t numberOfHeights,
-            const bool provenance)
+            const std::vector<RamPrimitiveType>& symbolMask, SymbolTable& symbolTable,
+            const size_t numberOfHeights, const bool provenance)
             : ReadStream(symbolMask, symbolTable, provenance, numberOfHeights), dbFilename(dbFilename),
               relationName(relationName) {
         openDB();
@@ -67,7 +67,7 @@ protected:
             if (element.empty()) {
                 element = "n/a";
             }
-            if (symbolMask.at(column)) {
+            if (symbolMask.at(column) == RamPrimitiveType::String) {
                 tuple[column] = symbolTable.unsafeLookup(element);
             } else {
                 try {
@@ -156,8 +156,9 @@ protected:
 
 class ReadSQLiteFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const bool provenance, const size_t numberOfHeights) override {
+    std::unique_ptr<ReadStream> getReader(const std::vector<RamPrimitiveType>& symbolMask,
+            SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
+            const size_t numberOfHeights) override {
         std::string dbName = ioDirectives.get("dbname");
         std::string relationName = ioDirectives.getRelationName();
         return std::make_unique<ReadStreamSQLite>(

@@ -777,10 +777,10 @@ private:
         return std::make_tuple(-1, -1, std::vector<RamDomain>());
     }
 
-    void printRelationOutput(
-            const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) override {
+    void printRelationOutput(const std::vector<RamPrimitiveType>& symbolMask, const IODirectives& ioDir,
+            const Relation& rel) override {
         WriteCoutCSVFactory()
-                .getWriter(symMask, prog.getSymbolTable(), ioDir, true, rel.getNumberOfHeights())
+                .getWriter(symbolMask, prog.getSymbolTable(), ioDir, true, rel.getNumberOfHeights())
                 ->writeAll(rel);
     }
 

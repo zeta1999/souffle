@@ -15,6 +15,7 @@
 #pragma once
 
 #include "IODirectives.h"
+#include "RamPrimitiveTypes.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
 
@@ -26,8 +27,8 @@ namespace souffle {
 
 class WriteStream {
 public:
-    WriteStream(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable, const bool prov,
-            const size_t numberOfHeights, bool summary = false)
+    WriteStream(const std::vector<RamPrimitiveType>& symbolMask, const SymbolTable& symbolTable,
+            const bool prov, const size_t numberOfHeights, bool summary = false)
             : symbolMask(symbolMask), symbolTable(symbolTable), isProvenance(prov), summary(summary),
               arity(symbolMask.size() - (prov ? (numberOfHeights + 1) : 0)) {}
     template <typename T>
@@ -55,7 +56,7 @@ public:
     virtual ~WriteStream() = default;
 
 protected:
-    const std::vector<bool>& symbolMask;
+    const std::vector<RamPrimitiveType>& symbolMask;
     const SymbolTable& symbolTable;
     const bool isProvenance;
     const bool summary;
@@ -74,7 +75,7 @@ protected:
 
 class WriteStreamFactory {
 public:
-    virtual std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& symbolMask,
+    virtual std::unique_ptr<WriteStream> getWriter(const std::vector<RamPrimitiveType>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
             const size_t numberOfHeights) = 0;
     virtual const std::string& getName() const = 0;

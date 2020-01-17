@@ -185,11 +185,11 @@ public:
         }
 
         // create symbol mask
-        std::vector<bool> symMask(rel->getArity());
+        std::vector<RamPrimitiveType> symbolMask(rel->getArity());
 
         for (size_t i = 0; i < rel->getArity(); i++) {
             if (*(rel->getAttrType(i)) == 's') {
-                symMask.at(i) = true;
+                symbolMask.at(i) = RamPrimitiveType::String;
             }
         }
 
@@ -202,7 +202,7 @@ public:
         auto originalCoutBuf = std::cout.rdbuf(out.rdbuf());
 
         // print relation
-        printRelationOutput(symMask, dir, *rel);
+        printRelationOutput(symbolMask, dir, *rel);
 
         // restore original cout buffer
         std::cout.rdbuf(originalCoutBuf);
@@ -263,8 +263,8 @@ protected:
         return args;
     }
 
-    virtual void printRelationOutput(
-            const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) = 0;
+    virtual void printRelationOutput(const std::vector<RamPrimitiveType>& symbolMask,
+            const IODirectives& ioDir, const Relation& rel) = 0;
 };
 
 }  // end of namespace souffle

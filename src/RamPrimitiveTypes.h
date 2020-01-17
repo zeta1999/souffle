@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cassert>
+#include <ostream>
 
 namespace souffle {
 
@@ -47,6 +48,24 @@ RamPrimitiveType RamPrimitiveFromChar(char c) {
             assert(false && "Invalid conversion to ram primitive type");
     }
     return t;
+}
+
+inline std::ostream& operator<<(std::ostream& os, RamPrimitiveType& T) {
+    switch (T) {
+        case RamPrimitiveType::String:
+            os << "RamPrimitiveType::String";
+            break;
+        case RamPrimitiveType::Signed:
+            os << "RamPrimitiveType::Signed";
+            break;
+        case RamPrimitiveType::Float:
+            os << "RamPrimitiveType::Float";
+            break;
+        case RamPrimitiveType::Unsigned:
+            os << "RamPrimitiveType::Unsigned";
+            break;
+    }
+    return os;
 }
 
 }  // namespace souffle

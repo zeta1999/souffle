@@ -24,6 +24,7 @@
 #include "souffle/IODirectives.h"
 #include "souffle/IOSystem.h"
 #include "souffle/ParallelUtils.h"
+#include "souffle/RamPrimitiveTypes.h"
 #include "souffle/RamTypes.h"
 #include "souffle/SignalHandler.h"
 #include "souffle/SouffleInterface.h"

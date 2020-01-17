@@ -24,6 +24,7 @@
 #include "RamIndexAnalysis.h"
 #include "RamNode.h"
 #include "RamOperation.h"
+#include "RamPrimitiveTypes.h"
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamTranslationUnit.h"
@@ -203,9 +204,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitLoad(const RamLoad& load, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
-            std::vector<bool> symbolMask;
+            std::vector<RamPrimitiveType> symbolMask;
             for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
-                symbolMask.push_back(cur[0] == 's');
+                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
             }
             // get some table details
             for (IODirectives ioDirectives : load.getIODirectives()) {
@@ -218,7 +219,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
-                out << "std::vector<bool>({" << join(symbolMask) << "})";
+                out << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ", " << load.getRelation().getNumberOfHeights();
@@ -234,9 +235,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitStore(const RamStore& store, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
-            std::vector<bool> symbolMask;
+            std::vector<RamPrimitiveType> symbolMask;
             for (auto& cur : store.getRelation().getAttributeTypeQualifiers()) {
-                symbolMask.push_back(cur[0] == 's');
+                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
             }
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 out << "try {";
@@ -247,7 +248,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << "std::vector<bool>({" << join(symbolMask) << "})";
+                out << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ", " << store.getRelation().getNumberOfHeights();
@@ -2012,9 +2013,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
     visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
-            std::vector<bool> symbolMask;
+            std::vector<RamPrimitiveType> symbolMask;
             for (auto& cur : store->getRelation().getAttributeTypeQualifiers()) {
-                symbolMask.push_back(cur[0] == 's');
+                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
             }
             for (IODirectives ioDirectives : store->getIODirectives()) {
                 os << "try {";
@@ -2025,7 +2026,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "}\n";
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
-                os << "std::vector<bool>({" << join(symbolMask) << "})";
+                os << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
                 os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
                 os << ", " << store->getRelation().getNumberOfHeights();
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
@@ -2056,9 +2057,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
     visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
         // get some table details
-        std::vector<bool> symbolMask;
+        std::vector<RamPrimitiveType> symbolMask;
         for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
-            symbolMask.push_back(cur[0] == 's');
+            symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
         }
         for (IODirectives ioDirectives : load.getIODirectives()) {
             os << "try {";
@@ -2070,7 +2071,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "}\n";
             os << "IODirectives ioDirectives(directiveMap);\n";
             os << "IOSystem::getInstance().getReader(";
-            os << "std::vector<bool>({" << join(symbolMask) << "})";
+            os << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
             os << ", symTable, ioDirectives";
             os << ", " << (Global::config().has("provenance") ? "true" : "false");
             os << ", " << load.getRelation().getNumberOfHeights();
@@ -2089,9 +2090,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         auto& mask = ramRelation.getAttributeTypeQualifiers();
         size_t numberOfHeights = ramRelation.getNumberOfHeights();
 
-        std::vector<bool> symbolMask;
+        std::vector<RamPrimitiveType> symbolMask;
         for (auto& cur : mask) {
-            symbolMask.push_back(cur[0] == 's');
+            symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
         }
 
         os << "try {";
@@ -2099,7 +2100,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "ioDirectives.setIOType(\"stdout\");\n";
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
-        os << "std::vector<bool>({" << join(symbolMask) << "})";
+        os << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
         os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
         os << ", " << numberOfHeights;
         os << ")->writeAll(*" << relName << ");\n";

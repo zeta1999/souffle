@@ -732,7 +732,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> parallelRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
-                if (scan->getTupleId() == 0) {
+                if (scan->getTupleId() == 0 && scan->getRelation().getArity() > 0) {
                     changed = true;
                     return std::make_unique<RamParallelScan>(
                             std::make_unique<RamRelationReference>(&scan->getRelation()), scan->getTupleId(),

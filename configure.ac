@@ -47,6 +47,8 @@ AS_IF([test "x$enable_ncurses" != "xno"], [
 ])
 AM_CONDITIONAL([NCURSES], [test "x$enable_ncurses" != "xno"])
 
+AC_LANG(C++)
+
 # Enable sanitise memory mode
 AC_ARG_ENABLE(
   [sanitise-memory],
@@ -261,7 +263,7 @@ AC_CHECK_LIB(dl, dlopen,,
 
 dnl Enables OpenMP in the souffle compiler and interpreter
 AC_OPENMP
-AS_VAR_APPEND(CXXFLAGS, [" $OPENMP_CFLAGS "])
+AS_VAR_APPEND(CXXFLAGS, [" $OPENMP_CXXFLAGS "])
 AC_MSG_CHECKING( for target cpu)
 
 AC_CONFIG_TESTDIR([tests])

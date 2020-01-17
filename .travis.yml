@@ -116,19 +116,6 @@ jobs:
     env:
     - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
 
-# Testing stage with Swig tests enabled (-j8,-c -j8)
-  - <<: *linuxgcc
-    before_script: ".travis/init_test_swig.sh"
-    name: "Linux gcc swig"
-    env:
-    - *gcc_environment
-    - SOUFFLE_CATEGORY=Swig SOUFFLE_CONFS="-j8,-c -j8"
-  - <<: *osxgcc
-    before_script: ".travis/init_test_swig.sh"
-    name: "OSX gcc swig"
-    env:
-    - SOUFFLE_CATEGORY=Swig SOUFFLE_CONFS="-j8,-c -j8"
-
 # Testing stage with engine option (-c -j8 -efile, FastEvaluation and select others)
   - <<: *linuxgcc
     name: "Linux file engine"
@@ -139,20 +126,23 @@ jobs:
 # Testing stage (-j8,-c -j8)
   - <<: *linuxgcc
     name: "Linux gcc fast evaluation tests"
+    before_script: ".travis/init_test_swig.sh"
     env:
     - *gcc_environment
-    - SOUFFLE_CATEGORY=FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
 
 # Testing stage for clang without OpenMP (,-c)
   - <<: *linuxclang
     name: "Linux clang fast evaluation tests"
+    before_script: ".travis/init_test_swig.sh"
     env:
     - *clang_environment
-    - SOUFFLE_CATEGORY=FastEvaluation SOUFFLE_CONFS=",-c"
+    - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS=",-c"
   - <<: *osxclang
     name: "OSX clang fast evaluation tests"
+    before_script: ".travis/init_test_swig.sh"
     env:
-    - SOUFFLE_CATEGORY=FastEvaluation SOUFFLE_CONFS=",-c"
+    - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS=",-c"
 
 # Packaging stage
   # Test make install installs a working souffle.

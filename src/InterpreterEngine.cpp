@@ -194,20 +194,23 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
 #define CASE(Kind)     \
     case (I_##Kind): { \
-        const auto* cur = static_cast<const Ram##Kind*>(node->getShadow());
-
-#define CASE_NO_CAST(Kind) case (I_##Kind): {
-#define ESAC(Kind)                                                        \
-    assert(false && "Program reach end of the scope but didn't return."); \
+        return [&]() -> RamDomain { \
+            const auto& cur = *static_cast<const Ram##Kind*>(node->getShadow());
+#define CASE_NO_CAST(Kind) \
+    case (I_##Kind): {     \
+        return [&]() -> RamDomain {
+#define ESAC(Kind) \
+    }              \
+    ();            \
     }
 
     switch (node->getType()) {
         CASE(Number)
-        return cur->getConstant();
+        return cur.getConstant();
         ESAC(Number)
 
         CASE(TupleElement)
-        return ctxt[cur->getTupleId()][cur->getElement()];
+        return ctxt[cur.getTupleId()][cur.getElement()];
         ESAC(TupleElement)
 
         CASE_NO_CAST(AutoIncrement)
@@ -216,8 +219,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(IntrinsicOperator)
 #define BINARY_OP(op) return execute(node->getChild(0), ctxt) op execute(node->getChild(1), ctxt)
-        const auto& args = cur->getArguments();
-        switch (cur->getOperator()) {
+        const auto& args = cur.getArguments();
+        switch (cur.getOperator()) {
             /** Unary Functor Operators */
             case FunctorOp::ORD:
                 return execute(node->getChild(0), ctxt);
@@ -506,8 +509,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(UserDefinedOperator)
         // get name and type
-        const std::string& name = cur->getName();
-        const std::string& type = cur->getType();
+        const std::string& name = cur.getName();
+        const std::string& type = cur.getType();
 
         auto fn = reinterpret_cast<void (*)()>(getMethodHandle(name));
         if (fn == nullptr) {
@@ -515,7 +518,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             exit(1);
         }
         // prepare dynamic call environment
-        size_t arity = cur->getArguments().size();
+        size_t arity = cur.getArguments().size();
         ffi_cif cif;
         ffi_type* args[arity];
         void* values[arity];
@@ -564,7 +567,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(UserDefinedOperator)
 
         CASE(PackRecord)
-        auto values = cur->getArguments();
+        auto values = cur.getArguments();
         size_t arity = values.size();
         RamDomain data[arity];
         for (size_t i = 0; i < arity; ++i) {
@@ -574,7 +577,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(PackRecord)
 
         CASE(SubroutineArgument)
-        return ctxt.getArgument(cur->getArgument());
+        return ctxt.getArgument(cur.getArgument());
         ESAC(SubroutineArgument)
 
         CASE_NO_CAST(True)
@@ -599,15 +602,15 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(ExistenceCheck)
         // construct the pattern tuple
-        size_t arity = cur->getRelation().getArity();
+        size_t arity = cur.getRelation().getArity();
 
         size_t viewPos = node->getData(0);
 
-        if (profileEnabled && !cur->getRelation().isTemp()) {
-            reads[cur->getRelation().getName()]++;
+        if (profileEnabled && !cur.getRelation().isTemp()) {
+            reads[cur.getRelation().getName()]++;
         }
         // for total we use the exists test
-        if (isa->isTotalSignature(cur)) {
+        if (isa->isTotalSignature(&cur)) {
             RamDomain tuple[arity];
             for (size_t i = 0; i < arity; i++) {
                 tuple[i] = execute(node->getChild(i), ctxt);
@@ -627,7 +630,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(ProvenanceExistenceCheck)
         // construct the pattern tuple
-        size_t arity = cur->getRelation().getArity();
+        size_t arity = cur.getRelation().getArity();
 
         // for partial we search for lower and upper boundaries
         RamDomain low[arity];
@@ -648,7 +651,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(ProvenanceExistenceCheck)
 
         CASE(Constraint)
-        switch (cur->getOperator()) {
+        switch (cur.getOperator()) {
             case (BinaryConstraintOp::EQ):
                 BINARY_OP(==);
             case (BinaryConstraintOp::NE):
@@ -712,12 +715,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(TupleOperation)
         bool result = execute(node->getChild(0), ctxt);
 
-        if (profileEnabled && !cur->getProfileText().empty()) {
-            auto& currentFrequencies = frequencies[cur->getProfileText()];
+        if (profileEnabled && !cur.getProfileText().empty()) {
+            auto& currentFrequencies = frequencies[cur.getProfileText()];
             while (currentFrequencies.size() <= getIterationNumber()) {
                 currentFrequencies.emplace_back(0);
             }
-            frequencies[cur->getProfileText()][getIterationNumber()]++;
+            frequencies[cur.getProfileText()][getIterationNumber()]++;
         }
         return result;
         ESAC(TupleOperation)
@@ -728,7 +731,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         // use simple iterator
         for (const RamDomain* tuple : rel) {
-            ctxt[cur->getTupleId()] = tuple;
+            ctxt[cur.getTupleId()] = tuple;
             if (!execute(node->getChild(0), ctxt)) {
                 break;
             }
@@ -750,7 +753,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
         pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
             for (const TupleRef& val : *it) {
-                newCtxt[cur->getTupleId()] = val.getBase();
+                newCtxt[cur.getTupleId()] = val.getBase();
                 if (!execute(node->getChild(0), newCtxt)) {
                     break;
                 }
@@ -762,7 +765,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(IndexScan)
         // create pattern tuple for range query
-        size_t arity = cur->getRelation().getArity();
+        size_t arity = cur.getRelation().getArity();
         RamDomain low[arity];
         RamDomain hig[arity];
         for (size_t i = 0; i < arity; i++) {
@@ -779,7 +782,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         auto& view = ctxt.getView(viewId);
         // conduct range query
         for (auto data : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
-            ctxt[cur->getTupleId()] = &data[0];
+            ctxt[cur.getTupleId()] = &data[0];
             if (!execute(node->getChild(arity), ctxt)) {
                 break;
             }
@@ -816,7 +819,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
         pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
             for (const TupleRef& val : *it) {
-                newCtxt[cur->getTupleId()] = val.getBase();
+                newCtxt[cur.getTupleId()] = val.getBase();
                 if (!execute(node->getChild(arity), newCtxt)) {
                     break;
                 }
@@ -833,7 +836,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         // use simple iterator
         for (const RamDomain* tuple : rel) {
-            ctxt[cur->getTupleId()] = tuple;
+            ctxt[cur.getTupleId()] = tuple;
             if (execute(node->getChild(0), ctxt)) {
                 execute(node->getChild(1), ctxt);
                 break;
@@ -855,7 +858,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
         pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
             for (const TupleRef& val : *it) {
-                newCtxt[cur->getTupleId()] = val.getBase();
+                newCtxt[cur.getTupleId()] = val.getBase();
                 if (execute(node->getChild(0), newCtxt)) {
                     execute(node->getChild(1), newCtxt);
                     break;
@@ -868,7 +871,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(IndexChoice)
         // create pattern tuple for range query
-        size_t arity = cur->getRelation().getArity();
+        size_t arity = cur.getRelation().getArity();
         RamDomain low[arity];
         RamDomain hig[arity];
         for (size_t i = 0; i < arity; i++) {
@@ -886,7 +889,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
             const RamDomain* data = &ip[0];
-            ctxt[cur->getTupleId()] = data;
+            ctxt[cur.getTupleId()] = data;
             if (execute(node->getChild(arity), ctxt)) {
                 execute(node->getChild(arity + 1), ctxt);
                 break;
@@ -925,7 +928,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
         pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
             for (const TupleRef& val : *it) {
-                newCtxt[cur->getTupleId()] = val.getBase();
+                newCtxt[cur.getTupleId()] = val.getBase();
                 if (execute(node->getChild(arity), newCtxt)) {
                     execute(node->getChild(arity + 1), newCtxt);
                     break;
@@ -946,11 +949,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
 
         // update environment variable
-        size_t arity = cur->getArity();
+        size_t arity = cur.getArity();
         const RamDomain* tuple = unpackInterpreter(ref, arity);
 
         // save reference to temporary value
-        ctxt[cur->getTupleId()] = tuple;
+        ctxt[cur.getTupleId()] = tuple;
 
         // run nested part - using base class visitor
         return execute(node->getChild(1), ctxt);
@@ -962,7 +965,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         // initialize result
         RamDomain res = 0;
-        switch (cur->getFunction()) {
+        switch (cur.getFunction()) {
             case souffle::MIN:
                 res = MAX_RAM_DOMAIN;
                 break;
@@ -978,14 +981,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
 
         for (const RamDomain* data : rel) {
-            ctxt[cur->getTupleId()] = data;
+            ctxt[cur.getTupleId()] = data;
 
             if (!execute(node->getChild(0), ctxt)) {
                 continue;
             }
 
             // count is easy
-            if (cur->getFunction() == souffle::COUNT) {
+            if (cur.getFunction() == souffle::COUNT) {
                 ++res;
                 continue;
             }
@@ -995,7 +998,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // eval target expression
             RamDomain val = execute(node->getChild(1), ctxt);
 
-            switch (cur->getFunction()) {
+            switch (cur.getFunction()) {
                 case souffle::MIN:
                     res = std::min(res, val);
                     break;
@@ -1014,12 +1017,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         // write result to environment
         RamDomain tuple[1];
         tuple[0] = res;
-        ctxt[cur->getTupleId()] = tuple;
+        ctxt[cur.getTupleId()] = tuple;
 
-        if (cur->getFunction() == souffle::MAX && res == MIN_RAM_DOMAIN) {
+        if (cur.getFunction() == souffle::MAX && res == MIN_RAM_DOMAIN) {
             // no maximum found
             return true;
-        } else if (cur->getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
+        } else if (cur.getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
             // no minimum found
             return true;
         } else {
@@ -1031,7 +1034,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(IndexAggregate)
         // initialize result
         RamDomain res = 0;
-        switch (cur->getFunction()) {
+        switch (cur.getFunction()) {
             case souffle::MIN:
                 res = MAX_RAM_DOMAIN;
                 break;
@@ -1047,7 +1050,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
 
         // init temporary tuple for this level
-        size_t arity = cur->getRelation().getArity();
+        size_t arity = cur.getRelation().getArity();
 
         // get lower and upper boundaries for iteration
         RamDomain low[arity];
@@ -1069,14 +1072,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
             // link tuple
             const RamDomain* data = &ip[0];
-            ctxt[cur->getTupleId()] = data;
+            ctxt[cur.getTupleId()] = data;
 
             if (!execute(node->getChild(arity), ctxt)) {
                 continue;
             }
 
             // count is easy
-            if (cur->getFunction() == souffle::COUNT) {
+            if (cur.getFunction() == souffle::COUNT) {
                 ++res;
                 continue;
             }
@@ -1086,7 +1089,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // eval target expression
             RamDomain val = execute(node->getChild(arity + 1), ctxt);
 
-            switch (cur->getFunction()) {
+            switch (cur.getFunction()) {
                 case souffle::MIN:
                     res = std::min(res, val);
                     break;
@@ -1105,13 +1108,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         // write result to environment
         RamDomain tuple[1];
         tuple[0] = res;
-        ctxt[cur->getTupleId()] = tuple;
+        ctxt[cur.getTupleId()] = tuple;
 
         // run nested part - using base class visitor
-        if (cur->getFunction() == souffle::MAX && res == MIN_RAM_DOMAIN) {
+        if (cur.getFunction() == souffle::MAX && res == MIN_RAM_DOMAIN) {
             // no maximum found
             return true;
-        } else if (cur->getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
+        } else if (cur.getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
             // no minimum found
             return true;
         } else {
@@ -1136,18 +1139,18 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             result = execute(node->getChild(1), ctxt);
         }
 
-        if (profileEnabled && !cur->getProfileText().empty()) {
-            auto& currentFrequencies = frequencies[cur->getProfileText()];
+        if (profileEnabled && !cur.getProfileText().empty()) {
+            auto& currentFrequencies = frequencies[cur.getProfileText()];
             while (currentFrequencies.size() <= getIterationNumber()) {
                 currentFrequencies.emplace_back(0);
             }
-            frequencies[cur->getProfileText()][getIterationNumber()]++;
+            frequencies[cur.getProfileText()][getIterationNumber()]++;
         }
         return result;
         ESAC(Filter)
 
         CASE(Project)
-        size_t arity = cur->getRelation().getArity();
+        size_t arity = cur.getRelation().getArity();
         RamDomain tuple[arity];
         for (size_t i = 0; i < arity; i++) {
             tuple[i] = execute(node->getChild(i), ctxt);
@@ -1160,7 +1163,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Project)
 
         CASE(SubroutineReturnValue)
-        for (size_t i = 0; i < cur->getValues().size(); ++i) {
+        for (size_t i = 0; i < cur.getValues().size(); ++i) {
             if (node->getChild(i) == nullptr) {
                 ctxt.addReturnValue(0, true);
             } else {
@@ -1202,18 +1205,18 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Exit)
 
         CASE(LogRelationTimer)
-        Logger logger(cur->getMessage().c_str(), getIterationNumber(),
+        Logger logger(cur.getMessage().c_str(), getIterationNumber(),
                 std::bind(&InterpreterRelation::size, node->getRelation()));
         return execute(node->getChild(0), ctxt);
         ESAC(LogRelationTimer)
 
         CASE(LogTimer)
-        Logger logger(cur->getMessage().c_str(), getIterationNumber());
+        Logger logger(cur.getMessage().c_str(), getIterationNumber());
         return execute(node->getChild(0), ctxt);
         ESAC(LogTimer)
 
         CASE(DebugInfo)
-        SignalHandler::instance()->setMsg(cur->getMessage().c_str());
+        SignalHandler::instance()->setMsg(cur.getMessage().c_str());
         return execute(node->getChild(0), ctxt);
         ESAC(DebugInfo)
 
@@ -1229,7 +1232,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     continue;
                 }
                 ProfileEventSingleton::instance().makeStratumRecord(
-                        cur->getIndex(), "relation", rel.first, "arity", std::to_string(rel.second));
+                        cur.getIndex(), "relation", rel.first, "arity", std::to_string(rel.second));
             }
         }
         return execute(node->getChild(0), ctxt);
@@ -1243,16 +1246,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(LogSize)
         const InterpreterRelation& rel = *node->getRelation();
         ProfileEventSingleton::instance().makeQuantityEvent(
-                cur->getMessage(), rel.size(), getIterationNumber());
+                cur.getMessage(), rel.size(), getIterationNumber());
         return true;
         ESAC(LogSize)
 
         CASE(Load)
-        for (IODirectives ioDirectives : cur->getIODirectives()) {
+        for (IODirectives ioDirectives : cur.getIODirectives()) {
             try {
                 InterpreterRelation& relation = *node->getRelation();
                 std::vector<RamPrimitiveType> symbolMask;
-                for (auto& cur : cur->getRelation().getAttributeTypeQualifiers()) {
+                for (auto& cur : cur.getRelation().getAttributeTypeQualifiers()) {
                     symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }
                 IOSystem::getInstance()
@@ -1267,15 +1270,15 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Load)
 
         CASE(Store)
-        for (IODirectives ioDirectives : cur->getIODirectives()) {
+        for (IODirectives ioDirectives : cur.getIODirectives()) {
             try {
                 std::vector<RamPrimitiveType> symbolMask;
-                for (auto& cur : cur->getRelation().getAttributeTypeQualifiers()) {
+                for (auto& cur : cur.getRelation().getAttributeTypeQualifiers()) {
                     symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }
                 IOSystem::getInstance()
                         .getWriter(symbolMask, getSymbolTable(), ioDirectives,
-                                Global::config().has("provenance"), cur->getRelation().getNumberOfHeights())
+                                Global::config().has("provenance"), cur.getRelation().getNumberOfHeights())
                         ->writeAll(*node->getRelation());
             } catch (std::exception& e) {
                 std::cerr << e.what();

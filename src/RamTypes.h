@@ -24,36 +24,6 @@
 
 namespace souffle {
 
-// TODO: Can this stay here?
-enum class RamPrimitiveType {
-    String,
-    Signed,    // Signed number
-    Unsigned,  // Unsigned number
-    Float,     // Floating point number.
-};
-
-inline RamPrimitiveType RamPrimitiveFromChar(char c) {
-    RamPrimitiveType t;
-    switch (c) {
-        case 's':
-            t = RamPrimitiveType::String;
-            break;
-        case 'i':
-            t = RamPrimitiveType::Signed;
-            break;
-        case 'f':
-            t = RamPrimitiveType::Float;
-            break;
-        case 'u':
-            t = RamPrimitiveType::Unsigned;
-            break;
-        default:
-            assert(false && "Invalid conversion to ram primitive type");
-    }
-
-    return t;
-}
-
 /**
  * Types of elements in a tuple.
  *

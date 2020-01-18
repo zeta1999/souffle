@@ -1033,7 +1033,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
     std::unique_ptr<RamSequence> updateTable(new RamSequence());
     std::unique_ptr<RamStatement> postamble;
 
-    auto genMerge = [](const RamRelationReference* dest, const RamRelationReference* src) -> std::unique_ptr<RamStatement> {
+    auto genMerge = [](const RamRelationReference* dest,
+                            const RamRelationReference* src) -> std::unique_ptr<RamStatement> {
         if (src->get()->getArity() > 0) {
             std::vector<std::unique_ptr<RamExpression>> values;
             for (std::size_t i = 0; i < dest->get()->getArity(); i++) {
@@ -1044,11 +1045,12 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                             std::make_unique<RamProject>(
                                     std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values)),
                             ""));
-            if (dest->get()->getRepresentation() == RelationRepresentation::EQREL) { 
-               stmt = std::make_unique<RamSequence>(
-                          std::make_unique<RamExtend>(std::unique_ptr<RamRelationReference>(dest->clone()), std::unique_ptr<RamRelationReference>(src->clone())),
-                          std::move(stmt)); 
-            } 
+            if (dest->get()->getRepresentation() == RelationRepresentation::EQREL) {
+                stmt = std::make_unique<RamSequence>(
+                        std::make_unique<RamExtend>(std::unique_ptr<RamRelationReference>(dest->clone()),
+                                std::unique_ptr<RamRelationReference>(src->clone())),
+                        std::move(stmt));
+            }
             return stmt;
         } else {
             std::vector<std::unique_ptr<RamExpression>> values;

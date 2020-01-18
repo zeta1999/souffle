@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "RamPrimitiveTypes.h"
 #include "RamTypes.h"
 
 #include <algorithm>

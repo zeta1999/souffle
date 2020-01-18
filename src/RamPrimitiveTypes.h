@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cassert>
+#include <iostream>
 #include <ostream>
 
 namespace souffle {
@@ -26,7 +27,28 @@ enum class RamPrimitiveType {
     Signed,    // Signed number
     Unsigned,  // Unsigned number
     Float,     // Floating point number.
+    Record,
 };
+
+inline std::ostream& operator<<(std::ostream& os, RamPrimitiveType T) {
+    switch (T) {
+        case RamPrimitiveType::String:
+            os << "RamPrimitiveType::String";
+            break;
+        case RamPrimitiveType::Signed:
+            os << "RamPrimitiveType::Signed";
+            break;
+        case RamPrimitiveType::Float:
+            os << "RamPrimitiveType::Float";
+            break;
+        case RamPrimitiveType::Unsigned:
+            os << "RamPrimitiveType::Unsigned";
+            break;
+        case RamPrimitiveType::Record:
+            os << "RamPrimitiveType::Record";
+    }
+    return os;
+}
 
 /** Convert a char to RamPrimitiveType */
 inline RamPrimitiveType RamPrimitiveFromChar(char c) {
@@ -44,28 +66,14 @@ inline RamPrimitiveType RamPrimitiveFromChar(char c) {
         case 'u':
             t = RamPrimitiveType::Unsigned;
             break;
+        case 'r':
+            t = RamPrimitiveType::Record;
+            break;
         default:
+            std::cerr << "Invalid RamPrimitiveType Char " << c << std::endl;
             assert(false && "Invalid conversion to ram primitive type");
     }
     return t;
-}
-
-inline std::ostream& operator<<(std::ostream& os, RamPrimitiveType T) {
-    switch (T) {
-        case RamPrimitiveType::String:
-            os << "RamPrimitiveType::String";
-            break;
-        case RamPrimitiveType::Signed:
-            os << "RamPrimitiveType::Signed";
-            break;
-        case RamPrimitiveType::Float:
-            os << "RamPrimitiveType::Float";
-            break;
-        case RamPrimitiveType::Unsigned:
-            os << "RamPrimitiveType::Unsigned";
-            break;
-    }
-    return os;
 }
 
 }  // namespace souffle

@@ -333,6 +333,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return ramBitCast(first * second);
             }
 
+            case FunctorOp::DIV: {
+                BINARY_OP(/);
+            }
+
             case FunctorOp::UDIV: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
@@ -344,9 +348,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return ramBitCast(first / second);
             }
 
-            case FunctorOp::DIV: {
-                BINARY_OP(/);
-            }
             case FunctorOp::EXP: {
                 return std::pow(execute(node->getChild(0), ctxt), execute(node->getChild(1), ctxt));
             }

@@ -433,9 +433,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitExtend(const RamExtend& extend, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << synthesiser.getRelationName(merge.getSourceRelation()) << "->"
+            out << synthesiser.getRelationName(extend.getSourceRelation()) << "->"
                 << "extend("
-                << "*" << synthesiser.getRelationName(merge.getTargetRelation()) << ");\n";
+                << "*" << synthesiser.getRelationName(extend.getTargetRelation()) << ");\n";
             PRINT_END_COMMENT(out);
         }
 

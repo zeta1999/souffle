@@ -6,7 +6,7 @@
 
 SUFFIXES = .cpp .h .yy .ll .cc .hh .h
 
-bin_PROGRAMS = souffle souffle-profile souffle2bdd souffle2lb
+bin_PROGRAMS = souffle souffle-profile
 
 nodist_souffle_profile_SOURCES = $(BUILT_SOURCES)
 
@@ -133,6 +133,7 @@ souffle_sources = \
               RamTransforms.cpp     RamTransforms.h     \
               RamTranslationUnit.h                      \
               RamExpression.h                           \
+              RamUtils.h                                \
               RamVisitor.h                              \
               ReadStream.h                              \
               ReadStreamCSV.h                           \
@@ -164,12 +165,6 @@ souffle_LDADD = libsouffle.la
 
 souffle_profile_SOURCES = souffle_prof.cpp
 souffle_profile_CXXFLAGS = $(souffle_CPPFLAGS) -DMAKEDIR='"$(DIR)"'
-
-souffle2bdd_SOURCES = souffle2bdd.cpp
-souffle2bdd_LDADD = libsouffle.la
-
-souffle2lb_SOURCES = souffle2lb.cpp
-souffle2lb_LDADD = libsouffle.la
 
 dist_bin_SCRIPTS = souffle-compile souffle-config
 
@@ -238,7 +233,6 @@ $(builddir)/scanner.cc: $(srcdir)/scanner.ll
 
 # driver depends on the generated header
 $(builddir)/parser.cc $(builddir)/stack.hh $(builddir)/scanner.cc \
-    $(builddir)/souffle2bdd.cpp $(builddir)/souffle2lb.cpp \
     $(builddir)/main.cpp $(builddir)/ParserDriver.cpp: $(builddir)/parser.hh
 
 ########## Unit Tests
@@ -381,6 +375,12 @@ check_PROGRAMS += test/ram_condition_equal_clone_test
 test_ram_condition_equal_clone_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
 test_ram_condition_equal_clone_test_SOURCES = test/ram_condition_equal_clone_test.cpp
 test_ram_condition_equal_clone_test_LDADD = libsouffle.la
+
+# test
+check_PROGRAMS += test/ram_arithmetic_test
+test_ram_arithmetic_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_ram_arithmetic_test_SOURCES = test/ram_arithmetic_test.cpp
+test_ram_arithmetic_test_LDADD = libsouffle.la
 
 # make all check-programs tests
 TESTS = $(check_PROGRAMS)

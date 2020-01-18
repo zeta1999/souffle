@@ -54,11 +54,12 @@ public:
  */
 class RamRelationStatement : public RamStatement {
 public:
-    RamRelationStatement(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {}
+    RamRelationStatement(std::unique_ptr<RamRelationReference> relRef) : relationRef(std::move(relRef)) {
+        assert(relationRef != nullptr && "Relation reference is a null-pointer");
+    }
 
     /** @brief Get RAM relation */
     const RamRelation& getRelation() const {
-        assert(relationRef != nullptr && "Relation reference is a null-pointer");
         return *relationRef->get();
     }
 
@@ -78,30 +79,6 @@ protected:
         assert(nullptr != dynamic_cast<const RamRelationStatement*>(&node));
         const auto& other = static_cast<const RamRelationStatement&>(node);
         return getRelation() == other.getRelation();
-    }
-};
-
-/**
- * @class RamCreate
- * @brief Create new RAM relation
- *
- * The following example creates the relation A:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * CREATE A
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-class RamCreate : public RamRelationStatement {
-public:
-    RamCreate(std::unique_ptr<RamRelationReference> relRef) : RamRelationStatement(std::move(relRef)) {}
-
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "CREATE " << rel.getName() << " " << rel.getRepresentation() << std::endl;
-    };
-
-    RamCreate* clone() const override {
-        return new RamCreate(std::unique_ptr<RamRelationReference>(relationRef->clone()));
     }
 };
 
@@ -236,31 +213,6 @@ public:
 };
 
 /**
- * @class RamDrop
- * @brief Drop relation, i.e., delete it from memory
- *
- * For example:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * DROP A
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-class RamDrop : public RamRelationStatement {
-public:
-    RamDrop(std::unique_ptr<RamRelationReference> relRef) : RamRelationStatement(std::move(relRef)) {}
-
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "DROP " << rel.getName();
-        os << std::endl;
-    }
-
-    RamDrop* clone() const override {
-        return new RamDrop(std::unique_ptr<RamRelationReference>(relationRef->clone()));
-    }
-};
-
-/**
  * @class RamBinRelationStatement
  * @brief Abstract class for a binary relation
  *
@@ -275,17 +227,17 @@ public:
             assert(first->get()->getArgTypeQualifier(i) == second->get()->getArgTypeQualifier(i) &&
                     "mismatching type");
         }
+        assert(first != nullptr && "First relation is a null-pointer");
+        assert(second != nullptr && "Second relation is a null-pointer");
     }
 
     /** @brief Get first relation */
     const RamRelation& getFirstRelation() const {
-        assert(first != nullptr && "First relation is a null-pointer");
         return *first->get();
     }
 
     /** @brief Get second relation */
     const RamRelation& getSecondRelation() const {
-        assert(second != nullptr && "Second relation is a null-pointer");
         return *second->get();
     }
 
@@ -310,6 +262,48 @@ protected:
         const auto& other = static_cast<const RamBinRelationStatement&>(node);
         return getFirstRelation() == other.getFirstRelation() &&
                getSecondRelation() == other.getSecondRelation();
+    }
+};
+
+/**
+ * @class RamExtend
+ * @brief Extend equivalence relation.
+ *
+ * The following example merges A into B:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * EXTEND B WITH A
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+class RamExtend : public RamBinRelationStatement {
+public:
+    RamExtend(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
+            : RamBinRelationStatement(std::move(sRef), std::move(tRef)) {}
+
+    /** @brief Get source relation */
+    const RamRelation& getSourceRelation() const {
+        return getFirstRelation();
+    }
+
+    /** @brief Get target relation */
+    const RamRelation& getTargetRelation() const {
+        return getSecondRelation();
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "EXTEND " << getTargetRelation().getName() << " WITH " << getSourceRelation().getName();
+        os << std::endl;
+    }
+
+    RamExtend* clone() const override {
+        auto* res = new RamExtend(std::unique_ptr<RamRelationReference>(first->clone()),
+                std::unique_ptr<RamRelationReference>(second->clone()));
+        return res;
+    }
+
+protected:
+    bool equal(const RamNode& node) const override {
+        return RamBinRelationStatement::equal(node);
     }
 };
 
@@ -347,67 +341,6 @@ protected:
 };
 
 /**
- * @class RamFact
- * @brief Insert a fact into a relation
- *
- * For example, inserting the number 100 into the
- * relation lim:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * INSERT (number(100)) INTO lim
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-class RamFact : public RamRelationStatement {
-public:
-    RamFact(std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>>&& v)
-            : RamRelationStatement(std::move(relRef)), values(std::move(v)) {}
-
-    /** @brief Get arguments of fact */
-    std::vector<RamExpression*> getValues() const {
-        return toPtrVector(values);
-    }
-
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "INSERT (" << join(values, ",", print_deref<std::unique_ptr<RamExpression>>()) << ") INTO "
-           << getRelation().getName();
-        os << std::endl;
-    };
-
-    std::vector<const RamNode*> getChildNodes() const override {
-        std::vector<const RamNode*> res = RamRelationStatement::getChildNodes();
-        for (const auto& cur : values) {
-            res.push_back(cur.get());
-        }
-        return res;
-    }
-
-    RamFact* clone() const override {
-        auto* res = new RamFact(std::unique_ptr<RamRelationReference>(relationRef->clone()), {});
-        for (auto& cur : values) {
-            res->values.emplace_back(cur->clone());
-        }
-        return res;
-    }
-
-    void apply(const RamNodeMapper& map) override {
-        RamRelationStatement::apply(map);
-        for (auto& val : values) {
-            val = map(std::move(val));
-        }
-    }
-
-protected:
-    /** Arguments of fact */
-    std::vector<std::unique_ptr<RamExpression>> values;
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamFact*>(&node));
-        const auto& other = static_cast<const RamFact&>(node);
-        return RamRelationStatement::equal(other) && equal_targets(values, other.values);
-    }
-};
-
-/**
  * @class RamQuery
  * @brief A relational algebra query
  *
@@ -423,11 +356,12 @@ protected:
  */
 class RamQuery : public RamStatement {
 public:
-    RamQuery(std::unique_ptr<RamOperation> o) : operation(std::move(o)) {}
+    RamQuery(std::unique_ptr<RamOperation> o) : operation(std::move(o)) {
+        assert(operation && "operation is a nullptr");
+    }
 
     /** @brief Get RAM operation */
     const RamOperation& getOperation() const {
-        assert(operation);
         return *operation;
     }
 
@@ -523,7 +457,7 @@ public:
         }
         for (const auto& cur : statements) {
             (void)cur;
-            assert(cur);
+            assert(cur && "statement is a nullptr");
         }
     }
 
@@ -605,7 +539,9 @@ protected:
  */
 class RamLoop : public RamStatement {
 public:
-    RamLoop(std::unique_ptr<RamStatement> b) : body(std::move(b)) {}
+    RamLoop(std::unique_ptr<RamStatement> b) : body(std::move(b)) {
+        assert(body != nullptr && "Loop body is a null-pointer");
+    }
 
     template <typename... Stmts>
     RamLoop(std::unique_ptr<RamStatement> f, std::unique_ptr<RamStatement> s, std::unique_ptr<Stmts>... rest)
@@ -613,7 +549,6 @@ public:
 
     /** @brief Get loop body */
     const RamStatement& getBody() const {
-        assert(body != nullptr && "Loop body is a null-pointer");
         return *body;
     }
 
@@ -660,11 +595,12 @@ protected:
  */
 class RamExit : public RamStatement {
 public:
-    RamExit(std::unique_ptr<RamCondition> c) : condition(std::move(c)) {}
+    RamExit(std::unique_ptr<RamCondition> c) : condition(std::move(c)) {
+        assert(condition && "condition is a nullptr");
+    }
 
     /** @brief Get exit condition */
     const RamCondition& getCondition() const {
-        assert(condition);
         return *condition;
     }
 
@@ -705,7 +641,7 @@ class RamAbstractLog {
 public:
     RamAbstractLog(std::unique_ptr<RamStatement> stmt, std::string msg)
             : statement(std::move(stmt)), message(std::move(msg)) {
-        assert(statement);
+        assert(statement && "log statement is a nullptr");
     }
 
     std::vector<const RamNode*> getChildNodes() const {
@@ -719,7 +655,6 @@ public:
 
     /** @brief Get logging statement */
     const RamStatement& getStatement() const {
-        assert(statement);
         return *statement;
     }
 
@@ -907,11 +842,12 @@ protected:
  */
 class RamStratum : public RamStatement {
 public:
-    RamStratum(std::unique_ptr<RamStatement> b, const int i) : body(std::move(b)), index(i) {}
+    RamStratum(std::unique_ptr<RamStatement> b, const int i) : body(std::move(b)), index(i) {
+        assert(body != nullptr && "Body of stratum is a null-pointer");
+    }
 
     /** @brief Get stratum body */
     const RamStatement& getBody() const {
-        assert(body != nullptr && "Body of stratum is a null-pointer");
         return *body;
     }
 

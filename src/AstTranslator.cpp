@@ -198,14 +198,16 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
         const size_t arity, const size_t numberOfHeights, const std::vector<std::string> attributeNames,
         const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation representation) {
-    const RamRelation* ramRel = ramProg->getRelation(name);
-    if (ramRel == nullptr) {
-        ramProg->addRelation(std::make_unique<RamRelation>(
-                name, arity, numberOfHeights, attributeNames, attributeTypeQualifiers, representation));
-        ramRel = ramProg->getRelation(name);
-        assert(ramRel != nullptr && "cannot find relation");
+    auto it = ramRels.find(name);
+    if (it == ramRels.end()) {
+        ramRels[name] = std::make_unique<RamRelation>(
+                name, arity, numberOfHeights, attributeNames, attributeTypeQualifiers, representation);
+        it = ramRels.find(name);
     }
-    return std::make_unique<RamRelationReference>(ramRel);
+    assert(it != ramRels.end() && "relation name not found");
+
+    const RamRelation* relation = it->second.get();
+    return std::make_unique<RamRelationReference>(relation);
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(
@@ -663,7 +665,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
 
         // create a fact statement
-        return std::make_unique<RamFact>(translator.translateRelation(head), std::move(values));
+        return std::make_unique<RamQuery>(
+                std::make_unique<RamProject>(translator.translateRelation(head), std::move(values)));
     }
 
     // the rest should be rules
@@ -1030,29 +1033,32 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
     std::unique_ptr<RamSequence> updateTable(new RamSequence());
     std::unique_ptr<RamStatement> postamble;
 
-    auto genMerge = [](const RamRelationReference *dest, const RamRelationReference *src) {
-        if (src->get()->getArity() > 0 ) {
-        std::vector<std::unique_ptr<RamExpression>> values;
-        for (std::size_t i=0; i< dest->get()->getArity();i++) {
-            values.push_back(std::make_unique<RamTupleElement>(0,i));
-        }
-        return std::make_unique<RamQuery>(
-                   std::make_unique<RamScan>(std::unique_ptr<RamRelationReference>(src->clone()), 0, 
-                      std::make_unique<RamProject>(std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values)),
-                      ""
-                   )
-               );
+    auto genMerge = [](const RamRelationReference* dest, const RamRelationReference* src) {
+        if (src->get()->getArity() > 0) {
+            std::unique<RamStatement> stmt;
+            std::vector<std::unique_ptr<RamExpression>> values;
+            for (std::size_t i = 0; i < dest->get()->getArity(); i++) {
+                values.push_back(std::make_unique<RamTupleElement>(0, i));
+            }
+            stmt = std::make_unique<RamQuery>(
+                    std::make_unique<RamScan>(std::unique_ptr<RamRelationReference>(src->clone()), 0,
+                            std::make_unique<RamProject>(
+                                    std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values)),
+                            ""));
+            if (dest->getRepresentation() == RelationRepresentation::EQREL) { 
+               stmt = std::make_unique<RamSequence>(
+                          std::make_unique<RamExtend>(std::unique_ptr<RamRelationReference>(dest->clone()), std::unique_ptr<RamRelationReference>(src->clone())),
+                          std::move(stmt)); 
+            } 
         } else {
-        std::vector<std::unique_ptr<RamExpression>> values;
-        return std::make_unique<RamQuery>(
-                   std::make_unique<RamFilter>(
-                       std::make_unique<RamNegation>(
-                            std::make_unique<RamEmptinessCheck>(std::unique_ptr<RamRelationReference>(src->clone()))), 
-                           std::make_unique<RamProject>(std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values))
-                       )
-                   );
-        } 
-    }; 
+            std::vector<std::unique_ptr<RamExpression>> values;
+            return std::make_unique<RamQuery>(std::make_unique<RamFilter>(
+                    std::make_unique<RamNegation>(std::make_unique<RamEmptinessCheck>(
+                            std::unique_ptr<RamRelationReference>(src->clone()))),)
+                    std::make_unique<RamProject>(
+                            std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values))));
+        }
+    };
 
     // --- create preamble ---
 
@@ -1073,8 +1079,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
         /* create update statements for fixpoint (even iteration) */
         appendStmt(updateRelTable,
-                std::make_unique<RamSequence>(
-                        genMerge(rrel[rel].get(), relNew[rel].get()),
+                std::make_unique<RamSequence>(genMerge(rrel[rel].get(), relNew[rel].get()),
                         std::make_unique<RamSwap>(
                                 std::unique_ptr<RamRelationReference>(relDelta[rel]->clone()),
                                 std::unique_ptr<RamRelationReference>(relNew[rel]->clone())),
@@ -1090,9 +1095,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
         /* drop temporary tables after recursion */
         appendStmt(postamble, std::make_unique<RamSequence>(
-                                      std::make_unique<RamDrop>(
+                                      std::make_unique<RamClear>(
                                               std::unique_ptr<RamRelationReference>(relDelta[rel]->clone())),
-                                      std::make_unique<RamDrop>(
+                                      std::make_unique<RamClear>(
                                               std::unique_ptr<RamRelationReference>(relNew[rel]->clone()))));
 
         /* Generate code for non-recursive part of relation */
@@ -1355,7 +1360,6 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     struct VariablesToArguments : public AstNodeMapper {
         const std::vector<const AstVariable*>& uniqueVariables;
 
-        VariablesToArguments() = default;
         VariablesToArguments(const std::vector<const AstVariable*>& uniqueVariables)
                 : uniqueVariables(uniqueVariables) {}
 
@@ -1514,9 +1518,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // start with an empty sequence of ram statements
     std::unique_ptr<RamStatement> res = std::make_unique<RamSequence>();
 
-    // start with an empty program
-    ramProg = std::make_unique<RamProgram>(std::make_unique<RamSequence>());
-
     // handle the case of an empty SCC graph
     if (sccGraph.getNumberOfSCCs() == 0) return;
 
@@ -1551,8 +1552,8 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     };
 
     // a function to drop relations
-    const auto& makeRamDrop = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
-        appendStmt(current, std::make_unique<RamDrop>(translateRelation(relation)));
+    const auto& makeRamClear = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation) {
+        appendStmt(current, std::make_unique<RamClear>(translateRelation(relation)));
     };
 
     // maintain the index of the SCC within the topological order
@@ -1581,19 +1582,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
         // make a variable for all relations that are expired at the current SCC
         const auto& internExps = expirySchedule.at(indexOfScc).expired();
-
-        // create all internal relations of the current scc
-        for (const auto& relation : allInterns) {
-            appendStmt(current, std::make_unique<RamCreate>(
-                                        std::unique_ptr<RamRelationReference>(translateRelation(relation))));
-            // create new and delta relations if required
-            if (isRecursive) {
-                appendStmt(current, std::make_unique<RamCreate>(std::unique_ptr<RamRelationReference>(
-                                            translateDeltaRelation(relation))));
-                appendStmt(current, std::make_unique<RamCreate>(std::unique_ptr<RamRelationReference>(
-                                            translateNewRelation(relation))));
-            }
-        }
 
         {
             // load all internal input relations from the facts dir with a .facts extension
@@ -1643,20 +1631,20 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             if (Global::config().has("engine")) {
                 // drop all internal relations
                 for (const auto& relation : allInterns) {
-                    makeRamDrop(current, relation);
+                    makeRamClear(current, relation);
                 }
                 // drop external output predecessor relations
                 for (const auto& relation : externOutPreds) {
-                    makeRamDrop(current, relation);
+                    makeRamClear(current, relation);
                 }
                 // drop external non-output predecessor relations
                 for (const auto& relation : externNonOutPreds) {
-                    makeRamDrop(current, relation);
+                    makeRamClear(current, relation);
                 }
             } else {
                 // otherwise, drop all  relations expired as per the topological order
                 for (const auto& relation : internExps) {
-                    makeRamDrop(current, relation);
+                    makeRamClear(current, relation);
                 }
             }
         }
@@ -1676,7 +1664,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     }
 
     // done for main prog
-    ramProg->setMain(std::move(res));
+    ramMain = std::move(res);
 
     // add subroutines for each clause
     if (Global::config().has("provenance")) {
@@ -1691,11 +1679,11 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
             std::string subroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_subproof";
-            ramProg->addSubroutine(subroutineLabel, makeSubproofSubroutine(clause));
+            ramSubs[subroutineLabel] = makeSubproofSubroutine(clause);
 
             std::string negationSubroutineLabel =
                     relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_negation_subproof";
-            ramProg->addSubroutine(negationSubroutineLabel, makeNegationSubproofSubroutine(clause));
+            ramSubs[negationSubroutineLabel] = makeNegationSubproofSubroutine(clause);
         });
     }
 }
@@ -1707,6 +1695,15 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     SymbolTable& symTab = tu.getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
+    std::vector<std::unique_ptr<RamRelation>> rels;
+    for (auto& cur : ramRels) {
+        rels.push_back(std::move(cur.second));
+    }
+    if (nullptr == ramMain) {
+        ramMain = std::make_unique<RamSequence>();
+    }
+    std::unique_ptr<RamProgram> ramProg =
+            std::make_unique<RamProgram>(std::move(rels), std::move(ramMain), std::move(ramSubs));
     if (!Global::config().get("debug-report").empty()) {
         if (ramProg) {
             auto ram_end = std::chrono::high_resolution_clock::now();

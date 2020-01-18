@@ -24,6 +24,7 @@
 #pragma once
 
 #include "InterpreterPreamble.h"
+#include "InterpreterRelation.h"
 #include "RamNode.h"
 
 namespace souffle {
@@ -68,14 +69,12 @@ enum InterpreterNodeType {
     I_LogTimer,
     I_DebugInfo,
     I_Stratum,
-    I_Create,
     I_Clear,
-    I_Drop,
     I_LogSize,
     I_Load,
     I_Store,
-    I_Fact,
     I_Query,
+    I_Extend,
     I_Swap,
 };
 
@@ -87,10 +86,14 @@ enum InterpreterNodeType {
  */
 
 class InterpreterNode {
+    using RelationHandle = std::unique_ptr<InterpreterRelation>;
+
 public:
     InterpreterNode(enum InterpreterNodeType ty, const RamNode* sdw,
-            std::vector<std::unique_ptr<InterpreterNode>> chlds = {}, std::vector<size_t> data = {})
-            : type(ty), shadow(sdw), children(std::move(chlds)), data(std::move(data)) {}
+            std::vector<std::unique_ptr<InterpreterNode>> chlds = {}, RelationHandle* relHandle = nullptr,
+            std::vector<size_t> data = {})
+            : type(ty), shadow(sdw), children(std::move(chlds)), relHandle(relHandle), data(std::move(data)) {
+    }
 
     /** @brief get node type */
     inline enum InterpreterNodeType getType() const {
@@ -127,11 +130,20 @@ public:
         return children;
     }
 
+    /** @brief get relation from handle */
+    inline InterpreterRelation* getRelation() const {
+        if (relHandle == nullptr) {
+            assert(false && "No relation cached\n");
+        }
+        return (*relHandle).get();
+    }
+
 protected:
     enum InterpreterNodeType type;
     const RamNode* shadow;
     std::vector<std::unique_ptr<InterpreterNode>> children;
-    std::shared_ptr<InterpreterPreamble> preamble = nullptr;
+    RelationHandle* const relHandle;
     std::vector<size_t> data;
+    std::shared_ptr<InterpreterPreamble> preamble = nullptr;
 };
 }  // namespace souffle

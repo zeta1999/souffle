@@ -363,7 +363,7 @@ public:
 
     /**
      * @Brief Get the default index signature for a relation (the total-order index)
-     * @param RamCreate node
+     * @param ramRel RAM-relation
      * @result total full-signature of the relation
      */
     SearchSignature getSearchSignature(const RamRelation* ramRel) const;

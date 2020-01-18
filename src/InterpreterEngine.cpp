@@ -26,37 +26,8 @@
 
 namespace souffle {
 
-void InterpreterEngine::createRelation(
-        const RamRelation& id, const MinIndexSelection& orderSet, const size_t idx) {
-    RelationHandle res;
-    if (relations.size() < idx + 1) {
-        relations.resize(idx + 1);
-    }
-    if (id.getRepresentation() == RelationRepresentation::EQREL) {
-        res = std::make_unique<InterpreterEqRelation>(
-                id.getArity(), id.getNumberOfHeights(), id.getName(), std::vector<std::string>(), orderSet);
-    } else {
-        if (isProvenance) {
-            res = std::make_unique<InterpreterRelation>(id.getArity(), id.getNumberOfHeights(), id.getName(),
-                    std::vector<std::string>(), orderSet, createBTreeProvenanceIndex);
-        } else {
-            res = std::make_unique<InterpreterRelation>(id.getArity(), id.getNumberOfHeights(), id.getName(),
-                    std::vector<std::string>(), orderSet);
-        }
-    }
-    std::swap(relations[idx], res);
-}
-
-InterpreterRelation& InterpreterEngine::getRelation(const size_t idx) {
-    return *relations[idx].get();
-}
-
 InterpreterEngine::RelationHandle& InterpreterEngine::getRelationHandle(const size_t idx) {
-    return relations[idx];
-}
-
-void InterpreterEngine::dropRelation(const size_t relId) {
-    relations[relId].reset(nullptr);
+    return generator.getRelationHandle(idx);
 }
 
 void InterpreterEngine::swapRelation(const size_t ramRel1, const size_t ramRel2) {
@@ -88,8 +59,8 @@ void* InterpreterEngine::getMethodHandle(const std::string& method) {
     return nullptr;
 }
 
-std::vector<InterpreterEngine::RelationHandle>& InterpreterEngine::getRelationMap() {
-    return relations;
+std::vector<std::unique_ptr<InterpreterEngine::RelationHandle>>& InterpreterEngine::getRelationMap() {
+    return generator.getRelations();
 }
 
 const std::vector<void*>& InterpreterEngine::loadDLL() {
@@ -151,16 +122,18 @@ void InterpreterEngine::executeMain() {
     if (Global::config().has("verbose")) {
         SignalHandler::instance()->enableLogging();
     }
-    auto* program = tUnit.getProgram()->getMain();
-    auto entry = generator.generateTree(*program);
+
+    RamStatement& program = tUnit.getProgram()->getMain();
+    auto entry = generator.generateTree(program);
     InterpreterContext ctxt;
+
     if (!profileEnabled) {
         InterpreterContext ctxt;
         execute(entry.get(), ctxt);
     } else {
         ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
         // Prepare the frequency table for threaded use
-        visitDepthFirst(*program, [&](const RamTupleOperation& node) {
+        visitDepthFirst(program, [&](const RamTupleOperation& node) {
             if (!node.getProfileText().empty()) {
                 frequencies.emplace(node.getProfileText(), std::deque<std::atomic<size_t>>());
             }
@@ -175,17 +148,17 @@ void InterpreterEngine::executeMain() {
         }
         // Store count of relations
         size_t relationCount = 0;
-        visitDepthFirst(*program, [&](const RamCreate& create) {
-            if (create.getRelation().getName()[0] != '@') {
+        for (auto rel : tUnit.getProgram()->getRelations()) {
+            if (rel->getName()[0] != '@') {
                 ++relationCount;
-                reads[create.getRelation().getName()] = 0;
+                reads[rel->getName()] = 0;
             }
-        });
+        }
         ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string(relationCount));
 
         // Store count of rules
         size_t ruleCount = 0;
-        visitDepthFirst(*program, [&](const RamQuery& rule) { ++ruleCount; });
+        visitDepthFirst(program, [&](const RamQuery& rule) { ++ruleCount; });
         ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
 
         InterpreterContext ctxt;
@@ -357,7 +330,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             exit(1);
         }
         // prepare dynamic call environment
-        size_t arity = cur->getArgCount();
+        size_t arity = cur->getArguments().size();
         ffi_cif cif;
         ffi_type* args[arity];
         void* values[arity];
@@ -436,7 +409,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Negation)
 
         CASE_NO_CAST(EmptinessCheck)
-        return getRelation(node->getData(0)).empty();
+        return node->getRelation()->empty();
         ESAC(EmptinessCheck)
 
         CASE(ExistenceCheck)
@@ -566,7 +539,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Scan)
         // get the targeted relation
-        auto& rel = getRelation(node->getData(0));
+        auto& rel = *node->getRelation();
 
         // use simple iterator
         for (const RamDomain* tuple : rel) {
@@ -580,7 +553,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(ParallelScan)
         auto preamble = node->getPreamble();
-        auto& rel = getRelation(node->getData(0));
+        auto& rel = *node->getRelation();
 
         auto pStream = rel.partitionScan(numOfThreads);
 
@@ -631,7 +604,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(ParallelIndexScan)
         auto preamble = node->getPreamble();
-        auto& rel = getRelation(node->getData(0));
+        auto& rel = *node->getRelation();
 
         // create pattern tuple for range query
         size_t arity = rel.getArity();
@@ -647,7 +620,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
         }
 
-        size_t indexPos = node->getData(1);
+        size_t indexPos = node->getData(0);
         auto pStream = rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
         PARALLEL_START;
@@ -671,7 +644,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Choice)
         // get the targeted relation
-        auto& rel = getRelation(node->getData(0));
+        auto& rel = *node->getRelation();
 
         // use simple iterator
         for (const RamDomain* tuple : rel) {
@@ -686,7 +659,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(ParallelChoice)
         auto preamble = node->getPreamble();
-        auto& rel = getRelation(node->getData(0));
+        auto& rel = *node->getRelation();
 
         auto pStream = rel.partitionScan(numOfThreads);
         auto viewInfo = preamble->getViewInfoForNested();
@@ -739,7 +712,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(ParallelIndexChoice)
         auto preamble = node->getPreamble();
-        auto& rel = getRelation(node->getData(0));
+        auto& rel = *node->getRelation();
 
         auto viewInfo = preamble->getViewInfoForNested();
 
@@ -757,7 +730,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
         }
 
-        size_t indexPos = node->getData(1);
+        size_t indexPos = node->getData(0);
         auto pStream = rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
         PARALLEL_START;
@@ -800,7 +773,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Aggregate)
         // get the targeted relation
-        const InterpreterRelation& rel = getRelation(node->getData(0));
+        const InterpreterRelation& rel = *node->getRelation();
 
         // initialize result
         RamDomain res = 0;
@@ -905,7 +878,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
         }
 
-        size_t viewId = node->getData(1);
+        size_t viewId = node->getData(0);
         auto& view = ctxt.getView(viewId);
 
         for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
@@ -996,7 +969,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
 
         // insert in target relation
-        InterpreterRelation& rel = getRelation(node->getData(0));
+        InterpreterRelation& rel = *node->getRelation();
         rel.insert(tuple);
         return true;
         ESAC(Project)
@@ -1045,7 +1018,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(LogRelationTimer)
         Logger logger(cur->getMessage().c_str(), getIterationNumber(),
-                std::bind(&InterpreterRelation::size, &getRelation(node->getData(0))));
+                std::bind(&InterpreterRelation::size, node->getRelation()));
         return execute(node->getChild(0), ctxt);
         ESAC(LogRelationTimer)
 
@@ -1062,9 +1035,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Stratum)
         if (profileEnabled) {
             std::map<std::string, size_t> relNames;
-            visitDepthFirst(*cur, [&](const RamCreate& create) {
-                relNames[create.getRelation().getName()] = create.getRelation().getArity();
-            });
+            for (auto rel : tUnit.getProgram()->getRelations()) {
+                relNames[rel->getName()] = rel->getArity();
+            }
             for (const auto& rel : relNames) {
                 // Skip temporary relations, marked with '@'
                 if (rel.first[0] == '@') {
@@ -1077,23 +1050,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return execute(node->getChild(0), ctxt);
         ESAC(Stratum)
 
-        CASE(Create)
-        createRelation(cur->getRelation(), isa->getIndexes(cur->getRelation()), node->getData(0));
-        return true;
-        ESAC(Create)
-
         CASE_NO_CAST(Clear)
-        getRelation(node->getData(0)).purge();
+        node->getRelation()->purge();
         return true;
         ESAC(Clear)
 
-        CASE_NO_CAST(Drop)
-        dropRelation(node->getData(0));
-        return true;
-        ESAC(Drop)
-
         CASE(LogSize)
-        const InterpreterRelation& rel = getRelation(node->getData(0));
+        const InterpreterRelation& rel = *node->getRelation();
         ProfileEventSingleton::instance().makeQuantityEvent(
                 cur->getMessage(), rel.size(), getIterationNumber());
         return true;
@@ -1102,7 +1065,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Load)
         for (IODirectives ioDirectives : cur->getIODirectives()) {
             try {
-                InterpreterRelation& relation = getRelation(node->getData(0));
+                InterpreterRelation& relation = *node->getRelation();
                 std::vector<bool> symbolMask;
                 for (auto& cur : cur->getRelation().getAttributeTypeQualifiers()) {
                     symbolMask.push_back(cur[0] == 's');
@@ -1128,7 +1091,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 IOSystem::getInstance()
                         .getWriter(symbolMask, getSymbolTable(), ioDirectives,
                                 Global::config().has("provenance"), cur->getRelation().getNumberOfHeights())
-                        ->writeAll(getRelation(node->getData(0)));
+                        ->writeAll(*node->getRelation());
             } catch (std::exception& e) {
                 std::cerr << e.what();
                 exit(1);
@@ -1136,17 +1099,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }
         return true;
         ESAC(Store)
-
-        CASE(Fact)
-        size_t arity = cur->getRelation().getArity();
-        RamDomain tuple[arity];
-
-        for (size_t i = 0; i < arity; ++i) {
-            tuple[i] = execute(node->getChild(i), ctxt);
-        }
-        getRelation(node->getData(0)).insert(tuple);
-        return true;
-        ESAC(Fact)
 
         CASE_NO_CAST(Query)
         InterpreterPreamble* preamble = node->getPreamble();
@@ -1185,6 +1137,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         execute(node->getChild(0), ctxt);
         return true;
         ESAC(Query)
+
+        CASE_NO_CAST(Extend)
+        InterpreterRelation& src = *getRelationHandle(node->getData(0));
+        InterpreterRelation& trg = *getRelationHandle(node->getData(1));
+        src.extend(trg);
+        trg.insert(src);
+        return true;
+        ESAC(Extend)
 
         CASE_NO_CAST(Swap)
         swapRelation(node->getData(0), node->getData(1));

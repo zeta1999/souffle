@@ -17,11 +17,13 @@
 
 #pragma once
 
+#include "Global.h"
 #include "InterpreterNode.h"
 #include "InterpreterPreamble.h"
 #include "InterpreterRecords.h"
 #include "RamIndexAnalysis.h"
 #include "RamVisitor.h"
+#include <cassert>
 #include <memory>
 #include <queue>
 
@@ -35,9 +37,10 @@ namespace souffle {
 class NodeGenerator : public RamVisitor<std::unique_ptr<InterpreterNode>> {
     using NodePtr = std::unique_ptr<InterpreterNode>;
     using NodePtrVec = std::vector<NodePtr>;
+    using RelationHandle = std::unique_ptr<InterpreterRelation>;
 
 public:
-    NodeGenerator(RamIndexAnalysis* isa) : isa(isa) {}
+    NodeGenerator(RamIndexAnalysis* isa) : isa(isa), isProvenance(Global::config().has("provenance")) {}
 
     /**
      * @brief Generate the tree based on given entry.
@@ -48,9 +51,6 @@ public:
         visitDepthFirst(root, [&](const RamNode& node) {
             if (dynamic_cast<const RamQuery*>(&node) != nullptr) {
                 newQueryBlock();
-            }
-            if (const auto* create = dynamic_cast<const RamCreate*>(&node)) {
-                encodeRelation(create->getRelation());
             }
             if (const auto* indexSearch = dynamic_cast<const RamIndexOperation*>(&node)) {
                 encodeIndexPos(*indexSearch);
@@ -130,9 +130,9 @@ public:
     }
 
     NodePtr visitEmptinessCheck(const RamEmptinessCheck& emptiness) override {
-        std::vector<size_t> data;
-        data.push_back(encodeRelation(emptiness.getRelation()));
-        return std::make_unique<InterpreterNode>(I_EmptinessCheck, &emptiness, NodePtrVec{}, std::move(data));
+        size_t relId = encodeRelation(emptiness.getRelation());
+        auto rel = relations[relId].get();
+        return std::make_unique<InterpreterNode>(I_EmptinessCheck, &emptiness, NodePtrVec{}, rel);
     }
 
     NodePtr visitExistenceCheck(const RamExistenceCheck& exists) override {
@@ -143,7 +143,7 @@ public:
         std::vector<size_t> data;
         data.push_back(encodeView(&exists));
         return std::make_unique<InterpreterNode>(
-                I_ExistenceCheck, &exists, std::move(children), std::move(data));
+                I_ExistenceCheck, &exists, std::move(children), nullptr, std::move(data));
     }
 
     NodePtr visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
@@ -154,7 +154,7 @@ public:
         std::vector<size_t> data;
         data.push_back(encodeView(&provExists));
         return std::make_unique<InterpreterNode>(
-                I_ProvenanceExistenceCheck, &provExists, std::move(children), std::move(data));
+                I_ProvenanceExistenceCheck, &provExists, std::move(children), nullptr, std::move(data));
     }
 
     // -- comparison operators --
@@ -176,20 +176,19 @@ public:
     }
 
     NodePtr visitScan(const RamScan& scan) override {
+        size_t relId = encodeRelation(scan.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         children.push_back(visitTupleOperation(scan));
-        std::vector<size_t> data;
-        data.push_back(encodeRelation(scan.getRelation()));
-        return std::make_unique<InterpreterNode>(I_Scan, &scan, std::move(children), std::move(data));
+        return std::make_unique<InterpreterNode>(I_Scan, &scan, std::move(children), rel);
     }
 
     NodePtr visitParallelScan(const RamParallelScan& pScan) override {
+        size_t relId = encodeRelation(pScan.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         children.push_back(visitTupleOperation(pScan));
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(pScan.getRelation())));
-        auto res = std::make_unique<InterpreterNode>(
-                I_ParallelScan, &pScan, std::move(children), std::move(data));
+        auto res = std::make_unique<InterpreterNode>(I_ParallelScan, &pScan, std::move(children), rel);
         res->setPreamble(parentQueryPreamble);
         return res;
     }
@@ -202,41 +201,42 @@ public:
         children.push_back(visitTupleOperation(scan));
         std::vector<size_t> data;
         data.push_back((encodeView(&scan)));
-        return std::make_unique<InterpreterNode>(I_IndexScan, &scan, std::move(children), std::move(data));
+        return std::make_unique<InterpreterNode>(
+                I_IndexScan, &scan, std::move(children), nullptr, std::move(data));
     }
 
     NodePtr visitParallelIndexScan(const RamParallelIndexScan& piscan) override {
+        size_t relId = encodeRelation(piscan.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         for (const auto& value : piscan.getRangePattern()) {
             children.push_back(visit(value));
         }
         children.push_back(visitTupleOperation(piscan));
         std::vector<size_t> data;
-        data.push_back((encodeRelation(piscan.getRelation())));
         data.push_back((encodeIndexPos(piscan)));
         auto res = std::make_unique<InterpreterNode>(
-                I_ParallelIndexScan, &piscan, std::move(children), std::move(data));
+                I_ParallelIndexScan, &piscan, std::move(children), rel, std::move(data));
         res->setPreamble(parentQueryPreamble);
         return res;
     }
 
     NodePtr visitChoice(const RamChoice& choice) override {
+        size_t relId = encodeRelation(choice.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         children.push_back(visit(choice.getCondition()));
         children.push_back(visitTupleOperation(choice));
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(choice.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Choice, &choice, std::move(children), std::move(data));
+        return std::make_unique<InterpreterNode>(I_Choice, &choice, std::move(children), rel);
     }
 
     NodePtr visitParallelChoice(const RamParallelChoice& pchoice) override {
+        size_t relId = encodeRelation(pchoice.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         children.push_back(visit(pchoice.getCondition()));
         children.push_back(visitTupleOperation(pchoice));
-        std::vector<size_t> data;
-        data.push_back(encodeRelation(pchoice.getRelation()));
-        auto res = std::make_unique<InterpreterNode>(
-                I_ParallelChoice, &pchoice, std::move(children), std::move(data));
+        auto res = std::make_unique<InterpreterNode>(I_ParallelChoice, &pchoice, std::move(children), rel);
         res->setPreamble(parentQueryPreamble);
         return res;
     }
@@ -251,10 +251,12 @@ public:
         std::vector<size_t> data;
         data.push_back((encodeView(&choice)));
         return std::make_unique<InterpreterNode>(
-                I_IndexChoice, &choice, std::move(children), std::move(data));
+                I_IndexChoice, &choice, std::move(children), nullptr, std::move(data));
     }
 
     NodePtr visitParallelIndexChoice(const RamParallelIndexChoice& ichoice) override {
+        size_t relId = encodeRelation(ichoice.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         for (const auto& value : ichoice.getRangePattern()) {
             children.push_back(visit(value));
@@ -262,10 +264,9 @@ public:
         children.push_back(visit(ichoice.getCondition()));
         children.push_back(visit(ichoice.getOperation()));
         std::vector<size_t> data;
-        data.push_back((encodeRelation(ichoice.getRelation())));
         data.push_back((encodeIndexPos(ichoice)));
         auto res = std::make_unique<InterpreterNode>(
-                I_ParallelIndexChoice, &ichoice, std::move(children), std::move(data));
+                I_ParallelIndexChoice, &ichoice, std::move(children), rel, std::move(data));
         res->setPreamble(parentQueryPreamble);
         return res;
     }
@@ -279,17 +280,18 @@ public:
     }
 
     NodePtr visitAggregate(const RamAggregate& aggregate) override {
+        size_t relId = encodeRelation(aggregate.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         children.push_back(visit(aggregate.getCondition()));
         children.push_back(visit(aggregate.getExpression()));
         children.push_back(visitTupleOperation(aggregate));
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(aggregate.getRelation())));
-        return std::make_unique<InterpreterNode>(
-                I_Aggregate, &aggregate, std::move(children), std::move(data));
+        return std::make_unique<InterpreterNode>(I_Aggregate, &aggregate, std::move(children), rel);
     }
 
     NodePtr visitIndexAggregate(const RamIndexAggregate& aggregate) override {
+        size_t relId = encodeRelation(aggregate.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         for (const auto& value : aggregate.getRangePattern()) {
             children.push_back(visit(value));
@@ -298,10 +300,9 @@ public:
         children.push_back(visit(aggregate.getExpression()));
         children.push_back(visitTupleOperation(aggregate));
         std::vector<size_t> data;
-        data.push_back((encodeRelation(aggregate.getRelation())));
         data.push_back((encodeView(&aggregate)));
         return std::make_unique<InterpreterNode>(
-                I_IndexAggregate, &aggregate, std::move(children), std::move(data));
+                I_IndexAggregate, &aggregate, std::move(children), rel, std::move(data));
     }
 
     NodePtr visitBreak(const RamBreak& breakOp) override {
@@ -319,13 +320,13 @@ public:
     }
 
     NodePtr visitProject(const RamProject& project) override {
+        size_t relId = encodeRelation(project.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         for (const auto& value : project.getValues()) {
             children.push_back(visit(value));
         }
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(project.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Project, &project, std::move(children), std::move(data));
+        return std::make_unique<InterpreterNode>(I_Project, &project, std::move(children), rel);
     }
 
     // -- return from subroutine --
@@ -367,12 +368,11 @@ public:
     }
 
     NodePtr visitLogRelationTimer(const RamLogRelationTimer& timer) override {
+        size_t relId = encodeRelation(timer.getRelation());
+        auto rel = relations[relId].get();
         NodePtrVec children;
         children.push_back(visit(timer.getStatement()));
-        std::vector<size_t> data;
-        data.push_back(encodeRelation(timer.getRelation()));
-        return std::make_unique<InterpreterNode>(
-                I_LogRelationTimer, &timer, std::move(children), std::move(data));
+        return std::make_unique<InterpreterNode>(I_LogRelationTimer, &timer, std::move(children), rel);
     }
 
     NodePtr visitLogTimer(const RamLogTimer& timer) override {
@@ -393,50 +393,28 @@ public:
         return std::make_unique<InterpreterNode>(I_Stratum, &stratum, std::move(children));
     }
 
-    NodePtr visitCreate(const RamCreate& create) override {
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(create.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Create, &create, NodePtrVec{}, std::move(data));
-    }
-
     NodePtr visitClear(const RamClear& clear) override {
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(clear.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Clear, &clear, NodePtrVec{}, std::move(data));
-    }
-
-    NodePtr visitDrop(const RamDrop& drop) override {
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(drop.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Drop, &drop, NodePtrVec{}, std::move(data));
+        size_t relId = encodeRelation(clear.getRelation());
+        auto rel = relations[relId].get();
+        return std::make_unique<InterpreterNode>(I_Clear, &clear, NodePtrVec{}, rel);
     }
 
     NodePtr visitLogSize(const RamLogSize& size) override {
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(size.getRelation())));
-        return std::make_unique<InterpreterNode>(I_LogSize, &size, NodePtrVec{}, std::move(data));
+        size_t relId = encodeRelation(size.getRelation());
+        auto rel = relations[relId].get();
+        return std::make_unique<InterpreterNode>(I_LogSize, &size, NodePtrVec{}, rel);
     }
 
     NodePtr visitLoad(const RamLoad& load) override {
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(load.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Load, &load, NodePtrVec{}, std::move(data));
+        size_t relId = encodeRelation(load.getRelation());
+        auto rel = relations[relId].get();
+        return std::make_unique<InterpreterNode>(I_Load, &load, NodePtrVec{}, rel);
     }
 
     NodePtr visitStore(const RamStore& store) override {
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(store.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Store, &store, NodePtrVec{}, std::move(data));
-    }
-
-    NodePtr visitFact(const RamFact& fact) override {
-        NodePtrVec children;
-        for (auto& val : fact.getValues()) {
-            children.push_back(visit(val));
-        }
-        std::vector<size_t> data;
-        data.push_back((encodeRelation(fact.getRelation())));
-        return std::make_unique<InterpreterNode>(I_Fact, &fact, std::move(children), std::move(data));
+        size_t relId = encodeRelation(store.getRelation());
+        auto rel = relations[relId].get();
+        return std::make_unique<InterpreterNode>(I_Store, &store, NodePtrVec{}, rel);
     }
 
     NodePtr visitQuery(const RamQuery& query) override {
@@ -488,11 +466,18 @@ public:
         return res;
     }
 
+    NodePtr visitExtend(const RamExtend& extend) override {
+        std::vector<size_t> data;
+        data.push_back((encodeRelation(merge.getFirstRelation())));
+        data.push_back(encodeRelation(merge.getSecondRelation()));
+        return std::make_unique<InterpreterNode>(I_Extend, &extend, NodePtrVec{}, nullptr, std::move(data));
+    }
+
     NodePtr visitSwap(const RamSwap& swap) override {
         std::vector<size_t> data;
         data.push_back((encodeRelation(swap.getFirstRelation())));
         data.push_back((encodeRelation(swap.getSecondRelation())));
-        return std::make_unique<InterpreterNode>(I_Swap, &swap, NodePtrVec{}, std::move(data));
+        return std::make_unique<InterpreterNode>(I_Swap, &swap, NodePtrVec{}, nullptr, std::move(data));
     }
 
     NodePtr visitUndefValue(const RamUndefValue& undef) override {
@@ -503,6 +488,17 @@ public:
         std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
         assert(false && "Unsupported Node Type!");
         return 0;
+    }
+
+public:
+    /** @brief Move relation map */
+    std::vector<std::unique_ptr<RelationHandle>>& getRelations() {
+        return relations;
+    }
+
+    /** @brief Return relation handle from given index */
+    RelationHandle& getRelationHandle(const size_t idx) {
+        return *relations[idx];
     }
 
 private:
@@ -521,6 +517,10 @@ private:
     std::unordered_map<const RamNode*, size_t> viewTable;
     /** Environment encoding, store a mapping from RamRelation to its id */
     std::unordered_map<const RamRelation*, size_t> relTable;
+    /** Symbol table for relations */
+    std::vector<std::unique_ptr<RelationHandle>> relations;
+    /** If generating a provenance program */
+    const bool isProvenance;
 
     /** @brief Reset view allocation system, since view's life time is within each query. */
     void newQueryBlock() {
@@ -563,7 +563,7 @@ private:
         return id;
     }
 
-    /** @brief Encode and return the relation id */
+    /** @brief Encode and create the relation, return the relation id */
     size_t encodeRelation(const RamRelation& rel) {
         auto pos = relTable.find(&rel);
         if (pos != relTable.end()) {
@@ -571,6 +571,7 @@ private:
         }
         size_t id = getNewRelId();
         relTable[&rel] = id;
+        createRelation(rel, isa->getIndexes(rel), id);
         return id;
     }
 
@@ -636,6 +637,26 @@ private:
             }
         }
         return conditionList;
+    }
+
+    void createRelation(const RamRelation& id, const MinIndexSelection& orderSet, const size_t idx) {
+        RelationHandle res;
+        if (relations.size() < idx + 1) {
+            relations.resize(idx + 1);
+        }
+        if (id.getRepresentation() == RelationRepresentation::EQREL) {
+            res = std::make_unique<InterpreterEqRelation>(id.getArity(), id.getNumberOfHeights(),
+                    id.getName(), std::vector<std::string>(), orderSet);
+        } else {
+            if (isProvenance) {
+                res = std::make_unique<InterpreterRelation>(id.getArity(), id.getNumberOfHeights(),
+                        id.getName(), std::vector<std::string>(), orderSet, createBTreeProvenanceIndex);
+            } else {
+                res = std::make_unique<InterpreterRelation>(id.getArity(), id.getNumberOfHeights(),
+                        id.getName(), std::vector<std::string>(), orderSet);
+            }
+        }
+        relations[idx] = std::make_unique<RelationHandle>(std::move(res));
     }
 };
 }  // namespace souffle

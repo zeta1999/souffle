@@ -326,7 +326,6 @@ TEST(BTreeSet, Merge) {
     test_set d = b;
 
     EXPECT_NE(c, d);
-
 }
 
 TEST(BTreeSet, IteratorEmpty) {

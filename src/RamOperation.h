@@ -661,9 +661,9 @@ enum AggregateFunction { MAX, MIN, COUNT, SUM };
  */
 class RamAbstractAggregate {
 public:
-    RamAbstractAggregate(AggregateFunction fun, std::unique_ptr<RamExpression> expression,
-            std::unique_ptr<RamCondition> condition)
-            : function(fun), expression(std::move(expression)), condition(std::move(condition)) {
+    RamAbstractAggregate(
+            AggregateFunction fun, std::unique_ptr<RamExpression> expr, std::unique_ptr<RamCondition> cond)
+            : function(fun), expression(std::move(expr)), condition(std::move(cond)) {
         assert(condition != nullptr && "Condition is a null-pointer");
         assert(expression != nullptr && "Expression is a null-pointer");
     }

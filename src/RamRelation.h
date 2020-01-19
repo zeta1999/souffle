@@ -15,11 +15,9 @@
 
 #pragma once
 
-#include "IODirectives.h"
 #include "RamNode.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
-#include "SymbolTable.h"
 
 #include <string>
 #include <utility>

@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <limits>
-
 #include <cassert>
 #include <cstdint>
+#include <limits>
+#include <string>
 #include <type_traits>
 
 namespace souffle {
@@ -67,7 +67,12 @@ but as of January 2020 it is not yet supported.
 reinterpret_cast won't work here, because integral <-> float conversions are unsafe.
 **/
 
-/** Cast a type by reinterpreting its bits. Domain is restricted to Ram Types only. */
+/** Cast a type by reinterpreting its bits. Domain is restricted to Ram Types only.
+ * Template takes two types (second type is never necessary because it can be deduced from argument)
+ * The following holds
+ * For type T and a : T
+ * ramBitCast<T>(ramBitCast<RamDomain>(a)) == a
+ **/
 template <typename To = RamDomain, typename From>
 inline To ramBitCast(From RamElement) {
     static_assert(isRamType<From> && isRamType<To>, "Bit casting should only be used on Ram Types.");
@@ -77,6 +82,36 @@ inline To ramBitCast(From RamElement) {
     } Union;
     Union.source = RamElement;
     return Union.destination;
+}
+
+inline RamDomain RamDomainFromString(const std::string& str) {
+    RamDomain val;
+#if RAM_DOMAIN_SIZE == 64
+    val = std::stoll(str);
+#else
+    val = std::stoi(str);
+#endif
+    return val;
+}
+
+inline RamFloat RamFloatFromString(const std::string& str) {
+    RamDomain val;
+#if RAM_DOMAIN_SIZE == 64
+    val = std::stod(str);
+#else
+    val = std::stof(str);
+#endif
+    return val;
+}
+
+inline RamUnsigned RamUnsignedFromString(const std::string& str) {
+    RamDomain val;
+#if RAM_DOMAIN_SIZE == 64
+    val = std::stoul(str);
+#else
+    val = std::stoull(str);
+#endif
+    return static_cast<RamUnsigned>(val);
 }
 
 /** lower and upper boundaries for the ram domain **/

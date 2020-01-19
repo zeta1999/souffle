@@ -282,12 +282,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 return ramBitCast(static_cast<RamFloat>(result));
             }
-
             case FunctorOp::FTOU: {
                 auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                 return ramBitCast(static_cast<RamUnsigned>(result));
             }
-
             /** Binary Functor Operators */
             case FunctorOp::ADD: {
                 BINARY_OP(+);
@@ -297,13 +295,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first + second);
             }
-
             case FunctorOp::FADD: {
                 auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first + second);
             }
-
             case FunctorOp::SUB: {
                 BINARY_OP(-);
             }
@@ -321,7 +317,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             case FunctorOp::MUL: {
                 BINARY_OP(*);
             }
-
             case FunctorOp::UMUL: {
                 auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
@@ -342,6 +337,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
                 return ramBitCast(first / second);
             }
+
             case FunctorOp::FDIV: {
                 auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                 auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));

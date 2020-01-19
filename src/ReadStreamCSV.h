@@ -93,6 +93,7 @@ protected:
                 continue;
             }
             ++columnsFilled;
+
             if (symbolMask.at(inputMap[column]) == RamPrimitiveType::String) {
                 tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
             } else {

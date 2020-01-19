@@ -238,7 +238,7 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     // 0-arity relation in a provenance program still need to be revisited.
 
     // visit all nodes to collect searches of each relation
-    visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
+    visitDepthFirst(translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexOperation*>(&node)) {
             MinIndexSelection& indexes = getIndexes(indexSearch->getRelation());
             indexes.addSearch(getSearchSignature(indexSearch));
@@ -255,7 +255,7 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     });
 
     // A swap happen between rel A and rel B indicates A should include all indices of B, vice versa.
-    visitDepthFirst(*translationUnit.getProgram(), [&](const RamSwap& swap) {
+    visitDepthFirst(translationUnit.getProgram(), [&](const RamSwap& swap) {
         // Note: this naive approach will not work if there exists chain or cyclic swapping.
         // e.g.  swap(relA, relB) swap(relB, relC) swap(relC, relA)
         // One need to keep merging the search set until a fixed point where no more index is introduced

@@ -1043,8 +1043,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
             std::unique_ptr<RamStatement> stmt = std::make_unique<RamQuery>(
                     std::make_unique<RamScan>(std::unique_ptr<RamRelationReference>(src->clone()), 0,
                             std::make_unique<RamProject>(
-                                    std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values)),
-                            ""));
+                                    std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values))));
             if (dest->get()->getRepresentation() == RelationRepresentation::EQREL) {
                 stmt = std::make_unique<RamSequence>(
                         std::make_unique<RamExtend>(std::unique_ptr<RamRelationReference>(dest->clone()),

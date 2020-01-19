@@ -37,36 +37,18 @@ namespace souffle {
  * @brief A RAM Relation in the RAM intermediate representation.
  */
 class RamRelation : public RamNode {
-protected:
-    /** Name of relation */
-    const std::string name;
-
-    /** Arity, i.e., number of attributes */
-    const size_t arity;
-
-    /** Number of height parameters for provenance */
-    const size_t numberOfHeights;
-
-    /** Name of attributes */
-    const std::vector<std::string> attributeNames;
-
-    /** Type of attributes */
-    const std::vector<std::string> attributeTypeQualifiers;
-
-    /** Data-structure representation */
-    const RelationRepresentation representation;
-
 public:
-    /** Used by Interpreter only */
-    mutable void* relation = nullptr;
-
     RamRelation(const std::string name, const size_t arity, const size_t numberOfHeights,
             const std::vector<std::string> attributeNames,
             const std::vector<std::string> attributeTypeQualifiers,
             const RelationRepresentation representation)
-            : name(std::move(name)), arity(arity), numberOfHeights(numberOfHeights),
+            :
+         representation(representation),
+ name(std::move(name)), arity(arity),
               attributeNames(std::move(attributeNames)),
-              attributeTypeQualifiers(std::move(attributeTypeQualifiers)), representation(representation) {
+              attributeTypeQualifiers(std::move(attributeTypeQualifiers)),
+ numberOfHeights(numberOfHeights)
+{
         assert(this->attributeNames.size() == arity || this->attributeNames.empty());
         assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
     }
@@ -154,6 +136,25 @@ protected:
                attributeTypeQualifiers == other.attributeTypeQualifiers &&
                representation == other.representation && isTemp() == other.isTemp();
     }
+
+protected:
+    /** Data-structure representation */
+    const RelationRepresentation representation;
+
+    /** Name of relation */
+    const std::string name;
+
+    /** Arity, i.e., number of attributes */
+    const size_t arity;
+
+    /** Name of attributes */
+    const std::vector<std::string> attributeNames;
+
+    /** Type of attributes */
+    const std::vector<std::string> attributeTypeQualifiers;
+
+    /** Number of height parameters for provenance only */
+    const size_t numberOfHeights;
 };
 
 /**

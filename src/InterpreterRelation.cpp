@@ -114,7 +114,7 @@ const std::string& InterpreterRelation::getName() const {
     return this->relName;
 }
 
-const std::vector<std::string>& InterpreterRelation::getAttributeTypeQualifiers() const {
+const std::vector<std::string>& InterpreterRelation::getAttributeTypes() const {
     return this->attributeTypes;
 }
 

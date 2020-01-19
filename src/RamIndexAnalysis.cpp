@@ -314,12 +314,15 @@ void RamIndexAnalysis::print(std::ostream& os) const {
         os << "Relation " << relName << "\n";
         os << "\tNumber of Primitive Searches: " << indexes.getSearches().size() << "\n";
 
+        const auto& attrib = rel.getAttributeNames();
+        uint32_t arity = rel.getArity();
+
         /* print searches */
         for (auto& cols : indexes.getSearches()) {
             os << "\t\t";
-            for (uint32_t i = 0; i < rel.getArity(); i++) {
+            for (uint32_t i = 0; i < arity; i++) {
                 if ((1UL << i) & cols) {
-                    os << rel.getArg(i) << " ";
+                    os << attrib[i] << " ";
                 }
             }
             os << "\n";
@@ -329,7 +332,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
         for (auto& order : indexes.getAllOrders()) {
             os << "\t\t";
             for (auto& i : order) {
-                os << rel.getArg(i) << " ";
+                os << attrib[i] << " ";
             }
             os << "\n";
         }

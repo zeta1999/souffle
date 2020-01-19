@@ -1071,7 +1071,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             try {
                 InterpreterRelation& relation = *node->getRelation();
                 std::vector<bool> symbolMask;
-                for (auto& cur : cur.getRelation().getAttributeTypeQualifiers()) {
+                for (auto& cur : cur.getRelation().getAttributeTypes()) {
                     symbolMask.push_back(cur[0] == 's');
                 }
                 IOSystem::getInstance()
@@ -1089,7 +1089,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         for (IODirectives ioDirectives : cur.getIODirectives()) {
             try {
                 std::vector<bool> symbolMask;
-                for (auto& cur : cur.getRelation().getAttributeTypeQualifiers()) {
+                for (auto& cur : cur.getRelation().getAttributeTypes()) {
                     symbolMask.push_back(cur[0] == 's');
                 }
                 IOSystem::getInstance()

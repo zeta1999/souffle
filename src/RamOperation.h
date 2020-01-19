@@ -295,6 +295,7 @@ protected:
 
     /** @brief Helper method for printing */
     void printIndex(std::ostream& os) const {
+        const auto& attrib = getRelation().getAttributeNames();
         bool first = true;
         for (unsigned int i = 0; i < queryPattern.size(); ++i) {
             if (!isRamUndefValue(queryPattern[i].get())) {
@@ -305,7 +306,7 @@ protected:
                     os << " AND ";
                 }
                 os << "t" << getTupleId() << ".";
-                os << getRelation().getArg(i) << " = ";
+                os << attrib[i] << " = ";
                 os << *queryPattern[i];
             }
         }

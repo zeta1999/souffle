@@ -218,7 +218,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (!(symbolMask.at(i) != RamPrimitiveType::String)) {
+            if (symbolMask.at(i) != RamPrimitiveType::String) {
                 projectionClause << "'_" << relationName << "'.'" << columnName << "'";
             } else {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";

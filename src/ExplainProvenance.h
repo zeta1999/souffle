@@ -188,9 +188,7 @@ public:
         std::vector<RamPrimitiveType> symbolMask(rel->getArity());
 
         for (size_t i = 0; i < rel->getArity(); i++) {
-            if (*(rel->getAttrType(i)) == 's') {
-                symbolMask.at(i) = RamPrimitiveType::String;
-            }
+            symbolMask.at(i) = RamPrimitiveFromChar(*(rel->getAttrType(i)));
         }
 
         // create IODirectives

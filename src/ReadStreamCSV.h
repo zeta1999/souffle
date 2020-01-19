@@ -94,21 +94,27 @@ protected:
             }
             ++columnsFilled;
 
-            if (symbolMask.at(inputMap[column]) == RamPrimitiveType::String) {
-                tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
-            } else {
-                try {
-#if RAM_DOMAIN_SIZE == 64
-                    tuple[inputMap[column]] = std::stoll(element);
-#else
-                    tuple[inputMap[column]] = std::stoi(element);
-#endif
-                } catch (...) {
-                    std::stringstream errorMessage;
-                    errorMessage << "Error converting number <" + element + "> in column " << column + 1
-                                 << " in line " << lineNumber << "; ";
-                    throw std::invalid_argument(errorMessage.str());
+            try {
+                switch (symbolMask.at(inputMap[column])) {
+                    case RamPrimitiveType::String:
+                        tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
+                        break;
+                    case RamPrimitiveType::Record:  // What should be done here?
+                    case RamPrimitiveType::Signed:
+                        tuple[inputMap[column]] = RamDomainFromString(element);
+                        break;
+                    case RamPrimitiveType::Unsigned:
+                        tuple[inputMap[column]] = ramBitCast(RamUnsignedFromString(element));
+                        break;
+                    case RamPrimitiveType::Float:
+                        tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element));
+                        break;
                 }
+            } catch (...) {
+                std::stringstream errorMessage;
+                errorMessage << "Error converting number <" + element + "> in column " << column + 1
+                             << " in line " << lineNumber << "; ";
+                throw std::invalid_argument(errorMessage.str());
             }
         }
 

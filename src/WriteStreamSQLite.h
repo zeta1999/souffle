@@ -52,14 +52,20 @@ protected:
 
     void writeNextTuple(const RamDomain* tuple) override {
         for (size_t i = 0; i < arity; i++) {
-            RamDomain value;
-            // Check if this makes sense. Should we cast before saving?
-            // Anyway, this should work before float goodies.
-            if (symbolMask.at(i) == RamPrimitiveType::String) {
-                value = getSymbolTableID(tuple[i]);
-            } else {
-                value = tuple[i];
+            RamDomain value = 0;  // Silence warning
+
+            switch (symbolMask.at(i)) {
+                case RamPrimitiveType::String:
+                    value = getSymbolTableID(tuple[i]);
+                    break;
+                case RamPrimitiveType::Signed:
+                case RamPrimitiveType::Unsigned:
+                case RamPrimitiveType::Float:
+                case RamPrimitiveType::Record:  // What should be done about it?
+                    value = tuple[i];
+                    break;
             }
+
 #if RAM_DOMAIN_SIZE == 64
             if (sqlite3_bind_int64(insertStatement, i + 1, value) != SQLITE_OK) {
 #else
@@ -218,9 +224,8 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (symbolMask.at(i) != RamPrimitiveType::String) {
-                projectionClause << "'_" << relationName << "'.'" << columnName << "'";
-            } else {
+            // Are float/unsigned handled correctly here?
+            if (symbolMask.at(i) == RamPrimitiveType::String) {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
                 fromClause << ",'" << symbolTableName << "' AS '_symtab_" << columnName << "'";
                 if (!firstWhere) {
@@ -230,6 +235,8 @@ private:
                 }
                 whereClause << "'_" << relationName << "'.'" << columnName << "' = "
                             << "'_symtab_" << columnName << "'.id";
+            } else {
+                projectionClause << "'_" << relationName << "'.'" << columnName << "'";
             }
         }
         createViewText << "SELECT " << projectionClause.str() << " FROM " << fromClause.str();

@@ -67,20 +67,23 @@ protected:
             if (element.empty()) {
                 element = "n/a";
             }
-            if (symbolMask.at(column) == RamPrimitiveType::String) {
-                tuple[column] = symbolTable.unsafeLookup(element);
-            } else {
-                try {
-#if RAM_DOMAIN_SIZE == 64
-                    tuple[column] = std::stoll(element);
-#else
-                    tuple[column] = std::stoi(element);
-#endif
-                } catch (...) {
-                    std::stringstream errorMessage;
-                    errorMessage << "Error converting number in column " << (column) + 1;
-                    throw std::invalid_argument(errorMessage.str());
+
+            try {
+                switch (symbolMask.at(column)) {
+                    case RamPrimitiveType::String:
+                        tuple[column] = symbolTable.unsafeLookup(element);
+                        break;
+                    case RamPrimitiveType::Signed:
+                    case RamPrimitiveType::Unsigned:
+                    case RamPrimitiveType::Float:
+                    case RamPrimitiveType::Record:
+                        tuple[column] = RamDomainFromString(element);
+                        break;
                 }
+            } catch (...) {
+                std::stringstream errorMessage;
+                errorMessage << "Error converting number in column " << (column) + 1;
+                throw std::invalid_argument(errorMessage.str());
             }
         }
 

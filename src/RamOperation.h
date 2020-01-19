@@ -183,7 +183,6 @@ public:
         return res;
     }
 
-
 protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRelationOperation*>(&node));
@@ -329,7 +328,6 @@ protected:
 protected:
     /** Values of index per column of table (if indexable) */
     std::vector<std::unique_ptr<RamExpression>> queryPattern;
-
 };
 
 /**
@@ -953,6 +951,7 @@ public:
         condition = map(std::move(condition));
         assert(condition != nullptr && "Condition is a null-pointer");
     }
+
 protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAbstractConditional*>(&node));

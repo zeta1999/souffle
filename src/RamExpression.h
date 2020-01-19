@@ -125,7 +125,6 @@ public:
         return new RamIntrinsicOperator(operation, std::move(argsCopy));
     }
 
-
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIntrinsicOperator&>(node);

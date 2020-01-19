@@ -267,7 +267,6 @@ protected:
 
     /** Right-hand side of constraint */
     std::unique_ptr<RamExpression> rhs;
-
 };
 
 /**
@@ -446,7 +445,6 @@ protected:
 protected:
     /** Relation */
     std::unique_ptr<RamRelationReference> relationRef;
-
 };
 
 }  // end of namespace souffle

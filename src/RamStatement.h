@@ -637,7 +637,6 @@ public:
         assert(condition != nullptr && "Condition is a null-pointer");
     }
 
-
 protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamExit*>(&node));

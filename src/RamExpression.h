@@ -74,14 +74,15 @@ public:
     }
 
 protected:
-    /** Arguments of user defined operator */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAbstractOperator*>(&node));
         const auto& other = static_cast<const RamAbstractOperator&>(node);
         return equal_targets(arguments, other.arguments);
     }
+
+protected:
+    /** Arguments of user defined operator */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
 };
 
 /**
@@ -124,14 +125,16 @@ public:
         return new RamIntrinsicOperator(operation, std::move(argsCopy));
     }
 
-protected:
-    /** Operation symbol */
-    const FunctorOp operation;
 
+protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIntrinsicOperator&>(node);
         return RamAbstractOperator::equal(node) && getOperator() == other.getOperator();
     }
+
+protected:
+    /** Operation symbol */
+    const FunctorOp operation;
 };
 
 /**
@@ -170,16 +173,17 @@ public:
     }
 
 protected:
+    bool equal(const RamNode& node) const override {
+        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
+        return RamAbstractOperator::equal(node) && name == other.name && type == other.type;
+    }
+
+protected:
     /** Name of user-defined operator */
     const std::string name;
 
     /** Argument types */
     const std::string type;
-
-    bool equal(const RamNode& node) const override {
-        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
-        return RamAbstractOperator::equal(node) && name == other.name && type == other.type;
-    }
 };
 
 /**
@@ -215,17 +219,18 @@ public:
     }
 
 protected:
-    /** Identifier for the tuple */
-    const size_t identifier;
-
-    /** Element number */
-    const size_t element;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamTupleElement*>(&node));
         const auto& other = static_cast<const RamTupleElement&>(node);
         return getTupleId() == other.getTupleId() && getElement() == other.getElement();
     }
+
+protected:
+    /** Identifier for the tuple */
+    const size_t identifier;
+
+    /** Element number */
+    const size_t element;
 };
 
 /**
@@ -256,14 +261,15 @@ public:
     }
 
 protected:
-    /** Constant value */
-    const RamDomain constant;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamNumber*>(&node));
         const auto& other = static_cast<const RamNumber&>(node);
         return getConstant() == other.getConstant();
     }
+
+protected:
+    /** Constant value */
+    const RamDomain constant;
 };
 
 /**
@@ -347,14 +353,15 @@ public:
     }
 
 protected:
-    /** Arguments */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamPackRecord*>(&node));
         const auto& other = static_cast<const RamPackRecord&>(node);
         return equal_targets(arguments, other.arguments);
     }
+
+protected:
+    /** Arguments */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
 };
 
 /**
@@ -383,14 +390,15 @@ public:
     }
 
 protected:
-    /** Argument number */
-    const size_t number;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSubroutineArgument*>(&node));
         const auto& other = static_cast<const RamSubroutineArgument&>(node);
         return getArgument() == other.getArgument();
     }
+
+protected:
+    /** Argument number */
+    const size_t number;
 };
 
 }  // end of namespace souffle

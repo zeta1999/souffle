@@ -258,18 +258,19 @@ public:
     }
 
 protected:
-    /** first argument of binary statement */
-    std::unique_ptr<RamRelationReference> first;
-
-    /** second argument of binary statement */
-    std::unique_ptr<RamRelationReference> second;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamBinRelationStatement*>(&node));
         const auto& other = static_cast<const RamBinRelationStatement&>(node);
         return getFirstRelation() == other.getFirstRelation() &&
                getSecondRelation() == other.getSecondRelation();
     }
+
+protected:
+    /** first argument of binary statement */
+    std::unique_ptr<RamRelationReference> first;
+
+    /** second argument of binary statement */
+    std::unique_ptr<RamRelationReference> second;
 };
 
 /**
@@ -393,14 +394,15 @@ public:
     }
 
 protected:
-    /** RAM operation */
-    std::unique_ptr<RamOperation> operation;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamQuery*>(&node));
         const auto& other = static_cast<const RamQuery&>(node);
         return getOperation() == other.getOperation();
     }
+
+protected:
+    /** RAM operation */
+    std::unique_ptr<RamOperation> operation;
 };
 
 /**
@@ -439,14 +441,15 @@ public:
     }
 
 protected:
-    /** ordered list of RAM statements */
-    std::vector<std::unique_ptr<RamStatement>> statements;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamListStatement*>(&node));
         const auto& other = static_cast<const RamListStatement&>(node);
         return equal_targets(statements, other.statements);
     }
+
+protected:
+    /** ordered list of RAM statements */
+    std::vector<std::unique_ptr<RamStatement>> statements;
 };
 
 /**
@@ -583,14 +586,15 @@ public:
     }
 
 protected:
-    /** Body of loop */
-    std::unique_ptr<RamStatement> body;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLoop*>(&node));
         const auto& other = static_cast<const RamLoop&>(node);
         return getBody() == other.getBody();
     }
+
+protected:
+    /** Body of loop */
+    std::unique_ptr<RamStatement> body;
 };
 
 /**
@@ -633,15 +637,17 @@ public:
         assert(condition != nullptr && "Condition is a null-pointer");
     }
 
-protected:
-    /** exit condition */
-    std::unique_ptr<RamCondition> condition;
 
+protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamExit*>(&node));
         const auto& other = static_cast<const RamExit&>(node);
         return getCondition() == other.getCondition();
     }
+
+protected:
+    /** exit condition */
+    std::unique_ptr<RamCondition> condition;
 };
 
 /**
@@ -677,17 +683,18 @@ public:
     }
 
 protected:
-    /** logging statement */
-    std::unique_ptr<RamStatement> statement;
-
-    /** logging message */
-    std::string message;
-
     bool equal(const RamNode& node) const {
         assert(nullptr != dynamic_cast<const RamAbstractLog*>(&node));
         const auto& other = dynamic_cast<const RamAbstractLog*>(&node);
         return getStatement() == other->getStatement() && getMessage() == other->getMessage();
     }
+
+protected:
+    /** logging statement */
+    std::unique_ptr<RamStatement> statement;
+
+    /** logging message */
+    std::string message;
 };
 
 /**
@@ -889,17 +896,18 @@ public:
     }
 
 protected:
-    /** Body of stratum */
-    std::unique_ptr<RamStatement> body;
-
-    /** Stratum number */
-    const int index;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamStratum*>(&node));
         const auto& other = static_cast<const RamStratum&>(node);
         return getBody() == other.getBody() && getIndex() == other.getIndex();
     }
+
+protected:
+    /** Body of stratum */
+    std::unique_ptr<RamStatement> body;
+
+    /** Stratum number */
+    const int index;
 };
 
 /**
@@ -928,14 +936,15 @@ public:
     }
 
 protected:
-    /** logging message */
-    std::string message;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogSize*>(&node));
         const auto& other = static_cast<const RamLogSize&>(node);
         return RamRelationStatement::equal(other) && getMessage() == other.getMessage();
     }
+
+protected:
+    /** logging message */
+    std::string message;
 };
 
 }  // end of namespace souffle

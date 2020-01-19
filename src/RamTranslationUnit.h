@@ -77,13 +77,6 @@ public:
         analyses.clear();
     }
 
-#if 0
-    /** @brief get the const RAM Program of the translation unit  */
-    const RamProgram* getProgram() const {
-        return program.get();
-    }
-#endif
-
     /** @brief get the RAM Program of the translation unit  */
     const RamProgram& getProgram() const {
         return *program.get();

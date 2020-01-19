@@ -40,9 +40,8 @@ namespace souffle {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamProgram : public RamNode {
-private:
-    RamProgram(std::unique_ptr<RamStatement> main) : main(std::move(main)) {}
-
+private: 
+    RamProgram() = default;
 public:
     RamProgram(std::vector<std::unique_ptr<RamRelation>> rels, std::unique_ptr<RamStatement> main,
             std::map<std::string, std::unique_ptr<RamStatement>> subs)
@@ -104,7 +103,8 @@ public:
     }
 
     RamProgram* clone() const override {
-        auto* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
+        auto* res = new RamProgram();
+        res->main = std::unique_ptr<RamStatement>(main->clone());
         for (auto& rel : relations) {
             res->relations.push_back(std::unique_ptr<RamRelation>(rel->clone()));
         }

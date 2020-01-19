@@ -41,7 +41,7 @@ TEST(IO_stdout, InterpretorStore) {
     std::vector<std::unique_ptr<RamRelation>> rels;
 
     std::vector<std::string> attribs = {"a", "b"};
-    std::vector<std::string> types = {"i", "i"};
+    std::vector<std::string> types = {"f", "f"};
     std::unique_ptr<RamRelation> myrel =
             std::make_unique<RamRelation>("test", 2, 0, attribs, types, RelationRepresentation::BTREE);
     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
@@ -53,8 +53,8 @@ TEST(IO_stdout, InterpretorStore) {
     ioDirs.push_back(IODirectives(dirs));
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
-    exprs.push_back(std::make_unique<RamNumber>(1));
-    exprs.push_back(std::make_unique<RamNumber>(2));
+    exprs.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(0.5))));
+    exprs.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(0.5))));
     std::unique_ptr<RamStatement> main = std::make_unique<RamSequence>(
             std::make_unique<RamQuery>(std::make_unique<RamProject>(std::move(ref1), std::move(exprs))),
             std::make_unique<RamStore>(std::move(ref2), ioDirs));
@@ -84,7 +84,7 @@ TEST(IO_stdout, InterpretorStore) {
     std::string expected = R"(---------------
 test
 ===============
-1	2
+0.5	0.5
 ===============
 )";
 

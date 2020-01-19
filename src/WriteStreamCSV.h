@@ -19,6 +19,7 @@
 #include "RamPrimitiveTypes.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
+#include <iostream>
 #ifdef USE_LIBZ
 #include "gzfstream.h"
 #endif
@@ -64,18 +65,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        if (symbolMask.at(0) == RamPrimitiveType::String) {
-            file << symbolTable.unsafeResolve(tuple[0]);
-        } else {
-            file << tuple[0];
-        }
+        writeNextTupleElement(file, symbolMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
-            if (symbolMask.at(col) == RamPrimitiveType::String) {
-                file << symbolTable.unsafeResolve(tuple[col]);
-            } else {
-                file << tuple[col];
-            }
+            writeNextTupleElement(file, symbolMask.at(col), tuple[col]);
         }
         file << "\n";
     }
@@ -102,18 +95,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        if (symbolMask.at(0) == RamPrimitiveType::String) {
-            file << symbolTable.unsafeResolve(tuple[0]);
-        } else {
-            file << tuple[0];
-        }
+        writeNextTupleElement(file, symbolMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
-            if (symbolMask.at(col) == RamPrimitiveType::String) {
-                file << symbolTable.unsafeResolve(tuple[col]);
-            } else {
-                file << tuple[col];
-            }
+            writeNextTupleElement(file, symbolMask.at(col), tuple[col]);
         }
         file << "\n";
     }
@@ -146,18 +131,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        if (symbolMask.at(0) == RamPrimitiveType::String) {
-            std::cout << symbolTable.unsafeResolve(tuple[0]);
-        } else {
-            std::cout << tuple[0];
-        }
+        writeNextTupleElement(std::cout, symbolMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             std::cout << delimiter;
-            if (symbolMask.at(col) == RamPrimitiveType::String) {
-                std::cout << symbolTable.unsafeResolve(tuple[col]);
-            } else {
-                std::cout << tuple[col];
-            }
+            writeNextTupleElement(std::cout, symbolMask.at(col), tuple[col]);
         }
         std::cout << "\n";
     }

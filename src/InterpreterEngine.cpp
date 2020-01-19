@@ -138,7 +138,7 @@ void InterpreterEngine::executeMain() {
             if (!node.getProfileText().empty()) {
                 frequencies.emplace(node.getProfileText(), std::deque<std::atomic<size_t>>());
                 frequencies[node.getProfileText()].emplace_back(0);
-            } 
+            }
         });
         // Enable profiling for execution of main
         ProfileEventSingleton::instance().startTimer();

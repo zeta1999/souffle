@@ -40,12 +40,21 @@ namespace souffle {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamProgram : public RamNode {
-private: 
+private:
     RamProgram() = default;
+
 public:
-    RamProgram(std::vector<std::unique_ptr<RamRelation>> rels, std::unique_ptr<RamStatement> main,
+    RamProgram(std::vector<std::unique_ptr<RamRelation>> rels, std::unique_ptr<RamStatement> m,
             std::map<std::string, std::unique_ptr<RamStatement>> subs)
-            : relations(std::move(rels)), main(std::move(main)), subroutines(std::move(subs)) {}
+            : relations(std::move(rels)), main(std::move(m)), subroutines(std::move(subs)) {
+        assert(main != nullptr && "Main program is a null-pointer");
+        for (const auto& rel : relations) {
+            assert(rel != nullptr && "Relation is a null-pointer");
+        }
+        for (const auto& sub : subroutines) {
+            assert(sub.second != nullptr && "Subroutine is a null-pointer");
+        }
+    }
 
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> children;
@@ -79,7 +88,6 @@ public:
 
     /** @brief Get main program */
     RamStatement& getMain() const {
-        assert(main && "Program has no main routine");
         return *main.get();
     }
 
@@ -127,11 +135,14 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         main = map(std::move(main));
+        assert(main != nullptr && "Main program is a null-pointer");
         for (auto& rel : relations) {
             rel = map(std::move(rel));
+            assert(rel != nullptr && "Relation is a null-pointer");
         }
         for (auto& sub : subroutines) {
             sub.second = map(std::move(sub.second));
+            assert(sub.second != nullptr && "Subroutine is a null-pointer");
         }
     }
 

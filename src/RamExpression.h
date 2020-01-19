@@ -47,7 +47,11 @@ public:
  */
 class RamAbstractOperator : public RamExpression {
 public:
-    RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {}
+    RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {
+        for (auto const& arg : arguments) {
+            assert(arg != nullptr && "argument is null-pointer");
+        }
+    }
 
     /** @brief Get argument values */
     std::vector<RamExpression*> getArguments() const {
@@ -65,6 +69,7 @@ public:
     void apply(const RamNodeMapper& map) override {
         for (auto& arg : arguments) {
             arg = map(std::move(arg));
+            assert(arg != nullptr && "argument is null-pointer");
         }
     }
 
@@ -301,7 +306,11 @@ public:
  */
 class RamPackRecord : public RamExpression {
 public:
-    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {}
+    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {
+        for (const auto& arg : arguments) {
+            assert(arg != nullptr && "argument is a null-pointer");
+        }
+    }
 
     /** @brief Get record arguments */
     std::vector<RamExpression*> getArguments() const {
@@ -333,6 +342,7 @@ public:
     void apply(const RamNodeMapper& map) override {
         for (auto& arg : arguments) {
             arg = map(std::move(arg));
+            assert(arg != nullptr && "argument is a null-pointer");
         }
     }
 

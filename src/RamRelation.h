@@ -21,8 +21,6 @@
 #include "RelationRepresentation.h"
 #include "SymbolTable.h"
 
-#include <list>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -152,7 +150,6 @@ public:
 
     /** @brief Get reference */
     const RamRelation* get() const {
-        assert(relation != nullptr && "relation reference is a null-pointer");
         return relation;
     }
 

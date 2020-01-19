@@ -160,7 +160,9 @@ public:
     RamRelationOperation(std::unique_ptr<RamRelationReference> relRef, int ident,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamTupleOperation(ident, std::move(nested), std::move(profileText)),
-              relationRef(std::move(relRef)) {}
+              relationRef(std::move(relRef)) {
+        assert(relationRef != nullptr && "relation reference is a null-pointer");
+    }
 
     /** @brief Get search relation */
     const RamRelation& getRelation() const {
@@ -170,6 +172,7 @@ public:
     void apply(const RamNodeMapper& map) override {
         RamTupleOperation::apply(map);
         relationRef = map(std::move(relationRef));
+        assert(relationRef != nullptr && "relation reference is a null-pointer");
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
@@ -264,6 +267,9 @@ public:
             : RamRelationOperation(std::move(r), ident, std::move(nested), std::move(profileText)),
               queryPattern(std::move(queryPattern)) {
         assert(getRangePattern().size() == getRelation().getArity());
+        for (const auto& pattern : queryPattern) {
+            assert(pattern != nullptr && "pattern is a null-pointer");
+        }
     }
 
     /**
@@ -276,16 +282,17 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamRelationOperation::getChildNodes();
-        for (auto& cur : queryPattern) {
-            res.push_back(cur.get());
+        for (auto& pattern : queryPattern) {
+            res.push_back(pattern.get());
         }
         return res;
     }
 
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
-        for (auto& cur : queryPattern) {
-            cur = map(std::move(cur));
+        for (auto& pattern : queryPattern) {
+            pattern = map(std::move(pattern));
+            assert(pattern != nullptr && "pattern is a null-pointer");
         }
     }
 
@@ -408,7 +415,9 @@ public:
  */
 class RamAbstractChoice {
 public:
-    RamAbstractChoice(std::unique_ptr<RamCondition> cond) : condition(std::move(cond)) {}
+    RamAbstractChoice(std::unique_ptr<RamCondition> cond) : condition(std::move(cond)) {
+        assert(condition != nullptr && "Condition is a null-pointer");
+    }
 
     /** @brief Getter for the condition */
     const RamCondition& getCondition() const {
@@ -418,6 +427,7 @@ public:
 
     void apply(const RamNodeMapper& map) {
         condition = map(std::move(condition));
+        assert(condition != nullptr && "Condition is a null-pointer");
     }
 
     std::vector<const RamNode*> getChildNodes() const {
@@ -563,8 +573,8 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
-        for (auto& cur : queryPattern) {
-            cur = map(std::move(cur));
+        for (auto& pattern : queryPattern) {
+            pattern = map(std::move(pattern));
         }
         RamAbstractChoice::apply(map);
     }
@@ -653,7 +663,10 @@ class RamAbstractAggregate {
 public:
     RamAbstractAggregate(AggregateFunction fun, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition)
-            : function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
+            : function(fun), expression(std::move(expression)), condition(std::move(condition)) {
+        assert(condition != nullptr && "Condition is a null-pointer");
+        assert(expression != nullptr && "Expression is a null-pointer");
+    }
 
     virtual ~RamAbstractAggregate() {}
 
@@ -764,7 +777,9 @@ public:
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
         condition = map(std::move(condition));
+        assert(condition != nullptr && "Condition is a null-pointer");
         expression = map(std::move(expression));
+        assert(expression != nullptr && "Expression is a null-pointer");
     }
 
 protected:
@@ -821,7 +836,9 @@ public:
     void apply(const RamNodeMapper& map) override {
         RamIndexOperation::apply(map);
         condition = map(std::move(condition));
+        assert(condition != nullptr && "Condition is a null-pointer");
         expression = map(std::move(expression));
+        assert(expression != nullptr && "Expression is a null-pointer");
     }
 
 protected:
@@ -846,7 +863,9 @@ class RamUnpackRecord : public RamTupleOperation {
 public:
     RamUnpackRecord(std::unique_ptr<RamOperation> nested, int ident, std::unique_ptr<RamExpression> expr,
             size_t arity)
-            : RamTupleOperation(ident, std::move(nested)), expression(std::move(expr)), arity(arity) {}
+            : RamTupleOperation(ident, std::move(nested)), expression(std::move(expr)), arity(arity) {
+        assert(expression != nullptr && "Expression is a null-pointer");
+    }
 
     /** @brief Get record expression */
     const RamExpression& getExpression() const {
@@ -878,6 +897,7 @@ public:
     void apply(const RamNodeMapper& map) override {
         RamTupleOperation::apply(map);
         expression = map(std::move(expression));
+        assert(expression != nullptr && "Expression is a null-pointer");
     }
 
 protected:
@@ -903,7 +923,9 @@ class RamAbstractConditional : public RamNestedOperation {
 public:
     RamAbstractConditional(std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {}
+            : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {
+        assert(condition != nullptr && "Condition is a null-pointer");
+    }
 
     /** @brief Get condition that must be satisfied */
     const RamCondition& getCondition() const {
@@ -920,6 +942,7 @@ public:
     void apply(const RamNodeMapper& map) override {
         RamNestedOperation::apply(map);
         condition = map(std::move(condition));
+        assert(condition != nullptr && "Condition is a null-pointer");
     }
 
 protected:
@@ -1020,7 +1043,12 @@ class RamProject : public RamOperation {
 public:
     RamProject(std::unique_ptr<RamRelationReference> relRef,
             std::vector<std::unique_ptr<RamExpression>> expressions)
-            : relationRef(std::move(relRef)), expressions(std::move(expressions)) {}
+            : relationRef(std::move(relRef)), expressions(std::move(expressions)) {
+        assert(relationRef != nullptr && "Relation reference is a null-pointer");
+        for (auto const& expr : expressions) {
+            assert(expr != nullptr && "Expression is a null-pointer");
+        }
+    }
 
     /** @brief Get relation */
     const RamRelation& getRelation() const {
@@ -1041,16 +1069,16 @@ public:
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         res.push_back(relationRef.get());
-        for (const auto& cur : expressions) {
-            res.push_back(cur.get());
+        for (const auto& expr : expressions) {
+            res.push_back(expr.get());
         }
         return res;
     }
 
     RamProject* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
-        for (auto& cur : expressions) {
-            newValues.emplace_back(cur->clone());
+        for (auto& expr : expressions) {
+            newValues.emplace_back(expr->clone());
         }
         return new RamProject(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
@@ -1058,8 +1086,10 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
-        for (auto& cur : expressions) {
-            cur = map(std::move(cur));
+        assert(relationRef != nullptr && "Relation reference is a null-pointer");
+        for (auto& expr : expressions) {
+            expr = map(std::move(expr));
+            assert(expr != nullptr && "Expression is a null-pointer");
         }
     }
 
@@ -1090,7 +1120,11 @@ protected:
 class RamSubroutineReturnValue : public RamOperation {
 public:
     RamSubroutineReturnValue(std::vector<std::unique_ptr<RamExpression>> vals)
-            : expressions(std::move(vals)) {}
+            : expressions(std::move(vals)) {
+        for (const auto& expr : expressions) {
+            assert(expr != nullptr && "Expression is a null-pointer");
+        }
+    }
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -1111,23 +1145,24 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
-        for (const auto& cur : expressions) {
-            res.push_back(cur.get());
+        for (const auto& expr : expressions) {
+            res.push_back(expr.get());
         }
         return res;
     }
 
     RamSubroutineReturnValue* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
-        for (auto& cur : expressions) {
-            newValues.emplace_back(cur->clone());
+        for (auto& expr : expressions) {
+            newValues.emplace_back(expr->clone());
         }
         return new RamSubroutineReturnValue(std::move(newValues));
     }
 
     void apply(const RamNodeMapper& map) override {
-        for (auto& cur : expressions) {
-            cur = map(std::move(cur));
+        for (auto& expr : expressions) {
+            expr = map(std::move(expr));
+            assert(expr != nullptr && "Expression is a null-pointer");
         }
     }
 

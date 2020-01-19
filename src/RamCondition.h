@@ -275,6 +275,9 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : relationRef(std::move(relRef)), values(std::move(vals)) {
         assert(relationRef != nullptr && "Relation reference is a nullptr");
+        for (const auto& v : values) {
+            assert(v != nullptr && "value is a nullptr");
+        }
     }
 
     /** @brief Get relation */
@@ -316,6 +319,7 @@ public:
         relationRef = map(std::move(relationRef));
         for (auto& val : values) {
             val = map(std::move(val));
+            assert(val != nullptr && "value is a nullptr");
         }
         assert(relationRef != nullptr && "Relation reference is a nullptr");
     }

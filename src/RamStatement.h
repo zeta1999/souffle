@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "IODirectives.h"
 #include "RamExpression.h"
 #include "RamNode.h"
 #include "RamOperation.h"
@@ -484,7 +485,7 @@ public:
     RamSequence* clone() const override {
         auto* res = new RamSequence();
         for (auto& cur : statements) {
-            res->add(std::unique_ptr<RamStatement>(cur->clone()));
+            res->statements.push_back(std::unique_ptr<RamStatement>(cur->clone()));
         }
         return res;
     }

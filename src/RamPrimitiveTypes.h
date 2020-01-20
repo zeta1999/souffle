@@ -52,28 +52,28 @@ inline std::ostream& operator<<(std::ostream& os, RamPrimitiveType T) {
 
 /** Convert a char to RamPrimitiveType */
 inline RamPrimitiveType RamPrimitiveFromChar(char c) {
-    RamPrimitiveType t;
+    RamPrimitiveType RamType;
     switch (c) {
         case 's':
-            t = RamPrimitiveType::String;
+            RamType = RamPrimitiveType::String;
             break;
         case 'i':
-            t = RamPrimitiveType::Signed;
+            RamType = RamPrimitiveType::Signed;
             break;
         case 'f':
-            t = RamPrimitiveType::Float;
+            RamType = RamPrimitiveType::Float;
             break;
         case 'u':
-            t = RamPrimitiveType::Unsigned;
+            RamType = RamPrimitiveType::Unsigned;
             break;
         case 'r':
-            t = RamPrimitiveType::Record;
+            RamType = RamPrimitiveType::Record;
             break;
         default:
             std::cerr << "Invalid RamPrimitiveType Char " << c << std::endl;
             assert(false && "Invalid conversion to ram primitive type");
     }
-    return t;
+    return RamType;
 }
 
 }  // namespace souffle

@@ -84,10 +84,37 @@ enum class FunctorOp {
     __UNDEFINED__,  // undefined operator
 };
 
+// enum class FunctorArgsType {
+//     String,
+//     Signed,
+//     Unsigned,
+//     Float,
+// };
+
+// inline FunctorArgsType typeOfFunctorArgs(FunctorOp functor) {
+//     switch (functor) {
+//         case FunctorOp::ORD:
+//         case FunctorOp::STRLEN:
+//         case FunctorOp::NEG:
+//         case FunctorOp::FNEG:
+//         case FunctorOp::BNOT:
+//         case FunctorOp::UBNOT:
+//         case FunctorOp::LNOT:
+//         case FunctorOp::TONUMBER:
+//         case FunctorOp::TOSTRING:
+//         case FunctorOp::ITOU:
+//         case FunctorOp::UTOI:
+//         case FunctorOp::ITOF:
+//         case FunctorOp::FTOI:
+//         case FunctorOp::UTOF:
+//         case FunctorOp::FTOU:
+//     }
+// }
+
 /**
  * Checks whether a functor operation can have a given argument count.
  */
-inline bool isValidFunctorOpArity(FunctorOp op, size_t arity) {
+inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
     switch (op) {
         /** Unary Functor Operators */
         case FunctorOp::ORD:
@@ -160,7 +187,7 @@ inline bool isValidFunctorOpArity(FunctorOp op, size_t arity) {
     return false;
 }
 
-inline std::string getSymbolForFunctorOp(FunctorOp op) {
+inline std::string getSymbolForFunctorOp(const FunctorOp op) {
     switch (op) {
         /** Unary Functor Operators */
         case FunctorOp::ORD:

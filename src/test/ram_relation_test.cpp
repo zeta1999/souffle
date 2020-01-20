@@ -399,7 +399,7 @@ TEST(IO_stdout, MixTypesRelation) {
 
     std::vector<std::unique_ptr<RamRelation>> rels;
 
-    std::vector<std::string> attribs{"f", "a", "j", "n", "a"};
+    std::vector<std::string> attribs{"t", "o", "s", "i", "a"};
 
     std::vector<std::string> types{"i", "u", "f", "f", "s"};
 
@@ -409,7 +409,7 @@ TEST(IO_stdout, MixTypesRelation) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     std::map<std::string, std::string> dirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}};
+            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}};  // stdin
     std::vector<IODirectives> ioDirs;
     ioDirs.push_back(IODirectives(dirs));
 
@@ -464,5 +464,80 @@ TEST(IO_stdout, MixTypesRelation) {
 
 TEST(IO_csvOut, InterpretorStoreUnsigned) {}
 TEST(IO_csvOut, InterpretorStoreFloat) {}
+
+// TEST(IO_stdout, InterpretorStoreSigned) {
+//     std::vector<RamDomain> randomNumbers = generateRandomVector<RamDomain>(RANDOM_TESTS);
+
+//     Global::config().set("jobs", "1");
+
+//     std::vector<std::unique_ptr<RamRelation>> rels;
+
+//     // a0 a1 a2...
+//     std::vector<std::string> attribs(RANDOM_TESTS, "a");
+//     for (size_t i = 0; i < RANDOM_TESTS; ++i) {
+//         attribs[i].append(std::to_string(i));
+//     }
+
+//     std::vector<std::string> types(RANDOM_TESTS, "i");
+
+//     std::unique_ptr<RamRelation> myrel = std::make_unique<RamRelation>(
+//             "test", RANDOM_TESTS, 0, attribs, types, RelationRepresentation::BTREE);
+//     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
+//     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
+
+//     std::map<std::string, std::string> dirs = {
+//             {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}};
+//     std::vector<IODirectives> ioDirs;
+//     ioDirs.push_back(IODirectives(dirs));
+
+//     std::vector<std::unique_ptr<RamExpression>> exprs;
+//     for (RamDomain i : randomNumbers) {
+//         exprs.push_back(std::make_unique<RamNumber>(i));
+//     }
+
+//     std::unique_ptr<RamStatement> main = std::make_unique<RamSequence>(
+//             std::make_unique<RamQuery>(std::make_unique<RamProject>(std::move(ref1), std::move(exprs))),
+//             std::make_unique<RamStore>(std::move(ref2), ioDirs));
+
+//     rels.push_back(std::move(myrel));
+//     std::map<std::string, std::unique_ptr<RamStatement>> subs;
+//     std::unique_ptr<RamProgram> prog =
+//             std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
+
+//     SymbolTable symTab;
+//     ErrorReport errReport;
+//     DebugReport debugReport;
+
+//     RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
+
+//     // configure and execute interpreter
+//     std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);
+
+//     std::streambuf* oldCoutStreambuf = std::cout.rdbuf();
+//     std::ostringstream sout;
+//     std::cout.rdbuf(sout.rdbuf());
+
+//     interpreter->executeMain();
+
+//     std::cout.rdbuf(oldCoutStreambuf);
+
+//     std::stringstream expected;
+//     expected << "---------------"
+//              << "\n"
+//              << "test"
+//              << "\n"
+//              << "==============="
+//              << "\n"
+//              << randomNumbers[0];
+
+//     for (size_t i = 1; i < randomNumbers.size(); ++i) {
+//         expected << "\t" << randomNumbers[i];
+//     }
+//     expected << "\n"
+//              << "==============="
+//              << "\n";
+
+//     EXPECT_EQ(expected.str(), sout.str());
+// }
 
 }  // end namespace souffle::test

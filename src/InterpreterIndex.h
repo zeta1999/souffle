@@ -133,8 +133,8 @@ class Order {
     std::vector<int> order;
 
 public:
-    template <typename... Positions>
-    Order(Positions... pos) : order{pos...} {
+    Order() = default;
+    Order(std::vector<int> pos) : order(std::move(pos)) {
         assert(valid());
     }
 

@@ -108,63 +108,45 @@ TEST(Unary, Neg) {
 }
 
 TEST(Unary, FloatNeg) {
-    RamDomain result;
+    FunctorOp functor = FunctorOp::FNEG;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamFloat randomNumber = dist(randomGenerator);
-        result = evalUnary(FunctorOp::FNEG, ramBitCast(randomNumber));
+    for (auto randomNumber : generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
+        auto result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamFloat>(result), -randomNumber);
     }
 }
 
 TEST(Unary, BinaryNot) {
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    FunctorOp functor = FunctorOp::BNOT;
 
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain randomNumber = dist(randomGenerator);
-        EXPECT_EQ(evalUnary(FunctorOp::BNOT, randomNumber), ~randomNumber);
+    for (auto randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
+        EXPECT_EQ(evalUnary(functor, randomNumber), ~randomNumber);
     }
 }
 
 TEST(Unary, UnsignedBinaryNot) {
     FunctorOp func = FunctorOp::UBNOT;
-    RamDomain result;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned randomNumber = dist(randomGenerator);
-        result = evalUnary(func, ramBitCast(randomNumber));
+    for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
+        RamDomain result = evalUnary(func, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), ~randomNumber);
     }
 }
 
 TEST(Unary, LogicalNeg) {
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    FunctorOp functor = FunctorOp::LNOT;
 
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain randomNumber = dist(randomGenerator);
-        EXPECT_EQ(evalUnary(FunctorOp::LNOT, randomNumber), !randomNumber);
+    for (auto randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
+        EXPECT_EQ(evalUnary(functor, randomNumber), !randomNumber);
     }
 }
 
 TEST(Unary, UnsignedLogicalNeg) {
     FunctorOp func = FunctorOp::ULNOT;
-    RamDomain result;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned randomNumber = dist(randomGenerator);
-        result = evalUnary(func, ramBitCast(randomNumber));
-        EXPECT_EQ(ramBitCast<RamUnsigned>(result), !randomNumber);
+    for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
+        RamDomain result = evalUnary(func, ramBitCast(randomNumber));
+        EXPECT_EQ(ramBitCast<RamUnsigned>(result), static_cast<RamUnsigned>(!randomNumber));
     }
 }
 

@@ -48,7 +48,7 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
     if (changed) {
         translationUnit.invalidateAnalyses();
         std::stringstream ramProgStr;
-        ramProgStr << *translationUnit.getProgram();
+        ramProgStr << translationUnit.getProgram();
         translationUnit.getDebugReport().addSection(
                 DebugReporter::getCodeSection(getName(), "RAM Program after " + getName(), ramProgStr.str()));
 

@@ -204,7 +204,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
             std::vector<bool> symbolMask;
-            for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
+            for (auto& cur : load.getRelation().getAttributeTypes()) {
                 symbolMask.push_back(cur[0] == 's');
             }
             // get some table details
@@ -235,7 +235,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
             std::vector<bool> symbolMask;
-            for (auto& cur : store.getRelation().getAttributeTypeQualifiers()) {
+            for (auto& cur : store.getRelation().getAttributeTypes()) {
                 symbolMask.push_back(cur[0] == 's');
             }
             for (IODirectives ioDirectives : store.getIODirectives()) {
@@ -1635,7 +1635,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     //                      Auto-Index Generation
     // ---------------------------------------------------------------
     const SymbolTable& symTable = translationUnit.getSymbolTable();
-    const RamProgram& prog = *translationUnit.getProgram();
+    const RamProgram& prog = translationUnit.getProgram();
     auto* idxAnalysis = translationUnit.getAnalysis<RamIndexAnalysis>();
 
     // ---------------------------------------------------------------
@@ -1816,14 +1816,16 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             std::string tupleName = "std::array<const char *," + std::to_string(arity) + ">{{";
 
             if (rel->getArity() != 0u) {
-                tupleType += "\"" + rel->getArgTypeQualifier(0) + "\"";
-                for (int i = 1; i < arity; i++) {
-                    tupleType += ",\"" + rel->getArgTypeQualifier(i) + "\"";
-                }
+                const auto& attrib = rel->getAttributeNames();
+                const auto& attribType = rel->getAttributeTypes();
+                tupleType += "\"" + attribType[0] + "\"";
 
-                tupleName += "\"" + rel->getArg(0) + "\"";
                 for (int i = 1; i < arity; i++) {
-                    tupleName += ",\"" + rel->getArg(i) + "\"";
+                    tupleType += ",\"" + attribType[i] + "\"";
+                }
+                tupleName += "\"" + attrib[0] + "\"";
+                for (int i = 1; i < arity; i++) {
+                    tupleName += ",\"" + attrib[i] + "\"";
                 }
             }
             tupleType += "}}";
@@ -2018,7 +2020,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
             std::vector<bool> symbolMask;
-            for (auto& cur : store->getRelation().getAttributeTypeQualifiers()) {
+            for (auto& cur : store->getRelation().getAttributeTypes()) {
                 symbolMask.push_back(cur[0] == 's');
             }
             for (IODirectives ioDirectives : store->getIODirectives()) {
@@ -2062,7 +2064,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
         // get some table details
         std::vector<bool> symbolMask;
-        for (auto& cur : load.getRelation().getAttributeTypeQualifiers()) {
+        for (auto& cur : load.getRelation().getAttributeTypes()) {
             symbolMask.push_back(cur[0] == 's');
         }
         for (IODirectives ioDirectives : load.getIODirectives()) {
@@ -2091,7 +2093,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     auto dumpRelation = [&](const RamRelation& ramRelation) {
         auto& relName = getRelationName(ramRelation);
         auto& name = ramRelation.getName();
-        auto& mask = ramRelation.getAttributeTypeQualifiers();
+        auto& mask = ramRelation.getAttributeTypes();
         size_t numberOfHeights = ramRelation.getNumberOfHeights();
 
         std::vector<bool> symbolMask;

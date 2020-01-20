@@ -67,7 +67,7 @@ public:
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
-        return expandFilters(*translationUnit.getProgram());
+        return expandFilters(translationUnit.getProgram());
     }
 };
 
@@ -119,7 +119,7 @@ protected:
 
     bool transform(RamTranslationUnit& translationUnit) override {
         rca = translationUnit.getAnalysis<RamComplexityAnalysis>();
-        return reorderConditions(*translationUnit.getProgram());
+        return reorderConditions(translationUnit.getProgram());
     }
 };
 
@@ -163,7 +163,7 @@ public:
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
-        return eliminateDuplicates(*translationUnit.getProgram());
+        return eliminateDuplicates(translationUnit.getProgram());
     }
 };
 
@@ -206,7 +206,7 @@ public:
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
-        return collapseFilters(*translationUnit.getProgram());
+        return collapseFilters(translationUnit.getProgram());
     }
 };
 
@@ -273,7 +273,7 @@ protected:
 
     bool transform(RamTranslationUnit& translationUnit) override {
         rla = translationUnit.getAnalysis<RamLevelAnalysis>();
-        return hoistConditions(*translationUnit.getProgram());
+        return hoistConditions(translationUnit.getProgram());
     }
 };
 
@@ -317,7 +317,7 @@ public:
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
-        return reorderFilterBreak(*translationUnit.getProgram());
+        return reorderFilterBreak(translationUnit.getProgram());
     }
 };
 
@@ -412,7 +412,7 @@ protected:
     RamLevelAnalysis* rla{nullptr};
     bool transform(RamTranslationUnit& translationUnit) override {
         rla = translationUnit.getAnalysis<RamLevelAnalysis>();
-        return makeIndex(*translationUnit.getProgram());
+        return makeIndex(translationUnit.getProgram());
     }
 };
 
@@ -470,7 +470,7 @@ public:
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
-        return convertIndexScans(*translationUnit.getProgram());
+        return convertIndexScans(translationUnit.getProgram());
     }
 };
 
@@ -545,7 +545,7 @@ protected:
     RamLevelAnalysis* rla{nullptr};
     bool transform(RamTranslationUnit& translationUnit) override {
         rla = translationUnit.getAnalysis<RamLevelAnalysis>();
-        return convertScans(*translationUnit.getProgram());
+        return convertScans(translationUnit.getProgram());
     }
 };
 
@@ -587,7 +587,7 @@ public:
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
-        return reorderOperations(*translationUnit.getProgram());
+        return reorderOperations(translationUnit.getProgram());
     }
 };
 
@@ -619,7 +619,7 @@ protected:
     RamLevelAnalysis* rla{nullptr};
     bool transform(RamTranslationUnit& translationUnit) override {
         rla = translationUnit.getAnalysis<RamLevelAnalysis>();
-        return hoistAggregate(*translationUnit.getProgram());
+        return hoistAggregate(translationUnit.getProgram());
     }
 };
 
@@ -659,7 +659,7 @@ public:
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
-        return parallelizeOperations(*translationUnit.getProgram());
+        return parallelizeOperations(translationUnit.getProgram());
     }
 };
 

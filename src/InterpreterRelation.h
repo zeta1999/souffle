@@ -162,7 +162,7 @@ public:
     /**
      * Return the attribute types
      */
-    const std::vector<std::string>& getAttributeTypeQualifiers() const;
+    const std::vector<std::string>& getAttributeTypes() const;
 
     /**
      * Return arity

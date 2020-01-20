@@ -181,7 +181,7 @@ private:
 class InterpreterProgInterface : public SouffleProgram {
 public:
     InterpreterProgInterface(InterpreterEngine& interp)
-            : prog(*interp.getTranslationUnit().getProgram()), exec(interp),
+            : prog(interp.getTranslationUnit().getProgram()), exec(interp),
               symTable(interp.getTranslationUnit().getSymbolTable()) {
         uint32_t id = 0;
 
@@ -201,15 +201,9 @@ public:
             const RamRelation& rel = *map[name];
 
             // construct types and names vectors
-            std::vector<std::string> types;
-            std::vector<std::string> attrNames;
-            for (size_t i = 0; i < rel.getArity(); i++) {
-                std::string t = rel.getArgTypeQualifier(i);
-                types.push_back(t);
+            std::vector<std::string> types = rel.getAttributeTypes();
+            std::vector<std::string> attrNames = rel.getAttributeNames();
 
-                std::string n = rel.getArg(i);
-                attrNames.push_back(n);
-            }
             auto* interface = new InterpreterRelInterface(
                     interpreterRel, symTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);

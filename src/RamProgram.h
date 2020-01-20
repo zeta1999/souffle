@@ -41,12 +41,20 @@ namespace souffle {
  */
 class RamProgram : public RamNode {
 private:
-    RamProgram(std::unique_ptr<RamStatement> main) : main(std::move(main)) {}
+    RamProgram() = default;
 
 public:
     RamProgram(std::vector<std::unique_ptr<RamRelation>> rels, std::unique_ptr<RamStatement> main,
             std::map<std::string, std::unique_ptr<RamStatement>> subs)
-            : relations(std::move(rels)), main(std::move(main)), subroutines(std::move(subs)) {}
+            : relations(std::move(rels)), main(std::move(main)), subroutines(std::move(subs)) {
+        assert(this->main != nullptr && "Main program is a null-pointer");
+        for (const auto& rel : relations) {
+            assert(rel != nullptr && "Relation is a null-pointer");
+        }
+        for (const auto& sub : subroutines) {
+            assert(sub.second != nullptr && "Subroutine is a null-pointer");
+        }
+    }
 
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> children;
@@ -80,7 +88,6 @@ public:
 
     /** @brief Get main program */
     RamStatement& getMain() const {
-        assert(main && "Program has no main routine");
         return *main.get();
     }
 
@@ -104,7 +111,8 @@ public:
     }
 
     RamProgram* clone() const override {
-        auto* res = new RamProgram(std::unique_ptr<RamStatement>(main->clone()));
+        auto* res = new RamProgram();
+        res->main = std::unique_ptr<RamStatement>(main->clone());
         for (auto& rel : relations) {
             res->relations.push_back(std::unique_ptr<RamRelation>(rel->clone()));
         }
@@ -127,24 +135,18 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         main = map(std::move(main));
+        assert(main != nullptr && "Main program is a null-pointer");
         for (auto& rel : relations) {
             rel = map(std::move(rel));
+            assert(rel != nullptr && "Relation is a null-pointer");
         }
         for (auto& sub : subroutines) {
             sub.second = map(std::move(sub.second));
+            assert(sub.second != nullptr && "Subroutine is a null-pointer");
         }
     }
 
 protected:
-    /** Relations of RAM program */
-    std::vector<std::unique_ptr<RamRelation>> relations;
-
-    /** Main program */
-    std::unique_ptr<RamStatement> main;
-
-    /** Subroutines for provenance system */
-    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamProgram*>(&node));
         const auto& other = static_cast<const RamProgram&>(node);
@@ -158,6 +160,16 @@ protected:
         }
         return getMain() == other.getMain() && equal_targets(relations, other.relations);
     }
+
+protected:
+    /** Relations of RAM program */
+    std::vector<std::unique_ptr<RamRelation>> relations;
+
+    /** Main program */
+    std::unique_ptr<RamStatement> main;
+
+    /** Subroutines for provenance system */
+    std::map<std::string, std::unique_ptr<RamStatement>> subroutines;
 };
 
 }  // end of namespace souffle

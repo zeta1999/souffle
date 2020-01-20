@@ -47,7 +47,11 @@ public:
  */
 class RamAbstractOperator : public RamExpression {
 public:
-    RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {}
+    RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {
+        for (auto const& arg : arguments) {
+            assert(arg != nullptr && "argument is null-pointer");
+        }
+    }
 
     /** @brief Get argument values */
     std::vector<RamExpression*> getArguments() const {
@@ -65,18 +69,19 @@ public:
     void apply(const RamNodeMapper& map) override {
         for (auto& arg : arguments) {
             arg = map(std::move(arg));
+            assert(arg != nullptr && "argument is null-pointer");
         }
     }
 
 protected:
-    /** Arguments of user defined operator */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAbstractOperator*>(&node));
         const auto& other = static_cast<const RamAbstractOperator&>(node);
         return equal_targets(arguments, other.arguments);
     }
+
+    /** Arguments of user defined operator */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
 };
 
 /**
@@ -120,13 +125,13 @@ public:
     }
 
 protected:
-    /** Operation symbol */
-    const FunctorOp operation;
-
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIntrinsicOperator&>(node);
         return RamAbstractOperator::equal(node) && getOperator() == other.getOperator();
     }
+
+    /** Operation symbol */
+    const FunctorOp operation;
 };
 
 /**
@@ -165,16 +170,16 @@ public:
     }
 
 protected:
+    bool equal(const RamNode& node) const override {
+        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
+        return RamAbstractOperator::equal(node) && name == other.name && type == other.type;
+    }
+
     /** Name of user-defined operator */
     const std::string name;
 
     /** Argument types */
     const std::string type;
-
-    bool equal(const RamNode& node) const override {
-        const auto& other = static_cast<const RamUserDefinedOperator&>(node);
-        return RamAbstractOperator::equal(node) && name == other.name && type == other.type;
-    }
 };
 
 /**
@@ -210,17 +215,17 @@ public:
     }
 
 protected:
-    /** Identifier for the tuple */
-    const size_t identifier;
-
-    /** Element number */
-    const size_t element;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamTupleElement*>(&node));
         const auto& other = static_cast<const RamTupleElement&>(node);
         return getTupleId() == other.getTupleId() && getElement() == other.getElement();
     }
+
+    /** Identifier for the tuple */
+    const size_t identifier;
+
+    /** Element number */
+    const size_t element;
 };
 
 /**
@@ -251,14 +256,14 @@ public:
     }
 
 protected:
-    /** Constant value */
-    const RamDomain constant;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamNumber*>(&node));
         const auto& other = static_cast<const RamNumber&>(node);
         return getConstant() == other.getConstant();
     }
+
+    /** Constant value */
+    const RamDomain constant;
 };
 
 /**
@@ -301,7 +306,11 @@ public:
  */
 class RamPackRecord : public RamExpression {
 public:
-    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {}
+    RamPackRecord(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {
+        for (const auto& arg : arguments) {
+            assert(arg != nullptr && "argument is a null-pointer");
+        }
+    }
 
     /** @brief Get record arguments */
     std::vector<RamExpression*> getArguments() const {
@@ -333,18 +342,19 @@ public:
     void apply(const RamNodeMapper& map) override {
         for (auto& arg : arguments) {
             arg = map(std::move(arg));
+            assert(arg != nullptr && "argument is a null-pointer");
         }
     }
 
 protected:
-    /** Arguments */
-    std::vector<std::unique_ptr<RamExpression>> arguments;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamPackRecord*>(&node));
         const auto& other = static_cast<const RamPackRecord&>(node);
         return equal_targets(arguments, other.arguments);
     }
+
+    /** Arguments */
+    std::vector<std::unique_ptr<RamExpression>> arguments;
 };
 
 /**
@@ -373,14 +383,14 @@ public:
     }
 
 protected:
-    /** Argument number */
-    const size_t number;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamSubroutineArgument*>(&node));
         const auto& other = static_cast<const RamSubroutineArgument&>(node);
         return getArgument() == other.getArgument();
     }
+
+    /** Argument number */
+    const size_t number;
 };
 
 }  // end of namespace souffle

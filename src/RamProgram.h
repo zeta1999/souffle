@@ -44,10 +44,10 @@ private:
     RamProgram() = default;
 
 public:
-    RamProgram(std::vector<std::unique_ptr<RamRelation>> rels, std::unique_ptr<RamStatement> m,
+    RamProgram(std::vector<std::unique_ptr<RamRelation>> rels, std::unique_ptr<RamStatement> main,
             std::map<std::string, std::unique_ptr<RamStatement>> subs)
-            : relations(std::move(rels)), main(std::move(m)), subroutines(std::move(subs)) {
-        assert(main != nullptr && "Main program is a null-pointer");
+            : relations(std::move(rels)), main(std::move(main)), subroutines(std::move(subs)) {
+        assert(this->main != nullptr && "Main program is a null-pointer");
         for (const auto& rel : relations) {
             assert(rel != nullptr && "Relation is a null-pointer");
         }

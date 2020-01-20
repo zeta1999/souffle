@@ -32,15 +32,16 @@ namespace souffle {
 class RamRelation : public RamNode {
 public:
     RamRelation(const std::string name, const size_t arity, const size_t numberOfHeights,
-            const std::vector<std::string> attribs, const std::vector<std::string> typs,
-            const RelationRepresentation repr)
-            : representation(repr), name(std::move(name)), arity(arity), attributeNames(std::move(attribs)),
-              attributeTypes(std::move(typs)), numberOfHeights(numberOfHeights) {
-        assert(attributeNames.size() == arity && "arity mismatch for attributes");
-        assert(attributeTypes.size() == arity && "arity mismatch for types");
+            const std::vector<std::string> attributeNames, const std::vector<std::string> attributeTypes,
+            const RelationRepresentation representation)
+            : representation(representation), name(std::move(name)), arity(arity),
+              attributeNames(std::move(attributeNames)), attributeTypes(std::move(attributeTypes)),
+              numberOfHeights(numberOfHeights) {
+        assert(this->attributeNames.size() == arity && "arity mismatch for attributes");
+        assert(this->attributeTypes.size() == arity && "arity mismatch for types");
         for (std::size_t i = 0; i < arity; i++) {
-            assert(!attributeNames[i].empty() && "no type specified");
-            assert(!attributeTypes[i].empty() && "no type specified");
+            assert(!this->attributeNames[i].empty() && "no attribute name specified");
+            assert(!this->attributeTypes[i].empty() && "no attribute type specified");
         }
     }
 

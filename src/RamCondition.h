@@ -128,17 +128,17 @@ public:
     }
 
 protected:
-    /** Left-hand side of conjunction */
-    std::unique_ptr<RamCondition> lhs;
-
-    /** Right-hand side of conjunction */
-    std::unique_ptr<RamCondition> rhs;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamConjunction*>(&node));
         const auto& other = static_cast<const RamConjunction&>(node);
         return getLHS() == other.getLHS() && getRHS() == other.getRHS();
     }
+
+    /** Left-hand side of conjunction */
+    std::unique_ptr<RamCondition> lhs;
+
+    /** Right-hand side of conjunction */
+    std::unique_ptr<RamCondition> rhs;
 };
 
 /**
@@ -179,14 +179,14 @@ public:
     }
 
 protected:
-    /** Operand */
-    std::unique_ptr<RamCondition> operand;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamNegation*>(&node));
         const auto& other = static_cast<const RamNegation&>(node);
         return getOperand() == other.getOperand();
     }
+
+    /** Operand */
+    std::unique_ptr<RamCondition> operand;
 };
 
 /**
@@ -249,6 +249,14 @@ public:
 
 protected:
     /** Operator */
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamConstraint*>(&node));
+        const auto& other = static_cast<const RamConstraint&>(node);
+        return getOperator() == other.getOperator() && getLHS() == other.getLHS() &&
+               getRHS() == other.getRHS();
+    }
+
+    /** Operator */
     BinaryConstraintOp op;
 
     /** Left-hand side of constraint*/
@@ -256,13 +264,6 @@ protected:
 
     /** Right-hand side of constraint */
     std::unique_ptr<RamExpression> rhs;
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamConstraint*>(&node));
-        const auto& other = static_cast<const RamConstraint&>(node);
-        return getOperator() == other.getOperator() && getLHS() == other.getLHS() &&
-               getRHS() == other.getRHS();
-    }
 };
 
 /**
@@ -275,6 +276,9 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : relationRef(std::move(relRef)), values(std::move(vals)) {
         assert(relationRef != nullptr && "Relation reference is a nullptr");
+        for (const auto& v : values) {
+            assert(v != nullptr && "value is a nullptr");
+        }
     }
 
     /** @brief Get relation */
@@ -316,22 +320,23 @@ public:
         relationRef = map(std::move(relationRef));
         for (auto& val : values) {
             val = map(std::move(val));
+            assert(val != nullptr && "value is a nullptr");
         }
         assert(relationRef != nullptr && "Relation reference is a nullptr");
     }
 
 protected:
-    /** Relation */
-    std::unique_ptr<RamRelationReference> relationRef;
-
-    /** Pattern -- nullptr if undefined */
-    std::vector<std::unique_ptr<RamExpression>> values;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAbstractExistenceCheck*>(&node));
         const auto& other = static_cast<const RamAbstractExistenceCheck&>(node);
         return getRelation() == other.getRelation() && equal_targets(values, other.values);
     }
+
+    /** Relation */
+    std::unique_ptr<RamRelationReference> relationRef;
+
+    /** Pattern -- nullptr if undefined */
+    std::vector<std::unique_ptr<RamExpression>> values;
 };
 
 /**
@@ -427,14 +432,14 @@ public:
     }
 
 protected:
-    /** Relation */
-    std::unique_ptr<RamRelationReference> relationRef;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamEmptinessCheck*>(&node));
         const auto& other = static_cast<const RamEmptinessCheck&>(node);
         return getRelation() == other.getRelation();
     }
+
+    /** Relation */
+    std::unique_ptr<RamRelationReference> relationRef;
 };
 
 }  // end of namespace souffle

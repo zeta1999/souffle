@@ -16,10 +16,10 @@
 
 #include "souffle/SouffleInterface.h"
 #include <array>
+#include <csignal>
+#include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
-#include <signal.h>
 
 using namespace souffle;
 

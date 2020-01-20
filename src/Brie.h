@@ -245,7 +245,9 @@ public:
         // copy content
         unsynced.levels = other.unsynced.levels;
         unsynced.root = clone(other.unsynced.root, unsynced.levels);
-        if (unsynced.root) unsynced.root->parent = nullptr;
+        if (unsynced.root) {
+            unsynced.root->parent = nullptr;
+        }
         unsynced.offset = other.unsynced.offset;
         unsynced.first = (unsynced.root) ? findFirst(unsynced.root, unsynced.levels) : nullptr;
         unsynced.firstOffset = other.unsynced.firstOffset;
@@ -394,7 +396,7 @@ private:
      * Obtains a snapshot of the current root information.
      */
     RootInfoSnapshot getRootInfo() const {
-        RootInfoSnapshot res;
+        RootInfoSnapshot res{};
         do {
             // first take the mod counter
             do {
@@ -468,7 +470,7 @@ private:
      * Obtains a snapshot of the current first-node information.
      */
     FirstInfoSnapshot getFirstInfo() const {
-        FirstInfoSnapshot res;
+        FirstInfoSnapshot res{};
         do {
             // first take the version
             do {
@@ -781,12 +783,16 @@ private:
      */
     static void merge(const Node* parent, Node*& trg, const Node* src, int levels) {
         // if other side is null => done
-        if (!src) return;
+        if (src == nullptr) {
+            return;
+        }
 
         // if the trg sub-tree is empty, clone the corresponding branch
         if (trg == nullptr) {
             trg = clone(src, levels);
-            if (trg) trg->parent = parent;
+            if (trg != nullptr) {
+                trg->parent = parent;
+            }
             return;  // done
         }
 
@@ -952,7 +958,9 @@ public:
             while (level > 0 && node) {
                 // search for next child
                 while (x < NUM_CELLS) {
-                    if (node->cell[x].ptr) break;
+                    if (node->cell[x].ptr != nullptr) {
+                        break;
+                    }
                     x++;
                 }
 
@@ -976,7 +984,9 @@ public:
             }
 
             // check whether it is the end of range
-            if (!node) return *this;
+            if (node == nullptr) {
+                return *this;
+            }
 
             // search the first value in this node
             x = 0;
@@ -1243,7 +1253,9 @@ private:
      */
     static Node* clone(const Node* node, int level) {
         // support null-pointers
-        if (!node) return nullptr;
+        if (node == nullptr) {
+            return nullptr;
+        }
 
         // create a clone
         auto* res = new Node();
@@ -1260,7 +1272,9 @@ private:
         // for inner nodes clone each child
         for (int i = 0; i < NUM_CELLS; i++) {
             auto cur = clone(node->cell[i].ptr, level - 1);
-            if (cur) cur->parent = res;
+            if (cur != nullptr) {
+                cur->parent = res;
+            }
             res->cell[i].ptr = cur;
         }
 
@@ -1490,7 +1504,7 @@ public:
 #endif
 
         value_t old = val.fetch_or(bit, std::memory_order::memory_order_relaxed);
-        return !(old & bit);
+        return (old & bit) == 0u;
     }
 
     /**
@@ -1572,7 +1586,7 @@ public:
         uint64_t mask = 0;
 
         // the value currently pointed to
-        index_type value;
+        index_type value{};
 
     public:
         // default constructor -- creating an end-iterator
@@ -2529,7 +2543,9 @@ public:
         int c = 1;
         auto priv = begin();
         for (auto it = store.begin(); it != store.end(); ++it, c++) {
-            if (c % step != 0 || c == 1) continue;
+            if (c % step != 0 || c == 1) {
+                continue;
+            }
             auto cur = iterator(it);
             res.push_back(make_range(priv, cur));
             priv = cur;
@@ -3096,7 +3112,9 @@ public:
         int c = 1;
         auto priv = begin();
         for (auto it = map.begin(); it != map.end(); ++it, c++) {
-            if (c % step != 0 || c == 1) continue;
+            if (c % step != 0 || c == 1) {
+                continue;
+            }
             auto cur = iterator(it);
             res.push_back(make_range(priv, cur));
             priv = cur;

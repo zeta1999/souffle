@@ -230,7 +230,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
     std::vector<std::string> attributeTypeQualifiers;
     for (size_t i = 0; i < rel->getArity(); ++i) {
         attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
-        if (typeEnv) {
+        if (typeEnv != nullptr) {
             attributeTypeQualifiers.push_back(
                     getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
         }
@@ -408,8 +408,9 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             if (Global::config().has("provenance")) {
                 values.push_back(std::make_unique<RamUndefValue>());
                 // add the height annotation for provenanceNotExists
-                for (size_t h = 0; h < numberOfHeightParameters; h++)
+                for (size_t h = 0; h < numberOfHeightParameters; h++) {
                     values.push_back(translator.translateValue(atom->getArgument(arity + h + 1), index));
+                }
             }
 
             // add constraint
@@ -453,7 +454,7 @@ std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
 
 AstTranslator::ClauseTranslator::arg_list* AstTranslator::ClauseTranslator::getArgList(
         const AstNode* curNode, std::map<const AstNode*, std::unique_ptr<arg_list>>& nodeArgs) const {
-    if (!nodeArgs.count(curNode)) {
+    if (nodeArgs.count(curNode) == 0u) {
         if (auto rec = dynamic_cast<const AstRecordInit*>(curNode)) {
             nodeArgs[curNode] = std::make_unique<arg_list>(rec->getArguments());
         } else if (auto atom = dynamic_cast<const AstAtom*>(curNode)) {
@@ -620,8 +621,9 @@ std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createO
             }
 
             // provenance annotation arguments
-            for (size_t i = 0; i < numberOfHeights + 1; ++i)
+            for (size_t i = 0; i < numberOfHeights + 1; ++i) {
                 values.push_back(std::make_unique<RamNumber>(-1));
+            }
         }
     }
 
@@ -916,7 +918,7 @@ void AstTranslator::appendStmt(std::unique_ptr<RamStatement>& stmtList, std::uni
     if (stmt) {
         if (stmtList) {
             RamSequence* stmtSeq;
-            if ((stmtSeq = dynamic_cast<RamSequence*>(stmtList.get()))) {
+            if ((stmtSeq = dynamic_cast<RamSequence*>(stmtList.get())) != nullptr) {
                 stmtSeq->add(std::move(stmt));
             } else {
                 stmtList = std::make_unique<RamSequence>(std::move(stmtList), std::move(stmt));
@@ -1008,7 +1010,7 @@ void AstTranslator::nameUnnamedVariables(AstClause* clause) {
             node->apply(*this);
 
             // replace unknown variables
-            if (dynamic_cast<AstUnnamedVariable*>(node.get())) {
+            if (dynamic_cast<AstUnnamedVariable*>(node.get()) != nullptr) {
                 auto name = " _unnamed_var" + toString(++counter);
                 return std::make_unique<AstVariable>(name);
             }
@@ -1151,9 +1153,10 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                     r1->addToBody(std::make_unique<AstProvenanceNegation>(
                             std::unique_ptr<AstAtom>(cl->getHead()->clone())));
                 } else {
-                    if (r1->getHead()->getArity() > 0)
+                    if (r1->getHead()->getArity() > 0) {
                         r1->addToBody(std::make_unique<AstNegation>(
                                 std::unique_ptr<AstAtom>(cl->getHead()->clone())));
+                    }
                 }
 
                 // replace wildcards with variables (reduces indices when wildcards are used in recursive
@@ -1202,7 +1205,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         }
 
         // if there was no rule, continue
-        if (!loopRelSeq) {
+        if (loopRelSeq == nullptr) {
             continue;
         }
 
@@ -1234,15 +1237,19 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     /* construct fixpoint loop  */
     std::unique_ptr<RamStatement> res;
-    if (preamble) appendStmt(res, std::move(preamble));
+    if (preamble != nullptr) {
+        appendStmt(res, std::move(preamble));
+    }
     if (!loopSeq->getStatements().empty() && exitCond && updateTable) {
         appendStmt(res, std::make_unique<RamLoop>(std::move(loopSeq),
                                 std::make_unique<RamExit>(std::move(exitCond)), std::move(updateTable)));
     }
-    if (postamble) {
+    if (postamble != nullptr) {
         appendStmt(res, std::move(postamble));
     }
-    if (res) return res;
+    if (res != nullptr) {
+        return res;
+    }
 
     assert(false && "Not Implemented");
     return nullptr;
@@ -1329,7 +1336,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
         AggregatesToVariables(int& aggNumber) : aggNumber(aggNumber) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
-            if (dynamic_cast<AstAggregator*>(node.get())) {
+            if (dynamic_cast<AstAggregator*>(node.get()) != nullptr) {
                 return std::make_unique<AstVariable>("agg_" + std::to_string(aggNumber++));
             }
 

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "IODirectives.h"
 #include "RamExpression.h"
 #include "RamNode.h"
 #include "RamOperation.h"
@@ -69,17 +70,19 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
+        assert(relationRef != nullptr && "Relation reference is a null-pointer");
     }
 
 protected:
-    /** Relation */
-    std::unique_ptr<RamRelationReference> relationRef;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRelationStatement*>(&node));
         const auto& other = static_cast<const RamRelationStatement&>(node);
         return getRelation() == other.getRelation();
     }
+
+protected:
+    /** Relation reference */
+    std::unique_ptr<RamRelationReference> relationRef;
 };
 
 /**
@@ -99,14 +102,15 @@ public:
     }
 
 protected:
-    /** Load directives of a relation */
-    const std::vector<IODirectives> ioDirectives;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamAbstractLoadStore*>(&node));
         const auto& other = static_cast<const RamAbstractLoadStore&>(node);
         return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
     }
+
+protected:
+    /** Load directives of a relation */
+    const std::vector<IODirectives> ioDirectives;
 };
 
 /**
@@ -222,13 +226,15 @@ class RamBinRelationStatement : public RamStatement {
 public:
     RamBinRelationStatement(std::unique_ptr<RamRelationReference> f, std::unique_ptr<RamRelationReference> s)
             : first(std::move(f)), second(std::move(s)) {
-        assert(first->get()->getArity() == second->get()->getArity() && "mismatching relations");
-        for (size_t i = 0; i < first->get()->getArity(); i++) {
-            assert(first->get()->getArgTypeQualifier(i) == second->get()->getArgTypeQualifier(i) &&
-                    "mismatching type");
-        }
+        assert(first->get()->getArity() == second->get()->getArity() && "mismatching arities");
+
         assert(first != nullptr && "First relation is a null-pointer");
         assert(second != nullptr && "Second relation is a null-pointer");
+        const auto& type1 = first->get()->getAttributeTypes();
+        const auto& type2 = first->get()->getAttributeTypes();
+        for (size_t i = 0; i < first->get()->getArity(); i++) {
+            assert(type1[i] == type2[i] && "mismatching type");
+        }
     }
 
     /** @brief Get first relation */
@@ -247,7 +253,17 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         first = map(std::move(first));
+        assert(first != nullptr && "First relation is a null-pointer");
         second = map(std::move(second));
+        assert(second != nullptr && "Second relation is a null-pointer");
+    }
+
+protected:
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamBinRelationStatement*>(&node));
+        const auto& other = static_cast<const RamBinRelationStatement&>(node);
+        return getFirstRelation() == other.getFirstRelation() &&
+               getSecondRelation() == other.getSecondRelation();
     }
 
 protected:
@@ -256,13 +272,6 @@ protected:
 
     /** second argument of binary statement */
     std::unique_ptr<RamRelationReference> second;
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamBinRelationStatement*>(&node));
-        const auto& other = static_cast<const RamBinRelationStatement&>(node);
-        return getFirstRelation() == other.getFirstRelation() &&
-               getSecondRelation() == other.getSecondRelation();
-    }
 };
 
 /**
@@ -382,17 +391,19 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         operation = map(std::move(operation));
+        assert(operation && "operation is a null-pointer");
     }
 
 protected:
-    /** RAM operation */
-    std::unique_ptr<RamOperation> operation;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamQuery*>(&node));
         const auto& other = static_cast<const RamQuery&>(node);
         return getOperation() == other.getOperation();
     }
+
+protected:
+    /** RAM operation */
+    std::unique_ptr<RamOperation> operation;
 };
 
 /**
@@ -426,18 +437,20 @@ public:
     void apply(const RamNodeMapper& map) override {
         for (auto& stmt : statements) {
             stmt = map(std::move(stmt));
+            assert(stmt != nullptr && "Statement is a null-pointer");
         }
     }
 
 protected:
-    /** ordered list of RAM statements */
-    std::vector<std::unique_ptr<RamStatement>> statements;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamListStatement*>(&node));
         const auto& other = static_cast<const RamListStatement&>(node);
         return equal_targets(statements, other.statements);
     }
+
+protected:
+    /** ordered list of RAM statements */
+    std::vector<std::unique_ptr<RamStatement>> statements;
 };
 
 /**
@@ -459,7 +472,7 @@ public:
         }
         for (const auto& cur : statements) {
             (void)cur;
-            assert(cur && "statement is a nullptr");
+            assert(cur && "statement is a null-pointer");
         }
     }
 
@@ -472,7 +485,7 @@ public:
     RamSequence* clone() const override {
         auto* res = new RamSequence();
         for (auto& cur : statements) {
-            res->add(std::unique_ptr<RamStatement>(cur->clone()));
+            res->statements.push_back(std::unique_ptr<RamStatement>(cur->clone()));
         }
         return res;
     }
@@ -570,17 +583,19 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         body = map(std::move(body));
+        assert(body != nullptr && "Loop body is a null-pointer");
     }
 
 protected:
-    /** Body of loop */
-    std::unique_ptr<RamStatement> body;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLoop*>(&node));
         const auto& other = static_cast<const RamLoop&>(node);
         return getBody() == other.getBody();
     }
+
+protected:
+    /** Body of loop */
+    std::unique_ptr<RamStatement> body;
 };
 
 /**
@@ -620,17 +635,19 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         condition = map(std::move(condition));
+        assert(condition != nullptr && "Condition is a null-pointer");
     }
 
 protected:
-    /** exit condition */
-    std::unique_ptr<RamCondition> condition;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamExit*>(&node));
         const auto& other = static_cast<const RamExit&>(node);
         return getCondition() == other.getCondition();
     }
+
+protected:
+    /** exit condition */
+    std::unique_ptr<RamCondition> condition;
 };
 
 /**
@@ -662,6 +679,14 @@ public:
 
     void apply(const RamNodeMapper& map) {
         statement = map(std::move(statement));
+        assert(statement && "log statement is a nullptr");
+    }
+
+protected:
+    bool equal(const RamNode& node) const {
+        assert(nullptr != dynamic_cast<const RamAbstractLog*>(&node));
+        const auto& other = dynamic_cast<const RamAbstractLog*>(&node);
+        return getStatement() == other->getStatement() && getMessage() == other->getMessage();
     }
 
 protected:
@@ -670,12 +695,6 @@ protected:
 
     /** logging message */
     std::string message;
-
-    bool equal(const RamNode& node) const {
-        assert(nullptr != dynamic_cast<const RamAbstractLog*>(&node));
-        const auto& other = dynamic_cast<const RamAbstractLog*>(&node);
-        return getStatement() == other->getStatement() && getMessage() == other->getMessage();
-    }
 };
 
 /**
@@ -775,9 +794,6 @@ public:
     }
 
 protected:
-    /** Relation */
-    std::unique_ptr<RamRelationReference> relationRef;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogTimer*>(&node));
         const auto& other = static_cast<const RamLogTimer&>(node);
@@ -876,6 +892,14 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         body = map(std::move(body));
+        assert(body != nullptr && "Body of stratum is a null-pointer");
+    }
+
+protected:
+    bool equal(const RamNode& node) const override {
+        assert(nullptr != dynamic_cast<const RamStratum*>(&node));
+        const auto& other = static_cast<const RamStratum&>(node);
+        return getBody() == other.getBody() && getIndex() == other.getIndex();
     }
 
 protected:
@@ -884,12 +908,6 @@ protected:
 
     /** Stratum number */
     const int index;
-
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamStratum*>(&node));
-        const auto& other = static_cast<const RamStratum&>(node);
-        return getBody() == other.getBody() && getIndex() == other.getIndex();
-    }
 };
 
 /**
@@ -918,14 +936,15 @@ public:
     }
 
 protected:
-    /** logging message */
-    std::string message;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamLogSize*>(&node));
         const auto& other = static_cast<const RamLogSize&>(node);
         return RamRelationStatement::equal(other) && getMessage() == other.getMessage();
     }
+
+protected:
+    /** logging message */
+    std::string message;
 };
 
 }  // end of namespace souffle

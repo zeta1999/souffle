@@ -125,7 +125,7 @@ void InterpreterEngine::executeMain() {
         SignalHandler::instance()->enableLogging();
     }
 
-    RamStatement& program = tUnit.getProgram()->getMain();
+    RamStatement& program = tUnit.getProgram().getMain();
     auto entry = generator.generateTree(program);
     InterpreterContext ctxt;
 
@@ -150,7 +150,7 @@ void InterpreterEngine::executeMain() {
         }
         // Store count of relations
         size_t relationCount = 0;
-        for (auto rel : tUnit.getProgram()->getRelations()) {
+        for (auto rel : tUnit.getProgram().getRelations()) {
             if (rel->getName()[0] != '@') {
                 ++relationCount;
                 reads[rel->getName()] = 0;
@@ -185,7 +185,7 @@ void InterpreterEngine::executeSubroutine(const std::string& name, const std::ve
     ctxt.setReturnErrors(err);
     ctxt.setArguments(args);
 
-    auto entry = generator.generateTree(tUnit.getProgram()->getSubroutine(name));
+    auto entry = generator.generateTree(tUnit.getProgram().getSubroutine(name));
     execute(entry.get(), ctxt);
 }
 
@@ -1220,7 +1220,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Stratum)
         if (profileEnabled) {
             std::map<std::string, size_t> relNames;
-            for (auto rel : tUnit.getProgram()->getRelations()) {
+            for (auto rel : tUnit.getProgram().getRelations()) {
                 relNames[rel->getName()] = rel->getArity();
             }
             for (const auto& rel : relNames) {
@@ -1252,7 +1252,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             try {
                 InterpreterRelation& relation = *node->getRelation();
                 std::vector<RamPrimitiveType> symbolMask;
-                for (auto& cur : cur.getRelation().getAttributeTypeQualifiers()) {
+                for (auto& cur : cur.getRelation().getAttributeTypes()) {
                     symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }
                 IOSystem::getInstance()
@@ -1270,7 +1270,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         for (IODirectives ioDirectives : cur.getIODirectives()) {
             try {
                 std::vector<RamPrimitiveType> symbolMask;
-                for (auto& cur : cur.getRelation().getAttributeTypeQualifiers()) {
+                for (auto& cur : cur.getRelation().getAttributeTypes()) {
                     symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }
                 IOSystem::getInstance()

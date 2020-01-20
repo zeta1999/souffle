@@ -15,17 +15,10 @@
 
 #pragma once
 
-#include "IODirectives.h"
-#include "ParallelUtils.h"
 #include "RamNode.h"
 #include "RamTypes.h"
 #include "RelationRepresentation.h"
-#include "SymbolTable.h"
-#include "Table.h"
-#include "Util.h"
 
-#include <list>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -37,38 +30,19 @@ namespace souffle {
  * @brief A RAM Relation in the RAM intermediate representation.
  */
 class RamRelation : public RamNode {
-protected:
-    /** Name of relation */
-    const std::string name;
-
-    /** Arity, i.e., number of attributes */
-    const size_t arity;
-
-    /** Number of height parameters for provenance */
-    const size_t numberOfHeights;
-
-    /** Name of attributes */
-    const std::vector<std::string> attributeNames;
-
-    /** Type of attributes */
-    const std::vector<std::string> attributeTypeQualifiers;
-
-    /** Data-structure representation */
-    const RelationRepresentation representation;
-
 public:
-    /** Used by Interpreter only */
-    mutable void* relation = nullptr;
-
     RamRelation(const std::string name, const size_t arity, const size_t numberOfHeights,
-            const std::vector<std::string> attributeNames,
-            const std::vector<std::string> attributeTypeQualifiers,
+            const std::vector<std::string> attributeNames, const std::vector<std::string> attributeTypes,
             const RelationRepresentation representation)
-            : name(std::move(name)), arity(arity), numberOfHeights(numberOfHeights),
-              attributeNames(std::move(attributeNames)),
-              attributeTypeQualifiers(std::move(attributeTypeQualifiers)), representation(representation) {
-        assert(this->attributeNames.size() == arity || this->attributeNames.empty());
-        assert(this->attributeTypeQualifiers.size() == arity || this->attributeTypeQualifiers.empty());
+            : representation(representation), name(std::move(name)), arity(arity),
+              attributeNames(std::move(attributeNames)), attributeTypes(std::move(attributeTypes)),
+              numberOfHeights(numberOfHeights) {
+        assert(this->attributeNames.size() == arity && "arity mismatch for attributes");
+        assert(this->attributeTypes.size() == arity && "arity mismatch for types");
+        for (std::size_t i = 0; i < arity; i++) {
+            assert(!this->attributeNames[i].empty() && "no attribute name specified");
+            assert(!this->attributeTypes[i].empty() && "no attribute type specified");
+        }
     }
 
     /** @brief Get name */
@@ -76,24 +50,14 @@ public:
         return name;
     }
 
-    /** @brief Get argument */
-    const std::string getArg(uint32_t i) const {
-        if (!attributeNames.empty()) {
-            return attributeNames[i];
-        }
-        if (arity == 0) {
-            return "";
-        }
-        return "c" + std::to_string(i);
+    /** @brief Get attribute types */
+    const std::vector<std::string>& getAttributeTypes() const {
+        return attributeTypes;
     }
 
-    /** @brief Get Argument Type Qualifier */
-    const std::string getArgTypeQualifier(uint32_t i) const {
-        return (i < attributeTypeQualifiers.size()) ? attributeTypeQualifiers[i] : "";
-    }
-
-    const std::vector<std::string>& getAttributeTypeQualifiers() const {
-        return attributeTypeQualifiers;
+    /** @brief Get attribute names */
+    const std::vector<std::string>& getAttributeNames() const {
+        return attributeNames;
     }
 
     /** @brief Is nullary relation */
@@ -129,10 +93,10 @@ public:
     void print(std::ostream& out) const override {
         out << name;
         if (arity > 0) {
-            out << "(" << getArg(0) << ":" << attributeTypeQualifiers[0];
+            out << "(" << attributeNames[0] << ":" << attributeTypes[0];
             for (unsigned i = 1; i < arity; i++) {
                 out << ",";
-                out << getArg(i) << ":" << attributeTypeQualifiers[i];
+                out << attributeNames[i] << ":" << attributeTypes[i];
             }
             out << ")";
             out << " " << representation;
@@ -142,8 +106,7 @@ public:
     }
 
     RamRelation* clone() const override {
-        return new RamRelation(
-                name, arity, numberOfHeights, attributeNames, attributeTypeQualifiers, representation);
+        return new RamRelation(name, arity, numberOfHeights, attributeNames, attributeTypes, representation);
     }
 
 protected:
@@ -151,9 +114,27 @@ protected:
         assert(nullptr != dynamic_cast<const RamRelation*>(&node));
         const auto& other = static_cast<const RamRelation&>(node);
         return name == other.name && arity == other.arity && attributeNames == other.attributeNames &&
-               attributeTypeQualifiers == other.attributeTypeQualifiers &&
-               representation == other.representation && isTemp() == other.isTemp();
+               attributeTypes == other.attributeTypes && representation == other.representation;
     }
+
+protected:
+    /** Data-structure representation */
+    const RelationRepresentation representation;
+
+    /** Name of relation */
+    const std::string name;
+
+    /** Arity, i.e., number of attributes */
+    const size_t arity;
+
+    /** Name of attributes */
+    const std::vector<std::string> attributeNames;
+
+    /** Type of attributes */
+    const std::vector<std::string> attributeTypes;
+
+    /** Number of height parameters for provenance only */
+    const size_t numberOfHeights;
 };
 
 /**
@@ -168,7 +149,6 @@ public:
 
     /** @brief Get reference */
     const RamRelation* get() const {
-        assert(relation != nullptr && "relation reference is a null-pointer");
         return relation;
     }
 
@@ -181,14 +161,15 @@ public:
     }
 
 protected:
-    /** Name of relation */
-    const RamRelation* relation;
-
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRelationReference*>(&node));
         const auto& other = static_cast<const RamRelationReference&>(node);
         return relation == other.relation;
     }
+
+protected:
+    /** Name of relation */
+    const RamRelation* relation;
 };
 
 }  // end of namespace souffle

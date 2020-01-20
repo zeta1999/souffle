@@ -504,7 +504,7 @@ int main(int argc, char** argv) {
 
     // Output the transformed RAM program and return
     if (Global::config().has("transformed-ram")) {
-        std::cout << *ramTranslationUnit->getProgram();
+        std::cout << ramTranslationUnit->getProgram();
         return 0;
     }
 

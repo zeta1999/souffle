@@ -579,7 +579,7 @@ public:
         for (size_t i = 0; i < queryPattern.size(); ++i) {
             resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
         }
-        RamIndexChoice* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+        auto* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
@@ -630,9 +630,8 @@ public:
         for (size_t i = 0; i < queryPattern.size(); ++i) {
             resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
         }
-        RamParallelIndexChoice* res = new RamParallelIndexChoice(
-                std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
-                std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
+        auto* res = new RamParallelIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
     }
@@ -654,7 +653,7 @@ public:
             std::unique_ptr<RamCondition> condition)
             : function(fun), expression(std::move(expression)), condition(std::move(condition)) {}
 
-    virtual ~RamAbstractAggregate() {}
+    virtual ~RamAbstractAggregate() = default;
 
     /** @brief Get condition */
     const RamCondition& getCondition() const {

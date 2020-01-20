@@ -77,10 +77,10 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
     using alias_map = std::map<AstRelationIdentifier, AstRelationIdentifier>;
 
     // tests whether something is a variable
-    auto isVar = [&](const AstArgument& arg) { return dynamic_cast<const AstVariable*>(&arg); };
+    auto isVar = [&](const AstArgument& arg) { return dynamic_cast<const AstVariable*>(&arg) != nullptr; };
 
     // tests whether something is a record
-    auto isRec = [&](const AstArgument& arg) { return dynamic_cast<const AstRecordInit*>(&arg); };
+    auto isRec = [&](const AstArgument& arg) { return dynamic_cast<const AstRecordInit*>(&arg) != nullptr; };
 
     // collect aliases
     alias_map isDirectAliasOf;
@@ -141,7 +141,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
 
         auto pos = isDirectAliasOf.find(cur.second);
         while (pos != isDirectAliasOf.end()) {
-            if (visited.count(pos->second)) {
+            if (visited.count(pos->second) != 0u) {
                 cycle_reps.insert(cur.second);
                 break;
             }
@@ -171,7 +171,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
 
     // remove unused relations
     for (const auto& cur : isAliasOf) {
-        if (!cycle_reps.count(cur.first)) {
+        if (cycle_reps.count(cur.first) == 0u) {
             program.removeRelation(program.getRelation(cur.first)->getName());
         }
     }
@@ -186,7 +186,7 @@ bool UniqueAggregationVariablesTransformer::transform(AstTranslationUnit& transl
     int aggNumber = 0;
     visitDepthFirstPostOrder(*translationUnit.getProgram(), [&](const AstAggregator& agg) {
         // only applicable for aggregates with target expression
-        if (!agg.getTargetExpression()) {
+        if (agg.getTargetExpression() == nullptr) {
             return;
         }
 
@@ -258,7 +258,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                     for (const auto& arg : atom->getArguments()) {
                         const auto* atomVariable = dynamic_cast<const AstVariable*>(arg);
                         // if this atom contains the variable I need to ground, add it
-                        if (atomVariable && variable->getName() == atomVariable->getName()) {
+                        if ((atomVariable != nullptr) && variable->getName() == atomVariable->getName()) {
                             // expand the body with this one so that it will ground this variable
                             aggClause->addToBody(std::unique_ptr<AstLiteral>(atom->clone()));
                             break;
@@ -290,7 +290,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                             [&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
                                 // check whether it is a unnamed variable
                                 auto* var = dynamic_cast<AstUnnamedVariable*>(node.get());
-                                if (!var) {
+                                if (var == nullptr) {
                                     return node;
                                 }
 
@@ -367,7 +367,7 @@ bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(const A
 
     // inspect remaining atom more closely
     const AstAtom* atom = dynamic_cast<const AstAtom*>(agg.getBodyLiterals()[0]);
-    if (!atom) {
+    if (atom == nullptr) {
         // no atoms, so materialize
         return true;
     }
@@ -376,7 +376,7 @@ bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(const A
     bool duplicates = false;
     std::set<std::string> vars;
     visitDepthFirst(*atom,
-            [&](const AstVariable& var) { duplicates = duplicates | !vars.insert(var.getName()).second; });
+            [&](const AstVariable& var) { duplicates = duplicates || !vars.insert(var.getName()).second; });
 
     // if there are duplicates a materialization is required
     if (duplicates) {
@@ -531,7 +531,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                     if (!containsFalse) {
                         for (AstLiteral* lit : aggr->getBodyLiterals()) {
                             // Don't add in 'true' boolean constraints
-                            if (!dynamic_cast<AstBooleanConstraint*>(lit)) {
+                            if (dynamic_cast<AstBooleanConstraint*>(lit) == nullptr) {
                                 isEmpty = false;
                                 replacementAggregator->addBodyLiteral(
                                         std::unique_ptr<AstLiteral>(lit->clone()));
@@ -584,7 +584,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
                 // Only keep non-'true' literals
                 for (AstLiteral* lit : clause->getBodyLiterals()) {
-                    if (!dynamic_cast<AstBooleanConstraint*>(lit)) {
+                    if (dynamic_cast<AstBooleanConstraint*>(lit) == nullptr) {
                         replacementClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
                     }
                 }
@@ -799,7 +799,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
     // Checks whether an atom is of the form a(_,_,...,_)
     auto isExistentialAtom = [&](const AstAtom& atom) {
         for (AstArgument* arg : atom.getArguments()) {
-            if (!dynamic_cast<AstUnnamedVariable*>(arg)) {
+            if (dynamic_cast<AstUnnamedVariable*>(arg) == nullptr) {
                 return false;
             }
         }
@@ -1019,9 +1019,9 @@ bool NameUnnamedVariablesTransformer::transform(AstTranslationUnit& translationU
     static constexpr const char* boundPrefix = "+underscore";
 
     struct nameVariables : public AstNodeMapper {
-        mutable bool changed;
-        mutable size_t count;
-        nameVariables() : changed(false), count(0) {}
+        mutable bool changed = false;
+        mutable size_t count = 0;
+        nameVariables() = default;
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             if (dynamic_cast<AstUnnamedVariable*>(node.get()) != nullptr) {
@@ -1049,7 +1049,7 @@ bool NameUnnamedVariablesTransformer::transform(AstTranslationUnit& translationU
 
 bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUnit) {
     struct ReplaceSumWithCount : public AstNodeMapper {
-        ReplaceSumWithCount() {}
+        ReplaceSumWithCount() = default;
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // Apply to all aggregates of the form
@@ -1152,7 +1152,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
 
                 // update constant to be the variable created
                 return std::move(newVariable);
-            } else if (dynamic_cast<AstUnnamedVariable*>(node.get())) {
+            } else if (dynamic_cast<AstUnnamedVariable*>(node.get()) != nullptr) {
                 // underscore found
                 changeCount++;
 

@@ -75,7 +75,7 @@ void executeBinary(const std::string& binaryFilename) {
                 ldPath += library + ':';
             }
             ldPath.back() = ' ';
-            setenv("LD_LIBRARY_PATH", ldPath.c_str(), true);
+            setenv("LD_LIBRARY_PATH", ldPath.c_str(), 1);
         }
 
         exitCode = system(binaryFilename.c_str());

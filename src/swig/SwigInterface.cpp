@@ -21,6 +21,6 @@
  */
 SWIGSouffleProgram* newInstance(const std::string& name) {
     souffle::SouffleProgram* prog = souffle::ProgramFactory::newInstance(name);
-    SWIGSouffleProgram* p = new SWIGSouffleProgram(prog);
+    auto* p = new SWIGSouffleProgram(prog);
     return p;
 }

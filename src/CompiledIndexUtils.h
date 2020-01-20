@@ -48,7 +48,7 @@ struct contains;
 
 template <unsigned E>
 struct contains<E> {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 template <unsigned E, unsigned F, unsigned... Rest>
@@ -63,7 +63,7 @@ struct unique;
 
 template <>
 struct unique<> {
-    static constexpr size_t value = true;
+    static constexpr size_t value = 1u;
 };
 
 template <unsigned E, unsigned... Rest>
@@ -209,12 +209,12 @@ namespace index_utils {
 
 template <typename... Index>
 struct all_indices {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 template <>
 struct all_indices<> {
-    static constexpr size_t value = true;
+    static constexpr size_t value = 1u;
 };
 
 template <unsigned... Columns, typename... Rest>
@@ -229,7 +229,7 @@ struct contains;
 
 template <typename E>
 struct contains<E> {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 template <typename E, typename F, typename... Rest>
@@ -239,7 +239,7 @@ struct contains<E, F, Rest...> {
 
 template <typename E, typename... Rest>
 struct contains<E, E, Rest...> {
-    static constexpr size_t value = true;
+    static constexpr size_t value = 1u;
 };
 
 // -- check whether a given list is a list of unique indices --
@@ -249,7 +249,7 @@ struct unique;
 
 template <>
 struct unique<> {
-    static constexpr size_t value = true;
+    static constexpr size_t value = 1u;
 };
 
 template <typename First, typename... Rest>
@@ -261,12 +261,12 @@ struct unique<First, Rest...> {
 
 template <unsigned arity, typename Index>
 struct check_index_arity {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 template <unsigned arity>
 struct check_index_arity<arity, index<>> {
-    static constexpr size_t value = true;
+    static constexpr size_t value = 1u;
 };
 
 template <unsigned arity, unsigned F, unsigned... Rest>
@@ -281,7 +281,7 @@ struct check_arity;
 
 template <unsigned arity>
 struct check_arity<arity> {
-    static constexpr size_t value = true;
+    static constexpr size_t value = 1u;
 };
 
 template <unsigned arity, typename F, typename... Rest>
@@ -355,12 +355,12 @@ struct extend_to_full_index : public detail::extend_to_full_index_aux<0, arity, 
 
 template <typename I1, typename I2>
 struct is_prefix {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 template <unsigned... Rest>
 struct is_prefix<index<>, index<Rest...>> {
-    static constexpr size_t value = true;
+    static constexpr size_t value = 1u;
 };
 
 template <unsigned F, unsigned... Ra, unsigned... Rb>
@@ -403,7 +403,7 @@ struct get_prefix<L, index<Rest...>> {
 
 template <typename I1, typename I2>
 struct is_subset_of {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 template <unsigned First, unsigned... Rest, unsigned... Full>
@@ -414,14 +414,14 @@ struct is_subset_of<index<First, Rest...>, index<Full...>> {
 
 template <unsigned... Full>
 struct is_subset_of<index<>, index<Full...>> {
-    static constexpr size_t value = true;
+    static constexpr size_t value = 1u;
 };
 
 // -- checks whether one index is a permutation of another index --
 
 template <typename I1, typename I2>
 struct is_permutation {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 template <unsigned... C1, unsigned... C2>
@@ -436,7 +436,7 @@ namespace detail {
 
 template <typename P1, typename R1, typename P2, typename R2>
 struct is_compatible_with_aux {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 template <unsigned... A1, unsigned A, unsigned... A2, unsigned... B1, unsigned B, unsigned... B2>
@@ -453,7 +453,7 @@ struct is_compatible_with_aux<index<A...>, index<>, index<B...>, index<R...>> {
 
 template <typename I1, typename I2>
 struct is_compatible_with {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 template <unsigned... C1, unsigned... C2>
@@ -482,7 +482,7 @@ struct contains_full_index<arity, First, Rest...> {
 
 template <unsigned arity>
 struct contains_full_index<arity> {
-    static constexpr size_t value = false;
+    static constexpr size_t value = 0u;
 };
 
 // -- get first full index from a list of indices --
@@ -522,7 +522,9 @@ template <unsigned F, unsigned... R, unsigned... M, RamDomain value>
 struct mask<index<F, R...>, index<M...>, value> {
     template <typename T>
     void operator()(T& t) const {
-        if (!column_utils::contains<F, M...>::value) t[F] = value;
+        if (!column_utils::contains<F, M...>::value) {
+            t[F] = value;
+        }
         mask<index<R...>, index<M...>, value>()(t);
     }
 };
@@ -1075,7 +1077,7 @@ public:
         nested_iterator nested;
 
         // the value currently pointed to
-        tuple_type value;
+        tuple_type value{};
 
     public:
         // default constructor -- creating an end-iterator
@@ -1408,7 +1410,7 @@ public:
 
     template <typename I>
     struct is_covered {
-        static constexpr size_t value = false;
+        static constexpr size_t value = 0u;
     };
 
     void insert(const T&, operation_context&) {}

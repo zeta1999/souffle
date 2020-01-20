@@ -77,8 +77,6 @@ public:
     static std::unique_ptr<AstTranslationUnit> parseTranslationUnit(const std::string& code,
             SymbolTable& symbolTable, ErrorReport& errorReport, DebugReport& debugReport);
 
-    bool trace_parsing = false;
-
     void error(const SrcLocation& loc, const std::string& msg);
     void error(const std::string& msg);
 };

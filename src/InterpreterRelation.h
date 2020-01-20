@@ -28,8 +28,8 @@ public:
     /**
      * Creates a relation, build all necessary indexes.
      */
-    InterpreterRelation(std::size_t arity, std::size_t numberOfHeights, const std::string& name,
-            const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet,
+    InterpreterRelation(std::size_t arity, std::size_t numberOfHeights, std::string name,
+            std::vector<std::string> attributeTypes, const MinIndexSelection& orderSet,
             IndexFactory factory = &createBTreeIndex);
 
     InterpreterRelation(InterpreterRelation& other) = delete;

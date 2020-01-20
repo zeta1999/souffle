@@ -45,8 +45,7 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
                 if (conditionList.size() > 1) {
                     changed = true;
                     std::vector<std::unique_ptr<RamFilter>> filters;
-                    for (auto iter = conditionList.begin(); iter != conditionList.end(); ++iter) {
-                        auto& cond = *iter;
+                    for (auto& cond : conditionList) {
                         auto tempCond = cond->clone();
                         if (filters.empty()) {
                             filters.emplace_back(std::make_unique<RamFilter>(
@@ -205,12 +204,12 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
             node->apply(makeLambdaRamMapper(filterRewriter));
             return node;
         };
-        RamQuery* mQuery = const_cast<RamQuery*>(&query);
+        auto* mQuery = const_cast<RamQuery*>(&query);
         mQuery->apply(makeLambdaRamMapper(filterRewriter));
         if (newCondition != nullptr) {
             // insert new filter operation at outer-most level of the query
             changed = true;
-            RamOperation* nestedOp = const_cast<RamOperation*>(&mQuery->getOperation());
+            auto* nestedOp = const_cast<RamOperation*>(&mQuery->getOperation());
             mQuery->rewrite(nestedOp, std::make_unique<RamFilter>(std::move(newCondition),
                                               std::unique_ptr<RamOperation>(nestedOp->clone())));
         }
@@ -235,7 +234,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
             node->apply(makeLambdaRamMapper(filterRewriter));
             return node;
         };
-        RamTupleOperation* tupleOp = const_cast<RamTupleOperation*>(&search);
+        auto* tupleOp = const_cast<RamTupleOperation*>(&search);
         tupleOp->apply(makeLambdaRamMapper(filterRewriter));
         if (newCondition != nullptr) {
             // insert new filter operation after the search operation
@@ -657,7 +656,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (nullptr != dynamic_cast<RamAggregate*>(node.get())) {
-                RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
+                auto* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
                 assert(tupleOp != nullptr && "aggregate conversion to tuple operation failed");
                 if (rla->getLevel(tupleOp) == -1 && !priorTupleOp) {
                     changed = true;
@@ -690,7 +689,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> aggRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (nullptr != dynamic_cast<RamAbstractAggregate*>(node.get())) {
-                RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
+                auto* tupleOp = dynamic_cast<RamTupleOperation*>(node.get());
                 assert(tupleOp != nullptr && "aggregate conversion to nested operation failed");
                 int dataDepLevel = rla->getLevel(tupleOp);
                 if (dataDepLevel != -1 && dataDepLevel < tupleOp->getTupleId() - 1) {
@@ -710,7 +709,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                 priorOpLevel = tupleOp->getTupleId();
             }
             node->apply(makeLambdaRamMapper(aggRewriter));
-            if (RamTupleOperation* search = dynamic_cast<RamTupleOperation*>(node.get())) {
+            if (auto* search = dynamic_cast<RamTupleOperation*>(node.get())) {
                 if (newAgg != nullptr && search->getTupleId() == newLevel) {
                     newAgg->rewrite(&newAgg->getOperation(),
                             std::unique_ptr<RamOperation>(search->getOperation().clone()));

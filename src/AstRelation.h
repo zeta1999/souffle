@@ -118,25 +118,25 @@ public:
     /** Set qualifier associated with this relation */
     void setQualifier(int q) {
         qualifier = q;
-        if (q & EQREL_RELATION) {
+        if ((q & EQREL_RELATION) != 0) {
             representation = RelationRepresentation::EQREL;
-        } else if (q & BRIE_RELATION) {
+        } else if ((q & BRIE_RELATION) != 0) {
             representation = RelationRepresentation::BRIE;
-        } else if (q & BTREE_RELATION) {
+        } else if ((q & BTREE_RELATION) != 0) {
             representation = RelationRepresentation::BTREE;
         }
 
-        if (q & INPUT_RELATION) {
+        if ((q & INPUT_RELATION) != 0) {
             loads.emplace_back(new AstLoad());
             loads.back()->setName(getName());
             loads.back()->setSrcLoc(getSrcLoc());
         }
-        if (q & OUTPUT_RELATION) {
+        if ((q & OUTPUT_RELATION) != 0) {
             stores.emplace_back(new AstStore());
             stores.back()->setName(getName());
             stores.back()->setSrcLoc(getSrcLoc());
         }
-        if (q & PRINTSIZE_RELATION) {
+        if ((q & PRINTSIZE_RELATION) != 0) {
             stores.emplace_back(new AstPrintSize());
             stores.back()->setName(getName());
             stores.back()->setSrcLoc(getSrcLoc());
@@ -171,7 +171,7 @@ public:
     bool hasRecordInHead() const {
         for (auto& cur : clauses) {
             for (auto* arg : cur->getHead()->getArguments()) {
-                if (dynamic_cast<AstRecordInit*>(arg)) {
+                if (dynamic_cast<AstRecordInit*>(arg) != nullptr) {
                     return true;
                 }
             };
@@ -185,7 +185,9 @@ public:
             size_t maxNrOfPremises = 0;
             for (auto& cur : clauses) {
                 size_t numberOfAtoms = cur->getAtoms().size();
-                if (numberOfAtoms > maxNrOfPremises) maxNrOfPremises = numberOfAtoms;
+                if (numberOfAtoms > maxNrOfPremises) {
+                    maxNrOfPremises = numberOfAtoms;
+                }
             }
             return maxNrOfPremises + 1;
         } else {

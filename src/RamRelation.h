@@ -55,7 +55,7 @@ public:
         return attributeTypes;
     }
 
-    /** @brif Get attribute names */
+    /** @brief Get attribute names */
     const std::vector<std::string>& getAttributeNames() const {
         return attributeNames;
     }

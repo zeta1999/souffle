@@ -25,6 +25,7 @@
 #include "SymbolTable.h"
 
 #include "test.h"
+#include "test_util.h"
 
 #include <cmath>
 #include <map>
@@ -35,7 +36,6 @@
 namespace souffle::test {
 
 #define TESTS_PER_OPERATION 20
-#define MAGIC_GENERATOR_SEED 3  // seed to random number generator
 
 /** Function to evaluate a single RamExpression. */
 RamDomain evalExpression(std::unique_ptr<RamExpression> expression) {
@@ -102,11 +102,7 @@ TEST(RamNumber, ArithmeticEvaluation) {
 }
 
 TEST(Unary, Neg) {
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain randomNumber = dist(randomGenerator);
+    for (RamDomain randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
         EXPECT_EQ(evalUnary(FunctorOp::NEG, randomNumber), -randomNumber);
     }
 }

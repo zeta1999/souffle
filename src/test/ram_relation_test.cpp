@@ -26,6 +26,7 @@
 #include "SymbolTable.h"
 
 #include "test.h"
+#include "test_util.h"
 
 #include <map>
 #include <random>
@@ -37,7 +38,7 @@ namespace souffle::test {
 #define MAGIC_GENERATOR_SEED 3  // seed to random number generator
 #define RANDOM_TESTS 12
 
-TEST(IO_stdout, IntepreterStoreFloat) {
+TEST(IO_stdout, IntepreterStoreFloatSimple) {
     Global::config().set("jobs", "1");
 
     std::vector<std::unique_ptr<RamRelation>> rels;
@@ -94,11 +95,7 @@ test
 }
 
 TEST(IO_stdout, InterpretorStoreFloatLong) {
-    std::default_random_engine randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
-    std::vector<RamFloat> randomNumbers(RANDOM_TESTS);
-    std::generate(randomNumbers.begin(), randomNumbers.end(),
-            [&dist, &randomGenerator]() { return dist(randomGenerator); });
+    std::vector<RamFloat> randomNumbers = generateRandomVector<RamFloat>(RANDOM_TESTS);
 
     Global::config().set("jobs", "1");
 

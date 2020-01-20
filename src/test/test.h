@@ -28,7 +28,7 @@ template <class T>
 void ignore(const T&) {}
 }  // namespace testutil
 
-/* singly linked list for linking test caes */
+/* singly linked list for linking test cases */
 
 static class TestCase* base = nullptr;
 

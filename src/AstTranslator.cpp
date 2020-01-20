@@ -1035,30 +1035,28 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     auto genMerge = [](const RamRelationReference* dest,
                             const RamRelationReference* src) -> std::unique_ptr<RamStatement> {
-        if (src->get()->getArity() > 0) {
-            std::vector<std::unique_ptr<RamExpression>> values;
-            for (std::size_t i = 0; i < dest->get()->getArity(); i++) {
-                values.push_back(std::make_unique<RamTupleElement>(0, i));
-            }
-            std::unique_ptr<RamStatement> stmt = std::make_unique<RamQuery>(
-                    std::make_unique<RamScan>(std::unique_ptr<RamRelationReference>(src->clone()), 0,
-                            std::make_unique<RamProject>(std::unique_ptr<RamRelationReference>(dest->clone()),
-                                    std::move(values))));
-            if (dest->get()->getRepresentation() == RelationRepresentation::EQREL) {
-                stmt = std::make_unique<RamSequence>(
-                        std::make_unique<RamExtend>(std::unique_ptr<RamRelationReference>(dest->clone()),
-                                std::unique_ptr<RamRelationReference>(src->clone())),
-                        std::move(stmt));
-            }
-            return stmt;
-        } else {
-            std::vector<std::unique_ptr<RamExpression>> values;
+        std::vector<std::unique_ptr<RamExpression>> values;
+        if (src->get()->getArity() == 0) {
             return std::make_unique<RamQuery>(std::make_unique<RamFilter>(
                     std::make_unique<RamNegation>(std::make_unique<RamEmptinessCheck>(
                             std::unique_ptr<RamRelationReference>(src->clone()))),
                     std::make_unique<RamProject>(
                             std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values))));
         }
+        for (std::size_t i = 0; i < dest->get()->getArity(); i++) {
+            values.push_back(std::make_unique<RamTupleElement>(0, i));
+        }
+        std::unique_ptr<RamStatement> stmt = std::make_unique<RamQuery>(
+                std::make_unique<RamScan>(std::unique_ptr<RamRelationReference>(src->clone()), 0,
+                        std::make_unique<RamProject>(
+                                std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values))));
+        if (dest->get()->getRepresentation() == RelationRepresentation::EQREL) {
+            stmt = std::make_unique<RamSequence>(
+                    std::make_unique<RamExtend>(std::unique_ptr<RamRelationReference>(dest->clone()),
+                            std::unique_ptr<RamRelationReference>(src->clone())),
+                    std::move(stmt));
+        }
+        return stmt;
     };
 
     // --- create preamble ---

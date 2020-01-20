@@ -80,7 +80,6 @@ protected:
         return equal_targets(arguments, other.arguments);
     }
 
-protected:
     /** Arguments of user defined operator */
     std::vector<std::unique_ptr<RamExpression>> arguments;
 };
@@ -131,7 +130,6 @@ protected:
         return RamAbstractOperator::equal(node) && getOperator() == other.getOperator();
     }
 
-protected:
     /** Operation symbol */
     const FunctorOp operation;
 };
@@ -177,7 +175,6 @@ protected:
         return RamAbstractOperator::equal(node) && name == other.name && type == other.type;
     }
 
-protected:
     /** Name of user-defined operator */
     const std::string name;
 
@@ -224,7 +221,6 @@ protected:
         return getTupleId() == other.getTupleId() && getElement() == other.getElement();
     }
 
-protected:
     /** Identifier for the tuple */
     const size_t identifier;
 
@@ -266,7 +262,6 @@ protected:
         return getConstant() == other.getConstant();
     }
 
-protected:
     /** Constant value */
     const RamDomain constant;
 };
@@ -358,7 +353,6 @@ protected:
         return equal_targets(arguments, other.arguments);
     }
 
-protected:
     /** Arguments */
     std::vector<std::unique_ptr<RamExpression>> arguments;
 };
@@ -395,7 +389,6 @@ protected:
         return getArgument() == other.getArgument();
     }
 
-protected:
     /** Argument number */
     const size_t number;
 };

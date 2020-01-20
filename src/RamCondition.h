@@ -134,7 +134,6 @@ protected:
         return getLHS() == other.getLHS() && getRHS() == other.getRHS();
     }
 
-protected:
     /** Left-hand side of conjunction */
     std::unique_ptr<RamCondition> lhs;
 
@@ -186,7 +185,6 @@ protected:
         return getOperand() == other.getOperand();
     }
 
-protected:
     /** Operand */
     std::unique_ptr<RamCondition> operand;
 };
@@ -258,7 +256,6 @@ protected:
                getRHS() == other.getRHS();
     }
 
-protected:
     /** Operator */
     BinaryConstraintOp op;
 
@@ -335,7 +332,6 @@ protected:
         return getRelation() == other.getRelation() && equal_targets(values, other.values);
     }
 
-protected:
     /** Relation */
     std::unique_ptr<RamRelationReference> relationRef;
 
@@ -442,7 +438,6 @@ protected:
         return getRelation() == other.getRelation();
     }
 
-protected:
     /** Relation */
     std::unique_ptr<RamRelationReference> relationRef;
 };

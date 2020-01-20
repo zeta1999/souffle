@@ -105,7 +105,6 @@ protected:
         return getOperation() == other.getOperation() && getProfileText() == other.getProfileText();
     }
 
-protected:
     /** Nested operation */
     std::unique_ptr<RamOperation> nestedOperation;
 
@@ -143,7 +142,6 @@ protected:
         return RamNestedOperation::equal(other) && getTupleId() == other.getTupleId();
     }
 
-protected:
     /**
      * Identifier for the tuple, corresponding to
      * its position in the loop nest
@@ -190,7 +188,6 @@ protected:
         return RamTupleOperation::equal(other) && getRelation() == other.getRelation();
     }
 
-protected:
     /** Search relation */
     std::unique_ptr<RamRelationReference> relationRef;
 };
@@ -325,7 +322,6 @@ protected:
         return RamRelationOperation::equal(other) && equal_targets(queryPattern, other.queryPattern);
     }
 
-protected:
     /** Values of index per column of table (if indexable) */
     std::vector<std::unique_ptr<RamExpression>> queryPattern;
 };
@@ -445,7 +441,6 @@ protected:
         return getCondition() == other->getCondition();
     }
 
-protected:
     /** Condition for which a tuple in the relation may hold */
     std::unique_ptr<RamCondition> condition;
 };
@@ -724,7 +719,6 @@ protected:
                getExpression() == other->getExpression();
     }
 
-protected:
     /** Aggregation function */
     AggregateFunction function;
 
@@ -914,7 +908,6 @@ protected:
                getArity() == other.getArity();
     }
 
-protected:
     /** Expression for record reference */
     std::unique_ptr<RamExpression> expression;
 
@@ -959,7 +952,6 @@ protected:
         return RamNestedOperation::equal(node) && getCondition() == other.getCondition();
     }
 
-protected:
     /** Condition */
     std::unique_ptr<RamCondition> condition;
 };
@@ -1108,7 +1100,6 @@ protected:
         return getRelation() == other.getRelation() && equal_targets(expressions, other.expressions);
     }
 
-protected:
     /** Relation that values are projected into */
     std::unique_ptr<RamRelationReference> relationRef;
 
@@ -1182,7 +1173,6 @@ protected:
         return equal_targets(expressions, other.expressions);
     }
 
-protected:
     /** Return expressions */
     std::vector<std::unique_ptr<RamExpression>> expressions;
 };

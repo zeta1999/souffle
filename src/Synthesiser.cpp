@@ -83,14 +83,14 @@ const std::string Synthesiser::convertRamIdent(const std::string& name) {
     // strip leading numbers
     unsigned int i;
     for (i = 0; i < name.length(); ++i) {
-        if (isalnum(name.at(i)) || name.at(i) == '_') {
+        if ((isalnum(name.at(i)) != 0) || name.at(i) == '_') {
             break;
         }
     }
     std::string id;
     for (auto ch : std::to_string(identifiers.size() + 1) + '_' + name.substr(i)) {
         // alphanumeric characters are allowed
-        if (isalnum(ch)) {
+        if (isalnum(ch) != 0) {
             id += ch;
         }
         // all other characters are replaced by an underscore, except when
@@ -136,7 +136,7 @@ std::string Synthesiser::toIndex(SearchSignature key) {
     tmp << "<";
     int i = 0;
     while (key != 0) {
-        if (key % 2) {
+        if ((key % 2) != 0u) {
             tmp << i;
             if (key > 1) {
                 tmp << ",";
@@ -1661,8 +1661,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // produce external definitions for user-defined functors
     std::map<std::string, std::string> functors;
     visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
-        if (functors.find(op.getName()) == functors.end())
+        if (functors.find(op.getName()) == functors.end()) {
             functors.insert(std::make_pair(op.getName(), op.getType()));
+        }
         withSharedLibrary = true;
     });
     os << "extern \"C\" {\n";
@@ -1765,7 +1766,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
         for (auto rel : prog.getRelations()) {
-            if (!rel->isTemp()) numRead++;
+            if (!rel->isTemp()) {
+                numRead++;
+            }
         }
         os << "  size_t reads[" << numRead << "]{};\n";
     }
@@ -1812,10 +1815,11 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             std::string tupleType = "std::array<const char *," + std::to_string(arity) + ">{{";
             std::string tupleName = "std::array<const char *," + std::to_string(arity) + ">{{";
 
-            if (rel->getArity()) {
+            if (rel->getArity() != 0u) {
                 const auto& attrib = rel->getAttributeNames();
                 const auto& attribType = rel->getAttributeTypes();
                 tupleType += "\"" + attribType[0] + "\"";
+
                 for (int i = 1; i < arity; i++) {
                     tupleType += ",\"" + attribType[i] + "\"";
                 }
@@ -1902,7 +1906,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         // Store count of relations
         size_t relationCount = 0;
         for (auto rel : prog.getRelations()) {
-            if (rel->getName()[0] != '@') ++relationCount;
+            if (rel->getName()[0] != '@') {
+                ++relationCount;
+            }
         }
         // Store configuration
         os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"

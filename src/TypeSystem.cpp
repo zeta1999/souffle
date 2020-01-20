@@ -324,7 +324,7 @@ bool isSymbolType(const TypeSet& s) {
 }
 
 bool isRecordType(const Type& type) {
-    return dynamic_cast<const RecordType*>(&type);
+    return dynamic_cast<const RecordType*>(&type) != nullptr;
 }
 
 bool isRecordType(const TypeSet& s) {

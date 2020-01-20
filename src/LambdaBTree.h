@@ -146,7 +146,9 @@ public:
                 cur_lease = cur->lock.start_read();
 
                 // check validity of root pointer
-                if (this->root_lock.end_read(root_lease)) break;
+                if (this->root_lock.end_read(root_lease)) {
+                    break;
+                }
 
             } while (true);
         }
@@ -284,7 +286,9 @@ public:
                         parent->lock.start_write();
                         while (true) {
                             // check whether parent is correct
-                            if (parent == priv->parent) break;
+                            if (parent == priv->parent) {
+                                break;
+                            }
                             // switch parent
                             parent->lock.abort_write();
                             parent = priv->parent;
@@ -299,7 +303,9 @@ public:
                     parents.push_back(parent);
 
                     // stop at "sphere of influence"
-                    if (!parent || !parent->isFull()) break;
+                    if (!parent || !parent->isFull()) {
+                        break;
+                    }
 
                     // go one step higher
                     priv = parent;

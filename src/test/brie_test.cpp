@@ -262,8 +262,8 @@ TEST(SparseArray, Merge) {
     m1.addAll(m2);
 
     std::vector<std::pair<int, int>> data;
-    for (auto it = m1.begin(); it != m1.end(); ++it) {
-        data.push_back(*it);
+    for (const auto& it : m1) {
+        data.push_back(it);
     }
     EXPECT_EQ("[(100,1),(500,2)]", toString(data));
 }

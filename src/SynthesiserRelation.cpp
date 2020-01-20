@@ -315,8 +315,9 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
     out << "void insertAll(" << getTypeName() << "& other) {\n";
     for (size_t i = 0; i < numIndexes; i++) {
-        if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end())
+        if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end()) {
             out << "ind_" << i << ".insertAll(other.ind_" << i << ");\n";
+        }
     }
     out << "}\n";  // end of insertAll(relationType& other)
 
@@ -365,7 +366,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
         // count size of search pattern
         size_t indSize = 0;
         for (size_t column = 0; column < arity; column++) {
-            if ((search >> column) & 1) {
+            if (((search >> column) & 1) != 0) {
                 indSize++;
             }
         }
@@ -382,7 +383,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             // check which indices to pad out
             for (size_t column = 0; column < arity; column++) {
                 // if bit number column is set
-                if (!((search >> column) & 1)) {
+                if (((search >> column) & 1) == 0) {
                     out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
                     out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
                 }
@@ -671,7 +672,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         // count size of search pattern
         size_t indSize = 0;
         for (size_t column = 0; column < arity; column++) {
-            if ((search >> column) & 1) {
+            if (((search >> column) & 1) != 0) {
                 indSize++;
             }
         }
@@ -687,7 +688,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             // check which indices to pad out
             for (size_t column = 0; column < arity; column++) {
                 // if bit number column is set
-                if (!((search >> column) & 1)) {
+                if (((search >> column) & 1) == 0) {
                     out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
                     out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
                 }
@@ -981,7 +982,7 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
         // compute size of sub-index
         size_t indSize = 0;
         for (size_t i = 0; i < arity; i++) {
-            if ((search >> i) & 1) {
+            if (((search >> i) & 1) != 0) {
                 indSize++;
             }
         }
@@ -1215,7 +1216,7 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
         // compute size of sub-index
         size_t indSize = 0;
         for (size_t column = 0; column < 2; column++) {
-            if ((i >> column) & 1) {
+            if (((i >> column) & 1) != 0) {
                 indSize++;
             }
         }

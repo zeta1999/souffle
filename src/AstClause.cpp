@@ -30,13 +30,13 @@ class AstAggregator;
 
 /* Add literal to body */
 void AstClause::addToBody(std::unique_ptr<AstLiteral> l) {
-    if (dynamic_cast<AstAtom*>(l.get())) {
+    if (dynamic_cast<AstAtom*>(l.get()) != nullptr) {
         atoms.emplace_back(static_cast<AstAtom*>(l.release()));
-    } else if (dynamic_cast<AstNegation*>(l.get())) {
+    } else if (dynamic_cast<AstNegation*>(l.get()) != nullptr) {
         negations.emplace_back(static_cast<AstNegation*>(l.release()));
-    } else if (dynamic_cast<AstProvenanceNegation*>(l.get())) {
+    } else if (dynamic_cast<AstProvenanceNegation*>(l.get()) != nullptr) {
         provNegations.emplace_back(static_cast<AstProvenanceNegation*>(l.release()));
-    } else if (dynamic_cast<AstConstraint*>(l.get())) {
+    } else if (dynamic_cast<AstConstraint*>(l.get()) != nullptr) {
         constraints.emplace_back(static_cast<AstConstraint*>(l.release()));
     } else {
         assert(false && "Unsupported literal type!");
@@ -106,7 +106,7 @@ void AstClause::print(std::ostream& os) const {
         os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
     }
     os << ".";
-    if (getExecutionPlan()) {
+    if (getExecutionPlan() != nullptr) {
         getExecutionPlan()->print(os);
     }
 }

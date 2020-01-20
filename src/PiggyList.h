@@ -299,10 +299,10 @@ public:
     const size_t BLOCKSIZE = (1ul << BLOCKBITS);
 
     // number of inserted
-    std::atomic<size_t> num_containers;
+    std::atomic<size_t> num_containers = 0;
     size_t allocsize = BLOCKSIZE;
-    std::atomic<size_t> container_size;
-    std::atomic<size_t> m_size;
+    std::atomic<size_t> container_size = 0;
+    std::atomic<size_t> m_size = 0;
 
     // > 2^64 elements can be stored (default initialise to nullptrs)
     static constexpr size_t max_conts = 64;

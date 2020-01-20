@@ -139,11 +139,11 @@ std::unique_ptr<AstRelation> makeInfoRelation(
                 std::string atomDescription = relName;
 
                 for (auto& arg : atom->getArguments()) {
-                    if (dynamic_cast<AstVariable*>(arg)) {
+                    if (dynamic_cast<AstVariable*>(arg) != nullptr) {
                         std::stringstream argDescription;
                         arg->print(argDescription);
                         atomDescription.append("," + argDescription.str());
-                    } else if (dynamic_cast<AstAggregator*>(arg)) {
+                    } else if (dynamic_cast<AstAggregator*>(arg) != nullptr) {
                         atomDescription.append(",agg_" + std::to_string(aggregateNumber++));
                     }
                 }
@@ -163,7 +163,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
                 std::stringstream argDescription;
                 var->print(argDescription);
                 constraintDescription.append("," + argDescription.str());
-            } else if (dynamic_cast<AstAggregator*>(con->getLHS())) {
+            } else if (dynamic_cast<AstAggregator*>(con->getLHS()) != nullptr) {
                 constraintDescription.append(",agg_" + std::to_string(aggregateNumber++));
             }
 
@@ -171,7 +171,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
                 std::stringstream argDescription;
                 var->print(argDescription);
                 constraintDescription.append("," + argDescription.str());
-            } else if (dynamic_cast<AstAggregator*>(con->getRHS())) {
+            } else if (dynamic_cast<AstAggregator*>(con->getRHS()) != nullptr) {
                 constraintDescription.append(",agg_" + std::to_string(aggregateNumber++));
             }
 
@@ -352,8 +352,9 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
             // if fact, level number is 0
             if (clause->isFact()) {
                 clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
-                for (size_t i = 0; i < relation->numberOfHeightParameters(); i++)
+                for (size_t i = 0; i < relation->numberOfHeightParameters(); i++) {
                     clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
+                }
             } else {
                 std::vector<AstArgument*> bodyLevels;
 

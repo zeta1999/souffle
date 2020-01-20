@@ -242,7 +242,7 @@ protected:
     static size_t card(SearchSignature cols) {
         size_t sz = 0, idx = 1;
         for (size_t i = 0; i < sizeof(SearchSignature) * 8; i++) {
-            if (idx & cols) {
+            if ((idx & cols) != 0u) {
                 sz++;
             }
             idx *= 2;
@@ -278,7 +278,7 @@ protected:
         while (mask < delta) {
             mask = SearchSignature(1 << (pos));
             SearchSignature result = (delta) & (mask);
-            if (result) {
+            if (result != 0u) {
                 ids.push_back(pos);
             }
             pos++;

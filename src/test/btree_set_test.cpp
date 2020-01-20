@@ -511,8 +511,8 @@ TEST(BTreeSet, ChunkSplit) {
     //        EXPECT_EQ(20, chunks.size());
 
     for (const auto& cur : chunks) {
-        for (auto i = cur.begin(); i != cur.end(); ++i) {
-            std::cout << *i << ", ";
+        for (int i : cur) {
+            std::cout << i << ", ";
         }
         std::cout << "\n";
     }

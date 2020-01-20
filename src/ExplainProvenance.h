@@ -23,6 +23,7 @@
 
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -39,7 +40,7 @@ public:
      * @param s, symbol of the variable
      * @param idx, first occurence of the variable
      * */
-    Equivalence(char t, std::string s, std::pair<size_t, size_t> idx) : type(t), symbol(s) {
+    Equivalence(char t, std::string s, std::pair<size_t, size_t> idx) : type(t), symbol(std::move(s)) {
         indices.push_back(idx);
     }
 
@@ -249,7 +250,7 @@ protected:
         }
 
         for (size_t i = 0; i < nums.size(); i++) {
-            if (err && (*err)[i]) {
+            if ((err != nullptr) && (*err)[i]) {
                 args.push_back("_");
             } else {
                 if (*rel->getAttrType(i) == 's') {

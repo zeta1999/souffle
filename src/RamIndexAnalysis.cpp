@@ -318,7 +318,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
         for (auto& cols : indexes.getSearches()) {
             os << "\t\t";
             for (uint32_t i = 0; i < rel.getArity(); i++) {
-                if ((1UL << i) & cols) {
+                if (((1UL << i) & cols) != 0u) {
                     os << rel.getArg(i) << " ";
                 }
             }

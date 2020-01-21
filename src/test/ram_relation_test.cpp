@@ -91,7 +91,7 @@ const std::string testInterpreterStore(std::vector<std::string> attribs, std::ve
     return sout.str();
 }
 
-TEST(IO_store, IntepreterStoreFloatSimple) {
+TEST(IO_store, FloatSimple) {
 
     std::vector<std::string> attribs = {"a", "b"};
     std::vector<std::string> types = {"f", "f"};
@@ -111,7 +111,7 @@ test
     EXPECT_EQ(expected, result);
 }
 
-TEST(IO_store, InterpretorStoreSigned) {
+TEST(IO_store, Signed) {
     std::vector<RamDomain> randomNumbers = generateRandomVector<RamDomain>(RANDOM_TESTS);
 
     // a0 a1 a2...
@@ -148,7 +148,7 @@ TEST(IO_store, InterpretorStoreSigned) {
     EXPECT_EQ(expected.str(), result);
 }
 
-TEST(IO_store, InterpretorStoreFloat) {
+TEST(IO_store, Float) {
     std::vector<RamFloat> randomNumbers = generateRandomVector<RamFloat>(RANDOM_TESTS);
 
     // a0 a1 a2...
@@ -184,7 +184,7 @@ TEST(IO_store, InterpretorStoreFloat) {
     EXPECT_EQ(expected.str(), result);
 }
 
-TEST(IO_store, InterpretorStoreUnsigned) {
+TEST(IO_store, Unsigned) {
     std::vector<RamUnsigned> randomNumbers = generateRandomVector<RamUnsigned>(RANDOM_TESTS);
 
 
@@ -222,7 +222,8 @@ TEST(IO_store, InterpretorStoreUnsigned) {
     EXPECT_EQ(expected.str(), result);
 }
 
-TEST(IO_store, IntepreterStoreSignedChangedDelimeter) {
+// Test (store) with different delimiter
+TEST(IO_store, SignedChangedDelimeter) {
     std::vector<RamDomain> randomNumbers = generateRandomVector<RamDomain>(RANDOM_TESTS);
     const std::string delimiter{", "};
 
@@ -298,7 +299,7 @@ TEST(IO_store, IntepreterStoreSignedChangedDelimeter) {
     EXPECT_EQ(expected.str(), sout.str());
 }
 
-TEST(IO_store, MixTypesRelation) {
+TEST(IO_store, MixedTypes) {
     Global::config().set("jobs", "1");
 
     std::vector<std::unique_ptr<RamRelation>> rels;
@@ -366,8 +367,8 @@ TEST(IO_store, MixTypesRelation) {
     EXPECT_EQ(expected.str(), sout.str());
 }
 
-TEST(IO_load, IntepreterLoadSigned) {
-    const std::string filename{"test/ram_rel.test"};
+TEST(IO_load, Signed) {
+    const std::string filename{"test/InterpreterLoadSigned.test"};
 
     Global::config().set("jobs", "1");
 
@@ -425,8 +426,8 @@ test
     EXPECT_EQ(expected, sout.str());
 }
 
-TEST(IO_load, IntepreterLoadFloat) {
-    const std::string filename{"test/ram_rel_f.test"};
+TEST(IO_load, Float) {
+    const std::string filename{"test/InterpreterLoadFloat.test"};
 
     Global::config().set("jobs", "1");
 
@@ -481,6 +482,125 @@ test
 0.5	0.5
 ===============
 )";
+    EXPECT_EQ(expected, sout.str());
+}
+
+TEST(IO_load, Unsigned) {
+    const std::string filename{"test/InterpreterLoadUnsigned.test"};
+
+    Global::config().set("jobs", "1");
+
+    std::vector<std::unique_ptr<RamRelation>> rels;
+
+    std::vector<std::string> attribs = {"a", "b"};
+    std::vector<std::string> types = {"u", "u"};
+    std::unique_ptr<RamRelation> myrel =
+            std::make_unique<RamRelation>("test", 2, 0, attribs, types, RelationRepresentation::BTREE);
+    std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
+    std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
+
+    std::map<std::string, std::string> readDirs = {
+            {"IO", "file"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+    std::vector<IODirectives> readIoDirs;
+    readIoDirs.push_back(IODirectives(readDirs));
+
+    std::map<std::string, std::string> writeDirs = {
+            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+    std::vector<IODirectives> writeIoDirs;
+    writeIoDirs.push_back(IODirectives(writeDirs));
+
+    std::unique_ptr<RamStatement> main =
+            std::make_unique<RamSequence>(std::make_unique<RamLoad>(std::move(ref1), readIoDirs),
+                    std::make_unique<RamStore>(std::move(ref2), writeIoDirs));
+
+    rels.push_back(std::move(myrel));
+    std::map<std::string, std::unique_ptr<RamStatement>> subs;
+    std::unique_ptr<RamProgram> prog =
+            std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
+
+    SymbolTable symTab;
+    ErrorReport errReport;
+    DebugReport debugReport;
+
+    RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
+
+    // configure and execute interpreter
+    std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);
+
+    std::streambuf* oldCoutStreambuf = std::cout.rdbuf();
+    std::ostringstream sout;
+    std::cout.rdbuf(sout.rdbuf());
+
+    interpreter->executeMain();
+
+    std::cout.rdbuf(oldCoutStreambuf);
+
+    std::string expected = R"(---------------
+test
+===============
+6	6
+===============
+)";
+    EXPECT_EQ(expected, sout.str());
+}
+
+TEST(IO_load, MixedTypesLoad) {
+    const std::string filename{"test/InterpreterLoadMixedTypes.test"};
+
+    Global::config().set("jobs", "1");
+
+    std::vector<std::unique_ptr<RamRelation>> rels;
+
+    std::vector<std::string> attribs = {"l", "u", "b", "a"};
+    std::vector<std::string> types = {"s", "i", "u", "f"};
+    std::unique_ptr<RamRelation> myrel =
+            std::make_unique<RamRelation>("test", 4, 0, attribs, types, RelationRepresentation::BTREE);
+    std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
+    std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
+
+    std::map<std::string, std::string> readDirs = {
+            {"IO", "file"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+    std::vector<IODirectives> readIoDirs;
+    readIoDirs.push_back(IODirectives(readDirs));
+
+    std::map<std::string, std::string> writeDirs = {
+            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+    std::vector<IODirectives> writeIoDirs;
+    writeIoDirs.push_back(IODirectives(writeDirs));
+
+    std::unique_ptr<RamStatement> main =
+            std::make_unique<RamSequence>(std::make_unique<RamLoad>(std::move(ref1), readIoDirs),
+                    std::make_unique<RamStore>(std::move(ref2), writeIoDirs));
+
+    rels.push_back(std::move(myrel));
+    std::map<std::string, std::unique_ptr<RamStatement>> subs;
+    std::unique_ptr<RamProgram> prog =
+            std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
+
+    SymbolTable symTab;
+    ErrorReport errReport;
+    DebugReport debugReport;
+
+    RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
+
+    // configure and execute interpreter
+    std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);
+
+    std::streambuf* oldCoutStreambuf = std::cout.rdbuf();
+    std::ostringstream sout;
+    std::cout.rdbuf(sout.rdbuf());
+
+    interpreter->executeMain();
+
+    std::cout.rdbuf(oldCoutStreambuf);
+
+    std::string expected = R"(---------------
+test
+===============
+meow	-3	3	0.3
+===============
+)";
+
     EXPECT_EQ(expected, sout.str());
 }
 

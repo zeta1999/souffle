@@ -14,9 +14,9 @@
  *
  ***********************************************************************/
 
-#include "RamStatement.h"
-#include "RamRelation.h"
 #include "RamOperation.h"
+#include "RamRelation.h"
+#include "RamStatement.h"
 
 #include "test.h"
 
@@ -100,22 +100,26 @@ TEST(RamQuery, CloneAndEquals) {
     RamRelation A("A", 3, 1, {"a", "b", "c"}, {"i", "s", "i"}, RelationRepresentation::DEFAULT);
     RamRelation B("B", 2, 1, {"a", "c"}, {"i", "i"}, RelationRepresentation::DEFAULT);
     /*
-     * QUERY 
+     * QUERY
      *  FOR t0 IN A
      *   PROJECT (t0.0, t0.2) INTO B
      */
     std::vector<std::unique_ptr<RamExpression>> a_expressions;
     a_expressions.emplace_back(new RamTupleElement(0, 0));
     a_expressions.emplace_back(new RamTupleElement(0, 2));
-    auto a_project = std::make_unique<RamProject>(std::make_unique<RamRelationReference>(&B), std::move(a_expressions));
-    auto a_scan = std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(a_project), "");
-    
+    auto a_project = std::make_unique<RamProject>(
+            std::make_unique<RamRelationReference>(&B), std::move(a_expressions));
+    auto a_scan = std::make_unique<RamScan>(
+            std::make_unique<RamRelationReference>(&A), 0, std::move(a_project), "");
+
     std::vector<std::unique_ptr<RamExpression>> b_expressions;
     b_expressions.emplace_back(new RamTupleElement(0, 0));
     b_expressions.emplace_back(new RamTupleElement(0, 2));
-    auto b_project = std::make_unique<RamProject>(std::make_unique<RamRelationReference>(&B), std::move(b_expressions));
-    auto b_scan = std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(b_project), "");
-    
+    auto b_project = std::make_unique<RamProject>(
+            std::make_unique<RamRelationReference>(&B), std::move(b_expressions));
+    auto b_scan = std::make_unique<RamScan>(
+            std::make_unique<RamRelationReference>(&A), 0, std::move(b_project), "");
+
     RamQuery a(std::move(a_scan));
     RamQuery b(std::move(b_scan));
     EXPECT_EQ(a, b);
@@ -126,7 +130,7 @@ TEST(RamQuery, CloneAndEquals) {
     EXPECT_NE(&a, c);
     delete c;
 
-    /* 
+    /*
      * QUERY
      *  PARALLEL CHOICE t1 IN A WHERE (t1.0 = 0)
      *   RETURN (t1.2)
@@ -135,15 +139,19 @@ TEST(RamQuery, CloneAndEquals) {
     d_return_value.emplace_back(new RamTupleElement(1, 0));
     auto d_return = std::make_unique<RamSubroutineReturnValue>(std::move(d_return_value));
     // condition t1.0 = 0
-    auto d_cond = std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(1, 0), std::make_unique<RamNumber>(0));
-    auto d_parallel_choice = std::make_unique<RamParallelChoice>(std::make_unique<RamRelationReference>(&A), 1, std::move(d_cond), std::move(d_return), "");
-    
+    auto d_cond = std::make_unique<RamConstraint>(
+            BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(1, 0), std::make_unique<RamNumber>(0));
+    auto d_parallel_choice = std::make_unique<RamParallelChoice>(
+            std::make_unique<RamRelationReference>(&A), 1, std::move(d_cond), std::move(d_return), "");
+
     std::vector<std::unique_ptr<RamExpression>> e_return_value;
     e_return_value.emplace_back(new RamTupleElement(1, 0));
     auto e_return = std::make_unique<RamSubroutineReturnValue>(std::move(e_return_value));
     // condition t1.0 = 0
-    auto e_cond = std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(1, 0), std::make_unique<RamNumber>(0));
-    auto e_parallel_choice = std::make_unique<RamParallelChoice>(std::make_unique<RamRelationReference>(&A), 1, std::move(e_cond), std::move(e_return), "");
+    auto e_cond = std::make_unique<RamConstraint>(
+            BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(1, 0), std::make_unique<RamNumber>(0));
+    auto e_parallel_choice = std::make_unique<RamParallelChoice>(
+            std::make_unique<RamRelationReference>(&A), 1, std::move(e_cond), std::move(e_return), "");
     RamQuery d(std::move(d_parallel_choice));
     RamQuery e(std::move(e_parallel_choice));
     EXPECT_EQ(d, e);
@@ -156,7 +164,7 @@ TEST(RamQuery, CloneAndEquals) {
 }
 
 TEST(RamSequence, CloneAndEquals) {
-    // no statements in the sequence 
+    // no statements in the sequence
     RamSequence a;
     RamSequence b;
     EXPECT_EQ(a, b);
@@ -179,14 +187,18 @@ TEST(RamSequence, CloneAndEquals) {
     EXPECT_EQ(d, *f);
     EXPECT_NE(&d, f);
     delete f;
-    
+
     // multiple statements in the sequence
-    // LOAD DATA FOR A FROM {} 
+    // LOAD DATA FOR A FROM {}
     // CLEAR A
     std::vector<IODirectives> g_load_IODir;
     std::vector<IODirectives> h_load_IODir;
-    RamSequence g(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(g_load_IODir)),std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&A)));
-    RamSequence h(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(h_load_IODir)),std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&A)));
+    RamSequence g(
+            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(g_load_IODir)),
+            std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&A)));
+    RamSequence h(
+            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(h_load_IODir)),
+            std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&A)));
     EXPECT_EQ(g, h);
     EXPECT_NE(&g, &h);
 
@@ -199,7 +211,7 @@ TEST(RamSequence, CloneAndEquals) {
 TEST(RamParallel, CloneAndEquals) {
     RamRelation A("A", 3, 1, {"a", "b", "c"}, {"i", "s", "i"}, RelationRepresentation::DEFAULT);
     RamRelation B("B", 2, 1, {"a", "c"}, {"i", "i"}, RelationRepresentation::DEFAULT);
-    
+
     /* PARALLEL
      *  QUERY
      *   FOR t0 IN A
@@ -207,35 +219,37 @@ TEST(RamParallel, CloneAndEquals) {
      *     PROJECT (t0.0, t0.2) INTO B
      * END PARALLEL
      * */
-    
+
     RamParallel a;
     std::vector<std::unique_ptr<RamExpression>> a_expressions;
     a_expressions.emplace_back(new RamTupleElement(0, 0));
     a_expressions.emplace_back(new RamTupleElement(0, 2));
-    auto a_project = std::make_unique<RamProject>(std::make_unique<RamRelationReference>(&B), std::move(a_expressions));
+    auto a_project = std::make_unique<RamProject>(
+            std::make_unique<RamRelationReference>(&B), std::move(a_expressions));
     auto a_cond = std::make_unique<RamFilter>(
-            std::make_unique<RamConstraint>(BinaryConstraintOp::GE,
-                std::make_unique<RamTupleElement>(0, 0),
-                std::make_unique<RamNumber>(0)),
+            std::make_unique<RamConstraint>(BinaryConstraintOp::GE, std::make_unique<RamTupleElement>(0, 0),
+                    std::make_unique<RamNumber>(0)),
             std::move(a_project), "");
-    auto a_scan = std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(a_cond), "");
+    auto a_scan =
+            std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(a_cond), "");
     auto a_query = std::make_unique<RamQuery>(std::move(a_scan));
     a.add(std::move(a_query));
-    
+
     RamParallel b;
     std::vector<std::unique_ptr<RamExpression>> b_expressions;
     b_expressions.emplace_back(new RamTupleElement(0, 0));
     b_expressions.emplace_back(new RamTupleElement(0, 2));
-    auto b_project = std::make_unique<RamProject>(std::make_unique<RamRelationReference>(&B), std::move(b_expressions));
+    auto b_project = std::make_unique<RamProject>(
+            std::make_unique<RamRelationReference>(&B), std::move(b_expressions));
     auto b_cond = std::make_unique<RamFilter>(
-            std::make_unique<RamConstraint>(BinaryConstraintOp::GE,
-                std::make_unique<RamTupleElement>(0, 0),
-                std::make_unique<RamNumber>(0)),
+            std::make_unique<RamConstraint>(BinaryConstraintOp::GE, std::make_unique<RamTupleElement>(0, 0),
+                    std::make_unique<RamNumber>(0)),
             std::move(b_project), "");
-    auto b_scan = std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(b_cond), "");
+    auto b_scan =
+            std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(b_cond), "");
     auto b_query = std::make_unique<RamQuery>(std::move(b_scan));
     b.add(std::move(b_query));
-    
+
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
@@ -257,26 +271,28 @@ TEST(RamLoop, CloneAndEquals) {
      * */
     std::vector<std::unique_ptr<RamExpression>> a_expressions;
     a_expressions.emplace_back(new RamTupleElement(0, 0));
-    auto a_project = std::make_unique<RamProject>(std::make_unique<RamRelationReference>(&B), std::move(a_expressions));
+    auto a_project = std::make_unique<RamProject>(
+            std::make_unique<RamRelationReference>(&B), std::move(a_expressions));
     auto a_break = std::make_unique<RamBreak>(
-            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                std::make_unique<RamTupleElement>(0, 0),
-                std::make_unique<RamNumber>(4)),
+            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(0, 0),
+                    std::make_unique<RamNumber>(4)),
             std::move(a_project), "");
-    auto a_scan = std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(a_break), "");
-    auto a_query =  std::make_unique<RamQuery>(std::move(a_scan));
+    auto a_scan =
+            std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(a_break), "");
+    auto a_query = std::make_unique<RamQuery>(std::move(a_scan));
     RamLoop a(std::move(a_query));
 
     std::vector<std::unique_ptr<RamExpression>> b_expressions;
     b_expressions.emplace_back(new RamTupleElement(0, 0));
-    auto b_project = std::make_unique<RamProject>(std::make_unique<RamRelationReference>(&B), std::move(b_expressions));
+    auto b_project = std::make_unique<RamProject>(
+            std::make_unique<RamRelationReference>(&B), std::move(b_expressions));
     auto b_break = std::make_unique<RamBreak>(
-            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                std::make_unique<RamTupleElement>(0, 0),
-                std::make_unique<RamNumber>(4)),
+            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(0, 0),
+                    std::make_unique<RamNumber>(4)),
             std::move(b_project), "");
-    auto b_scan = std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(b_break), "");
-    auto b_query =  std::make_unique<RamQuery>(std::move(b_scan));
+    auto b_scan =
+            std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(b_break), "");
+    auto b_query = std::make_unique<RamQuery>(std::move(b_scan));
     RamLoop b(std::move(b_query));
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
@@ -287,7 +303,6 @@ TEST(RamLoop, CloneAndEquals) {
     delete c;
 }
 TEST(RamExit, CloneAndEquals) {
-    
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     // EXIT (A = ∅)
     RamExit a(std::make_unique<RamEmptinessCheck>(std::make_unique<RamRelationReference>(&A)));
@@ -302,17 +317,20 @@ TEST(RamExit, CloneAndEquals) {
 }
 
 TEST(RamLogRelationTimer, CloneAndEquals) {
-    
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     /*
      * START_TIMER ON A "file.dl [8:1-8:8]"
-     *   LOAD DATA FOR A FROM {} 
+     *   LOAD DATA FOR A FROM {}
      * END_TIMER
      * */
     std::vector<IODirectives> a_IODir;
     std::vector<IODirectives> b_IODir;
-    RamLogRelationTimer a(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)), "file.dl [8:1-8:8]", std::make_unique<RamRelationReference>(&A));
-    RamLogRelationTimer b(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(b_IODir)), "file.dl [8:1-8:8]", std::make_unique<RamRelationReference>(&A));
+    RamLogRelationTimer a(
+            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
+            "file.dl [8:1-8:8]", std::make_unique<RamRelationReference>(&A));
+    RamLogRelationTimer b(
+            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(b_IODir)),
+            "file.dl [8:1-8:8]", std::make_unique<RamRelationReference>(&A));
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
@@ -323,17 +341,18 @@ TEST(RamLogRelationTimer, CloneAndEquals) {
 }
 
 TEST(RamLogTimer, CloneAndEquals) {
-   
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     /*
      * START_TIMER "@runtime"
-     *   LOAD DATA FOR A FROM {} 
+     *   LOAD DATA FOR A FROM {}
      * END_TIMER
      * */
     std::vector<IODirectives> a_IODir;
     std::vector<IODirectives> b_IODir;
-    RamLogTimer a(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)), "@runtime");
-    RamLogTimer b(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)), "@runtime");
+    RamLogTimer a(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
+            "@runtime");
+    RamLogTimer b(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
+            "@runtime");
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
@@ -344,15 +363,13 @@ TEST(RamLogTimer, CloneAndEquals) {
 }
 
 TEST(RamDebugInfo, CloneAndEquals) {
-    RamRelation edge("edge", 4, 1, {"src", "dest", "a", "b"}, {"i", "i", "i", "i"}, RelationRepresentation::DEFAULT);
-    RamRelation path("path", 4, 1, {"src", "dest", "a", "b"}, {"i", "i", "i", "i"}, RelationRepresentation::DEFAULT);
-    /* BEGIN_DEBUG "path(x,y,1,(@level_num_0+1)) :- \n   edge(x,y,_,@level_num_0).\nin file /edge.dl [17:1-17:26];"
-     *  QUERY
-     *   FOR t0 IN edge
-     *    IF (NOT (edge = ∅))
-     *     IF (NOT (t0.0,t0.1,⊥,⊥) ∈ path)
-     *      PROJECT (t0.0, t0.1, number(1), (t0.3+number(1))) INTO path
-     * END DEBUG
+    RamRelation edge(
+            "edge", 4, 1, {"src", "dest", "a", "b"}, {"i", "i", "i", "i"}, RelationRepresentation::DEFAULT);
+    RamRelation path(
+            "path", 4, 1, {"src", "dest", "a", "b"}, {"i", "i", "i", "i"}, RelationRepresentation::DEFAULT);
+    /* BEGIN_DEBUG "path(x,y,1,(@level_num_0+1)) :- \n   edge(x,y,_,@level_num_0).\nin file /edge.dl
+     * [17:1-17:26];" QUERY FOR t0 IN edge IF (NOT (edge = ∅)) IF (NOT (t0.0,t0.1,⊥,⊥) ∈ path) PROJECT (t0.0,
+     * t0.1, number(1), (t0.3+number(1))) INTO path END DEBUG
      * */
     std::vector<std::unique_ptr<RamExpression>> a_project_list;
     a_project_list.emplace_back(new RamTupleElement(0, 0));
@@ -363,24 +380,25 @@ TEST(RamDebugInfo, CloneAndEquals) {
     a_project_add.emplace_back(new RamNumber(1));
     a_project_list.emplace_back(new RamIntrinsicOperator(FunctorOp::ADD, std::move(a_project_add)));
     auto a_project = std::make_unique<RamProject>(
-            std::make_unique<RamRelationReference>(&path),
-            std::move(a_project_list));
+            std::make_unique<RamRelationReference>(&path), std::move(a_project_list));
     std::vector<std::unique_ptr<RamExpression>> a_filter1_list;
     a_filter1_list.emplace_back(new RamTupleElement(0, 0));
     a_filter1_list.emplace_back(new RamTupleElement(0, 1));
     a_filter1_list.emplace_back(new RamUndefValue);
     a_filter1_list.emplace_back(new RamUndefValue);
     auto a_existence_check1 = std::make_unique<RamExistenceCheck>(
-            std::make_unique<RamRelationReference>(&path),
-            std::move(a_filter1_list));
+            std::make_unique<RamRelationReference>(&path), std::move(a_filter1_list));
     auto a_cond1 = std::make_unique<RamNegation>(std::move(a_existence_check1));
     auto a_filter1 = std::make_unique<RamFilter>(std::move(a_cond1), std::move(a_project), "");
-    auto a_cond2 = std::make_unique<RamNegation>(std::make_unique<RamEmptinessCheck>(std::make_unique<RamRelationReference>(&edge)));
+    auto a_cond2 = std::make_unique<RamNegation>(
+            std::make_unique<RamEmptinessCheck>(std::make_unique<RamRelationReference>(&edge)));
     auto a_filter2 = std::make_unique<RamFilter>(std::move(a_cond2), std::move(a_filter1), "");
-    auto a_scan = std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&edge), 0, std::move(a_filter2), "");
+    auto a_scan = std::make_unique<RamScan>(
+            std::make_unique<RamRelationReference>(&edge), 0, std::move(a_filter2), "");
     auto a_query = std::make_unique<RamQuery>(std::move(a_scan));
-    RamDebugInfo a(std::move(a_query), "path(x,y,1,(@level_num_0+1)) :- \n   edge(x,y,_,@level_num_0).\nin file /edge.dl [17:1-17:26];");
- 
+    RamDebugInfo a(std::move(a_query),
+            "path(x,y,1,(@level_num_0+1)) :- \n   edge(x,y,_,@level_num_0).\nin file /edge.dl [17:1-17:26];");
+
     std::vector<std::unique_ptr<RamExpression>> b_project_list;
     b_project_list.emplace_back(new RamTupleElement(0, 0));
     b_project_list.emplace_back(new RamTupleElement(0, 1));
@@ -390,23 +408,24 @@ TEST(RamDebugInfo, CloneAndEquals) {
     b_project_add.emplace_back(new RamNumber(1));
     b_project_list.emplace_back(new RamIntrinsicOperator(FunctorOp::ADD, std::move(b_project_add)));
     auto b_project = std::make_unique<RamProject>(
-            std::make_unique<RamRelationReference>(&path),
-            std::move(b_project_list));
+            std::make_unique<RamRelationReference>(&path), std::move(b_project_list));
     std::vector<std::unique_ptr<RamExpression>> b_filter1_list;
     b_filter1_list.emplace_back(new RamTupleElement(0, 0));
     b_filter1_list.emplace_back(new RamTupleElement(0, 1));
     b_filter1_list.emplace_back(new RamUndefValue);
     b_filter1_list.emplace_back(new RamUndefValue);
     auto b_existence_check1 = std::make_unique<RamExistenceCheck>(
-            std::make_unique<RamRelationReference>(&path),
-            std::move(b_filter1_list));
+            std::make_unique<RamRelationReference>(&path), std::move(b_filter1_list));
     auto b_cond1 = std::make_unique<RamNegation>(std::move(b_existence_check1));
     auto b_filter1 = std::make_unique<RamFilter>(std::move(b_cond1), std::move(b_project), "");
-    auto b_cond2 = std::make_unique<RamNegation>(std::make_unique<RamEmptinessCheck>(std::make_unique<RamRelationReference>(&edge)));
+    auto b_cond2 = std::make_unique<RamNegation>(
+            std::make_unique<RamEmptinessCheck>(std::make_unique<RamRelationReference>(&edge)));
     auto b_filter2 = std::make_unique<RamFilter>(std::move(b_cond2), std::move(b_filter1), "");
-    auto b_scan = std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&edge), 0, std::move(b_filter2), "");
+    auto b_scan = std::make_unique<RamScan>(
+            std::make_unique<RamRelationReference>(&edge), 0, std::move(b_filter2), "");
     auto b_query = std::make_unique<RamQuery>(std::move(b_scan));
-    RamDebugInfo b(std::move(b_query), "path(x,y,1,(@level_num_0+1)) :- \n   edge(x,y,_,@level_num_0).\nin file /edge.dl [17:1-17:26];");
+    RamDebugInfo b(std::move(b_query),
+            "path(x,y,1,(@level_num_0+1)) :- \n   edge(x,y,_,@level_num_0).\nin file /edge.dl [17:1-17:26];");
 
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
@@ -436,7 +455,6 @@ TEST(RamStratum, CloneAndEquals) {
 }
 
 TEST(RamLogSize, CloneAndEquals) {
-    
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     RamLogSize a(std::make_unique<RamRelationReference>(&A), "Log message");
     RamLogSize b(std::make_unique<RamRelationReference>(&A), "Log message");

@@ -36,7 +36,7 @@ TEST(RamIntrinsicOperator, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamIntrinsicOperator *c = a.clone();
+    RamIntrinsicOperator* c = a.clone();
     EXPECT_EQ(a, *c);
     EXPECT_NE(&a, c);
     delete c;
@@ -45,14 +45,14 @@ TEST(RamIntrinsicOperator, CloneAndEquals) {
     std::vector<std::unique_ptr<RamExpression>> d_args;
     d_args.emplace_back(new RamNumber(1));
     RamIntrinsicOperator d(FunctorOp::NEG, std::move(d_args));
-    
+
     std::vector<std::unique_ptr<RamExpression>> e_args;
     e_args.emplace_back(new RamNumber(1));
     RamIntrinsicOperator e(FunctorOp::NEG, std::move(e_args));
     EXPECT_EQ(d, e);
     EXPECT_NE(&d, &e);
 
-    RamIntrinsicOperator *f = d.clone();
+    RamIntrinsicOperator* f = d.clone();
     EXPECT_EQ(d, *f);
     EXPECT_NE(&d, f);
     delete f;
@@ -73,7 +73,7 @@ TEST(RamUserDefinedOperator, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamUserDefinedOperator *c = a.clone();
+    RamUserDefinedOperator* c = a.clone();
     EXPECT_EQ(a, *c);
     EXPECT_NE(&a, c);
     delete c;
@@ -86,7 +86,7 @@ TEST(RamTupleElement, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamTupleElement *c = a.clone();
+    RamTupleElement* c = a.clone();
     EXPECT_EQ(a, *c);
     EXPECT_NE(&a, c);
     delete c;
@@ -105,7 +105,6 @@ TEST(RamNumber, CloneAndEquals) {
     delete c;
 }
 
-
 TEST(RamAutoIncrement, CloneAndEquals) {
     RamAutoIncrement a;
     RamAutoIncrement b;
@@ -117,7 +116,6 @@ TEST(RamAutoIncrement, CloneAndEquals) {
     EXPECT_NE(&a, c);
     delete c;
 }
-
 
 TEST(RamUndefValue, CloneAndEquals) {
     RamUndefValue a;
@@ -146,11 +144,11 @@ TEST(RamPackRecord, CloneAndEquals) {
     b_args.emplace_back(new RamUndefValue);
     b_args.emplace_back(new RamUndefValue);
     RamPackRecord b(std::move(b_args));
-    
+
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamPackRecord *c = a.clone();
+    RamPackRecord* c = a.clone();
     EXPECT_EQ(a, *c);
     EXPECT_NE(&a, c);
     delete c;
@@ -173,11 +171,11 @@ TEST(RamPackRecord, CloneAndEquals) {
     e_args.emplace_back(new RamPackRecord(std::move(e_record)));
     e_args.emplace_back(new RamTupleElement(1, 3));
     RamPackRecord e(std::move(e_args));
-    
+
     EXPECT_EQ(d, e);
     EXPECT_NE(&d, &e);
 
-    RamPackRecord *f = d.clone();
+    RamPackRecord* f = d.clone();
     EXPECT_EQ(d, *f);
     EXPECT_NE(&d, f);
     delete f;

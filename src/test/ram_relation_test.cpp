@@ -28,7 +28,6 @@
 #include "test.h"
 #include "test_util.h"
 
-#include <filesystem>
 #include <fstream>
 #include <map>
 #include <random>
@@ -39,12 +38,12 @@
 namespace souffle::test {
 #define RANDOM_TESTS 12
 
-void fillTestFile(const std::string& filename, const std::string& content) {
-    std::ofstream file;
-    file.open(filename);
-    file << content;
-    file.close();
-}
+// void fillTestFile(const std::string& filename, const std::string& content) {
+//     std::ofstream file;
+//     file.open(filename);
+//     file << content;
+//     file.close();
+// }
 
 TEST(IO_store, IntepreterStoreFloatSimple) {
     Global::config().set("jobs", "1");
@@ -472,7 +471,7 @@ TEST(IO_store, MixTypesRelation) {
 }
 
 TEST(IO_load, IntepreterLoadSigned) {
-    const std::string filename{std::filesystem::current_path() / std::filesystem::path("test/ram_rel.test")};
+    const std::string filename{"test/ram_rel.test"};
 
     Global::config().set("jobs", "1");
 
@@ -531,8 +530,7 @@ test
 }
 
 TEST(IO_load, IntepreterLoadFloat) {
-    const std::string filename{
-            std::filesystem::current_path() / std::filesystem::path("test/ram_rel_f.test")};
+    const std::string filename{"test/ram_rel_f.test"};
 
     Global::config().set("jobs", "1");
 

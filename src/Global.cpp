@@ -28,6 +28,10 @@ namespace souffle {
 
 void MainConfig::processArgs(int argc, char** argv, const std::string& header, const std::string& footer,
         const std::vector<MainOption> mainOptions) {
+    constexpr auto ONE_SPACE = " ";
+    constexpr auto TWO_SPACES = "  ";
+    constexpr auto THREE_SPACES = "   ";
+
     // construct the help text using the main options
     {
         // create a stream to be 'printed' to
@@ -36,64 +40,71 @@ void MainConfig::processArgs(int argc, char** argv, const std::string& header, c
         // print the header
         ss << header;
 
-        // iterate over the options and obtain the maximum name and argument lengths
-        int maxLongNameLength = 0, maxArgumentIdLength = 0;
-        for (const MainOption& opt : mainOptions) {
-            // if it is the main option, do nothing
-            if (opt.longName.empty()) {
-                continue;
+        // compute the maximum length of a line of the help text without including the description
+        std::size_t maxLineLengthWithoutDescription = 0;
+        {
+            // initially compute the maximum line length without the long option, arguments, or description
+            std::stringstream lineSchema;
+            const auto shortOption = "?";
+            const auto longOption = "";
+            const auto arguments = "";
+            const auto description = "";
+            lineSchema << TWO_SPACES << "-" << shortOption << "," << ONE_SPACE << "--" << longOption << "=<"
+                       << arguments << ">" << TWO_SPACES << description;
+            maxLineLengthWithoutDescription = lineSchema.str().size();
+        }
+        {
+            // then compute the maximum length of the long option plus the description
+            std::size_t maxLongOptionPlusArgumentLength = 0;
+            for (const MainOption& opt : mainOptions) {
+                if (opt.longName.empty()) {
+                    continue;
+                }
+                const auto longOptionPlusArgumentLength = opt.longName.size() + opt.argument.size();
+                if (longOptionPlusArgumentLength > maxLongOptionPlusArgumentLength) {
+                    maxLongOptionPlusArgumentLength = longOptionPlusArgumentLength;
+                }
             }
-            // otherwise, proceed with the calculation
-            maxLongNameLength =
-                    ((int)opt.longName.size() > maxLongNameLength) ? opt.longName.size() : maxLongNameLength;
-            maxArgumentIdLength = ((int)opt.argument.size() > maxArgumentIdLength) ? opt.argument.size()
-                                                                                   : maxArgumentIdLength;
+            maxLineLengthWithoutDescription += maxLongOptionPlusArgumentLength;
         }
 
-        // iterator over the options and pretty print them, using padding as determined
-        // by the maximum name and argument lengths
-        int length;
+        // iterate over the options and pretty print them, using the computed maximum line length without the
+        // description
         for (const MainOption& opt : mainOptions) {
+            // the current line
+            std::stringstream line;
+
             // if it is the main option, do nothing
             if (opt.longName.empty()) {
                 continue;
             }
 
             // print the short form name and the argument parameter
-            length = 0;
-            ss << "\t";
+            line << TWO_SPACES;
             if (isalpha(opt.shortName) != 0) {
-                ss << "-" << opt.shortName;
-                if (!opt.argument.empty()) {
-                    ss << "<" << opt.argument << ">";
-                    length = opt.argument.size() + 2;
-                }
+                line << "-" << opt.shortName << ",";
             } else {
-                ss << "  ";
+                line << THREE_SPACES;
             }
 
-            // pad with empty space for prettiness
-            for (; length < maxArgumentIdLength + 2; ++length) {
-                ss << " ";
-            }
+            // print the long form name
+            line << ONE_SPACE << "--" << opt.longName;
 
-            // print the long form name and the argument parameter
-            length = 0;
-            ss << "\t"
-               << "--" << opt.longName;
+            // print the argument parameter
             if (!opt.argument.empty()) {
-                ss << "=<" << opt.argument << ">";
-                length = opt.argument.size() + 3;
+                line << "=<" << opt.argument << ">";
             }
 
             // again, pad with empty space for prettiness
-            for (length += opt.longName.size(); length < maxArgumentIdLength + maxLongNameLength + 3;
-                    ++length) {
-                ss << " ";
-
-                // print the description
+            for (std::size_t lineLength = line.str().size(); lineLength < maxLineLengthWithoutDescription;
+                    ++lineLength) {
+                line << ONE_SPACE;
             }
-            ss << "\t" << opt.description << std::endl;
+
+            // print the description
+            line << opt.description << std::endl;
+
+            ss << line.str();
         }
 
         // print the footer

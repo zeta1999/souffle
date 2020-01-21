@@ -85,11 +85,8 @@ Generate SWIG interface for the specified language. Possible values for \fI<LANG
 .B -t\fI<none|explain|explore|subtreeHeights>\fP, --provenance=\fI<none|explain|explore|subtreeHeights>\fP
 Enable provenance instrumentation and interaction
 .TP
-.B --transformed-datalog
-Output datalog after all transformations
-.TP
-.B --transformed-ram
-Output ram program after all transformations
+.B --show=\fI<parse-errors|precedence-graph|scc-graph|transformed-datalog|transformed-ram|type-analysis>\fP
+Print selected program information.
 .TP
 .B -u\fI<FILE>\fP, --profile-use=\fI<FILE>\fP
 Use profile log-file \fI<FILE>\fP for profile-guided optimisation

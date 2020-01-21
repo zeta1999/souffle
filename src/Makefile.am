@@ -88,7 +88,6 @@ souffle_sources = \
         AstTypeAnalysis.cpp   AstTypeAnalysis.h   \
         AstTypeEnvironmentAnalysis.cpp            \
         AstTypeEnvironmentAnalysis.h              \
-        AstTypes.h                                \
         AstUtils.cpp          AstUtils.h          \
         AstVisitor.h                              \
         BinaryConstraintOps.h                     \

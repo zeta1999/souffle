@@ -30,7 +30,6 @@
 #include "AstType.h"
 #include "AstTypeAnalysis.h"
 #include "AstTypeEnvironmentAnalysis.h"
-#include "AstTypes.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
@@ -169,12 +168,6 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         TypeSet types = typeAnalysis.getTypes(&cnst);
         if (!isNumberType(types)) {
             report.addError("Number constant (type mismatch)", cnst.getSrcLoc());
-        }
-        AstDomain idx = cnst.getIndex();
-        if (idx > MAX_AST_DOMAIN || idx < MIN_AST_DOMAIN) {
-            report.addError("Number constant not in range [" + std::to_string(MIN_AST_DOMAIN) + ", " +
-                                    std::to_string(MAX_AST_DOMAIN) + "]",
-                    cnst.getSrcLoc());
         }
     });
 

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <limits>
 #include <random>
@@ -32,8 +33,9 @@ std::vector<T> generateRandomVector(size_t vectorSize) {
     std::default_random_engine randomGenerator(MAGIC_GENERATOR_SEED);
 
     if constexpr (std::is_floating_point<T>::value) {
-        // Requires: a ≤ b and b − a ≤ numeric_limits<RealType>::max()
-        // (if given type bound it will crash).
+        // For distribution bonds, following must hold:
+        // a ≤ b and b − a ≤ numeric_limits<RealType>::max()
+        // (in particular: if given values bounds, it will crash).
         // Investigate better solution.
         std::uniform_real_distribution<T> distribution(-1000, 1000);
         std::generate(values.begin(), values.end(),

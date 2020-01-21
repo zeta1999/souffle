@@ -41,7 +41,7 @@ void MainConfig::processArgs(int argc, char** argv, const std::string& header, c
         ss << header;
 
         // compute the maximum length of a line of the help text without including the description
-        std::size_t maxLineLengthWithoutDescription = -1;
+        std::size_t maxLineLengthWithoutDescription = 0;
         {
             // initially compute the maximum line length without the long option, arguments, or description
             std::stringstream lineSchema;
@@ -68,7 +68,7 @@ void MainConfig::processArgs(int argc, char** argv, const std::string& header, c
             maxLineLengthWithoutDescription += maxLongOptionPlusArgumentLength;
         }
 
-        // iterator over the options and pretty print them, using the computed maximum line length without the
+        // iterate over the options and pretty print them, using the computed maximum line length without the
         // description
         for (const MainOption& opt : mainOptions) {
             // the current line

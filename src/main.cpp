@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
                 {"show", '\4',
                         "[ parse-errors | precedence-graph | scc-graph | transformed-datalog | "
                         "transformed-ram | type-analysis ]",
-                        "", false, "Print program information for debugging."},
+                        "", false, "Print selected program information."},
                 {"parse-errors", '\5', "", "", false, "Show parsing errors, if any, then exit."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);

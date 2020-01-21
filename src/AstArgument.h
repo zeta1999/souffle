@@ -20,7 +20,6 @@
 
 #include "AstNode.h"
 #include "AstType.h"
-#include "AstTypes.h"
 #include "FunctorOps.h"
 #include "SymbolTable.h"
 #include "Util.h"
@@ -168,10 +167,10 @@ protected:
  */
 class AstConstant : public AstArgument {
 public:
-    AstConstant(AstDomain i) : AstArgument(), idx(i) {}
+    AstConstant(RamDomain i) : AstArgument(), idx(i) {}
 
     /** @return Return the index of this constant in the SymbolTable */
-    AstDomain getIndex() const {
+    RamDomain getIndex() const {
         return idx;
     }
 
@@ -182,7 +181,7 @@ public:
 
 protected:
     /** Index of this Constant in the SymbolTable */
-    AstDomain idx;
+    RamDomain idx;
 
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
@@ -227,7 +226,7 @@ private:
  */
 class AstNumberConstant : public AstConstant {
 public:
-    AstNumberConstant(AstDomain num) : AstConstant(num) {}
+    AstNumberConstant(RamDomain num) : AstConstant(num) {}
 
     /**  Print argument to the given output stream */
     void print(std::ostream& os) const override {

@@ -298,8 +298,8 @@ public:
     }
 
     RamMerge* clone() const override {
-        auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(first->clone()),
-                std::unique_ptr<RamRelationReference>(second->clone()));
+        auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(second->clone()),
+                std::unique_ptr<RamRelationReference>(first->clone()));
         return res;
     }
 

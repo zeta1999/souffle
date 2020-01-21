@@ -45,25 +45,25 @@ namespace souffle::test {
 //     file.close();
 // }
 
-const std::string testInterpreterStore(std::vector<std::string> attribs, std::vector<std::string> types, std::vector<std::unique_ptr<RamExpression>> exprs) {
+const std::string testInterpreterStore(std::vector<std::string> attribs, std::vector<std::string> types,
+        std::vector<std::unique_ptr<RamExpression>> exprs) {
     Global::config().set("jobs", "1");
 
     std::vector<std::unique_ptr<RamRelation>> rels;
-        std::unique_ptr<RamRelation> myrel =
-            std::make_unique<RamRelation>("test", attribs.size(), 0, attribs, types, RelationRepresentation::BTREE);
-        
+    std::unique_ptr<RamRelation> myrel = std::make_unique<RamRelation>(
+            "test", attribs.size(), 0, attribs, types, RelationRepresentation::BTREE);
+
     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     std::map<std::string, std::string> dirs = {
-        {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}};
+            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}};
     std::vector<IODirectives> ioDirs;
     ioDirs.push_back(IODirectives(dirs));
 
-
     std::unique_ptr<RamStatement> main = std::make_unique<RamSequence>(
-        std::make_unique<RamQuery>(std::make_unique<RamProject>(std::move(ref1), std::move(exprs))),
-        std::make_unique<RamStore>(std::move(ref2), ioDirs));
+            std::make_unique<RamQuery>(std::make_unique<RamProject>(std::move(ref1), std::move(exprs))),
+            std::make_unique<RamStore>(std::move(ref2), ioDirs));
 
     rels.push_back(std::move(myrel));
     std::map<std::string, std::unique_ptr<RamStatement>> subs;
@@ -87,12 +87,10 @@ const std::string testInterpreterStore(std::vector<std::string> attribs, std::ve
 
     std::cout.rdbuf(oldCoutStreambuf);
 
-    
     return sout.str();
 }
 
 TEST(IO_store, FloatSimple) {
-
     std::vector<std::string> attribs = {"a", "b"};
     std::vector<std::string> types = {"f", "f"};
 
@@ -121,7 +119,6 @@ TEST(IO_store, Signed) {
     }
 
     std::vector<std::string> types(RANDOM_TESTS, "i");
-
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
     for (RamDomain i : randomNumbers) {
@@ -187,7 +184,6 @@ TEST(IO_store, Float) {
 TEST(IO_store, Unsigned) {
     std::vector<RamUnsigned> randomNumbers = generateRandomVector<RamUnsigned>(RANDOM_TESTS);
 
-
     // a0 a1 a2...
     std::vector<std::string> attribs(RANDOM_TESTS, "a");
     for (size_t i = 0; i < RANDOM_TESTS; ++i) {
@@ -195,7 +191,6 @@ TEST(IO_store, Unsigned) {
     }
 
     std::vector<std::string> types(RANDOM_TESTS, "u");
-
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
     for (RamUnsigned u : randomNumbers) {

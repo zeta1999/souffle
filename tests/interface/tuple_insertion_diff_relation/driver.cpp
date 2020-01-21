@@ -43,12 +43,10 @@ void handler(int n) {
  * Main program
  */
 int main(int argc, char** argv) {
-
     // create an instance of program "tuple_insertion_diff_relation"
     if (SouffleProgram* prog = ProgramFactory::newInstance("tuple_insertion_diff_relation")) {
         // get input relation "edge"
         if (Relation* edge = prog->getRelation("edge")) {
-
             std::vector<std::array<std::string, 2>> myData = {
                     {"A", "B"}, {"B", "C"}, {"C", "D"}, {"D", "E"}, {"E", "F"}, {"F", "A"}};
             for (auto input : myData) {
@@ -58,7 +56,6 @@ int main(int argc, char** argv) {
             }
 
             if (Relation* line = prog->getRelation("line")) {
-                
                 std::vector<std::array<std::string, 2>> myData = {
                         {"1", "2"}, {"3", "4"}, {"5", "6"}, {"7", "8"}};
                 for (auto input : myData) {
@@ -66,20 +63,21 @@ int main(int argc, char** argv) {
                     t << input[0] << input[1];
                     line->insert(t);
                 }
-                
+
                 // set default signal  for SIGINT signal
                 signal(SIGABRT, handler);
-                
+
                 // redirect stderr to a file called stderr
                 freopen("stderr", "w", stderr);
-                
-                // this raises an assertion, which is caught by the handler function, which produces no stderr output due to the redirection
+
+                // this raises an assertion, which is caught by the handler function, which produces no stderr
+                // output due to the redirection
                 for (auto input : myData) {
                     tuple t(line);
                     t << input[0] << input[1];
                     edge->insert(t);
                 }
-            
+
                 // run program
                 prog->run();
 
@@ -89,7 +87,7 @@ int main(int argc, char** argv) {
 
                 // free program analysis
                 delete prog;
-            } else{
+            } else {
                 error("cannot find relation line");
             }
         } else {

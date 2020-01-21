@@ -25,7 +25,6 @@
 #include "AstRelationIdentifier.h"
 #include "AstTypeAnalysis.h"
 #include "AstTypeEnvironmentAnalysis.h"
-#include "AstTypes.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
@@ -1140,7 +1139,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                AstDomain constantValue = numberConstant->getIndex();
+                RamDomain constantValue = numberConstant->getIndex();
                 std::stringstream newVariableName;
                 newVariableName << boundPrefix << changeCount << "_" << constantValue << "_n";
 

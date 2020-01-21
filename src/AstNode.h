@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "AstTypes.h"
 #include "SrcLocation.h"
 #include "Util.h"
 

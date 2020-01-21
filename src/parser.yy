@@ -39,7 +39,6 @@
     #include "AstParserUtils.h"
     #include "AstPragma.h"
     #include "AstProgram.h"
-    #include "AstTypes.h"
     #include "BinaryConstraintOps.h"
     #include "FunctorOps.h"
 
@@ -79,7 +78,7 @@
 %token END 0                     "end of file"
 %token <std::string> STRING      "symbol"
 %token <std::string> IDENT       "identifier"
-%token <AstDomain> NUMBER        "number"
+%token <RamDomain> NUMBER        "number"
 %token <std::string> RELOP       "relational operator"
 %token PRAGMA                    "pragma directive"
 %token OUTPUT_QUALIFIER          "relation qualifier output"

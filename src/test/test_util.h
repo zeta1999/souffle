@@ -24,13 +24,11 @@
 
 namespace souffle::test {
 
-#define MAGIC_GENERATOR_SEED 3  // seed to random number generator
-
 template <typename T>
-std::vector<T> generateRandomVector(size_t vectorSize) {
+std::vector<T> generateRandomVector(const size_t vectorSize, const int seed = 3) {
     std::vector<T> values(vectorSize);
 
-    std::default_random_engine randomGenerator(MAGIC_GENERATOR_SEED);
+    std::default_random_engine randomGenerator(seed);
 
     if constexpr (std::is_floating_point<T>::value) {
         // For distribution bonds, following must hold:

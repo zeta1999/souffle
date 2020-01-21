@@ -125,10 +125,10 @@ TEST(Unary, BinaryNot) {
 }
 
 TEST(Unary, UnsignedBinaryNot) {
-    FunctorOp func = FunctorOp::UBNOT;
+    FunctorOp functor = FunctorOp::UBNOT;
 
     for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
-        RamDomain result = evalUnary(func, ramBitCast(randomNumber));
+        RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), ~randomNumber);
     }
 }
@@ -142,508 +142,451 @@ TEST(Unary, LogicalNeg) {
 }
 
 TEST(Unary, UnsignedLogicalNeg) {
-    FunctorOp func = FunctorOp::ULNOT;
+    FunctorOp functor = FunctorOp::ULNOT;
 
     for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
-        RamDomain result = evalUnary(func, ramBitCast(randomNumber));
+        RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), static_cast<RamUnsigned>(!randomNumber));
     }
 }
 
 TEST(Unary, SingedTpUnsigned) {
-    FunctorOp func = FunctorOp::ITOU;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::ITOU;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain randomNumber = dist(randomGenerator);
-        result = evalUnary(func, ramBitCast(randomNumber));
+    for (auto randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
+        RamDomain result = evalUnary(functor, randomNumber);
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), static_cast<RamUnsigned>(randomNumber));
     }
 }
 
 TEST(Unary, UnsignedToSigned) {
-    FunctorOp func = FunctorOp::UTOI;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::UTOI;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned randomNumber = dist(randomGenerator);
-        result = evalUnary(func, ramBitCast(randomNumber));
+    for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
+        RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(result, static_cast<RamDomain>(randomNumber));
     }
 }
 
 TEST(Unary, SignedToFloat) {
-    FunctorOp func = FunctorOp::ITOF;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::ITOF;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain randomNumber = dist(randomGenerator);
-        result = evalUnary(func, ramBitCast(randomNumber));
+    for (auto randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
+        RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(randomNumber));
     }
 }
 
 TEST(Unary, FloatToSigned) {
-    FunctorOp func = FunctorOp::FTOI;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::FTOI;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamFloat randomNumber = dist(randomGenerator);
-        result = evalUnary(func, ramBitCast(randomNumber));
+    for (auto randomNumber : generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
+        RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(result, static_cast<RamDomain>(randomNumber));
     }
 }
 
-TEST(Unary, UnsignedTFloat) {
-    FunctorOp func = FunctorOp::UTOF;
-    RamDomain result;
+TEST(Unary, UnsignedToFloat) {
+    FunctorOp functor = FunctorOp::UTOF;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned randomNumber = dist(randomGenerator);
-        result = evalUnary(func, ramBitCast(randomNumber));
+    for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
+        RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(randomNumber));
     }
 }
 
 TEST(Unary, FloatToUnsigned) {
-    FunctorOp func = FunctorOp::FTOU;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::FTOU;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_real_distribution<RamFloat> dist(-100, 100);
-
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamFloat randomNumber = dist(randomGenerator);
-        result = evalUnary(func, ramBitCast(randomNumber));
+    for (auto randomNumber : generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
+        RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), static_cast<RamUnsigned>(randomNumber));
     }
 }
 
 TEST(Binary, SignedAdd) {
-    FunctorOp func = FunctorOp::ADD;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::ADD;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
-    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+    for (size_t i = 0; i < TESTS_PER_OPERATION; ++i) {
+        RamDomain arg1 = vecArg1[i];
+        RamDomain arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, arg1 + arg2);
     }
 }
 
 TEST(Binary, UnsignedAdd) {
-    FunctorOp func = FunctorOp::UADD;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::UADD;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        RamUnsigned arg1 = vecArg1[i];
+        RamUnsigned arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 + arg2);
     }
 }
 
 TEST(Binary, FloatAdd) {
-    FunctorOp func = FunctorOp::FADD;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::FADD;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
+    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamFloat arg1 = dist(randomGenerator);
-        RamFloat arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamFloat>(result), arg1 + arg2);
     }
 }
 
 TEST(Binary, SignedSub) {
-    FunctorOp func = FunctorOp::SUB;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::SUB;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, arg1 - arg2);
     }
 }
 
 TEST(Binary, UnsignedSub) {
-    FunctorOp func = FunctorOp::USUB;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::USUB;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 - arg2);
     }
 }
 
 TEST(Binary, FloatSub) {
-    FunctorOp func = FunctorOp::FSUB;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::FSUB;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
+    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamFloat arg1 = dist(randomGenerator);
-        RamFloat arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamFloat>(result), arg1 - arg2);
     }
 }
 
 TEST(Binary, SignedMul) {
-    FunctorOp func = FunctorOp::MUL;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::MUL;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, arg1 * arg2);
     }
 }
 
 TEST(Binary, UnsignedMul) {
-    FunctorOp func = FunctorOp::UMUL;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::UMUL;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 * arg2);
     }
 }
 
 TEST(Binary, FloatMul) {
-    FunctorOp func = FunctorOp::FMUL;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::FMUL;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
+    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamFloat arg1 = dist(randomGenerator);
-        RamFloat arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamFloat>(result), arg1 * arg2);
     }
 }
 
 TEST(Binary, SignedDiv) {
-    FunctorOp func = FunctorOp::DIV;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::DIV;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
         if (arg2 != 0) {
-            result = evalBinary(func, arg1, arg2);
+            RamDomain result = evalBinary(functor, arg1, arg2);
             EXPECT_EQ(result, arg1 / arg2);
         }
     }
 }
 
 TEST(Binary, UnsignedDiv) {
-    FunctorOp func = FunctorOp::UDIV;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::UDIV;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
         if (arg2 != 0) {
-            result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+            RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
             EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 / arg2);
         }
     }
 }
 
 TEST(Binary, FloatDiv) {
-    FunctorOp func = FunctorOp::FDIV;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::FDIV;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
+    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamFloat arg1 = dist(randomGenerator);
-        RamFloat arg2 = dist(randomGenerator);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
         if (arg2 != 0) {
-            result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+            RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
             EXPECT_EQ(ramBitCast<RamFloat>(result), arg1 / arg2);
         }
     }
 }
 
 TEST(Binary, SignedExp) {
-    FunctorOp func = FunctorOp::EXP;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::EXP;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, static_cast<RamDomain>(std::pow(arg1, arg2)));
     }
 }
 
 TEST(Binary, UnsignedExp) {
-    FunctorOp func = FunctorOp::UEXP;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::UEXP;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), static_cast<RamUnsigned>(std::pow(arg1, arg2)));
     }
 }
 
-// This can produce NaN, which can't be compared - investigate for a better way.
+// This can produce NaN, which can't be compared - investigate a better way.
 // TEST(Binary, FloatExp) {
-//     FunctorOp func = FunctorOp::FEXP;
-//     RamDomain result;
+//     FunctorOp functor = FunctorOp::FEXP;
 
-//     std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-//     std::uniform_real_distribution<RamFloat> dist(-100.0, 100.0);
+// auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+// auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
 //     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-//         RamFloat arg1 = dist(randomGenerator);
-//         RamFloat arg2 = dist(randomGenerator);
+//         auto arg1 = vecArg1[i];
+//         auto arg2 = vecArg2[i];
 //         std::feclearexcept(FE_ALL_EXCEPT);
 //         errno = 0;
-//         result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+//         RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
 //         EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(std::pow(arg1, arg2)));
 //     }
 // }
 
 TEST(Binary, SignedMod) {
-    FunctorOp func = FunctorOp::MOD;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::MOD;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, arg1 % arg2);
     }
 }
 
 TEST(Binary, UnsignedMod) {
-    FunctorOp func = FunctorOp::UMOD;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::UMOD;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 % arg2);
     }
 }
 
 TEST(Binary, SignedBinaryAnd) {
-    FunctorOp func = FunctorOp::BAND;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::BAND;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, arg1 & arg2);
     }
 }
 
 TEST(Binary, UnsignedBinaryAnd) {
-    FunctorOp func = FunctorOp::UBAND;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::UBAND;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 & arg2);
     }
 }
 
 TEST(Binary, SignedBinaryOr) {
-    FunctorOp func = FunctorOp::BOR;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::BOR;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, arg1 | arg2);
     }
 }
 
 TEST(Binary, UnsignedBinaryOr) {
-    FunctorOp func = FunctorOp::UBOR;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::UBOR;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 | arg2);
     }
 }
 
 TEST(Binary, SignedBinaryXor) {
-    FunctorOp func = FunctorOp::BXOR;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::BXOR;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, arg1 ^ arg2);
     }
 }
 
 TEST(Binary, UnsignedBinaryXor) {
-    FunctorOp func = FunctorOp::UBXOR;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::UBXOR;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 ^ arg2);
     }
 }
 
 TEST(Binary, SignedLogicalAnd) {
-    FunctorOp func = FunctorOp::LAND;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::LAND;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, arg1 || arg2);
     }
 }
 
 TEST(Binary, UnsignedLogicalAnd) {
-    FunctorOp func = FunctorOp::ULAND;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::ULAND;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 || arg2);
     }
 }
 
 TEST(Binary, SignedLogicalOr) {
-    FunctorOp func = FunctorOp::LOR;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::LOR;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamDomain> dist(-100, 100);
+    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamDomain arg1 = dist(randomGenerator);
-        RamDomain arg2 = dist(randomGenerator);
-        result = evalBinary(func, arg1, arg2);
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, arg1, arg2);
         EXPECT_EQ(result, arg1 || arg2);
     }
 }
 
 TEST(Binary, UnsignedLogicalOr) {
-    FunctorOp func = FunctorOp::ULOR;
-    RamDomain result;
+    FunctorOp functor = FunctorOp::ULOR;
 
-    std::mt19937 randomGenerator(MAGIC_GENERATOR_SEED);
-    std::uniform_int_distribution<RamUnsigned> dist(0, 1000);
+    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-        RamUnsigned arg1 = dist(randomGenerator);
-        RamUnsigned arg2 = dist(randomGenerator);
-        result = evalBinary(func, ramBitCast(arg1), ramBitCast(arg2));
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), arg1 || arg2);
     }
 }
@@ -651,13 +594,12 @@ TEST(Binary, UnsignedLogicalOr) {
 TEST(MultiArg, Max) {
     FunctorOp functor = FunctorOp::MAX;
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
-    RamDomain result;
 
     for (RamDomain i = 0; i <= 50; ++i) {
         args.push_back(std::make_unique<RamNumber>(i));
     }
 
-    result = evalMultiArg(functor, std::move(args));
+    RamDomain result = evalMultiArg(functor, std::move(args));
 
     EXPECT_EQ(result, 50);
 }
@@ -665,13 +607,12 @@ TEST(MultiArg, Max) {
 TEST(MultiArg, UnsignedMax) {
     FunctorOp functor = FunctorOp::UMAX;
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
-    RamDomain result;
 
     for (RamUnsigned i = 0; i <= 100; ++i) {
         args.push_back(std::make_unique<RamNumber>(ramBitCast(i)));
     }
 
-    result = evalMultiArg(functor, std::move(args));
+    RamDomain result = evalMultiArg(functor, std::move(args));
 
     EXPECT_EQ(ramBitCast<RamUnsigned>(result), 100);
 }
@@ -679,13 +620,12 @@ TEST(MultiArg, UnsignedMax) {
 TEST(MultiArg, FloatMax) {
     FunctorOp functor = FunctorOp::FMAX;
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
-    RamDomain result;
 
     for (RamDomain i = -100; i <= 100; ++i) {
         args.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(i))));
     }
 
-    result = evalMultiArg(functor, std::move(args));
+    RamDomain result = evalMultiArg(functor, std::move(args));
 
     EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(100));
 }
@@ -693,13 +633,12 @@ TEST(MultiArg, FloatMax) {
 TEST(MultiArg, Min) {
     FunctorOp functor = FunctorOp::MIN;
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
-    RamDomain result;
 
     for (RamDomain i = 0; i <= 50; ++i) {
         args.push_back(std::make_unique<RamNumber>(i));
     }
 
-    result = evalMultiArg(functor, std::move(args));
+    RamDomain result = evalMultiArg(functor, std::move(args));
 
     EXPECT_EQ(result, 0);
 }
@@ -707,13 +646,12 @@ TEST(MultiArg, Min) {
 TEST(MultiArg, UnsignedMin) {
     FunctorOp functor = FunctorOp::UMIN;
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
-    RamDomain result;
 
     for (RamUnsigned i = 0; i <= 100; ++i) {
         args.push_back(std::make_unique<RamNumber>(ramBitCast(i)));
     }
 
-    result = evalMultiArg(functor, std::move(args));
+    RamDomain result = evalMultiArg(functor, std::move(args));
 
     EXPECT_EQ(ramBitCast<RamUnsigned>(result), 0);
 }
@@ -721,13 +659,12 @@ TEST(MultiArg, UnsignedMin) {
 TEST(MultiArg, FloatMin) {
     FunctorOp functor = FunctorOp::FMIN;
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
-    RamDomain result;
 
     for (RamDomain i = -100; i <= 100; ++i) {
         args.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(i))));
     }
 
-    result = evalMultiArg(functor, std::move(args));
+    RamDomain result = evalMultiArg(functor, std::move(args));
 
     EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(-100));
 }

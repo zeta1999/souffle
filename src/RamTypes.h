@@ -95,7 +95,7 @@ inline RamDomain RamDomainFromString(const std::string& str) {
 }
 
 inline RamFloat RamFloatFromString(const std::string& str) {
-    RamDomain val;
+    RamFloat val;
 #if RAM_DOMAIN_SIZE == 64
     val = std::stod(str);
 #else
@@ -105,13 +105,13 @@ inline RamFloat RamFloatFromString(const std::string& str) {
 }
 
 inline RamUnsigned RamUnsignedFromString(const std::string& str) {
-    RamDomain val;
+    RamUnsigned val;
 #if RAM_DOMAIN_SIZE == 64
     val = std::stoul(str);
 #else
     val = std::stoull(str);
 #endif
-    return static_cast<RamUnsigned>(val);
+    return val;
 }
 
 /** lower and upper boundaries for the ram domain **/

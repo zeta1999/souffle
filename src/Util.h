@@ -104,21 +104,25 @@ inline unsigned long __builtin_ctzll(unsigned long long value) {
 #endif
 
 /**
- * Converts a string to a number
+ * Converts a string to a RamDomain (i.e. signed 32 bit or 64 bit number)
  */
 
+namespace souffle {
+
 #if RAM_DOMAIN_SIZE == 64
-#define stord(a) std::stoll(a)
+inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
+    return static_cast<RamDomain>(std::stoull(str, pos, base));
+}
 #elif RAM_DOMAIN_SIZE == 32
-#define stord(a) std::stoi(a)
+inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
+    return static_cast<RamDomain>(std::stoul(str, pos, base));
+}
 #else
 #error RAM Domain is neither 32bit nor 64bit
 #endif
 
-namespace souffle {
-
 /**
- * Check whether a string is a sequence of numbers
+ * Check whether a string is a sequence of digits
  */
 inline bool isNumber(const char* str) {
     if (str == nullptr) {

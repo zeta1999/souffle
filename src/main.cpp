@@ -28,6 +28,7 @@
 #include "InterpreterEngine.h"
 #include "InterpreterProgInterface.h"
 #include "ParserDriver.h"
+#include "PrecedenceGraph.h"
 #include "RamIndexAnalysis.h"
 #include "RamLevelAnalysis.h"
 #include "RamProgram.h"
@@ -187,13 +188,25 @@ int main(int argc, char** argv) {
                 {"engine", 'e', "[ file ]", "", false, "Alternative evaluation strategies."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
-                {"transformed-datalog", '\4', "", "", false, "Output dl after all transformations."},
-                {"transformed-ram", '\6', "", "", false, "Output ram program after all transformations."},
+                // TODO (lyndonhenry): remove deprecated options while ensuring backwards compatibility
+                {"transformed-datalog", '\4', "", "", false, "Deprecated, use --show=transformed-datalog."},
+                {"transformed-ram", '\6', "", "", false, "Deprecated, use --show=transformed-ram."},
+                {"show", 'z', "[ tranformed-datalog | transformed-ram | scc-graph | precedence-graph ]", "",
+                        false, "Print program information for debugging."},
                 {"parse-errors", '\5', "", "", false, "Show parsing errors, if any, then exit."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
         // ------ command line arguments -------------
+
+        // TODO (lyndonhenry): remove handling for deprecated options once all deprecated options are removed
+        /* handle deprecated options */
+        if (Global::config().has("transformed-datalog")) {
+            Global::config().set("show", "transformed-datalog");
+        }
+        if (Global::config().has("transformed-ram")) {
+            Global::config().set("show", "transformed-ram");
+        }
 
         /* for the version option, if given print the version text then exit */
         if (Global::config().has("version")) {
@@ -466,11 +479,28 @@ int main(int argc, char** argv) {
     // Apply all the transformations
     pipeline->apply(*astTranslationUnit);
 
-    // Output the transformed datalog and return
-    if (Global::config().has("transformed-datalog")) {
-        std::cout << *astTranslationUnit->getProgram() << std::endl;
-        return 0;
+    if (Global::config().has("show")) {
+        // Output the transformed datalog and return
+        if (Global::config().get("show") == "transformed-datalog") {
+            std::cout << *astTranslationUnit->getProgram() << std::endl;
+            return 0;
+        }
+
+        // Output the precedence graph in graphviz dot format and return
+        if (Global::config().get("show") == "precedence-graph") {
+            astTranslationUnit->getAnalysis<PrecedenceGraph>()->print(std::cout);
+            std::cout << std::endl;
+            return 0;
+        }
+
+        // Output the scc graph in graphviz dot format and return
+        if (Global::config().get("show") == "scc-graph") {
+            astTranslationUnit->getAnalysis<SCCGraph>()->print(std::cout);
+            std::cout << std::endl;
+            return 0;
+        }
     }
+
     // ------- execution -------------
 
     /* translate AST to RAM */
@@ -503,7 +533,7 @@ int main(int argc, char** argv) {
     }
 
     // Output the transformed RAM program and return
-    if (Global::config().has("transformed-ram")) {
+    if (Global::config().get("show") == "transformed-ram") {
         std::cout << ramTranslationUnit->getProgram();
         return 0;
     }

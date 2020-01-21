@@ -821,8 +821,8 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamLogTimer*>(&node));
-        const auto& other = static_cast<const RamLogTimer&>(node);
+        assert(nullptr != dynamic_cast<const RamDebugInfo*>(&node));
+        const auto& other = static_cast<const RamDebugInfo&>(node);
         return RamAbstractLog::equal(other);
     }
 };

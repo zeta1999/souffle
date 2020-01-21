@@ -20,6 +20,7 @@
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstTranslator.h"
+#include "AstTypeAnalysis.h"
 #include "ComponentModel.h"
 #include "DebugReport.h"
 #include "ErrorReport.h"
@@ -188,25 +189,13 @@ int main(int argc, char** argv) {
                 {"engine", 'e', "[ file ]", "", false, "Alternative evaluation strategies."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
-                // TODO (lyndonhenry): remove deprecated options while ensuring backwards compatibility
-                {"transformed-datalog", '\4', "", "", false, "Deprecated, use --show=transformed-datalog."},
-                {"transformed-ram", '\6', "", "", false, "Deprecated, use --show=transformed-ram."},
-                {"show", 'z', "[ tranformed-datalog | transformed-ram | scc-graph | precedence-graph ]", "",
+                {"show", '\4', "[ parse-errors | precedence-graph | scc-graph | transformed-datalog | transformed-ram | type-analysis ]", "",
                         false, "Print program information for debugging."},
                 {"parse-errors", '\5', "", "", false, "Show parsing errors, if any, then exit."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
         // ------ command line arguments -------------
-
-        // TODO (lyndonhenry): remove handling for deprecated options once all deprecated options are removed
-        /* handle deprecated options */
-        if (Global::config().has("transformed-datalog")) {
-            Global::config().set("show", "transformed-datalog");
-        }
-        if (Global::config().has("transformed-ram")) {
-            Global::config().set("show", "transformed-ram");
-        }
 
         /* for the version option, if given print the version text then exit */
         if (Global::config().has("version")) {
@@ -383,7 +372,7 @@ int main(int argc, char** argv) {
                   << "sec\n";
     }
 
-    if (Global::config().has("parse-errors")) {
+    if (Global::config().get("show") == "parse-errors") {
         std::cout << astTranslationUnit->getErrorReport();
         return astTranslationUnit->getErrorReport().getNumErrors();
     }
@@ -499,6 +488,14 @@ int main(int argc, char** argv) {
             std::cout << std::endl;
             return 0;
         }
+
+        // Output the type analysis 
+        if (Global::config().get("show") == "type-analysis") {
+            astTranslationUnit->getAnalysis<TypeAnalysis>()->print(std::cout);
+            std::cout << std::endl;
+            return 0;
+        }
+
     }
 
     // ------- execution -------------

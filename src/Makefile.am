@@ -197,6 +197,7 @@ soufflepublic_HEADERS = \
         PiggyList.h                               \
         ProfileDatabase.h                         \
         ProfileEvent.h                            \
+	RamPrimitiveTypes.h                       \
         RamTypes.h                                \
         ReadStream.h                              \
         ReadStreamCSV.h                           \

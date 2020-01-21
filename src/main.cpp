@@ -189,8 +189,10 @@ int main(int argc, char** argv) {
                 {"engine", 'e', "[ file ]", "", false, "Alternative evaluation strategies."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
-                {"show", '\4', "[ parse-errors | precedence-graph | scc-graph | transformed-datalog | transformed-ram | type-analysis ]", "",
-                        false, "Print program information for debugging."},
+                {"show", '\4',
+                        "[ parse-errors | precedence-graph | scc-graph | transformed-datalog | "
+                        "transformed-ram | type-analysis ]",
+                        "", false, "Print program information for debugging."},
                 {"parse-errors", '\5', "", "", false, "Show parsing errors, if any, then exit."},
                 {"help", 'h', "", "", false, "Display this help message."}};
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
@@ -489,13 +491,12 @@ int main(int argc, char** argv) {
             return 0;
         }
 
-        // Output the type analysis 
+        // Output the type analysis
         if (Global::config().get("show") == "type-analysis") {
             astTranslationUnit->getAnalysis<TypeAnalysis>()->print(std::cout);
             std::cout << std::endl;
             return 0;
         }
-
     }
 
     // ------- execution -------------

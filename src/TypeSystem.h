@@ -73,7 +73,7 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& out, const Type* t) {
-        if (!t) {
+        if (t == nullptr) {
             return out << "-null-";
         }
         return t->print(out), out;

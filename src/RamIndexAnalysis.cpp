@@ -238,7 +238,7 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     // 0-arity relation in a provenance program still need to be revisited.
 
     // visit all nodes to collect searches of each relation
-    visitDepthFirst(*translationUnit.getProgram(), [&](const RamNode& node) {
+    visitDepthFirst(translationUnit.getProgram(), [&](const RamNode& node) {
         if (const auto* indexSearch = dynamic_cast<const RamIndexOperation*>(&node)) {
             MinIndexSelection& indexes = getIndexes(indexSearch->getRelation());
             indexes.addSearch(getSearchSignature(indexSearch));
@@ -255,7 +255,7 @@ void RamIndexAnalysis::run(const RamTranslationUnit& translationUnit) {
     });
 
     // A swap happen between rel A and rel B indicates A should include all indices of B, vice versa.
-    visitDepthFirst(*translationUnit.getProgram(), [&](const RamSwap& swap) {
+    visitDepthFirst(translationUnit.getProgram(), [&](const RamSwap& swap) {
         // Note: this naive approach will not work if there exists chain or cyclic swapping.
         // e.g.  swap(relA, relB) swap(relB, relC) swap(relC, relA)
         // One need to keep merging the search set until a fixed point where no more index is introduced
@@ -314,12 +314,15 @@ void RamIndexAnalysis::print(std::ostream& os) const {
         os << "Relation " << relName << "\n";
         os << "\tNumber of Primitive Searches: " << indexes.getSearches().size() << "\n";
 
+        const auto& attrib = rel.getAttributeNames();
+        uint32_t arity = rel.getArity();
+
         /* print searches */
         for (auto& cols : indexes.getSearches()) {
             os << "\t\t";
-            for (uint32_t i = 0; i < rel.getArity(); i++) {
-                if ((1UL << i) & cols) {
-                    os << rel.getArg(i) << " ";
+            for (uint32_t i = 0; i < arity; i++) {
+                if (((1UL << i) & cols) != 0u) {
+                    os << attrib[i] << " ";
                 }
             }
             os << "\n";
@@ -329,7 +332,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
         for (auto& order : indexes.getAllOrders()) {
             os << "\t\t";
             for (auto& i : order) {
-                os << rel.getArg(i) << " ";
+                os << attrib[i] << " ";
             }
             os << "\n";
         }

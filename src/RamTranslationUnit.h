@@ -38,8 +38,10 @@ namespace souffle {
  */
 class RamTranslationUnit {
 public:
-    RamTranslationUnit(std::unique_ptr<RamProgram> program, SymbolTable& sym, ErrorReport& e, DebugReport& d)
-            : program(std::move(program)), symbolTable(sym), errorReport(e), debugReport(d) {}
+    RamTranslationUnit(std::unique_ptr<RamProgram> prog, SymbolTable& sym, ErrorReport& e, DebugReport& d)
+            : program(std::move(prog)), symbolTable(sym), errorReport(e), debugReport(d) {
+        assert(program != nullptr && "program is a null-pointer");
+    }
 
     virtual ~RamTranslationUnit() = default;
 
@@ -75,14 +77,14 @@ public:
         analyses.clear();
     }
 
-    /** @brief get the const RAM Program of the translation unit  */
-    const RamProgram* getProgram() const {
-        return program.get();
+    /** @brief get the RAM Program of the translation unit  */
+    const RamProgram& getProgram() const {
+        return *program.get();
     }
 
     /** @brief get the RAM Program of the translation unit  */
-    RamProgram* getProgram() {
-        return program.get();
+    RamProgram& getProgram() {
+        return *program.get();
     }
 
     /** @brief get symbol table  */

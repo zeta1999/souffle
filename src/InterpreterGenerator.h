@@ -487,7 +487,7 @@ public:
     NodePtr visitNode(const RamNode& node) override {
         std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
         assert(false && "Unsupported Node Type!");
-        return 0;
+        return nullptr;
     }
 
 public:
@@ -606,9 +606,9 @@ private:
      * This function assume the operation does requires a view.
      */
     const RamRelation& getRelationRefForView(const RamNode* node) {
-        if (const RamAbstractExistenceCheck* exist = dynamic_cast<const RamAbstractExistenceCheck*>(node)) {
+        if (const auto* exist = dynamic_cast<const RamAbstractExistenceCheck*>(node)) {
             return exist->getRelation();
-        } else if (const RamIndexOperation* index = dynamic_cast<const RamIndexOperation*>(node)) {
+        } else if (const auto* index = dynamic_cast<const RamIndexOperation*>(node)) {
             return index->getRelation();
         }
         assert(false && "The RamNode does not require a view.");

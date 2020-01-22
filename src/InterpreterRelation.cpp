@@ -15,17 +15,19 @@
  ***********************************************************************/
 
 #include "InterpreterRelation.h"
+
 #include "BTree.h"
 #include "Brie.h"
 #include "EquivalenceRelation.h"
 #include "Util.h"
+#include <utility>
 
 namespace souffle {
 
-InterpreterRelation::InterpreterRelation(std::size_t arity, std::size_t numberOfHeights,
-        const std::string& name, const std::vector<std::string>& attributeTypes,
-        const MinIndexSelection& orderSet, IndexFactory factory)
-        : relName(name), arity(arity), numberOfHeights(numberOfHeights), attributeTypes(attributeTypes) {
+InterpreterRelation::InterpreterRelation(std::size_t arity, std::size_t numberOfHeights, std::string name,
+        std::vector<std::string> attributeTypes, const MinIndexSelection& orderSet, IndexFactory factory)
+        : relName(std::move(name)), arity(arity), numberOfHeights(numberOfHeights),
+          attributeTypes(std::move(attributeTypes)) {
     for (auto order : orderSet.getAllOrders()) {
         // Expand the order to a total order
         std::set<int> set;
@@ -114,7 +116,7 @@ const std::string& InterpreterRelation::getName() const {
     return this->relName;
 }
 
-const std::vector<std::string>& InterpreterRelation::getAttributeTypeQualifiers() const {
+const std::vector<std::string>& InterpreterRelation::getAttributeTypes() const {
     return this->attributeTypes;
 }
 

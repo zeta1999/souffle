@@ -327,7 +327,7 @@ AstClause* createAnnotatedClause(
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     // Check if debugging information is being generated and note where logs should be sent
     std::ostream* debugStream = nullptr;
-    if (!Global::config().get("debug-report").empty()) {
+    if (Global::config().has("debug-report") || Global::config().get("show") == "type-analysis") {
         debugStream = &analysisLogs;
     }
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
@@ -374,7 +374,7 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         void visitAtom(const AstAtom& atom) override {
             // get relation
             auto rel = getAtomRelation(&atom, program);
-            if (!rel) {
+            if (rel == nullptr) {
                 return;  // error in input program
             }
 

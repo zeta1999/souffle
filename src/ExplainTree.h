@@ -176,10 +176,11 @@ public:
         os << tab << "  \"children\": [\n";
         bool first = true;
         for (const std::unique_ptr<TreeNode>& k : children) {
-            if (first)
+            if (first) {
                 first = false;
-            else
+            } else {
                 os << ",\n";
+            }
             k->printJSON(os, pos + 1);
         }
         os << tab << "]\n";

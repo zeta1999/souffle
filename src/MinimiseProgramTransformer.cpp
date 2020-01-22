@@ -106,7 +106,7 @@ std::vector<std::vector<unsigned int>> extractPermutations(
         possibilities.erase(possibilities.begin());
         todoStack.push(possibilities);
 
-        if (seen[nextNum]) {
+        if (seen[nextNum] != 0u) {
             // number already seen in this permutation
             continue;
         } else {

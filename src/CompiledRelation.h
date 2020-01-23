@@ -400,14 +400,6 @@ public:
         data.extend(other.data);
     }
 
-    template <typename Setup, typename... Idxs>
-    void insertAll(const Relation<Setup, arity, Idxs...>& other) {
-        operation_context context;
-        for (const tuple_type& cur : other) {
-            insert(cur, context);
-        }
-    }
-
     template <typename Index>
     auto scan() const -> decltype(indices.scan(Index())) {
         return indices.scan(Index());
@@ -548,19 +540,6 @@ public:
         }
         // no new element
         return false;
-    }
-
-    void insertAll(const DirectIndexedRelation& other) {
-        // merge indices using index-specific implementation
-        indices.insertAll(other.indices);
-    }
-
-    template <typename Setup, typename... Idxs>
-    void insertAll(const Relation<Setup, arity, Idxs...>& other) {
-        operation_context context;
-        for (const tuple_type& cur : other) {
-            insert(cur, context);
-        }
     }
 
     template <typename Index>
@@ -754,11 +733,6 @@ public:
         return res;
     }
 
-    template <typename Setup, typename... Idxs>
-    void insertAll(const Relation<Setup, 0, Idxs...>& other) {
-        present = present || other.present;
-    }
-
     template <typename Index>
     range<iterator> scan() const {
         static_assert(std::is_same<Index, index<>>::value, "Requesting uncovered index!");
@@ -873,27 +847,10 @@ public:
         return data.insert(tuple, ctxt);
     }
 
-    void insertAll(const SingleIndexRelation& other) {
-        data.insertAll(other.data);
-    }
-
     /** Extend this relation with the knowledge created by inserting into other. */
     template <typename Setup, typename... Idxs>
     void extend(const Relation<Setup, arity, Idxs...>& other) {
         data.extend(other.getData());
-    }
-
-    template <typename... Idxs>
-    void insertAll(const Relation<souffle::ram::EqRel, arity, Idxs...>& other) {
-        data.insertAll(other.getData());
-    }
-
-    template <typename Setup, typename... Idxs>
-    void insertAll(const Relation<Setup, arity, Idxs...>& other) {
-        operation_context ctxt;
-        for (const tuple_type& cur : other) {
-            insert(cur, ctxt);
-        }
     }
 
     template <typename I>
@@ -1223,13 +1180,6 @@ public:
         if (contains(tuple)) return false;
         indices.insert(tuple);
         return true;
-    }
-
-    template <typename Setup, typename... Idxs>
-    void insertAll(const Relation<Setup, arity, Idxs...>& other) {
-        for (const tuple_type& cur : other) {
-            insert(cur);
-        }
     }
 
     template <typename I>

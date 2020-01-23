@@ -466,11 +466,11 @@ public:
         return res;
     }
 
-    NodePtr visitMerge(const RamMerge& merge) override {
+    NodePtr visitExtend(const RamExtend& extend) override {
         std::vector<size_t> data;
-        data.push_back((encodeRelation(merge.getFirstRelation())));
-        data.push_back(encodeRelation(merge.getSecondRelation()));
-        return std::make_unique<InterpreterNode>(I_Merge, &merge, NodePtrVec{}, nullptr, std::move(data));
+        data.push_back((encodeRelation(extend.getFirstRelation())));
+        data.push_back(encodeRelation(extend.getSecondRelation()));
+        return std::make_unique<InterpreterNode>(I_Extend, &extend, NodePtrVec{}, nullptr, std::move(data));
     }
 
     NodePtr visitSwap(const RamSwap& swap) override {

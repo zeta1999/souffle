@@ -201,7 +201,9 @@ int main(int argc, char** argv) {
 
         /* for the version option, if given print the version text then exit */
         if (Global::config().has("version")) {
-            std::cout << "Souffle: " << PACKAGE_VERSION << "" << std::endl;
+            std::cout << "Souffle: " << PACKAGE_VERSION;
+            std::cout << "(" << RAM_DOMAIN_SIZE << "bit Domains)";
+            std::cout << std::endl;
             std::cout << "Copyright (c) 2016-19 The Souffle Developers." << std::endl;
             std::cout << "Copyright (c) 2013-16 Oracle and/or its affiliates." << std::endl;
             return 0;

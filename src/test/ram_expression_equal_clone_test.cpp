@@ -36,10 +36,10 @@ TEST(RamIntrinsicOperator, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamIntrinsicOperator* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
+    RamIntrinsicOperator* aClone = a.clone();
+    EXPECT_EQ(a, *aClone);
+    EXPECT_NE(&a, aClone);
+    delete aClone;
 
     // NEG(number(1))
     std::vector<std::unique_ptr<RamExpression>> d_args;
@@ -52,10 +52,10 @@ TEST(RamIntrinsicOperator, CloneAndEquals) {
     EXPECT_EQ(d, e);
     EXPECT_NE(&d, &e);
 
-    RamIntrinsicOperator* f = d.clone();
-    EXPECT_EQ(d, *f);
-    EXPECT_NE(&d, f);
-    delete f;
+    RamIntrinsicOperator* dClone = d.clone();
+    EXPECT_EQ(d, *dClone);
+    EXPECT_NE(&d, dClone);
+    delete dClone;
 }
 
 TEST(RamUserDefinedOperator, CloneAndEquals) {
@@ -73,10 +73,10 @@ TEST(RamUserDefinedOperator, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamUserDefinedOperator* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
+    RamUserDefinedOperator* aClone = a.clone();
+    EXPECT_EQ(a, *aClone);
+    EXPECT_NE(&a, aClone);
+    delete aClone;
 }
 
 TEST(RamTupleElement, CloneAndEquals) {
@@ -86,10 +86,10 @@ TEST(RamTupleElement, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamTupleElement* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
+    RamTupleElement* aClone = a.clone();
+    EXPECT_EQ(a, *aClone);
+    EXPECT_NE(&a, aClone);
+    delete aClone;
 }
 
 TEST(RamNumber, CloneAndEquals) {
@@ -99,10 +99,10 @@ TEST(RamNumber, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamNumber* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
+    RamNumber* aClone = a.clone();
+    EXPECT_EQ(a, *aClone);
+    EXPECT_NE(&a, aClone);
+    delete aClone;
 }
 
 TEST(RamAutoIncrement, CloneAndEquals) {
@@ -111,10 +111,10 @@ TEST(RamAutoIncrement, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamAutoIncrement* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
+    RamAutoIncrement* aClone = a.clone();
+    EXPECT_EQ(a, *aClone);
+    EXPECT_NE(&a, aClone);
+    delete aClone;
 }
 
 TEST(RamUndefValue, CloneAndEquals) {
@@ -123,10 +123,10 @@ TEST(RamUndefValue, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamUndefValue* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
+    RamUndefValue* aClone = a.clone();
+    EXPECT_EQ(a, *aClone);
+    EXPECT_NE(&a, aClone);
+    delete aClone;
 }
 
 TEST(RamPackRecord, CloneAndEquals) {
@@ -148,10 +148,10 @@ TEST(RamPackRecord, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamPackRecord* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
+    RamPackRecord* aClone = a.clone();
+    EXPECT_EQ(a, *aClone);
+    EXPECT_NE(&a, aClone);
+    delete aClone;
 
     // {⊥, {argument(1), number(0)}, t1.3}
     std::vector<std::unique_ptr<RamExpression>> d_args;
@@ -175,10 +175,10 @@ TEST(RamPackRecord, CloneAndEquals) {
     EXPECT_EQ(d, e);
     EXPECT_NE(&d, &e);
 
-    RamPackRecord* f = d.clone();
-    EXPECT_EQ(d, *f);
-    EXPECT_NE(&d, f);
-    delete f;
+    RamPackRecord* dClone = d.clone();
+    EXPECT_EQ(d, *dClone);
+    EXPECT_NE(&d, dClone);
+    delete dClone;
 }
 
 TEST(RamSubrountineArgument, CloneAndEquals) {
@@ -187,10 +187,10 @@ TEST(RamSubrountineArgument, CloneAndEquals) {
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamSubroutineArgument* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
+    RamSubroutineArgument* aClone = a.clone();
+    EXPECT_EQ(a, *aClone);
+    EXPECT_NE(&a, aClone);
+    delete aClone;
 }
 }  // end namespace test
 }  // end namespace souffle

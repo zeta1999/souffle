@@ -30,8 +30,8 @@ class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
             const std::vector<bool>& symbolMask, const SymbolTable& symbolTable, const bool provenance,
-            const size_t numberOfHeights)
-            : WriteStream(symbolMask, symbolTable, provenance, numberOfHeights), dbFilename(dbFilename),
+            const size_t numAuxAttributes)
+            : WriteStream(symbolMask, symbolTable, provenance, numAuxAttributes), dbFilename(dbFilename),
               relationName(relationName) {
         openDB();
         createTables();
@@ -258,11 +258,11 @@ class WriteSQLiteFactory : public WriteStreamFactory {
 public:
     std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
-            const size_t numberOfHeights) override {
+            const size_t numAuxAttributes) override {
         std::string dbName = ioDirectives.get("dbname");
         std::string relationName = ioDirectives.getRelationName();
         return std::make_unique<WriteStreamSQLite>(
-                dbName, relationName, symbolMask, symbolTable, provenance, numberOfHeights);
+                dbName, relationName, symbolMask, symbolTable, provenance, numAuxAttributes);
     }
     const std::string& getName() const override {
         static const std::string name = "sqlite";

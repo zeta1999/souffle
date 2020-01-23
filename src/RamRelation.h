@@ -31,12 +31,12 @@ namespace souffle {
  */
 class RamRelation : public RamNode {
 public:
-    RamRelation(const std::string name, const size_t arity, const size_t numberOfHeights,
+    RamRelation(const std::string name, const size_t arity, const size_t numAuxAttributes,
             const std::vector<std::string> attributeNames, const std::vector<std::string> attributeTypes,
             const RelationRepresentation representation)
             : representation(representation), name(std::move(name)), arity(arity),
               attributeNames(std::move(attributeNames)), attributeTypes(std::move(attributeTypes)),
-              numberOfHeights(numberOfHeights) {
+              numAuxAttributes(numAuxAttributes) {
         assert(this->attributeNames.size() == arity && "arity mismatch for attributes");
         assert(this->attributeTypes.size() == arity && "arity mismatch for types");
         for (std::size_t i = 0; i < arity; i++) {
@@ -80,9 +80,9 @@ public:
         return arity;
     }
 
-    /* @brief Get number of height parameters of relation */
-    unsigned getNumberOfHeights() const {
-        return numberOfHeights;
+    /* @brief Get number of auxiliary attributes */
+    unsigned getNumAuxAttributes() const {
+        return numAuxAttributes;
     }
 
     /* @brief Compare two relations via their name */
@@ -97,16 +97,20 @@ public:
             for (unsigned i = 1; i < arity; i++) {
                 out << ",";
                 out << attributeNames[i] << ":" << attributeTypes[i];
+                if (i >= arity - numAuxAttributes ) { 
+                   out << " auxiliary";  
+                } 
             }
             out << ")";
             out << " " << representation;
+            out << " " << numAuxAttributes; 
         } else {
             out << " nullary";
         }
     }
 
     RamRelation* clone() const override {
-        return new RamRelation(name, arity, numberOfHeights, attributeNames, attributeTypes, representation);
+        return new RamRelation(name, arity, numAuxAttributes, attributeNames, attributeTypes, representation);
     }
 
 protected:
@@ -133,8 +137,8 @@ protected:
     /** Type of attributes */
     const std::vector<std::string> attributeTypes;
 
-    /** Number of height parameters for provenance only */
-    const size_t numberOfHeights;
+    /** Number of auxiliary attributes (e.g. provenance attributes etc) */
+    const size_t numAuxAttributes;
 };
 
 /**

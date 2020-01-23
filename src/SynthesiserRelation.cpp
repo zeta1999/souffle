@@ -94,7 +94,7 @@ void SynthesiserDirectRelation::computeIndices() {
         // and also add provenance annotations to the indices
         if (isProvenance) {
             // expand index to be full
-            for (size_t i = 0; i < getArity() - 1 - relation.getNumberOfHeights(); i++) {
+            for (size_t i = 0; i < getArity() - 1 - relation.getNumAuxAttributes(); i++) {
                 if (curIndexElems.find(i) == curIndexElems.end()) {
                     ind.push_back(i);
                 }
@@ -105,7 +105,7 @@ void SynthesiserDirectRelation::computeIndices() {
                 // parameter occurs in order of columns before regular columns (at least only in this case it
                 // needs to be copied) -- verify this!!
 
-                auto firstProvenanceColumn = (getArity() - relation.getNumberOfHeights() - 1);
+                auto firstProvenanceColumn = (getArity() - relation.getNumAuxAttributes() - 1);
 
                 // position of last non provenance column
                 auto nonProv = std::find_if(ind.rbegin(), ind.rend(),
@@ -126,35 +126,35 @@ void SynthesiserDirectRelation::computeIndices() {
 
                 // add provenance annotations to the index but in reverse order
                 // add height columns if not already contained
-                for (size_t i = getArity() - relation.getNumberOfHeights(); i < getArity(); i++) {
+                for (size_t i = getArity() - relation.getNumAuxAttributes(); i < getArity(); i++) {
                     if (curIndexElems.find(i) == curIndexElems.end()) {
                         ind.push_back(i);
                     }
                 }
 
                 // remove rule annotation if already in the index order
-                if (curIndexElems.find(getArity() - 1 - relation.getNumberOfHeights()) !=
+                if (curIndexElems.find(getArity() - 1 - relation.getNumAuxAttributes()) !=
                         curIndexElems.end()) {
                     ind.erase(std::find(
-                            ind.begin(), ind.end(), getArity() - 1 - relation.getNumberOfHeights()));
+                            ind.begin(), ind.end(), getArity() - 1 - relation.getNumAuxAttributes()));
                 }
                 // add rule as last parameter
-                ind.push_back(getArity() - 1 - relation.getNumberOfHeights());
+                ind.push_back(getArity() - 1 - relation.getNumAuxAttributes());
             } else {
                 // remove any provenance annotations already in the index order
-                if (curIndexElems.find(getArity() - relation.getNumberOfHeights()) != curIndexElems.end()) {
-                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - relation.getNumberOfHeights()));
+                if (curIndexElems.find(getArity() - relation.getNumAuxAttributes()) != curIndexElems.end()) {
+                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - relation.getNumAuxAttributes()));
                 }
 
-                if (curIndexElems.find(getArity() - relation.getNumberOfHeights() - 1) !=
+                if (curIndexElems.find(getArity() - relation.getNumAuxAttributes() - 1) !=
                         curIndexElems.end()) {
                     ind.erase(std::find(
-                            ind.begin(), ind.end(), getArity() - relation.getNumberOfHeights() - 1));
+                            ind.begin(), ind.end(), getArity() - relation.getNumAuxAttributes() - 1));
                 }
 
                 // add provenance annotations to the index, but in reverse order
-                ind.push_back(getArity() - relation.getNumberOfHeights());
-                ind.push_back(getArity() - relation.getNumberOfHeights() - 1);
+                ind.push_back(getArity() - relation.getNumAuxAttributes());
+                ind.push_back(getArity() - relation.getNumAuxAttributes() - 1);
                 masterIndex = 0;
             }
 
@@ -198,7 +198,7 @@ std::string SynthesiserDirectRelation::getTypeName() {
 /** Generate type struct of a direct indexed relation */
 void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     size_t arity = getArity();
-    size_t numberOfHeights = relation.getNumberOfHeights();
+    size_t numAuxAttributes = relation.getNumAuxAttributes();
     const auto& inds = getIndices();
     size_t numIndexes = inds.size();
     std::map<MinIndexSelection::LexOrder, int> indexToNumMap;
@@ -214,7 +214,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
         out << "struct updater_" << getTypeName() << " {\n";
         out << "void update(t_tuple& old_t, const t_tuple& new_t) {\n";
 
-        for (size_t i = arity - numberOfHeights - 1; i < arity; i++) {
+        for (size_t i = arity - numAuxAttributes - 1; i < arity; i++) {
             out << "old_t[" << i << "] = new_t[" << i << "];\n";
         }
 
@@ -238,7 +238,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
                 out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);
                 out << ">, std::allocator<t_tuple>, 256, typename "
                        "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
-                out << join(ind.begin(), ind.end() - 1 - numberOfHeights) << ">, updater_" << getTypeName()
+                out << join(ind.begin(), ind.end() - 1 - numAuxAttributes) << ">, updater_" << getTypeName()
                     << ">;\n";
             } else {  // index for top down phase
                 out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);

@@ -31,9 +31,9 @@ namespace souffle {
 class ReadStreamSQLite : public ReadStream {
 public:
     ReadStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const size_t numberOfHeights,
+            const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const size_t numAuxAttributes,
             const bool provenance)
-            : ReadStream(symbolMask, symbolTable, provenance, numberOfHeights), dbFilename(dbFilename),
+            : ReadStream(symbolMask, symbolTable, provenance, numAuxAttributes), dbFilename(dbFilename),
               relationName(relationName) {
         openDB();
         checkTableExists();
@@ -58,7 +58,7 @@ protected:
         }
 
         std::unique_ptr<RamDomain[]> tuple =
-                std::make_unique<RamDomain[]>(arity + (isProvenance ? (numberOfHeights + 1) : 0));
+                std::make_unique<RamDomain[]>(arity + (isProvenance ? (numAuxAttributes + 1) : 0));
 
         uint32_t column;
         for (column = 0; column < arity; column++) {
@@ -157,11 +157,11 @@ protected:
 class ReadSQLiteFactory : public ReadStreamFactory {
 public:
     std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const bool provenance, const size_t numberOfHeights) override {
+            const IODirectives& ioDirectives, const bool provenance, const size_t numAuxAttributes) override {
         std::string dbName = ioDirectives.get("dbname");
         std::string relationName = ioDirectives.getRelationName();
         return std::make_unique<ReadStreamSQLite>(
-                dbName, relationName, symbolMask, symbolTable, numberOfHeights, provenance);
+                dbName, relationName, symbolMask, symbolTable, numAuxAttributes, provenance);
     }
     const std::string& getName() const override {
         static const std::string name = "sqlite";

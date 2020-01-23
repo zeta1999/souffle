@@ -86,7 +86,7 @@ const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* progra
  * @param program the program containing the relations
  * @return number of height parameters of the relation referenced by the atom
  */
-const size_t getNumberOfHeights(const AstAtom* atom, const AstProgram* program);
+const size_t getNumAuxAttributes(const AstAtom* atom, const AstProgram* program);
 
 /**
  * Returns the relation referenced by the head of the given clause.

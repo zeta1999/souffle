@@ -193,7 +193,8 @@ void SCCGraph::run(const AstTranslationUnit& translationUnit) {
     std::vector<AstRelation*> relations = translationUnit.getProgram()->getRelations();
     size_t counter = 0;
     size_t numSCCs = 0;
-    std::stack<const AstRelation*> S, P;
+    std::stack<const AstRelation*> S;
+    std::stack<const AstRelation*> P;
     std::map<const AstRelation*, size_t> preOrder;  // Pre-order number of a node (for Gabow's Algo)
     for (const AstRelation* relation : relations) {
         relationToScc[relation] = preOrder[relation] = (size_t)-1;
@@ -317,7 +318,9 @@ int TopologicallySortedSCCGraph::topologicalOrderingCost(const std::vector<size_
 
 void TopologicallySortedSCCGraph::computeTopologicalOrdering(size_t scc, std::vector<bool>& visited) {
     // create a flag to indicate that a successor was visited (by default it hasn't been)
-    bool found = false, hasUnvisitedSuccessor = false, hasUnvisitedPredecessor = false;
+    bool found = false;
+    bool hasUnvisitedSuccessor = false;
+    bool hasUnvisitedPredecessor = false;
     // for each successor of the input scc
     const auto& successorsToVisit = sccGraph->getSuccessorSCCs(scc);
     for (const auto scc_i : successorsToVisit) {

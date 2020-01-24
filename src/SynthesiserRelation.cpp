@@ -313,7 +313,8 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "return insert(tuple, h);\n";
     out << "}\n";  // end of insert(RamDomain*)
 
-    std::vector<std::string> decls, params;
+    std::vector<std::string> decls;
+    std::vector<std::string> params;
     for (size_t i = 0; i < arity; i++) {
         decls.push_back("RamDomain a" + std::to_string(i));
         params.push_back("a" + std::to_string(i));
@@ -611,7 +612,8 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "return insert(tuple, h);\n";
     out << "}\n";  // end of insert(RamDomain*)
 
-    std::vector<std::string> decls, params;
+    std::vector<std::string> decls;
+    std::vector<std::string> params;
     for (size_t i = 0; i < arity; i++) {
         decls.push_back("RamDomain a" + std::to_string(i));
         params.push_back("a" + std::to_string(i));
@@ -901,7 +903,8 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // insert method
-    std::vector<std::string> decls, params;
+    std::vector<std::string> decls;
+    std::vector<std::string> params;
     for (size_t i = 0; i < arity; i++) {
         decls.push_back("RamDomain a" + std::to_string(i));
         params.push_back("a" + std::to_string(i));

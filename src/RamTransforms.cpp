@@ -75,8 +75,8 @@ bool ReorderConditionsTransformer::reorderConditions(RamProgram& program) {
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition* condition = &filter->getCondition();
-                std::vector<std::unique_ptr<RamCondition>> sortedConds,
-                        condList = toConjunctionList(condition);
+                std::vector<std::unique_ptr<RamCondition>> sortedConds;
+                std::vector<std::unique_ptr<RamCondition>> condList = toConjunctionList(condition);
                 for (auto& cond : condList) {
                     sortedConds.emplace_back(cond->clone());
                 }

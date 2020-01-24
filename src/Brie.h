@@ -2479,7 +2479,8 @@ public:
         base::hint_stats.get_boundaries.addMiss();
 
         // start with two end iterators
-        iterator begin{}, end{};
+        iterator begin{};
+        iterator end{};
 
         // adapt them level by level
         auto found = detail::fix_binding<levels, 0, Dim>()(store, begin, end, entry);

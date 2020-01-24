@@ -70,7 +70,9 @@ protected:
         }
         ++lineNumber;
 
-        size_t start = 0, end = 0, columnsFilled = 0;
+        size_t start = 0;
+        size_t end = 0;
+        size_t columnsFilled = 0;
         for (uint32_t column = 0; columnsFilled < arity; column++) {
             end = line.find(delimiter, start);
             if (end == std::string::npos) {

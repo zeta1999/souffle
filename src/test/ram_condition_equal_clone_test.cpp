@@ -96,9 +96,9 @@ TEST(RamNegation, CloneAndEquals) {
     EXPECT_NE(neg_a, neg_b);
 
     auto c = std::make_unique<RamFalse>();
-    auto neg_neg_c = std::make_unique<RamNegation>(std::move(std::make_unique<RamNegation>(std::move(c))));
+    auto neg_neg_c = std::make_unique<RamNegation>(std::make_unique<RamNegation>(std::move(c)));
     auto d = std::make_unique<RamFalse>();
-    auto neg_neg_d = std::make_unique<RamNegation>(std::move(std::make_unique<RamNegation>(std::move(d))));
+    auto neg_neg_d = std::make_unique<RamNegation>(std::make_unique<RamNegation>(std::move(d)));
     EXPECT_EQ(*neg_neg_c, *neg_neg_d);
     EXPECT_NE(neg_neg_c, neg_neg_d);
 }

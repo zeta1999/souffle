@@ -549,7 +549,7 @@ public:
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
                     tuple >> s;
-                    n = symTable.lookupExisting(s.c_str());
+                    n = symTable.lookupExisting(s);
                 } else {
                     tuple >> n;
                 }

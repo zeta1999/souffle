@@ -50,7 +50,7 @@ std::unique_ptr<AstTranslationUnit> ParserDriver::parse(const std::string& filen
             std::unique_ptr<AstProgram>(new AstProgram()), symbolTable, errorReport, debugReport);
     yyscan_t scanner;
     scanner_data data;
-    data.yyfilename = filename.c_str();
+    data.yyfilename = filename;
     yylex_init_extra(&data, &scanner);
     yyset_in(in, scanner);
 

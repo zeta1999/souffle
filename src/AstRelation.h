@@ -179,19 +179,24 @@ public:
         return false;
     }
 
-    /** Get number of height parameters */
-    size_t numberOfHeightParameters() const {
-        if (Global::config().has("provenance") && Global::config().get("provenance") == "subtreeHeights") {
-            size_t maxNrOfPremises = 0;
-            for (auto& cur : clauses) {
-                size_t numberOfAtoms = cur->getAtoms().size();
-                if (numberOfAtoms > maxNrOfPremises) {
-                    maxNrOfPremises = numberOfAtoms;
+    /** Get number of auxiliary attributes  */
+    size_t getNumAuxAttributes() const {
+        if (Global::config().has("provenance")) {
+            if (Global::config().get("provenance") == "subtreeHeights") {
+                size_t maxNrOfPremises = 0;
+                for (auto& cur : clauses) {
+                    size_t numberOfAtoms = cur->getAtoms().size();
+                    if (numberOfAtoms > maxNrOfPremises) {
+                        maxNrOfPremises = numberOfAtoms;
+                    }
                 }
+                return maxNrOfPremises + 2;
+            } else {
+                // accounts for rule number and proof height
+                return 2;
             }
-            return maxNrOfPremises + 1;
         } else {
-            return 1;
+            return 0;
         }
     }
 

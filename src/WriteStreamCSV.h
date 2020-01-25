@@ -43,7 +43,8 @@ protected:
 class WriteFileCSV : public WriteStreamCSV, public WriteStream {
 public:
     WriteFileCSV(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0, const bool provenance = false)
+            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0,
+            const bool provenance = false)
             : WriteStream(symbolMask, symbolTable, provenance, numAuxAttributes),
               delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
@@ -84,7 +85,8 @@ protected:
 class WriteGZipFileCSV : public WriteStreamCSV, public WriteStream {
 public:
     WriteGZipFileCSV(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0, const bool provenance = false)
+            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0,
+            const bool provenance = false)
             : WriteStream(symbolMask, symbolTable, provenance, numAuxAttributes),
               delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
@@ -125,7 +127,8 @@ protected:
 class WriteCoutCSV : public WriteStreamCSV, public WriteStream {
 public:
     WriteCoutCSV(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0, const bool provenance = false)
+            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0,
+            const bool provenance = false)
             : WriteStream(symbolMask, symbolTable, provenance, numAuxAttributes),
               delimiter(getDelimiter(ioDirectives)) {
         std::cout << "---------------\n" << ioDirectives.getRelationName();

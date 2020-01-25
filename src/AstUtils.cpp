@@ -51,15 +51,16 @@ const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* progra
 }
 
 const size_t getNumAuxAttributes(const AstAtom* atom, const AstProgram* program) {
-    // TODO (sarah): what is correct way to get number of height parameters for delta and new relations?
     if (atom->getName().getName().rfind("@delta_") == 0) {
         const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(7));
-        return program->getRelation(originalRel)->numberOfHeightParameters();
+        return program->getRelation(originalRel)->getNumAuxAttributes();
     } else if (atom->getName().getName().rfind("@new_") == 0) {
         const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(5));
-        return program->getRelation(originalRel)->numberOfHeightParameters();
+        return program->getRelation(originalRel)->getNumAuxAttributes();
+    } else if (atom->getName().getName().rfind("@info_") == 0) {
+        return 0;
     }
-    return program->getRelation(atom->getName())->numberOfHeightParameters();
+    return program->getRelation(atom->getName())->getNumAuxAttributes();
 }
 
 const AstRelation* getHeadRelation(const AstClause* clause, const AstProgram* program) {

@@ -1076,7 +1076,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 IOSystem::getInstance()
                         .getReader(symbolMask, getSymbolTable(), ioDirectives,
-                                Global::config().has("provenance"), relation. getNumAuxAttributes())
+                                Global::config().has("provenance"), relation.getNumAuxAttributes())
                         ->readAll(relation);
             } catch (std::exception& e) {
                 std::cerr << "Error loading data: " << e.what() << "\n";

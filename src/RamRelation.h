@@ -35,8 +35,8 @@ public:
             const std::vector<std::string> attributeNames, const std::vector<std::string> attributeTypes,
             const RelationRepresentation representation)
             : representation(representation), name(std::move(name)), arity(arity),
-              attributeNames(std::move(attributeNames)), attributeTypes(std::move(attributeTypes)),
-              numAuxAttributes(numAuxAttributes) {
+              numAuxAttributes(numAuxAttributes), attributeNames(std::move(attributeNames)),
+              attributeTypes(std::move(attributeTypes)) {
         assert(this->attributeNames.size() == arity && "arity mismatch for attributes");
         assert(this->attributeTypes.size() == arity && "arity mismatch for types");
         for (std::size_t i = 0; i < arity; i++) {
@@ -97,13 +97,13 @@ public:
             for (unsigned i = 1; i < arity; i++) {
                 out << ",";
                 out << attributeNames[i] << ":" << attributeTypes[i];
-                if (i >= arity - numAuxAttributes ) { 
-                   out << " auxiliary";  
-                } 
+                if (i >= arity - numAuxAttributes) {
+                    out << " auxiliary";
+                }
             }
             out << ")";
             out << " " << representation;
-            out << " " << numAuxAttributes; 
+            out << " " << numAuxAttributes;
         } else {
             out << " nullary";
         }
@@ -131,14 +131,14 @@ protected:
     /** Arity, i.e., number of attributes */
     const size_t arity;
 
+    /** Number of auxiliary attributes (e.g. provenance attributes etc) */
+    const size_t numAuxAttributes;
+
     /** Name of attributes */
     const std::vector<std::string> attributeNames;
 
     /** Type of attributes */
     const std::vector<std::string> attributeTypes;
-
-    /** Number of auxiliary attributes (e.g. provenance attributes etc) */
-    const size_t numAuxAttributes;
 };
 
 /**

@@ -37,7 +37,8 @@ namespace souffle {
 class ReadStreamCSV : public ReadStream {
 public:
     ReadStreamCSV(std::istream& file, const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0, const bool provenance = false)
+            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0,
+            const bool provenance = false)
             : ReadStream(symbolMask, symbolTable, provenance, numAuxAttributes),
               delimiter(getDelimiter(ioDirectives)), file(file), lineNumber(0),
               inputMap(getInputColumnMap(ioDirectives, arity)) {
@@ -154,7 +155,8 @@ protected:
 class ReadFileCSV : public ReadStreamCSV {
 public:
     ReadFileCSV(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0, const bool provenance = false)
+            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0,
+            const bool provenance = false)
             : ReadStreamCSV(fileHandle, symbolMask, symbolTable, ioDirectives, numAuxAttributes, provenance),
               baseName(souffle::baseName(getFileName(ioDirectives))),
               fileHandle(getFileName(ioDirectives), std::ios::in | std::ios::binary) {

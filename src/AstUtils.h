@@ -81,10 +81,10 @@ std::vector<const AstRecordInit*> getRecords(const AstNode* root);
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program);
 
 /**
- * Returns the number of height parameters of the relation referenced by the given atom.
+ * Returns the number of auxiliary parameters of a relation
  * @param atom the atom
  * @param program the program containing the relations
- * @return number of height parameters of the relation referenced by the atom
+ * @return number of auxiliary attributes in the atom
  */
 const size_t getNumAuxAttributes(const AstAtom* atom, const AstProgram* program);
 

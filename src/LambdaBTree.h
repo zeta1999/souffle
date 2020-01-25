@@ -492,30 +492,6 @@ public:
     }
 
     /**
-     * Inserts all elements of the given b-tree into this tree.
-     * This can be a more effective alternative to the ordered insertion
-     * of elements utilizing iterators.
-     */
-    void insertAll(const LambdaBTree& other) {
-        // shortcut for non-sense operation
-        if (this == &other) {
-            return;
-        }
-
-        // make sure bigger tree is inserted in smaller tree
-        if ((this->size() + 10000) < other.size()) {
-            // switch sides
-            LambdaBTree tmp = other;
-            tmp.insertAll(*this);
-            swap(tmp);
-            return;
-        }
-
-        // by default use the iterator based insertion
-        insert(other.begin(), other.end());
-    }
-
-    /**
      * Swaps the content of this tree with the given tree. This
      * is a much more efficient operation than creating a copy and
      * realizing the swap utilizing assignment operations.

@@ -212,12 +212,6 @@ public:
     void insert(const RamDomain* ramDomain) {
         data = true;
     }
-    template <typename T>
-    void insertAll(T& other) {
-        if (!other.empty()) {
-            insert();
-        }
-    }
     bool insert() {
         bool result = data;
         data = true;

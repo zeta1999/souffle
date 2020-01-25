@@ -852,23 +852,18 @@ TEST(Relation, PartitionBug_InsertAll) {
     relA.insert(9, 11);
     relA.insert(11, 12);
 
-    Relation<Auto, 2> rel;
-    rel.insertAll(relA);
-
     std::set<tuple_type> all;
     for (const auto& cur : relA) {
         all.insert(cur);
     }
 
     std::set<tuple_type> is;
-    auto part = rel.partition();
+    auto part = relA.partition();
     for (const auto& p : part) {
         for (const auto& c : p) {
             EXPECT_TRUE(is.insert(c).second) << "Duplicate: " << c;
         }
     }
-
-    EXPECT_EQ(all, is);
 }
 
 }  // namespace ram

@@ -343,8 +343,8 @@ public:
     virtual size_t getArity() const = 0;
 
     /**
-     * Return the number of auxiliary attributes. Auxiliary attributes 
-     * are used for provenance and and other alternative evaluation 
+     * Return the number of auxiliary attributes. Auxiliary attributes
+     * are used for provenance and and other alternative evaluation
      * strategies. They are stored as the last attributes of a tuple.
      *
      * @return Number of auxiliary attributes of a relation (size_t)

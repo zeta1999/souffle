@@ -1284,7 +1284,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // out << synthesiser.toIndex(ne.getSearchSignature());
             out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">{{";
-            for (size_t i = 0; i < provExists.getValues().size() - numAuxAttributes; i++) {
+            for (size_t i = 0; i < provExists.getValues().size() - numAuxAttributes + 1; i++) {
                 RamExpression* val = provExists.getValues()[i];
                 if (!isRamUndefValue(val)) {
                     visit(*val, out);
@@ -1294,29 +1294,29 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ",";
             }
             // extra 0 for provenance height annotations
-            for (size_t i = 0; i < numAuxAttributes-1; i++) {
+            for (size_t i = 0; i < numAuxAttributes - 2; i++) {
                 out << "0,";
             }
             out << "0";
 
             out << "}}," << ctxName << ");\n";
             out << "if (existenceCheck.empty()) return false; else return ((*existenceCheck.begin())["
-                << arity - numAuxAttributes << "] <= ";
+                << arity - numAuxAttributes + 1 << "] <= ";
 
-            visit(*(provExists.getValues()[arity - numAuxAttributes]), out);
+            visit(*(provExists.getValues()[arity - numAuxAttributes + 1]), out);
             out << ")";
-            if (numAuxAttributes > 1) {
+            if (numAuxAttributes > 2) {
                 out << " &&  !("
-                    << "(*existenceCheck.begin())[" << arity - numAuxAttributes << "] == ";
-                visit(*(provExists.getValues()[arity - numAuxAttributes]), out);
+                    << "(*existenceCheck.begin())[" << arity - numAuxAttributes + 1 << "] == ";
+                visit(*(provExists.getValues()[arity - numAuxAttributes + 1]), out);
 
                 // out << ")";}
                 out << " && (";
 
-                out << "(*existenceCheck.begin())[" << arity - numAuxAttributes + 1 << "] > ";
+                out << "(*existenceCheck.begin())[" << arity - numAuxAttributes << "] > ";
                 visit(*(provExists.getValues()[arity - numAuxAttributes]), out);
                 // out << "))";}
-                for (int i = arity - numAuxAttributes-1; i < (int)arity; i++) {
+                for (int i = arity - numAuxAttributes + 1; i < (int)arity; i++) {
                     out << " || (";
                     for (int j = arity - numAuxAttributes; j < i; j++) {
                         out << "(*existenceCheck.begin())[" << j << "] == ";
@@ -1808,7 +1808,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << type << ",";
             os << "Tuple<RamDomain," << arity << ">,";
             os << arity << ",";
-            os << numAuxAttributes;
+            os << numAuxAttributes - 1;
             os << "> wrapper_" << cppName << ";\n";
 
             // construct types

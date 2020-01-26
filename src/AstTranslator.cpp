@@ -1232,7 +1232,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
         // index of level argument in argument list
         size_t levelIndex = head->getArguments().size() - numAuxAttributes;
 
-        // add level constraints
+        // add level constraints`
         for (size_t i = 0; i < intermediateClause->getBodyLiterals().size(); i++) {
             auto lit = intermediateClause->getBodyLiteral(i);
             if (auto atom = dynamic_cast<AstAtom*>(lit)) {

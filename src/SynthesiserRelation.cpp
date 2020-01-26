@@ -126,17 +126,15 @@ void SynthesiserDirectRelation::computeIndices() {
 
                 // add provenance annotations to the index but in reverse order
                 // add height columns if not already contained
-                for (size_t i = getArity() - relation.getNumAuxAttributes() -1 ; i < getArity(); i++) {
+                for (size_t i = getArity() - relation.getNumAuxAttributes() - 1; i < getArity(); i++) {
                     if (curIndexElems.find(i) == curIndexElems.end()) {
                         ind.push_back(i);
                     }
                 }
 
                 // remove rule annotation if already in the index order
-                if (curIndexElems.find(getArity()- relation.getNumAuxAttributes()) !=
-                        curIndexElems.end()) {
-                    ind.erase(std::find(
-                            ind.begin(), ind.end(), getArity() - relation.getNumAuxAttributes()));
+                if (curIndexElems.find(getArity() - relation.getNumAuxAttributes()) != curIndexElems.end()) {
+                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - relation.getNumAuxAttributes()));
                 }
                 // add rule as last parameter
                 ind.push_back(getArity() - relation.getNumAuxAttributes());
@@ -146,14 +144,12 @@ void SynthesiserDirectRelation::computeIndices() {
                     ind.erase(std::find(ind.begin(), ind.end(), getArity() - relation.getNumAuxAttributes()));
                 }
 
-                if (curIndexElems.find(getArity() - relation.getNumAuxAttributes() ) !=
-                        curIndexElems.end()) {
-                    ind.erase(std::find(
-                            ind.begin(), ind.end(), getArity() - relation.getNumAuxAttributes()));
+                if (curIndexElems.find(getArity() - relation.getNumAuxAttributes()) != curIndexElems.end()) {
+                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - relation.getNumAuxAttributes()));
                 }
 
                 // add provenance annotations to the index, but in reverse order
-                ind.push_back(getArity() - relation.getNumAuxAttributes()-1);
+                ind.push_back(getArity() - relation.getNumAuxAttributes() - 1);
                 ind.push_back(getArity() - relation.getNumAuxAttributes());
                 masterIndex = 0;
             }

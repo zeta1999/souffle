@@ -1220,7 +1220,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
             if (auto atom = dynamic_cast<AstAtom*>(lit)) {
                 auto arity = atom->getArity();
                 auto numAuxAttributes = program->getRelation(atom->getName())->getNumAuxAttributes();
-                auto literalLevelIndex = arity - numAuxAttributes;
+                auto literalLevelIndex = arity - numAuxAttributes + 1;
 
                 intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
                         std::unique_ptr<AstArgument>(atom->getArgument(literalLevelIndex)->clone()),
@@ -1347,8 +1347,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             }
 
             // fill up query with nullptrs for the provenance columns
-            query.push_back(std::make_unique<RamUndefValue>());
-            for (size_t h = 0; h < numAuxAttributes; h++) {
+            for (size_t i = 0; i < numAuxAttributes; i++) {
                 query.push_back(std::make_unique<RamUndefValue>());
             }
 

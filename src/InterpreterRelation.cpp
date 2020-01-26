@@ -147,7 +147,7 @@ void InterpreterRelation::extend(const InterpreterRelation& rel) {}
 InterpreterEqRelation::InterpreterEqRelation(size_t arity, size_t numAuxAttributes, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
         : InterpreterRelation(arity, numAuxAttributes, name, attributeTypes, orderSet, createEqrelIndex) {
-    // EqivalenceRelation should have only index.
+    // EqivalenceRelation should have only one index.
     assert(this->indexes.size() == 1);
 }
 

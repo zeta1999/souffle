@@ -191,10 +191,8 @@ public:
                     }
                 }
                 return maxNrOfPremises + 2;
-            } else {
-                // accounts for rule number and proof height
-                return 2;
             }
+            return 2;
         } else {
             return 0;
         }

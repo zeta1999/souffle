@@ -153,7 +153,7 @@ public:
                 // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
                 // annotations
                 arity = 4;
-                numAuxAttributes = 1;
+                numAuxAttributes = 2;
             } else {
                 arity = prog.getRelation(bodyRelAtomName)->getArity();
                 numAuxAttributes = prog.getRelation(bodyRelAtomName)->getNumAuxAttributes();
@@ -164,7 +164,7 @@ public:
             std::vector<RamDomain> subproofTuple;
             std::vector<bool> subproofTupleError;
 
-            for (; tupleCurInd < tupleEnd - 1 - numAuxAttributes; tupleCurInd++) {
+            for (; tupleCurInd < tupleEnd - numAuxAttributes; tupleCurInd++) {
                 subproofTuple.push_back(ret[tupleCurInd]);
                 subproofTupleError.push_back(err[tupleCurInd]);
             }
@@ -244,18 +244,18 @@ public:
         auto rel = prog.getRelation(relName);
 
         RamDomain ruleNum;
-        ruleNum = tup[rel->getArity() - rel->getNumAuxAttributes() - 1];
+        ruleNum = tup[rel->getArity() - rel->getNumAuxAttributes()];
 
         RamDomain levelNum;
-        levelNum = tup[rel->getArity() - rel->getNumAuxAttributes()];
+        levelNum = tup[rel->getArity() - rel->getNumAuxAttributes() + 1];
 
         std::vector<RamDomain> subtreeLevels;
 
-        for (size_t i = rel->getArity() - rel->getNumAuxAttributes() + 1; i < rel->getArity(); i++) {
+        for (size_t i = rel->getArity() - rel->getNumAuxAttributes() + 2; i < rel->getArity(); i++) {
             subtreeLevels.push_back(tup[i]);
         }
 
-        tup.erase(tup.begin() + rel->getArity() - rel->getNumAuxAttributes() - 1, tup.end());
+        tup.erase(tup.begin() + rel->getArity() - rel->getNumAuxAttributes(), tup.end());
 
         return explain(relName, tup, ruleNum, levelNum, subtreeLevels, depthLimit);
     }
@@ -435,7 +435,7 @@ public:
                 // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
                 // annotations
                 arity = 4;
-                numAuxAttributes = 1;
+                numAuxAttributes = 2;
             } else {
                 arity = prog.getRelation(bodyRelAtomName)->getArity();
                 numAuxAttributes = prog.getRelation(bodyRelAtomName)->getNumAuxAttributes();
@@ -446,7 +446,7 @@ public:
             std::vector<bool> atomErrs;
             size_t j = returnCounter;
 
-            for (; j < returnCounter + arity - 1 - numAuxAttributes; j++) {
+            for (; j < returnCounter + arity - numAuxAttributes; j++) {
                 atomValues.push_back(ret[j]);
                 atomErrs.push_back(err[j]);
             }
@@ -536,7 +536,7 @@ public:
             }
 
             std::vector<RamDomain> currentTuple;
-            for (size_t i = 0; i < rel->getArity() - 1 - rel->getNumAuxAttributes(); i++) {
+            for (size_t i = 0; i < rel->getArity() - rel->getNumAuxAttributes(); i++) {
                 RamDomain n;
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
@@ -557,7 +557,7 @@ public:
 
             std::vector<RamDomain> subtreeLevels;
 
-            for (size_t i = rel->getArity() - rel->getNumAuxAttributes() + 1; i < rel->getArity(); i++) {
+            for (size_t i = rel->getArity() - rel->getNumAuxAttributes() + 2; i < rel->getArity(); i++) {
                 RamDomain subLevel;
                 tuple >> subLevel;
                 subtreeLevels.push_back(subLevel);
@@ -630,9 +630,9 @@ public:
                 return;
             }
             // arity error
-            if (relation->getArity() - 1 - relation->getNumAuxAttributes() != rel.second.size()) {
+            if (relation->getArity() - relation->getNumAuxAttributes() != rel.second.size()) {
                 std::cout << "<" + rel.first << "> has arity of "
-                          << std::to_string(relation->getArity() - 1 - relation->getNumAuxAttributes())
+                          << std::to_string(relation->getArity() - relation->getNumAuxAttributes())
                           << std::endl;
                 return;
             }
@@ -689,7 +689,7 @@ public:
                 // if relation contains this tuple, remove all related constraints
                 if (tupleExist) {
                     constConstraints.getConstraints().erase(constConstraints.getConstraints().end() -
-                                                                    relation->getArity() + 1 +
+                                                                    relation->getArity() +
                                                                     relation->getNumAuxAttributes(),
                             constConstraints.getConstraints().end());
                     // otherwise, there is no solution for given query
@@ -739,7 +739,7 @@ private:
             bool match = true;
             std::vector<RamDomain> currentTuple;
 
-            for (size_t i = 0; i < rel->getArity() - 1 - rel->getNumAuxAttributes(); i++) {
+            for (size_t i = 0; i < rel->getArity() - rel->getNumAuxAttributes(); i++) {
                 RamDomain n;
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
@@ -766,7 +766,7 @@ private:
 
                 std::vector<RamDomain> subtreeLevels;
 
-                for (size_t i = rel->getArity() - rel->getNumAuxAttributes() + 1; i < rel->getArity(); i++) {
+                for (size_t i = rel->getArity() - rel->getNumAuxAttributes() + 2; i < rel->getArity(); i++) {
                     RamDomain subLevel;
                     tuple >> subLevel;
                     subtreeLevels.push_back(subLevel);

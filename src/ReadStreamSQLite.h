@@ -58,7 +58,7 @@ protected:
         }
 
         std::unique_ptr<RamDomain[]> tuple =
-                std::make_unique<RamDomain[]>(arity + (isProvenance ? (numAuxAttributes + 1) : 0));
+                std::make_unique<RamDomain[]>(arity + numAuxAttributes);
 
         uint32_t column;
         for (column = 0; column < arity; column++) {

@@ -1294,7 +1294,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ",";
             }
             // extra 0 for provenance height annotations
-            for (size_t i = 0; i < numAuxAttributes - 1; i++) {
+            for (size_t i = 0; i < numAuxAttributes-1; i++) {
                 out << "0,";
             }
             out << "0";
@@ -1314,11 +1314,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << " && (";
 
                 out << "(*existenceCheck.begin())[" << arity - numAuxAttributes + 1 << "] > ";
-                visit(*(provExists.getValues()[arity - numAuxAttributes + 1]), out);
+                visit(*(provExists.getValues()[arity - numAuxAttributes]), out);
                 // out << "))";}
-                for (int i = arity - numAuxAttributes + 2; i < (int)arity; i++) {
+                for (int i = arity - numAuxAttributes-1; i < (int)arity; i++) {
                     out << " || (";
-                    for (int j = arity - numAuxAttributes + 1; j < i; j++) {
+                    for (int j = arity - numAuxAttributes; j < i; j++) {
                         out << "(*existenceCheck.begin())[" << j << "] == ";
                         visit(*(provExists.getValues()[j]), out);
                         out << " && ";

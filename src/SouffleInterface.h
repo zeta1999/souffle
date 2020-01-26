@@ -342,6 +342,13 @@ public:
      */
     virtual size_t getArity() const = 0;
 
+    /**
+     * Get the number of auxiliary attributes. Auxiliary attributes 
+     * are used for provenance and other alternative evaluation 
+     * strategies. 
+     *
+     * @return Arity of a relation (size_t)
+     */
     virtual size_t getNumAuxAttributes() const = 0;
 
     /**

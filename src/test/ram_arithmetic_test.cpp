@@ -406,22 +406,20 @@ TEST(Binary, UnsignedExp) {
     }
 }
 
-// This can produce NaN, which can't be compared - investigate a better way.
-// TEST(Binary, FloatExp) {
-//     FunctorOp functor = FunctorOp::FEXP;
+TEST(Binary, FloatExp) {
+    FunctorOp functor = FunctorOp::FEXP;
 
-// auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
-// auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
-//     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
-//         auto arg1 = vecArg1[i];
-//         auto arg2 = vecArg2[i];
-//         std::feclearexcept(FE_ALL_EXCEPT);
-//         errno = 0;
-//         RamDomain result = evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2));
-//         EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(std::pow(arg1, arg2)));
-//     }
-// }
+    for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
+        auto arg1 = vecArg1[i];
+        auto arg2 = vecArg2[i];
+        RamFloat result = ramBitCast<RamFloat>(evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2)));
+        RamFloat expected = static_cast<RamFloat>(std::pow(arg1, arg2));
+        EXPECT_TRUE((std::isnan(result) && std::isnan(expected)) || result == expected);
+    }
+}
 
 TEST(Binary, SignedMod) {
     FunctorOp functor = FunctorOp::MOD;

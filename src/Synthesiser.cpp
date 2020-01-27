@@ -1803,7 +1803,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << type << ",";
             os << "Tuple<RamDomain," << arity << ">,";
             os << arity << ",";
-            os << numAuxAttributes - 1;
+            os << numAuxAttributes ;
             os << "> wrapper_" << cppName << ";\n";
 
             // construct types

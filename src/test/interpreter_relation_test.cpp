@@ -111,7 +111,7 @@ TEST(Independence, Iteration) {
     EXPECT_EQ(1, (*it)[0]);
 
     // Test that a new iterator is also valid
-    Relation::iterator it3 = std::move(relInt.begin());
+    Relation::iterator it3 = relInt.begin();
     EXPECT_EQ(1, (*it3)[0]);
 }
 

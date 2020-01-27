@@ -275,19 +275,17 @@ protected:
 };
 
 /**
- * @class RamMerge
- * @brief Merge tuples from a source into target relation.
- *
- * Note that semantically uniqueness of tuples is not checked.
+ * @class RamExtend
+ * @brief Extend equivalence relation.
  *
  * The following example merges A into B:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * MERGE B WITH A
+ * EXTEND B WITH A
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamMerge : public RamBinRelationStatement {
+class RamExtend : public RamBinRelationStatement {
 public:
-    RamMerge(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
+    RamExtend(std::unique_ptr<RamRelationReference> tRef, std::unique_ptr<RamRelationReference> sRef)
             : RamBinRelationStatement(std::move(sRef), std::move(tRef)) {}
 
     /** @brief Get source relation */
@@ -302,13 +300,13 @@ public:
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
-        os << "MERGE " << getTargetRelation().getName() << " WITH " << getSourceRelation().getName();
+        os << "EXTEND " << getTargetRelation().getName() << " WITH " << getSourceRelation().getName();
         os << std::endl;
     }
 
-    RamMerge* clone() const override {
-        auto* res = new RamMerge(std::unique_ptr<RamRelationReference>(first->clone()),
-                std::unique_ptr<RamRelationReference>(second->clone()));
+    RamExtend* clone() const override {
+        auto* res = new RamExtend(std::unique_ptr<RamRelationReference>(second->clone()),
+                std::unique_ptr<RamRelationReference>(first->clone()));
         return res;
     }
 
@@ -837,8 +835,8 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamLogTimer*>(&node));
-        const auto& other = static_cast<const RamLogTimer&>(node);
+        assert(nullptr != dynamic_cast<const RamDebugInfo*>(&node));
+        const auto& other = static_cast<const RamDebugInfo&>(node);
         return RamAbstractLog::equal(other);
     }
 };

@@ -375,6 +375,26 @@ test_ram_condition_equal_clone_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_t
 test_ram_condition_equal_clone_test_SOURCES = test/ram_condition_equal_clone_test.cpp
 test_ram_condition_equal_clone_test_LDADD = libsouffle.la
 
+check_PROGRAMS += test/ram_statement_equal_clone_test
+test_ram_statement_equal_clone_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_ram_statement_equal_clone_test_SOURCES = test/ram_statement_equal_clone_test.cpp
+test_ram_statement_equal_clone_test_LDADD = libsouffle.la
+
+check_PROGRAMS += test/ram_expression_equal_clone_test
+test_ram_expression_equal_clone_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_ram_expression_equal_clone_test_SOURCES = test/ram_expression_equal_clone_test.cpp
+test_ram_expression_equal_clone_test_LDADD = libsouffle.la
+
+check_PROGRAMS += test/ram_operation_equal_clone_test
+test_ram_operation_equal_clone_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_ram_operation_equal_clone_test_SOURCES = test/ram_operation_equal_clone_test.cpp
+test_ram_operation_equal_clone_test_LDADD = libsouffle.la
+
+check_PROGRAMS += test/ram_relation_equal_clone_test
+test_ram_relation_equal_clone_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_ram_relation_equal_clone_test_SOURCES = test/ram_relation_equal_clone_test.cpp
+test_ram_relation_equal_clone_test_LDADD = libsouffle.la
+
 # relation test
 check_PROGRAMS += test/ram_relation_test
 test_ram_relation_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'

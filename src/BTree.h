@@ -1692,30 +1692,6 @@ public:
         }
     }
 
-    /**
-     * Inserts all elements of the given b-tree into this tree.
-     * This can be a more effective alternative to the ordered insertion
-     * of elements utilizing iterators.
-     */
-    void insertAll(const btree& other) {
-        // shortcut for non-sense operation
-        if (this == &other) {
-            return;
-        }
-
-        // make sure bigger tree is inserted in smaller tree
-        if ((size() + 10000) < other.size()) {
-            // switch sides
-            btree tmp = other;
-            tmp.insertAll(*this);
-            swap(tmp);
-            return;
-        }
-
-        // by default use the iterator based insertion
-        insert(other.begin(), other.end());
-    }
-
     // Obtains an iterator referencing the first element of the tree.
     iterator begin() const {
         return iterator(leftmost, 0);

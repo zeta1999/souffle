@@ -147,11 +147,11 @@ void SynthesiserDirectRelation::computeIndices() {
                 }
 
                 if (curIndexElems.find(getArity() - relation.getNumAuxAttributes()) != curIndexElems.end()) {
-                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - relation.getNumAuxAttributes()));
+                    ind.erase(std::find(ind.begin(), ind.end(), getArity() - relation.getNumAuxAttributes() ));
                 }
 
                 // add provenance annotations to the index, but in reverse order
-                ind.push_back(getArity() - relation.getNumAuxAttributes() - 1);
+                ind.push_back(getArity() - relation.getNumAuxAttributes() + 1);
                 ind.push_back(getArity() - relation.getNumAuxAttributes());
                 masterIndex = 0;
             }

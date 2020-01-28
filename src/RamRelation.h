@@ -75,17 +75,17 @@ public:
         return name.at(0) == '@';
     }
 
-    /* @brief Get arity of relation */
+    /** @brief Get arity of relation */
     unsigned getArity() const {
         return arity;
     }
 
-    /* @brief Get number of auxiliary attributes */
+    /** @brief Get number of auxiliary attributes */
     unsigned getNumAuxAttributes() const {
         return numAuxAttributes;
     }
 
-    /* @brief Compare two relations via their name */
+    /** @brief Compare two relations via their name */
     bool operator<(const RamRelation& other) const {
         return name < other.name;
     }
@@ -103,7 +103,6 @@ public:
             }
             out << ")";
             out << " " << representation;
-            out << " " << numAuxAttributes;
         } else {
             out << " nullary";
         }

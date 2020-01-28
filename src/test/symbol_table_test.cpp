@@ -121,9 +121,9 @@ TEST(SymbolTable, Inserts) {
     end = now();
     n = duration_in_ns(start, end);  // record the time
 
-    if (ECHO_TIME)
-        std::cout << "Time to insert single element: " << n / N << " ns"
-                  << std::endl;  // average the times for the single elements
+    if (ECHO_TIME) {
+        std::cout << "Time to insert " << N << " new elements:      " << n << " ns" << std::endl;
+    }
 
     // try inserting all the elements that were just inserted
     start = now();
@@ -131,19 +131,9 @@ TEST(SymbolTable, Inserts) {
     end = now();
     n = duration_in_ns(start, end);
 
-    if (ECHO_TIME) std::cout << "Time to insert " << N << " existing elements: " << n << " ns" << std::endl;
-
-    A.clear();
-
-    SymbolTable Y;
-
-    // test insert for elements that don't exist yet
-    start = now();
-    Y.insert(A);
-    end = now();
-    n = duration_in_ns(start, end);
-
-    if (ECHO_TIME) std::cout << "Time to insert " << N << " new elements: " << n << " ns" << std::endl;
+    if (ECHO_TIME) {
+        std::cout << "Time to insert " << N << " existing elements: " << n << " ns" << std::endl;
+    }
 }
 
 }  // end namespace test

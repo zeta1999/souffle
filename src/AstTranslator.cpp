@@ -371,14 +371,19 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             for (int i = 0; i < arity; i++) {
                 values.push_back(translator.translateValue(atom->getArgument(i), index));
             }
-            for (int i = 0; i < numAuxAttributes; i++) {
+            // we don't care about the provenance columns when doing the existence check
+            if (Global::config().has("provenance")) {
+                // undefined value for rule number
                 values.push_back(std::make_unique<RamUndefValue>());
+                // add the height annotation for provenanceNotExists
+                for (int h = 0; h < numAuxAttributes - 1; h++) {
+                    values.push_back(translator.translateValue(atom->getArgument(arity + h + 1), index));
+                }
             }
             return std::make_unique<RamNegation>(std::make_unique<RamProvenanceExistenceCheck>(
                     translator.translateRelation(atom), std::move(values)));
         }
     };
-
     return ConstraintTranslator(*this, index)(*lit);
 }
 

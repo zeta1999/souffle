@@ -147,7 +147,7 @@ public:
         return Arity;
     }
     size_t getNumAuxAttributes() const override {
-        return numAuxAttributes;
+        return NumAuxAttributes;
     }
     SymbolTable& getSymbolTable() const override {
         return symTable;

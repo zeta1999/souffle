@@ -1308,12 +1308,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // out << ")";}
                 out << " && (";
 
-                out << "(*existenceCheck.begin())[" << arity - numAuxAttributes << "] > ";
-                visit(*(provExists.getValues()[arity - numAuxAttributes]), out);
+                out << "(*existenceCheck.begin())[" << arity - numAuxAttributes + 2 << "] > ";
+                visit(*(provExists.getValues()[arity - numAuxAttributes + 2]), out);
                 // out << "))";}
-                for (int i = arity - numAuxAttributes + 1; i < (int)arity; i++) {
+                for (int i = arity - numAuxAttributes + 3; i < (int)arity; i++) {
                     out << " || (";
-                    for (int j = arity - numAuxAttributes; j < i; j++) {
+                    for (int j = arity - numAuxAttributes + 2; j < i; j++) {
                         out << "(*existenceCheck.begin())[" << j << "] == ";
                         visit(*(provExists.getValues()[j]), out);
                         out << " && ";

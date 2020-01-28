@@ -606,11 +606,6 @@ public:
         return index.insert(key, hints);
     }
 
-    void insertAll(const DirectIndex& other) {
-        // use index's insert-all
-        index.insertAll(other.index);
-    }
-
     bool contains(const key_type& key, operation_hints& hints) const {
         return index.contains(key, hints);
     }
@@ -711,11 +706,6 @@ public:
     bool insert(const key_type& key, operation_hints& hints) {
         // insert the element (insert is synchronized internally)
         return index.insert(&key, hints);
-    }
-
-    void insertAll(const IndirectIndex& other) {
-        // use index's insert-all
-        index.insertAll(other.index);
     }
 
     bool contains(const key_type& key, operation_hints& hints) const {
@@ -872,11 +862,6 @@ public:
     bool insert(const tuple_type& tuple, operation_hints& ctxt) {
         // the Trie-insert is synchronized internally
         return data.insert(orderIn(tuple), ctxt);
-    }
-
-    void insertAll(const TrieIndex& other) {
-        // use trie merge
-        data.insertAll(other.data);
     }
 
     void clear() {
@@ -1044,14 +1029,6 @@ public:
      */
     bool insert(const tuple_type& tuple, operation_hints& ctxt) {
         return data.insert(tuple[0], tuple[1], ctxt);
-    }
-
-    /**
-     * Inserts all pairs from the other disjoint set into this one
-     * @param other the supplied disjoint set to copy pairs from
-     */
-    void insertAll(const DisjointSetIndex& other) {
-        data.insertAll(other.data);
     }
 
     /** perform a delta extension, where we union the sets that share elements between this and other.
@@ -1299,11 +1276,6 @@ public:
         nested.insert(tuple, c.nested);
     }
 
-    void insertAll(const Indices& other) {
-        index.insertAll(other.index);
-        nested.insertAll(other.nested);
-    }
-
     bool contains(const T& tuple, const First&, operation_context& c) const {
         return index.contains(tuple, c.ctxt);
     }
@@ -1414,8 +1386,6 @@ public:
     };
 
     void insert(const T&, operation_context&) {}
-
-    void insertAll(const Indices&) {}
 
     template <typename Index>
     bool contains(const T&, const Index&, operation_context&) const {

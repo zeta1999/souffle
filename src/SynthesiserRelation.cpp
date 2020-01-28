@@ -305,22 +305,6 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "return insert(data);\n";
     out << "}\n";  // end of insert(RamDomain x1, RamDomain x2, ...)
 
-    // insertAll methods
-    out << "template <typename T>\n";
-    out << "void insertAll(T& other) {\n";
-    out << "for (auto const& cur : other) {\n";
-    out << "insert(cur);\n";
-    out << "}\n";
-    out << "}\n";  // end of insertAll<T>
-
-    out << "void insertAll(" << getTypeName() << "& other) {\n";
-    for (size_t i = 0; i < numIndexes; i++) {
-        if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end()) {
-            out << "ind_" << i << ".insertAll(other.ind_" << i << ");\n";
-        }
-    }
-    out << "}\n";  // end of insertAll(relationType& other)
-
     // contains methods
     out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".contains(t, h.hints_" << masterIndex << ");\n";
@@ -619,15 +603,6 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "return insert(data);\n";
     out << "}\n";  // end of insert(RamDomain x1, RamDomain x2, ...)
 
-    // insertAll method
-    // do not use the specialized insertAll as it will copy references rather than tuples
-    out << "template <typename T>\n";
-    out << "void insertAll(T& other) {\n";
-    out << "for (auto const& cur : other) {\n";
-    out << "insert(cur);\n";
-    out << "}\n";
-    out << "}\n";
-
     // contains methods
     out << "bool contains(const t_tuple& t, context& h) const {\n";
     out << "return ind_" << masterIndex << ".contains(&t, h.hints_" << masterIndex << ");\n";
@@ -907,21 +882,6 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     out << "return insert(tuple, h);\n";
     out << "}\n";
 
-    // insertAll method
-    out << "template <typename T>\n";
-    out << "void insertAll(T& other) {\n";
-    out << "for (auto const& cur : other) {\n";
-    out << "insert(cur);\n";
-    out << "}\n";
-    out << "}\n";
-
-    // insertAll using the index method
-    out << "void insertAll(" << getTypeName() << "& other) {\n";
-    for (size_t i = 0; i < numIndexes; i++) {
-        out << "ind_" << i << ".insertAll(other.ind_" << i << ");\n";
-    }
-    out << "}\n";
-
     // insert method
     std::vector<std::string> decls, params;
     for (size_t i = 0; i < arity; i++) {
@@ -1171,19 +1131,6 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     //      i.e. if a in this, and a in other, union(set(this->a), set(other->a))
     out << "void extend(const " << getTypeName() << "& other) {\n";
     out << "ind_" << masterIndex << ".extend(other.ind_" << masterIndex << ");\n";
-    out << "}\n";
-
-    // insertAll method
-    out << "template <typename T>\n";
-    out << "void insertAll(T& other) {\n";
-    out << "for (auto const& cur : other) {\n";
-    out << "insert(cur);\n";
-    out << "}\n";
-    out << "}\n";
-
-    // insertAll using the index method
-    out << "void insertAll(" << getTypeName() << "& other) {\n";
-    out << "ind_" << masterIndex << ".insertAll(other.ind_" << masterIndex << ");\n";
     out << "}\n";
 
     // contains methods

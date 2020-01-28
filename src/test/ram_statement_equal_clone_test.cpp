@@ -66,16 +66,16 @@ TEST(RamClear, CloneAndEquals) {
     delete c;
 }
 
-TEST(RamMerge, CloneAndEquals) {
+TEST(RamExtend, CloneAndEquals) {
     // MERGE B WITH A
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     RamRelation B("B", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
-    RamMerge a(std::make_unique<RamRelationReference>(&B), std::make_unique<RamRelationReference>(&A));
-    RamMerge b(std::make_unique<RamRelationReference>(&B), std::make_unique<RamRelationReference>(&A));
+    RamExtend a(std::make_unique<RamRelationReference>(&B), std::make_unique<RamRelationReference>(&A));
+    RamExtend b(std::make_unique<RamRelationReference>(&B), std::make_unique<RamRelationReference>(&A));
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamMerge* c = a.clone();
+    RamExtend* c = a.clone();
     EXPECT_EQ(a, *c);
     EXPECT_NE(&a, c);
     delete c;

@@ -326,15 +326,6 @@ TEST(BTreeSet, Merge) {
     test_set d = b;
 
     EXPECT_NE(c, d);
-
-    c.insertAll(b);
-    d.insertAll(a);
-
-    EXPECT_EQ(5, c.size());
-    EXPECT_EQ(c, d);
-
-    c.insertAll(a);
-    EXPECT_EQ(c, d);
 }
 
 TEST(BTreeSet, IteratorEmpty) {

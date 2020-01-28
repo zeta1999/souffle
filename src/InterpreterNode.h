@@ -74,7 +74,7 @@ enum InterpreterNodeType {
     I_Load,
     I_Store,
     I_Query,
-    I_Merge,
+    I_Extend,
     I_Swap,
 };
 

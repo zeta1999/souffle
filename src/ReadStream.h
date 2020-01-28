@@ -26,9 +26,8 @@ namespace souffle {
 
 class ReadStream {
 public:
-    ReadStream(const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const bool prov,
-            const size_t numAuxAttributes)
-            : symbolMask(symbolMask), symbolTable(symbolTable), isProvenance(prov),
+    ReadStream(const std::vector<bool>& symbolMask, SymbolTable& symbolTable, const size_t numAuxAttributes)
+            : symbolMask(symbolMask), symbolTable(symbolTable),
               arity(static_cast<uint8_t>(symbolMask.size() - numAuxAttributes)),
               numAuxAttributes(numAuxAttributes) {}
     template <typename T>
@@ -47,7 +46,6 @@ protected:
     virtual std::unique_ptr<RamDomain[]> readNextTuple() = 0;
     const std::vector<bool>& symbolMask;
     SymbolTable& symbolTable;
-    const bool isProvenance;
     const uint8_t arity;
     const size_t numAuxAttributes;
 };
@@ -55,8 +53,7 @@ protected:
 class ReadStreamFactory {
 public:
     virtual std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives, const bool provenance,
-            const size_t number) = 0;
+            SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t number) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~ReadStreamFactory() = default;
 };

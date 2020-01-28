@@ -220,7 +220,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IOSystem::getInstance().getReader(";
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
-                out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ", " << load.getRelation().getNumAuxAttributes();
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
                 out << ");\n";
@@ -249,7 +248,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IOSystem::getInstance().getWriter(";
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
-                out << ", " << (Global::config().has("provenance") ? "true" : "false");
                 out << ", " << store.getRelation().getNumAuxAttributes();
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2028,8 +2026,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
                 os << "std::vector<bool>({" << join(symbolMask) << "})";
-                os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
-                os << ", " << store->getRelation().getNumAuxAttributes();
+                os << ", symTable, ioDirectives, " << store->getRelation().getNumAuxAttributes();
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
                 os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2074,7 +2071,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "IOSystem::getInstance().getReader(";
             os << "std::vector<bool>({" << join(symbolMask) << "})";
             os << ", symTable, ioDirectives";
-            os << ", " << (Global::config().has("provenance") ? "true" : "false");
             os << ", " << load.getRelation().getNumAuxAttributes();
             os << ")->readAll(*" << getRelationName(load.getRelation());
             os << ");\n";
@@ -2102,8 +2098,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "std::vector<bool>({" << join(symbolMask) << "})";
-        os << ", symTable, ioDirectives, " << (Global::config().has("provenance") ? "true" : "false");
-        os << ", " << numAuxAttributes;
+        os << ", symTable, ioDirectives, " << numAuxAttributes;
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
     };

@@ -783,7 +783,7 @@ private:
     void printRelationOutput(
             const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) override {
         WriteCoutCSVFactory()
-                .getWriter(symMask, prog.getSymbolTable(), ioDir, true, rel.getNumAuxAttributes())
+                .getWriter(symMask, prog.getSymbolTable(), ioDir, rel.getNumAuxAttributes())
                 ->writeAll(rel);
     }
 

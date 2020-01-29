@@ -193,8 +193,7 @@ public:
             const size_t auxiliaryArity) override {
 #ifdef USE_LIBZ
         if (ioDirectives.has("compress")) {
-            return std::make_unique<WriteGZipFileCSV>(
-                    symbolMask, symbolTable, ioDirectives, auxiliaryArity);
+            return std::make_unique<WriteGZipFileCSV>(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
         }
 #endif
         return std::make_unique<WriteFileCSV>(symbolMask, symbolTable, ioDirectives, auxiliaryArity);

@@ -321,8 +321,8 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         // max level
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         // level number
-                        for (size_t i = 0;
-                                i < program->getRelation(atom->getName())->getAuxiliaryArity() - 2; i++) {
+                        for (size_t i = 0; i < program->getRelation(atom->getName())->getAuxiliaryArity() - 2;
+                                i++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
                     } else if (auto neg = dynamic_cast<AstNegation*>(node.get())) {
@@ -332,8 +332,8 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         // max level
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         // level number
-                        for (size_t i = 0;
-                                i < program->getRelation(atom->getName())->getAuxiliaryArity() - 2; i++) {
+                        for (size_t i = 0; i < program->getRelation(atom->getName())->getAuxiliaryArity() - 2;
+                                i++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
                     }
@@ -369,8 +369,8 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         atom->addArgument(
                                 std::make_unique<AstVariable>("@level_number_" + std::to_string(i)));
                         // level nums
-                        for (size_t j = 0;
-                                j < program->getRelation(atom->getName())->getAuxiliaryArity() - 2; j++) {
+                        for (size_t j = 0; j < program->getRelation(atom->getName())->getAuxiliaryArity() - 2;
+                                j++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
                         bodyLevels.push_back(new AstVariable("@level_number_" + std::to_string(i)));

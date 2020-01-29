@@ -29,8 +29,7 @@ namespace souffle {
 class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
-            const size_t auxiliaryArity)
+            const std::vector<bool>& symbolMask, const SymbolTable& symbolTable, const size_t auxiliaryArity)
             : WriteStream(symbolMask, symbolTable, auxiliaryArity), dbFilename(dbFilename),
               relationName(relationName) {
         openDB();

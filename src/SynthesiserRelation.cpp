@@ -142,8 +142,8 @@ void SynthesiserDirectRelation::computeIndices() {
                 // remove any provenance annotations already in the index order
                 if (curIndexElems.find(getArity() - relation.getAuxiliaryArity() + 1) !=
                         curIndexElems.end()) {
-                    ind.erase(std::find(
-                            ind.begin(), ind.end(), getArity() - relation.getAuxiliaryArity() + 1));
+                    ind.erase(
+                            std::find(ind.begin(), ind.end(), getArity() - relation.getAuxiliaryArity() + 1));
                 }
 
                 if (curIndexElems.find(getArity() - relation.getAuxiliaryArity()) != curIndexElems.end()) {

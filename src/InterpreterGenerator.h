@@ -645,8 +645,8 @@ private:
             relations.resize(idx + 1);
         }
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = std::make_unique<InterpreterEqRelation>(id.getArity(), id.getAuxiliaryArity(),
-                    id.getName(), std::vector<std::string>(), orderSet);
+            res = std::make_unique<InterpreterEqRelation>(id.getArity(), id.getAuxiliaryArity(), id.getName(),
+                    std::vector<std::string>(), orderSet);
         } else {
             if (isProvenance) {
                 res = std::make_unique<InterpreterRelation>(id.getArity(), id.getAuxiliaryArity(),

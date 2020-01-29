@@ -345,13 +345,13 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         /** for negations */
         std::unique_ptr<RamCondition> visitNegation(const AstNegation& neg) override {
             const auto* atom = neg.getAtom();
-            int auxiliaryArity = getAuxiliaryArity(atom, translator.program);
-            int arity = atom->getArity() - auxiliaryArity;
+            size_t auxiliaryArity = getAuxiliaryArity(atom, translator.program);
+            size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
-            for (int i = 0; i < arity; i++) {
+            for (size_t i = 0; i < arity; i++) {
                 values.push_back(translator.translateValue(atom->getArgument(i), index));
             }
-            for (int i = 0; i < auxiliaryArity; i++) {
+            for (size_t i = 0; i < auxiliaryArity; i++) {
                 values.push_back(std::make_unique<RamUndefValue>());
             }
             if (arity > 0) {

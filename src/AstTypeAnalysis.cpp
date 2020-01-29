@@ -416,6 +416,12 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             addConstraint(isSubtypeOf(getVar(cnst), env.getNumberType()));
         }
 
+        // number
+        void visitFloatConstant(const AstFloatConstant& cnst) override {
+            // this type has to be a sub-type of number
+            addConstraint(isSubtypeOf(getVar(cnst), env.getFloatType()));
+        }
+
         // binary constraint
         void visitBinaryConstraint(const AstBinaryConstraint& rel) override {
             auto lhs = getVar(rel.getLHS());

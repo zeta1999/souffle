@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "RamPrimitiveTypes.h"
+
 #include <cassert>
 #include <iostream>
 
@@ -246,6 +248,70 @@ inline std::string getSymbolForFunctorOp(const FunctorOp op) {
 
     assert(false && "unsupported operator");
     return "?";
+}
+
+inline RamPrimitiveType functorReturnType(const FunctorOp op) {
+    switch (op) {
+        case FunctorOp::ORD:
+        case FunctorOp::STRLEN:
+        case FunctorOp::NEG:
+        case FunctorOp::BNOT:
+        case FunctorOp::LNOT:
+        case FunctorOp::TONUMBER:
+        case FunctorOp::ADD:
+        case FunctorOp::SUB:
+        case FunctorOp::MUL:
+        case FunctorOp::DIV:
+        case FunctorOp::EXP:
+        case FunctorOp::BAND:
+        case FunctorOp::BOR:
+        case FunctorOp::BXOR:
+        case FunctorOp::LAND:
+        case FunctorOp::LOR:
+        case FunctorOp::MOD:
+        case FunctorOp::MAX:
+        case FunctorOp::MIN:
+        case FunctorOp::FTOI:
+        case FunctorOp::UTOI:
+            return RamPrimitiveType::Signed;
+        case FunctorOp::UBNOT:
+        case FunctorOp::ITOU:
+        case FunctorOp::FTOU:
+        case FunctorOp::ULNOT:
+        case FunctorOp::UADD:
+        case FunctorOp::USUB:
+        case FunctorOp::UMUL:
+        case FunctorOp::UDIV:
+        case FunctorOp::UEXP:
+        case FunctorOp::UMAX:
+        case FunctorOp::UMIN:
+        case FunctorOp::UMOD:
+        case FunctorOp::UBAND:
+        case FunctorOp::UBOR:
+        case FunctorOp::UBXOR:
+        case FunctorOp::ULAND:
+        case FunctorOp::ULOR:
+            return RamPrimitiveType::Unsigned;
+        case FunctorOp::FMAX:
+        case FunctorOp::FMIN:
+        case FunctorOp::FNEG:
+        case FunctorOp::FADD:
+        case FunctorOp::FSUB:
+        case FunctorOp::ITOF:
+        case FunctorOp::UTOF:
+        case FunctorOp::FMUL:
+        case FunctorOp::FDIV:
+        case FunctorOp::FEXP:
+            return RamPrimitiveType::Float;
+        case FunctorOp::TOSTRING:
+        case FunctorOp::CAT:
+        case FunctorOp::SUBSTR:
+            return RamPrimitiveType::String;
+        case FunctorOp::__UNDEFINED__:
+            assert(false && "Bad functor return type query");
+            exit(EXIT_FAILURE);
+            return RamPrimitiveType::Record; // Silence warning.
+    }
 }
 
 /**

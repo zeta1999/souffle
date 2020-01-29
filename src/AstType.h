@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AstNode.h"
+#include "RamPrimitiveTypes.h"
 
 #include <iostream>
 #include <set>
@@ -157,26 +158,26 @@ private:
 class AstPrimitiveType : public AstType {
 public:
     /** Creates a new primitive type */
-    AstPrimitiveType(const AstTypeIdentifier& name, bool num = false) : AstType(name), num(num) {}
+    AstPrimitiveType(const AstTypeIdentifier& name, RamPrimitiveType type) : AstType(name), type(type) {}
 
     /** Tests whether this type is a numeric type */
     bool isNumeric() const {
-        return num;
+        return type == RamPrimitiveType::Signed;
     }
 
     /** Tests whether this type is a symbolic type */
     bool isSymbolic() const {
-        return !num;
+        return type == RamPrimitiveType::String;
     }
 
     /** Prints a summary of this type to the given stream */
     void print(std::ostream& os) const override {
-        os << ".type " << getName() << (num ? "= number" : "");
+        os << ".type " << getName() << (isNumeric() ? "= number" : "");
     }
 
     /** Creates a clone of this AST sub-structure */
     AstPrimitiveType* clone() const override {
-        auto res = new AstPrimitiveType(getName(), num);
+        auto res = new AstPrimitiveType(getName(), type);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -186,12 +187,11 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstPrimitiveType*>(&node));
         const auto& other = static_cast<const AstPrimitiveType&>(node);
-        return getName() == other.getName() && num == other.num;
+        return getName() == other.getName() && type == other.type;
     }
 
 private:
-    /** Indicates whether it is a number (true) or a symbol (false) */
-    bool num;
+    RamPrimitiveType type;
 };
 
 /**

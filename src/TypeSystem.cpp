@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "TypeSystem.h"
+#include "RamPrimitiveTypes.h"
 #include "Util.h"
 #include <cassert>
 
@@ -77,6 +78,7 @@ void TypeEnvironment::clear() {
 
     // re-initialize type environment
     createType<PredefinedType>("number");
+    createType<PredefinedType>("float");
     createType<PredefinedType>("symbol");
 }
 
@@ -290,21 +292,41 @@ std::string getTypeQualifier(const Type& type) {
 
         std::string visitType(const Type& type) const override {
             std::string str;
-            if (isNumberType(type)) {
-                str = "i:" + toString(type.getName());
-            } else if (isSymbolType(type)) {
-                str = "s:" + toString(type.getName());
-            } else if (isRecordType(type)) {
-                str = "r:" + toString(type.getName());
-            } else {
-                assert(false && "unknown type class");
+            assert((isSimplePrimitiveType(type) || isRecordType(type)) && "unknown type");
+            
+            switch (getPrimitiveType(type)) {
+                case RamPrimitiveType::Signed:
+                    str.append("i");
+                    break;
+                case RamPrimitiveType::Unsigned:
+                    str.append("u");
+                    break;
+                case RamPrimitiveType::Float:
+                    str.append("f");
+                    break;
+                case RamPrimitiveType::String:
+                    str.append("s");
+                    break;
+                case RamPrimitiveType::Record:
+                    str.append("r");
+                    break;
             }
+            str.append(":");
+            str.append(toString(type.getName()));
             seen[&type] = str;
             return str;
         }
     };
 
     return visitor().visit(type);
+}
+
+bool isFloatType(const Type& type) {
+    return isOfRootType(type, type.getTypeEnvironment().getFloatType());
+}
+
+bool isFloatType(const TypeSet& s) {
+    return !s.empty() && !s.isAll() && all_of(s, (bool (*)(const Type&)) & isFloatType);
 }
 
 bool isNumberType(const Type& type) {

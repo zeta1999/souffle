@@ -81,6 +81,7 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(UserDefinedFunctor)
         FORWARD(Counter)
         FORWARD(NumberConstant)
+        FORWARD(FloatConstant)
         FORWARD(StringConstant)
         FORWARD(NullConstant)
         FORWARD(TypeCast)
@@ -139,6 +140,7 @@ protected:
     LINK(SubroutineArgument, Argument)
 
     LINK(NumberConstant, Constant)
+    LINK(FloatConstant, Constant)
     LINK(StringConstant, Constant)
     LINK(NullConstant, Constant)
     LINK(Constant, Argument)

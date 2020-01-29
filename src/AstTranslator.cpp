@@ -273,7 +273,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitConstant(const AstConstant& c) override {
-            return std::make_unique<RamNumber>(c.getIndex());
+            return std::make_unique<RamNumber>(c.getRamRepresentation());
         }
 
         std::unique_ptr<RamExpression> visitIntrinsicFunctor(const AstIntrinsicFunctor& inf) override {
@@ -833,7 +833,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                                              std::make_unique<RamTupleElement>(level, pos),
-                                                             std::make_unique<RamNumber>(c->getIndex())),
+                                                             std::make_unique<RamNumber>(c->getRamRepresentation())),
                             std::move(op));
                 }
             }
@@ -885,7 +885,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 if (AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                                              std::make_unique<RamTupleElement>(level, pos),
-                                                             std::make_unique<RamNumber>(c->getIndex())),
+                                                             std::make_unique<RamNumber>(c->getRamRepresentation())),
                             std::move(op));
                 } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,

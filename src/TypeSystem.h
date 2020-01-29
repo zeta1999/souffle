@@ -328,6 +328,10 @@ public:
         return createType<PrimitiveType>(name, getNumberType());
     }
 
+    PrimitiveType& createFloatType(const identifier& name) {
+        return createType<PrimitiveType>(name, getFloatType());
+    }
+
     PrimitiveType& createSymbolType(const identifier& name) {
         return createType<PrimitiveType>(name, getSymbolType());
     }
@@ -350,6 +354,10 @@ public:
 
     const Type& getNumberType() const {
         return getType("number");
+    }
+
+    const Type& getFloatType() const {
+        return getType("float");
     }
 
     const Type& getSymbolType() const {
@@ -389,6 +397,43 @@ private:
  * Returns full type qualifier for a given type
  */
 std::string getTypeQualifier(const Type& type);
+
+
+template <typename T>  // T = Type or T = Typeset
+bool isSimplePrimitiveType(const T& type) {
+    return isNumberType(type) /*|| isUnsignedType(type)*/ || isFloatType(type) || isSymbolType(type);
+}
+
+template <typename T> // T = Type or T = Typeset
+RamPrimitiveType getPrimitiveType(const T& type) {
+    RamPrimitiveType primitiveType;
+    if (isNumberType(type)) {
+        primitiveType = RamPrimitiveType::Signed;
+    } /*else if (isUnsignedType(type)) {
+        primitiveType = RamPrimitiveType::Unsigned;
+    } */ else if (isFloatType(type)) {
+        primitiveType = RamPrimitiveType::Float;
+    } else if (isRecordType(type)) {
+        primitiveType = RamPrimitiveType::Record;
+    } else if (isSymbolType(type)) {
+        primitiveType = RamPrimitiveType::String;
+    } else {
+        std::cerr << "Unknown type class" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+    return primitiveType;
+}
+
+
+/**
+ * Determines whether the given type is a float type.
+ */
+bool isFloatType(const Type& type);
+
+/**
+ * Determines whether all the types in the given set are float types.
+ */
+bool isFloatType(const TypeSet& s);
 
 /**
  * Determines whether the given type is a number type.

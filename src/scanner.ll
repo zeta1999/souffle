@@ -159,6 +159,14 @@
                                           return yy::parser::make_NUMBER(0, yylloc);
                                         }
                                       }
+[0-9]+[.][0-9]+                       { // Naive floats
+                                        try {
+                                          return yy::parser::make_FLOAT(souffle::RamFloatFromString(yytext), yylloc);
+                                        } catch (...) {
+                                          driver.error(yylloc, "float out of range");
+                                          return yy::parser::make_FLOAT(0, yylloc);
+                                        }
+                                      }
 0b[0-1][0-1]*                         {
                                         try {
                                           return yy::parser::make_NUMBER(souffle::stord(yytext+2, nullptr, 2), yylloc);

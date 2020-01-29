@@ -41,6 +41,8 @@
     #include "AstProgram.h"
     #include "BinaryConstraintOps.h"
     #include "FunctorOps.h"
+    #include "RamTypes.h"
+    #include "RamPrimitiveTypes.h"
 
     using namespace souffle;
 
@@ -79,6 +81,7 @@
 %token <std::string> STRING      "symbol"
 %token <std::string> IDENT       "identifier"
 %token <RamDomain> NUMBER        "number"
+%token <RamFloat> FLOAT          "float"
 %token <std::string> RELOP       "relational operator"
 %token PRAGMA                    "pragma directive"
 %token OUTPUT_QUALIFIER          "relation qualifier output"
@@ -91,7 +94,7 @@
 %token INLINE_QUALIFIER          "relation qualifier inline"
 %token TMATCH                    "match predicate"
 %token TCONTAINS                 "checks whether substring is contained in a string"
-%token CAT                       "concatenation of two strings"
+%token CAT                       "concatenation of strings"
 %token ORD                       "ordinal number of a string"
 %token STRLEN                    "length of a string"
 %token SUBSTR                    "sub-string of a string"
@@ -115,7 +118,7 @@
 %token INSTANTIATE               "component instantiation"
 %token NUMBER_TYPE               "numeric type declaration"
 %token SYMBOL_TYPE               "symbolic type declaration"
-%token TONUMBER                  "convert string to number"
+%token TONUMBER                  "convert string to (signed) number"
 %token TOSTRING                  "convert number to string"
 %token AS                        "type cast"
 %token AT                        "@"
@@ -345,15 +348,15 @@ identifier
 /* Type declarations */
 type
   : NUMBER_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, true);
+        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::Signed);
         $$->setSrcLoc(@$);
     }
   | SYMBOL_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, false);
+        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::String);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT);
+        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::String);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS union_type_list {
@@ -846,6 +849,10 @@ arg
         $$ = new AstStringConstant(driver.getSymbolTable(), $STRING);
         $$->setSrcLoc(@$);
     }
+  | FLOAT {
+        $$ = new AstFloatConstant($FLOAT);
+        $$->setSrcLoc(@$);
+    }
   | NUMBER {
         $$ = new AstNumberConstant($NUMBER);
         $$->setSrcLoc(@$);
@@ -925,7 +932,7 @@ arg
     /* unary functors */
   | MINUS arg[nested_arg] %prec NEG {
         if (const AstNumberConstant* original = dynamic_cast<const AstNumberConstant*>($nested_arg)) {
-            $$ = new AstNumberConstant(-1 * original->getIndex());
+            $$ = new AstNumberConstant(-1 * original->getRamRepresentation());
             $$->setSrcLoc(@nested_arg);
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,

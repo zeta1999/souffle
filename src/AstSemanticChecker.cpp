@@ -38,6 +38,7 @@
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
 #include "RelationRepresentation.h"
+#include "FunctorOps.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
@@ -171,6 +172,14 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
+    // all number constants are used as numbers
+    visitDepthFirst(nodes, [&](const AstFloatConstant& cnst) {
+        TypeSet types = typeAnalysis.getTypes(&cnst);
+        if (!isFloatType(types)) {
+            report.addError("Number constant (type mismatch)", cnst.getSrcLoc());
+        }
+    });
+
     // all null constants are used as records
     visitDepthFirst(nodes, [&](const AstNullConstant& cnst) {
         // TODO (#467) remove the next line to enable subprogram compilation for record types
@@ -206,12 +215,25 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // - intrinsic functors -
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         // check type of result
-        if (fun.isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-        }
-
-        if (fun.isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
+        RamPrimitiveType expectedResultType = fun.checkReturnType();
+        auto resultType = typeAnalysis.getTypes(&fun);
+        if (!isSimplePrimitiveType(resultType) || getPrimitiveType(resultType) != expectedResultType) {
+            switch (expectedResultType) {
+                case RamPrimitiveType::Signed:
+                    report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
+                    break;
+                case RamPrimitiveType::Unsigned:
+                    report.addError("Non-unsigned use for unsigned functor", fun.getSrcLoc());
+                    break;
+                case RamPrimitiveType::Float:
+                    report.addError("Non-float use for float functor", fun.getSrcLoc());
+                    break;
+                case RamPrimitiveType::String:
+                    report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
+                    break;
+                case RamPrimitiveType::Record:
+                    assert(false && "Invalid return type");
+            }
         }
 
         // check types of arguments
@@ -235,8 +257,10 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
         if (funDecl == nullptr) {
             report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
-        } else {
-            if (funDecl->getArgCount() != fun.getArgCount()) {
+            return;
+        }
+
+        if (funDecl->getArgCount() != fun.getArgCount()) {
                 report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
             }
             // check return values of user-defined functor
@@ -257,7 +281,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                     }
                 }
             }
-        }
+        
     });
 
     // - binary relation -
@@ -651,7 +675,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
         AstTypeIdentifier typeName = attr->getTypeName();
 
         /* check whether type exists */
-        if (typeName != "number" && typeName != "symbol" && (program.getType(typeName) == nullptr)) {
+        if (typeName != "number" && typeName != "symbol" && typeName != "float" && (program.getType(typeName) == nullptr)) {
             report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
                                     toString(attr->getTypeName()),
                     attr->getSrcLoc());

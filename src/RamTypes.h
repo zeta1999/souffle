@@ -84,32 +84,32 @@ inline To ramBitCast(From RamElement) {
     return Union.destination;
 }
 
-inline RamDomain RamDomainFromString(const std::string& str) {
+inline RamDomain RamDomainFromString(const std::string& str, std::size_t* position = nullptr, int base = 10) {
     RamDomain val;
 #if RAM_DOMAIN_SIZE == 64
-    val = std::stoll(str);
+    val = std::stoll(str, position, base);
 #else
-    val = std::stoi(str);
+    val = std::stoi(str, position, base);
 #endif
     return val;
 }
 
-inline RamFloat RamFloatFromString(const std::string& str) {
+inline RamFloat RamFloatFromString(const std::string& str, std::size_t* position = nullptr) {
     RamFloat val;
 #if RAM_DOMAIN_SIZE == 64
-    val = std::stod(str);
+    val = std::stod(str, position);
 #else
-    val = std::stof(str);
+    val = std::stof(str, position);
 #endif
     return val;
 }
 
-inline RamUnsigned RamUnsignedFromString(const std::string& str) {
+inline RamUnsigned RamUnsignedFromString(const std::string& str, std::size_t* position = nullptr, int base = 10) {
     RamUnsigned val;
 #if RAM_DOMAIN_SIZE == 64
-    val = std::stoul(str);
+    val = std::stoul(str, position, base);
 #else
-    val = std::stoull(str);
+    val = std::stoull(str, position, base);
 #endif
     return val;
 }

@@ -167,11 +167,11 @@ protected:
  */
 class AstConstant : public AstArgument {
 public:
-    AstConstant(RamDomain i) : AstArgument(), idx(i) {}
+    AstConstant(RamDomain i) : AstArgument(), ramRepresentation(i) {}
 
-    /** @return Return the index of this constant in the SymbolTable */
-    RamDomain getIndex() const {
-        return idx;
+    /** @return Return the ram representation of this constant */
+    RamDomain getRamRepresentation() const {
+        return ramRepresentation;
     }
 
     /** Mutates this node */
@@ -180,14 +180,16 @@ public:
     }
 
 protected:
-    /** Index of this Constant in the SymbolTable */
-    RamDomain idx;
+    /** Constant represented as RamDomain value.
+     * In case of string this is the entry in symbol table.
+     * In case of float/unsigned this is the bit cast of the value. */
+    RamDomain ramRepresentation;
 
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstConstant*>(&node));
         const auto& other = static_cast<const AstConstant&>(node);
-        return idx == other.idx;
+        return ramRepresentation == other.ramRepresentation;
     }
 };
 
@@ -201,7 +203,7 @@ public:
 
     /** @return String representation of this Constant */
     const std::string& getConstant() const {
-        return symTable.resolve(getIndex());
+        return symTable.resolve(ramRepresentation);
     }
 
     /**  Print argument to the given output stream */
@@ -211,7 +213,7 @@ public:
 
     /** Creates a clone of this AST sub-structure */
     AstStringConstant* clone() const override {
-        auto* res = new AstStringConstant(symTable, getIndex());
+        auto* res = new AstStringConstant(symTable, ramRepresentation);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -222,7 +224,7 @@ private:
 };
 
 /**
- * Subclass of Argument that represents a datalog constant value
+ * Subclass of Argument that represents a datalog constant signed value
  */
 class AstNumberConstant : public AstConstant {
 public:
@@ -230,12 +232,32 @@ public:
 
     /**  Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        os << idx;
+        os << ramRepresentation;
     }
 
     /** Creates a clone of this AST sub-structure */
     AstNumberConstant* clone() const override {
-        auto* res = new AstNumberConstant(getIndex());
+        auto* res = new AstNumberConstant(ramRepresentation);
+        res->setSrcLoc(getSrcLoc());
+        return res;
+    }
+};
+
+/**
+ * Subclass of Argument that represents a datalog constant float value
+ */
+class AstFloatConstant : public AstConstant {
+public:
+    AstFloatConstant(RamFloat num) : AstConstant(ramBitCast(num)) {}
+
+    /**  Print argument to the given output stream */
+    void print(std::ostream& os) const override {
+        os << ramBitCast<RamFloat>(ramRepresentation);
+    }
+
+    /** Creates a clone of this AST sub-structure */
+    AstFloatConstant* clone() const override {
+        auto* res = new AstFloatConstant(ramBitCast<RamFloat>(ramRepresentation));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -307,6 +329,10 @@ public:
         args[idx] = std::move(arg);
     }
 
+    RamPrimitiveType checkReturnType() const {
+        return functorReturnType(function);
+    }
+    
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {
         return isNumericFunctorOp(function);

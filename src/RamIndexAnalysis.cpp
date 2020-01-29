@@ -354,9 +354,9 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
         const RamProvenanceExistenceCheck* provExistCheck) const {
     const auto values = provExistCheck->getValues();
     SearchSignature res = 0;
-    auto numberOfHeights = provExistCheck->getRelation().getNumberOfHeights();
-    // values.size() - numberOfHeights because we discard the height annotations
-    for (size_t i = 0; i < values.size() - numberOfHeights; i++) {
+    auto auxiliaryArity = provExistCheck->getRelation().getAuxiliaryArity();
+    // values.size() - auxiliaryArity because we discard the height annotations
+    for (size_t i = 0; i < values.size() - auxiliaryArity; i++) {
         if (!isRamUndefValue(values[i])) {
             res |= (1 << i);
         }

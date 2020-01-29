@@ -335,14 +335,21 @@ public:
     virtual const char* getAttrName(size_t) const = 0;
 
     /**
-     * Get the arity of a relation.
+     * Return the arity of a relation.
      * For example for a tuple (1 2) the arity is 2 and for a tuple (1 2 3) the arity is 3.
      *
      * @return Arity of a relation (size_t)
      */
     virtual size_t getArity() const = 0;
 
-    virtual size_t getNumberOfHeights() const = 0;
+    /**
+     * Return the number of auxiliary attributes. Auxiliary attributes
+     * are used for provenance and and other alternative evaluation
+     * strategies. They are stored as the last attributes of a tuple.
+     *
+     * @return Number of auxiliary attributes of a relation (size_t)
+     */
+    virtual size_t getAuxiliaryArity() const = 0;
 
     /**
      * Get the symbol table of a relation.

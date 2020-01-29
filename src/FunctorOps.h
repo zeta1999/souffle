@@ -310,7 +310,7 @@ inline RamPrimitiveType functorReturnType(const FunctorOp op) {
         case FunctorOp::__UNDEFINED__:
             assert(false && "Bad functor return type query");
             exit(EXIT_FAILURE);
-            return RamPrimitiveType::Record; // Silence warning.
+            return RamPrimitiveType::Record;  // Silence warning.
     }
 }
 

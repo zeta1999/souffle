@@ -332,7 +332,7 @@ public:
     RamPrimitiveType checkReturnType() const {
         return functorReturnType(function);
     }
-    
+
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {
         return isNumericFunctorOp(function);

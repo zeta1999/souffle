@@ -34,11 +34,11 @@
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "ErrorReport.h"
+#include "FunctorOps.h"
 #include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
 #include "RelationRepresentation.h"
-#include "FunctorOps.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
@@ -261,27 +261,26 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
 
         if (funDecl->getArgCount() != fun.getArgCount()) {
-                report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
-            }
-            // check return values of user-defined functor
-            if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-                report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-            }
-            if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-                report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-            }
-            for (size_t i = 0; i < fun.getArgCount(); i++) {
-                const AstArgument* arg = fun.getArg(i);
-                if (i < funDecl->getArgCount()) {
-                    if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                        report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-                    }
-                    if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                        report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
-                    }
+            report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
+        }
+        // check return values of user-defined functor
+        if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
+            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
+        }
+        if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
+            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
+        }
+        for (size_t i = 0; i < fun.getArgCount(); i++) {
+            const AstArgument* arg = fun.getArg(i);
+            if (i < funDecl->getArgCount()) {
+                if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
+                    report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+                }
+                if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
+                    report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
                 }
             }
-        
+        }
     });
 
     // - binary relation -
@@ -675,7 +674,8 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
         AstTypeIdentifier typeName = attr->getTypeName();
 
         /* check whether type exists */
-        if (typeName != "number" && typeName != "symbol" && typeName != "float" && (program.getType(typeName) == nullptr)) {
+        if (typeName != "number" && typeName != "symbol" && typeName != "float" &&
+                (program.getType(typeName) == nullptr)) {
             report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
                                     toString(attr->getTypeName()),
                     attr->getSrcLoc());

@@ -104,7 +104,8 @@ inline RamFloat RamFloatFromString(const std::string& str, std::size_t* position
     return val;
 }
 
-inline RamUnsigned RamUnsignedFromString(const std::string& str, std::size_t* position = nullptr, int base = 10) {
+inline RamUnsigned RamUnsignedFromString(
+        const std::string& str, std::size_t* position = nullptr, int base = 10) {
     RamUnsigned val;
 #if RAM_DOMAIN_SIZE == 64
     val = std::stoul(str, position, base);

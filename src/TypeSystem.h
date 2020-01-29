@@ -398,20 +398,20 @@ private:
  */
 std::string getTypeQualifier(const Type& type);
 
-
 template <typename T>  // T = Type or T = Typeset
 bool isSimplePrimitiveType(const T& type) {
     return isNumberType(type) /*|| isUnsignedType(type)*/ || isFloatType(type) || isSymbolType(type);
 }
 
-template <typename T> // T = Type or T = Typeset
+template <typename T>  // T = Type or T = Typeset
 RamPrimitiveType getPrimitiveType(const T& type) {
     RamPrimitiveType primitiveType;
     if (isNumberType(type)) {
         primitiveType = RamPrimitiveType::Signed;
     } /*else if (isUnsignedType(type)) {
         primitiveType = RamPrimitiveType::Unsigned;
-    } */ else if (isFloatType(type)) {
+    } */
+    else if (isFloatType(type)) {
         primitiveType = RamPrimitiveType::Float;
     } else if (isRecordType(type)) {
         primitiveType = RamPrimitiveType::Record;
@@ -423,7 +423,6 @@ RamPrimitiveType getPrimitiveType(const T& type) {
     }
     return primitiveType;
 }
-
 
 /**
  * Determines whether the given type is a float type.

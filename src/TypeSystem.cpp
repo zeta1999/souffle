@@ -293,7 +293,7 @@ std::string getTypeQualifier(const Type& type) {
         std::string visitType(const Type& type) const override {
             std::string str;
             assert((isSimplePrimitiveType(type) || isRecordType(type)) && "unknown type");
-            
+
             switch (getPrimitiveType(type)) {
                 case RamPrimitiveType::Signed:
                     str.append("i");

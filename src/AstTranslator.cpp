@@ -831,9 +831,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add constraints
             for (size_t pos = 0; pos < atom->argSize(); ++pos) {
                 if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
-                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                             std::make_unique<RamTupleElement>(level, pos),
-                                                             std::make_unique<RamNumber>(c->getRamRepresentation())),
+                    op = std::make_unique<RamFilter>(
+                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                    std::make_unique<RamTupleElement>(level, pos),
+                                    std::make_unique<RamNumber>(c->getRamRepresentation())),
                             std::move(op));
                 }
             }
@@ -883,9 +884,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add constant constraints
             for (size_t pos = 0; pos < rec->getArguments().size(); ++pos) {
                 if (AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
-                    op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                                             std::make_unique<RamTupleElement>(level, pos),
-                                                             std::make_unique<RamNumber>(c->getRamRepresentation())),
+                    op = std::make_unique<RamFilter>(
+                            std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                                    std::make_unique<RamTupleElement>(level, pos),
+                                    std::make_unique<RamNumber>(c->getRamRepresentation())),
                             std::move(op));
                 } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,

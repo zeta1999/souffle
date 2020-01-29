@@ -220,7 +220,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IOSystem::getInstance().getReader(";
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
-                out << ", " << load.getRelation().getNumAuxAttributes();
+                out << ", " << load.getRelation().getAuxiliaryArity();
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
                 out << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -248,7 +248,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IOSystem::getInstance().getWriter(";
                 out << "std::vector<bool>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
-                out << ", " << store.getRelation().getNumAuxAttributes();
+                out << ", " << store.getRelation().getAuxiliaryArity();
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
             }
@@ -1268,7 +1268,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto arity = rel.getArity();
-            auto numAuxAttributes = rel.getNumAuxAttributes();
+            auto auxiliaryArity = rel.getAuxiliaryArity();
 
             // provenance not exists is never total, conduct a range query
             out << "[&]() -> bool {\n";
@@ -1277,7 +1277,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // out << synthesiser.toIndex(ne.getSearchSignature());
             out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">{{";
-            for (size_t i = 0; i < provExists.getValues().size() - numAuxAttributes + 1; i++) {
+            for (size_t i = 0; i < provExists.getValues().size() - auxiliaryArity + 1; i++) {
                 RamExpression* val = provExists.getValues()[i];
                 if (!isRamUndefValue(val)) {
                     visit(*val, out);
@@ -1287,31 +1287,31 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << ",";
             }
             // extra 0 for provenance height annotations
-            for (size_t i = 0; i < numAuxAttributes - 2; i++) {
+            for (size_t i = 0; i < auxiliaryArity - 2; i++) {
                 out << "0,";
             }
             out << "0";
 
             out << "}}," << ctxName << ");\n";
             out << "if (existenceCheck.empty()) return false; else return ((*existenceCheck.begin())["
-                << arity - numAuxAttributes + 1 << "] <= ";
+                << arity - auxiliaryArity + 1 << "] <= ";
 
-            visit(*(provExists.getValues()[arity - numAuxAttributes + 1]), out);
+            visit(*(provExists.getValues()[arity - auxiliaryArity + 1]), out);
             out << ")";
-            if (numAuxAttributes > 2) {
+            if (auxiliaryArity > 2) {
                 out << " &&  !("
-                    << "(*existenceCheck.begin())[" << arity - numAuxAttributes + 1 << "] == ";
-                visit(*(provExists.getValues()[arity - numAuxAttributes + 1]), out);
+                    << "(*existenceCheck.begin())[" << arity - auxiliaryArity + 1 << "] == ";
+                visit(*(provExists.getValues()[arity - auxiliaryArity + 1]), out);
 
                 // out << ")";}
                 out << " && (";
 
-                out << "(*existenceCheck.begin())[" << arity - numAuxAttributes + 2 << "] > ";
-                visit(*(provExists.getValues()[arity - numAuxAttributes + 2]), out);
+                out << "(*existenceCheck.begin())[" << arity - auxiliaryArity + 2 << "] > ";
+                visit(*(provExists.getValues()[arity - auxiliaryArity + 2]), out);
                 // out << "))";}
-                for (int i = arity - numAuxAttributes + 3; i < (int)arity; i++) {
+                for (int i = arity - auxiliaryArity + 3; i < (int)arity; i++) {
                     out << " || (";
-                    for (int j = arity - numAuxAttributes + 2; j < i; j++) {
+                    for (int j = arity - auxiliaryArity + 2; j < i; j++) {
                         out << "(*existenceCheck.begin())[" << j << "] == ";
                         visit(*(provExists.getValues()[j]), out);
                         out << " && ";
@@ -1780,7 +1780,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     for (auto rel : prog.getRelations()) {
         // get some table details
         int arity = rel->getArity();
-        int numAuxAttributes = rel->getNumAuxAttributes();
+        int auxiliaryArity = rel->getAuxiliaryArity();
         const std::string& datalogName = rel->getName();
         const std::string& cppName = getRelationName(*rel);
 
@@ -1801,7 +1801,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << type << ",";
             os << "Tuple<RamDomain," << arity << ">,";
             os << arity << ",";
-            os << numAuxAttributes;
+            os << auxiliaryArity;
             os << "> wrapper_" << cppName << ";\n";
 
             // construct types
@@ -2026,7 +2026,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
                 os << "std::vector<bool>({" << join(symbolMask) << "})";
-                os << ", symTable, ioDirectives, " << store->getRelation().getNumAuxAttributes();
+                os << ", symTable, ioDirectives, " << store->getRelation().getAuxiliaryArity();
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
                 os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2071,7 +2071,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "IOSystem::getInstance().getReader(";
             os << "std::vector<bool>({" << join(symbolMask) << "})";
             os << ", symTable, ioDirectives";
-            os << ", " << load.getRelation().getNumAuxAttributes();
+            os << ", " << load.getRelation().getAuxiliaryArity();
             os << ")->readAll(*" << getRelationName(load.getRelation());
             os << ");\n";
             os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -2085,7 +2085,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         auto& relName = getRelationName(ramRelation);
         auto& name = ramRelation.getName();
         auto& mask = ramRelation.getAttributeTypes();
-        size_t numAuxAttributes = ramRelation.getNumAuxAttributes();
+        size_t auxiliaryArity = ramRelation.getAuxiliaryArity();
 
         std::vector<bool> symbolMask;
         for (auto& cur : mask) {
@@ -2098,7 +2098,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "std::vector<bool>({" << join(symbolMask) << "})";
-        os << ", symTable, ioDirectives, " << numAuxAttributes;
+        os << ", symTable, ioDirectives, " << auxiliaryArity;
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
     };

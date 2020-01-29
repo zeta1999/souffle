@@ -24,9 +24,9 @@
 
 namespace souffle {
 
-InterpreterRelation::InterpreterRelation(std::size_t arity, std::size_t numAuxAttributes, std::string name,
+InterpreterRelation::InterpreterRelation(std::size_t arity, std::size_t auxiliaryArity, std::string name,
         std::vector<std::string> attributeTypes, const MinIndexSelection& orderSet, IndexFactory factory)
-        : relName(std::move(name)), arity(arity), numAuxAttributes(numAuxAttributes),
+        : relName(std::move(name)), arity(arity), auxiliaryArity(auxiliaryArity),
           attributeTypes(std::move(attributeTypes)) {
     for (auto order : orderSet.getAllOrders()) {
         // Expand the order to a total order
@@ -120,8 +120,8 @@ const std::vector<std::string>& InterpreterRelation::getAttributeTypes() const {
     return this->attributeTypes;
 }
 
-size_t InterpreterRelation::getNumAuxAttributes() const {
-    return numAuxAttributes;
+size_t InterpreterRelation::getAuxiliaryArity() const {
+    return auxiliaryArity;
 }
 
 size_t InterpreterRelation::size() const {
@@ -144,9 +144,9 @@ bool InterpreterRelation::exists(const TupleRef& tuple) const {
 
 void InterpreterRelation::extend(const InterpreterRelation& rel) {}
 
-InterpreterEqRelation::InterpreterEqRelation(size_t arity, size_t numAuxAttributes, const std::string& name,
+InterpreterEqRelation::InterpreterEqRelation(size_t arity, size_t auxiliaryArity, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)
-        : InterpreterRelation(arity, numAuxAttributes, name, attributeTypes, orderSet, createEqrelIndex) {
+        : InterpreterRelation(arity, auxiliaryArity, name, attributeTypes, orderSet, createEqrelIndex) {
     // EqivalenceRelation should have only one index.
     assert(this->indexes.size() == 1);
 }
@@ -157,10 +157,10 @@ void InterpreterEqRelation::extend(const InterpreterRelation& rel) {
     this->main->extend(otherEqRel->main);
 }
 
-InterpreterIndirectRelation::InterpreterIndirectRelation(size_t arity, size_t numAuxAttributes,
+InterpreterIndirectRelation::InterpreterIndirectRelation(size_t arity, size_t auxiliaryArity,
         const std::string& name, const std::vector<std::string>& attributeTypes,
         const MinIndexSelection& orderSet)
-        : InterpreterRelation(arity, numAuxAttributes, name, attributeTypes, orderSet, createIndirectIndex) {}
+        : InterpreterRelation(arity, auxiliaryArity, name, attributeTypes, orderSet, createIndirectIndex) {}
 
 bool InterpreterIndirectRelation::insert(const TupleRef& tuple) {
     if (main->contains(tuple)) {

@@ -349,7 +349,7 @@ public:
      *
      * @return Number of auxiliary attributes of a relation (size_t)
      */
-    virtual size_t getNumAuxAttributes() const = 0;
+    virtual size_t getAuxiliaryArity() const = 0;
 
     /**
      * Get the symbol table of a relation.

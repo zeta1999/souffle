@@ -69,8 +69,8 @@ public:
     }
 
     /** Get arity */
-    size_t getNumAuxAttributes() const override {
-        return relation.getNumAuxAttributes();
+    size_t getAuxiliaryArity() const override {
+        return relation.getAuxiliaryArity();
     }
 
     /** Get symbol table */

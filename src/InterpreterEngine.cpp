@@ -1075,7 +1075,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     symbolMask.push_back(cur[0] == 's');
                 }
                 IOSystem::getInstance()
-                        .getReader(symbolMask, getSymbolTable(), ioDirectives, relation.getNumAuxAttributes())
+                        .getReader(symbolMask, getSymbolTable(), ioDirectives, relation.getAuxiliaryArity())
                         ->readAll(relation);
             } catch (std::exception& e) {
                 std::cerr << "Error loading data: " << e.what() << "\n";
@@ -1093,7 +1093,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 IOSystem::getInstance()
                         .getWriter(symbolMask, getSymbolTable(), ioDirectives,
-                                cur.getRelation().getNumAuxAttributes())
+                                cur.getRelation().getAuxiliaryArity())
                         ->writeAll(*node->getRelation());
             } catch (std::exception& e) {
                 std::cerr << e.what();

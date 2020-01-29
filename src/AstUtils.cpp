@@ -50,17 +50,17 @@ const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* progra
     return program->getRelation(atom->getName());
 }
 
-const size_t getNumAuxAttributes(const AstAtom* atom, const AstProgram* program) {
+const size_t getAuxiliaryArity(const AstAtom* atom, const AstProgram* program) {
     if (atom->getName().getName().rfind("@delta_") == 0) {
         const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(7));
-        return program->getRelation(originalRel)->getNumAuxAttributes();
+        return program->getRelation(originalRel)->getAuxiliaryArity();
     } else if (atom->getName().getName().rfind("@new_") == 0) {
         const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(5));
-        return program->getRelation(originalRel)->getNumAuxAttributes();
+        return program->getRelation(originalRel)->getAuxiliaryArity();
     } else if (atom->getName().getName().rfind("@info_") == 0) {
         return 0;
     }
-    return program->getRelation(atom->getName())->getNumAuxAttributes();
+    return program->getRelation(atom->getName())->getAuxiliaryArity();
 }
 
 const AstRelation* getHeadRelation(const AstClause* clause, const AstProgram* program) {

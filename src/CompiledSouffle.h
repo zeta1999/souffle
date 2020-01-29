@@ -146,7 +146,7 @@ public:
     size_t getArity() const override {
         return Arity;
     }
-    size_t getNumAuxAttributes() const override {
+    size_t getAuxiliaryArity() const override {
         return NumAuxAttributes;
     }
     SymbolTable& getSymbolTable() const override {

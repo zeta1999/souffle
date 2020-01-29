@@ -37,8 +37,8 @@ namespace souffle {
 class ReadStreamCSV : public ReadStream {
 public:
     ReadStreamCSV(std::istream& file, const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0)
-            : ReadStream(symbolMask, symbolTable, numAuxAttributes), delimiter(getDelimiter(ioDirectives)),
+            const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
+            : ReadStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
               file(file), lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
         while (inputMap.size() < arity) {
             int size = static_cast<int>(inputMap.size());
@@ -153,8 +153,8 @@ protected:
 class ReadFileCSV : public ReadStreamCSV {
 public:
     ReadFileCSV(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t numAuxAttributes = 0)
-            : ReadStreamCSV(fileHandle, symbolMask, symbolTable, ioDirectives, numAuxAttributes),
+            const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
+            : ReadStreamCSV(fileHandle, symbolMask, symbolTable, ioDirectives, auxiliaryArity),
               baseName(souffle::baseName(getFileName(ioDirectives))),
               fileHandle(getFileName(ioDirectives), std::ios::in | std::ios::binary) {
         if (!ioDirectives.has("intermediate")) {
@@ -205,9 +205,9 @@ protected:
 class ReadCinCSVFactory : public ReadStreamFactory {
 public:
     std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t numAuxAttributes) override {
+            const IODirectives& ioDirectives, const size_t auxiliaryArity) override {
         return std::make_unique<ReadStreamCSV>(
-                std::cin, symbolMask, symbolTable, ioDirectives, numAuxAttributes);
+                std::cin, symbolMask, symbolTable, ioDirectives, auxiliaryArity);
     }
     const std::string& getName() const override {
         static const std::string name = "stdin";
@@ -219,8 +219,8 @@ public:
 class ReadFileCSVFactory : public ReadStreamFactory {
 public:
     std::unique_ptr<ReadStream> getReader(const std::vector<bool>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t numAuxAttributes) override {
-        return std::make_unique<ReadFileCSV>(symbolMask, symbolTable, ioDirectives, numAuxAttributes);
+            const IODirectives& ioDirectives, const size_t auxiliaryArity) override {
+        return std::make_unique<ReadFileCSV>(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
     }
     const std::string& getName() const override {
         static const std::string name = "file";

@@ -555,4 +555,19 @@ private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
 
+/**
+ * Transformation pass to determine operator types for polymorphic
+ * functors such as plus, minus, etc.
+ */
+
+class PolymorphicFunctorsTransformer : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "PolymorphicFunctorsTransformer";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+};
+
 }  // end of namespace souffle

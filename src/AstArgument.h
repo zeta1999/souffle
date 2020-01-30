@@ -316,6 +316,10 @@ public:
         return function;
     }
 
+    void setFunction(FunctorOp functor) {
+        function = functor;
+    }
+
     size_t getArity() const {
         return args.size();
     }

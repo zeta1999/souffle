@@ -1217,4 +1217,60 @@ bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) 
     return update.changed;
 }
 
+bool PolymorphicFunctorsTransformer::transform(AstTranslationUnit& translationUnit) {
+    struct TypeRewriter : public AstNodeMapper {
+        mutable bool changed{false};
+        const TypeAnalysis& typeAnalysis;
+        ErrorReport& report;
+
+        TypeRewriter(const TypeAnalysis& typeAnalysis, ErrorReport& report)
+                : typeAnalysis(typeAnalysis), report(report) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // rewrite sub-expressions first
+            node->apply(*this);
+            // if current node is a typecast, replace with the value directly
+            if (auto* fun = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
+                if (fun->getFunction() == FunctorOp::ADD) {
+                    // get arguments
+                    assert(fun->getArity() == 2 && "wrong arity of add functor.");
+                    const AstArgument* lhs = fun->getArg(0);
+                    const AstArgument* rhs = fun->getArg(1);
+
+                    // get argument types
+                    TypeSet lhsType = typeAnalysis.getTypes(lhs);
+                    TypeSet rhsType = typeAnalysis.getTypes(rhs);
+
+                    std::cerr << lhsType << std::endl;
+                    std::cerr << rhsType << std::endl;
+
+                    // check that correctness of argument types
+                    if (lhsType.empty()) {
+                        report.addError("Unable to deduce type for lhs", lhs->getSrcLoc());
+                    }
+                    if (rhsType.empty()) {
+                        report.addError("Unable to deduce type for rhs", rhs->getSrcLoc());
+                    }
+
+                    // check polymorphic cases
+                    if (isFloatType(lhsType) && isFloatType(rhsType)) {
+                        fun->setFunction(FunctorOp::FADD);
+                        changed = true;
+                    } else if (isNumberType(lhsType) && isNumberType(rhsType)) {
+                        // nothing to do here
+                    } else {
+                        report.addError("Implicit number conversion not permitted", rhs->getSrcLoc());
+                    }
+                }
+            }
+            // otherwise, return the original node
+            return node;
+        }
+    };
+    const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
+    TypeRewriter update(typeAnalysis, translationUnit.getErrorReport());
+    translationUnit.getProgram()->apply(update);
+    return update.changed;
+}
+
 }  // end of namespace souffle

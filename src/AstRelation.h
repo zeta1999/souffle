@@ -60,6 +60,9 @@
 /* Relation uses a union relation */
 #define EQREL_RELATION (0x100)
 
+/* Relation is an info relation */
+#define INFO_RELATION (0x200)
+
 /* Relation warnings are suppressed */
 #define SUPPRESSED_RELATION (0x800)
 
@@ -124,6 +127,8 @@ public:
             representation = RelationRepresentation::BRIE;
         } else if ((q & BTREE_RELATION) != 0) {
             representation = RelationRepresentation::BTREE;
+        } else if ((q & INFO_RELATION) != 0) {
+            representation = RelationRepresentation::INFO;
         }
 
         if ((q & INPUT_RELATION) != 0) {

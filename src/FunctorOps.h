@@ -86,33 +86,6 @@ enum class FunctorOp {
     __UNDEFINED__,  // undefined operator
 };
 
-// enum class FunctorArgsType {
-//     String,
-//     Signed,
-//     Unsigned,
-//     Float,
-// };
-
-// inline FunctorArgsType typeOfFunctorArgs(FunctorOp functor) {
-//     switch (functor) {
-//         case FunctorOp::ORD:
-//         case FunctorOp::STRLEN:
-//         case FunctorOp::NEG:
-//         case FunctorOp::FNEG:
-//         case FunctorOp::BNOT:
-//         case FunctorOp::UBNOT:
-//         case FunctorOp::LNOT:
-//         case FunctorOp::TONUMBER:
-//         case FunctorOp::TOSTRING:
-//         case FunctorOp::ITOU:
-//         case FunctorOp::UTOI:
-//         case FunctorOp::ITOF:
-//         case FunctorOp::FTOI:
-//         case FunctorOp::UTOF:
-//         case FunctorOp::FTOU:
-//     }
-// }
-
 /**
  * Checks whether a functor operation can have a given argument count.
  */
@@ -126,6 +99,7 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
         case FunctorOp::BNOT:
         case FunctorOp::UBNOT:
         case FunctorOp::LNOT:
+        case FunctorOp::ULNOT:
         case FunctorOp::TONUMBER:
         case FunctorOp::TOSTRING:
         case FunctorOp::ITOU:
@@ -181,7 +155,7 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
             return arity >= 2;
 
         /** Undefined */
-        default:
+        case FunctorOp::__UNDEFINED__:
             break;
     }
 
@@ -209,30 +183,50 @@ inline std::string getSymbolForFunctorOp(const FunctorOp op) {
 
         /** Binary Functor Operators */
         case FunctorOp::ADD:
+        case FunctorOp::FADD:
+        case FunctorOp::UADD:
             return "+";
         case FunctorOp::SUB:
+        case FunctorOp::USUB:
+        case FunctorOp::FSUB:
             return "-";
         case FunctorOp::MUL:
+        case FunctorOp::UMUL:
+        case FunctorOp::FMUL:
             return "*";
         case FunctorOp::DIV:
+        case FunctorOp::UDIV:
+        case FunctorOp::FDIV:
             return "/";
         case FunctorOp::EXP:
+        case FunctorOp::FEXP:
+        case FunctorOp::UEXP:
             return "^";
         case FunctorOp::MOD:
+        case FunctorOp::UMOD:
             return "%";
         case FunctorOp::BAND:
+        case FunctorOp::UBAND:
             return "band";
         case FunctorOp::BOR:
+        case FunctorOp::UBOR:
             return "bor";
         case FunctorOp::BXOR:
+        case FunctorOp::UBXOR:
             return "bxor";
         case FunctorOp::LAND:
+        case FunctorOp::ULAND:
             return "land";
         case FunctorOp::LOR:
+        case FunctorOp::ULOR:
             return "lor";
         case FunctorOp::MAX:
+        case FunctorOp::UMAX:
+        case FunctorOp::FMAX:
             return "max";
         case FunctorOp::MIN:
+        case FunctorOp::UMIN:
+        case FunctorOp::FMIN:
             return "min";
         case FunctorOp::CAT:
             return "cat";
@@ -308,125 +302,97 @@ inline RamPrimitiveType functorReturnType(const FunctorOp op) {
         case FunctorOp::SUBSTR:
             return RamPrimitiveType::String;
         case FunctorOp::__UNDEFINED__:
-            assert(false && "Bad functor return type query");
-            exit(EXIT_FAILURE);
-            return RamPrimitiveType::Record;  // Silence warning.
+            break;
     }
+    assert(false && "Bad functor return type query");
+    exit(EXIT_FAILURE);
+    return RamPrimitiveType::Record;  // Silence warning.
 }
 
-/**
- * Determines whether the given operator has a numeric return value
- */
-inline bool isNumericFunctorOp(const FunctorOp op) {
+inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
     switch (op) {
-        /** Unary Functor Operators */
-        case FunctorOp::ORD:
-        case FunctorOp::STRLEN:
+        case FunctorOp::ITOF:
+        case FunctorOp::ITOU:
         case FunctorOp::NEG:
         case FunctorOp::BNOT:
         case FunctorOp::LNOT:
-        case FunctorOp::TONUMBER:
-            return true;
         case FunctorOp::TOSTRING:
-            return false;
-
-        /** Binary Functor Operators */
+            assert(arg == 0 && "unary functor out of bound");
+            return RamPrimitiveType::Signed;
+        case FunctorOp::FNEG:
+        case FunctorOp::FTOI:
+        case FunctorOp::FTOU:
+            assert(arg == 0 && "unary functor out of bound");
+            return RamPrimitiveType::Float;
+        case FunctorOp::ORD:
+        case FunctorOp::STRLEN:
+        case FunctorOp::TONUMBER:
+            assert(arg == 0 && "unary functor out of bound");
+            return RamPrimitiveType::String;
+        case FunctorOp::UBNOT:
+        case FunctorOp::ULNOT:
+        case FunctorOp::UTOI:
+        case FunctorOp::UTOF:
+            assert(arg == 0 && "unary functor out of bound");
+            return RamPrimitiveType::Unsigned;
         case FunctorOp::ADD:
         case FunctorOp::SUB:
         case FunctorOp::MUL:
         case FunctorOp::DIV:
         case FunctorOp::EXP:
+        case FunctorOp::MOD:
         case FunctorOp::BAND:
         case FunctorOp::BOR:
         case FunctorOp::BXOR:
         case FunctorOp::LAND:
         case FunctorOp::LOR:
-        case FunctorOp::MOD:
+            assert(arg < 2 && "binary functor out of bound");
+            return RamPrimitiveType::Signed;
+        case FunctorOp::UADD:
+        case FunctorOp::USUB:
+        case FunctorOp::UMUL:
+        case FunctorOp::UDIV:
+        case FunctorOp::UEXP:
+        case FunctorOp::UMOD:
+        case FunctorOp::UBAND:
+        case FunctorOp::UBOR:
+        case FunctorOp::UBXOR:
+        case FunctorOp::ULAND:
+        case FunctorOp::ULOR:
+            assert(arg < 2 && "binary functor out of bound");
+            return RamPrimitiveType::Unsigned;
+        case FunctorOp::FADD:
+        case FunctorOp::FSUB:
+        case FunctorOp::FMUL:
+        case FunctorOp::FDIV:
+        case FunctorOp::FEXP:
+            assert(arg < 2 && "binary functor out of bound");
+            return RamPrimitiveType::Float;
+        case FunctorOp::SUBSTR:
+            assert(arg < 3 && "Ternary Functor Operators");
+            if (arg == 0) {
+                return RamPrimitiveType::String;
+            } else {
+                return RamPrimitiveType::Signed;  // In the future: Change to unsigned
+            }
         case FunctorOp::MAX:
         case FunctorOp::MIN:
-            return true;
+            return RamPrimitiveType::Signed;
+        case FunctorOp::UMAX:
+        case FunctorOp::UMIN:
+            return RamPrimitiveType::Unsigned;
+        case FunctorOp::FMAX:
+        case FunctorOp::FMIN:
+            return RamPrimitiveType::Float;
         case FunctorOp::CAT:
-            return false;
+            return RamPrimitiveType::String;
 
-        /** Ternary Functor Operators */
-        case FunctorOp::SUBSTR:
-            return false;
-
-        /** Undefined */
-        default:
+        case FunctorOp::__UNDEFINED__:
             break;
     }
-
     assert(false && "unsupported operator");
-    return false;
-}
-
-/*
- * Determines whether the operator has a symbolic return value.
- */
-inline bool isSymbolicFunctorOp(const FunctorOp op) {
-    return !isNumericFunctorOp(op);
-}
-
-/**
- * Determines whether an argument has a number value
- */
-inline bool functorOpAcceptsNumbers(size_t arg, const FunctorOp op) {
-    switch (op) {
-        /** Unary Functor Operators */
-        case FunctorOp::NEG:
-        case FunctorOp::BNOT:
-        case FunctorOp::LNOT:
-        case FunctorOp::TOSTRING:
-            assert(arg < 1 && "unary functor argument out of bounds");
-            return true;
-        case FunctorOp::ORD:
-        case FunctorOp::STRLEN:
-        case FunctorOp::TONUMBER:
-            assert(arg < 1 && "unary functor argument out of bounds");
-            return false;
-
-        /** Binary Functor Operators */
-        case FunctorOp::ADD:
-        case FunctorOp::SUB:
-        case FunctorOp::MUL:
-        case FunctorOp::DIV:
-        case FunctorOp::EXP:
-        case FunctorOp::BAND:
-        case FunctorOp::BOR:
-        case FunctorOp::BXOR:
-        case FunctorOp::LAND:
-        case FunctorOp::LOR:
-        case FunctorOp::MOD:
-            assert(arg < 2 && "binary functor argument out of bounds");
-            return true;
-
-        /** Ternary Functor Operators */
-        case FunctorOp::SUBSTR:
-            assert(arg < 3 && "ternary functor argument out of bounds");
-            return arg == 1 || arg == 2;
-
-        /** Non-fixed Functor Operators */
-        case FunctorOp::MAX:
-        case FunctorOp::MIN:
-            return true;
-        case FunctorOp::CAT:
-            return false;
-
-        /** Undefined */
-        default:
-            break;
-    }
-
-    assert(false && "unsupported operator");
-    return false;
-}
-
-/**
- * Determines whether an argument has a symbolic value
- */
-inline bool functorOpAcceptsSymbols(size_t arg, const FunctorOp op) {
-    return !functorOpAcceptsNumbers(arg, op);
+    exit(EXIT_FAILURE);
+    return RamPrimitiveType::Record;  // silence warning.
 }
 
 /**
@@ -436,16 +402,32 @@ inline bool functorOpAcceptsSymbols(size_t arg, const FunctorOp op) {
 inline bool isInfixFunctorOp(const FunctorOp op) {
     switch (op) {
         case FunctorOp::ADD:
+        case FunctorOp::FADD:
+        case FunctorOp::UADD:
         case FunctorOp::SUB:
+        case FunctorOp::USUB:
+        case FunctorOp::FSUB:
         case FunctorOp::MUL:
+        case FunctorOp::FMUL:
+        case FunctorOp::UMUL:
         case FunctorOp::DIV:
+        case FunctorOp::FDIV:
+        case FunctorOp::UDIV:
         case FunctorOp::EXP:
+        case FunctorOp::FEXP:
+        case FunctorOp::UEXP:
         case FunctorOp::BAND:
+        case FunctorOp::UBAND:
         case FunctorOp::BOR:
+        case FunctorOp::UBOR:
         case FunctorOp::BXOR:
+        case FunctorOp::UBXOR:
         case FunctorOp::LAND:
+        case FunctorOp::ULAND:
         case FunctorOp::LOR:
+        case FunctorOp::ULOR:
         case FunctorOp::MOD:
+        case FunctorOp::UMOD:
             return true;
         default:
             return false;

@@ -329,28 +329,34 @@ public:
         args[idx] = std::move(arg);
     }
 
+    /** Get the return type of the functor. */
     RamPrimitiveType checkReturnType() const {
         return functorReturnType(function);
     }
 
     /** Check if the return value of this functor is a number type. */
     bool isNumerical() const {
-        return isNumericFunctorOp(function);
+        return checkReturnType() == RamPrimitiveType::Signed;
     }
 
     /** Check if the return value of this functor is a symbol type. */
     bool isSymbolic() const {
-        return isSymbolicFunctorOp(function);
+        return checkReturnType() == RamPrimitiveType::String;
+    }
+
+    /** Get type of the functor argument*/
+    RamPrimitiveType getArgType(size_t arg) const {
+        return functorOpArgType(arg, function);
     }
 
     /** Check if the argument of this functor is a number type. */
     bool acceptsNumbers(size_t arg) const {
-        return functorOpAcceptsNumbers(arg, function);
+        return getArgType(arg) == RamPrimitiveType::Signed;
     }
 
     /** Check if the argument of this functor is a symbol type. */
     bool acceptsSymbols(size_t arg) const {
-        return functorOpAcceptsSymbols(arg, function);
+        return getArgType(arg) == RamPrimitiveType::String;
     }
 
     /** Print argument to the given output stream */

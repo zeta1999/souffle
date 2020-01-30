@@ -38,6 +38,7 @@
 #include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
+#include "RamPrimitiveTypes.h"
 #include "RelationRepresentation.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
@@ -215,10 +216,9 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // - intrinsic functors -
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         // check type of result
-        RamPrimitiveType expectedResultType = fun.checkReturnType();
-        auto resultType = typeAnalysis.getTypes(&fun);
-        if (!isSimplePrimitiveType(resultType) || getPrimitiveType(resultType) != expectedResultType) {
-            switch (expectedResultType) {
+        const TypeSet& resultType = typeAnalysis.getTypes(&fun);
+        if (!eqTypeRamPrimitive(fun.checkReturnType(), resultType)) {
+            switch (fun.checkReturnType()) {
                 case RamPrimitiveType::Signed:
                     report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
                     break;
@@ -243,11 +243,23 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
         for (size_t i = 0; i < fun.getArity(); i++) {
             auto arg = fun.getArg(i);
-            if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-            }
-            if (fun.acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+            if (!eqTypeRamPrimitive(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
+                switch (fun.getArgType(i)) {
+                    case RamPrimitiveType::Signed:
+                        report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+                        break;
+                    case RamPrimitiveType::String:
+                        report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+                        break;
+                    case RamPrimitiveType::Unsigned:
+                        report.addError("Non-unsigned argument for functor", arg->getSrcLoc());
+                        break;
+                    case RamPrimitiveType::Float:
+                        report.addError("Non-float argument for functor", arg->getSrcLoc());
+                        break;
+                    case RamPrimitiveType::Record:
+                        assert(false && "Invalid argument type");
+                }
             }
         }
     });
@@ -263,6 +275,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         if (funDecl->getArgCount() != fun.getArgCount()) {
             report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
         }
+
         // check return values of user-defined functor
         if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
             report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());

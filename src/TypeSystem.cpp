@@ -80,6 +80,7 @@ void TypeEnvironment::clear() {
     createType<PredefinedType>("number");
     createType<PredefinedType>("float");
     createType<PredefinedType>("symbol");
+    createType<PredefinedType>("unsigned");
 }
 
 bool TypeEnvironment::isType(const identifier& ident) const {
@@ -335,6 +336,14 @@ bool isNumberType(const Type& type) {
 
 bool isNumberType(const TypeSet& s) {
     return !s.empty() && !s.isAll() && all_of(s, (bool (*)(const Type&)) & isNumberType);
+}
+
+bool isUnsignedType(const Type& type) {
+    return isOfRootType(type, type.getTypeEnvironment().getUnsignedType());
+}
+
+bool isUnsignedType(const TypeSet& s) {
+    return !s.empty() && !s.isAll() && all_of(s, (bool (*)(const Type&)) & isUnsignedType);
 }
 
 bool isSymbolType(const Type& type) {

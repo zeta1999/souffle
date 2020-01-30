@@ -356,6 +356,10 @@ public:
         return getType("number");
     }
 
+    const Type& getUnsignedType() const {
+        return getType("unsigned");
+    }
+
     const Type& getFloatType() const {
         return getType("float");
     }
@@ -400,7 +404,25 @@ std::string getTypeQualifier(const Type& type);
 
 template <typename T>  // T = Type or T = Typeset
 bool isSimplePrimitiveType(const T& type) {
-    return isNumberType(type) /*|| isUnsignedType(type)*/ || isFloatType(type) || isSymbolType(type);
+    return isNumberType(type) || isUnsignedType(type) || isFloatType(type) || isSymbolType(type);
+}
+
+template <typename T>  // T = Type or T = Typeset
+bool eqTypeRamPrimitive(const RamPrimitiveType ramType, const T& type) {
+    switch (ramType) {
+        case RamPrimitiveType::Signed:
+            return isNumberType(type);
+        case RamPrimitiveType::Unsigned:
+            return isUnsignedType(type);
+        case RamPrimitiveType::Float:
+            return isFloatType(type);
+        case RamPrimitiveType::String:
+            return isSymbolType(type);
+        case RamPrimitiveType::Record:
+            return isRecordType(type);
+        default:
+            return false;
+    }
 }
 
 template <typename T>  // T = Type or T = Typeset
@@ -408,10 +430,9 @@ RamPrimitiveType getPrimitiveType(const T& type) {
     RamPrimitiveType primitiveType;
     if (isNumberType(type)) {
         primitiveType = RamPrimitiveType::Signed;
-    } /*else if (isUnsignedType(type)) {
+    } else if (isUnsignedType(type)) {
         primitiveType = RamPrimitiveType::Unsigned;
-    } */
-    else if (isFloatType(type)) {
+    } else if (isFloatType(type)) {
         primitiveType = RamPrimitiveType::Float;
     } else if (isRecordType(type)) {
         primitiveType = RamPrimitiveType::Record;
@@ -443,6 +464,16 @@ bool isNumberType(const Type& type);
  * Determines whether all the types in the given set are number types.
  */
 bool isNumberType(const TypeSet& s);
+
+/**
+ * Determines whether the given type is a number type.
+ */
+bool isUnsignedType(const Type& type);
+
+/**
+ * Determines whether all the types in the given set are number types.
+ */
+bool isUnsignedType(const TypeSet& s);
 
 /**
  * Determines whether the given type is a symbol type.

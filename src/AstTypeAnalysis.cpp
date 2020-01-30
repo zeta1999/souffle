@@ -435,11 +435,18 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             auto cur = getVar(fun);
 
             // add a constraint for the return type of the functor
-            if (fun.isNumerical()) {
-                addConstraint(isSubtypeOf(cur, env.getNumberType()));
-            }
-            if (fun.isSymbolic()) {
-                addConstraint(isSubtypeOf(cur, env.getSymbolType()));
+            switch (fun.checkReturnType()) {
+                case RamPrimitiveType::Signed:
+                    addConstraint(isSubtypeOf(cur, env.getNumberType()));
+                    break;
+                case RamPrimitiveType::Float:
+                    addConstraint(isSubtypeOf(cur, env.getFloatType()));
+                    break;
+                case RamPrimitiveType::String:
+                    addConstraint(isSubtypeOf(cur, env.getSymbolType()));
+                    break;
+                default:
+                    assert(false && "Invalid return type");
             }
 
             // add a constraint for each argument of the functor
@@ -449,11 +456,18 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
             for (size_t i = 0; i < fun.getArity(); i++) {
                 auto arg = getVar(fun.getArg(i));
-                if (fun.acceptsNumbers(i)) {
-                    addConstraint(isSubtypeOf(arg, env.getNumberType()));
-                }
-                if (fun.acceptsSymbols(i)) {
-                    addConstraint(isSubtypeOf(arg, env.getSymbolType()));
+                switch (fun.getArgType(i)) {
+                    case RamPrimitiveType::Signed:
+                        addConstraint(isSubtypeOf(arg, env.getNumberType()));
+                        break;
+                    case RamPrimitiveType::Float:
+                        addConstraint(isSubtypeOf(arg, env.getFloatType()));
+                        break;
+                    case RamPrimitiveType::String:
+                        addConstraint(isSubtypeOf(arg, env.getSymbolType()));
+                        break;
+                    default:
+                        assert(false && "Invalid argument type");
                 }
             }
         }

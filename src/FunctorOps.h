@@ -395,10 +395,10 @@ inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
     return RamPrimitiveType::Record;  // silence warning.
 }
 
-inline bool isOverloadedFunctor(const FunctorOp op) {
-    switch (op) {
+inline bool isOverloadedFunctor(const FunctorOp functor) {
+    switch (functor) {
         /* Unary */
-        case FunctorOp::NEG:
+        case FunctorOp::NEG:  // Should float/unsigned version be added here?
         case FunctorOp::BNOT:
         case FunctorOp::LNOT:
         /* Binary */
@@ -418,6 +418,82 @@ inline bool isOverloadedFunctor(const FunctorOp op) {
     }
 
     return false;
+}
+
+inline FunctorOp getFromOverloaded(const FunctorOp functor, RamPrimitiveType toType) {
+    switch (functor) {
+        case FunctorOp::NEG:
+            assert(toType == RamPrimitiveType::Float && "Invalid functor conversion from NEG");
+            return FunctorOp::FNEG;
+        case FunctorOp::BNOT:
+            assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion from UBNOT");
+            return FunctorOp::UBNOT;
+        case FunctorOp::LNOT:
+            assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion from LNOT");
+            return FunctorOp::LNOT;
+        /* Binary */
+        case FunctorOp::ADD:
+            if (toType == RamPrimitiveType::Float) {
+                return FunctorOp::FADD;
+            } else if (toType == RamPrimitiveType::Unsigned) {
+                return FunctorOp::UADD;
+            }
+            assert(false && "Invalid functor conversion");
+            break;
+        case FunctorOp::SUB:
+            if (toType == RamPrimitiveType::Float) {
+                return FunctorOp::FSUB;
+            } else if (toType == RamPrimitiveType::Unsigned) {
+                return FunctorOp::USUB;
+            }
+            assert(false && "Invalid functor conversion");
+            break;
+        case FunctorOp::MUL:
+            if (toType == RamPrimitiveType::Float) {
+                return FunctorOp::FMUL;
+            } else if (toType == RamPrimitiveType::Unsigned) {
+                return FunctorOp::UMUL;
+            }
+            assert(false && "Invalid functor conversion");
+            break;
+        case FunctorOp::DIV:
+            if (toType == RamPrimitiveType::Float) {
+                return FunctorOp::FDIV;
+            } else if (toType == RamPrimitiveType::Unsigned) {
+                return FunctorOp::UDIV;
+            }
+            assert(false && "Invalid functor conversion");
+            break;
+        case FunctorOp::EXP:
+            if (toType == RamPrimitiveType::Float) {
+                return FunctorOp::FEXP;
+            } else if (toType == RamPrimitiveType::Unsigned) {
+                return FunctorOp::UEXP;
+            }
+            assert(false && "Invalid functor conversion");
+            break;
+        case FunctorOp::BAND:
+            assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion");
+            return FunctorOp::UBAND;
+        case FunctorOp::BOR:
+            assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion");
+            return FunctorOp::UBOR;
+        case FunctorOp::LAND:
+            assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion");
+            return FunctorOp::ULAND;
+        case FunctorOp::LOR:
+            assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion");
+            return FunctorOp::ULOR;
+        case FunctorOp::MOD:
+            assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion");
+            return FunctorOp::UMOD;
+        default:
+            break;
+    }
+
+    assert(false && "Invalid functor");
+    exit(EXIT_FAILURE);
+    return FunctorOp::__UNDEFINED__;
 }
 
 /**

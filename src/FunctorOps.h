@@ -395,6 +395,31 @@ inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
     return RamPrimitiveType::Record;  // silence warning.
 }
 
+inline bool isOverloadedFunctor(const FunctorOp op) {
+    switch (op) {
+        /* Unary */
+        case FunctorOp::NEG:
+        case FunctorOp::BNOT:
+        case FunctorOp::LNOT:
+        /* Binary */
+        case FunctorOp::ADD:
+        case FunctorOp::SUB:
+        case FunctorOp::MUL:
+        case FunctorOp::DIV:
+        case FunctorOp::EXP:
+        case FunctorOp::BAND:
+        case FunctorOp::BOR:
+        case FunctorOp::LAND:
+        case FunctorOp::LOR:
+        case FunctorOp::MOD:
+            return true;
+        default:
+            break;
+    }
+
+    return false;
+}
+
 /**
  * Determines whether a functor should be written using infix notation (e.g. `a + b + c`)
  * or prefix notation (e.g. `+(a,b,c)`)

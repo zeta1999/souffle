@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "AstArgument.h"
+#include "AstAnalyses.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
@@ -256,6 +257,7 @@ void transformEqrelRelation(AstRelation& rel) {
 
 bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translationUnit) {
     static auto program = translationUnit.getProgram();
+    const auto& auxiliaryArity = *translationUnit.getAnalysis<AuxiliaryArity>();
 
     // get next level number
     auto getNextLevelNumber = [&](std::vector<AstArgument*> levels) {
@@ -304,16 +306,14 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                 std::make_unique<AstAttribute>(std::string("@rule_number"), AstTypeIdentifier("number")));
         relation->addAttribute(
                 std::make_unique<AstAttribute>(std::string("@level_number"), AstTypeIdentifier("number")));
-        for (size_t i = 0; i < relation->getAuxiliaryArity() - 2; i++) {
+        for (size_t i = 0; i < auxiliaryArity.getArity(relation) - 2; i++) {
             relation->addAttribute(std::make_unique<AstAttribute>(
                     std::string("@sublevel_number_" + std::to_string(i)), AstTypeIdentifier("number")));
         }
         for (auto clause : relation->getClauses()) {
-            // mapper to add two provenance columns to atoms
-            struct M : public AstNodeMapper {
-                using AstNodeMapper::operator();
 
-                std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            std::function<std::unique_ptr<AstNode>(std::unique_ptr<AstNode>)> rewriter =
+                [&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
                     // add provenance columns
                     if (auto atom = dynamic_cast<AstAtom*>(node.get())) {
                         // rule number
@@ -321,7 +321,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         // max level
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         // level number
-                        for (size_t i = 0; i < program->getRelation(atom->getName())->getAuxiliaryArity() - 2;
+                        for (size_t i = 0; i < auxiliaryArity.getArity(program,atom) - 2;
                                 i++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
@@ -332,25 +332,24 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         // max level
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         // level number
-                        for (size_t i = 0; i < program->getRelation(atom->getName())->getAuxiliaryArity() - 2;
+                        for (size_t i = 0; i < auxiliaryArity.getArity(program, atom) - 2;
                                 i++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
                     }
 
                     // otherwise - apply mapper recursively
-                    node->apply(*this);
+                    node->apply(makeLambdaAstMapper(rewriter));
                     return node;
-                }
             };
 
             // add unnamed vars to each atom nested in arguments of head
-            clause->getHead()->apply(M());
+            clause->getHead()->apply(makeLambdaAstMapper(rewriter));
 
             // if fact, level number is 0
             if (clause->isFact()) {
                 clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
-                for (size_t i = 0; i < relation->getAuxiliaryArity() - 1; i++) {
+                for (size_t i = 0; i < auxiliaryArity.getArity(relation) - 1; i++) {
                     clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
                 }
             } else {
@@ -360,7 +359,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                     auto lit = clause->getBodyLiterals()[i];
 
                     // add unnamed vars to each atom nested in arguments of lit
-                    lit->apply(M());
+                    lit->apply(makeLambdaAstMapper(rewriter));
 
                     // add provenance columns to lit; first rule num, then level nums
                     if (auto atom = dynamic_cast<AstAtom*>(lit)) {
@@ -369,7 +368,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         atom->addArgument(
                                 std::make_unique<AstVariable>("@level_number_" + std::to_string(i)));
                         // level nums
-                        for (size_t j = 0; j < program->getRelation(atom->getName())->getAuxiliaryArity() - 2;
+                        for (size_t j = 0; j < auxiliaryArity.getArity(program,atom) - 2;
                                 j++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
@@ -387,7 +386,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                     clause->getHead()->addArgument(
                             std::make_unique<AstVariable>("@level_number_" + std::to_string(j)));
                 }
-                for (size_t j = clause->getAtoms().size(); j < relation->getAuxiliaryArity() - 2; j++) {
+                for (size_t j = clause->getAtoms().size(); j < auxiliaryArity.getArity(relation) - 2; j++) {
                     clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(-1));
                 }
             }

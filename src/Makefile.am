@@ -59,6 +59,7 @@ endif
 
 souffle_sources = \
         AstAnalysis.h                             \
+        AstAnalyses.h AstAnalyses.cpp             \
         AstArgument.cpp       AstArgument.h       \
         AstAttribute.h                            \
         AstClause.cpp         AstClause.h         \

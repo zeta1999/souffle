@@ -163,6 +163,9 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
     return false;
 }
 
+/**
+ * Return a string representation of a functor.
+ */
 inline std::string getSymbolForFunctorOp(const FunctorOp op) {
     switch (op) {
         /** Unary Functor Operators */
@@ -244,6 +247,9 @@ inline std::string getSymbolForFunctorOp(const FunctorOp op) {
     return "?";
 }
 
+/**
+ * Check a functor's return type (codomain).
+ */
 inline RamPrimitiveType functorReturnType(const FunctorOp op) {
     switch (op) {
         case FunctorOp::ORD:
@@ -309,6 +315,9 @@ inline RamPrimitiveType functorReturnType(const FunctorOp op) {
     return RamPrimitiveType::Record;  // Silence warning.
 }
 
+/**
+ * Check the type of argument indicated by arg (0-indexed) of a functor op.
+ */
 inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
     switch (op) {
         case FunctorOp::ITOF:
@@ -369,7 +378,7 @@ inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
             assert(arg < 2 && "binary functor out of bound");
             return RamPrimitiveType::Float;
         case FunctorOp::SUBSTR:
-            assert(arg < 3 && "Ternary Functor Operators");
+            assert(arg < 3 && "ternary functor out of bound");
             if (arg == 0) {
                 return RamPrimitiveType::String;
             } else {
@@ -395,6 +404,12 @@ inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
     return RamPrimitiveType::Record;  // silence warning.
 }
 
+/**
+ * Indicate whether a functor is overloaded, that is, it can have to different meaning.
+ * Example: signed + singed; float + float. + can mean signed addition or float addition.
+ * At the moment, the signed versions are treated as representatives (because parser always returns a signed
+ * version).
+ */
 inline bool isOverloadedFunctor(const FunctorOp functor) {
     switch (functor) {
         /* Unary */
@@ -420,7 +435,11 @@ inline bool isOverloadedFunctor(const FunctorOp functor) {
     return false;
 }
 
-inline FunctorOp getFromOverloaded(const FunctorOp functor, RamPrimitiveType toType) {
+/**
+ * Convert an overloaded functor, so that it can work with requested type.
+ * Example: toType = Float, functor = PLUS -> FPLUS (version of plus working on floats)
+ */
+inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const RamPrimitiveType toType) {
     switch (functor) {
         case FunctorOp::NEG:
             assert(toType == RamPrimitiveType::Float && "Invalid functor conversion from NEG");

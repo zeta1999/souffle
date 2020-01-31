@@ -16,7 +16,7 @@
 
 #include "test.h"
 
-#include "CompiledRelation.h"
+#include "CompiledIndexUtils.h"
 
 namespace souffle {
 namespace ram {

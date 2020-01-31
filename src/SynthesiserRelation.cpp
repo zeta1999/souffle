@@ -33,6 +33,9 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
         rel = new SynthesiserBrieRelation(ramRel, indexSet, isProvenance);
     } else if (ramRel.getRepresentation() == RelationRepresentation::EQREL) {
         rel = new SynthesiserEqrelRelation(ramRel, indexSet, isProvenance);
+    // TODO: create data structrue for info relation
+    } else if (ramRel.getRepresentation() == RelationRepresentation::INFO) {
+        rel = new SynthesiserDirectRelation(ramRel, indexSet, isProvenance);
     } else {
         // Handle the data structure command line flag
         if (ramRel.getArity() > 6) {

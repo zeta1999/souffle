@@ -1690,7 +1690,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // synthesise data-structures for relations
     for (auto rel : prog.getRelations()) {
-        const std::string& datalogName = rel->getName();
+        //const std::string& datalogName = rel->getName();
 
         bool isProvInfo =  rel->getRepresentation() == RelationRepresentation::INFO;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
@@ -2133,7 +2133,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             for (auto rel : prog.getRelations()) {
                 // get some table details
                 const std::string& cppName = getRelationName(*rel);
-                const std::string& datalogName = rel->getName();
+                //const std::string& datalogName = rel->getName();
 
                 bool isProvInfo = rel->getRepresentation() == RelationRepresentation::INFO;
                 auto relationType = SynthesiserRelation::getSynthesiserRelation(*rel,

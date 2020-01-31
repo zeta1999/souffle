@@ -120,6 +120,12 @@
 %token SYMBOL_TYPE               "symbolic type declaration"
 %token TONUMBER                  "convert string to (signed) number"
 %token TOSTRING                  "convert number to string"
+%token ITOU                      "convert int to unsigned"
+%token ITOF                      "convert int to float"
+%token UTOI                      "convert unsigned to int"
+%token UTOF                      "convert unsigned to float"
+%token FTOI                      "convert float to int"
+%token FTOU                      "convert float to unsigned"
 %token AS                        "type cast"
 %token AT                        "@"
 %token NIL                       "nil reference"
@@ -984,6 +990,48 @@ arg
 
         $nested_arg = nullptr;
     }
+  | ITOU LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::ITOU,
+                std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
+
+        $nested_arg = nullptr;
+    }
+  | ITOF LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::ITOF,
+                std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
+
+        $nested_arg = nullptr;
+    }
+  | UTOI LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::UTOI,
+                std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
+
+        $nested_arg = nullptr;
+    }
+  | UTOF LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::UTOF,
+                std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
+
+        $nested_arg = nullptr;
+    }
+  | FTOI LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::FTOI,
+                std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
+
+        $nested_arg = nullptr;
+    }
+  | FTOU LPAREN arg[nested_arg] RPAREN {
+        $$ = new AstIntrinsicFunctor(FunctorOp::ITOU,
+                std::unique_ptr<AstArgument>($nested_arg));
+        $$->setSrcLoc(@$);
+
+        $nested_arg = nullptr;
+    }
 
     /* binary infix functors */
   | arg[left] PLUS arg[right] {
@@ -1476,6 +1524,10 @@ functor_type
             $$ = "N";
         } else if ($IDENT == "symbol") {
             $$ = "S";
+        } else if ($IDENT == "float") {
+            $$ = "F";
+        } else if ($IDENT == "unsigned") {
+            $$ = "U";
         } else {
             driver.error(@IDENT, "number or symbol identifier expected");
         }

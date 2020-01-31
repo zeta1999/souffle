@@ -1266,8 +1266,8 @@ bool PolymorphicFunctorsTransformer::transform(AstTranslationUnit& translationUn
                         bool typesSolution = true;
                         for (const AstArgument* argument : fun->getArguments()) {
                             if (typeAnalysis.getTypes(argument).empty()) {
-                                report.addError("Unable to deduce the type of the argument",
-                                        argument->getSrcLoc());
+                                report.addError(
+                                        "Unable to deduce the type of the argument", argument->getSrcLoc());
                                 typesSolution = false;
                             }
                         }

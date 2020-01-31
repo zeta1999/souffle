@@ -453,6 +453,9 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 case RamPrimitiveType::Float:
                     addConstraint(isSubtypeOf(functorVar, env.getFloatType()));
                     break;
+                case RamPrimitiveType::Unsigned:
+                    addConstraint(isSubtypeOf(functorVar, env.getUnsignedType()));
+                    break;
                 case RamPrimitiveType::String:
                     addConstraint(isSubtypeOf(functorVar, env.getSymbolType()));
                     break;
@@ -473,6 +476,9 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                         break;
                     case RamPrimitiveType::Float:
                         addConstraint(isSubtypeOf(argumentVar, env.getFloatType()));
+                        break;
+                    case RamPrimitiveType::Unsigned:
+                        addConstraint(isSubtypeOf(argumentVar, env.getUnsignedType()));
                         break;
                     case RamPrimitiveType::String:
                         addConstraint(isSubtypeOf(argumentVar, env.getSymbolType()));

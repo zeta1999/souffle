@@ -687,7 +687,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
         AstTypeIdentifier typeName = attr->getTypeName();
 
         /* check whether type exists */
-        if (typeName != "number" && typeName != "symbol" && typeName != "float" &&
+        if (typeName != "number" && typeName != "symbol" && typeName != "float" && typeName != "unsigned" &&
                 (program.getType(typeName) == nullptr)) {
             report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
                                     toString(attr->getTypeName()),

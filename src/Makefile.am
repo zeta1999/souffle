@@ -178,7 +178,6 @@ soufflepublic_HEADERS = \
         BTree.h                                   \
         CompiledIndexUtils.h                      \
         CompiledRecord.h                          \
-        CompiledRelation.h                        \
         CompiledSouffle.h                         \
         CompiledTuple.h                           \
         EventProcessor.h                          \

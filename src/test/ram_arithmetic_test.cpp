@@ -25,7 +25,6 @@
 #include "SymbolTable.h"
 
 #include "test.h"
-#include "test_util.h"
 
 #include <cmath>
 #include <map>
@@ -102,7 +101,7 @@ TEST(RamNumber, ArithmeticEvaluation) {
 }
 
 TEST(Unary, Neg) {
-    for (RamDomain randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
+    for (RamDomain randomNumber : testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
         EXPECT_EQ(evalUnary(FunctorOp::NEG, randomNumber), -randomNumber);
     }
 }
@@ -110,7 +109,7 @@ TEST(Unary, Neg) {
 TEST(Unary, FloatNeg) {
     FunctorOp functor = FunctorOp::FNEG;
 
-    for (auto randomNumber : generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
         auto result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamFloat>(result), -randomNumber);
     }
@@ -119,7 +118,7 @@ TEST(Unary, FloatNeg) {
 TEST(Unary, BinaryNot) {
     FunctorOp functor = FunctorOp::BNOT;
 
-    for (auto randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
         EXPECT_EQ(evalUnary(functor, randomNumber), ~randomNumber);
     }
 }
@@ -127,7 +126,7 @@ TEST(Unary, BinaryNot) {
 TEST(Unary, UnsignedBinaryNot) {
     FunctorOp functor = FunctorOp::UBNOT;
 
-    for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), ~randomNumber);
     }
@@ -136,7 +135,7 @@ TEST(Unary, UnsignedBinaryNot) {
 TEST(Unary, LogicalNeg) {
     FunctorOp functor = FunctorOp::LNOT;
 
-    for (auto randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
         EXPECT_EQ(evalUnary(functor, randomNumber), !randomNumber);
     }
 }
@@ -144,7 +143,7 @@ TEST(Unary, LogicalNeg) {
 TEST(Unary, UnsignedLogicalNeg) {
     FunctorOp functor = FunctorOp::ULNOT;
 
-    for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), static_cast<RamUnsigned>(!randomNumber));
     }
@@ -153,7 +152,7 @@ TEST(Unary, UnsignedLogicalNeg) {
 TEST(Unary, SingedTpUnsigned) {
     FunctorOp functor = FunctorOp::ITOU;
 
-    for (auto randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, randomNumber);
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), static_cast<RamUnsigned>(randomNumber));
     }
@@ -162,7 +161,7 @@ TEST(Unary, SingedTpUnsigned) {
 TEST(Unary, UnsignedToSigned) {
     FunctorOp functor = FunctorOp::UTOI;
 
-    for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(result, static_cast<RamDomain>(randomNumber));
     }
@@ -171,7 +170,7 @@ TEST(Unary, UnsignedToSigned) {
 TEST(Unary, SignedToFloat) {
     FunctorOp functor = FunctorOp::ITOF;
 
-    for (auto randomNumber : generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(randomNumber));
     }
@@ -180,7 +179,7 @@ TEST(Unary, SignedToFloat) {
 TEST(Unary, FloatToSigned) {
     FunctorOp functor = FunctorOp::FTOI;
 
-    for (auto randomNumber : generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(result, static_cast<RamDomain>(randomNumber));
     }
@@ -189,7 +188,7 @@ TEST(Unary, FloatToSigned) {
 TEST(Unary, UnsignedToFloat) {
     FunctorOp functor = FunctorOp::UTOF;
 
-    for (auto randomNumber : generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamFloat>(result), static_cast<RamFloat>(randomNumber));
     }
@@ -198,7 +197,7 @@ TEST(Unary, UnsignedToFloat) {
 TEST(Unary, FloatToUnsigned) {
     FunctorOp functor = FunctorOp::FTOU;
 
-    for (auto randomNumber : generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
+    for (auto randomNumber : testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
         EXPECT_EQ(ramBitCast<RamUnsigned>(result), static_cast<RamUnsigned>(randomNumber));
     }
@@ -207,8 +206,8 @@ TEST(Unary, FloatToUnsigned) {
 TEST(Binary, SignedAdd) {
     FunctorOp functor = FunctorOp::ADD;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (size_t i = 0; i < TESTS_PER_OPERATION; ++i) {
         RamDomain arg1 = vecArg1[i];
@@ -221,8 +220,8 @@ TEST(Binary, SignedAdd) {
 TEST(Binary, UnsignedAdd) {
     FunctorOp functor = FunctorOp::UADD;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         RamUnsigned arg1 = vecArg1[i];
@@ -235,8 +234,8 @@ TEST(Binary, UnsignedAdd) {
 TEST(Binary, FloatAdd) {
     FunctorOp functor = FunctorOp::FADD;
 
-    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -249,8 +248,8 @@ TEST(Binary, FloatAdd) {
 TEST(Binary, SignedSub) {
     FunctorOp functor = FunctorOp::SUB;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -263,8 +262,8 @@ TEST(Binary, SignedSub) {
 TEST(Binary, UnsignedSub) {
     FunctorOp functor = FunctorOp::USUB;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -277,8 +276,8 @@ TEST(Binary, UnsignedSub) {
 TEST(Binary, FloatSub) {
     FunctorOp functor = FunctorOp::FSUB;
 
-    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -291,8 +290,8 @@ TEST(Binary, FloatSub) {
 TEST(Binary, SignedMul) {
     FunctorOp functor = FunctorOp::MUL;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -305,8 +304,8 @@ TEST(Binary, SignedMul) {
 TEST(Binary, UnsignedMul) {
     FunctorOp functor = FunctorOp::UMUL;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -319,8 +318,8 @@ TEST(Binary, UnsignedMul) {
 TEST(Binary, FloatMul) {
     FunctorOp functor = FunctorOp::FMUL;
 
-    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -333,8 +332,8 @@ TEST(Binary, FloatMul) {
 TEST(Binary, SignedDiv) {
     FunctorOp functor = FunctorOp::DIV;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -349,8 +348,8 @@ TEST(Binary, SignedDiv) {
 TEST(Binary, UnsignedDiv) {
     FunctorOp functor = FunctorOp::UDIV;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -365,8 +364,8 @@ TEST(Binary, UnsignedDiv) {
 TEST(Binary, FloatDiv) {
     FunctorOp functor = FunctorOp::FDIV;
 
-    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -381,8 +380,8 @@ TEST(Binary, FloatDiv) {
 TEST(Binary, SignedExp) {
     FunctorOp functor = FunctorOp::EXP;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -395,8 +394,8 @@ TEST(Binary, SignedExp) {
 TEST(Binary, UnsignedExp) {
     FunctorOp functor = FunctorOp::UEXP;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -409,8 +408,8 @@ TEST(Binary, UnsignedExp) {
 TEST(Binary, FloatExp) {
     FunctorOp functor = FunctorOp::FEXP;
 
-    auto vecArg1 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -424,8 +423,8 @@ TEST(Binary, FloatExp) {
 TEST(Binary, SignedMod) {
     FunctorOp functor = FunctorOp::MOD;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -438,8 +437,8 @@ TEST(Binary, SignedMod) {
 TEST(Binary, UnsignedMod) {
     FunctorOp functor = FunctorOp::UMOD;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -452,8 +451,8 @@ TEST(Binary, UnsignedMod) {
 TEST(Binary, SignedBinaryAnd) {
     FunctorOp functor = FunctorOp::BAND;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -466,8 +465,8 @@ TEST(Binary, SignedBinaryAnd) {
 TEST(Binary, UnsignedBinaryAnd) {
     FunctorOp functor = FunctorOp::UBAND;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -480,8 +479,8 @@ TEST(Binary, UnsignedBinaryAnd) {
 TEST(Binary, SignedBinaryOr) {
     FunctorOp functor = FunctorOp::BOR;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -494,8 +493,8 @@ TEST(Binary, SignedBinaryOr) {
 TEST(Binary, UnsignedBinaryOr) {
     FunctorOp functor = FunctorOp::UBOR;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -508,8 +507,8 @@ TEST(Binary, UnsignedBinaryOr) {
 TEST(Binary, SignedBinaryXor) {
     FunctorOp functor = FunctorOp::BXOR;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -522,8 +521,8 @@ TEST(Binary, SignedBinaryXor) {
 TEST(Binary, UnsignedBinaryXor) {
     FunctorOp functor = FunctorOp::UBXOR;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -536,8 +535,8 @@ TEST(Binary, UnsignedBinaryXor) {
 TEST(Binary, SignedLogicalAnd) {
     FunctorOp functor = FunctorOp::LAND;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -550,8 +549,8 @@ TEST(Binary, SignedLogicalAnd) {
 TEST(Binary, UnsignedLogicalAnd) {
     FunctorOp functor = FunctorOp::ULAND;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -564,8 +563,8 @@ TEST(Binary, UnsignedLogicalAnd) {
 TEST(Binary, SignedLogicalOr) {
     FunctorOp functor = FunctorOp::LOR;
 
-    auto vecArg1 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
@@ -578,8 +577,8 @@ TEST(Binary, SignedLogicalOr) {
 TEST(Binary, UnsignedLogicalOr) {
     FunctorOp functor = FunctorOp::ULOR;
 
-    auto vecArg1 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
-    auto vecArg2 = generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg1 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
+    auto vecArg2 = testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION);
 
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];

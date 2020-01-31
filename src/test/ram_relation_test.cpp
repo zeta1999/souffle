@@ -26,7 +26,6 @@
 #include "SymbolTable.h"
 
 #include "test.h"
-#include "test_util.h"
 
 #include <fstream>
 #include <map>
@@ -110,7 +109,7 @@ test
 }
 
 TEST(IO_store, Signed) {
-    std::vector<RamDomain> randomNumbers = generateRandomVector<RamDomain>(RANDOM_TESTS);
+    std::vector<RamDomain> randomNumbers = testutil::generateRandomVector<RamDomain>(RANDOM_TESTS);
 
     // a0 a1 a2...
     std::vector<std::string> attribs(RANDOM_TESTS, "a");
@@ -146,7 +145,7 @@ TEST(IO_store, Signed) {
 }
 
 TEST(IO_store, Float) {
-    std::vector<RamFloat> randomNumbers = generateRandomVector<RamFloat>(RANDOM_TESTS);
+    std::vector<RamFloat> randomNumbers = testutil::generateRandomVector<RamFloat>(RANDOM_TESTS);
 
     // a0 a1 a2...
     std::vector<std::string> attribs(RANDOM_TESTS, "a");
@@ -182,7 +181,7 @@ TEST(IO_store, Float) {
 }
 
 TEST(IO_store, Unsigned) {
-    std::vector<RamUnsigned> randomNumbers = generateRandomVector<RamUnsigned>(RANDOM_TESTS);
+    std::vector<RamUnsigned> randomNumbers = testutil::generateRandomVector<RamUnsigned>(RANDOM_TESTS);
 
     // a0 a1 a2...
     std::vector<std::string> attribs(RANDOM_TESTS, "a");
@@ -219,7 +218,7 @@ TEST(IO_store, Unsigned) {
 
 // Test (store) with different delimiter
 TEST(IO_store, SignedChangedDelimeter) {
-    std::vector<RamDomain> randomNumbers = generateRandomVector<RamDomain>(RANDOM_TESTS);
+    std::vector<RamDomain> randomNumbers = testutil::generateRandomVector<RamDomain>(RANDOM_TESTS);
     const std::string delimiter{", "};
 
     Global::config().set("jobs", "1");

@@ -16,13 +16,42 @@
 #pragma once
 #include "Util.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <limits>
+#include <random>
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace testutil {
+
+template <typename T>
+std::vector<T> generateRandomVector(const size_t vectorSize, const int seed = 3) {
+    std::vector<T> values(vectorSize);
+
+    std::default_random_engine randomGenerator(seed);
+
+    if constexpr (std::is_floating_point<T>::value) {
+        // For distribution bonds, following must hold:
+        // a ≤ b and b − a ≤ numeric_limits<RealType>::max()
+        // (in particular: if given values bounds, it will crash).
+        // Investigate better solution.
+        std::uniform_real_distribution<T> distribution(-1000, 1000);
+        std::generate(values.begin(), values.end(),
+                [&distribution, &randomGenerator]() { return distribution(randomGenerator); });
+        return values;
+    } else {
+        std::uniform_int_distribution<T> distribution(
+                std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max());
+        std::generate(values.begin(), values.end(),
+                [&distribution, &randomGenerator]() { return distribution(randomGenerator); });
+        return values;
+    }
+}
+
 // easy function to suppress unused var warnings (when we REALLY don't need to use them!)
 template <class T>
 void ignore(const T&) {}

@@ -102,6 +102,5 @@ TEST(IndicesTools, FullIndex) {
     EXPECT_EQ(typeid(index<0, 1, 2, 3>), typeid(index_utils::get_full_index<4>::type));
 }
 
-
 }  // namespace ram
 }  // end namespace souffle

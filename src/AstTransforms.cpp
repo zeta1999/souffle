@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "AstTransforms.h"
+#include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstGroundAnalysis.h"
@@ -28,8 +29,10 @@
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
+#include "FunctorOps.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
+#include "RamPrimitiveTypes.h"
 #include "TypeSystem.h"
 #include <cstddef>
 #include <functional>
@@ -1231,32 +1234,48 @@ bool PolymorphicFunctorsTransformer::transform(AstTranslationUnit& translationUn
             node->apply(*this);
             // if current node is a typecast, replace with the value directly
             if (auto* fun = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
-                if (fun->getFunction() == FunctorOp::ADD) {
-                    // get arguments
-                    assert(fun->getArity() == 2 && "wrong arity of add functor.");
-                    const AstArgument* lhs = fun->getArg(0);
-                    const AstArgument* rhs = fun->getArg(1);
+                if (isOverloadedFunctor(fun->getFunction())) {
+                    // All args must be of the same type.
 
-                    // get argument types
-                    TypeSet lhsType = typeAnalysis.getTypes(lhs);
-                    TypeSet rhsType = typeAnalysis.getTypes(rhs);
+                    auto isFloat = [&](const AstArgument* argument) {
+                        return isFloatType(typeAnalysis.getTypes(argument));
+                    };
+                    auto isUnsigned = [&](const AstArgument* argument) {
+                        return isUnsignedType(typeAnalysis.getTypes(argument));
+                    };
+                    auto isSigned = [&](const AstArgument* argument) {
+                        return isNumberType(typeAnalysis.getTypes(argument));
+                    };
 
-                    // check that correctness of argument types
-                    if (lhsType.empty()) {
-                        report.addError("Unable to deduce type for lhs", lhs->getSrcLoc());
-                    }
-                    if (rhsType.empty()) {
-                        report.addError("Unable to deduce type for rhs", rhs->getSrcLoc());
-                    }
-
-                    // check polymorphic cases
-                    if (isFloatType(lhsType) && isFloatType(rhsType)) {
-                        fun->setFunction(FunctorOp::FADD);
+                    // This might needs to change, as the operator can be illegal. Will ast semantic check
+                    // detect problem?
+                    if (all_of(fun->getArguments(), isFloat)) {
+                        FunctorOp convertedFunctor =
+                                convertOverloadedFunctor(fun->getFunction(), RamPrimitiveType::Float);
+                        fun->setFunction(convertedFunctor);
                         changed = true;
-                    } else if (isNumberType(lhsType) && isNumberType(rhsType)) {
-                        // nothing to do here
+                    } else if (all_of(fun->getArguments(), isUnsigned)) {
+                        FunctorOp convertedFunctor =
+                                convertOverloadedFunctor(fun->getFunction(), RamPrimitiveType::Unsigned);
+                        fun->setFunction(convertedFunctor);
+                        changed = true;
+                    } else if (all_of(fun->getArguments(), isSigned)) {
+                        // Nothing to do here.
                     } else {
-                        report.addError("Implicit number conversion not permitted", rhs->getSrcLoc());
+                        // Determine whether all argument have some possible type
+                        bool typesSolution = true;
+                        for (const AstArgument* argument : fun->getArguments()) {
+                            if (typeAnalysis.getTypes(argument).empty()) {
+                                report.addError("Unable to deduce types for functor's argument",
+                                        argument->getSrcLoc());
+                                typesSolution = false;
+                            }
+                        }
+
+                        // No implicit conversion allowed.
+                        if (typesSolution) {
+                            report.addError("Implicit number conversion not permitted", fun->getSrcLoc());
+                        }
                     }
                 }
             }

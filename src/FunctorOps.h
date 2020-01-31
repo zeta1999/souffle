@@ -19,6 +19,7 @@
 #include "RamPrimitiveTypes.h"
 
 #include <cassert>
+#include <cstdlib>
 #include <iostream>
 
 namespace souffle {
@@ -169,15 +170,30 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
 inline std::string getSymbolForFunctorOp(const FunctorOp op) {
     switch (op) {
         /** Unary Functor Operators */
+        case FunctorOp::ITOF:
+            return "itof";
+        case FunctorOp::ITOU:
+            return "itou";
+        case FunctorOp::UTOF:
+            return "utof";
+        case FunctorOp::UTOI:
+            return "utoi";
+        case FunctorOp::FTOI:
+            return "ftoi";
+        case FunctorOp::FTOU:
+            return "ftou";
         case FunctorOp::ORD:
             return "ord";
         case FunctorOp::STRLEN:
             return "strlen";
         case FunctorOp::NEG:
+        case FunctorOp::FNEG:
             return "-";
         case FunctorOp::BNOT:
+        case FunctorOp::UBNOT:
             return "bnot";
         case FunctorOp::LNOT:
+        case FunctorOp::ULNOT:
             return "lnot";
         case FunctorOp::TONUMBER:
             return "to_number";
@@ -239,11 +255,12 @@ inline std::string getSymbolForFunctorOp(const FunctorOp op) {
             return "substr";
 
         /** Undefined */
-        default:
+        case FunctorOp::__UNDEFINED__:
             break;
     }
 
     assert(false && "unsupported operator");
+    exit(EXIT_FAILURE);
     return "?";
 }
 
@@ -427,6 +444,8 @@ inline bool isOverloadedFunctor(const FunctorOp functor) {
         case FunctorOp::LAND:
         case FunctorOp::LOR:
         case FunctorOp::MOD:
+        case FunctorOp::MAX:
+        case FunctorOp::MIN:
             return true;
         default:
             break;
@@ -488,6 +507,22 @@ inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const RamPrim
                 return FunctorOp::FEXP;
             } else if (toType == RamPrimitiveType::Unsigned) {
                 return FunctorOp::UEXP;
+            }
+            assert(false && "Invalid functor conversion");
+            break;
+        case FunctorOp::MAX:
+            if (toType == RamPrimitiveType::Float) {
+                return FunctorOp::FMAX;
+            } else if (toType == RamPrimitiveType::Unsigned) {
+                return FunctorOp::UMAX;
+            }
+            assert(false && "Invalid functor conversion");
+            break;
+        case FunctorOp::MIN:
+            if (toType == RamPrimitiveType::Float) {
+                return FunctorOp::FMIN;
+            } else if (toType == RamPrimitiveType::Unsigned) {
+                return FunctorOp::UMIN;
             }
             assert(false && "Invalid functor conversion");
             break;

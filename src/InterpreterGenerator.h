@@ -645,14 +645,14 @@ private:
             relations.resize(idx + 1);
         }
         if (id.getRepresentation() == RelationRepresentation::EQREL) {
-            res = std::make_unique<InterpreterEqRelation>(id.getArity(), id.getNumberOfHeights(),
-                    id.getName(), std::vector<std::string>(), orderSet);
+            res = std::make_unique<InterpreterEqRelation>(id.getArity(), id.getAuxiliaryArity(), id.getName(),
+                    std::vector<std::string>(), orderSet);
         } else {
             if (isProvenance) {
-                res = std::make_unique<InterpreterRelation>(id.getArity(), id.getNumberOfHeights(),
+                res = std::make_unique<InterpreterRelation>(id.getArity(), id.getAuxiliaryArity(),
                         id.getName(), std::vector<std::string>(), orderSet, createBTreeProvenanceIndex);
             } else {
-                res = std::make_unique<InterpreterRelation>(id.getArity(), id.getNumberOfHeights(),
+                res = std::make_unique<InterpreterRelation>(id.getArity(), id.getAuxiliaryArity(),
                         id.getName(), std::vector<std::string>(), orderSet);
             }
         }

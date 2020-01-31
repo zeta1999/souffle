@@ -148,15 +148,15 @@ public:
 
             // traverse subroutine return
             size_t arity;
-            size_t numberOfHeights;
+            size_t auxiliaryArity;
             if (isConstraint) {
                 // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
                 // annotations
                 arity = 4;
-                numberOfHeights = 1;
+                auxiliaryArity = 2;
             } else {
                 arity = prog.getRelation(bodyRelAtomName)->getArity();
-                numberOfHeights = prog.getRelation(bodyRelAtomName)->getNumberOfHeights();
+                auxiliaryArity = prog.getRelation(bodyRelAtomName)->getAuxiliaryArity();
             }
             auto tupleEnd = tupleCurInd + arity;
 
@@ -164,7 +164,7 @@ public:
             std::vector<RamDomain> subproofTuple;
             std::vector<bool> subproofTupleError;
 
-            for (; tupleCurInd < tupleEnd - 1 - numberOfHeights; tupleCurInd++) {
+            for (; tupleCurInd < tupleEnd - auxiliaryArity; tupleCurInd++) {
                 subproofTuple.push_back(ret[tupleCurInd]);
                 subproofTupleError.push_back(err[tupleCurInd]);
             }
@@ -244,18 +244,18 @@ public:
         auto rel = prog.getRelation(relName);
 
         RamDomain ruleNum;
-        ruleNum = tup[rel->getArity() - rel->getNumberOfHeights() - 1];
+        ruleNum = tup[rel->getArity() - rel->getAuxiliaryArity()];
 
         RamDomain levelNum;
-        levelNum = tup[rel->getArity() - rel->getNumberOfHeights()];
+        levelNum = tup[rel->getArity() - rel->getAuxiliaryArity() + 1];
 
         std::vector<RamDomain> subtreeLevels;
 
-        for (size_t i = rel->getArity() - rel->getNumberOfHeights() + 1; i < rel->getArity(); i++) {
+        for (size_t i = rel->getArity() - rel->getAuxiliaryArity() + 2; i < rel->getArity(); i++) {
             subtreeLevels.push_back(tup[i]);
         }
 
-        tup.erase(tup.begin() + rel->getArity() - rel->getNumberOfHeights() - 1, tup.end());
+        tup.erase(tup.begin() + rel->getArity() - rel->getAuxiliaryArity(), tup.end());
 
         return explain(relName, tup, ruleNum, levelNum, subtreeLevels, depthLimit);
     }
@@ -430,15 +430,15 @@ public:
 
             // traverse subroutine return
             size_t arity;
-            size_t numberOfHeights;
+            size_t auxiliaryArity;
             if (isConstraint) {
                 // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
                 // annotations
                 arity = 4;
-                numberOfHeights = 1;
+                auxiliaryArity = 2;
             } else {
                 arity = prog.getRelation(bodyRelAtomName)->getArity();
-                numberOfHeights = prog.getRelation(bodyRelAtomName)->getNumberOfHeights();
+                auxiliaryArity = prog.getRelation(bodyRelAtomName)->getAuxiliaryArity();
             }
 
             // process current literal
@@ -446,7 +446,7 @@ public:
             std::vector<bool> atomErrs;
             size_t j = returnCounter;
 
-            for (; j < returnCounter + arity - 1 - numberOfHeights; j++) {
+            for (; j < returnCounter + arity - auxiliaryArity; j++) {
                 atomValues.push_back(ret[j]);
                 atomErrs.push_back(err[j]);
             }
@@ -536,7 +536,7 @@ public:
             }
 
             std::vector<RamDomain> currentTuple;
-            for (size_t i = 0; i < rel->getArity() - 1 - rel->getNumberOfHeights(); i++) {
+            for (size_t i = 0; i < rel->getArity() - rel->getAuxiliaryArity(); i++) {
                 RamDomain n;
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
@@ -557,7 +557,7 @@ public:
 
             std::vector<RamDomain> subtreeLevels;
 
-            for (size_t i = rel->getArity() - rel->getNumberOfHeights() + 1; i < rel->getArity(); i++) {
+            for (size_t i = rel->getArity() - rel->getAuxiliaryArity() + 2; i < rel->getArity(); i++) {
                 RamDomain subLevel;
                 tuple >> subLevel;
                 subtreeLevels.push_back(subLevel);
@@ -630,9 +630,9 @@ public:
                 return;
             }
             // arity error
-            if (relation->getArity() - 1 - relation->getNumberOfHeights() != rel.second.size()) {
+            if (relation->getArity() - relation->getAuxiliaryArity() != rel.second.size()) {
                 std::cout << "<" + rel.first << "> has arity of "
-                          << std::to_string(relation->getArity() - 1 - relation->getNumberOfHeights())
+                          << std::to_string(relation->getArity() - relation->getAuxiliaryArity())
                           << std::endl;
                 return;
             }
@@ -689,8 +689,8 @@ public:
                 // if relation contains this tuple, remove all related constraints
                 if (tupleExist) {
                     constConstraints.getConstraints().erase(constConstraints.getConstraints().end() -
-                                                                    relation->getArity() + 1 +
-                                                                    relation->getNumberOfHeights(),
+                                                                    relation->getArity() +
+                                                                    relation->getAuxiliaryArity(),
                             constConstraints.getConstraints().end());
                     // otherwise, there is no solution for given query
                 } else {
@@ -739,7 +739,7 @@ private:
             bool match = true;
             std::vector<RamDomain> currentTuple;
 
-            for (size_t i = 0; i < rel->getArity() - 1 - rel->getNumberOfHeights(); i++) {
+            for (size_t i = 0; i < rel->getArity() - rel->getAuxiliaryArity(); i++) {
                 RamDomain n;
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
@@ -766,7 +766,7 @@ private:
 
                 std::vector<RamDomain> subtreeLevels;
 
-                for (size_t i = rel->getArity() - rel->getNumberOfHeights() + 1; i < rel->getArity(); i++) {
+                for (size_t i = rel->getArity() - rel->getAuxiliaryArity() + 2; i < rel->getArity(); i++) {
                     RamDomain subLevel;
                     tuple >> subLevel;
                     subtreeLevels.push_back(subLevel);
@@ -783,7 +783,7 @@ private:
     void printRelationOutput(
             const std::vector<bool>& symMask, const IODirectives& ioDir, const Relation& rel) override {
         WriteCoutCSVFactory()
-                .getWriter(symMask, prog.getSymbolTable(), ioDir, true, rel.getNumberOfHeights())
+                .getWriter(symMask, prog.getSymbolTable(), ioDir, rel.getAuxiliaryArity())
                 ->writeAll(rel);
     }
 

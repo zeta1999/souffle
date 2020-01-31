@@ -31,12 +31,12 @@ namespace souffle {
  */
 class RamRelation : public RamNode {
 public:
-    RamRelation(const std::string name, const size_t arity, const size_t numberOfHeights,
+    RamRelation(const std::string name, const size_t arity, const size_t auxiliaryArity,
             const std::vector<std::string> attributeNames, const std::vector<std::string> attributeTypes,
             const RelationRepresentation representation)
             : representation(representation), name(std::move(name)), arity(arity),
-              attributeNames(std::move(attributeNames)), attributeTypes(std::move(attributeTypes)),
-              numberOfHeights(numberOfHeights) {
+              auxiliaryArity(auxiliaryArity), attributeNames(std::move(attributeNames)),
+              attributeTypes(std::move(attributeTypes)) {
         assert(this->attributeNames.size() == arity && "arity mismatch for attributes");
         assert(this->attributeTypes.size() == arity && "arity mismatch for types");
         for (std::size_t i = 0; i < arity; i++) {
@@ -75,17 +75,17 @@ public:
         return name.at(0) == '@';
     }
 
-    /* @brief Get arity of relation */
+    /** @brief Get arity of relation */
     unsigned getArity() const {
         return arity;
     }
 
-    /* @brief Get number of height parameters of relation */
-    unsigned getNumberOfHeights() const {
-        return numberOfHeights;
+    /** @brief Get number of auxiliary attributes */
+    unsigned getAuxiliaryArity() const {
+        return auxiliaryArity;
     }
 
-    /* @brief Compare two relations via their name */
+    /** @brief Compare two relations via their name */
     bool operator<(const RamRelation& other) const {
         return name < other.name;
     }
@@ -97,6 +97,9 @@ public:
             for (unsigned i = 1; i < arity; i++) {
                 out << ",";
                 out << attributeNames[i] << ":" << attributeTypes[i];
+                if (i >= arity - auxiliaryArity) {
+                    out << " auxiliary";
+                }
             }
             out << ")";
             out << " " << representation;
@@ -106,7 +109,7 @@ public:
     }
 
     RamRelation* clone() const override {
-        return new RamRelation(name, arity, numberOfHeights, attributeNames, attributeTypes, representation);
+        return new RamRelation(name, arity, auxiliaryArity, attributeNames, attributeTypes, representation);
     }
 
 protected:
@@ -127,14 +130,14 @@ protected:
     /** Arity, i.e., number of attributes */
     const size_t arity;
 
+    /** Number of auxiliary attributes (e.g. provenance attributes etc) */
+    const size_t auxiliaryArity;
+
     /** Name of attributes */
     const std::vector<std::string> attributeNames;
 
     /** Type of attributes */
     const std::vector<std::string> attributeTypes;
-
-    /** Number of height parameters for provenance only */
-    const size_t numberOfHeights;
 };
 
 /**

@@ -60,7 +60,7 @@
 /* Relation uses a union relation */
 #define EQREL_RELATION (0x100)
 
-/* Relation is an info relation */
+/* Relation is an info relation for provenance */ 
 #define INFO_RELATION (0x200)
 
 /* Relation warnings are suppressed */
@@ -130,7 +130,6 @@ public:
         } else if ((q & INFO_RELATION) != 0) {
             representation = RelationRepresentation::INFO;
         }
-
         if ((q & INPUT_RELATION) != 0) {
             loads.emplace_back(new AstLoad());
             loads.back()->setName(getName());
@@ -184,19 +183,22 @@ public:
         return false;
     }
 
-    /** Get number of height parameters */
-    size_t numberOfHeightParameters() const {
-        if (Global::config().has("provenance") && Global::config().get("provenance") == "subtreeHeights") {
-            size_t maxNrOfPremises = 0;
-            for (auto& cur : clauses) {
-                size_t numberOfAtoms = cur->getAtoms().size();
-                if (numberOfAtoms > maxNrOfPremises) {
-                    maxNrOfPremises = numberOfAtoms;
+    /** Get number of auxiliary attributes  */
+    size_t getAuxiliaryArity() const {
+        if (Global::config().has("provenance")) {
+            if (Global::config().get("provenance") == "subtreeHeights") {
+                size_t maxNrOfPremises = 0;
+                for (auto& cur : clauses) {
+                    size_t numberOfAtoms = cur->getAtoms().size();
+                    if (numberOfAtoms > maxNrOfPremises) {
+                        maxNrOfPremises = numberOfAtoms;
+                    }
                 }
+                return maxNrOfPremises + 2;
             }
-            return maxNrOfPremises + 1;
+            return 2;
         } else {
-            return 1;
+            return 0;
         }
     }
 

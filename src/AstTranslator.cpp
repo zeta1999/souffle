@@ -184,7 +184,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 
             if (Global::config().has("provenance")) {
                 std::vector<std::string> originalAttributeNames(
-                        attributeNames.begin(), attributeNames.end() - 1 - rel->numberOfHeightParameters());
+                        attributeNames.begin(), attributeNames.end() - rel->getAuxiliaryArity());
                 ioDirective.set("attributeNames", toString(join(originalAttributeNames, delimiter)));
             } else {
                 ioDirective.set("attributeNames", toString(join(attributeNames, delimiter)));
@@ -196,12 +196,12 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
-        const size_t arity, const size_t numberOfHeights, const std::vector<std::string> attributeNames,
+        const size_t arity, const size_t auxiliaryArity, const std::vector<std::string> attributeNames,
         const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation representation) {
     auto it = ramRels.find(name);
     if (it == ramRels.end()) {
         ramRels[name] = std::make_unique<RamRelation>(
-                name, arity, numberOfHeights, attributeNames, attributeTypeQualifiers, representation);
+                name, arity, auxiliaryArity, attributeNames, attributeTypeQualifiers, representation);
         it = ramRels.find(name);
     }
     assert(it != ramRels.end() && "relation name not found");
@@ -211,8 +211,8 @@ std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(con
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(
-        const std::string name, const size_t arity, const size_t numberOfHeights) {
-    return createRelationReference(name, arity, numberOfHeights, {}, {}, {});
+        const std::string name, const size_t arity, const size_t auxiliaryArity) {
+    return createRelationReference(name, arity, auxiliaryArity, {}, {}, {});
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const AstAtom* atom) {
@@ -220,7 +220,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const Ast
         return translateRelation(rel);
     } else {
         return createRelationReference(
-                getRelationName(atom->getName()), atom->getArity(), getNumberOfHeights(atom, program));
+                getRelationName(atom->getName()), atom->getArity(), getAuxiliaryArity(atom, program));
     }
 }
 
@@ -237,8 +237,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
     }
 
     return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
-            rel->numberOfHeightParameters(), attributeNames, attributeTypeQualifiers,
-            rel->getRepresentation());
+            rel->getAuxiliaryArity(), attributeNames, attributeTypeQualifiers, rel->getRepresentation());
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {
@@ -345,34 +344,16 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
 
         /** for negations */
         std::unique_ptr<RamCondition> visitNegation(const AstNegation& neg) override {
-            // get contained atom
             const auto* atom = neg.getAtom();
-            auto arity = atom->getArity();
-            auto numberOfHeightParameters = getNumberOfHeights(atom, translator.program);
-
-            // account for extra provenance columns
-            if (Global::config().has("provenance")) {
-                // rule number
-                arity -= 1;
-                // height parameters
-                arity -= numberOfHeightParameters;
-            }
-
+            size_t auxiliaryArity = getAuxiliaryArity(atom, translator.program);
+            size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
-
             for (size_t i = 0; i < arity; i++) {
                 values.push_back(translator.translateValue(atom->getArgument(i), index));
             }
-
-            // we don't care about the provenance columns when doing the existence check
-            if (Global::config().has("provenance")) {
+            for (size_t i = 0; i < auxiliaryArity; i++) {
                 values.push_back(std::make_unique<RamUndefValue>());
-                for (size_t h = 0; h < numberOfHeightParameters; h++) {
-                    values.push_back(std::make_unique<RamUndefValue>());
-                }
             }
-
-            // add constraint
             if (arity > 0) {
                 return std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
                         translator.translateRelation(atom), std::move(values)));
@@ -383,42 +364,26 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
 
         /** for provenance negation */
         std::unique_ptr<RamCondition> visitProvenanceNegation(const AstProvenanceNegation& neg) override {
-            // get contained atom
-            const AstAtom* atom = neg.getAtom();
-            auto arity = atom->getArity();
-            auto numberOfHeightParameters = getNumberOfHeights(atom, translator.program);
-
-            // account for extra provenance columns
-            if (Global::config().has("provenance")) {
-                // rule number
-                arity -= 1;
-                // level numbers
-                arity -= numberOfHeightParameters;
-            }
-
+            const auto* atom = neg.getAtom();
+            int auxiliaryArity = getAuxiliaryArity(atom, translator.program);
+            int arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
-
-            for (size_t i = 0; i < arity; i++) {
-                const auto& arg = atom->getArgument(i);
-                // for (const auto& arg : atom->getArguments()) {
-                values.push_back(translator.translateValue(arg, index));
+            for (int i = 0; i < arity; i++) {
+                values.push_back(translator.translateValue(atom->getArgument(i), index));
             }
-
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
+                // undefined value for rule number
                 values.push_back(std::make_unique<RamUndefValue>());
                 // add the height annotation for provenanceNotExists
-                for (size_t h = 0; h < numberOfHeightParameters; h++) {
+                for (int h = 0; h < auxiliaryArity - 1; h++) {
                     values.push_back(translator.translateValue(atom->getArgument(arity + h + 1), index));
                 }
             }
-
-            // add constraint
             return std::make_unique<RamNegation>(std::make_unique<RamProvenanceExistenceCheck>(
                     translator.translateRelation(atom), std::move(values)));
         }
     };
-
     return ConstraintTranslator(*this, index)(*lit);
 }
 
@@ -560,28 +525,21 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     if (Global::config().has("provenance") &&
             ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
                     !Global::config().has("generate")))) {
-        size_t numberOfHeights = getNumberOfHeights(head, translator.program);
-
-        auto arity = head->getArity() - 1 - numberOfHeights;
-
+        size_t auxiliaryArity = getAuxiliaryArity(head, translator.program);
+        auto arity = head->getArity() - auxiliaryArity;
         std::vector<std::unique_ptr<RamExpression>> values;
-
         bool isVolatile = true;
+
         // add args for original tuple
         for (size_t i = 0; i < arity; i++) {
             auto arg = head->getArgument(i);
-
             // don't add counters
             visitDepthFirst(*arg, [&](const AstCounter& cur) { isVolatile = false; });
             values.push_back(translator.translateValue(arg, valueIndex));
         }
-
-        // add unnamed args for provenance columns
-        values.push_back(std::make_unique<RamUndefValue>());
-        for (size_t h = 0; h < numberOfHeights; h++) {
+        for (size_t i = 0; i < auxiliaryArity; i++) {
             values.push_back(std::make_unique<RamUndefValue>());
         }
-
         if (isVolatile) {
             return std::make_unique<RamFilter>(
                     std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
@@ -612,16 +570,12 @@ std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createO
             values.push_back(translator.translateValue(con->getLHS(), valueIndex));
             values.push_back(translator.translateValue(con->getRHS(), valueIndex));
         } else if (auto neg = dynamic_cast<AstProvenanceNegation*>(lit)) {
-            size_t numberOfHeights = getNumberOfHeights(neg->getAtom(), translator.program);
-
-            // non provenance arguments
-            for (size_t i = 0; i < neg->getAtom()->getArguments().size() - 1 - numberOfHeights; ++i) {
+            size_t auxiliaryArity = getAuxiliaryArity(neg->getAtom(), translator.program);
+            for (size_t i = 0; i < neg->getAtom()->getArguments().size() - auxiliaryArity; ++i) {
                 auto arg = neg->getAtom()->getArguments()[i];
                 values.push_back(translator.translateValue(arg, valueIndex));
             }
-
-            // provenance annotation arguments
-            for (size_t i = 0; i < numberOfHeights + 1; ++i) {
+            for (size_t i = 0; i < auxiliaryArity; ++i) {
                 values.push_back(std::make_unique<RamNumber>(-1));
             }
         }
@@ -1265,8 +1219,8 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
     // add constraint for each argument in head of atom
     AstAtom* head = intermediateClause->getHead();
-    size_t numberOfHeights = program->getRelation(head->getName())->numberOfHeightParameters();
-    for (size_t i = 0; i < head->getArguments().size() - 1 - numberOfHeights; i++) {
+    size_t auxiliaryArity = program->getRelation(head->getName())->getAuxiliaryArity();
+    for (size_t i = 0; i < head->getArguments().size() - auxiliaryArity; i++) {
         auto arg = head->getArgument(i);
 
         if (auto var = dynamic_cast<AstVariable*>(arg)) {
@@ -1285,15 +1239,15 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
         // starting index of subtree level arguments in argument list
         // starts immediately after original arguments as height and rulenumber of tuple are not passed to
         // subroutine
-        size_t levelIndex = head->getArguments().size() - numberOfHeights - 1;
+        size_t levelIndex = head->getArguments().size() - auxiliaryArity;
 
         // add level constraints
         for (size_t i = 0; i < intermediateClause->getBodyLiterals().size(); i++) {
             auto lit = intermediateClause->getBodyLiteral(i);
             if (auto atom = dynamic_cast<AstAtom*>(lit)) {
                 auto arity = atom->getArity();
-                auto literalHeights = program->getRelation(atom->getName())->numberOfHeightParameters();
-                auto literalLevelIndex = arity - literalHeights;
+                auto auxiliaryArity = program->getRelation(atom->getName())->getAuxiliaryArity();
+                auto literalLevelIndex = arity - auxiliaryArity + 1;
 
                 intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
                         std::unique_ptr<AstArgument>(atom->getArgument(literalLevelIndex)->clone()),
@@ -1303,7 +1257,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
         }
     } else {
         // index of level argument in argument list
-        size_t levelIndex = head->getArguments().size() - numberOfHeights - 1;
+        size_t levelIndex = head->getArguments().size() - auxiliaryArity;
 
         // add level constraints
         for (size_t i = 0; i < intermediateClause->getBodyLiterals().size(); i++) {
@@ -1402,7 +1356,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     size_t litNumber = 0;
     for (const auto& lit : newClause->getBodyLiterals()) {
         if (auto atom = dynamic_cast<AstAtom*>(lit)) {
-            size_t numberOfHeights = program->getRelation(atom->getName())->numberOfHeightParameters();
+            size_t auxiliaryArity = program->getRelation(atom->getName())->getAuxiliaryArity();
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
 
@@ -1414,14 +1368,13 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             atom->apply(varsToArgs);
 
             // add each value (subroutine argument) to the search query
-            for (size_t i = 0; i < atom->getArity() - 1 - numberOfHeights; i++) {
+            for (size_t i = 0; i < atom->getArity() - auxiliaryArity; i++) {
                 auto arg = atom->getArgument(i);
                 query.push_back(translateValue(arg, ValueIndex()));
             }
 
             // fill up query with nullptrs for the provenance columns
-            query.push_back(std::make_unique<RamUndefValue>());
-            for (size_t h = 0; h < numberOfHeights; h++) {
+            for (size_t i = 0; i < auxiliaryArity; i++) {
                 query.push_back(std::make_unique<RamUndefValue>());
             }
 
@@ -1444,7 +1397,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             std::vector<std::unique_ptr<RamExpression>> returnAtom;
             returnAtom.push_back(std::make_unique<RamUndefValue>());
             // the actual atom
-            for (size_t i = 0; i < atom->getArity() - 1 - numberOfHeights; i++) {
+            for (size_t i = 0; i < atom->getArity() - auxiliaryArity; i++) {
                 returnAtom.push_back(translateValue(atom->getArgument(i), ValueIndex()));
             }
 
@@ -1481,9 +1434,9 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
                 returnLit.push_back(translateValue(binaryConstraint->getRHS(), ValueIndex()));
             } else if (auto negation = dynamic_cast<AstNegation*>(con)) {
                 auto vals = negation->getAtom()->getArguments();
-                auto numberOfHeights =
-                        program->getRelation(negation->getAtom()->getName())->numberOfHeightParameters();
-                for (size_t i = 0; i < vals.size() - 1 - numberOfHeights; i++) {
+                auto auxiliaryArity =
+                        program->getRelation(negation->getAtom()->getName())->getAuxiliaryArity();
+                for (size_t i = 0; i < vals.size() - auxiliaryArity; i++) {
                     returnLit.push_back(translateValue(vals[i], ValueIndex()));
                 }
             }

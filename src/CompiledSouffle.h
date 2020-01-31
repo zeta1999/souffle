@@ -64,7 +64,7 @@ inline souffle::SouffleProgram* getInstance(const char* p) {
 /**
  * Relation wrapper used internally in the generated Datalog program
  */
-template <uint32_t id, class RelType, class TupleType, size_t Arity, size_t NumberOfHeights>
+template <uint32_t id, class RelType, class TupleType, size_t Arity, size_t NumAuxAttributes>
 class RelationWrapper : public souffle::Relation {
 private:
     RelType& relation;
@@ -146,8 +146,8 @@ public:
     size_t getArity() const override {
         return Arity;
     }
-    size_t getNumberOfHeights() const override {
-        return NumberOfHeights;
+    size_t getAuxiliaryArity() const override {
+        return NumAuxAttributes;
     }
     SymbolTable& getSymbolTable() const override {
         return symTable;
@@ -233,5 +233,83 @@ public:
     }
     void printHintStatistics(std::ostream& o, std::string prefix) const {}
 };
+
+/** Nullary relations */
+template <int Arity> 
+class t_info {
+private:
+    std::vector<ram::Tuple<RamDomain, Arity>> data};
+
+public:
+    t_info() = default;
+    using t_tuple = ram::Tuple<RamDomain, Arity>;
+    struct context {};
+    context createContext() {
+        return context();
+    }
+    class iterator : public std::iterator<std::forward_iterator_tag, RamDomain*> {
+        std::vector<ram::Tuple<RamDomain, Arity>>::iterator it; 
+
+    public:
+        iterator(bool v = false) : value(v) {}
+
+        const RamDomain* operator*() {
+            return *it; 
+        }
+
+        bool operator==(const iterator& other) const {
+            return *other.it == *it;
+        }
+
+        bool operator!=(const iterator& other) const {
+            return *other.it != *it;
+        }
+
+        iterator& operator++() {
+            it++; 
+            return *this;
+        }
+    };
+    iterator begin() const {
+        return iterator(data);
+    }
+    iterator end() const {
+        return iterator();
+    }
+    void insert(const t_tuple& t) {
+
+        data = true;
+    }
+    void insert(const t_tuple& t, context& /* ctxt */) {
+        data = true;
+    }
+    void insert(const RamDomain* ramDomain) {
+        data = true;
+    }
+    bool insert() {
+        bool result = data;
+        data = true;
+        return !result;
+    }
+    bool contains(const t_tuple& t) const {
+        return data;
+    }
+    bool contains(const t_tuple& t, context& /* ctxt */) const {
+        for( ....) { 
+        return data;
+        } 
+    }
+    std::size_t size() const {
+        return data.size(); 
+    }
+    bool empty() const {
+        return data.size() == 0; 
+    }
+    void purge() {
+        data.reset(); 
+    }
+    void printHintStatistics(std::ostream& o, std::string prefix) const {}
+};
+
 
 }  // namespace souffle

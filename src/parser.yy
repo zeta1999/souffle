@@ -1026,7 +1026,7 @@ arg
         $nested_arg = nullptr;
     }
   | FTOU LPAREN arg[nested_arg] RPAREN {
-        $$ = new AstIntrinsicFunctor(FunctorOp::ITOU,
+        $$ = new AstIntrinsicFunctor(FunctorOp::FTOU,
                 std::unique_ptr<AstArgument>($nested_arg));
         $$->setSrcLoc(@$);
 

@@ -411,15 +411,15 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         }
 
         // number
-        void visitNumberConstant(const AstNumberConstant& cnst) override {
+        void visitNumberConstant(const AstNumberConstant& constant) override {
             // this type has to be a sub-type of number
-            addConstraint(isSubtypeOf(getVar(cnst), env.getNumberType()));
+            addConstraint(isSubtypeOf(getVar(constant), env.getNumberType()));
         }
 
         // number
-        void visitFloatConstant(const AstFloatConstant& cnst) override {
+        void visitFloatConstant(const AstFloatConstant& constant) override {
             // this type has to be a sub-type of number
-            addConstraint(isSubtypeOf(getVar(cnst), env.getFloatType()));
+            addConstraint(isSubtypeOf(getVar(constant), env.getFloatType()));
         }
 
         // binary constraint
@@ -432,18 +432,29 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // intrinsic functor
         void visitIntrinsicFunctor(const AstIntrinsicFunctor& fun) override {
-            auto cur = getVar(fun);
+            auto functorVar = getVar(fun);
+
+            // Currently we take very simple approach toward polymorphic function.
+            // We require are argument and return type to be of the same type.
+            if (isOverloadedFunctor(fun.getFunction())) {
+                for (auto* argument : fun.getArguments()) {
+                    auto argumentVar = getVar(argument);
+                    addConstraint(isSubtypeOf(functorVar, argumentVar));
+                    addConstraint(isSubtypeOf(argumentVar, functorVar));
+                }
+                return;
+            }
 
             // add a constraint for the return type of the functor
             switch (fun.checkReturnType()) {
                 case RamPrimitiveType::Signed:
-                    addConstraint(isSubtypeOf(cur, env.getNumberType()));
+                    addConstraint(isSubtypeOf(functorVar, env.getNumberType()));
                     break;
                 case RamPrimitiveType::Float:
-                    addConstraint(isSubtypeOf(cur, env.getFloatType()));
+                    addConstraint(isSubtypeOf(functorVar, env.getFloatType()));
                     break;
                 case RamPrimitiveType::String:
-                    addConstraint(isSubtypeOf(cur, env.getSymbolType()));
+                    addConstraint(isSubtypeOf(functorVar, env.getSymbolType()));
                     break;
                 default:
                     assert(false && "Invalid return type");
@@ -455,16 +466,16 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             }
 
             for (size_t i = 0; i < fun.getArity(); i++) {
-                auto arg = getVar(fun.getArg(i));
+                auto argumentVar = getVar(fun.getArg(i));
                 switch (fun.getArgType(i)) {
                     case RamPrimitiveType::Signed:
-                        addConstraint(isSubtypeOf(arg, env.getNumberType()));
+                        addConstraint(isSubtypeOf(argumentVar, env.getNumberType()));
                         break;
                     case RamPrimitiveType::Float:
-                        addConstraint(isSubtypeOf(arg, env.getFloatType()));
+                        addConstraint(isSubtypeOf(argumentVar, env.getFloatType()));
                         break;
                     case RamPrimitiveType::String:
-                        addConstraint(isSubtypeOf(arg, env.getSymbolType()));
+                        addConstraint(isSubtypeOf(argumentVar, env.getSymbolType()));
                         break;
                     default:
                         assert(false && "Invalid argument type");

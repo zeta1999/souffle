@@ -332,6 +332,10 @@ public:
         return createType<PrimitiveType>(name, getFloatType());
     }
 
+    PrimitiveType& createUnsignedType(const identifier& name) {
+        return createType<PrimitiveType>(name, getUnsignedType());
+    }
+
     PrimitiveType& createSymbolType(const identifier& name) {
         return createType<PrimitiveType>(name, getSymbolType());
     }

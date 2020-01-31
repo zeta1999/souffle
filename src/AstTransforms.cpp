@@ -1241,9 +1241,6 @@ bool PolymorphicFunctorsTransformer::transform(AstTranslationUnit& translationUn
                     TypeSet lhsType = typeAnalysis.getTypes(lhs);
                     TypeSet rhsType = typeAnalysis.getTypes(rhs);
 
-                    std::cerr << lhsType << std::endl;
-                    std::cerr << rhsType << std::endl;
-
                     // check that correctness of argument types
                     if (lhsType.empty()) {
                         report.addError("Unable to deduce type for lhs", lhs->getSrcLoc());

@@ -18,7 +18,6 @@
 #include "InterpreterGenerator.h"
 #include "InterpreterRecords.h"
 #include "Logger.h"
-#include "RamPrimitiveTypes.h"
 #include "RamTypes.h"
 #include "SignalHandler.h"
 #include <cassert>

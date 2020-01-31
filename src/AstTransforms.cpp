@@ -32,7 +32,7 @@
 #include "FunctorOps.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
-#include "RamPrimitiveTypes.h"
+#include "RamTypes.h"
 #include "TypeSystem.h"
 #include <cstddef>
 #include <functional>
@@ -1236,7 +1236,6 @@ bool PolymorphicFunctorsTransformer::transform(AstTranslationUnit& translationUn
             if (auto* fun = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
                 if (isOverloadedFunctor(fun->getFunction())) {
                     // All args must be of the same type.
-
                     auto isFloat = [&](const AstArgument* argument) {
                         return isFloatType(typeAnalysis.getTypes(argument));
                     };
@@ -1247,8 +1246,6 @@ bool PolymorphicFunctorsTransformer::transform(AstTranslationUnit& translationUn
                         return isNumberType(typeAnalysis.getTypes(argument));
                     };
 
-                    // This might needs to change, as the operator can be illegal. Will ast semantic check
-                    // detect problem?
                     if (all_of(fun->getArguments(), isFloat)) {
                         FunctorOp convertedFunctor =
                                 convertOverloadedFunctor(fun->getFunction(), RamPrimitiveType::Float);
@@ -1263,17 +1260,17 @@ bool PolymorphicFunctorsTransformer::transform(AstTranslationUnit& translationUn
                         // Nothing to do here.
                     } else {
                         // Determine whether all argument have some possible type
-                        bool typesSolution = true;
+                        bool typesSolutionExists = true;
                         for (const AstArgument* argument : fun->getArguments()) {
                             if (typeAnalysis.getTypes(argument).empty()) {
                                 report.addError(
                                         "Unable to deduce the type of the argument", argument->getSrcLoc());
-                                typesSolution = false;
+                                typesSolutionExists = false;
                             }
                         }
 
                         // No implicit conversion allowed.
-                        if (typesSolution) {
+                        if (typesSolutionExists) {
                             report.addError("Implicit number conversion not permitted", fun->getSrcLoc());
                         }
                     }

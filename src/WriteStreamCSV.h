@@ -16,7 +16,7 @@
 
 #include "IODirectives.h"
 #include "ParallelUtils.h"
-#include "RamPrimitiveTypes.h"
+#include "RamTypes.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
 #include <iostream>

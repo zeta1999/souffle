@@ -38,7 +38,7 @@
 #include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
-#include "RamPrimitiveTypes.h"
+#include "RamTypes.h"
 #include "RelationRepresentation.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"

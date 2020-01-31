@@ -17,7 +17,7 @@
 #pragma once
 
 #include "AstNode.h"
-#include "RamPrimitiveTypes.h"
+#include "RamTypes.h"
 
 #include <iostream>
 #include <set>

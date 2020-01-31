@@ -15,7 +15,7 @@
  ***********************************************************************/
 
 #include "TypeSystem.h"
-#include "RamPrimitiveTypes.h"
+#include "RamTypes.h"
 #include "Util.h"
 #include <cassert>
 

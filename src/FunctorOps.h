@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "RamPrimitiveTypes.h"
+#include "RamTypes.h"
 
 #include <cassert>
 #include <cstdlib>

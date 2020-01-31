@@ -18,11 +18,68 @@
 
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <string>
 #include <type_traits>
 
 namespace souffle {
+
+enum class RamPrimitiveType {
+    String,
+    Signed,    // Signed number
+    Unsigned,  // Unsigned number
+    Float,     // Floating point number.
+    Record,
+};
+
+// Printing of the RamPrimitiveType Enum.
+// To be utilized in synthesizer.
+inline std::ostream& operator<<(std::ostream& os, RamPrimitiveType T) {
+    switch (T) {
+        case RamPrimitiveType::String:
+            os << "RamPrimitiveType::String";
+            break;
+        case RamPrimitiveType::Signed:
+            os << "RamPrimitiveType::Signed";
+            break;
+        case RamPrimitiveType::Float:
+            os << "RamPrimitiveType::Float";
+            break;
+        case RamPrimitiveType::Unsigned:
+            os << "RamPrimitiveType::Unsigned";
+            break;
+        case RamPrimitiveType::Record:
+            os << "RamPrimitiveType::Record";
+    }
+    return os;
+}
+
+/** Convert a char to RamPrimitiveType */
+inline RamPrimitiveType RamPrimitiveFromChar(char c) {
+    RamPrimitiveType RamType;
+    switch (c) {
+        case 's':
+            RamType = RamPrimitiveType::String;
+            break;
+        case 'i':
+            RamType = RamPrimitiveType::Signed;
+            break;
+        case 'f':
+            RamType = RamPrimitiveType::Float;
+            break;
+        case 'u':
+            RamType = RamPrimitiveType::Unsigned;
+            break;
+        case 'r':
+            RamType = RamPrimitiveType::Record;
+            break;
+        default:
+            std::cerr << "Invalid RamPrimitiveType Char " << c << std::endl;
+            exit(EXIT_FAILURE);
+    }
+    return RamType;
+}
 
 /**
  * Types of elements in a tuple.
@@ -49,6 +106,7 @@ using RamUnsigned = uint32_t;
 using RamFloat = float;
 #endif
 
+// Compile time sanity checks
 static_assert(std::is_integral<RamSigned>::value && std::is_signed<RamSigned>::value,
         "RamSigned must be represented by a signed type.");
 static_assert(std::is_integral<RamUnsigned>::value && !std::is_signed<RamUnsigned>::value,
@@ -68,8 +126,8 @@ reinterpret_cast won't work here, because integral <-> float conversions are uns
 **/
 
 /** Cast a type by reinterpreting its bits. Domain is restricted to Ram Types only.
- * Template takes two types (second type is never necessary because it can be deduced from argument)
- * The following holds
+ * Template takes two types (second type is never necessary because it can be deduced from the argument)
+ * The following always holds
  * For type T and a : T
  * ramBitCast<T>(ramBitCast<RamDomain>(a)) == a
  **/
@@ -82,37 +140,6 @@ inline To ramBitCast(From RamElement) {
     } Union;
     Union.source = RamElement;
     return Union.destination;
-}
-
-inline RamDomain RamDomainFromString(const std::string& str, std::size_t* position = nullptr, int base = 10) {
-    RamDomain val;
-#if RAM_DOMAIN_SIZE == 64
-    val = std::stoll(str, position, base);
-#else
-    val = std::stoi(str, position, base);
-#endif
-    return val;
-}
-
-inline RamFloat RamFloatFromString(const std::string& str, std::size_t* position = nullptr) {
-    RamFloat val;
-#if RAM_DOMAIN_SIZE == 64
-    val = std::stod(str, position);
-#else
-    val = std::stof(str, position);
-#endif
-    return val;
-}
-
-inline RamUnsigned RamUnsignedFromString(
-        const std::string& str, std::size_t* position = nullptr, int base = 10) {
-    RamUnsigned val;
-#if RAM_DOMAIN_SIZE == 64
-    val = std::stoul(str, position, base);
-#else
-    val = std::stoull(str, position, base);
-#endif
-    return val;
 }
 
 /** lower and upper boundaries for the ram domain **/

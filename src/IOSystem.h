@@ -15,7 +15,7 @@
 #pragma once
 
 #include "IODirectives.h"
-#include "RamPrimitiveTypes.h"
+#include "RamTypes.h"
 #include "ReadStream.h"
 #include "ReadStreamCSV.h"
 #include "SymbolTable.h"

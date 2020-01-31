@@ -42,7 +42,6 @@
     #include "BinaryConstraintOps.h"
     #include "FunctorOps.h"
     #include "RamTypes.h"
-    #include "RamPrimitiveTypes.h"
 
     using namespace souffle;
 

@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "RamPrimitiveTypes.h"
+#include "RamTypes.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
 

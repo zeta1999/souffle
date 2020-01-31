@@ -19,16 +19,16 @@
 #pragma once
 
 #include "LambdaBTree.h"
+#include "ParallelUtils.h"
 #include "UnionFind.h"
 #include "Util.h"
-#include "ParallelUtils.h"
 #include <algorithm>
 #include <exception>
+#include <mutex>
 #include <set>
 #include <shared_mutex>
 #include <unordered_map>
 #include <utility>
-#include <mutex>
 
 namespace souffle {
 template <typename TupleType>

@@ -144,4 +144,14 @@ public:
     void generateTypeStruct(std::ostream& out) override;
 };
 
+class SynthesiserInfoRelation : public SynthesiserRelation {
+public:
+    SynthesiserInfoRelation(const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
+            : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
+
+    void computeIndices() override;
+    std::string getTypeName() override;
+    void generateTypeStruct(std::ostream& out) override;
+};
+
 }  // end of namespace souffle

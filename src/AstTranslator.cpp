@@ -72,7 +72,6 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
         const std::string& filePath, const std::string& fileExt) {
     // set relation name correctly
     ioDirective.setRelationName(getRelationName(rel->getName()));
-
     // set a default IO type of file and a default filename if not supplied
     if (!ioDirective.has("IO")) {
         ioDirective.setIOType("file");
@@ -80,6 +79,10 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
 
     // load intermediate relations from correct files
     if (ioDirective.getIOType() == "file") {
+        // set filename by relation if not given
+        if (!ioDirective.has("filename")) {
+            ioDirective.setFileName(ioDirective.getRelationName() + fileExt);
+        }
         // if filename is not an absolute path, concat with cmd line facts directory
         if (ioDirective.getIOType() == "file" && ioDirective.getFileName().front() != '/') {
             ioDirective.setFileName(filePath + "/" + ioDirective.getFileName());

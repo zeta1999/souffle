@@ -82,6 +82,22 @@ inline RamPrimitiveType RamPrimitiveFromChar(char c) {
 }
 
 /**
+ * Check if type is numeric.
+ */
+inline bool isNumericType(RamPrimitiveType ramType) {
+    switch (ramType) {
+        case RamPrimitiveType::Signed:
+        case RamPrimitiveType::Unsigned:
+        case RamPrimitiveType::Float:
+            return true;
+        case RamPrimitiveType::String:
+        case RamPrimitiveType::Record:
+            return false;
+    }
+    return false;  // silence warning
+}
+
+/**
  * Types of elements in a tuple.
  *
  * Default domain has size of 32 bits; may be overridden by user
@@ -121,8 +137,6 @@ constexpr bool isRamType = (std::is_same<T, RamDomain>::value || std::is_same<T,
 /**
 In C++20 there will be a new way to cast between types by reinterpreting bits (std::bit_cast),
 but as of January 2020 it is not yet supported.
-
-reinterpret_cast won't work here, because integral <-> float conversions are unsafe.
 **/
 
 /** Cast a type by reinterpreting its bits. Domain is restricted to Ram Types only.

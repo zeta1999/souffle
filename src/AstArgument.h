@@ -329,29 +329,9 @@ public:
         return functorReturnType(function);
     }
 
-    /** Check if the return value of this functor is a number type. */
-    bool isNumerical() const {
-        return checkReturnType() == RamPrimitiveType::Signed;
-    }
-
-    /** Check if the return value of this functor is a symbol type. */
-    bool isSymbolic() const {
-        return checkReturnType() == RamPrimitiveType::String;
-    }
-
     /** Get type of the functor argument*/
     RamPrimitiveType getArgType(size_t arg) const {
         return functorOpArgType(arg, function);
-    }
-
-    /** Check if the argument of this functor is a number type. */
-    bool acceptsNumbers(size_t arg) const {
-        return getArgType(arg) == RamPrimitiveType::Signed;
-    }
-
-    /** Check if the argument of this functor is a symbol type. */
-    bool acceptsSymbols(size_t arg) const {
-        return getArgType(arg) == RamPrimitiveType::String;
     }
 
     /** Print argument to the given output stream */

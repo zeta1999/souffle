@@ -562,19 +562,19 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     if (dynamic_cast<const AstNumberConstant*>(&argument) != nullptr) {
         return true;
     }
-    if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
-        if (!inf->isNumerical()) {
+    if (dynamic_cast<const AstFloatConstant*>(&argument) != nullptr) {
+        return true;
+    }
+    if (dynamic_cast<const AstUnsignedConstant*>(&argument) != nullptr) {
+        return true;
+    }
+    if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
+        // Check return type.
+        if (!isNumericType(functor->checkReturnType())) {
             return false;
         }
-
-        for (size_t i = 0; i < inf->getArity(); i++) {
-            if (!isConstantArithExpr(*inf->getArg(i))) {
-                return false;
-            }
-        }
-
-        // numerical intrinsic functor with all-constant arguments
-        return true;
+        // Check arguments
+        return all_of(functor->getArguments(), [](auto* arg) { return isConstantArithExpr(*arg); });
     }
     return false;
 }

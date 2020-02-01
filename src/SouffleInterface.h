@@ -36,13 +36,6 @@ class tuple;
 
 /**
  * Object-oriented wrapper class for Souffle's templatized relations.
- *
- * Tuples can be inserted into a relation. To access the stored tuples, iterator_base and iteraor are
- * used. A relation is manipulated by the souffle program (create new relation, load input etc).
- *
- * A relation stores the master-copy collection of tuples and their
- * indices in tables. (check CompiledRelation.h for more details.)
- * Which table is a single link-list structure. (check Table.h for more details.)
  */
 class Relation {
 protected:

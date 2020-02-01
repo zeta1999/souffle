@@ -146,9 +146,18 @@ inline RamUnsigned RamUnsignedFromString(
 }
 
 // This needs to be removed.
+// It will read a too large number and then sneakily convert it.
+#if RAM_DOMAIN_SIZE == 64
 inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
-    return RamDomainFromString(str, pos, base);
+    return static_cast<RamDomain>(std::stoull(str, pos, base));
 }
+#elif RAM_DOMAIN_SIZE == 32
+inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
+    return static_cast<RamDomain>(std::stoul(str, pos, base));
+}
+#else
+#error RAM Domain is neither 32bit nor 64bit
+#endif
 
 /**
  * Check whether a string is a sequence of digits

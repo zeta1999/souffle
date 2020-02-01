@@ -131,6 +131,7 @@ souffle_sources = \
         RamTransformer.cpp    RamTransformer.h    \
         RamTransforms.cpp     RamTransforms.h     \
         RamTranslationUnit.h                      \
+	RamTypes.h                                \
         RamExpression.h                           \
         RamUtils.h                                \
         RamVisitor.h                              \

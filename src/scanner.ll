@@ -165,7 +165,7 @@
                                           return yy::parser::make_NUMBER(0, yylloc);
                                         }
                                       }
-[0-9]+[.][0-9]+                       { // Naive floats
+[0-9]+[.][0-9]+                       {
                                         try {
                                           return yy::parser::make_FLOAT(souffle::RamFloatFromString(yytext), yylloc);
                                         } catch (...) {

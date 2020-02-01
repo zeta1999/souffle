@@ -158,49 +158,57 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // - constants -
 
     // all string constants are used as symbols
-    visitDepthFirst(nodes, [&](const AstStringConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
+    visitDepthFirst(nodes, [&](const AstStringConstant& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isSymbolType(types)) {
-            report.addError("Symbol constant (type mismatch)", cnst.getSrcLoc());
+            report.addError("Symbol constant (type mismatch)", constant.getSrcLoc());
         }
     });
 
     // all number constants are used as numbers
-    visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
+    visitDepthFirst(nodes, [&](const AstNumberConstant& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isNumberType(types)) {
-            report.addError("Number constant (type mismatch)", cnst.getSrcLoc());
+            report.addError("Number constant (type mismatch)", constant.getSrcLoc());
         }
     });
 
     // all number constants are used as numbers
-    visitDepthFirst(nodes, [&](const AstFloatConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
+    visitDepthFirst(nodes, [&](const AstFloatConstant& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isFloatType(types)) {
-            report.addError("Number constant (type mismatch)", cnst.getSrcLoc());
+            report.addError("Float constant (type mismatch)", constant.getSrcLoc());
+        }
+    });
+
+    // all number constants are used as numbers
+    visitDepthFirst(nodes, [&](const AstUnsignedConstant& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
+        if (!isUnsignedType(types)) {
+            report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
         }
     });
 
     // all null constants are used as records
-    visitDepthFirst(nodes, [&](const AstNullConstant& cnst) {
+    visitDepthFirst(nodes, [&](const AstNullConstant& constant) {
         // TODO (#467) remove the next line to enable subprogram compilation for record types
         Global::config().unset("engine");
-        TypeSet types = typeAnalysis.getTypes(&cnst);
+        TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isRecordType(types)) {
-            report.addError("Null constant used as a non-record", cnst.getSrcLoc());
+            report.addError("Null constant used as a non-record", constant.getSrcLoc());
         }
     });
 
     // record initializations have the same size as their types
-    visitDepthFirst(nodes, [&](const AstRecordInit& cnst) {
+    visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
         // TODO (#467) remove the next line to enable subprogram compilation for record types
         Global::config().unset("engine");
-        TypeSet types = typeAnalysis.getTypes(&cnst);
+        TypeSet types = typeAnalysis.getTypes(&constant);
         if (isRecordType(types)) {
             for (const Type& type : types) {
-                if (cnst.getArguments().size() !=
+                if (constant.getArguments().size() !=
                         dynamic_cast<const RecordType*>(&type)->getFields().size()) {
-                    report.addError("Wrong number of arguments given to record", cnst.getSrcLoc());
+                    report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
                 }
             }
         }

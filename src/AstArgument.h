@@ -167,8 +167,6 @@ protected:
  */
 class AstConstant : public AstArgument {
 public:
-    AstConstant(RamDomain i) : AstArgument(), ramRepresentation(i) {}
-
     /** @return Return the ram representation of this constant */
     RamDomain getRamRepresentation() const {
         return ramRepresentation;
@@ -180,9 +178,11 @@ public:
     }
 
 protected:
+    AstConstant(RamDomain i) : AstArgument(), ramRepresentation(i) {}
+
     /** Constant represented as RamDomain value.
-     * In case of string this is the entry in symbol table.
-     * In case of float/unsigned this is the bit cast of the value. */
+     * In the case of a string this is the entry in symbol table.
+     * In the case of a float/unsigned this is the bit cast of the value. */
     RamDomain ramRepresentation;
 
     /** Implements the node comparison for this node type */
@@ -224,44 +224,35 @@ private:
 };
 
 /**
- * Subclass of Argument that represents a datalog constant signed value
+ * Subclass of Argument that represents a souffle constant numeric value.
  */
-class AstNumberConstant : public AstConstant {
+template <typename type>  // type ⲉ {RamSigned, RamUnsigned, RamFloat}
+class AstNumericConstant : public AstConstant {
 public:
-    AstNumberConstant(RamDomain num) : AstConstant(num) {}
+    AstNumericConstant(type value) : AstConstant(ramBitCast(value)) {}
 
     /**  Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        os << ramRepresentation;
+        os << getValue();
+    }
+
+    /** Get value of the node by reinterpreting the bits of RamDomain. */
+    type getValue() const {
+        return ramBitCast<type>(ramRepresentation);
     }
 
     /** Creates a clone of this AST sub-structure */
-    AstNumberConstant* clone() const override {
-        auto* res = new AstNumberConstant(ramRepresentation);
-        res->setSrcLoc(getSrcLoc());
-        return res;
+    AstNumericConstant<type>* clone() const override {
+        auto* copy = new AstNumericConstant<type>(getValue());
+        copy->setSrcLoc(getSrcLoc());
+        return copy;
     }
 };
 
-/**
- * Subclass of Argument that represents a datalog constant float value
- */
-class AstFloatConstant : public AstConstant {
-public:
-    AstFloatConstant(RamFloat num) : AstConstant(ramBitCast(num)) {}
-
-    /**  Print argument to the given output stream */
-    void print(std::ostream& os) const override {
-        os << ramBitCast<RamFloat>(ramRepresentation);
-    }
-
-    /** Creates a clone of this AST sub-structure */
-    AstFloatConstant* clone() const override {
-        auto* res = new AstFloatConstant(ramBitCast<RamFloat>(ramRepresentation));
-        res->setSrcLoc(getSrcLoc());
-        return res;
-    }
-};
+// This definitions are used by AstVisitor.
+using AstNumberConstant = AstNumericConstant<RamSigned>;
+using AstFloatConstant = AstNumericConstant<RamFloat>;
+using AstUnsignedConstant = AstNumericConstant<RamUnsigned>;
 
 /**
  * Subclass of AstConstant that represents a null-constant (no record)

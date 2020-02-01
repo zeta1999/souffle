@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "AstProgram.h"
 #include "AstAnalysis.h"
+#include "AstProgram.h"
 #include "AstRelation.h"
 #include "GraphUtils.h"
 #include <algorithm>
@@ -31,10 +31,11 @@
 #include <utility>
 #include <vector>
 
+#include "AstTranslationUnit.h"
+
 namespace souffle {
 
 class AstClause;
-class AstTranslationUnit;
 
 /**
  * Determine the auxiliary arity for relations
@@ -43,29 +44,38 @@ class AuxiliaryArity : public AstAnalysis {
 public:
     static constexpr const char* name = "auxiliary-arity";
 
-    void run(const AstTranslationUnit& translationUnit) override {}
+    void run(const AstTranslationUnit& translationUnit) override {
+        program = translationUnit.getProgram();
+    }
 
     /**
      * Returns the number of auxiliary parameters of an atom
-     * @param atom the atom
-     * @param program the program containing the relations
-     * @return number of auxiliary attributes in the atom
+     * @param atom the atom (const AstAtom*) 
+     * @return number of auxiliary attributes 
      */
-    const size_t getAuxiliaryArity(const AstAtom* atom, const AstProgram* program);
+    const size_t getArity(const AstAtom* atom) const {
+        return program->getRelation(atom->getName())->getAuxiliaryArity();
+    }
 
     /**
-     * Returns the number of auxiliary parameters of an atom
-     * @param atom the atom
-     * @param program the program containing the relations
-     * @return number of auxiliary attributes in the atom
+     * Returns the number of auxiliary parameters of a relation
+     * @param atom the atom (const AstRelation*) 
+     * @return number of auxiliary attributes 
      */
-    const size_t getArity(const AstProgram* program, const AstAtom* atom) const {
-          return program->getRelation(atom->getName())->getAuxiliaryArity();
-    } 
-
     const size_t getArity(const AstRelation* relation) const {
-        return relation->getAuxiliaryArity(); 
-    } 
+        return relation->getAuxiliaryArity();
+    }
+
+    /**
+     * Returns the number of auxiliary parameters of evaluation relations 
+     * taken delta/info/new into account. 
+     * @param atom the atom (const AstRelation*) 
+     * @return number of auxiliary attributes 
+     */
+    const size_t getEvaluationArity(const AstAtom* atom);
+
+private:
+    const AstProgram* program;
 };
 
 }  // end of namespace souffle

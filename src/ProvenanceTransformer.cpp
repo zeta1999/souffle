@@ -321,7 +321,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         // max level
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         // level number
-                        for (size_t i = 0; i < auxiliaryArity.getArity(program,atom) - 2;
+                        for (size_t i = 0; i < auxiliaryArity.getArity(atom) - 2;
                                 i++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
@@ -332,7 +332,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         // max level
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         // level number
-                        for (size_t i = 0; i < auxiliaryArity.getArity(program, atom) - 2;
+                        for (size_t i = 0; i < auxiliaryArity.getArity(atom) - 2;
                                 i++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
@@ -368,7 +368,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         atom->addArgument(
                                 std::make_unique<AstVariable>("@level_number_" + std::to_string(i)));
                         // level nums
-                        for (size_t j = 0; j < auxiliaryArity.getArity(program,atom) - 2;
+                        for (size_t j = 0; j < auxiliaryArity.getArity(atom) - 2;
                                 j++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }

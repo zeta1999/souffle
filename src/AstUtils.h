@@ -81,14 +81,6 @@ std::vector<const AstRecordInit*> getRecords(const AstNode* root);
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program);
 
 /**
- * Returns the number of auxiliary parameters of an atom
- * @param atom the atom
- * @param program the program containing the relations
- * @return number of auxiliary attributes in the atom
- */
-const size_t getAuxiliaryArity(const AstAtom* atom, const AstProgram* program);
-
-/**
  * Returns the relation referenced by the head of the given clause.
  * @param clause the clause
  * @param program the program containing the relations

@@ -27,6 +27,7 @@
 #include "souffle/SignalHandler.h"
 #include "souffle/SouffleInterface.h"
 #include "souffle/SymbolTable.h"
+#include "souffle/Table.h"
 #include "souffle/Util.h"
 #include "souffle/WriteStream.h"
 #ifndef __EMBEDDED_SOUFFLE__

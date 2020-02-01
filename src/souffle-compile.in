@@ -57,7 +57,7 @@ WARNINGS=""
 SWIGLANG=""
 
 # find header files of souffle
-TEST_HEADER="souffle/CompiledRelation.h"
+TEST_HEADER="souffle/CompiledSouffle.h"
 HEADER_DIR=$(dirname $0)/../include
 test -f "$HEADER_DIR/$TEST_HEADER"
 error "installation error: souffle header files cannot be found" $?

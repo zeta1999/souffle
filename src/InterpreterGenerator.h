@@ -387,12 +387,6 @@ public:
         return std::make_unique<InterpreterNode>(I_DebugInfo, &dbg, std::move(children));
     }
 
-    NodePtr visitStratum(const RamStratum& stratum) override {
-        NodePtrVec children;
-        children.push_back(visit(stratum.getBody()));
-        return std::make_unique<InterpreterNode>(I_Stratum, &stratum, std::move(children));
-    }
-
     NodePtr visitClear(const RamClear& clear) override {
         size_t relId = encodeRelation(clear.getRelation());
         auto rel = relations[relId].get();

@@ -184,7 +184,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 
             if (Global::config().has("provenance")) {
                 std::vector<std::string> originalAttributeNames(
-                        attributeNames.begin(), attributeNames.end() - rel->getAuxiliaryArity());
+                        attributeNames.begin(), attributeNames.end() - auxiliaryArity.getArity(rel));
                 ioDirective.set("attributeNames", toString(join(originalAttributeNames, delimiter)));
             } else {
                 ioDirective.set("attributeNames", toString(join(attributeNames, delimiter)));
@@ -220,7 +220,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const Ast
         return translateRelation(rel);
     } else {
         return createRelationReference(
-                getRelationName(atom->getName()), atom->getArity(), getAuxiliaryArity(atom, program));
+                getRelationName(atom->getName()), atom->getArity(), auxiliaryArity->getEvaluationArity(program));
     }
 }
 
@@ -237,7 +237,7 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
     }
 
     return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
-            rel->getAuxiliaryArity(), attributeNames, attributeTypeQualifiers, rel->getRepresentation());
+            auxiliaryArity->getArity(rel), attributeNames, attributeTypeQualifiers, rel->getRepresentation());
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {
@@ -345,7 +345,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         /** for negations */
         std::unique_ptr<RamCondition> visitNegation(const AstNegation& neg) override {
             const auto* atom = neg.getAtom();
-            size_t auxiliaryArity = getAuxiliaryArity(atom, translator.program);
+            size_t auxiliaryArity = auxiliaryArity->getEvaluationArity(atom);
             size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
             for (size_t i = 0; i < arity; i++) {
@@ -365,7 +365,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         /** for provenance negation */
         std::unique_ptr<RamCondition> visitProvenanceNegation(const AstProvenanceNegation& neg) override {
             const auto* atom = neg.getAtom();
-            int auxiliaryArity = getAuxiliaryArity(atom, translator.program);
+            int auxiliaryArity = analysisArity.getEvaluationArity(atom);
             int arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
             for (int i = 0; i < arity; i++) {
@@ -525,7 +525,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     if (Global::config().has("provenance") &&
             ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
                     !Global::config().has("generate")))) {
-        size_t auxiliaryArity = getAuxiliaryArity(head, translator.program);
+        size_t auxiliaryArity = auxiliaryArity.getEvaluationArity(head);
         auto arity = head->getArity() - auxiliaryArity;
         std::vector<std::unique_ptr<RamExpression>> values;
         bool isVolatile = true;
@@ -1473,6 +1473,9 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
     // obtain the schedule of relations expired at each index of the topological order
     const auto& expirySchedule = translationUnit.getAnalysis<RelationSchedule>()->schedule();
+
+    // get auxiliary arity analysis
+    const auto& auxiliaryArity = translationUnit.getAnalysis<AuxiliaryArity>(); 
 
     // start with an empty sequence of ram statements
     std::unique_ptr<RamStatement> res = std::make_unique<RamSequence>();

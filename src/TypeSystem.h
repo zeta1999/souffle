@@ -406,11 +406,10 @@ private:
  */
 std::string getTypeQualifier(const Type& type);
 
-template <typename T>  // T = Type or T = Typeset
-bool isSimplePrimitiveType(const T& type) {
-    return isNumberType(type) || isUnsignedType(type) || isFloatType(type) || isSymbolType(type);
-}
-
+/**
+ * Determine if a type analysis result is equivalent to the given RamPrimitiveType.
+ * @return whether ramType is equivalent to type.
+ */
 template <typename T>  // T = Type or T = Typeset
 bool eqTypeRamPrimitive(const RamPrimitiveType ramType, const T& type) {
     switch (ramType) {
@@ -429,6 +428,9 @@ bool eqTypeRamPrimitive(const RamPrimitiveType ramType, const T& type) {
     }
 }
 
+/**
+ * Convert a type analysis' type/set of type to the the RamPrimitiveType or
+ */
 template <typename T>  // T = Type or T = Typeset
 RamPrimitiveType getPrimitiveType(const T& type) {
     RamPrimitiveType primitiveType;
@@ -447,6 +449,14 @@ RamPrimitiveType getPrimitiveType(const T& type) {
         std::exit(EXIT_FAILURE);
     }
     return primitiveType;
+}
+
+/**
+ * Determines whether the type is numerical.
+ */
+template <typename T>  // T = Type or T = Typeset
+inline bool isNumericType(const T& type) {
+    return isFloatType(type) || isNumberType(type) || isUnsignedType(type);
 }
 
 /**

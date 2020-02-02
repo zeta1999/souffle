@@ -318,10 +318,10 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
         if (constraint.isNumerical()) {
             // check numeric type
-            if (!isNumberType(typeAnalysis.getTypes(lhs))) {
+            if (!isNumericType(typeAnalysis.getTypes(lhs))) {
                 report.addError("Non-numerical operand for comparison", lhs->getSrcLoc());
             }
-            if (!isNumberType(typeAnalysis.getTypes(rhs))) {
+            if (!isNumericType(typeAnalysis.getTypes(rhs))) {
                 report.addError("Non-numerical operand for comparison", rhs->getSrcLoc());
             }
         } else if (constraint.isSymbolic()) {

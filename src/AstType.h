@@ -162,7 +162,7 @@ public:
 
     /** Tests whether this type is a numeric type */
     bool isNumeric() const {
-        return type == RamPrimitiveType::Signed;
+        return isNumericType(type);
     }
 
     /** Tests whether this type is a symbolic type */
@@ -172,7 +172,7 @@ public:
 
     /** Prints a summary of this type to the given stream */
     void print(std::ostream& os) const override {
-        os << ".type " << getName() << (isNumeric() ? "= number" : "");
+        os << ".type " << getName() << (type == RamPrimitiveType::Signed ? "= number" : "");
     }
 
     /** Creates a clone of this AST sub-structure */

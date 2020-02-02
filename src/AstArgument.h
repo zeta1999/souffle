@@ -226,24 +226,24 @@ private:
 /**
  * Subclass of Argument that represents a souffle constant numeric value.
  */
-template <typename type>  // type ⲉ {RamSigned, RamUnsigned, RamFloat}
+template <typename numericType>  // numericType ⲉ {RamSigned, RamUnsigned, RamFloat}
 class AstNumericConstant : public AstConstant {
 public:
-    AstNumericConstant(type value) : AstConstant(ramBitCast(value)) {}
+    AstNumericConstant(numericType value) : AstConstant(ramBitCast(value)) {}
 
     /**  Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        os << getValue();
+        os << getConstant();
     }
 
-    /** Get value of the node by reinterpreting the bits of RamDomain. */
-    type getValue() const {
-        return ramBitCast<type>(ramRepresentation);
+    /** Get the value of the constant. */
+    numericType getConstant() const {
+        return ramBitCast<numericType>(ramRepresentation);
     }
 
     /** Creates a clone of this AST sub-structure */
-    AstNumericConstant<type>* clone() const override {
-        auto* copy = new AstNumericConstant<type>(getValue());
+    AstNumericConstant<numericType>* clone() const override {
+        auto* copy = new AstNumericConstant<numericType>(getConstant());
         copy->setSrcLoc(getSrcLoc());
         return copy;
     }

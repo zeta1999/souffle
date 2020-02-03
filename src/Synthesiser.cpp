@@ -1328,7 +1328,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         // -- values --
         void visitNumber(const RamNumber& num, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "RamDomain(" << num.getConstant() << ")";
+            out << "(" << num.getConstant() << ")";
             PRINT_END_COMMENT(out);
         }
 
@@ -1389,6 +1389,41 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(args[0], out);
                     out << ")))";
                     break;
+                }
+
+                case FunctorOp::ITOU: {
+                    out << "(static_cast<RamUnsigned>(";
+                    visit(args[0], out);
+                    out << "))";
+                }
+                case FunctorOp::ITOF: {
+                    out << "(static_cast<RamFloat>(";
+                    visit(args[0], out);
+                    out << "))";
+                }
+
+                case FunctorOp::FTOI: {
+                    out << "(static_cast<RamSigned>(ramBitCast<RamFloat>(";
+                    visit(args[0], out);
+                    out << ")))";
+                }
+
+                case FunctorOp::FTOU: {
+                    out << "(static_cast<RamUnsigned>(ramBitCast<RamFloat>(";
+                    visit(args[0], out);
+                    out << ")))";
+                }
+
+                case FunctorOp::UTOI: {
+                    out << "(static_cast<RamSigned>(ramBitCast<RamUnsigned>(";
+                    visit(args[0], out);
+                    out << ")))";
+                }
+
+                case FunctorOp::UTOF: {
+                    out << "(static_cast<RamFloat>(ramBitCast<RamUnsigned>(";
+                    visit(args[0], out);
+                    out << ")))";
                 }
 
                 /** Binary Functor Operators */

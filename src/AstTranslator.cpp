@@ -1203,7 +1203,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
     // add constraint for each argument in head of atom
     AstAtom* head = intermediateClause->getHead();
-    size_t auxiliaryArity = program->getRelation(head->getName())->getAuxiliaryArity();
+    size_t auxiliaryArity = aaa->getArity(head);
     for (size_t i = 0; i < head->getArguments().size() - auxiliaryArity; i++) {
         auto arg = head->getArgument(i);
 
@@ -1230,7 +1230,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
             auto lit = intermediateClause->getBodyLiteral(i);
             if (auto atom = dynamic_cast<AstAtom*>(lit)) {
                 auto arity = atom->getArity();
-                auto auxiliaryArity = program->getRelation(atom->getName())->getAuxiliaryArity();
+                auto auxiliaryArity = aaa->getArity(atom);
                 auto literalLevelIndex = arity - auxiliaryArity + 1;
 
                 intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
@@ -1340,7 +1340,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     size_t litNumber = 0;
     for (const auto& lit : newClause->getBodyLiterals()) {
         if (auto atom = dynamic_cast<AstAtom*>(lit)) {
-            size_t auxiliaryArity = program->getRelation(atom->getName())->getAuxiliaryArity();
+            size_t auxiliaryArity = aaa->getArity(atom);
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
 
@@ -1418,8 +1418,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
                 returnLit.push_back(translateValue(binaryConstraint->getRHS(), ValueIndex()));
             } else if (auto negation = dynamic_cast<AstNegation*>(con)) {
                 auto vals = negation->getAtom()->getArguments();
-                auto auxiliaryArity =
-                        program->getRelation(negation->getAtom()->getName())->getAuxiliaryArity();
+                auto auxiliaryArity = aaa->getArity(negation->getAtom());
                 for (size_t i = 0; i < vals.size() - auxiliaryArity; i++) {
                     returnLit.push_back(translateValue(vals[i], ValueIndex()));
                 }

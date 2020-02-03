@@ -37,4 +37,22 @@ const size_t AuxiliaryArity::getEvaluationArity(const AstAtom* atom) const {
     }
 }
 
+const size_t AuxiliaryArity::computeArity(const AstRelation* relation) const {
+    if (Global::config().has("provenance")) {
+        if (Global::config().get("provenance") == "subtreeHeights") {
+            size_t maxNrOfPremises = 0;
+            for (auto& cur : relation->getClauses()) {
+                size_t numberOfAtoms = cur->getAtoms().size();
+                if (numberOfAtoms > maxNrOfPremises) {
+                    maxNrOfPremises = numberOfAtoms;
+                }
+            }
+            return maxNrOfPremises + 2;
+        }
+        return 2;
+    } else {
+        return 0;
+    }
+}
+
 }  // end of namespace souffle

@@ -1257,21 +1257,6 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "};\n";
 }
 
-// -------- Info Relation ----------
-
-void SynthesiserInfoRelation::computeIndices() {
-
-
-}
-std::string SynthesiserInfoRelation::getTypeName() {
-    return "info_data_struct";
-}
-
-void SynthesiserInfoRelation::generateTypeStruct(std::ostream& out) {
-
-}
-
-
 // -------- Rbtset Relation --------
 
 }  // end of namespace souffle

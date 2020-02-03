@@ -46,13 +46,8 @@ inline std::ostream& operator<<(std::ostream& os, RelationRepresentation structu
             os << "eqrel";
             break;
         case RelationRepresentation::INFO:
-<<<<<<< HEAD
             os << "info";
             break;
-=======
-            os << "info"; 
-            break; 
->>>>>>> a49155d0fe137c4faa93e05f7f57fcfa3a83e51a
         case RelationRepresentation::DEFAULT:
         default:
             break;

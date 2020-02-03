@@ -407,18 +407,14 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
                     }
                 }
             } else if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(node.get())) {
-                if (scan->getRelation().getRepresentation() != RelationRepresentation::INFO) {
-                    if (std::unique_ptr<RamOperation> op = rewriteIndexScan(iscan)) {
-                        changed = true;
-                        node = std::move(op);
-                    }
+                if (std::unique_ptr<RamOperation> op = rewriteIndexScan(iscan)) {
+                    changed = true;
+                    node = std::move(op);
                 }
             } else if (const RamAggregate* agg = dynamic_cast<RamAggregate*>(node.get())) {
-                if (scan->getRelation().getRepresentation() != RelationRepresentation::INFO) {
-                    if (std::unique_ptr<RamOperation> op = rewriteAggregate(agg)) {
-                        changed = true;
-                        node = std::move(op);
-                    }
+                if (std::unique_ptr<RamOperation> op = rewriteAggregate(agg)) {
+                    changed = true;
+                    node = std::move(op);
                 }
             }
             node->apply(makeLambdaRamMapper(scanRewriter));

@@ -234,12 +234,12 @@ public:
     void printHintStatistics(std::ostream& o, std::string prefix) const {}
 };
 
-/** Nullary relations */
+/** info relations */
 template <int Arity> 
 class t_info {
 private:
-    std::vector<ram::Tuple<RamDomain, Arity>> data};
-
+    std::vector<ram::Tuple<RamDomain, Arity>> data;
+    Lock insert_lock;
 public:
     t_info() = default;
     using t_tuple = ram::Tuple<RamDomain, Arity>;
@@ -247,13 +247,19 @@ public:
     context createContext() {
         return context();
     }
-    class iterator : public std::iterator<std::forward_iterator_tag, RamDomain*> {
-        std::vector<ram::Tuple<RamDomain, Arity>>::iterator it; 
-
+    class iterator : public std::iterator<std::forward_iterator_tag, ram::Tuple<RamDomain, Arity>> {
+        typename std::vector<ram::Tuple<RamDomain, Arity>>::const_iterator it; 
+    
     public:
-        iterator(bool v = false) : value(v) {}
+        iterator(const t_tuple* o = nullptr) : it(o) {
+        }
 
-        const RamDomain* operator*() {
+/*        iterator(const std::vector<t_tuple>& iter) {
+            it(iter);
+        }
+        */
+        
+        const t_tuple operator*() {
             return *it; 
         }
 
@@ -271,33 +277,52 @@ public:
         }
     };
     iterator begin() const {
-        return iterator(data);
+        //return iterator(data.begin());
+        return iterator(data.data());
+        //return iterator(data.begin());
     }
     iterator end() const {
-        return iterator();
+        return iterator(data.data() + data.size());
+        //return iterator(data.end());
     }
     void insert(const t_tuple& t) {
-
-        data = true;
+        insert_lock.lock();
+        data.push_back(t);
+        insert_lock.unlock();
     }
     void insert(const t_tuple& t, context& /* ctxt */) {
-        data = true;
+        insert_lock.lock();
+        data.push_back(t);
+        insert_lock.unlock();
     }
     void insert(const RamDomain* ramDomain) {
-        data = true;
+        insert_lock.lock();
+        // TODO: check the size of ramDomain
+        t_tuple t;
+        for (size_t i = 0; i < Arity; ++i) {
+            t.data[i] = ramDomain[i];
+        }
+        data.push_back(t);
+        insert_lock.unlock();
     }
     bool insert() {
-        bool result = data;
-        data = true;
-        return !result;
+        return true;
     }
     bool contains(const t_tuple& t) const {
-        return data;
+        for(const auto& o : data) { 
+            if (t == o) {
+                return true;
+            }
+        }
+        return false;
     }
     bool contains(const t_tuple& t, context& /* ctxt */) const {
-        for( ....) { 
-        return data;
-        } 
+        for(const auto& o : data) { 
+            if (t == o) {
+                return true;
+            }
+        }
+        return false;
     }
     std::size_t size() const {
         return data.size(); 
@@ -306,7 +331,7 @@ public:
         return data.size() == 0; 
     }
     void purge() {
-        data.reset(); 
+        data.clear(); 
     }
     void printHintStatistics(std::ostream& o, std::string prefix) const {}
 };

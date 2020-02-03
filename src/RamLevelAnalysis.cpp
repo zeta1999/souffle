@@ -25,17 +25,17 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
     class ValueLevelVisitor : public RamVisitor<int> {
     public:
         // number
-        int visitNumber(const RamNumber& num) override {
+        int visitConst(const RamConst&) override {
             return -1;
         }
 
         // true
-        int visitTrue(const RamTrue& t) override {
+        int visitTrue(const RamTrue&) override {
             return -1;
         }
 
         // false
-        int visitFalse(const RamFalse& f) override {
+        int visitFalse(const RamFalse&) override {
             return -1;
         }
 
@@ -45,7 +45,7 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
         }
 
         // scan
-        int visitScan(const RamScan& scan) override {
+        int visitScan(const RamScan&) override {
             return -1;
         }
 

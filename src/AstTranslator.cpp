@@ -254,7 +254,23 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             return std::make_unique<RamUndefValue>();
         }
 
-        std::unique_ptr<RamExpression> visitConstant(const AstConstant& c) override {
+        std::unique_ptr<RamExpression> visitUnsignedConstant(const AstUnsignedConstant& c) override {
+            return std::make_unique<RamUnsignedC>(c.getRamRepresentation());
+        }
+
+        std::unique_ptr<RamExpression> visitFloatConstant(const AstFloatConstant& c) override {
+            return std::make_unique<RamFloatC>(c.getRamRepresentation());
+        }
+
+        std::unique_ptr<RamExpression> visitNumberConstant(const AstNumberConstant& c) override {
+            return std::make_unique<RamNumber>(c.getRamRepresentation());
+        }
+
+        std::unique_ptr<RamExpression> visitStringConstant(const AstStringConstant& c) override {
+            return std::make_unique<RamNumber>(c.getRamRepresentation());
+        }
+
+        std::unique_ptr<RamExpression> visitNullConstant(const AstNullConstant& c) override {
             return std::make_unique<RamNumber>(c.getRamRepresentation());
         }
 

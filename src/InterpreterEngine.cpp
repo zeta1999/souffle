@@ -204,9 +204,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
     }
 
     switch (node->getType()) {
-        CASE(Number)
+        CASE(Const)
         return cur.getConstant();
-        ESAC(Number)
+        ESAC(Const)
 
         CASE(TupleElement)
         return ctxt[cur.getTupleId()][cur.getElement()];
@@ -243,7 +243,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             case FunctorOp::ULNOT: {
                 RamDomain result = execute(node->getChild(0), ctxt);
                 // Casting is a bit tricky here, since ! returns a boolean.
-                return ramBitCast(static_cast<RamDomain>(!ramBitCast<RamUnsigned>(result)));
+                return ramBitCast(static_cast<RamUnsigned>(!ramBitCast<RamUnsigned>(result)));
             }
             case FunctorOp::TONUMBER: {
                 RamDomain result = 0;

@@ -75,7 +75,7 @@ public:
     const size_t getEvaluationArity(const AstAtom* atom) const;
 
     /**
-     * Returns the number of auxiliary parameters of a relation 
+     * Returns the number of auxiliary parameters of a relation
      * @param atom the atom (const AstRelation*)
      * @return number of auxiliary attributes
      */

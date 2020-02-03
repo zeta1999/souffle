@@ -32,9 +32,9 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
     } else if (ramRel.getRepresentation() == RelationRepresentation::BRIE) {
         rel = new SynthesiserBrieRelation(ramRel, indexSet, isProvenance);
     } else if (ramRel.getRepresentation() == RelationRepresentation::EQREL) {
-        rel = new SynthesiserEqrelRelation(ramRel, indexSet, isProvenance); 
-    } else if (ramRel.getRepresentation() == RelationRepresentation::INFO) { 
-        rel = new SynthesiserInfoRelation(ramRel, indexSet, isProvenance); 
+        rel = new SynthesiserEqrelRelation(ramRel, indexSet, isProvenance);
+    } else if (ramRel.getRepresentation() == RelationRepresentation::INFO) {
+        rel = new SynthesiserInfoRelation(ramRel, indexSet, isProvenance);
     } else {
         // Handle the data structure command line flag
         if (ramRel.getArity() > 6) {
@@ -61,7 +61,7 @@ void SynthesiserInfoRelation::computeIndices() {
 
 /** Generate type name of a nullary relation */
 std::string SynthesiserInfoRelation::getTypeName() {
-    return "t_info<" + std::to_string(getArity()) + ">"; 
+    return "t_info<" + std::to_string(getArity()) + ">";
 }
 
 /** Generate type struct of a nullary relation, which is empty,
@@ -69,7 +69,6 @@ std::string SynthesiserInfoRelation::getTypeName() {
 void SynthesiserInfoRelation::generateTypeStruct(std::ostream& out) {
     return;
 }
-
 
 // -------- Nullary Relation --------
 

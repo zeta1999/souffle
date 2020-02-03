@@ -105,8 +105,7 @@ public:
 
 class SynthesiserInfoRelation : public SynthesiserRelation {
 public:
-    SynthesiserInfoRelation(
-            const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
+    SynthesiserInfoRelation(const RamRelation& ramRel, const MinIndexSelection& indexSet, bool isProvenance)
             : SynthesiserRelation(ramRel, indexSet, isProvenance) {}
 
     void computeIndices() override;

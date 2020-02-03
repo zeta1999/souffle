@@ -235,11 +235,12 @@ public:
 };
 
 /** info relations */
-template <int Arity> 
+template <int Arity>
 class t_info {
 private:
     std::vector<ram::Tuple<RamDomain, Arity>> data;
     Lock insert_lock;
+
 public:
     t_info() = default;
     using t_tuple = ram::Tuple<RamDomain, Arity>;
@@ -248,19 +249,13 @@ public:
         return context();
     }
     class iterator : public std::iterator<std::forward_iterator_tag, ram::Tuple<RamDomain, Arity>> {
-        typename std::vector<ram::Tuple<RamDomain, Arity>>::const_iterator it; 
-    
-    public:
-        iterator(const t_tuple* o = nullptr) : it(o) {
-        }
+        typename std::vector<ram::Tuple<RamDomain, Arity>>::const_iterator it;
 
-/*        iterator(const std::vector<t_tuple>& iter) {
-            it(iter);
-        }
-        */
-        
+    public:
+        iterator(const t_tuple* o = nullptr) : it(o) {}
+
         const t_tuple operator*() {
-            return *it; 
+            return *it;
         }
 
         bool operator==(const iterator& other) const {
@@ -272,18 +267,15 @@ public:
         }
 
         iterator& operator++() {
-            it++; 
+            it++;
             return *this;
         }
     };
     iterator begin() const {
-        //return iterator(data.begin());
         return iterator(data.data());
-        //return iterator(data.begin());
     }
     iterator end() const {
         return iterator(data.data() + data.size());
-        //return iterator(data.end());
     }
     void insert(const t_tuple& t) {
         insert_lock.lock();
@@ -309,7 +301,7 @@ public:
         return true;
     }
     bool contains(const t_tuple& t) const {
-        for(const auto& o : data) { 
+        for (const auto& o : data) {
             if (t == o) {
                 return true;
             }
@@ -317,7 +309,7 @@ public:
         return false;
     }
     bool contains(const t_tuple& t, context& /* ctxt */) const {
-        for(const auto& o : data) { 
+        for (const auto& o : data) {
             if (t == o) {
                 return true;
             }
@@ -325,16 +317,15 @@ public:
         return false;
     }
     std::size_t size() const {
-        return data.size(); 
+        return data.size();
     }
     bool empty() const {
-        return data.size() == 0; 
+        return data.size() == 0;
     }
     void purge() {
-        data.clear(); 
+        data.clear();
     }
     void printHintStatistics(std::ostream& o, std::string prefix) const {}
 };
-
 
 }  // namespace souffle

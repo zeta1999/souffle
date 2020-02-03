@@ -34,9 +34,6 @@ Specify directory for output relations (if \fI<DIR>\fP is -, all output is writt
 .B -F\fI<DIR>\fP, --fact-dir=\fI<DIR>\fP
 Specify directory for fact files
 .TP
-.B -e[=\fI<FILE>\fP], --engine[=\fI<FILE>\fP]
-Alternative evaluation strategies
-.TP
 .B -g \fI<FILE>\fP, --generate=\fI<FILE>\fP
 Generate C++ source code from the given datalog file
 .TP

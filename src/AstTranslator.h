@@ -289,7 +289,7 @@ private:
     }
 
     void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,
-            const std::string& fileExt, const bool isIntermediate);
+            const std::string& fileExt);
 
     std::vector<IODirectives> getInputIODirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());

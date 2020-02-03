@@ -436,24 +436,6 @@ TEST(RamDebugInfo, CloneAndEquals) {
     delete c;
 }
 
-TEST(RamStratum, CloneAndEquals) {
-    /*
-     * BEGIN_STRATUM 0
-     *  CLEAR edge
-     * END_STRATUM 0
-     * */
-    RamRelation edge("edge", 2, 1, {"src", "dest"}, {"i", "i"}, RelationRepresentation::DEFAULT);
-    RamStratum a(std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&edge)), 0);
-    RamStratum b(std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&edge)), 0);
-    EXPECT_EQ(a, b);
-    EXPECT_NE(&a, &b);
-
-    RamStratum* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
-}
-
 TEST(RamLogSize, CloneAndEquals) {
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     RamLogSize a(std::make_unique<RamRelationReference>(&A), "Log message");

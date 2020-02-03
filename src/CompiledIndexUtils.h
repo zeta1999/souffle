@@ -257,46 +257,6 @@ struct unique<First, Rest...> {
     static constexpr size_t value = all_indices<First, Rest...>::value && !contains<First, Rest...>::value;
 };
 
-// -- check whether the columns of an index are not exceeding a given arity --
-
-template <unsigned arity, typename Index>
-struct check_index_arity {
-    static constexpr size_t value = 0u;
-};
-
-template <unsigned arity>
-struct check_index_arity<arity, index<>> {
-    static constexpr size_t value = 1u;
-};
-
-template <unsigned arity, unsigned F, unsigned... Rest>
-struct check_index_arity<arity, index<F, Rest...>> {
-    static constexpr size_t value = (F < arity) && check_index_arity<arity, index<Rest...>>::value;
-};
-
-// -- check whether the columns of a list of indices are not exceeding a given arity --
-
-template <unsigned arity, typename... Index>
-struct check_arity;
-
-template <unsigned arity>
-struct check_arity<arity> {
-    static constexpr size_t value = 1u;
-};
-
-template <unsigned arity, typename F, typename... Rest>
-struct check_arity<arity, F, Rest...> {
-    static constexpr size_t value = check_index_arity<arity, F>::value && check_arity<arity, Rest...>::value;
-};
-
-// -- checks the validity of a given list of indices --
-
-template <unsigned arity, typename... Indices>
-struct check {
-    // indices need to be unique and valid
-    static constexpr size_t value = unique<Indices...>::value && check_arity<arity, Indices...>::value;
-};
-
 // -- a utility extending a given index by another column --
 //   e.g. index<1,0>   =>    index<1,0,2>
 
@@ -306,16 +266,6 @@ struct extend;
 template <unsigned... Columns, unsigned Col>
 struct extend<index<Columns...>, Col> {
     using type = index<Columns..., Col>;
-};
-
-// -- a utility concatenating indices --
-
-template <typename I1, typename I2>
-struct concat;
-
-template <unsigned... C1, unsigned... C2>
-struct concat<index<C1...>, index<C2...>> {
-    using type = index<C1..., C2...>;
 };
 
 // -- obtains a full index for a given arity --

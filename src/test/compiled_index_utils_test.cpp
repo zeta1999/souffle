@@ -59,9 +59,6 @@ TEST(IndicesTools, Contains) {
 }
 
 TEST(IndicesTools, Arity) {
-    EXPECT_TRUE((index_utils::check_arity<2, index<0>, index<1>>::value));
-    EXPECT_TRUE((index_utils::check_arity<2, index<0, 1>, index<1, 0>>::value));
-
     EXPECT_FALSE((index_utils::contains<int, double>::value));
     EXPECT_FALSE((index_utils::contains<int, double, float>::value));
     EXPECT_FALSE((index_utils::contains<int, double, float, unsigned>::value));

@@ -23,7 +23,7 @@
 
 namespace souffle {
 
-const size_t getEvaluationArity(const AstAtom* atom) {
+const size_t AuxiliaryArity::getEvaluationArity(const AstAtom* atom) const {
     if (atom->getName().getName().rfind("@delta_") == 0) {
         const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(7));
         return getArity(program->getRelation(originalRel));
@@ -32,8 +32,9 @@ const size_t getEvaluationArity(const AstAtom* atom) {
         return getArity(program->getRelation(originalRel));
     } else if (atom->getName().getName().rfind("@info_") == 0) {
         return 0;
+    } else {
+        return getArity(atom);
     }
 }
-}  // namespace souffle
 
 }  // end of namespace souffle

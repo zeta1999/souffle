@@ -50,8 +50,8 @@ public:
 
     /**
      * Returns the number of auxiliary parameters of an atom
-     * @param atom the atom (const AstAtom*) 
-     * @return number of auxiliary attributes 
+     * @param atom the atom (const AstAtom*)
+     * @return number of auxiliary attributes
      */
     const size_t getArity(const AstAtom* atom) const {
         return program->getRelation(atom->getName())->getAuxiliaryArity();
@@ -59,20 +59,20 @@ public:
 
     /**
      * Returns the number of auxiliary parameters of a relation
-     * @param atom the atom (const AstRelation*) 
-     * @return number of auxiliary attributes 
+     * @param atom the atom (const AstRelation*)
+     * @return number of auxiliary attributes
      */
     const size_t getArity(const AstRelation* relation) const {
         return relation->getAuxiliaryArity();
     }
 
     /**
-     * Returns the number of auxiliary parameters of evaluation relations 
-     * taken delta/info/new into account. 
-     * @param atom the atom (const AstRelation*) 
-     * @return number of auxiliary attributes 
+     * Returns the number of auxiliary parameters of evaluation relations
+     * taken delta/info/new into account.
+     * @param atom the atom (const AstRelation*)
+     * @return number of auxiliary attributes
      */
-    const size_t getEvaluationArity(const AstAtom* atom);
+    const size_t getEvaluationArity(const AstAtom* atom) const;
 
 private:
     const AstProgram* program;

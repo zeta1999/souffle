@@ -14,8 +14,8 @@
  *
  ***********************************************************************/
 
-#include "AstArgument.h"
 #include "AstAnalyses.h"
+#include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
@@ -311,36 +311,33 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                     std::string("@sublevel_number_" + std::to_string(i)), AstTypeIdentifier("number")));
         }
         for (auto clause : relation->getClauses()) {
-
             std::function<std::unique_ptr<AstNode>(std::unique_ptr<AstNode>)> rewriter =
-                [&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
-                    // add provenance columns
-                    if (auto atom = dynamic_cast<AstAtom*>(node.get())) {
-                        // rule number
+                    [&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
+                // add provenance columns
+                if (auto atom = dynamic_cast<AstAtom*>(node.get())) {
+                    // rule number
+                    atom->addArgument(std::make_unique<AstUnnamedVariable>());
+                    // max level
+                    atom->addArgument(std::make_unique<AstUnnamedVariable>());
+                    // level number
+                    for (size_t i = 0; i < auxiliaryArity.getArity(atom) - 2; i++) {
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
-                        // max level
-                        atom->addArgument(std::make_unique<AstUnnamedVariable>());
-                        // level number
-                        for (size_t i = 0; i < auxiliaryArity.getArity(atom) - 2;
-                                i++) {
-                            atom->addArgument(std::make_unique<AstUnnamedVariable>());
-                        }
-                    } else if (auto neg = dynamic_cast<AstNegation*>(node.get())) {
-                        auto atom = neg->getAtom();
-                        // rule number
-                        atom->addArgument(std::make_unique<AstUnnamedVariable>());
-                        // max level
-                        atom->addArgument(std::make_unique<AstUnnamedVariable>());
-                        // level number
-                        for (size_t i = 0; i < auxiliaryArity.getArity(atom) - 2;
-                                i++) {
-                            atom->addArgument(std::make_unique<AstUnnamedVariable>());
-                        }
                     }
+                } else if (auto neg = dynamic_cast<AstNegation*>(node.get())) {
+                    auto atom = neg->getAtom();
+                    // rule number
+                    atom->addArgument(std::make_unique<AstUnnamedVariable>());
+                    // max level
+                    atom->addArgument(std::make_unique<AstUnnamedVariable>());
+                    // level number
+                    for (size_t i = 0; i < auxiliaryArity.getArity(atom) - 2; i++) {
+                        atom->addArgument(std::make_unique<AstUnnamedVariable>());
+                    }
+                }
 
-                    // otherwise - apply mapper recursively
-                    node->apply(makeLambdaAstMapper(rewriter));
-                    return node;
+                // otherwise - apply mapper recursively
+                node->apply(makeLambdaAstMapper(rewriter));
+                return node;
             };
 
             // add unnamed vars to each atom nested in arguments of head
@@ -368,8 +365,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         atom->addArgument(
                                 std::make_unique<AstVariable>("@level_number_" + std::to_string(i)));
                         // level nums
-                        for (size_t j = 0; j < auxiliaryArity.getArity(atom) - 2;
-                                j++) {
+                        for (size_t j = 0; j < auxiliaryArity.getArity(atom) - 2; j++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
                         bodyLevels.push_back(new AstVariable("@level_number_" + std::to_string(i)));

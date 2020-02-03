@@ -186,7 +186,6 @@ int main(int argc, char** argv) {
                 {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
                 {"provenance", 't', "[ none | explain | explore | subtreeHeights ]", "", false,
                         "Enable provenance instrumentation and interaction."},
-                {"engine", 'e', "[ file ]", "", false, "Alternative evaluation strategies."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
                 {"show", '\4',
@@ -290,25 +289,6 @@ int main(int argc, char** argv) {
         /* turn on compilation of executables */
         if (Global::config().has("dl-program")) {
             Global::config().set("compile");
-        }
-
-        /* disable provenance with engine option */
-        if (Global::config().has("provenance")) {
-            if (Global::config().has("engine")) {
-                throw std::runtime_error("provenance cannot be enabled with distributed execution.");
-            }
-        }
-
-        /* ensure that souffle has been compiled with support for the execution engine, if specified */
-        if (Global::config().has("engine")) {
-            if (!(Global::config().has("compile") || Global::config().has("dl-program") ||
-                        Global::config().has("generate"))) {
-                throw std::invalid_argument("Error: Use of engine option not yet available for interpreter.");
-            }
-            const auto& engine = Global::config().get("engine");
-            if (engine != "file") {
-                throw std::invalid_argument("Error: Use of engine '" + engine + "' is not supported.");
-            }
         }
 
         if (Global::config().has("live-profile") && !Global::config().has("profile")) {

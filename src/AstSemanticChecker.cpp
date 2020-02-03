@@ -191,8 +191,6 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
     // all null constants are used as records
     visitDepthFirst(nodes, [&](const AstNullConstant& constant) {
-        // TODO (#467) remove the next line to enable subprogram compilation for record types
-        Global::config().unset("engine");
         TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isRecordType(types)) {
             report.addError("Null constant used as a non-record", constant.getSrcLoc());
@@ -201,8 +199,6 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
     // record initializations have the same size as their types
     visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
-        // TODO (#467) remove the next line to enable subprogram compilation for record types
-        Global::config().unset("engine");
         TypeSet types = typeAnalysis.getTypes(&constant);
         if (isRecordType(types)) {
             for (const Type& type : types) {
@@ -715,9 +711,6 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
         if (typeEnv.isType(typeName)) {
             const Type& type = typeEnv.getType(typeName);
             if (isRecordType(type)) {
-                // TODO (#467) remove the next line to enable subprogram compilation for record types
-                Global::config().unset("engine");
-
                 if (ioTypes.isInput(&relation)) {
                     report.addError(
                             "Input relations must not have record types. "

@@ -167,7 +167,7 @@ public:
 
     /** Tests whether this type is a symbolic type */
     bool isSymbolic() const {
-        return type == RamPrimitiveType::String;
+        return type == RamPrimitiveType::Symbol;
     }
 
     /** Prints a summary of this type to the given stream */

@@ -93,7 +93,7 @@ protected:
 
             try {
                 switch (symbolMask.at(inputMap[column])) {
-                    case RamPrimitiveType::String:
+                    case RamPrimitiveType::Symbol:
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         break;
                     case RamPrimitiveType::Record:  // What should be done here?

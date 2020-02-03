@@ -236,7 +236,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                 case RamPrimitiveType::Float:
                     report.addError("Non-float use for float functor", fun.getSrcLoc());
                     break;
-                case RamPrimitiveType::String:
+                case RamPrimitiveType::Symbol:
                     report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
                     break;
                 case RamPrimitiveType::Record:
@@ -256,7 +256,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                     case RamPrimitiveType::Signed:
                         report.addError("Non-numeric argument for functor", arg->getSrcLoc());
                         break;
-                    case RamPrimitiveType::String:
+                    case RamPrimitiveType::Symbol:
                         report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
                         break;
                     case RamPrimitiveType::Unsigned:

@@ -304,7 +304,7 @@ std::string getTypeQualifier(const Type& type) {
                 case RamPrimitiveType::Float:
                     str.append("f");
                     break;
-                case RamPrimitiveType::String:
+                case RamPrimitiveType::Symbol:
                     str.append("s");
                     break;
                 case RamPrimitiveType::Record:

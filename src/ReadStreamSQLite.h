@@ -69,7 +69,7 @@ protected:
 
             try {
                 switch (symbolMask.at(column)) {
-                    case RamPrimitiveType::String:
+                    case RamPrimitiveType::Symbol:
                         tuple[column] = symbolTable.unsafeLookup(element);
                         break;
                     case RamPrimitiveType::Signed:

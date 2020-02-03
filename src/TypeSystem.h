@@ -419,7 +419,7 @@ bool eqTypeRamPrimitive(const RamPrimitiveType ramType, const T& type) {
             return isUnsignedType(type);
         case RamPrimitiveType::Float:
             return isFloatType(type);
-        case RamPrimitiveType::String:
+        case RamPrimitiveType::Symbol:
             return isSymbolType(type);
         case RamPrimitiveType::Record:
             return isRecordType(type);
@@ -443,7 +443,7 @@ RamPrimitiveType getPrimitiveType(const T& type) {
     } else if (isRecordType(type)) {
         primitiveType = RamPrimitiveType::Record;
     } else if (isSymbolType(type)) {
-        primitiveType = RamPrimitiveType::String;
+        primitiveType = RamPrimitiveType::Symbol;
     } else {
         std::cerr << "Unknown type class" << std::endl;
         std::exit(EXIT_FAILURE);

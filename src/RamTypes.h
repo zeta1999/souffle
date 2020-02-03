@@ -26,7 +26,7 @@
 namespace souffle {
 
 enum class RamPrimitiveType {
-    String,
+    Symbol,
     Signed,    // Signed number
     Unsigned,  // Unsigned number
     Float,     // Floating point number.
@@ -37,8 +37,8 @@ enum class RamPrimitiveType {
 // To be utilized in synthesizer.
 inline std::ostream& operator<<(std::ostream& os, RamPrimitiveType T) {
     switch (T) {
-        case RamPrimitiveType::String:
-            os << "RamPrimitiveType::String";
+        case RamPrimitiveType::Symbol:
+            os << "RamPrimitiveType::Symbol";
             break;
         case RamPrimitiveType::Signed:
             os << "RamPrimitiveType::Signed";
@@ -60,7 +60,7 @@ inline RamPrimitiveType RamPrimitiveFromChar(char c) {
     RamPrimitiveType RamType;
     switch (c) {
         case 's':
-            RamType = RamPrimitiveType::String;
+            RamType = RamPrimitiveType::Symbol;
             break;
         case 'i':
             RamType = RamPrimitiveType::Signed;
@@ -90,7 +90,7 @@ inline bool isNumericType(RamPrimitiveType ramType) {
         case RamPrimitiveType::Unsigned:
         case RamPrimitiveType::Float:
             return true;
-        case RamPrimitiveType::String:
+        case RamPrimitiveType::Symbol:
         case RamPrimitiveType::Record:
             return false;
     }

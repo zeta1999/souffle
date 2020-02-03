@@ -71,7 +71,7 @@ protected:
     }
     void writeNextTupleElement(std::ostream& destination, RamPrimitiveType type, RamDomain value) {
         switch (type) {
-            case RamPrimitiveType::String:
+            case RamPrimitiveType::Symbol:
                 destination << symbolTable.unsafeResolve(value);
                 break;
             case RamPrimitiveType::Signed:

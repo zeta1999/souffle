@@ -323,7 +323,7 @@ inline RamPrimitiveType functorReturnType(const FunctorOp op) {
         case FunctorOp::TOSTRING:
         case FunctorOp::CAT:
         case FunctorOp::SUBSTR:
-            return RamPrimitiveType::String;
+            return RamPrimitiveType::Symbol;
         case FunctorOp::__UNDEFINED__:
             break;
     }
@@ -354,7 +354,7 @@ inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
         case FunctorOp::STRLEN:
         case FunctorOp::TONUMBER:
             assert(arg == 0 && "unary functor out of bound");
-            return RamPrimitiveType::String;
+            return RamPrimitiveType::Symbol;
         case FunctorOp::UBNOT:
         case FunctorOp::ULNOT:
         case FunctorOp::UTOI:
@@ -397,7 +397,7 @@ inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
         case FunctorOp::SUBSTR:
             assert(arg < 3 && "ternary functor out of bound");
             if (arg == 0) {
-                return RamPrimitiveType::String;
+                return RamPrimitiveType::Symbol;
             } else {
                 return RamPrimitiveType::Signed;  // In the future: Change to unsigned
             }
@@ -411,7 +411,7 @@ inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
         case FunctorOp::FMIN:
             return RamPrimitiveType::Float;
         case FunctorOp::CAT:
-            return RamPrimitiveType::String;
+            return RamPrimitiveType::Symbol;
 
         case FunctorOp::__UNDEFINED__:
             break;

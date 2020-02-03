@@ -357,11 +357,11 @@ type
         $$->setSrcLoc(@$);
     }
   | SYMBOL_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::String);
+        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::String);
+        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS union_type_list {

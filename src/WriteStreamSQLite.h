@@ -55,7 +55,7 @@ protected:
             RamDomain value = 0;  // Silence warning
 
             switch (symbolMask.at(i)) {
-                case RamPrimitiveType::String:
+                case RamPrimitiveType::Symbol:
                     value = getSymbolTableID(tuple[i]);
                     break;
                 case RamPrimitiveType::Signed:
@@ -225,7 +225,7 @@ private:
                 projectionClause << ",";
             }
             // Are float/unsigned handled correctly here?
-            if (symbolMask.at(i) == RamPrimitiveType::String) {
+            if (symbolMask.at(i) == RamPrimitiveType::Symbol) {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
                 fromClause << ",'" << symbolTableName << "' AS '_symtab_" << columnName << "'";
                 if (!firstWhere) {

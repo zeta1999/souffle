@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstAnalyses.h
+ * @file AuxArityAnalysis.h
  *
  * Define of AST analyses classes
  *
@@ -19,23 +19,9 @@
 #include "AstAnalysis.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
-#include "GraphUtils.h"
-#include <algorithm>
-#include <cassert>
-#include <cstddef>
-#include <iostream>
-#include <iterator>
-#include <map>
-#include <set>
-#include <stack>
-#include <utility>
-#include <vector>
-
 #include "AstTranslationUnit.h"
 
 namespace souffle {
-
-class AstClause;
 
 /**
  * Determine the auxiliary arity for relations

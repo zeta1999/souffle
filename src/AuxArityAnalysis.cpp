@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstAnalyses.cpp
+ * @file AuxArityAnalysis.cpp
  *
  * Implementation of AST analyses classes
  *
@@ -17,9 +17,9 @@
 #include <cassert>
 #include <utility>
 
-#include "AstAnalyses.h"
 #include "AstProgram.h"
 #include "AstUtils.h"
+#include "AuxArityAnalysis.h"
 
 namespace souffle {
 

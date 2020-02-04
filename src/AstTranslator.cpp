@@ -167,7 +167,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
 
             if (Global::config().has("provenance")) {
                 std::vector<std::string> originalAttributeNames(
-                        attributeNames.begin(), attributeNames.end() - aaa->getArity(rel));
+                        attributeNames.begin(), attributeNames.end() - auxArityAnalysis->getArity(rel));
                 ioDirective.set("attributeNames", toString(join(originalAttributeNames, delimiter)));
             } else {
                 ioDirective.set("attributeNames", toString(join(attributeNames, delimiter)));
@@ -202,8 +202,8 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const Ast
     if (const auto rel = getAtomRelation(atom, program)) {
         return translateRelation(rel);
     } else {
-        return createRelationReference(
-                getRelationName(atom->getName()), atom->getArity(), aaa->getEvaluationArity(atom));
+        return createRelationReference(getRelationName(atom->getName()), atom->getArity(),
+                auxArityAnalysis->getEvaluationArity(atom));
     }
 }
 
@@ -220,7 +220,8 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
     }
 
     return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
-            aaa->getArity(rel), attributeNames, attributeTypeQualifiers, rel->getRepresentation());
+            auxArityAnalysis->getArity(rel), attributeNames, attributeTypeQualifiers,
+            rel->getRepresentation());
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {
@@ -306,11 +307,12 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
     class ConstraintTranslator : public AstVisitor<std::unique_ptr<RamCondition>> {
         AstTranslator& translator;
         const ValueIndex& index;
-        const AuxiliaryArity* aaa;
+        const AuxiliaryArity* auxArityAnalysis;
 
     public:
-        ConstraintTranslator(AstTranslator& translator, const ValueIndex& index, const AuxiliaryArity* aaa)
-                : translator(translator), index(index), aaa(aaa) {}
+        ConstraintTranslator(
+                AstTranslator& translator, const ValueIndex& index, const AuxiliaryArity* auxArityAnalysis)
+                : translator(translator), index(index), auxArityAnalysis(auxArityAnalysis) {}
 
         /** for atoms */
         std::unique_ptr<RamCondition> visitAtom(const AstAtom&) override {
@@ -329,7 +331,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         /** for negations */
         std::unique_ptr<RamCondition> visitNegation(const AstNegation& neg) override {
             const auto* atom = neg.getAtom();
-            size_t auxiliaryArity = aaa->getEvaluationArity(atom);
+            size_t auxiliaryArity = auxArityAnalysis->getEvaluationArity(atom);
             size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
             for (size_t i = 0; i < arity; i++) {
@@ -349,7 +351,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         /** for provenance negation */
         std::unique_ptr<RamCondition> visitProvenanceNegation(const AstProvenanceNegation& neg) override {
             const auto* atom = neg.getAtom();
-            int auxiliaryArity = aaa->getEvaluationArity(atom);
+            int auxiliaryArity = auxArityAnalysis->getEvaluationArity(atom);
             int arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
             for (int i = 0; i < arity; i++) {
@@ -368,7 +370,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                     translator.translateRelation(atom), std::move(values)));
         }
     };
-    return ConstraintTranslator(*this, index, aaa)(*lit);
+    return ConstraintTranslator(*this, index, auxArityAnalysis)(*lit);
 }
 
 std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
@@ -509,7 +511,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
     if (Global::config().has("provenance") &&
             ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
                     !Global::config().has("generate")))) {
-        size_t auxiliaryArity = aaa->getEvaluationArity(head);
+        size_t auxiliaryArity = auxArityAnalysis->getEvaluationArity(head);
         auto arity = head->getArity() - auxiliaryArity;
         std::vector<std::unique_ptr<RamExpression>> values;
         bool isVolatile = true;
@@ -554,7 +556,7 @@ std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createO
             values.push_back(translator.translateValue(con->getLHS(), valueIndex));
             values.push_back(translator.translateValue(con->getRHS(), valueIndex));
         } else if (auto neg = dynamic_cast<AstProvenanceNegation*>(lit)) {
-            size_t auxiliaryArity = aaa->getEvaluationArity(neg->getAtom());
+            size_t auxiliaryArity = auxArityAnalysis->getEvaluationArity(neg->getAtom());
             for (size_t i = 0; i < neg->getAtom()->getArguments().size() - auxiliaryArity; ++i) {
                 auto arg = neg->getAtom()->getArguments()[i];
                 values.push_back(translator.translateValue(arg, valueIndex));
@@ -1203,7 +1205,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
     // add constraint for each argument in head of atom
     AstAtom* head = intermediateClause->getHead();
-    size_t auxiliaryArity = aaa->getArity(head);
+    size_t auxiliaryArity = auxArityAnalysis->getArity(head);
     for (size_t i = 0; i < head->getArguments().size() - auxiliaryArity; i++) {
         auto arg = head->getArgument(i);
 
@@ -1230,7 +1232,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
             auto lit = intermediateClause->getBodyLiteral(i);
             if (auto atom = dynamic_cast<AstAtom*>(lit)) {
                 auto arity = atom->getArity();
-                auto auxiliaryArity = aaa->getArity(atom);
+                auto auxiliaryArity = auxArityAnalysis->getArity(atom);
                 auto literalLevelIndex = arity - auxiliaryArity + 1;
 
                 intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
@@ -1340,7 +1342,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     size_t litNumber = 0;
     for (const auto& lit : newClause->getBodyLiterals()) {
         if (auto atom = dynamic_cast<AstAtom*>(lit)) {
-            size_t auxiliaryArity = aaa->getArity(atom);
+            size_t auxiliaryArity = auxArityAnalysis->getArity(atom);
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
 
@@ -1418,7 +1420,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
                 returnLit.push_back(translateValue(binaryConstraint->getRHS(), ValueIndex()));
             } else if (auto negation = dynamic_cast<AstNegation*>(con)) {
                 auto vals = negation->getAtom()->getArguments();
-                auto auxiliaryArity = aaa->getArity(negation->getAtom());
+                auto auxiliaryArity = auxArityAnalysis->getArity(negation->getAtom());
                 for (size_t i = 0; i < vals.size() - auxiliaryArity; i++) {
                     returnLit.push_back(translateValue(vals[i], ValueIndex()));
                 }
@@ -1458,7 +1460,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     const auto& expirySchedule = translationUnit.getAnalysis<RelationSchedule>()->schedule();
 
     // get auxiliary arity analysis
-    aaa = translationUnit.getAnalysis<AuxiliaryArity>();
+    auxArityAnalysis = translationUnit.getAnalysis<AuxiliaryArity>();
 
     // start with an empty sequence of ram statements
     std::unique_ptr<RamStatement> res = std::make_unique<RamSequence>();

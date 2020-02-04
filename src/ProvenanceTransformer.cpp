@@ -14,7 +14,6 @@
  *
  ***********************************************************************/
 
-#include "AstAnalyses.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
@@ -27,6 +26,7 @@
 #include "AstTranslationUnit.h"
 #include "AstType.h"
 #include "AstVisitor.h"
+#include "AuxArityAnalysis.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
@@ -257,7 +257,7 @@ void transformEqrelRelation(AstRelation& rel) {
 
 bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translationUnit) {
     static auto program = translationUnit.getProgram();
-    const auto& auxiliaryArity = *translationUnit.getAnalysis<AuxiliaryArity>();
+    const auto& auxArityAnalysis = *translationUnit.getAnalysis<AuxiliaryArity>();
 
     // get next level number
     auto getNextLevelNumber = [&](std::vector<AstArgument*> levels) {
@@ -306,7 +306,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                 std::make_unique<AstAttribute>(std::string("@rule_number"), AstTypeIdentifier("number")));
         relation->addAttribute(
                 std::make_unique<AstAttribute>(std::string("@level_number"), AstTypeIdentifier("number")));
-        for (size_t i = 0; i < auxiliaryArity.getArity(relation) - 2; i++) {
+        for (size_t i = 0; i < auxArityAnalysis.getArity(relation) - 2; i++) {
             relation->addAttribute(std::make_unique<AstAttribute>(
                     std::string("@sublevel_number_" + std::to_string(i)), AstTypeIdentifier("number")));
         }
@@ -320,7 +320,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                     // max level
                     atom->addArgument(std::make_unique<AstUnnamedVariable>());
                     // level number
-                    for (size_t i = 0; i < auxiliaryArity.getArity(atom) - 2; i++) {
+                    for (size_t i = 0; i < auxArityAnalysis.getArity(atom) - 2; i++) {
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
                     }
                 } else if (auto neg = dynamic_cast<AstNegation*>(node.get())) {
@@ -330,7 +330,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                     // max level
                     atom->addArgument(std::make_unique<AstUnnamedVariable>());
                     // level number
-                    for (size_t i = 0; i < auxiliaryArity.getArity(atom) - 2; i++) {
+                    for (size_t i = 0; i < auxArityAnalysis.getArity(atom) - 2; i++) {
                         atom->addArgument(std::make_unique<AstUnnamedVariable>());
                     }
                 }
@@ -346,7 +346,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
             // if fact, level number is 0
             if (clause->isFact()) {
                 clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
-                for (size_t i = 0; i < auxiliaryArity.getArity(relation) - 1; i++) {
+                for (size_t i = 0; i < auxArityAnalysis.getArity(relation) - 1; i++) {
                     clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
                 }
             } else {
@@ -365,7 +365,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                         atom->addArgument(
                                 std::make_unique<AstVariable>("@level_number_" + std::to_string(i)));
                         // level nums
-                        for (size_t j = 0; j < auxiliaryArity.getArity(atom) - 2; j++) {
+                        for (size_t j = 0; j < auxArityAnalysis.getArity(atom) - 2; j++) {
                             atom->addArgument(std::make_unique<AstUnnamedVariable>());
                         }
                         bodyLevels.push_back(new AstVariable("@level_number_" + std::to_string(i)));
@@ -382,7 +382,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                     clause->getHead()->addArgument(
                             std::make_unique<AstVariable>("@level_number_" + std::to_string(j)));
                 }
-                for (size_t j = clause->getAtoms().size(); j < auxiliaryArity.getArity(relation) - 2; j++) {
+                for (size_t j = clause->getAtoms().size(); j < auxArityAnalysis.getArity(relation) - 2; j++) {
                     clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(-1));
                 }
             }

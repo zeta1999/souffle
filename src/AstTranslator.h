@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "AstAnalyses.h"
 #include "AstArgument.h"
 #include "AstRelationIdentifier.h"
+#include "AuxArityAnalysis.h"
 #include "RamRelation.h"
 #include "RelationRepresentation.h"
 #include "Util.h"
@@ -77,7 +77,7 @@ private:
     std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
 
     /** Auxiliary Arity Analysis */
-    const AuxiliaryArity* aaa;
+    const AuxiliaryArity* auxArityAnalysis;
 
     /**
      * Concrete attribute
@@ -362,10 +362,11 @@ private:
         virtual std::unique_ptr<RamOperation> createOperation(const AstClause& clause);
         virtual std::unique_ptr<RamCondition> createCondition(const AstClause& originalClause);
 
-        const AuxiliaryArity* aaa;
+        const AuxiliaryArity* auxArityAnalysis;
 
     public:
-        ClauseTranslator(AstTranslator& translator) : translator(translator), aaa(translator.aaa) {}
+        ClauseTranslator(AstTranslator& translator)
+                : translator(translator), auxArityAnalysis(translator.auxArityAnalysis) {}
 
         std::unique_ptr<RamStatement> translateClause(
                 const AstClause& clause, const AstClause& originalClause, const int version = 0);

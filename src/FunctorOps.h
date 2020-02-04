@@ -441,12 +441,14 @@ inline bool isOverloadedFunctor(const FunctorOp functor) {
         case FunctorOp::EXP:
         case FunctorOp::BAND:
         case FunctorOp::BOR:
+        case FunctorOp::BXOR:
         case FunctorOp::LAND:
         case FunctorOp::LOR:
         case FunctorOp::MOD:
         case FunctorOp::MAX:
         case FunctorOp::MIN:
             return true;
+            break;
         default:
             break;
     }
@@ -468,7 +470,7 @@ inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const RamPrim
             return FunctorOp::UBNOT;
         case FunctorOp::LNOT:
             assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion from LNOT");
-            return FunctorOp::LNOT;
+            return FunctorOp::ULNOT;
         /* Binary */
         case FunctorOp::ADD:
             if (toType == RamPrimitiveType::Float) {
@@ -532,6 +534,9 @@ inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const RamPrim
         case FunctorOp::BOR:
             assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion");
             return FunctorOp::UBOR;
+        case FunctorOp::BXOR:
+            assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion");
+            return FunctorOp::UBXOR;
         case FunctorOp::LAND:
             assert(toType == RamPrimitiveType::Unsigned && "Invalid functor conversion");
             return FunctorOp::ULAND;

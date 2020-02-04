@@ -7,6 +7,7 @@ Unsigned(itou(3)) :- itou(42) > itou(12).
 Unsigned(itou(4)) :- itou(42) >= itou(12).
 Unsigned(itou(5)) :- itou(42) != itou(12).
 Unsigned(itou(6)) :- itou(42) = itou(42).
+Unsigned(itou(7)) :- itou(0) < itou(2147483647) + itou(1).
 
 .decl Float(x: number)
 Float(1) :- 0.999 < 1.0.

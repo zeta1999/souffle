@@ -60,7 +60,7 @@
 /* Relation uses a union relation */
 #define EQREL_RELATION (0x100)
 
-/* Relation is an info relation for provenance */ 
+/* Relation is an info relation for provenance */
 #define INFO_RELATION (0x200)
 
 /* Relation warnings are suppressed */

@@ -278,7 +278,49 @@ public:
  * A common base class for AST functors
  */
 // TODO (azreika): consider pushing some common Intr/Extr functor functionality here
-class AstFunctor : public AstArgument {};
+class AstFunctor : public AstArgument {
+public:
+    std::vector<AstArgument*> getArguments() const {
+        return toPtrVector(args);
+    }
+
+    /** Get argument at idx. */
+    AstArgument* getArg(const size_t idx) const {
+        assert(idx < args.size() && "argument index out of bounds");
+        return args[idx].get();
+    }
+
+    /** set argument */
+    void setArg(const size_t idx, std::unique_ptr<AstArgument> arg) {
+        assert(idx < args.size() && "argument index out of bounds");
+        args[idx] = std::move(arg);
+    }
+
+    /** get number of arguments */
+    size_t getArity() const {
+        return args.size();
+    }
+
+    /** Obtains a list of all embedded child nodes */
+    std::vector<const AstNode*> getChildNodes() const override {
+        auto res = AstArgument::getChildNodes();
+        for (auto& cur : args) {
+            res.push_back(cur.get());
+        }
+        return res;
+    }
+
+    /** Mutates this node */
+    void apply(const AstNodeMapper& map) override {
+        for (auto& arg : args) {
+            arg = map(std::move(arg));
+        }
+    }
+
+protected:
+    AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : args(std::move(operands)){};
+    std::vector<std::unique_ptr<AstArgument>> args;
+};
 
 /**
  * Subclass of AstFunctor that represents an intrinsic (built-in) functor
@@ -286,7 +328,7 @@ class AstFunctor : public AstArgument {};
 class AstIntrinsicFunctor : public AstFunctor {
 public:
     template <typename... Operands>
-    AstIntrinsicFunctor(FunctorOp function, Operands... operands) : function(function) {
+    AstIntrinsicFunctor(FunctorOp function, Operands... operands) : AstFunctor({}), function(function) {
         std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
         for (auto& cur : tmp) {
             args.push_back(std::move(cur));
@@ -296,32 +338,14 @@ public:
     }
 
     AstIntrinsicFunctor(FunctorOp function, std::vector<std::unique_ptr<AstArgument>> operands)
-            : function(function), args(std::move(operands)){};
-
-    AstArgument* getArg(size_t idx) const {
-        assert(idx >= 0 && idx < args.size() && "wrong argument");
-        return args[idx].get();
-    }
+            : AstFunctor(std::move(operands)), function(function){};
 
     FunctorOp getFunction() const {
         return function;
     }
 
-    void setFunction(FunctorOp functor) {
+    void setFunction(const FunctorOp functor) {
         function = functor;
-    }
-
-    size_t getArity() const {
-        return args.size();
-    }
-
-    std::vector<AstArgument*> getArguments() const {
-        return toPtrVector(args);
-    }
-
-    void setArg(size_t idx, std::unique_ptr<AstArgument> arg) {
-        assert(idx >= 0 && idx < args.size() && "wrong argument");
-        args[idx] = std::move(arg);
     }
 
     /** Get the return type of the functor. */
@@ -330,7 +354,7 @@ public:
     }
 
     /** Get type of the functor argument*/
-    RamPrimitiveType getArgType(size_t arg) const {
+    RamPrimitiveType getArgType(const size_t arg) const {
         return functorOpArgType(arg, function);
     }
 
@@ -359,25 +383,8 @@ public:
         return res;
     }
 
-    /** Mutates this node */
-    void apply(const AstNodeMapper& map) override {
-        for (auto& arg : args) {
-            arg = map(std::move(arg));
-        }
-    }
-
-    /** Obtains a list of all embedded child nodes */
-    std::vector<const AstNode*> getChildNodes() const override {
-        auto res = AstArgument::getChildNodes();
-        for (auto& arg : args) {
-            res.push_back(arg.get());
-        }
-        return res;
-    }
-
 protected:
     FunctorOp function;
-    std::vector<std::unique_ptr<AstArgument>> args;
 
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
@@ -392,9 +399,9 @@ protected:
  */
 class AstUserDefinedFunctor : public AstFunctor {
 public:
-    AstUserDefinedFunctor() = default;
-
-    AstUserDefinedFunctor(std::string name) : name(std::move(name)) {}
+    AstUserDefinedFunctor() : AstFunctor({}){};
+    AstUserDefinedFunctor(std::string name, std::vector<std::unique_ptr<AstArgument>> args)
+            : AstFunctor(std::move(args)), name(std::move(name)){};
 
     ~AstUserDefinedFunctor() override = default;
 
@@ -406,28 +413,6 @@ public:
     /** set name */
     void setName(const std::string& n) {
         name = n;
-    }
-
-    /** get argument */
-    const AstArgument* getArg(size_t idx) const {
-        assert(idx >= 0 && idx < args.size() && "argument index out of bounds");
-        return args[idx].get();
-    }
-
-    /** get number of arguments */
-    size_t getArgCount() const {
-        return args.size();
-    }
-
-    /** set argument */
-    void setArg(size_t idx, std::unique_ptr<AstArgument> arg) {
-        assert(idx >= 0 && idx < args.size() && "argument index out of bounds");
-        args[idx] = std::move(arg);
-    }
-
-    /** get arguments */
-    std::vector<AstArgument*> getArguments() const {
-        return toPtrVector(args);
     }
 
     /** add argument to argument list */
@@ -451,28 +436,9 @@ public:
         return res;
     }
 
-    /** Mutates this node */
-    void apply(const AstNodeMapper& map) override {
-        for (auto& arg : args) {
-            arg = map(std::move(arg));
-        }
-    }
-
-    /** Obtains a list of all embedded child nodes */
-    std::vector<const AstNode*> getChildNodes() const override {
-        auto res = AstArgument::getChildNodes();
-        for (auto& cur : args) {
-            res.push_back(cur.get());
-        }
-        return res;
-    }
-
 protected:
     /** name of user-defined functor */
     std::string name;
-
-    /** arguments of user-defined functor */
-    std::vector<std::unique_ptr<AstArgument>> args;
 
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {

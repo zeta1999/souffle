@@ -276,7 +276,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             return;
         }
 
-        if (funDecl->getArgCount() != fun.getArgCount()) {
+        if (funDecl->getArity() != fun.getArity()) {
             report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
         }
 
@@ -287,9 +287,9 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
             report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
         }
-        for (size_t i = 0; i < fun.getArgCount(); i++) {
+        for (size_t i = 0; i < fun.getArity(); i++) {
             const AstArgument* arg = fun.getArg(i);
-            if (i < funDecl->getArgCount()) {
+            if (i < funDecl->getArity()) {
                 if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
                     report.addError("Non-numeric argument for functor", arg->getSrcLoc());
                 }
@@ -548,7 +548,7 @@ void AstSemanticChecker::checkArgument(
             checkArgument(report, program, *intrFunc->getArg(i));
         }
     } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
-        for (size_t i = 0; i < userDefFunc->getArgCount(); i++) {
+        for (size_t i = 0; i < userDefFunc->getArity(); i++) {
             checkArgument(report, program, *userDefFunc->getArg(i));
         }
     }

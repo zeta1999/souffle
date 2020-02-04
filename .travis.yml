@@ -116,13 +116,6 @@ jobs:
     env:
     - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
 
-# Testing stage with engine option (-c -j8 -efile, FastEvaluation and select others)
-  - <<: *linuxgcc
-    name: "Linux file engine"
-    env:
-    - *gcc_environment
-    - SOUFFLE_CATEGORY=FastEvaluation,Interface,Profile SOUFFLE_CONFS="-c -j8 -efile"
-
 # Testing stage (-j8,-c -j8)
   - <<: *linuxgcc
     name: "Linux gcc fast evaluation tests"

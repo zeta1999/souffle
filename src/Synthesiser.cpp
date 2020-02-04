@@ -493,11 +493,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitStratum(const RamStratum& stratum, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            PRINT_END_COMMENT(out);
-        }
-
         // -- operations --
 
         void visitNestedOperation(const RamNestedOperation& nested, std::ostream& out) override {
@@ -1866,7 +1861,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // -- run function --
     os << "private:\nvoid runFunction(std::string inputDirectory = \".\", "
-          "std::string outputDirectory = \".\", size_t stratumIndex = (size_t) -1, bool performIO = false) "
+          "std::string outputDirectory = \".\", bool performIO = false) "
           "{\n";
 
     os << "SignalHandler::instance()->set();\n";
@@ -1906,69 +1901,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         // Store configuration
         os << R"_(ProfileEventSingleton::instance().makeConfigRecord("relationCount", std::to_string()_"
            << relationCount << "));";
-        // Outline stratum records for faster compilation
-        os << "[](){\n";
-
-        // Record relations created in each stratum
-        visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
-            std::map<std::string, size_t> relNames;
-            for (auto rel : prog.getRelations()) {
-                relNames[rel->getName()] = rel->getArity();
-            }
-            for (const auto& cur : relNames) {
-                // Skip temporary relations, marked with '@'
-                if (cur.first[0] == '@') {
-                    continue;
-                }
-                os << "ProfileEventSingleton::instance().makeStratumRecord(" << stratum.getIndex()
-                   << R"_(, "relation", ")_" << cur.first << R"_(", "arity", ")_" << cur.second << R"_(");)_"
-                   << '\n';
-            }
-        });
-        // End stratum record outlining
-        os << "}();\n";
     }
 
-    if (Global::config().has("engine")) {
-        std::stringstream ss;
-        bool hasAtLeastOneStrata = false;
-        visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
-            hasAtLeastOneStrata = true;
-            // go to stratum of index in switch
-            auto i = stratum.getIndex();
-            ss << "case " << i << ":\ngoto STRATUM_" << i << ";\nbreak;\n";
-        });
-        if (hasAtLeastOneStrata) {
-            os << "switch (stratumIndex) {\n";
-            {
-                // otherwise use stratum 0 if index is -1
-                os << "case (size_t) -1:\ngoto STRATUM_0;\nbreak;\n";
-            }
-            os << ss.str();
-            os << "}\n";
-        }
-    }
-
-    // Set up stratum
-    visitDepthFirst(prog.getMain(), [&](const RamStratum& stratum) {
-        os << "/* BEGIN STRATUM " << stratum.getIndex() << " */\n";
-        if (Global::config().has("engine")) {
-            // go to the stratum with the max value for int as a suffix if calling the master stratum
-            auto i = stratum.getIndex();
-            os << "STRATUM_" << i << ":\n";
-        }
-        os << "[&]() {\n";
-        emitCode(os, stratum.getBody());
-        os << "}();\n";
-        if (Global::config().has("engine")) {
-            os << "if (stratumIndex != (size_t) -1) goto EXIT;\n";
-        }
-        os << "/* END STRATUM " << stratum.getIndex() << " */\n";
-    });
-
-    if (Global::config().has("engine")) {
-        os << "EXIT:{}";
-    }
+    // emit code
+    emitCode(os, prog.getMain());
 
     if (Global::config().has("profile")) {
         os << "}\n";
@@ -1993,15 +1929,14 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of runFunction() method
 
     // add methods to run with and without performing IO (mainly for the interface)
-    os << "public:\nvoid run(size_t stratumIndex = (size_t) -1) override { runFunction(\".\", \".\", "
-          "stratumIndex, false); }\n";
-    os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\", "
-          "size_t stratumIndex = (size_t) -1) "
+    os << "public:\nvoid run() override { runFunction(\".\", \".\", "
+          "false); }\n";
+    os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\") "
           "override { ";
     if (Global::config().has("live-profile")) {
         os << "std::thread profiler([]() { profile::Tui().runProf(); });\n";
     }
-    os << "runFunction(inputDirectory, outputDirectory, stratumIndex, true);\n";
+    os << "runFunction(inputDirectory, outputDirectory, true);\n";
     if (Global::config().has("live-profile")) {
         os << "if (profiler.joinable()) { profiler.join(); }\n";
     }
@@ -2240,7 +2175,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("version", ")_"
            << Global::config().get("version") << R"_(");)_" << '\n';
     }
-    os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getStratumIndex());\n";
+    os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir());\n";
 
     if (Global::config().get("provenance") == "explain") {
         os << "explain(obj, false, false);\n";

@@ -1036,24 +1036,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return execute(node->getChild(0), ctxt);
         ESAC(DebugInfo)
 
-        CASE(Stratum)
-        if (profileEnabled) {
-            std::map<std::string, size_t> relNames;
-            for (auto rel : tUnit.getProgram().getRelations()) {
-                relNames[rel->getName()] = rel->getArity();
-            }
-            for (const auto& rel : relNames) {
-                // Skip temporary relations, marked with '@'
-                if (rel.first[0] == '@') {
-                    continue;
-                }
-                ProfileEventSingleton::instance().makeStratumRecord(
-                        cur.getIndex(), "relation", rel.first, "arity", std::to_string(rel.second));
-            }
-        }
-        return execute(node->getChild(0), ctxt);
-        ESAC(Stratum)
-
         CASE_NO_CAST(Clear)
         node->getRelation()->purge();
         return true;

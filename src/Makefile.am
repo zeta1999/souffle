@@ -178,7 +178,6 @@ soufflepublic_HEADERS = \
         BTree.h                                   \
         CompiledIndexUtils.h                      \
         CompiledRecord.h                          \
-        CompiledRelation.h                        \
         CompiledSouffle.h                         \
         CompiledTuple.h                           \
         EventProcessor.h                          \
@@ -302,12 +301,6 @@ check_PROGRAMS += test/compiled_index_utils_test
 test_compiled_index_utils_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
 test_compiled_index_utils_test_SOURCES = test/compiled_index_utils_test.cpp
 test_compiled_index_utils_test_LDADD = libsouffle.la
-
-# compiled ram relation test
-check_PROGRAMS += test/compiled_relation_test
-test_compiled_relation_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
-test_compiled_relation_test_SOURCES = test/compiled_relation_test.cpp
-test_compiled_relation_test_LDADD = libsouffle.la
 
 # interpreter relation test
 check_PROGRAMS += test/interpreter_relation_test

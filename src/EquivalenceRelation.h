@@ -19,10 +19,12 @@
 #pragma once
 
 #include "LambdaBTree.h"
+#include "ParallelUtils.h"
 #include "UnionFind.h"
 #include "Util.h"
 #include <algorithm>
 #include <exception>
+#include <mutex>
 #include <set>
 #include <shared_mutex>
 #include <unordered_map>

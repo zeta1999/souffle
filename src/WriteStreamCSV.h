@@ -19,7 +19,6 @@
 #include "RamTypes.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
-#include <iostream>
 #ifdef USE_LIBZ
 #include "gzfstream.h"
 #endif

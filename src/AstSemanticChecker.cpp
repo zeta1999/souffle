@@ -165,7 +165,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // all number constants are used as numbers
+    // all singed constants are used as numbers
     visitDepthFirst(nodes, [&](const AstNumberConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isNumberType(types)) {
@@ -173,7 +173,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // all number constants are used as numbers
+    // all float constants are used as numbers
     visitDepthFirst(nodes, [&](const AstFloatConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isFloatType(types)) {
@@ -181,7 +181,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // all number constants are used as numbers
+    // all unsigned constants are used as numbers
     visitDepthFirst(nodes, [&](const AstUnsignedConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isUnsignedType(types)) {
@@ -217,6 +217,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
+    // TODO (darth_tytus): Add support for float/unsigned to User functors. Preferably by unifying the
+    // analysis of intr/extr functor's types.
     // - intrinsic functors -
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         // check type of result
@@ -271,11 +273,14 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // - user-defined functors -
     visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
         const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+
+        // handle degenerate case first.
         if (funDecl == nullptr) {
             report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
             return;
         }
 
+        // Check arity.
         if (funDecl->getArity() != fun.getArity()) {
             report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
         }
@@ -283,10 +288,11 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         // check return values of user-defined functor
         if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
             report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-        }
-        if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
+        } else if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
             report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
         }
+
+        // Check argument types.
         for (size_t i = 0; i < fun.getArity(); i++) {
             const AstArgument* arg = fun.getArg(i);
             if (i < funDecl->getArity()) {
@@ -564,6 +570,7 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     if (dynamic_cast<const AstUnsignedConstant*>(&argument) != nullptr) {
         return true;
     }
+    // TODO (darth_tytus): Can user-defined functors be added here?
     if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
         // Check return type.
         if (!isNumericType(functor->checkReturnType())) {

@@ -275,7 +275,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 auto conditions = toConjunctionList(&filter->getCondition());
                 for (auto const& cur : conditions) {
                     bool needContext = false;
-                    visitDepthFirst(*cur, [&](const RamExistenceCheck& exists) { needContext = true; });
+                    visitDepthFirst(*cur, [&](const RamExistenceCheck&) { needContext = true; });
                     if (needContext) {
                         requireCtx.push_back(std::unique_ptr<RamCondition>(cur->clone()));
                     } else {
@@ -297,7 +297,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // check whether loop nest can be parallelized
             bool isParallel = false;
-            visitDepthFirst(*next, [&](const RamAbstractParallel& node) { isParallel = true; });
+            visitDepthFirst(*next, [&](const RamAbstractParallel&) { isParallel = true; });
 
             // reset preamble
             preamble.str("");
@@ -1097,13 +1097,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- conditions --
 
-        void visitTrue(const RamTrue& ltrue, std::ostream& out) override {
+        void visitTrue(const RamTrue&, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "true";
             PRINT_END_COMMENT(out);
         }
 
-        void visitFalse(const RamFalse& lfalse, std::ostream& out) override {
+        void visitFalse(const RamFalse&, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "false";
             PRINT_END_COMMENT(out);

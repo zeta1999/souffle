@@ -561,10 +561,10 @@ private:
  * Operators = Functors (plus, minus...) ∪ binary constraints (>, ≥ ...)
  */
 
-class PolymorphicFunctorsTransformer : public AstTransformer {
+class PolymorphicOperatorsTransformer : public AstTransformer {
 public:
     std::string getName() const override {
-        return "PolymorphicFunctorsTransformer";
+        return "PolymorphicOperatorsTransformer";
     }
 
 private:

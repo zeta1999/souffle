@@ -1220,7 +1220,7 @@ bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) 
     return update.changed;
 }
 
-bool PolymorphicFunctorsTransformer::transform(AstTranslationUnit& translationUnit) {
+bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationUnit) {
     struct TypeRewriter : public AstNodeMapper {
         mutable bool changed{false};
         const TypeAnalysis& typeAnalysis;

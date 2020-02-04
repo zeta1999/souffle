@@ -61,7 +61,7 @@ protected:
                 case RamPrimitiveType::Signed:
                 case RamPrimitiveType::Unsigned:
                 case RamPrimitiveType::Float:
-                case RamPrimitiveType::Record:  // What should be done about it?
+                case RamPrimitiveType::Record:
                     value = tuple[i];
                     break;
             }
@@ -224,7 +224,6 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            // Are float/unsigned handled correctly here?
             if (symbolMask.at(i) == RamPrimitiveType::Symbol) {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
                 fromClause << ",'" << symbolTableName << "' AS '_symtab_" << columnName << "'";

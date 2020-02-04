@@ -23,17 +23,14 @@
 
 namespace souffle {
 
-/******************************************
- * Helper Functions for Binary Constraints
- ******************************************/
-
 /**
  * Binary Constraint Operators
- *
- * TODO (darth_tytus): Some of the constraints are repeated because of floats and unsigned.
- * This is inelegant solution, but Ram execution demands this distinction.
- * Investigate a better way.
  */
+
+// TODO (darth_tytus): Some of the constraints are repeated because of float and unsigned.
+// This is inelegant solution, but Ram execution demands this distinction.
+// Investigate a better way.
+
 enum class BinaryConstraintOp {
     __UNDEFINED__,  // undefined operator
     EQ,             // equivalence of two values

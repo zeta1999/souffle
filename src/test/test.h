@@ -38,7 +38,7 @@ std::vector<T> generateRandomVector(const size_t vectorSize, const int seed = 3)
         // For distribution bonds, following must hold:
         // a ≤ b and b − a ≤ numeric_limits<RealType>::max()
         // (in particular: if given values bounds, it will crash).
-        // Investigate better solution.
+        // TODO (darth_tytus): Investigate a better solution.
         std::uniform_real_distribution<T> distribution(-1000, 1000);
         std::generate(values.begin(), values.end(),
                 [&distribution, &randomGenerator]() { return distribution(randomGenerator); });

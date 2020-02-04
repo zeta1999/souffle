@@ -422,15 +422,14 @@ inline RamPrimitiveType functorOpArgType(const size_t arg, const FunctorOp op) {
 }
 
 /**
- * Indicate whether a functor is overloaded, that is, it can have to different meaning.
- * Example: signed + singed; float + float. + can mean signed addition or float addition.
+ * Indicate whether a functor is overloaded.
  * At the moment, the signed versions are treated as representatives (because parser always returns a signed
  * version).
  */
 inline bool isOverloadedFunctor(const FunctorOp functor) {
     switch (functor) {
         /* Unary */
-        case FunctorOp::NEG:  // Should float/unsigned version be added here?
+        case FunctorOp::NEG:
         case FunctorOp::BNOT:
         case FunctorOp::LNOT:
         /* Binary */
@@ -457,7 +456,7 @@ inline bool isOverloadedFunctor(const FunctorOp functor) {
 }
 
 /**
- * Convert an overloaded functor, so that it can work with requested type.
+ * Convert an overloaded functor, so that it works with the requested type.
  * Example: toType = Float, functor = PLUS -> FPLUS (version of plus working on floats)
  */
 inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const RamPrimitiveType toType) {

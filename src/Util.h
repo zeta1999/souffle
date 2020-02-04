@@ -108,7 +108,8 @@ namespace souffle {
 /**
  * Converts a string to a RamDomain
  */
-inline RamDomain RamDomainFromString(const std::string& str, std::size_t* position = nullptr, int base = 10) {
+inline RamDomain RamDomainFromString(
+        const std::string& str, std::size_t* position = nullptr, const int base = 10) {
     RamDomain val;
 #if RAM_DOMAIN_SIZE == 64
     val = std::stoll(str, position, base);
@@ -135,7 +136,7 @@ inline RamFloat RamFloatFromString(const std::string& str, std::size_t* position
  * Converts a string to a RamUnsigned
  */
 inline RamUnsigned RamUnsignedFromString(
-        const std::string& str, std::size_t* position = nullptr, int base = 10) {
+        const std::string& str, std::size_t* position = nullptr, const int base = 10) {
     RamUnsigned val;
 #if RAM_DOMAIN_SIZE == 64
     val = std::stoul(str, position, base);
@@ -145,8 +146,9 @@ inline RamUnsigned RamUnsignedFromString(
     return static_cast<RamUnsigned>(val);
 }
 
-// This needs to be removed.
-// It will read a too large number and then sneakily convert it.
+// TODO (darth_tytus): This should be removed.
+// When used in parser it silently converts (overflows) larger numbers.
+// (but the change can probably wait until new typesystem)
 #if RAM_DOMAIN_SIZE == 64
 inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
     return static_cast<RamDomain>(std::stoull(str, pos, base));

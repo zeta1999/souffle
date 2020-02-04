@@ -376,7 +376,7 @@ public:
     }
 
     /** Update the binary operator */
-    void setOperator(BinaryConstraintOp op) {
+    void setOperator(const BinaryConstraintOp op) {
         operation = op;
     }
 

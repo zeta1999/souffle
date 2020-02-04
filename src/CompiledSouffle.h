@@ -259,11 +259,11 @@ public:
         }
 
         bool operator==(const iterator& other) const {
-            return *other.it == *it;
+            return other.it == it || *other.it == *it;
         }
 
         bool operator!=(const iterator& other) const {
-            return *other.it != *it;
+            return !(*this == other);
         }
 
         iterator& operator++() {
@@ -289,7 +289,6 @@ public:
     }
     void insert(const RamDomain* ramDomain) {
         insert_lock.lock();
-        // TODO: check the size of ramDomain
         t_tuple t;
         for (size_t i = 0; i < Arity; ++i) {
             t.data[i] = ramDomain[i];

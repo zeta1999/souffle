@@ -1230,49 +1230,55 @@ bool PolymorphicFunctorsTransformer::transform(AstTranslationUnit& translationUn
                 : typeAnalysis(typeAnalysis), report(report) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // Utility lambdas to determine if all args are of the same type.
+            auto isFloat = [&](const AstArgument* argument) {
+                return isFloatType(typeAnalysis.getTypes(argument));
+            };
+            auto isUnsigned = [&](const AstArgument* argument) {
+                return isUnsignedType(typeAnalysis.getTypes(argument));
+            };
+
             // rewrite sub-expressions first
             node->apply(*this);
-            // if current node is a typecast, replace with the value directly
-            if (auto* fun = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
-                if (isOverloadedFunctor(fun->getFunction())) {
+
+            // Handle functor
+            if (auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
+                if (isOverloadedFunctor(functor->getFunction())) {
                     // All args must be of the same type.
-                    auto isFloat = [&](const AstArgument* argument) {
-                        return isFloatType(typeAnalysis.getTypes(argument));
-                    };
-                    auto isUnsigned = [&](const AstArgument* argument) {
-                        return isUnsignedType(typeAnalysis.getTypes(argument));
-                    };
-                    auto isSigned = [&](const AstArgument* argument) {
-                        return isNumberType(typeAnalysis.getTypes(argument));
-                    };
-
-                    if (all_of(fun->getArguments(), isFloat)) {
+                    if (all_of(functor->getArguments(), isFloat)) {
                         FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(fun->getFunction(), RamPrimitiveType::Float);
-                        fun->setFunction(convertedFunctor);
+                                convertOverloadedFunctor(functor->getFunction(), RamPrimitiveType::Float);
+                        functor->setFunction(convertedFunctor);
                         changed = true;
-                    } else if (all_of(fun->getArguments(), isUnsigned)) {
-                        FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(fun->getFunction(), RamPrimitiveType::Unsigned);
-                        fun->setFunction(convertedFunctor);
-                        changed = true;
-                    } else if (all_of(fun->getArguments(), isSigned)) {
-                        // Nothing to do here.
-                    } else {
-                        // Determine whether all argument have some possible type
-                        bool typesSolutionExists = true;
-                        for (const AstArgument* argument : fun->getArguments()) {
-                            if (typeAnalysis.getTypes(argument).empty()) {
-                                report.addError(
-                                        "Unable to deduce the type of the argument", argument->getSrcLoc());
-                                typesSolutionExists = false;
-                            }
-                        }
 
-                        // No implicit conversion allowed.
-                        if (typesSolutionExists) {
-                            report.addError("Implicit number conversion not permitted", fun->getSrcLoc());
-                        }
+                    } else if (all_of(functor->getArguments(), isUnsigned)) {
+                        FunctorOp convertedFunctor =
+                                convertOverloadedFunctor(functor->getFunction(), RamPrimitiveType::Unsigned);
+                        functor->setFunction(convertedFunctor);
+                        changed = true;
+                    }
+                }
+            }
+
+            // Handle binary constraint
+            if (auto* binaryConstraint = dynamic_cast<AstBinaryConstraint*>(node.get())) {
+                if (isOverloaded(binaryConstraint->getOperator())) {
+                    // Get arguments
+                    auto* leftArg = binaryConstraint->getLHS();
+                    auto* rightArg = binaryConstraint->getRHS();
+
+                    // Both args must be of the same type
+                    if (isFloat(leftArg) && isFloat(rightArg)) {
+                        BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
+                                binaryConstraint->getOperator(), RamPrimitiveType::Float);
+                        binaryConstraint->setOperator(convertedConstraint);
+                        changed = true;
+
+                    } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
+                        BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
+                                binaryConstraint->getOperator(), RamPrimitiveType::Unsigned);
+                        binaryConstraint->setOperator(convertedConstraint);
+                        changed = true;
                     }
                 }
             }

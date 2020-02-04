@@ -1143,6 +1143,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(rel.getRHS(), out);
                     out << "))";
                     break;
+                case BinaryConstraintOp::ULT:
+                case BinaryConstraintOp::FLT:
                 case BinaryConstraintOp::LT:
                     out << "((";
                     visit(rel.getLHS(), out);
@@ -1150,6 +1152,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(rel.getRHS(), out);
                     out << "))";
                     break;
+                case BinaryConstraintOp::ULE:
+                case BinaryConstraintOp::FLE:
                 case BinaryConstraintOp::LE:
                     out << "((";
                     visit(rel.getLHS(), out);
@@ -1157,6 +1161,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(rel.getRHS(), out);
                     out << "))";
                     break;
+                case BinaryConstraintOp::UGT:
+                case BinaryConstraintOp::FGT:
                 case BinaryConstraintOp::GT:
                     out << "((";
                     visit(rel.getLHS(), out);
@@ -1164,6 +1170,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(rel.getRHS(), out);
                     out << "))";
                     break;
+                case BinaryConstraintOp::UGE:
+                case BinaryConstraintOp::FGE:
                 case BinaryConstraintOp::GE:
                     out << "((";
                     visit(rel.getLHS(), out);

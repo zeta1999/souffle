@@ -557,7 +557,8 @@ private:
 
 /**
  * Transformation pass to determine operator types for polymorphic
- * functors such as plus, minus, etc.
+ * operators.
+ * Operators = Functors (plus, minus...) ∪ binary constraints (>, ≥ ...)
  */
 
 class PolymorphicFunctorsTransformer : public AstTransformer {

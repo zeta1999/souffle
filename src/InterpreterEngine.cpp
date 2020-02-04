@@ -648,19 +648,59 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Constraint)
         switch (cur.getOperator()) {
-            case (BinaryConstraintOp::EQ):
+            case BinaryConstraintOp::EQ:
                 BINARY_OP(==);
-            case (BinaryConstraintOp::NE):
+            case BinaryConstraintOp::NE:
                 BINARY_OP(!=);
-            case (BinaryConstraintOp::LT):
+            case BinaryConstraintOp::LT:
                 BINARY_OP(<);
-            case (BinaryConstraintOp::LE):
+            case BinaryConstraintOp::ULT: {
+                auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return left < right;
+            }
+            case BinaryConstraintOp::FLT: {
+                auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return left < right;
+            }
+            case BinaryConstraintOp::LE:
                 BINARY_OP(<=);
-            case (BinaryConstraintOp::GT):
+            case BinaryConstraintOp::ULE: {
+                auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return left <= right;
+            }
+            case BinaryConstraintOp::FLE: {
+                auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return left <= right;
+            }
+            case BinaryConstraintOp::GT:
                 BINARY_OP(>);
-            case (BinaryConstraintOp::GE):
+            case BinaryConstraintOp::UGT: {
+                auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return left > right;
+            }
+            case BinaryConstraintOp::FGT: {
+                auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return left > right;
+            }
+            case BinaryConstraintOp::GE:
                 BINARY_OP(>=);
-            case (BinaryConstraintOp::MATCH): {
+            case BinaryConstraintOp::UGE: {
+                auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return left >= right;
+            }
+            case BinaryConstraintOp::FGE: {
+                auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return left >= right;
+            }
+            case BinaryConstraintOp::MATCH: {
                 RamDomain left = execute(node->getChild(0), ctxt);
                 RamDomain right = execute(node->getChild(1), ctxt);
                 const std::string& pattern = getSymbolTable().resolve(left);
@@ -674,7 +714,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 return result;
             }
-            case (BinaryConstraintOp::NOT_MATCH): {
+            case BinaryConstraintOp::NOT_MATCH: {
                 RamDomain left = execute(node->getChild(0), ctxt);
                 RamDomain right = execute(node->getChild(1), ctxt);
                 const std::string& pattern = getSymbolTable().resolve(left);
@@ -688,14 +728,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 return result;
             }
-            case (BinaryConstraintOp::CONTAINS): {
+            case BinaryConstraintOp::CONTAINS: {
                 RamDomain left = execute(node->getChild(0), ctxt);
                 RamDomain right = execute(node->getChild(1), ctxt);
                 const std::string& pattern = getSymbolTable().resolve(left);
                 const std::string& text = getSymbolTable().resolve(right);
                 return text.find(pattern) != std::string::npos;
             }
-            case (BinaryConstraintOp::NOT_CONTAINS): {
+            case BinaryConstraintOp::NOT_CONTAINS: {
                 RamDomain left = execute(node->getChild(0), ctxt);
                 RamDomain right = execute(node->getChild(1), ctxt);
                 const std::string& pattern = getSymbolTable().resolve(left);

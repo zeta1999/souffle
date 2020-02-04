@@ -19,6 +19,8 @@
 #include <cassert>
 #include <iostream>
 
+#include "RamTypes.h"
+
 namespace souffle {
 
 /******************************************
@@ -27,15 +29,27 @@ namespace souffle {
 
 /**
  * Binary Constraint Operators
+ *
+ * TODO (darth_tytus): Some of the constraints are repeated because of floats and unsigned.
+ * This is inelegant solution, but Ram execution demands this distinction.
+ * Investigate a better way.
  */
 enum class BinaryConstraintOp {
     __UNDEFINED__,  // undefined operator
     EQ,             // equivalence of two values
     NE,             // whether two values are different
-    LT,             // less-than
-    LE,             // less-than-or-equal-to
-    GT,             // greater-than
-    GE,             // greater-than-or-equal-to
+    LT,             // signed <
+    ULT,            // Unsigned <
+    FLT,            // Float <
+    LE,             // signed ≤
+    ULE,            // Unsigned ≤
+    FLE,            // Float ≤
+    GT,             // signed >
+    UGT,            // unsigned >
+    FGT,            // float >
+    GE,             // signed ≥
+    UGE,            // Unsigned ≥
+    FGE,            // Float ≥
     MATCH,          // matching string
     CONTAINS,       // whether a sub-string is contained in a string
     NOT_MATCH,      // not matching string
@@ -43,24 +57,108 @@ enum class BinaryConstraintOp {
 };
 
 /**
+ *
+ * Utility function, informing whether constraint
+ */
+inline bool isOverloaded(const BinaryConstraintOp constraintOp) {
+    switch (constraintOp) {
+        case BinaryConstraintOp::LT:
+        case BinaryConstraintOp::LE:
+        case BinaryConstraintOp::GT:
+        case BinaryConstraintOp::GE:
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
+/**
+ * Convert Constraint to work with requested type.
+ * Example: constraintOp = LT, toType = Float -> FLT (less-than working on floats).
+ */
+inline BinaryConstraintOp convertOverloadedConstraint(
+        const BinaryConstraintOp constraintOp, const RamPrimitiveType toType) {
+    switch (constraintOp) {
+        case BinaryConstraintOp::LT:
+            if (toType == RamPrimitiveType::Unsigned) {
+                return BinaryConstraintOp::ULT;
+            }
+            if (toType == RamPrimitiveType::Float) {
+                return BinaryConstraintOp::FLT;
+            }
+            break;
+        case BinaryConstraintOp::LE:
+            if (toType == RamPrimitiveType::Unsigned) {
+                return BinaryConstraintOp::ULE;
+            }
+            if (toType == RamPrimitiveType::Float) {
+                return BinaryConstraintOp::FLE;
+            }
+            break;
+        case BinaryConstraintOp::GT:
+            if (toType == RamPrimitiveType::Unsigned) {
+                return BinaryConstraintOp::UGT;
+            }
+            if (toType == RamPrimitiveType::Float) {
+                return BinaryConstraintOp::FGT;
+            }
+            break;
+        case BinaryConstraintOp::GE:
+            if (toType == RamPrimitiveType::Unsigned) {
+                return BinaryConstraintOp::UGE;
+            }
+            if (toType == RamPrimitiveType::Float) {
+                return BinaryConstraintOp::FGE;
+            }
+            break;
+        default:
+            break;
+    }
+    assert(false && "Invalid constraint conversion");
+    return BinaryConstraintOp::__UNDEFINED__;
+}
+
+/**
  * Negated Constraint Operator
- * Each opeprator requires a negated operator which is
+ * Each operator requires a negated operator which is
  * necessary for the expansion of complex rule bodies with disjunction and negation.
  */
-inline BinaryConstraintOp negatedConstraintOp(BinaryConstraintOp op) {
+inline BinaryConstraintOp negatedConstraintOp(const BinaryConstraintOp op) {
     switch (op) {
         case BinaryConstraintOp::EQ:
             return BinaryConstraintOp::NE;
         case BinaryConstraintOp::NE:
             return BinaryConstraintOp::EQ;
+
         case BinaryConstraintOp::LT:
             return BinaryConstraintOp::GE;
+        case BinaryConstraintOp::ULT:
+            return BinaryConstraintOp::UGE;
+        case BinaryConstraintOp::FLT:
+            return BinaryConstraintOp::FGE;
+
         case BinaryConstraintOp::LE:
             return BinaryConstraintOp::GT;
+        case BinaryConstraintOp::ULE:
+            return BinaryConstraintOp::UGT;
+        case BinaryConstraintOp::FLE:
+            return BinaryConstraintOp::FGT;
+
         case BinaryConstraintOp::GE:
             return BinaryConstraintOp::LT;
+        case BinaryConstraintOp::UGE:
+            return BinaryConstraintOp::ULT;
+        case BinaryConstraintOp::FGE:
+            return BinaryConstraintOp::FLT;
+
         case BinaryConstraintOp::GT:
             return BinaryConstraintOp::LE;
+        case BinaryConstraintOp::UGT:
+            return BinaryConstraintOp::ULE;
+        case BinaryConstraintOp::FGT:
+            return BinaryConstraintOp::FLE;
+
         case BinaryConstraintOp::MATCH:
             return BinaryConstraintOp::NOT_MATCH;
         case BinaryConstraintOp::NOT_MATCH:
@@ -69,7 +167,8 @@ inline BinaryConstraintOp negatedConstraintOp(BinaryConstraintOp op) {
             return BinaryConstraintOp::NOT_CONTAINS;
         case BinaryConstraintOp::NOT_CONTAINS:
             return BinaryConstraintOp::CONTAINS;
-        default:
+
+        case BinaryConstraintOp::__UNDEFINED__:
             break;
     }
     assert(false && "Unsupported Operator!");
@@ -79,18 +178,26 @@ inline BinaryConstraintOp negatedConstraintOp(BinaryConstraintOp op) {
 /**
  * Converts operator to its symbolic representation
  */
-inline std::string toBinaryConstraintSymbol(BinaryConstraintOp op) {
+inline std::string toBinaryConstraintSymbol(const BinaryConstraintOp op) {
     switch (op) {
         case BinaryConstraintOp::EQ:
             return "=";
         case BinaryConstraintOp::NE:
             return "!=";
+        case BinaryConstraintOp::ULT:
+        case BinaryConstraintOp::FLT:
         case BinaryConstraintOp::LT:
             return "<";
+        case BinaryConstraintOp::ULE:
+        case BinaryConstraintOp::FLE:
         case BinaryConstraintOp::LE:
             return "<=";
+        case BinaryConstraintOp::UGT:
+        case BinaryConstraintOp::FGT:
         case BinaryConstraintOp::GT:
             return ">";
+        case BinaryConstraintOp::UGE:
+        case BinaryConstraintOp::FGE:
         case BinaryConstraintOp::GE:
             return ">=";
         case BinaryConstraintOp::MATCH:
@@ -101,7 +208,7 @@ inline std::string toBinaryConstraintSymbol(BinaryConstraintOp op) {
             return "not_match";
         case BinaryConstraintOp::NOT_CONTAINS:
             return "not_contains";
-        default:
+        case BinaryConstraintOp::__UNDEFINED__:
             break;
     }
     assert(false && "Unsupported Operator!");
@@ -128,10 +235,6 @@ inline BinaryConstraintOp toBinaryConstraintOp(const std::string& symbol) {
 }
 
 /**
- * Helper Functions for Binary Functors
- */
-
-/**
  * Determines whether arguments of constraint are numeric
  */
 inline bool isNumericBinaryConstraintOp(const BinaryConstraintOp op) {
@@ -139,9 +242,17 @@ inline bool isNumericBinaryConstraintOp(const BinaryConstraintOp op) {
         case BinaryConstraintOp::EQ:
         case BinaryConstraintOp::NE:
         case BinaryConstraintOp::LT:
+        case BinaryConstraintOp::ULT:
+        case BinaryConstraintOp::FLT:
         case BinaryConstraintOp::LE:
+        case BinaryConstraintOp::ULE:
+        case BinaryConstraintOp::FLE:
         case BinaryConstraintOp::GE:
+        case BinaryConstraintOp::UGE:
+        case BinaryConstraintOp::FGE:
         case BinaryConstraintOp::GT:
+        case BinaryConstraintOp::UGT:
+        case BinaryConstraintOp::FGT:
             return true;
 
         case BinaryConstraintOp::MATCH:
@@ -150,7 +261,7 @@ inline bool isNumericBinaryConstraintOp(const BinaryConstraintOp op) {
         case BinaryConstraintOp::NOT_CONTAINS:
             return false;
 
-        default:
+        case BinaryConstraintOp::__UNDEFINED__:
             break;
     }
     assert(false && "Uncovered case!");

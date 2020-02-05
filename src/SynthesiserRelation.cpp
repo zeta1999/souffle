@@ -33,6 +33,8 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
         rel = new SynthesiserBrieRelation(ramRel, indexSet, isProvenance);
     } else if (ramRel.getRepresentation() == RelationRepresentation::EQREL) {
         rel = new SynthesiserEqrelRelation(ramRel, indexSet, isProvenance);
+    } else if (ramRel.getRepresentation() == RelationRepresentation::INFO) {
+        rel = new SynthesiserInfoRelation(ramRel, indexSet, isProvenance);
     } else {
         // Handle the data structure command line flag
         if (ramRel.getArity() > 6) {
@@ -48,6 +50,24 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
     rel->computeIndices();
 
     return std::unique_ptr<SynthesiserRelation>(rel);
+}
+
+// -------- Info Relation --------
+
+/** Generate index set for a info relation, which should be empty */
+void SynthesiserInfoRelation::computeIndices() {
+    computedIndices = {};
+}
+
+/** Generate type name of a info relation */
+std::string SynthesiserInfoRelation::getTypeName() {
+    return "t_info<" + std::to_string(getArity()) + ">";
+}
+
+/** Generate type struct of a info relation, which is empty,
+ * the actual implementation is in CompiledSouffle.h */
+void SynthesiserInfoRelation::generateTypeStruct(std::ostream& out) {
+    return;
 }
 
 // -------- Nullary Relation --------

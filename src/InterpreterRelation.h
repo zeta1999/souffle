@@ -259,5 +259,4 @@ private:
 
     size_t numTuples = 0;
 };
-
 }  // end of namespace souffle

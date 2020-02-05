@@ -400,9 +400,11 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> scanRewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamScan* scan = dynamic_cast<RamScan*>(node.get())) {
-                if (std::unique_ptr<RamOperation> op = rewriteScan(scan)) {
-                    changed = true;
-                    node = std::move(op);
+                if (scan->getRelation().getRepresentation() != RelationRepresentation::INFO) {
+                    if (std::unique_ptr<RamOperation> op = rewriteScan(scan)) {
+                        changed = true;
+                        node = std::move(op);
+                    }
                 }
             } else if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(node.get())) {
                 if (std::unique_ptr<RamOperation> op = rewriteIndexScan(iscan)) {

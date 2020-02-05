@@ -1683,9 +1683,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // synthesise data-structures for relations
     for (auto rel : prog.getRelations()) {
-        const std::string& datalogName = rel->getName();
-
-        bool isProvInfo = datalogName.find("@info") != std::string::npos;
+        bool isProvInfo = rel->getRepresentation() == RelationRepresentation::INFO;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
 
@@ -1781,7 +1779,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
         // TODO(b-scholz): we need a qualifier for info relations used by the provenance system
         // this would permit a more efficient storage of relations (no indexes!!)
-        bool isProvInfo = datalogName.find("@info") != std::string::npos;
+        bool isProvInfo = rel->getRepresentation() == RelationRepresentation::INFO;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
         const std::string& type = relationType->getTypeName();
@@ -2063,9 +2061,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             for (auto rel : prog.getRelations()) {
                 // get some table details
                 const std::string& cppName = getRelationName(*rel);
-                const std::string& datalogName = rel->getName();
 
-                bool isProvInfo = datalogName.find("@info") != std::string::npos;
+                bool isProvInfo = rel->getRepresentation() == RelationRepresentation::INFO;
                 auto relationType = SynthesiserRelation::getSynthesiserRelation(*rel,
                         idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
 

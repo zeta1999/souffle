@@ -1334,19 +1334,19 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
         // -- values --
-        void visitUnsignedC(const RamUnsignedC& constant, std::ostream& out) override {
+        void visitUnsignedConstant(const RamUnsignedConstant& constant, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "RamUnsigned(" << constant.getValue() << ")";
             PRINT_END_COMMENT(out);
         }
 
-        void visitFloatC(const RamFloatC& constant, std::ostream& out) override {
+        void visitFloatConstant(const RamFloatConstant& constant, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "RamFloat(" << constant.getValue() << ")";
             PRINT_END_COMMENT(out);
         }
 
-        void visitNumber(const RamNumber& constant, std::ostream& out) override {
+        void visitSignedConstant(const RamSignedConstant& constant, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "RamSigned(" << constant.getConstant() << ")";
             PRINT_END_COMMENT(out);

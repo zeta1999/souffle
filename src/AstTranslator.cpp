@@ -255,23 +255,23 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitUnsignedConstant(const AstUnsignedConstant& c) override {
-            return std::make_unique<RamUnsignedC>(c.getRamRepresentation());
+            return std::make_unique<RamUnsignedConstant>(c.getRamRepresentation());
         }
 
         std::unique_ptr<RamExpression> visitFloatConstant(const AstFloatConstant& c) override {
-            return std::make_unique<RamFloatC>(c.getRamRepresentation());
+            return std::make_unique<RamFloatConstant>(c.getRamRepresentation());
         }
 
         std::unique_ptr<RamExpression> visitNumberConstant(const AstNumberConstant& c) override {
-            return std::make_unique<RamNumber>(c.getRamRepresentation());
+            return std::make_unique<RamSignedConstant>(c.getRamRepresentation());
         }
 
         std::unique_ptr<RamExpression> visitStringConstant(const AstStringConstant& c) override {
-            return std::make_unique<RamNumber>(c.getRamRepresentation());
+            return std::make_unique<RamSignedConstant>(c.getRamRepresentation());
         }
 
         std::unique_ptr<RamExpression> visitNullConstant(const AstNullConstant& c) override {
-            return std::make_unique<RamNumber>(c.getRamRepresentation());
+            return std::make_unique<RamSignedConstant>(c.getRamRepresentation());
         }
 
         std::unique_ptr<RamExpression> visitIntrinsicFunctor(const AstIntrinsicFunctor& inf) override {
@@ -575,7 +575,7 @@ std::unique_ptr<RamOperation> AstTranslator::ProvenanceClauseTranslator::createO
                 values.push_back(translator.translateValue(arg, valueIndex));
             }
             for (size_t i = 0; i < auxiliaryArity; ++i) {
-                values.push_back(std::make_unique<RamNumber>(-1));
+                values.push_back(std::make_unique<RamSignedConstant>(-1));
             }
         }
     }
@@ -787,7 +787,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamTupleElement>(level, pos),
-                                    std::make_unique<RamNumber>(c->getRamRepresentation())),
+                                    std::make_unique<RamSignedConstant>(c->getRamRepresentation())),
                             std::move(op));
                 }
             }
@@ -840,7 +840,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamTupleElement>(level, pos),
-                                    std::make_unique<RamNumber>(c->getRamRepresentation())),
+                                    std::make_unique<RamSignedConstant>(c->getRamRepresentation())),
                             std::move(op));
                 } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
@@ -1384,7 +1384,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
             // make the nested operation to return the atom number if it exists
             std::vector<std::unique_ptr<RamExpression>> returnValue;
-            returnValue.push_back(std::make_unique<RamNumber>(litNumber));
+            returnValue.push_back(std::make_unique<RamSignedConstant>(litNumber));
 
             // create a search
             // a filter to find whether the current atom exists or not
@@ -1419,7 +1419,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
             // create a return value
             std::vector<std::unique_ptr<RamExpression>> returnValue;
-            returnValue.push_back(std::make_unique<RamNumber>(litNumber));
+            returnValue.push_back(std::make_unique<RamSignedConstant>(litNumber));
 
             // create a filter
             auto filter = std::make_unique<RamFilter>(

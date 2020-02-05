@@ -25,7 +25,7 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
     class ValueLevelVisitor : public RamVisitor<int> {
     public:
         // number
-        int visitConst(const RamConst&) override {
+        int visitConstant(const RamConstant&) override {
             return -1;
         }
 

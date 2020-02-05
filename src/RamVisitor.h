@@ -82,10 +82,10 @@ struct RamVisitor : public ram_visitor_tag {
 
         // Expressions
         FORWARD(TupleElement);
-        FORWARD(Number);
-        FORWARD(UnsignedC);
-        FORWARD(FloatC);
-        FORWARD(Const);
+        FORWARD(SignedConstant);
+        FORWARD(UnsignedConstant);
+        FORWARD(FloatConstant);
+        FORWARD(Constant);
         FORWARD(IntrinsicOperator);
         FORWARD(UserDefinedOperator);
         FORWARD(AutoIncrement);
@@ -222,10 +222,10 @@ protected:
     LINK(Condition, Node);
 
     // -- values --
-    LINK(Number, Const);
-    LINK(UnsignedC, Const);
-    LINK(FloatC, Const);
-    LINK(Const, Expression);
+    LINK(SignedConstant, Constant);
+    LINK(UnsignedConstant, Constant);
+    LINK(FloatConstant, Constant);
+    LINK(Constant, Expression);
     LINK(UndefValue, Expression);
     LINK(TupleElement, Expression);
     LINK(IntrinsicOperator, AbstractOperator);

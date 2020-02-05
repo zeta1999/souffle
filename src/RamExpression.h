@@ -229,11 +229,11 @@ protected:
 };
 
 /**
- * @class RamConst
+ * @class RamConstant
  * @brief Represents a Ram Constant
  *
  */
-class RamConst : public RamExpression {
+class RamConstant : public RamExpression {
 public:
     /** @brief Get constant */
     RamDomain getConstant() const {
@@ -241,14 +241,14 @@ public:
     }
 
 protected:
-    explicit RamConst(RamDomain val) : constant(val) {}
+    explicit RamConstant(RamDomain val) : constant(val) {}
 
     /** Constant value */
     const RamDomain constant;
 };
 
 /**
- * @class RamNumber
+ * @class RamSignedConstant
  * @brief Represents a signed constant
  *
  * For example:
@@ -256,9 +256,9 @@ protected:
  * number(5)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamNumber : public RamConst {
+class RamSignedConstant : public RamConstant {
 public:
-    explicit RamNumber(RamDomain val) : RamConst(val) {}
+    explicit RamSignedConstant(RamDomain val) : RamConstant(val) {}
 
     /** @brief Get value of the constant. */
     RamDomain getValue() const {
@@ -270,20 +270,20 @@ public:
     }
 
     /** Create clone */
-    RamNumber* clone() const override {
-        return new RamNumber(constant);
+    RamSignedConstant* clone() const override {
+        return new RamSignedConstant(constant);
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamNumber*>(&node));
-        const auto& other = static_cast<const RamNumber&>(node);
+        assert(nullptr != dynamic_cast<const RamSignedConstant*>(&node));
+        const auto& other = static_cast<const RamSignedConstant&>(node);
         return getConstant() == other.getConstant();
     }
 };
 
 /**
- * @class RamUnsignedC
+ * @class RamUnsignedConstant
  * @brief Represents a unsigned constant
  *
  * For example:
@@ -291,9 +291,9 @@ protected:
  * unsigned(5)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamUnsignedC : public RamConst {
+class RamUnsignedConstant : public RamConstant {
 public:
-    explicit RamUnsignedC(RamDomain val) : RamConst(val) {}
+    explicit RamUnsignedConstant(RamDomain val) : RamConstant(val) {}
 
     /** @brief Get value of the constant. */
     RamUnsigned getValue() const {
@@ -305,20 +305,20 @@ public:
     }
 
     /** Create clone */
-    RamUnsignedC* clone() const override {
-        return new RamUnsignedC(constant);
+    RamUnsignedConstant* clone() const override {
+        return new RamUnsignedConstant(constant);
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamUnsignedC*>(&node));
-        const auto& other = static_cast<const RamUnsignedC&>(node);
+        assert(nullptr != dynamic_cast<const RamUnsignedConstant*>(&node));
+        const auto& other = static_cast<const RamUnsignedConstant&>(node);
         return getConstant() == other.getConstant();
     }
 };
 
 /**
- * @class RamFloatC
+ * @class RamFloatConstant
  * @brief Represents a float constant
  *
  * For example:
@@ -326,9 +326,9 @@ protected:
  * float(3.3)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class RamFloatC : public RamConst {
+class RamFloatConstant : public RamConstant {
 public:
-    explicit RamFloatC(RamDomain val) : RamConst(val) {}
+    explicit RamFloatConstant(RamDomain val) : RamConstant(val) {}
 
     /** @brief Get value of the constant. */
     RamFloat getValue() const {
@@ -340,14 +340,14 @@ public:
     }
 
     /** Create clone */
-    RamFloatC* clone() const override {
-        return new RamFloatC(constant);
+    RamFloatConstant* clone() const override {
+        return new RamFloatConstant(constant);
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamFloatC*>(&node));
-        const auto& other = static_cast<const RamFloatC&>(node);
+        assert(nullptr != dynamic_cast<const RamFloatConstant*>(&node));
+        const auto& other = static_cast<const RamFloatConstant&>(node);
         return getConstant() == other.getConstant();
     }
 };

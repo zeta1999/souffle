@@ -204,9 +204,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
     }
 
     switch (node->getType()) {
-        CASE(Const)
+        CASE(Constant)
         return cur.getConstant();
-        ESAC(Const)
+        ESAC(Constant)
 
         CASE(TupleElement)
         return ctxt[cur.getTupleId()][cur.getElement()];

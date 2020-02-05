@@ -67,8 +67,8 @@ public:
         return visit(root);
     }
 
-    NodePtr visitConst(const RamConst& num) override {
-        return std::make_unique<InterpreterNode>(I_Const, &num);
+    NodePtr visitConstant(const RamConstant& num) override {
+        return std::make_unique<InterpreterNode>(I_Constant, &num);
     }
 
     NodePtr visitTupleElement(const RamTupleElement& access) override {

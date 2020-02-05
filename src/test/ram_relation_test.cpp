@@ -87,8 +87,8 @@ TEST(IO_store, FloatSimple) {
     std::vector<std::string> types = {"f", "f"};
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
-    exprs.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(0.5))));
-    exprs.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(0.5))));
+    exprs.push_back(std::make_unique<RamSignedConstant>(ramBitCast(static_cast<RamFloat>(0.5))));
+    exprs.push_back(std::make_unique<RamSignedConstant>(ramBitCast(static_cast<RamFloat>(0.5))));
 
     std::string expected = R"(---------------
 test
@@ -114,7 +114,7 @@ TEST(IO_store, Signed) {
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
     for (RamDomain i : randomNumbers) {
-        exprs.push_back(std::make_unique<RamNumber>(i));
+        exprs.push_back(std::make_unique<RamSignedConstant>(i));
     }
 
     std::stringstream expected;
@@ -150,7 +150,7 @@ TEST(IO_store, Float) {
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
     for (RamFloat f : randomNumbers) {
-        exprs.push_back(std::make_unique<RamNumber>(ramBitCast(f)));
+        exprs.push_back(std::make_unique<RamSignedConstant>(ramBitCast(f)));
     }
 
     std::stringstream expected;
@@ -186,7 +186,7 @@ TEST(IO_store, Unsigned) {
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
     for (RamUnsigned u : randomNumbers) {
-        exprs.push_back(std::make_unique<RamNumber>(ramBitCast(u)));
+        exprs.push_back(std::make_unique<RamSignedConstant>(ramBitCast(u)));
     }
 
     std::stringstream expected;
@@ -238,7 +238,7 @@ TEST(IO_store, SignedChangedDelimeter) {
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
     for (RamDomain i : randomNumbers) {
-        exprs.push_back(std::make_unique<RamNumber>(i));
+        exprs.push_back(std::make_unique<RamSignedConstant>(i));
     }
 
     std::unique_ptr<RamStatement> main = std::make_unique<RamSequence>(
@@ -310,11 +310,11 @@ TEST(IO_store, MixedTypes) {
     DebugReport debugReport;
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
-    exprs.push_back(std::make_unique<RamNumber>(3));
-    exprs.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamUnsigned>(27))));
-    exprs.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(27.27))));
-    exprs.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(27.27))));
-    exprs.push_back(std::make_unique<RamNumber>(symbolTable.lookup("meow")));
+    exprs.push_back(std::make_unique<RamSignedConstant>(3));
+    exprs.push_back(std::make_unique<RamSignedConstant>(ramBitCast(static_cast<RamUnsigned>(27))));
+    exprs.push_back(std::make_unique<RamSignedConstant>(ramBitCast(static_cast<RamFloat>(27.27))));
+    exprs.push_back(std::make_unique<RamSignedConstant>(ramBitCast(static_cast<RamFloat>(27.27))));
+    exprs.push_back(std::make_unique<RamSignedConstant>(symbolTable.lookup("meow")));
 
     std::unique_ptr<RamStatement> main = std::make_unique<RamSequence>(
             std::make_unique<RamQuery>(std::make_unique<RamProject>(std::move(ref1), std::move(exprs))),

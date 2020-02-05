@@ -30,7 +30,7 @@
 namespace souffle {
 
 enum InterpreterNodeType {
-    I_Const,
+    I_Constant,
     I_TupleElement,
     I_AutoIncrement,
     I_IntrinsicOperator,

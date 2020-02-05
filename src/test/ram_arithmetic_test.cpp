@@ -79,7 +79,7 @@ RamDomain evalMultiArg(FunctorOp functor, std::vector<std::unique_ptr<RamExpress
 /** Evaluate a single argument expression */
 RamDomain evalUnary(FunctorOp functor, RamDomain arg1) {
     std::vector<std::unique_ptr<RamExpression>> args;
-    args.push_back(std::make_unique<RamNumber>(arg1));
+    args.push_back(std::make_unique<RamSignedConstant>(arg1));
 
     return evalMultiArg(functor, std::move(args));
 }
@@ -87,15 +87,15 @@ RamDomain evalUnary(FunctorOp functor, RamDomain arg1) {
 /** Evaluate a binary operator */
 RamDomain evalBinary(FunctorOp functor, RamDomain arg1, RamDomain arg2) {
     std::vector<std::unique_ptr<RamExpression>> args;
-    args.push_back(std::make_unique<RamNumber>(arg1));
-    args.push_back(std::make_unique<RamNumber>(arg2));
+    args.push_back(std::make_unique<RamSignedConstant>(arg1));
+    args.push_back(std::make_unique<RamSignedConstant>(arg2));
 
     return evalMultiArg(functor, std::move(args));
 }
 
-TEST(RamNumber, ArithmeticEvaluation) {
+TEST(RamSignedConstant, ArithmeticEvaluation) {
     RamDomain num = 42;
-    std::unique_ptr<RamExpression> expression = std::make_unique<RamNumber>(num);
+    std::unique_ptr<RamExpression> expression = std::make_unique<RamSignedConstant>(num);
     RamDomain result = evalExpression(std::move(expression));
     EXPECT_EQ(result, num);
 }
@@ -593,7 +593,7 @@ TEST(MultiArg, Max) {
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
 
     for (RamDomain i = 0; i <= 50; ++i) {
-        args.push_back(std::make_unique<RamNumber>(i));
+        args.push_back(std::make_unique<RamSignedConstant>(i));
     }
 
     RamDomain result = evalMultiArg(functor, std::move(args));
@@ -606,7 +606,7 @@ TEST(MultiArg, UnsignedMax) {
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
 
     for (RamUnsigned i = 0; i <= 100; ++i) {
-        args.push_back(std::make_unique<RamNumber>(ramBitCast(i)));
+        args.push_back(std::make_unique<RamSignedConstant>(ramBitCast(i)));
     }
 
     RamDomain result = evalMultiArg(functor, std::move(args));
@@ -619,7 +619,7 @@ TEST(MultiArg, FloatMax) {
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
 
     for (RamDomain i = -100; i <= 100; ++i) {
-        args.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(i))));
+        args.push_back(std::make_unique<RamSignedConstant>(ramBitCast(static_cast<RamFloat>(i))));
     }
 
     RamDomain result = evalMultiArg(functor, std::move(args));
@@ -632,7 +632,7 @@ TEST(MultiArg, Min) {
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
 
     for (RamDomain i = 0; i <= 50; ++i) {
-        args.push_back(std::make_unique<RamNumber>(i));
+        args.push_back(std::make_unique<RamSignedConstant>(i));
     }
 
     RamDomain result = evalMultiArg(functor, std::move(args));
@@ -645,7 +645,7 @@ TEST(MultiArg, UnsignedMin) {
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
 
     for (RamUnsigned i = 0; i <= 100; ++i) {
-        args.push_back(std::make_unique<RamNumber>(ramBitCast(i)));
+        args.push_back(std::make_unique<RamSignedConstant>(ramBitCast(i)));
     }
 
     RamDomain result = evalMultiArg(functor, std::move(args));
@@ -658,7 +658,7 @@ TEST(MultiArg, FloatMin) {
     std::vector<std::unique_ptr<souffle::RamExpression>> args;
 
     for (RamDomain i = -100; i <= 100; ++i) {
-        args.push_back(std::make_unique<RamNumber>(ramBitCast(static_cast<RamFloat>(i))));
+        args.push_back(std::make_unique<RamSignedConstant>(ramBitCast(static_cast<RamFloat>(i))));
     }
 
     RamDomain result = evalMultiArg(functor, std::move(args));

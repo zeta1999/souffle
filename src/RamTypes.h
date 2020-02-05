@@ -101,7 +101,7 @@ inline bool isNumericType(RamTypeAttribute ramType) {
  * Types of elements in a tuple.
  *
  * Default domain has size of 32 bits; may be overridden by user
- * defining RAM_DOMAIN_TYPE.
+ * defining RAM_DOMAIN_SIZE.
  */
 
 #ifndef RAM_DOMAIN_SIZE

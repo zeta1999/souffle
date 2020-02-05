@@ -296,9 +296,6 @@ public:
         data.push_back(t);
         insert_lock.unlock();
     }
-    bool insert() {
-        return true;
-    }
     bool contains(const t_tuple& t) const {
         for (const auto& o : data) {
             if (t == o) {

@@ -25,7 +25,7 @@
 
 namespace souffle {
 
-enum class RamPrimitiveType {
+enum class RamTypeAttribute {
     Symbol,
     Signed,    // Signed number
     Unsigned,  // Unsigned number
@@ -33,49 +33,49 @@ enum class RamPrimitiveType {
     Record,
 };
 
-// Printing of the RamPrimitiveType Enum.
+// Printing of the RamTypeAttribute Enum.
 // To be utilized in synthesizer.
-inline std::ostream& operator<<(std::ostream& os, RamPrimitiveType T) {
+inline std::ostream& operator<<(std::ostream& os, RamTypeAttribute T) {
     switch (T) {
-        case RamPrimitiveType::Symbol:
-            os << "RamPrimitiveType::Symbol";
+        case RamTypeAttribute::Symbol:
+            os << "RamTypeAttribute::Symbol";
             break;
-        case RamPrimitiveType::Signed:
-            os << "RamPrimitiveType::Signed";
+        case RamTypeAttribute::Signed:
+            os << "RamTypeAttribute::Signed";
             break;
-        case RamPrimitiveType::Float:
-            os << "RamPrimitiveType::Float";
+        case RamTypeAttribute::Float:
+            os << "RamTypeAttribute::Float";
             break;
-        case RamPrimitiveType::Unsigned:
-            os << "RamPrimitiveType::Unsigned";
+        case RamTypeAttribute::Unsigned:
+            os << "RamTypeAttribute::Unsigned";
             break;
-        case RamPrimitiveType::Record:
-            os << "RamPrimitiveType::Record";
+        case RamTypeAttribute::Record:
+            os << "RamTypeAttribute::Record";
     }
     return os;
 }
 
-/** Convert a char to RamPrimitiveType */
-inline RamPrimitiveType RamPrimitiveFromChar(char c) {
-    RamPrimitiveType RamType;
+/** Convert a char to RamTypeAttribute */
+inline RamTypeAttribute RamPrimitiveFromChar(char c) {
+    RamTypeAttribute RamType;
     switch (c) {
         case 's':
-            RamType = RamPrimitiveType::Symbol;
+            RamType = RamTypeAttribute::Symbol;
             break;
         case 'i':
-            RamType = RamPrimitiveType::Signed;
+            RamType = RamTypeAttribute::Signed;
             break;
         case 'f':
-            RamType = RamPrimitiveType::Float;
+            RamType = RamTypeAttribute::Float;
             break;
         case 'u':
-            RamType = RamPrimitiveType::Unsigned;
+            RamType = RamTypeAttribute::Unsigned;
             break;
         case 'r':
-            RamType = RamPrimitiveType::Record;
+            RamType = RamTypeAttribute::Record;
             break;
         default:
-            std::cerr << "Invalid RamPrimitiveType Char " << c << std::endl;
+            std::cerr << "Invalid RamTypeAttribute Char " << c << std::endl;
             exit(EXIT_FAILURE);
     }
     return RamType;
@@ -84,14 +84,14 @@ inline RamPrimitiveType RamPrimitiveFromChar(char c) {
 /**
  * Check if type is numeric.
  */
-inline bool isNumericType(RamPrimitiveType ramType) {
+inline bool isNumericType(RamTypeAttribute ramType) {
     switch (ramType) {
-        case RamPrimitiveType::Signed:
-        case RamPrimitiveType::Unsigned:
-        case RamPrimitiveType::Float:
+        case RamTypeAttribute::Signed:
+        case RamTypeAttribute::Unsigned:
+        case RamTypeAttribute::Float:
             return true;
-        case RamPrimitiveType::Symbol:
-        case RamPrimitiveType::Record:
+        case RamTypeAttribute::Symbol:
+        case RamTypeAttribute::Record:
             return false;
     }
     return false;  // silence warning

@@ -1272,7 +1272,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         for (IODirectives ioDirectives : cur.getIODirectives()) {
             try {
                 InterpreterRelation& relation = *node->getRelation();
-                std::vector<RamPrimitiveType> symbolMask;
+                std::vector<RamTypeAttribute> symbolMask;
                 for (auto& cur : cur.getRelation().getAttributeTypes()) {
                     symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }
@@ -1289,7 +1289,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Store)
         for (IODirectives ioDirectives : cur.getIODirectives()) {
             try {
-                std::vector<RamPrimitiveType> symbolMask;
+                std::vector<RamTypeAttribute> symbolMask;
                 for (auto& cur : cur.getRelation().getAttributeTypes()) {
                     symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }

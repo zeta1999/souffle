@@ -223,21 +223,21 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
-        if (!eqTypeRamPrimitive(fun.checkReturnType(), resultType)) {
+        if (!eqTypeRamTypeAttribute(fun.checkReturnType(), resultType)) {
             switch (fun.checkReturnType()) {
-                case RamPrimitiveType::Signed:
+                case RamTypeAttribute::Signed:
                     report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
                     break;
-                case RamPrimitiveType::Unsigned:
+                case RamTypeAttribute::Unsigned:
                     report.addError("Non-unsigned use for unsigned functor", fun.getSrcLoc());
                     break;
-                case RamPrimitiveType::Float:
+                case RamTypeAttribute::Float:
                     report.addError("Non-float use for float functor", fun.getSrcLoc());
                     break;
-                case RamPrimitiveType::Symbol:
+                case RamTypeAttribute::Symbol:
                     report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
                     break;
-                case RamPrimitiveType::Record:
+                case RamTypeAttribute::Record:
                     assert(false && "Invalid return type");
             }
         }
@@ -249,21 +249,21 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
         for (size_t i = 0; i < fun.getArity(); i++) {
             auto arg = fun.getArg(i);
-            if (!eqTypeRamPrimitive(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
+            if (!eqTypeRamTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
                 switch (fun.getArgType(i)) {
-                    case RamPrimitiveType::Signed:
+                    case RamTypeAttribute::Signed:
                         report.addError("Non-numeric argument for functor", arg->getSrcLoc());
                         break;
-                    case RamPrimitiveType::Symbol:
+                    case RamTypeAttribute::Symbol:
                         report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
                         break;
-                    case RamPrimitiveType::Unsigned:
+                    case RamTypeAttribute::Unsigned:
                         report.addError("Non-unsigned argument for functor", arg->getSrcLoc());
                         break;
-                    case RamPrimitiveType::Float:
+                    case RamTypeAttribute::Float:
                         report.addError("Non-float argument for functor", arg->getSrcLoc());
                         break;
-                    case RamPrimitiveType::Record:
+                    case RamTypeAttribute::Record:
                         assert(false && "Invalid argument type");
                 }
             }
@@ -570,7 +570,7 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     if (dynamic_cast<const AstUnsignedConstant*>(&argument) != nullptr) {
         return true;
     }
-    // TODO (darth_tytus): Can user-defined functors be added here?
+    // TODO (darth_tytus): Can/should user-defined functors be added here?
     if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
         // Check return type.
         if (!isNumericType(functor->checkReturnType())) {

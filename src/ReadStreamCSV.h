@@ -36,7 +36,7 @@ namespace souffle {
 
 class ReadStreamCSV : public ReadStream {
 public:
-    ReadStreamCSV(std::istream& file, const std::vector<RamPrimitiveType>& symbolMask,
+    ReadStreamCSV(std::istream& file, const std::vector<RamTypeAttribute>& symbolMask,
             SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
             : ReadStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
               file(file), lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
@@ -93,17 +93,17 @@ protected:
 
             try {
                 switch (symbolMask.at(inputMap[column])) {
-                    case RamPrimitiveType::Symbol:
+                    case RamTypeAttribute::Symbol:
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         break;
-                    case RamPrimitiveType::Record:  // What should be done here?
-                    case RamPrimitiveType::Signed:
+                    case RamTypeAttribute::Record:  // What should be done here?
+                    case RamTypeAttribute::Signed:
                         tuple[inputMap[column]] = RamDomainFromString(element);
                         break;
-                    case RamPrimitiveType::Unsigned:
+                    case RamTypeAttribute::Unsigned:
                         tuple[inputMap[column]] = ramBitCast(RamUnsignedFromString(element));
                         break;
-                    case RamPrimitiveType::Float:
+                    case RamTypeAttribute::Float:
                         tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element));
                         break;
                 }
@@ -159,7 +159,7 @@ protected:
 
 class ReadFileCSV : public ReadStreamCSV {
 public:
-    ReadFileCSV(const std::vector<RamPrimitiveType>& symbolMask, SymbolTable& symbolTable,
+    ReadFileCSV(const std::vector<RamTypeAttribute>& symbolMask, SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
             : ReadStreamCSV(fileHandle, symbolMask, symbolTable, ioDirectives, auxiliaryArity),
               baseName(souffle::baseName(getFileName(ioDirectives))),
@@ -211,7 +211,7 @@ protected:
 
 class ReadCinCSVFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamPrimitiveType>& symbolMask,
+    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
             SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) override {
         return std::make_unique<ReadStreamCSV>(
@@ -226,7 +226,7 @@ public:
 
 class ReadFileCSVFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamPrimitiveType>& symbolMask,
+    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
             SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) override {
         return std::make_unique<ReadFileCSV>(symbolMask, symbolTable, ioDirectives, auxiliaryArity);

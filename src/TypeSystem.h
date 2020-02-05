@@ -407,43 +407,41 @@ private:
 std::string getTypeQualifier(const Type& type);
 
 /**
- * Determine if a type analysis result is equivalent to the given RamPrimitiveType.
- * @return whether ramType is equivalent to type.
+ * Determine if a type analysis' result is equivalent to the given RamTypeAttribute.
  */
 template <typename T>  // T = Type or T = Typeset
-bool eqTypeRamPrimitive(const RamPrimitiveType ramType, const T& type) {
+bool eqTypeRamTypeAttribute(const RamTypeAttribute ramType, const T& type) {
     switch (ramType) {
-        case RamPrimitiveType::Signed:
+        case RamTypeAttribute::Signed:
             return isNumberType(type);
-        case RamPrimitiveType::Unsigned:
+        case RamTypeAttribute::Unsigned:
             return isUnsignedType(type);
-        case RamPrimitiveType::Float:
+        case RamTypeAttribute::Float:
             return isFloatType(type);
-        case RamPrimitiveType::Symbol:
+        case RamTypeAttribute::Symbol:
             return isSymbolType(type);
-        case RamPrimitiveType::Record:
+        case RamTypeAttribute::Record:
             return isRecordType(type);
-        default:
-            return false;
     }
+    return false;
 }
 
 /**
- * Convert a type analysis' type/set of type to the the RamPrimitiveType or
+ * Convert a type analysis' type/set of type to the the RamTypeAttribute
  */
 template <typename T>  // T = Type or T = Typeset
-RamPrimitiveType getPrimitiveType(const T& type) {
-    RamPrimitiveType primitiveType;
+RamTypeAttribute getTypeAttribute(const T& type) {
+    RamTypeAttribute primitiveType;
     if (isNumberType(type)) {
-        primitiveType = RamPrimitiveType::Signed;
+        primitiveType = RamTypeAttribute::Signed;
     } else if (isUnsignedType(type)) {
-        primitiveType = RamPrimitiveType::Unsigned;
+        primitiveType = RamTypeAttribute::Unsigned;
     } else if (isFloatType(type)) {
-        primitiveType = RamPrimitiveType::Float;
+        primitiveType = RamTypeAttribute::Float;
     } else if (isRecordType(type)) {
-        primitiveType = RamPrimitiveType::Record;
+        primitiveType = RamTypeAttribute::Record;
     } else if (isSymbolType(type)) {
-        primitiveType = RamPrimitiveType::Symbol;
+        primitiveType = RamTypeAttribute::Symbol;
     } else {
         std::cerr << "Unknown type class" << std::endl;
         std::exit(EXIT_FAILURE);

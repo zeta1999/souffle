@@ -353,15 +353,15 @@ identifier
 /* Type declarations */
 type
   : NUMBER_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::Signed);
+        $$ = new AstPrimitiveType($IDENT, RamTypeAttribute::Signed);
         $$->setSrcLoc(@$);
     }
   | SYMBOL_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::Symbol);
+        $$ = new AstPrimitiveType($IDENT, RamTypeAttribute::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamPrimitiveType::Symbol);
+        $$ = new AstPrimitiveType($IDENT, RamTypeAttribute::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS union_type_list {

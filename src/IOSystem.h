@@ -51,7 +51,7 @@ public:
     /**
      * Return a new WriteStream
      */
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamPrimitiveType>& symbolMask,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) const {
         std::string ioType = ioDirectives.getIOType();
@@ -63,7 +63,7 @@ public:
     /**
      * Return a new ReadStream
      */
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamPrimitiveType>& symbolMask,
+    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
             SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t auxiliaryArity) const {
         std::string ioType = ioDirectives.getIOType();
         if (inputFactories.count(ioType) == 0) {

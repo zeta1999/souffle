@@ -31,7 +31,7 @@ namespace souffle {
 class ReadStreamSQLite : public ReadStream {
 public:
     ReadStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<RamPrimitiveType>& symbolMask, SymbolTable& symbolTable,
+            const std::vector<RamTypeAttribute>& symbolMask, SymbolTable& symbolTable,
             const size_t auxiliaryArity)
             : ReadStream(symbolMask, symbolTable, auxiliaryArity), dbFilename(dbFilename),
               relationName(relationName) {
@@ -69,13 +69,13 @@ protected:
 
             try {
                 switch (symbolMask.at(column)) {
-                    case RamPrimitiveType::Symbol:
+                    case RamTypeAttribute::Symbol:
                         tuple[column] = symbolTable.unsafeLookup(element);
                         break;
-                    case RamPrimitiveType::Signed:
-                    case RamPrimitiveType::Unsigned:
-                    case RamPrimitiveType::Float:
-                    case RamPrimitiveType::Record:
+                    case RamTypeAttribute::Signed:
+                    case RamTypeAttribute::Unsigned:
+                    case RamTypeAttribute::Float:
+                    case RamTypeAttribute::Record:
                         tuple[column] = RamDomainFromString(element);
                         break;
                 }
@@ -158,7 +158,7 @@ protected:
 
 class ReadSQLiteFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamPrimitiveType>& symbolMask,
+    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
             SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) override {
         std::string dbName = ioDirectives.get("dbname");

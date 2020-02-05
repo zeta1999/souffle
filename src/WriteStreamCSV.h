@@ -43,7 +43,7 @@ protected:
 
 class WriteFileCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteFileCSV(const std::vector<RamPrimitiveType>& symbolMask, const SymbolTable& symbolTable,
+    WriteFileCSV(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
             : WriteStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
@@ -75,7 +75,7 @@ protected:
 #ifdef USE_LIBZ
 class WriteGZipFileCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteGZipFileCSV(const std::vector<RamPrimitiveType>& symbolMask, const SymbolTable& symbolTable,
+    WriteGZipFileCSV(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
             : WriteStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
@@ -107,7 +107,7 @@ protected:
 
 class WriteCoutCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteCoutCSV(const std::vector<RamPrimitiveType>& symbolMask, const SymbolTable& symbolTable,
+    WriteCoutCSV(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
             : WriteStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)) {
         std::cout << "---------------\n" << ioDirectives.getRelationName();
@@ -165,7 +165,7 @@ protected:
 
 class WriteFileCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamPrimitiveType>& symbolMask,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) override {
 #ifdef USE_LIBZ
@@ -184,7 +184,7 @@ public:
 
 class WriteCoutCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamPrimitiveType>& symbolMask,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) override {
         return std::make_unique<WriteCoutCSV>(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
@@ -198,7 +198,7 @@ public:
 
 class WriteCoutPrintSizeFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamPrimitiveType>& /* symbolMask */,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& /* symbolMask */,
             const SymbolTable& /* symbolTable */, const IODirectives& ioDirectives,
             const size_t /* auxiliaryArity */) override {
         return std::make_unique<WriteCoutPrintSize>(ioDirectives);

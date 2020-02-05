@@ -450,16 +450,16 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
             // add a constraint for the return type of the functor
             switch (fun.checkReturnType()) {
-                case RamPrimitiveType::Signed:
+                case RamTypeAttribute::Signed:
                     addConstraint(isSubtypeOf(functorVar, env.getNumberType()));
                     break;
-                case RamPrimitiveType::Float:
+                case RamTypeAttribute::Float:
                     addConstraint(isSubtypeOf(functorVar, env.getFloatType()));
                     break;
-                case RamPrimitiveType::Unsigned:
+                case RamTypeAttribute::Unsigned:
                     addConstraint(isSubtypeOf(functorVar, env.getUnsignedType()));
                     break;
-                case RamPrimitiveType::Symbol:
+                case RamTypeAttribute::Symbol:
                     addConstraint(isSubtypeOf(functorVar, env.getSymbolType()));
                     break;
                 default:
@@ -474,16 +474,16 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             for (size_t i = 0; i < fun.getArity(); i++) {
                 auto argumentVar = getVar(fun.getArg(i));
                 switch (fun.getArgType(i)) {
-                    case RamPrimitiveType::Signed:
+                    case RamTypeAttribute::Signed:
                         addConstraint(isSubtypeOf(argumentVar, env.getNumberType()));
                         break;
-                    case RamPrimitiveType::Float:
+                    case RamTypeAttribute::Float:
                         addConstraint(isSubtypeOf(argumentVar, env.getFloatType()));
                         break;
-                    case RamPrimitiveType::Unsigned:
+                    case RamTypeAttribute::Unsigned:
                         addConstraint(isSubtypeOf(argumentVar, env.getUnsignedType()));
                         break;
-                    case RamPrimitiveType::Symbol:
+                    case RamTypeAttribute::Symbol:
                         addConstraint(isSubtypeOf(argumentVar, env.getSymbolType()));
                         break;
                     default:

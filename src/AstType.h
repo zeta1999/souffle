@@ -158,7 +158,7 @@ private:
 class AstPrimitiveType : public AstType {
 public:
     /** Creates a new primitive type */
-    AstPrimitiveType(const AstTypeIdentifier& name, RamPrimitiveType type) : AstType(name), type(type) {}
+    AstPrimitiveType(const AstTypeIdentifier& name, RamTypeAttribute type) : AstType(name), type(type) {}
 
     /** Tests whether this type is a numeric type */
     bool isNumeric() const {
@@ -167,12 +167,12 @@ public:
 
     /** Tests whether this type is a symbolic type */
     bool isSymbolic() const {
-        return type == RamPrimitiveType::Symbol;
+        return type == RamTypeAttribute::Symbol;
     }
 
     /** Prints a summary of this type to the given stream */
     void print(std::ostream& os) const override {
-        os << ".type " << getName() << (type == RamPrimitiveType::Signed ? "= number" : "");
+        os << ".type " << getName() << (type == RamTypeAttribute::Signed ? "= number" : "");
     }
 
     /** Creates a clone of this AST sub-structure */
@@ -191,7 +191,7 @@ protected:
     }
 
 private:
-    RamPrimitiveType type;
+    RamTypeAttribute type;
 };
 
 /**

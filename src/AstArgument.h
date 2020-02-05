@@ -349,12 +349,12 @@ public:
     }
 
     /** Get the return type of the functor. */
-    RamPrimitiveType checkReturnType() const {
+    RamTypeAttribute checkReturnType() const {
         return functorReturnType(function);
     }
 
     /** Get type of the functor argument*/
-    RamPrimitiveType getArgType(const size_t arg) const {
+    RamTypeAttribute getArgType(const size_t arg) const {
         return functorOpArgType(arg, function);
     }
 

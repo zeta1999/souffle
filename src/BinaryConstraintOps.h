@@ -75,37 +75,37 @@ inline bool isOverloaded(const BinaryConstraintOp constraintOp) {
  * Example: constraintOp = LT, toType = Float -> FLT (less-than working on floats).
  */
 inline BinaryConstraintOp convertOverloadedConstraint(
-        const BinaryConstraintOp constraintOp, const RamPrimitiveType toType) {
+        const BinaryConstraintOp constraintOp, const RamTypeAttribute toType) {
     switch (constraintOp) {
         case BinaryConstraintOp::LT:
-            if (toType == RamPrimitiveType::Unsigned) {
+            if (toType == RamTypeAttribute::Unsigned) {
                 return BinaryConstraintOp::ULT;
             }
-            if (toType == RamPrimitiveType::Float) {
+            if (toType == RamTypeAttribute::Float) {
                 return BinaryConstraintOp::FLT;
             }
             break;
         case BinaryConstraintOp::LE:
-            if (toType == RamPrimitiveType::Unsigned) {
+            if (toType == RamTypeAttribute::Unsigned) {
                 return BinaryConstraintOp::ULE;
             }
-            if (toType == RamPrimitiveType::Float) {
+            if (toType == RamTypeAttribute::Float) {
                 return BinaryConstraintOp::FLE;
             }
             break;
         case BinaryConstraintOp::GT:
-            if (toType == RamPrimitiveType::Unsigned) {
+            if (toType == RamTypeAttribute::Unsigned) {
                 return BinaryConstraintOp::UGT;
             }
-            if (toType == RamPrimitiveType::Float) {
+            if (toType == RamTypeAttribute::Float) {
                 return BinaryConstraintOp::FGT;
             }
             break;
         case BinaryConstraintOp::GE:
-            if (toType == RamPrimitiveType::Unsigned) {
+            if (toType == RamTypeAttribute::Unsigned) {
                 return BinaryConstraintOp::UGE;
             }
-            if (toType == RamPrimitiveType::Float) {
+            if (toType == RamTypeAttribute::Float) {
                 return BinaryConstraintOp::FGE;
             }
             break;

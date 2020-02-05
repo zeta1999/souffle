@@ -780,7 +780,7 @@ private:
         return std::make_tuple(-1, -1, std::vector<RamDomain>());
     }
 
-    void printRelationOutput(const std::vector<RamPrimitiveType>& symbolMask, const IODirectives& ioDir,
+    void printRelationOutput(const std::vector<RamTypeAttribute>& symbolMask, const IODirectives& ioDir,
             const Relation& rel) override {
         WriteCoutCSVFactory()
                 .getWriter(symbolMask, prog.getSymbolTable(), ioDir, rel.getAuxiliaryArity())

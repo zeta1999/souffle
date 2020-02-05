@@ -205,7 +205,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
 
-            std::vector<RamPrimitiveType> symbolMask;
+            std::vector<RamTypeAttribute> symbolMask;
             for (auto& cur : load.getRelation().getAttributeTypes()) {
                 symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
             }
@@ -220,7 +220,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
-                out << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
+                out << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << load.getRelation().getAuxiliaryArity();
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
@@ -236,7 +236,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
 
-            std::vector<RamPrimitiveType> symbolMask;
+            std::vector<RamTypeAttribute> symbolMask;
             for (auto& cur : store.getRelation().getAttributeTypes()) {
                 symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
             }
@@ -249,7 +249,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
+                out << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << store.getRelation().getAuxiliaryArity();
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
@@ -2008,7 +2008,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
     visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
-            std::vector<RamPrimitiveType> symbolMask;
+            std::vector<RamTypeAttribute> symbolMask;
             for (auto& cur : store->getRelation().getAttributeTypes()) {
                 symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
             }
@@ -2021,7 +2021,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "}\n";
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
-                os << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
+                os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
                 os << ", symTable, ioDirectives, " << store->getRelation().getAuxiliaryArity();
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
@@ -2050,7 +2050,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
     visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
         // get some table details
-        std::vector<RamPrimitiveType> symbolMask;
+        std::vector<RamTypeAttribute> symbolMask;
         for (auto& cur : load.getRelation().getAttributeTypes()) {
             symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
         }
@@ -2064,7 +2064,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "}\n";
             os << "IODirectives ioDirectives(directiveMap);\n";
             os << "IOSystem::getInstance().getReader(";
-            os << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
+            os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
             os << ", symTable, ioDirectives";
             os << ", " << load.getRelation().getAuxiliaryArity();
             os << ")->readAll(*" << getRelationName(load.getRelation());
@@ -2081,7 +2081,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         auto& mask = ramRelation.getAttributeTypes();
         size_t auxiliaryArity = ramRelation.getAuxiliaryArity();
 
-        std::vector<RamPrimitiveType> symbolMask;
+        std::vector<RamTypeAttribute> symbolMask;
         for (auto& cur : mask) {
             symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
         }
@@ -2091,7 +2091,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "ioDirectives.setIOType(\"stdout\");\n";
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
-        os << "std::vector<RamPrimitiveType>({" << join(symbolMask) << "})";
+        os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
         os << ", symTable, ioDirectives, " << auxiliaryArity;
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";

@@ -26,7 +26,7 @@ namespace souffle {
 
 class WriteStream {
 public:
-    WriteStream(const std::vector<RamPrimitiveType>& symbolMask, const SymbolTable& symbolTable,
+    WriteStream(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const size_t auxiliaryArity, bool summary = false)
             : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),
               arity(symbolMask.size() - auxiliaryArity) {}
@@ -55,7 +55,7 @@ public:
     virtual ~WriteStream() = default;
 
 protected:
-    const std::vector<RamPrimitiveType>& symbolMask;
+    const std::vector<RamTypeAttribute>& symbolMask;
     const SymbolTable& symbolTable;
     const bool summary;
     const size_t arity;
@@ -69,21 +69,21 @@ protected:
     void writeNext(const Tuple tuple) {
         writeNextTuple(tuple.data);
     }
-    void writeNextTupleElement(std::ostream& destination, RamPrimitiveType type, RamDomain value) {
+    void writeNextTupleElement(std::ostream& destination, RamTypeAttribute type, RamDomain value) {
         switch (type) {
-            case RamPrimitiveType::Symbol:
+            case RamTypeAttribute::Symbol:
                 destination << symbolTable.unsafeResolve(value);
                 break;
-            case RamPrimitiveType::Signed:
+            case RamTypeAttribute::Signed:
                 destination << value;
                 break;
-            case RamPrimitiveType::Unsigned:
+            case RamTypeAttribute::Unsigned:
                 destination << ramBitCast<RamUnsigned>(value);
                 break;
-            case RamPrimitiveType::Float:
+            case RamTypeAttribute::Float:
                 destination << ramBitCast<RamFloat>(value);
                 break;
-            case RamPrimitiveType::Record:
+            case RamTypeAttribute::Record:
                 assert(false && "Record not suported here");  // What should happen here?
         }
     }
@@ -91,7 +91,7 @@ protected:
 
 class WriteStreamFactory {
 public:
-    virtual std::unique_ptr<WriteStream> getWriter(const std::vector<RamPrimitiveType>& symbolMask,
+    virtual std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) = 0;
     virtual const std::string& getName() const = 0;

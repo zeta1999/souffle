@@ -294,20 +294,20 @@ std::string getTypeQualifier(const Type& type) {
         std::string visitType(const Type& type) const override {
             std::string str;
 
-            switch (getPrimitiveType(type)) {
-                case RamPrimitiveType::Signed:
+            switch (getTypeAttribute(type)) {
+                case RamTypeAttribute::Signed:
                     str.append("i");
                     break;
-                case RamPrimitiveType::Unsigned:
+                case RamTypeAttribute::Unsigned:
                     str.append("u");
                     break;
-                case RamPrimitiveType::Float:
+                case RamTypeAttribute::Float:
                     str.append("f");
                     break;
-                case RamPrimitiveType::Symbol:
+                case RamTypeAttribute::Symbol:
                     str.append("s");
                     break;
-                case RamPrimitiveType::Record:
+                case RamTypeAttribute::Record:
                     str.append("r");
                     break;
             }

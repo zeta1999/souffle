@@ -30,7 +30,7 @@ namespace souffle {
 class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<RamPrimitiveType>& symbolMask, const SymbolTable& symbolTable,
+            const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const size_t auxiliaryArity)
             : WriteStream(symbolMask, symbolTable, auxiliaryArity), dbFilename(dbFilename),
               relationName(relationName) {
@@ -55,13 +55,13 @@ protected:
             RamDomain value = 0;  // Silence warning
 
             switch (symbolMask.at(i)) {
-                case RamPrimitiveType::Symbol:
+                case RamTypeAttribute::Symbol:
                     value = getSymbolTableID(tuple[i]);
                     break;
-                case RamPrimitiveType::Signed:
-                case RamPrimitiveType::Unsigned:
-                case RamPrimitiveType::Float:
-                case RamPrimitiveType::Record:
+                case RamTypeAttribute::Signed:
+                case RamTypeAttribute::Unsigned:
+                case RamTypeAttribute::Float:
+                case RamTypeAttribute::Record:
                     value = tuple[i];
                     break;
             }
@@ -224,7 +224,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (symbolMask.at(i) == RamPrimitiveType::Symbol) {
+            if (symbolMask.at(i) == RamTypeAttribute::Symbol) {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
                 fromClause << ",'" << symbolTableName << "' AS '_symtab_" << columnName << "'";
                 if (!firstWhere) {
@@ -265,7 +265,7 @@ private:
 
 class WriteSQLiteFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamPrimitiveType>& symbolMask,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) override {
         std::string dbName = ioDirectives.get("dbname");

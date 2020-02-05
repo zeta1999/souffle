@@ -186,7 +186,7 @@ public:
         }
 
         // create symbol mask
-        std::vector<RamPrimitiveType> symbolMask(rel->getArity());
+        std::vector<RamTypeAttribute> symbolMask(rel->getArity());
 
         for (size_t i = 0; i < rel->getArity(); i++) {
             symbolMask.at(i) = RamPrimitiveFromChar(*(rel->getAttrType(i)));
@@ -262,7 +262,7 @@ protected:
         return args;
     }
 
-    virtual void printRelationOutput(const std::vector<RamPrimitiveType>& symbolMask,
+    virtual void printRelationOutput(const std::vector<RamTypeAttribute>& symbolMask,
             const IODirectives& ioDir, const Relation& rel) = 0;
 };
 

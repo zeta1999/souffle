@@ -183,25 +183,6 @@ public:
         return false;
     }
 
-    /** Get number of auxiliary attributes  */
-    size_t getAuxiliaryArity() const {
-        if (Global::config().has("provenance")) {
-            if (Global::config().get("provenance") == "subtreeHeights") {
-                size_t maxNrOfPremises = 0;
-                for (auto& cur : clauses) {
-                    size_t numberOfAtoms = cur->getAtoms().size();
-                    if (numberOfAtoms > maxNrOfPremises) {
-                        maxNrOfPremises = numberOfAtoms;
-                    }
-                }
-                return maxNrOfPremises + 2;
-            }
-            return 2;
-        } else {
-            return 0;
-        }
-    }
-
     /** Operator overload, calls print if reference is given */
     friend std::ostream& operator<<(std::ostream& os, const AstRelation& rel) {
         rel.print(os);

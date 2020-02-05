@@ -279,13 +279,13 @@ public:
     }
     void insert(const t_tuple& t) {
         insert_lock.lock();
-        data.push_back(t);
+        if (!contains(t)) {
+            data.push_back(t);
+        }
         insert_lock.unlock();
     }
     void insert(const t_tuple& t, context& /* ctxt */) {
-        insert_lock.lock();
-        data.push_back(t);
-        insert_lock.unlock();
+        insert(t);
     }
     void insert(const RamDomain* ramDomain) {
         insert_lock.lock();
@@ -308,12 +308,7 @@ public:
         return false;
     }
     bool contains(const t_tuple& t, context& /* ctxt */) const {
-        for (const auto& o : data) {
-            if (t == o) {
-                return true;
-            }
-        }
-        return false;
+        return contains(t);
     }
     std::size_t size() const {
         return data.size();

@@ -70,7 +70,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     infoRelation->setName(name);
     // set qualifier to INFO_RELATION
     infoRelation->setQualifier(INFO_RELATION);
-    
+
     // create new clause containing a single fact
     auto infoClause = new AstClause();
     auto infoClauseHead = new AstAtom();

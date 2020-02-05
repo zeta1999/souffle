@@ -259,15 +259,4 @@ private:
 
     size_t numTuples = 0;
 };
-
-/**
- * Interpreter Info Relation
- */
-class InterpreterInfoRelation : public InterpreterRelation {
-public:
-
-private:
-
-
-}
 }  // end of namespace souffle

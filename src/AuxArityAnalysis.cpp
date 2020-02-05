@@ -14,23 +14,25 @@
  *
  ***********************************************************************/
 
-#include <cassert>
-#include <utility>
-
-#include "AstProgram.h"
-#include "AstUtils.h"
 #include "AuxArityAnalysis.h"
+#include "AstClause.h"
+#include "AstProgram.h"
+#include "AstRelation.h"
+#include "AstRelationIdentifier.h"
+#include "AstUtils.h"
+#include "Global.h"
+#include <string>
 
 namespace souffle {
 
 const size_t AuxiliaryArity::getEvaluationArity(const AstAtom* atom) const {
-    if (atom->getName().getName().rfind("@delta_") == 0) {
+    if (atom->getName().getName().find("@delta_") == 0) {
         const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(7));
         return getArity(program->getRelation(originalRel));
-    } else if (atom->getName().getName().rfind("@new_") == 0) {
+    } else if (atom->getName().getName().find("@new_") == 0) {
         const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(5));
         return getArity(program->getRelation(originalRel));
-    } else if (atom->getName().getName().rfind("@info_") == 0) {
+    } else if (atom->getName().getName().find("@info_") == 0) {
         return 0;
     } else {
         return getArity(atom);

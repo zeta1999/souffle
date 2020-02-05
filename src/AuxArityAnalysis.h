@@ -17,11 +17,12 @@
 #pragma once
 
 #include "AstAnalysis.h"
+#include "AstLiteral.h"
 #include "AstProgram.h"
-#include "AstRelation.h"
 #include "AstTranslationUnit.h"
 
 namespace souffle {
+class AstRelation;
 
 /**
  * Determine the auxiliary arity for relations
@@ -35,8 +36,8 @@ public:
     }
 
     /**
-     * Returns the number of auxiliary parameters of an atom
-     * @param atom the atom (const AstAtom*)
+     * Returns the number of auxiliary parameters of an atom's relation
+     * @param atom the atom to report on
      * @return number of auxiliary attributes
      */
     const size_t getArity(const AstAtom* atom) const {
@@ -45,7 +46,7 @@ public:
 
     /**
      * Returns the number of auxiliary parameters of a relation
-     * @param atom the atom (const AstRelation*)
+     * @param relation the relation to report on
      * @return number of auxiliary attributes
      */
     const size_t getArity(const AstRelation* relation) const {
@@ -54,20 +55,20 @@ public:
 
     /**
      * Returns the number of auxiliary parameters of relations
-     * taken delta/info/new into account.
-     * @param atom the atom (const AstRelation*)
+     * taking delta/info/new types into account.
+     * @param atom the atom to report on
      * @return number of auxiliary attributes
      */
     const size_t getEvaluationArity(const AstAtom* atom) const;
 
+private:
     /**
      * Returns the number of auxiliary parameters of a relation
-     * @param atom the atom (const AstRelation*)
+     * @param relation the relation to report on
      * @return number of auxiliary attributes
      */
     const size_t computeArity(const AstRelation* relation) const;
 
-private:
     const AstProgram* program;
 };
 

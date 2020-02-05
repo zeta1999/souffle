@@ -54,17 +54,17 @@ std::unique_ptr<SynthesiserRelation> SynthesiserRelation::getSynthesiserRelation
 
 // -------- Info Relation --------
 
-/** Generate index set for a nullary relation, which should be empty */
+/** Generate index set for a info relation, which should be empty */
 void SynthesiserInfoRelation::computeIndices() {
     computedIndices = {};
 }
 
-/** Generate type name of a nullary relation */
+/** Generate type name of a info relation */
 std::string SynthesiserInfoRelation::getTypeName() {
     return "t_info<" + std::to_string(getArity()) + ">";
 }
 
-/** Generate type struct of a nullary relation, which is empty,
+/** Generate type struct of a info relation, which is empty,
  * the actual implementation is in CompiledSouffle.h */
 void SynthesiserInfoRelation::generateTypeStruct(std::ostream& out) {
     return;

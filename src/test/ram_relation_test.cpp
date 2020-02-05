@@ -37,13 +37,6 @@
 namespace souffle::test {
 #define RANDOM_TESTS 12
 
-// void fillTestFile(const std::string& filename, const std::string& content) {
-//     std::ofstream file;
-//     file.open(filename);
-//     file << content;
-//     file.close();
-// }
-
 const std::string testInterpreterStore(std::vector<std::string> attribs, std::vector<std::string> types,
         std::vector<std::unique_ptr<RamExpression>> exprs) {
     Global::config().set("jobs", "1");
@@ -362,7 +355,9 @@ TEST(IO_store, MixedTypes) {
 }
 
 TEST(IO_load, Signed) {
-    const std::string filename{"test/InterpreterLoadSigned.test"};
+    std::streambuf* backupCin = std::cin.rdbuf();
+    std::istringstream testInput("5	3");
+    std::cin.rdbuf(testInput.rdbuf());
 
     Global::config().set("jobs", "1");
 
@@ -376,12 +371,12 @@ TEST(IO_load, Signed) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     std::map<std::string, std::string> readDirs = {
-            {"IO", "file"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}};
     std::vector<IODirectives> readIoDirs;
     readIoDirs.push_back(IODirectives(readDirs));
 
     std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}};
     std::vector<IODirectives> writeIoDirs;
     writeIoDirs.push_back(IODirectives(writeDirs));
 
@@ -418,10 +413,14 @@ test
 ===============
 )";
     EXPECT_EQ(expected, sout.str());
+
+    std::cin.rdbuf(backupCin);
 }
 
 TEST(IO_load, Float) {
-    const std::string filename{"test/InterpreterLoadFloat.test"};
+    std::streambuf* backupCin = std::cin.rdbuf();
+    std::istringstream testInput("0.5	0.5");
+    std::cin.rdbuf(testInput.rdbuf());
 
     Global::config().set("jobs", "1");
 
@@ -435,12 +434,12 @@ TEST(IO_load, Float) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     std::map<std::string, std::string> readDirs = {
-            {"IO", "file"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}};
     std::vector<IODirectives> readIoDirs;
     readIoDirs.push_back(IODirectives(readDirs));
 
     std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}};
     std::vector<IODirectives> writeIoDirs;
     writeIoDirs.push_back(IODirectives(writeDirs));
 
@@ -477,10 +476,14 @@ test
 ===============
 )";
     EXPECT_EQ(expected, sout.str());
+
+    std::cin.rdbuf(backupCin);
 }
 
 TEST(IO_load, Unsigned) {
-    const std::string filename{"test/InterpreterLoadUnsigned.test"};
+    std::streambuf* backupCin = std::cin.rdbuf();
+    std::istringstream testInput("6	6");
+    std::cin.rdbuf(testInput.rdbuf());
 
     Global::config().set("jobs", "1");
 
@@ -494,12 +497,12 @@ TEST(IO_load, Unsigned) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     std::map<std::string, std::string> readDirs = {
-            {"IO", "file"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}};
     std::vector<IODirectives> readIoDirs;
     readIoDirs.push_back(IODirectives(readDirs));
 
     std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}};
     std::vector<IODirectives> writeIoDirs;
     writeIoDirs.push_back(IODirectives(writeDirs));
 
@@ -536,10 +539,14 @@ test
 ===============
 )";
     EXPECT_EQ(expected, sout.str());
+
+    std::cin.rdbuf(backupCin);
 }
 
 TEST(IO_load, MixedTypesLoad) {
-    const std::string filename{"test/InterpreterLoadMixedTypes.test"};
+    std::streambuf* backupCin = std::cin.rdbuf();
+    std::istringstream testInput("meow	-3	3	0.3");
+    std::cin.rdbuf(testInput.rdbuf());
 
     Global::config().set("jobs", "1");
 
@@ -553,12 +560,12 @@ TEST(IO_load, MixedTypesLoad) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     std::map<std::string, std::string> readDirs = {
-            {"IO", "file"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}};
     std::vector<IODirectives> readIoDirs;
     readIoDirs.push_back(IODirectives(readDirs));
 
     std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"filename", filename}};
+            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}};
     std::vector<IODirectives> writeIoDirs;
     writeIoDirs.push_back(IODirectives(writeDirs));
 
@@ -596,6 +603,8 @@ meow	-3	3	0.3
 )";
 
     EXPECT_EQ(expected, sout.str());
+
+    std::cin.rdbuf(backupCin);
 }
 
 }  // end namespace souffle::test

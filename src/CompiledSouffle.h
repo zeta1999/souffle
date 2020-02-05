@@ -252,7 +252,7 @@ public:
         typename std::vector<ram::Tuple<RamDomain, Arity>>::const_iterator it;
 
     public:
-        iterator(const t_tuple* o = nullptr) : it(o) {}
+        iterator(const typename std::vector<t_tuple>::const_iterator& o) : it(o) {}
 
         const t_tuple operator*() {
             return *it;
@@ -272,10 +272,10 @@ public:
         }
     };
     iterator begin() const {
-        return iterator(data.data());
+        return iterator(data.begin());
     }
     iterator end() const {
-        return iterator(data.data() + data.size());
+        return iterator(data.end());
     }
     void insert(const t_tuple& t) {
         insert_lock.lock();

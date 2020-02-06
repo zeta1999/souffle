@@ -278,6 +278,9 @@ private:
     /** create a RAM element access node */
     static std::unique_ptr<RamTupleElement> makeRamTupleElement(const Location& loc);
 
+    /** determine the auxiliary for relations */
+    const size_t getEvaluationArity(const AstAtom* atom) const;
+
     /**
      * assigns names to unnamed variables such that enclosing
      * constructs may be cloned without losing the variable-identity

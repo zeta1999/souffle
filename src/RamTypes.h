@@ -18,9 +18,8 @@
 
 #include <cassert>
 #include <cstdint>
-#include <iostream>
 #include <limits>
-#include <string>
+#include <ostream>
 #include <type_traits>
 
 namespace souffle {
@@ -34,7 +33,7 @@ enum class RamTypeAttribute {
 };
 
 // Printing of the RamTypeAttribute Enum.
-// To be utilized in synthesizer.
+// To be utilised in synthesizer.
 inline std::ostream& operator<<(std::ostream& os, RamTypeAttribute T) {
     switch (T) {
         case RamTypeAttribute::Symbol:
@@ -75,8 +74,7 @@ inline RamTypeAttribute RamPrimitiveFromChar(char c) {
             RamType = RamTypeAttribute::Record;
             break;
         default:
-            std::cerr << "Invalid RamTypeAttribute Char " << c << std::endl;
-            exit(EXIT_FAILURE);
+            assert(false && "Invalid RamTypeAttribute Char");
     }
     return RamType;
 }

@@ -146,7 +146,6 @@ inline RamUnsigned RamUnsignedFromString(
     return static_cast<RamUnsigned>(val);
 }
 
-
 #if RAM_DOMAIN_SIZE == 64
 inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
     return static_cast<RamDomain>(std::stoull(str, pos, base));

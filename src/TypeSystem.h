@@ -103,7 +103,7 @@ private:
     // only allow type environments to create instances
     friend class TypeEnvironment;
 
-    /** The base type -- may be symbol or numerical */
+    /** The base type -- may be symbol or numeric */
     const Type& baseType;
 
     PrimitiveType(const TypeEnvironment& environment, const AstTypeIdentifier& name, const Type& base)
@@ -450,7 +450,7 @@ RamTypeAttribute getTypeAttribute(const T& type) {
 }
 
 /**
- * Determines whether the type is numerical.
+ * Determines whether the type is numeric.
  */
 template <typename T>  // T = Type or T = Typeset
 inline bool isNumericType(const T& type) {

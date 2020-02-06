@@ -16,10 +16,9 @@
 
 #pragma once
 
+#include "RamTypes.h"
 #include <cassert>
 #include <iostream>
-
-#include "RamTypes.h"
 
 namespace souffle {
 
@@ -54,8 +53,8 @@ enum class BinaryConstraintOp {
 };
 
 /**
- *
- * Utility function, informing whether constraint
+ * Utility function, informing whether constraint is overloaded.
+ * Only the signed version's are treated as overloaded (as they are returned by the parser).
  */
 inline bool isOverloaded(const BinaryConstraintOp constraintOp) {
     switch (constraintOp) {

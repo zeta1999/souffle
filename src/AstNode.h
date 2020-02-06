@@ -38,6 +38,7 @@ class AstNodeMapper;
  */
 class AstNode {
 public:
+    AstNode() = default;
     virtual ~AstNode() = default;
 
     /** Return source location of the AstNode */

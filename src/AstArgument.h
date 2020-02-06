@@ -214,6 +214,7 @@ public:
  */
 class AstTerm : public AstArgument {
 protected:
+    AstTerm() = default;
     AstTerm(std::vector<std::unique_ptr<AstArgument>> operands) : args(std::move(operands)){};
 
 public:
@@ -260,8 +261,8 @@ public:
 
 protected: 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstRecordInit*>(&node));
-        const auto& other = static_cast<const AstRecordInit&>(node);
+        assert(nullptr != dynamic_cast<const AstTerm*>(&node));
+        const auto& other = static_cast<const AstTerm&>(node);
         return equal_targets(args, other.args);
     }
 
@@ -281,7 +282,7 @@ public:
     }
 
     AstIntrinsicFunctor(FunctorOp function, std::vector<std::unique_ptr<AstArgument>> operands)
-            : function(function), args(std::move(operands)){
+            : AstTerm(std::move(operands)), function(function) {
         assert(isValidFunctorOpArity(function, args.size()) && "invalid number of arguments for functor");
     }     
 
@@ -306,11 +307,6 @@ public:
     /** set function */ 
     void setFunction(const FunctorOp functor) {
         function = functor;
-    }
-
-    /** check if the return value of this functor is a number type. */
-    bool isNumerical() const {
-        return isNumericFunctorOp(function);
     }
 
     /** get the return type of the functor. */
@@ -350,7 +346,7 @@ protected:
  */
 class AstUserDefinedFunctor : public AstTerm {
 public:
-    AstUserDefinedFunctor() : AstTerm({}){};
+    AstUserDefinedFunctor() = default; 
     AstUserDefinedFunctor(std::string name, std::vector<std::unique_ptr<AstArgument>> args)
             : AstTerm(std::move(args)), name(std::move(name)){};
 
@@ -366,7 +362,7 @@ public:
 
     /** set name */
     void setName(const std::string& name) {
-        this.name = name;
+        this->name = name;
     }
 
     AstUserDefinedFunctor* clone() const override {
@@ -392,7 +388,6 @@ protected:
 
 /**
  * Record
- * TODO (b-scholz): use AstTerm (rename to AstTerm) as a super-class
  */
 class AstRecordInit : public AstTerm {
 public:
@@ -457,7 +452,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstTypeCast*>(&node));
         const auto& other = static_cast<const AstTypeCast&>(node);
-        return type == other.type && equ_ptr(value,other.value);
+        return type == other.type && equal_ptr(value,other.value);
     }
 
     /** The value to be casted */

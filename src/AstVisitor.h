@@ -137,7 +137,6 @@ protected:
     LINK(UnnamedVariable, Argument)
     LINK(Counter, Argument)
     LINK(TypeCast, Argument)
-    LINK(RecordInit, Argument)
     LINK(SubroutineArgument, Argument)
 
     LINK(NumberConstant, Constant)
@@ -147,9 +146,11 @@ protected:
     LINK(NilConstant, Constant)
     LINK(Constant, Argument)
 
-    LINK(IntrinsicFunctor, Functor)
-    LINK(UserDefinedFunctor, Functor)
-    LINK(Functor, Argument)
+    LINK(IntrinsicFunctor, Term)
+    LINK(UserDefinedFunctor, Term)
+    LINK(RecordInit, Term)
+
+    LINK(Term, Argument)
 
     LINK(Aggregator, Argument)
 

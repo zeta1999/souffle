@@ -16,6 +16,7 @@
 
 #include "IODirectives.h"
 #include "ParallelUtils.h"
+#include "RamTypes.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
 #ifdef USE_LIBZ
@@ -42,7 +43,7 @@ protected:
 
 class WriteFileCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteFileCSV(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
+    WriteFileCSV(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
             : WriteStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
@@ -62,18 +63,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        if (symbolMask.at(0)) {
-            file << symbolTable.unsafeResolve(tuple[0]);
-        } else {
-            file << tuple[0];
-        }
+        writeNextTupleElement(file, symbolMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
-            if (symbolMask.at(col)) {
-                file << symbolTable.unsafeResolve(tuple[col]);
-            } else {
-                file << tuple[col];
-            }
+            writeNextTupleElement(file, symbolMask.at(col), tuple[col]);
         }
         file << "\n";
     }
@@ -82,7 +75,7 @@ protected:
 #ifdef USE_LIBZ
 class WriteGZipFileCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteGZipFileCSV(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
+    WriteGZipFileCSV(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
             : WriteStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
@@ -99,18 +92,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        if (symbolMask.at(0)) {
-            file << symbolTable.unsafeResolve(tuple[0]);
-        } else {
-            file << tuple[0];
-        }
+        writeNextTupleElement(file, symbolMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
-            if (symbolMask.at(col)) {
-                file << symbolTable.unsafeResolve(tuple[col]);
-            } else {
-                file << tuple[col];
-            }
+            writeNextTupleElement(file, symbolMask.at(col), tuple[col]);
         }
         file << "\n";
     }
@@ -122,7 +107,7 @@ protected:
 
 class WriteCoutCSV : public WriteStreamCSV, public WriteStream {
 public:
-    WriteCoutCSV(const std::vector<bool>& symbolMask, const SymbolTable& symbolTable,
+    WriteCoutCSV(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
             : WriteStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)) {
         std::cout << "---------------\n" << ioDirectives.getRelationName();
@@ -142,18 +127,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        if (symbolMask.at(0)) {
-            std::cout << symbolTable.unsafeResolve(tuple[0]);
-        } else {
-            std::cout << tuple[0];
-        }
+        writeNextTupleElement(std::cout, symbolMask.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             std::cout << delimiter;
-            if (symbolMask.at(col)) {
-                std::cout << symbolTable.unsafeResolve(tuple[col]);
-            } else {
-                std::cout << tuple[col];
-            }
+            writeNextTupleElement(std::cout, symbolMask.at(col), tuple[col]);
         }
         std::cout << "\n";
     }
@@ -188,7 +165,7 @@ protected:
 
 class WriteFileCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& symbolMask,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) override {
 #ifdef USE_LIBZ
@@ -207,7 +184,7 @@ public:
 
 class WriteCoutCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& symbolMask,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) override {
         return std::make_unique<WriteCoutCSV>(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
@@ -221,7 +198,7 @@ public:
 
 class WriteCoutPrintSizeFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<bool>& /* symbolMask */,
+    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& /* symbolMask */,
             const SymbolTable& /* symbolTable */, const IODirectives& ioDirectives,
             const size_t /* auxiliaryArity */) override {
         return std::make_unique<WriteCoutPrintSize>(ioDirectives);

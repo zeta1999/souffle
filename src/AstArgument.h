@@ -167,11 +167,9 @@ protected:
  */
 class AstConstant : public AstArgument {
 public:
-    AstConstant(RamDomain i) : AstArgument(), idx(i) {}
-
-    /** @return Return the index of this constant in the SymbolTable */
-    RamDomain getIndex() const {
-        return idx;
+    /** @return Return the ram representation of this constant */
+    RamDomain getRamRepresentation() const {
+        return ramRepresentation;
     }
 
     /** Mutates this node */
@@ -180,14 +178,18 @@ public:
     }
 
 protected:
-    /** Index of this Constant in the SymbolTable */
-    RamDomain idx;
+    AstConstant(RamDomain i) : AstArgument(), ramRepresentation(i) {}
+
+    /** Constant represented as RamDomain value.
+     * In the case of a string this is the entry in symbol table.
+     * In the case of a float/unsigned this is the bit cast of the value. */
+    RamDomain ramRepresentation;
 
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstConstant*>(&node));
         const auto& other = static_cast<const AstConstant&>(node);
-        return idx == other.idx;
+        return ramRepresentation == other.ramRepresentation;
     }
 };
 
@@ -201,7 +203,7 @@ public:
 
     /** @return String representation of this Constant */
     const std::string& getConstant() const {
-        return symTable.resolve(getIndex());
+        return symTable.resolve(ramRepresentation);
     }
 
     /**  Print argument to the given output stream */
@@ -211,7 +213,7 @@ public:
 
     /** Creates a clone of this AST sub-structure */
     AstStringConstant* clone() const override {
-        auto* res = new AstStringConstant(symTable, getIndex());
+        auto* res = new AstStringConstant(symTable, ramRepresentation);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -222,24 +224,35 @@ private:
 };
 
 /**
- * Subclass of Argument that represents a datalog constant value
+ * Subclass of Argument that represents a souffle constant numeric value.
  */
-class AstNumberConstant : public AstConstant {
+template <typename numericType>  // numericType ⲉ {RamSigned, RamUnsigned, RamFloat}
+class AstNumericConstant : public AstConstant {
 public:
-    AstNumberConstant(RamDomain num) : AstConstant(num) {}
+    AstNumericConstant(numericType value) : AstConstant(ramBitCast(value)) {}
 
     /**  Print argument to the given output stream */
     void print(std::ostream& os) const override {
-        os << idx;
+        os << getConstant();
+    }
+
+    /** Get the value of the constant. */
+    numericType getConstant() const {
+        return ramBitCast<numericType>(ramRepresentation);
     }
 
     /** Creates a clone of this AST sub-structure */
-    AstNumberConstant* clone() const override {
-        auto* res = new AstNumberConstant(getIndex());
-        res->setSrcLoc(getSrcLoc());
-        return res;
+    AstNumericConstant<numericType>* clone() const override {
+        auto* copy = new AstNumericConstant<numericType>(getConstant());
+        copy->setSrcLoc(getSrcLoc());
+        return copy;
     }
 };
+
+// This definitions are used by AstVisitor.
+using AstNumberConstant = AstNumericConstant<RamSigned>;
+using AstFloatConstant = AstNumericConstant<RamFloat>;
+using AstUnsignedConstant = AstNumericConstant<RamUnsigned>;
 
 /**
  * Subclass of AstConstant that represents a null-constant (no record)
@@ -265,7 +278,49 @@ public:
  * A common base class for AST functors
  */
 // TODO (azreika): consider pushing some common Intr/Extr functor functionality here
-class AstFunctor : public AstArgument {};
+class AstFunctor : public AstArgument {
+public:
+    std::vector<AstArgument*> getArguments() const {
+        return toPtrVector(args);
+    }
+
+    /** Get argument at idx. */
+    AstArgument* getArg(const size_t idx) const {
+        assert(idx < args.size() && "argument index out of bounds");
+        return args[idx].get();
+    }
+
+    /** set argument */
+    void setArg(const size_t idx, std::unique_ptr<AstArgument> arg) {
+        assert(idx < args.size() && "argument index out of bounds");
+        args[idx] = std::move(arg);
+    }
+
+    /** get number of arguments */
+    size_t getArity() const {
+        return args.size();
+    }
+
+    /** Obtains a list of all embedded child nodes */
+    std::vector<const AstNode*> getChildNodes() const override {
+        auto res = AstArgument::getChildNodes();
+        for (auto& cur : args) {
+            res.push_back(cur.get());
+        }
+        return res;
+    }
+
+    /** Mutates this node */
+    void apply(const AstNodeMapper& map) override {
+        for (auto& arg : args) {
+            arg = map(std::move(arg));
+        }
+    }
+
+protected:
+    AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : args(std::move(operands)){};
+    std::vector<std::unique_ptr<AstArgument>> args;
+};
 
 /**
  * Subclass of AstFunctor that represents an intrinsic (built-in) functor
@@ -273,7 +328,7 @@ class AstFunctor : public AstArgument {};
 class AstIntrinsicFunctor : public AstFunctor {
 public:
     template <typename... Operands>
-    AstIntrinsicFunctor(FunctorOp function, Operands... operands) : function(function) {
+    AstIntrinsicFunctor(FunctorOp function, Operands... operands) : AstFunctor({}), function(function) {
         std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
         for (auto& cur : tmp) {
             args.push_back(std::move(cur));
@@ -283,48 +338,24 @@ public:
     }
 
     AstIntrinsicFunctor(FunctorOp function, std::vector<std::unique_ptr<AstArgument>> operands)
-            : function(function), args(std::move(operands)){};
-
-    AstArgument* getArg(size_t idx) const {
-        assert(idx >= 0 && idx < args.size() && "wrong argument");
-        return args[idx].get();
-    }
+            : AstFunctor(std::move(operands)), function(function){};
 
     FunctorOp getFunction() const {
         return function;
     }
 
-    size_t getArity() const {
-        return args.size();
+    void setFunction(const FunctorOp functor) {
+        function = functor;
     }
 
-    std::vector<AstArgument*> getArguments() const {
-        return toPtrVector(args);
+    /** Get the return type of the functor. */
+    RamTypeAttribute getReturnType() const {
+        return functorReturnType(function);
     }
 
-    void setArg(size_t idx, std::unique_ptr<AstArgument> arg) {
-        assert(idx >= 0 && idx < args.size() && "wrong argument");
-        args[idx] = std::move(arg);
-    }
-
-    /** Check if the return value of this functor is a number type. */
-    bool isNumerical() const {
-        return isNumericFunctorOp(function);
-    }
-
-    /** Check if the return value of this functor is a symbol type. */
-    bool isSymbolic() const {
-        return isSymbolicFunctorOp(function);
-    }
-
-    /** Check if the argument of this functor is a number type. */
-    bool acceptsNumbers(size_t arg) const {
-        return functorOpAcceptsNumbers(arg, function);
-    }
-
-    /** Check if the argument of this functor is a symbol type. */
-    bool acceptsSymbols(size_t arg) const {
-        return functorOpAcceptsSymbols(arg, function);
+    /** Get type of the functor argument*/
+    RamTypeAttribute getArgType(const size_t arg) const {
+        return functorOpArgType(arg, function);
     }
 
     /** Print argument to the given output stream */
@@ -352,25 +383,8 @@ public:
         return res;
     }
 
-    /** Mutates this node */
-    void apply(const AstNodeMapper& map) override {
-        for (auto& arg : args) {
-            arg = map(std::move(arg));
-        }
-    }
-
-    /** Obtains a list of all embedded child nodes */
-    std::vector<const AstNode*> getChildNodes() const override {
-        auto res = AstArgument::getChildNodes();
-        for (auto& arg : args) {
-            res.push_back(arg.get());
-        }
-        return res;
-    }
-
 protected:
     FunctorOp function;
-    std::vector<std::unique_ptr<AstArgument>> args;
 
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
@@ -385,9 +399,9 @@ protected:
  */
 class AstUserDefinedFunctor : public AstFunctor {
 public:
-    AstUserDefinedFunctor() = default;
-
-    AstUserDefinedFunctor(std::string name) : name(std::move(name)) {}
+    AstUserDefinedFunctor() : AstFunctor({}){};
+    AstUserDefinedFunctor(std::string name, std::vector<std::unique_ptr<AstArgument>> args)
+            : AstFunctor(std::move(args)), name(std::move(name)){};
 
     ~AstUserDefinedFunctor() override = default;
 
@@ -399,28 +413,6 @@ public:
     /** set name */
     void setName(const std::string& n) {
         name = n;
-    }
-
-    /** get argument */
-    const AstArgument* getArg(size_t idx) const {
-        assert(idx >= 0 && idx < args.size() && "argument index out of bounds");
-        return args[idx].get();
-    }
-
-    /** get number of arguments */
-    size_t getArgCount() const {
-        return args.size();
-    }
-
-    /** set argument */
-    void setArg(size_t idx, std::unique_ptr<AstArgument> arg) {
-        assert(idx >= 0 && idx < args.size() && "argument index out of bounds");
-        args[idx] = std::move(arg);
-    }
-
-    /** get arguments */
-    std::vector<AstArgument*> getArguments() const {
-        return toPtrVector(args);
     }
 
     /** add argument to argument list */
@@ -444,28 +436,9 @@ public:
         return res;
     }
 
-    /** Mutates this node */
-    void apply(const AstNodeMapper& map) override {
-        for (auto& arg : args) {
-            arg = map(std::move(arg));
-        }
-    }
-
-    /** Obtains a list of all embedded child nodes */
-    std::vector<const AstNode*> getChildNodes() const override {
-        auto res = AstArgument::getChildNodes();
-        for (auto& cur : args) {
-            res.push_back(cur.get());
-        }
-        return res;
-    }
-
 protected:
     /** name of user-defined functor */
     std::string name;
-
-    /** arguments of user-defined functor */
-    std::vector<std::unique_ptr<AstArgument>> args;
 
     /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {

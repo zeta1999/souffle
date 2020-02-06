@@ -139,8 +139,8 @@ TEST(RamQuery, CloneAndEquals) {
     d_return_value.emplace_back(new RamTupleElement(1, 0));
     auto d_return = std::make_unique<RamSubroutineReturnValue>(std::move(d_return_value));
     // condition t1.0 = 0
-    auto d_cond = std::make_unique<RamConstraint>(
-            BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(1, 0), std::make_unique<RamNumber>(0));
+    auto d_cond = std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+            std::make_unique<RamTupleElement>(1, 0), std::make_unique<RamSignedConstant>(0));
     auto d_parallel_choice = std::make_unique<RamParallelChoice>(
             std::make_unique<RamRelationReference>(&A), 1, std::move(d_cond), std::move(d_return), "");
 
@@ -148,8 +148,8 @@ TEST(RamQuery, CloneAndEquals) {
     e_return_value.emplace_back(new RamTupleElement(1, 0));
     auto e_return = std::make_unique<RamSubroutineReturnValue>(std::move(e_return_value));
     // condition t1.0 = 0
-    auto e_cond = std::make_unique<RamConstraint>(
-            BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(1, 0), std::make_unique<RamNumber>(0));
+    auto e_cond = std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+            std::make_unique<RamTupleElement>(1, 0), std::make_unique<RamSignedConstant>(0));
     auto e_parallel_choice = std::make_unique<RamParallelChoice>(
             std::make_unique<RamRelationReference>(&A), 1, std::move(e_cond), std::move(e_return), "");
     RamQuery d(std::move(d_parallel_choice));
@@ -228,7 +228,7 @@ TEST(RamParallel, CloneAndEquals) {
             std::make_unique<RamRelationReference>(&B), std::move(a_expressions));
     auto a_cond = std::make_unique<RamFilter>(
             std::make_unique<RamConstraint>(BinaryConstraintOp::GE, std::make_unique<RamTupleElement>(0, 0),
-                    std::make_unique<RamNumber>(0)),
+                    std::make_unique<RamSignedConstant>(0)),
             std::move(a_project), "");
     auto a_scan =
             std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(a_cond), "");
@@ -243,7 +243,7 @@ TEST(RamParallel, CloneAndEquals) {
             std::make_unique<RamRelationReference>(&B), std::move(b_expressions));
     auto b_cond = std::make_unique<RamFilter>(
             std::make_unique<RamConstraint>(BinaryConstraintOp::GE, std::make_unique<RamTupleElement>(0, 0),
-                    std::make_unique<RamNumber>(0)),
+                    std::make_unique<RamSignedConstant>(0)),
             std::move(b_project), "");
     auto b_scan =
             std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(b_cond), "");
@@ -275,7 +275,7 @@ TEST(RamLoop, CloneAndEquals) {
             std::make_unique<RamRelationReference>(&B), std::move(a_expressions));
     auto a_break = std::make_unique<RamBreak>(
             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(0, 0),
-                    std::make_unique<RamNumber>(4)),
+                    std::make_unique<RamSignedConstant>(4)),
             std::move(a_project), "");
     auto a_scan =
             std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(a_break), "");
@@ -288,7 +288,7 @@ TEST(RamLoop, CloneAndEquals) {
             std::make_unique<RamRelationReference>(&B), std::move(b_expressions));
     auto b_break = std::make_unique<RamBreak>(
             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, std::make_unique<RamTupleElement>(0, 0),
-                    std::make_unique<RamNumber>(4)),
+                    std::make_unique<RamSignedConstant>(4)),
             std::move(b_project), "");
     auto b_scan =
             std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(b_break), "");
@@ -374,10 +374,10 @@ TEST(RamDebugInfo, CloneAndEquals) {
     std::vector<std::unique_ptr<RamExpression>> a_project_list;
     a_project_list.emplace_back(new RamTupleElement(0, 0));
     a_project_list.emplace_back(new RamTupleElement(0, 1));
-    a_project_list.emplace_back(new RamNumber(1));
+    a_project_list.emplace_back(new RamSignedConstant(1));
     std::vector<std::unique_ptr<RamExpression>> a_project_add;
     a_project_add.emplace_back(new RamTupleElement(0, 3));
-    a_project_add.emplace_back(new RamNumber(1));
+    a_project_add.emplace_back(new RamSignedConstant(1));
     a_project_list.emplace_back(new RamIntrinsicOperator(FunctorOp::ADD, std::move(a_project_add)));
     auto a_project = std::make_unique<RamProject>(
             std::make_unique<RamRelationReference>(&path), std::move(a_project_list));
@@ -402,10 +402,10 @@ TEST(RamDebugInfo, CloneAndEquals) {
     std::vector<std::unique_ptr<RamExpression>> b_project_list;
     b_project_list.emplace_back(new RamTupleElement(0, 0));
     b_project_list.emplace_back(new RamTupleElement(0, 1));
-    b_project_list.emplace_back(new RamNumber(1));
+    b_project_list.emplace_back(new RamSignedConstant(1));
     std::vector<std::unique_ptr<RamExpression>> b_project_add;
     b_project_add.emplace_back(new RamTupleElement(0, 3));
-    b_project_add.emplace_back(new RamNumber(1));
+    b_project_add.emplace_back(new RamSignedConstant(1));
     b_project_list.emplace_back(new RamIntrinsicOperator(FunctorOp::ADD, std::move(b_project_add)));
     auto b_project = std::make_unique<RamProject>(
             std::make_unique<RamRelationReference>(&path), std::move(b_project_list));

@@ -86,6 +86,12 @@
 "land"                                { return yy::parser::make_L_AND(yylloc); }
 "lor"                                 { return yy::parser::make_L_OR(yylloc); }
 "lnot"                                { return yy::parser::make_L_NOT(yylloc); }
+"itou"                                { return yy::parser::make_ITOU(yylloc); }
+"itof"                                { return yy::parser::make_ITOF(yylloc); }
+"utoi"                                { return yy::parser::make_UTOI(yylloc); }
+"utof"                                { return yy::parser::make_UTOF(yylloc); }
+"ftoi"                                { return yy::parser::make_FTOI(yylloc); }
+"ftou"                                { return yy::parser::make_FTOU(yylloc); }
 "match"                               { return yy::parser::make_TMATCH(yylloc); }
 "cat"                                 { return yy::parser::make_CAT(yylloc); }
 "ord"                                 { return yy::parser::make_ORD(yylloc); }
@@ -157,6 +163,14 @@
                                         } catch(...) {
                                           driver.error(yylloc, "IP out of range");
                                           return yy::parser::make_NUMBER(0, yylloc);
+                                        }
+                                      }
+[0-9]+[.][0-9]+                       {
+                                        try {
+                                          return yy::parser::make_FLOAT(souffle::RamFloatFromString(yytext), yylloc);
+                                        } catch (...) {
+                                          driver.error(yylloc, "float out of range");
+                                          return yy::parser::make_FLOAT(0, yylloc);
                                         }
                                       }
 0b[0-1][0-1]*                         {

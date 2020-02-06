@@ -555,4 +555,20 @@ private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
 
+/**
+ * Transformation pass to determine operator types for polymorphic
+ * operators.
+ * Operators = Functors (plus, minus...) ∪ binary constraints (>, ≥ ...)
+ */
+
+class PolymorphicOperatorsTransformer : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "PolymorphicOperatorsTransformer";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+};
+
 }  // end of namespace souffle

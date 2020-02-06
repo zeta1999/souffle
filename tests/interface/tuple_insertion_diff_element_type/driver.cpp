@@ -43,12 +43,10 @@ void handler(int n) {
  * Main program
  */
 int main(int argc, char** argv) {
-
     // create an instance of program "tuple_insertion_diff_element_type"
     if (SouffleProgram* prog = ProgramFactory::newInstance("tuple_insertion_diff_element_type")) {
         // get input relation "edge"
         if (Relation* edge = prog->getRelation("edge")) {
-
             std::vector<std::array<std::string, 2>> myData = {
                     {"A", "B"}, {"B", "C"}, {"C", "D"}, {"D", "E"}, {"E", "F"}, {"F", "A"}};
             for (auto input : myData) {
@@ -58,18 +56,18 @@ int main(int argc, char** argv) {
             }
 
             if (Relation* line = prog->getRelation("line")) {
-                
                 // set default signal  for SIGINT signal
                 signal(SIGABRT, handler);
-                
+
                 // redirect stderr to a file called stderr
                 freopen("stderr", "w", stderr);
-                
-                // this raises an assertion, which is caught by the handler function, which produces no stderr output due to the redirection
+
+                // this raises an assertion, which is caught by the handler function, which produces no stderr
+                // output due to the redirection
                 tuple t(edge);
                 t << 1 << 2;
                 edge->insert(t);
-            
+
                 // run program
                 prog->run();
 
@@ -79,7 +77,7 @@ int main(int argc, char** argv) {
 
                 // free program analysis
                 delete prog;
-            } else{
+            } else {
                 error("cannot find relation line");
             }
         } else {

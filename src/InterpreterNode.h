@@ -30,7 +30,7 @@
 namespace souffle {
 
 enum InterpreterNodeType {
-    I_Number,
+    I_Constant,
     I_TupleElement,
     I_AutoIncrement,
     I_IntrinsicOperator,
@@ -110,7 +110,7 @@ public:
     }
 
     /** @brief get data */
-    inline const size_t getData(std::size_t i) const {
+    inline size_t getData(std::size_t i) const {
         return data[i];
     }
 

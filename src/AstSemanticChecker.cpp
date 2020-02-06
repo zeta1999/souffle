@@ -34,9 +34,11 @@
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "ErrorReport.h"
+#include "FunctorOps.h"
 #include "Global.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
+#include "RamTypes.h"
 #include "RelationRepresentation.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
@@ -156,37 +158,53 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // - constants -
 
     // all string constants are used as symbols
-    visitDepthFirst(nodes, [&](const AstStringConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
+    visitDepthFirst(nodes, [&](const AstStringConstant& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isSymbolType(types)) {
-            report.addError("Symbol constant (type mismatch)", cnst.getSrcLoc());
+            report.addError("Symbol constant (type mismatch)", constant.getSrcLoc());
         }
     });
 
-    // all number constants are used as numbers
-    visitDepthFirst(nodes, [&](const AstNumberConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
+    // all signed constants are used as numbers
+    visitDepthFirst(nodes, [&](const AstNumberConstant& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isNumberType(types)) {
-            report.addError("Number constant (type mismatch)", cnst.getSrcLoc());
+            report.addError("Number constant (type mismatch)", constant.getSrcLoc());
+        }
+    });
+
+    // all float constants are used as floats
+    visitDepthFirst(nodes, [&](const AstFloatConstant& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
+        if (!isFloatType(types)) {
+            report.addError("Float constant (type mismatch)", constant.getSrcLoc());
+        }
+    });
+
+    // all unsigned constants are used as unsigned
+    visitDepthFirst(nodes, [&](const AstUnsignedConstant& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
+        if (!isUnsignedType(types)) {
+            report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
         }
     });
 
     // all null constants are used as records
-    visitDepthFirst(nodes, [&](const AstNullConstant& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
+    visitDepthFirst(nodes, [&](const AstNullConstant& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isRecordType(types)) {
-            report.addError("Null constant used as a non-record", cnst.getSrcLoc());
+            report.addError("Null constant used as a non-record", constant.getSrcLoc());
         }
     });
 
     // record initializations have the same size as their types
-    visitDepthFirst(nodes, [&](const AstRecordInit& cnst) {
-        TypeSet types = typeAnalysis.getTypes(&cnst);
+    visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
+        TypeSet types = typeAnalysis.getTypes(&constant);
         if (isRecordType(types)) {
             for (const Type& type : types) {
-                if (cnst.getArguments().size() !=
+                if (constant.getArguments().size() !=
                         dynamic_cast<const RecordType*>(&type)->getFields().size()) {
-                    report.addError("Wrong number of arguments given to record", cnst.getSrcLoc());
+                    report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
                 }
             }
         }
@@ -199,15 +217,29 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
+    // TODO (darth_tytus): Add support for float/unsigned to User functors. Preferably by unifying the
+    // analysis of intr/extr functor's types.
     // - intrinsic functors -
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         // check type of result
-        if (fun.isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-        }
-
-        if (fun.isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
+        const TypeSet& resultType = typeAnalysis.getTypes(&fun);
+        if (!eqTypeRamTypeAttribute(fun.getReturnType(), resultType)) {
+            switch (fun.getReturnType()) {
+                case RamTypeAttribute::Signed:
+                    report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
+                    break;
+                case RamTypeAttribute::Unsigned:
+                    report.addError("Non-unsigned use for unsigned functor", fun.getSrcLoc());
+                    break;
+                case RamTypeAttribute::Float:
+                    report.addError("Non-float use for float functor", fun.getSrcLoc());
+                    break;
+                case RamTypeAttribute::Symbol:
+                    report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
+                    break;
+                case RamTypeAttribute::Record:
+                    assert(false && "Invalid return type");
+            }
         }
 
         // check types of arguments
@@ -217,11 +249,23 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
         for (size_t i = 0; i < fun.getArity(); i++) {
             auto arg = fun.getArg(i);
-            if (fun.acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-            }
-            if (fun.acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+            if (!eqTypeRamTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
+                switch (fun.getArgType(i)) {
+                    case RamTypeAttribute::Signed:
+                        report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+                        break;
+                    case RamTypeAttribute::Symbol:
+                        report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
+                        break;
+                    case RamTypeAttribute::Unsigned:
+                        report.addError("Non-unsigned argument for functor", arg->getSrcLoc());
+                        break;
+                    case RamTypeAttribute::Float:
+                        report.addError("Non-float argument for functor", arg->getSrcLoc());
+                        break;
+                    case RamTypeAttribute::Record:
+                        assert(false && "Invalid argument type");
+                }
             }
         }
     });
@@ -229,28 +273,33 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // - user-defined functors -
     visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
         const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
+
+        // handle degenerate case first.
         if (funDecl == nullptr) {
             report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
-        } else {
-            if (funDecl->getArgCount() != fun.getArgCount()) {
-                report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
-            }
-            // check return values of user-defined functor
-            if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-                report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-            }
-            if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-                report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-            }
-            for (size_t i = 0; i < fun.getArgCount(); i++) {
-                const AstArgument* arg = fun.getArg(i);
-                if (i < funDecl->getArgCount()) {
-                    if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                        report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-                    }
-                    if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                        report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
-                    }
+            return;
+        }
+
+        // Check arity.
+        if (funDecl->getArity() != fun.getArity()) {
+            report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
+        }
+
+        // check return values of user-defined functor
+        if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
+            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
+        } else if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
+            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
+        }
+
+        // Check argument types.
+        for (size_t i = 0; i < fun.getArity(); i++) {
+            const AstArgument* arg = fun.getArg(i);
+            if (i < funDecl->getArity()) {
+                if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
+                    report.addError("Non-numeric argument for functor", arg->getSrcLoc());
+                } else if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
+                    report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
                 }
             }
         }
@@ -270,10 +319,10 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
         if (constraint.isNumerical()) {
             // check numeric type
-            if (!isNumberType(typeAnalysis.getTypes(lhs))) {
+            if (!isNumericType(typeAnalysis.getTypes(lhs))) {
                 report.addError("Non-numerical operand for comparison", lhs->getSrcLoc());
             }
-            if (!isNumberType(typeAnalysis.getTypes(rhs))) {
+            if (!isNumericType(typeAnalysis.getTypes(rhs))) {
                 report.addError("Non-numerical operand for comparison", rhs->getSrcLoc());
             }
         } else if (constraint.isSymbolic()) {
@@ -504,7 +553,7 @@ void AstSemanticChecker::checkArgument(
             checkArgument(report, program, *intrFunc->getArg(i));
         }
     } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
-        for (size_t i = 0; i < userDefFunc->getArgCount(); i++) {
+        for (size_t i = 0; i < userDefFunc->getArity(); i++) {
             checkArgument(report, program, *userDefFunc->getArg(i));
         }
     }
@@ -514,19 +563,20 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     if (dynamic_cast<const AstNumberConstant*>(&argument) != nullptr) {
         return true;
     }
-    if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
-        if (!inf->isNumerical()) {
+    if (dynamic_cast<const AstFloatConstant*>(&argument) != nullptr) {
+        return true;
+    }
+    if (dynamic_cast<const AstUnsignedConstant*>(&argument) != nullptr) {
+        return true;
+    }
+    // TODO (darth_tytus): Can/should user-defined functors be added here?
+    if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
+        // Check return type.
+        if (!isNumericType(functor->getReturnType())) {
             return false;
         }
-
-        for (size_t i = 0; i < inf->getArity(); i++) {
-            if (!isConstantArithExpr(*inf->getArg(i))) {
-                return false;
-            }
-        }
-
-        // numerical intrinsic functor with all-constant arguments
-        return true;
+        // Check arguments
+        return all_of(functor->getArguments(), [](auto* arg) { return isConstantArithExpr(*arg); });
     }
     return false;
 }
@@ -647,7 +697,8 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
         AstTypeIdentifier typeName = attr->getTypeName();
 
         /* check whether type exists */
-        if (typeName != "number" && typeName != "symbol" && (program.getType(typeName) == nullptr)) {
+        if (typeName != "number" && typeName != "symbol" && typeName != "float" && typeName != "unsigned" &&
+                (program.getType(typeName) == nullptr)) {
             report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
                                     toString(attr->getTypeName()),
                     attr->getSrcLoc());

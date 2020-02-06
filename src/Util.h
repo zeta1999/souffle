@@ -103,11 +103,48 @@ inline unsigned long __builtin_ctzll(unsigned long long value) {
 }
 #endif
 
-/**
- * Converts a string to a RamDomain (i.e. signed 32 bit or 64 bit number)
- */
-
 namespace souffle {
+
+/**
+ * Converts a string to a RamDomain
+ */
+inline RamDomain RamDomainFromString(
+        const std::string& str, std::size_t* position = nullptr, const int base = 10) {
+    RamDomain val;
+#if RAM_DOMAIN_SIZE == 64
+    val = std::stoll(str, position, base);
+#else
+    val = std::stoi(str, position, base);
+#endif
+    return static_cast<RamDomain>(val);
+}
+
+/**
+ * Converts a string to a RamFloat
+ */
+inline RamFloat RamFloatFromString(const std::string& str, std::size_t* position = nullptr) {
+    RamFloat val;
+#if RAM_DOMAIN_SIZE == 64
+    val = std::stod(str, position);
+#else
+    val = std::stof(str, position);
+#endif
+    return static_cast<RamFloat>(val);
+}
+
+/**
+ * Converts a string to a RamUnsigned
+ */
+inline RamUnsigned RamUnsignedFromString(
+        const std::string& str, std::size_t* position = nullptr, const int base = 10) {
+    RamUnsigned val;
+#if RAM_DOMAIN_SIZE == 64
+    val = std::stoul(str, position, base);
+#else
+    val = std::stoull(str, position, base);
+#endif
+    return static_cast<RamUnsigned>(val);
+}
 
 #if RAM_DOMAIN_SIZE == 64
 inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {

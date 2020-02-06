@@ -27,6 +27,7 @@
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamTranslationUnit.h"
+#include "RamTypes.h"
 #include "RamUtils.h"
 #include "RamVisitor.h"
 #include "RelationRepresentation.h"
@@ -203,9 +204,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitLoad(const RamLoad& load, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
-            std::vector<bool> symbolMask;
+
+            std::vector<RamTypeAttribute> symbolMask;
             for (auto& cur : load.getRelation().getAttributeTypes()) {
-                symbolMask.push_back(cur[0] == 's');
+                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
             }
             // get some table details
             for (IODirectives ioDirectives : load.getIODirectives()) {
@@ -218,7 +220,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
-                out << "std::vector<bool>({" << join(symbolMask) << "})";
+                out << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << load.getRelation().getAuxiliaryArity();
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
@@ -233,9 +235,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitStore(const RamStore& store, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
-            std::vector<bool> symbolMask;
+
+            std::vector<RamTypeAttribute> symbolMask;
             for (auto& cur : store.getRelation().getAttributeTypes()) {
-                symbolMask.push_back(cur[0] == 's');
+                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
             }
             for (IODirectives ioDirectives : store.getIODirectives()) {
                 out << "try {";
@@ -246,7 +249,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << "std::vector<bool>({" << join(symbolMask) << "})";
+                out << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
                 out << ", symTable, ioDirectives";
                 out << ", " << store.getRelation().getAuxiliaryArity();
                 out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
@@ -272,7 +275,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 auto conditions = toConjunctionList(&filter->getCondition());
                 for (auto const& cur : conditions) {
                     bool needContext = false;
-                    visitDepthFirst(*cur, [&](const RamExistenceCheck& exists) { needContext = true; });
+                    visitDepthFirst(*cur, [&](const RamExistenceCheck&) { needContext = true; });
                     if (needContext) {
                         requireCtx.push_back(std::unique_ptr<RamCondition>(cur->clone()));
                     } else {
@@ -294,7 +297,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // check whether loop nest can be parallelized
             bool isParallel = false;
-            visitDepthFirst(*next, [&](const RamAbstractParallel& node) { isParallel = true; });
+            visitDepthFirst(*next, [&](const RamAbstractParallel&) { isParallel = true; });
 
             // reset preamble
             preamble.str("");
@@ -1094,13 +1097,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- conditions --
 
-        void visitTrue(const RamTrue& ltrue, std::ostream& out) override {
+        void visitTrue(const RamTrue&, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "true";
             PRINT_END_COMMENT(out);
         }
 
-        void visitFalse(const RamFalse& lfalse, std::ostream& out) override {
+        void visitFalse(const RamFalse&, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             out << "false";
             PRINT_END_COMMENT(out);
@@ -1140,6 +1143,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(rel.getRHS(), out);
                     out << "))";
                     break;
+                case BinaryConstraintOp::ULT:
+                case BinaryConstraintOp::FLT:
                 case BinaryConstraintOp::LT:
                     out << "((";
                     visit(rel.getLHS(), out);
@@ -1147,6 +1152,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(rel.getRHS(), out);
                     out << "))";
                     break;
+                case BinaryConstraintOp::ULE:
+                case BinaryConstraintOp::FLE:
                 case BinaryConstraintOp::LE:
                     out << "((";
                     visit(rel.getLHS(), out);
@@ -1154,6 +1161,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(rel.getRHS(), out);
                     out << "))";
                     break;
+                case BinaryConstraintOp::UGT:
+                case BinaryConstraintOp::FGT:
                 case BinaryConstraintOp::GT:
                     out << "((";
                     visit(rel.getLHS(), out);
@@ -1161,6 +1170,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(rel.getRHS(), out);
                     out << "))";
                     break;
+                case BinaryConstraintOp::UGE:
+                case BinaryConstraintOp::FGE:
                 case BinaryConstraintOp::GE:
                     out << "((";
                     visit(rel.getLHS(), out);
@@ -1323,9 +1334,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
         // -- values --
-        void visitNumber(const RamNumber& num, std::ostream& out) override {
+        void visitUnsignedConstant(const RamUnsignedConstant& constant, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "RamDomain(" << num.getConstant() << ")";
+            out << "RamUnsigned(" << constant.getValue() << ")";
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitFloatConstant(const RamFloatConstant& constant, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            out << "RamFloat(" << constant.getValue() << ")";
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitSignedConstant(const RamSignedConstant& constant, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            out << "RamSigned(" << constant.getConstant() << ")";
             PRINT_END_COMMENT(out);
         }
 
@@ -1357,18 +1380,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ").size())";
                     break;
                 }
+                case FunctorOp::FNEG:
                 case FunctorOp::NEG: {
                     out << "(-(";
                     visit(args[0], out);
                     out << "))";
                     break;
                 }
+                case FunctorOp::UBNOT:
                 case FunctorOp::BNOT: {
                     out << "(~(";
                     visit(args[0], out);
                     out << "))";
                     break;
                 }
+                case FunctorOp::ULNOT:
                 case FunctorOp::LNOT: {
                     out << "(!(";
                     visit(args[0], out);
@@ -1387,9 +1413,31 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")))";
                     break;
                 }
-
+                case FunctorOp::FTOU:
+                case FunctorOp::ITOU: {
+                    out << "(static_cast<RamUnsigned>(";
+                    visit(args[0], out);
+                    out << "))";
+                    break;
+                }
+                case FunctorOp::FTOI:
+                case FunctorOp::UTOI: {
+                    out << "(static_cast<RamSigned>(";
+                    visit(args[0], out);
+                    out << "))";
+                    break;
+                }
+                case FunctorOp::ITOF:
+                case FunctorOp::UTOF: {
+                    out << "(static_cast<RamFloat>(";
+                    visit(args[0], out);
+                    out << "))";
+                    break;
+                }
                 /** Binary Functor Operators */
                 // arithmetic
+                case FunctorOp::FADD:
+                case FunctorOp::UADD:
                 case FunctorOp::ADD: {
                     out << "(";
                     visit(args[0], out);
@@ -1398,6 +1446,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::FSUB:
+                case FunctorOp::USUB:
                 case FunctorOp::SUB: {
                     out << "(";
                     visit(args[0], out);
@@ -1406,6 +1456,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::FMUL:
+                case FunctorOp::UMUL:
                 case FunctorOp::MUL: {
                     out << "(";
                     visit(args[0], out);
@@ -1414,6 +1466,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::FDIV:
+                case FunctorOp::UDIV:
                 case FunctorOp::DIV: {
                     out << "(";
                     visit(args[0], out);
@@ -1422,6 +1476,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::FEXP:
+                case FunctorOp::UEXP:
                 case FunctorOp::EXP: {
                     // Cast as int64, then back to RamDomain of int32 to avoid wrapping to negative
                     // when using int32 RamDomains
@@ -1432,6 +1488,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << "))";
                     break;
                 }
+                case FunctorOp::UMOD:
                 case FunctorOp::MOD: {
                     out << "(";
                     visit(args[0], out);
@@ -1440,6 +1497,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::UBAND:
                 case FunctorOp::BAND: {
                     out << "(";
                     visit(args[0], out);
@@ -1448,6 +1506,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::UBOR:
                 case FunctorOp::BOR: {
                     out << "(";
                     visit(args[0], out);
@@ -1456,6 +1515,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::UBXOR:
                 case FunctorOp::BXOR: {
                     out << "(";
                     visit(args[0], out);
@@ -1464,6 +1524,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::ULAND:
                 case FunctorOp::LAND: {
                     out << "(";
                     visit(args[0], out);
@@ -1472,6 +1533,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::ULOR:
                 case FunctorOp::LOR: {
                     out << "(";
                     visit(args[0], out);
@@ -1480,6 +1542,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                case FunctorOp::FMAX:
+                case FunctorOp::UMAX:
                 case FunctorOp::MAX: {
                     out << "std::max({";
                     for (auto& cur : args) {
@@ -1489,6 +1553,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << "})";
                     break;
                 }
+                case FunctorOp::FMIN:
+                case FunctorOp::UMIN:
                 case FunctorOp::MIN: {
                     out << "std::min({";
                     for (auto& cur : args) {
@@ -1529,10 +1595,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
 
                 /** Undefined */
-                default: {
+                case FunctorOp::__UNDEFINED__:
                     assert(false && "Unsupported Operation!");
                     break;
-                }
             }
             PRINT_END_COMMENT(out);
         }
@@ -1744,7 +1809,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "}";
     }
     os << ";";
-
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
@@ -1829,7 +1893,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             registerRel += ");\n";
         }
     }
-
     os << "public:\n";
 
     // -- constructor --
@@ -1866,7 +1929,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("verbose")) {
         os << "SignalHandler::instance()->enableLogging();\n";
     }
-
     bool hasIncrement = false;
     visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
     // initialize counter
@@ -1939,15 +2001,14 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "if (profiler.joinable()) { profiler.join(); }\n";
     }
     os << "}\n";
-
     // issue printAll method
     os << "public:\n";
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
     visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
-            std::vector<bool> symbolMask;
+            std::vector<RamTypeAttribute> symbolMask;
             for (auto& cur : store->getRelation().getAttributeTypes()) {
-                symbolMask.push_back(cur[0] == 's');
+                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
             }
             for (IODirectives ioDirectives : store->getIODirectives()) {
                 os << "try {";
@@ -1958,7 +2019,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 os << "}\n";
                 os << "IODirectives ioDirectives(directiveMap);\n";
                 os << "IOSystem::getInstance().getWriter(";
-                os << "std::vector<bool>({" << join(symbolMask) << "})";
+                os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
                 os << ", symTable, ioDirectives, " << store->getRelation().getAuxiliaryArity();
                 os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
@@ -1982,15 +2043,14 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         }
         os << "}\n";  // end of dumpFreqs() method
     }
-
     // issue loadAll method
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
     visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
         // get some table details
-        std::vector<bool> symbolMask;
+        std::vector<RamTypeAttribute> symbolMask;
         for (auto& cur : load.getRelation().getAttributeTypes()) {
-            symbolMask.push_back(cur[0] == 's');
+            symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
         }
         for (IODirectives ioDirectives : load.getIODirectives()) {
             os << "try {";
@@ -2002,7 +2062,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "}\n";
             os << "IODirectives ioDirectives(directiveMap);\n";
             os << "IOSystem::getInstance().getReader(";
-            os << "std::vector<bool>({" << join(symbolMask) << "})";
+            os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
             os << ", symTable, ioDirectives";
             os << ", " << load.getRelation().getAuxiliaryArity();
             os << ")->readAll(*" << getRelationName(load.getRelation());
@@ -2012,7 +2072,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         }
     });
     os << "}\n";  // end of loadAll() method
-
     // issue dump methods
     auto dumpRelation = [&](const RamRelation& ramRelation) {
         auto& relName = getRelationName(ramRelation);
@@ -2020,9 +2079,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         auto& mask = ramRelation.getAttributeTypes();
         size_t auxiliaryArity = ramRelation.getAuxiliaryArity();
 
-        std::vector<bool> symbolMask;
+        std::vector<RamTypeAttribute> symbolMask;
         for (auto& cur : mask) {
-            symbolMask.push_back(cur[0] == 's');
+            symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
         }
 
         os << "try {";
@@ -2030,7 +2089,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "ioDirectives.setIOType(\"stdout\");\n";
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
         os << "IOSystem::getInstance().getWriter(";
-        os << "std::vector<bool>({" << join(symbolMask) << "})";
+        os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
         os << ", symTable, ioDirectives, " << auxiliaryArity;
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2108,7 +2167,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             subroutineNum++;
         }
     }
-
     os << "};\n";  // end of class declaration
 
     // hidden hooks

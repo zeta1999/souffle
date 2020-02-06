@@ -204,9 +204,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
     }
 
     switch (node->getType()) {
-        CASE(Number)
+        CASE(Constant)
         return cur.getConstant();
-        ESAC(Number)
+        ESAC(Constant)
 
         CASE(TupleElement)
         return ctxt[cur.getTupleId()][cur.getElement()];
@@ -227,10 +227,24 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return getSymbolTable().resolve(execute(node->getChild(0), ctxt)).size();
             case FunctorOp::NEG:
                 return -execute(node->getChild(0), ctxt);
+            case FunctorOp::FNEG: {
+                RamDomain result = execute(node->getChild(0), ctxt);
+                return ramBitCast(-ramBitCast<RamFloat>(result));
+            }
             case FunctorOp::BNOT:
                 return ~execute(node->getChild(0), ctxt);
+            case FunctorOp::UBNOT: {
+                RamDomain result = execute(node->getChild(0), ctxt);
+                return ramBitCast(~ramBitCast<RamUnsigned>(result));
+            }
             case FunctorOp::LNOT:
                 return !execute(node->getChild(0), ctxt);
+
+            case FunctorOp::ULNOT: {
+                RamDomain result = execute(node->getChild(0), ctxt);
+                // Casting is a bit tricky here, since ! returns a boolean.
+                return ramBitCast(static_cast<RamUnsigned>(!ramBitCast<RamUnsigned>(result)));
+            }
             case FunctorOp::TONUMBER: {
                 RamDomain result = 0;
                 try {
@@ -245,40 +259,168 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
             case FunctorOp::TOSTRING:
                 return getSymbolTable().lookup(std::to_string(execute(node->getChild(0), ctxt)));
+
+            /** The following are the default C++ conversions. */
+            case FunctorOp::ITOU: {
+                auto result = execute(node->getChild(0), ctxt);
+                return ramBitCast(static_cast<RamUnsigned>(result));
+            }
+            case FunctorOp::UTOI: {
+                auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                return static_cast<RamSigned>(result);
+            }
+            case FunctorOp::ITOF: {
+                auto result = execute(node->getChild(0), ctxt);
+                return ramBitCast(static_cast<RamFloat>(result));
+            }
+            case FunctorOp::FTOI: {
+                auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                return static_cast<RamSigned>(result);
+            }
+            case FunctorOp::UTOF: {
+                auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                return ramBitCast(static_cast<RamFloat>(result));
+            }
+            case FunctorOp::FTOU: {
+                auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                return ramBitCast(static_cast<RamUnsigned>(result));
+            }
             /** Binary Functor Operators */
             case FunctorOp::ADD: {
                 BINARY_OP(+);
             }
+            case FunctorOp::UADD: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first + second);
+            }
+            case FunctorOp::FADD: {
+                auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first + second);
+            }
             case FunctorOp::SUB: {
                 BINARY_OP(-);
             }
+            case FunctorOp::USUB: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first - second);
+            }
+            case FunctorOp::FSUB: {
+                auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first - second);
+            }
+
             case FunctorOp::MUL: {
                 BINARY_OP(*);
             }
+            case FunctorOp::UMUL: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first * second);
+            }
+            case FunctorOp::FMUL: {
+                auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first * second);
+            }
+
             case FunctorOp::DIV: {
                 BINARY_OP(/);
             }
+
+            case FunctorOp::UDIV: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first / second);
+            }
+
+            case FunctorOp::FDIV: {
+                auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first / second);
+            }
+
             case FunctorOp::EXP: {
                 return std::pow(execute(node->getChild(0), ctxt), execute(node->getChild(1), ctxt));
             }
+
+            case FunctorOp::UEXP: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                // Extra casting required: pow returns a floating point.
+                return ramBitCast(static_cast<RamUnsigned>(std::pow(first, second)));
+            }
+
+            case FunctorOp::FEXP: {
+                auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return ramBitCast(static_cast<RamFloat>(std::pow(first, second)));
+            }
+
             case FunctorOp::MOD: {
                 BINARY_OP(%);
+            }
+
+            case FunctorOp::UMOD: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first % second);
             }
             case FunctorOp::BAND: {
                 BINARY_OP(&);
             }
+
+            case FunctorOp::UBAND: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first & second);
+            }
+
             case FunctorOp::BOR: {
                 BINARY_OP(|);
             }
+
+            case FunctorOp::UBOR: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first | second);
+            }
+
             case FunctorOp::BXOR: {
                 BINARY_OP(^);
             }
+
+            case FunctorOp::UBXOR: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return ramBitCast(first ^ second);
+            }
+
             case FunctorOp::LAND: {
                 BINARY_OP(&&);
             }
+
+            case FunctorOp::ULAND: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                // Extra casting required (from bool)
+                return ramBitCast(static_cast<RamUnsigned>(first && second));
+            }
+
             case FunctorOp::LOR: {
                 BINARY_OP(||);
             }
+
+            case FunctorOp::ULOR: {
+                auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                // Extra casting required (from bool)
+                return ramBitCast(static_cast<RamUnsigned>(first || second));
+            }
+
             case FunctorOp::MAX: {
                 auto result = execute(node->getChild(0), ctxt);
                 for (size_t i = 1; i < args.size(); i++) {
@@ -286,6 +428,25 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 return result;
             }
+
+            case FunctorOp::UMAX: {
+                auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                for (size_t i = 1; i < args.size(); i++) {
+                    auto element = ramBitCast<RamUnsigned>(execute(node->getChild(i), ctxt));
+                    result = std::max(result, element);
+                }
+                return ramBitCast(result);
+            }
+
+            case FunctorOp::FMAX: {
+                auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                for (size_t i = 1; i < args.size(); i++) {
+                    auto element = ramBitCast<RamFloat>(execute(node->getChild(i), ctxt));
+                    result = std::max(result, element);
+                }
+                return ramBitCast(result);
+            }
+
             case FunctorOp::MIN: {
                 auto result = execute(node->getChild(0), ctxt);
                 for (size_t i = 1; i < args.size(); i++) {
@@ -293,6 +454,25 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 return result;
             }
+
+            case FunctorOp::UMIN: {
+                auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                for (size_t i = 1; i < args.size(); i++) {
+                    auto element = ramBitCast<RamUnsigned>(execute(node->getChild(i), ctxt));
+                    result = std::min(result, element);
+                }
+                return ramBitCast(result);
+            }
+
+            case FunctorOp::FMIN: {
+                auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                for (size_t i = 1; i < args.size(); i++) {
+                    auto element = ramBitCast<RamFloat>(execute(node->getChild(i), ctxt));
+                    result = std::min(result, element);
+                }
+                return ramBitCast(result);
+            }
+
             case FunctorOp::CAT: {
                 std::stringstream ss;
                 for (size_t i = 0; i < args.size(); i++) {
@@ -468,19 +648,59 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Constraint)
         switch (cur.getOperator()) {
-            case (BinaryConstraintOp::EQ):
+            case BinaryConstraintOp::EQ:
                 BINARY_OP(==);
-            case (BinaryConstraintOp::NE):
+            case BinaryConstraintOp::NE:
                 BINARY_OP(!=);
-            case (BinaryConstraintOp::LT):
+            case BinaryConstraintOp::LT:
                 BINARY_OP(<);
-            case (BinaryConstraintOp::LE):
+            case BinaryConstraintOp::ULT: {
+                auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return left < right;
+            }
+            case BinaryConstraintOp::FLT: {
+                auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return left < right;
+            }
+            case BinaryConstraintOp::LE:
                 BINARY_OP(<=);
-            case (BinaryConstraintOp::GT):
+            case BinaryConstraintOp::ULE: {
+                auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return left <= right;
+            }
+            case BinaryConstraintOp::FLE: {
+                auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return left <= right;
+            }
+            case BinaryConstraintOp::GT:
                 BINARY_OP(>);
-            case (BinaryConstraintOp::GE):
+            case BinaryConstraintOp::UGT: {
+                auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return left > right;
+            }
+            case BinaryConstraintOp::FGT: {
+                auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return left > right;
+            }
+            case BinaryConstraintOp::GE:
                 BINARY_OP(>=);
-            case (BinaryConstraintOp::MATCH): {
+            case BinaryConstraintOp::UGE: {
+                auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                return left >= right;
+            }
+            case BinaryConstraintOp::FGE: {
+                auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
+                auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                return left >= right;
+            }
+            case BinaryConstraintOp::MATCH: {
                 RamDomain left = execute(node->getChild(0), ctxt);
                 RamDomain right = execute(node->getChild(1), ctxt);
                 const std::string& pattern = getSymbolTable().resolve(left);
@@ -494,7 +714,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 return result;
             }
-            case (BinaryConstraintOp::NOT_MATCH): {
+            case BinaryConstraintOp::NOT_MATCH: {
                 RamDomain left = execute(node->getChild(0), ctxt);
                 RamDomain right = execute(node->getChild(1), ctxt);
                 const std::string& pattern = getSymbolTable().resolve(left);
@@ -508,14 +728,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
                 return result;
             }
-            case (BinaryConstraintOp::CONTAINS): {
+            case BinaryConstraintOp::CONTAINS: {
                 RamDomain left = execute(node->getChild(0), ctxt);
                 RamDomain right = execute(node->getChild(1), ctxt);
                 const std::string& pattern = getSymbolTable().resolve(left);
                 const std::string& text = getSymbolTable().resolve(right);
                 return text.find(pattern) != std::string::npos;
             }
-            case (BinaryConstraintOp::NOT_CONTAINS): {
+            case BinaryConstraintOp::NOT_CONTAINS: {
                 RamDomain left = execute(node->getChild(0), ctxt);
                 RamDomain right = execute(node->getChild(1), ctxt);
                 const std::string& pattern = getSymbolTable().resolve(left);
@@ -1052,9 +1272,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         for (IODirectives ioDirectives : cur.getIODirectives()) {
             try {
                 InterpreterRelation& relation = *node->getRelation();
-                std::vector<bool> symbolMask;
+                std::vector<RamTypeAttribute> symbolMask;
                 for (auto& cur : cur.getRelation().getAttributeTypes()) {
-                    symbolMask.push_back(cur[0] == 's');
+                    symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }
                 IOSystem::getInstance()
                         .getReader(symbolMask, getSymbolTable(), ioDirectives, relation.getAuxiliaryArity())
@@ -1069,9 +1289,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(Store)
         for (IODirectives ioDirectives : cur.getIODirectives()) {
             try {
-                std::vector<bool> symbolMask;
+                std::vector<RamTypeAttribute> symbolMask;
                 for (auto& cur : cur.getRelation().getAttributeTypes()) {
-                    symbolMask.push_back(cur[0] == 's');
+                    symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
                 }
                 IOSystem::getInstance()
                         .getWriter(symbolMask, getSymbolTable(), ioDirectives,

@@ -131,20 +131,7 @@ public:
         this->name = name;
     }
 
-    /** Obtains a list of all embedded child nodes */
-    std::vector<const AstNode*> getChildNodes() const override {
-        return {};
-    }
-
-    /** Creates a clone of this AST sub-structure */
-    AstType* clone() const override = 0;
-
-    /** Mutates this node */
-    void apply(const AstNodeMapper& /*map*/) override {
-        // no nested nodes in any type
-    }
-
-private:
+private: 
     /** In the AST each type has to have a name forming a unique identifier */
     AstTypeIdentifier name;
 };
@@ -159,6 +146,10 @@ public:
     /** Creates a new primitive type */
     AstPrimitiveType(const AstTypeIdentifier& name, bool num = false) : AstType(name), num(num) {}
 
+    void print(std::ostream& os) const override {
+        os << ".type " << getName() << (num ? "= number" : "");
+    }
+
     /** Tests whether this type is a numeric type */
     bool isNumeric() const {
         return num;
@@ -169,12 +160,6 @@ public:
         return !num;
     }
 
-    /** Prints a summary of this type to the given stream */
-    void print(std::ostream& os) const override {
-        os << ".type " << getName() << (num ? "= number" : "");
-    }
-
-    /** Creates a clone of this AST sub-structure */
     AstPrimitiveType* clone() const override {
         auto res = new AstPrimitiveType(getName(), num);
         res->setSrcLoc(getSrcLoc());
@@ -182,14 +167,12 @@ public:
     }
 
 protected:
-    /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstPrimitiveType*>(&node));
         const auto& other = static_cast<const AstPrimitiveType&>(node);
         return getName() == other.getName() && num == other.num;
     }
 
-private:
     /** Indicates whether it is a number (true) or a symbol (false) */
     bool num;
 };
@@ -204,6 +187,10 @@ public:
     /** Creates a new union type */
     AstUnionType() = default;
 
+    void print(std::ostream& os) const override {
+        os << ".type " << getName() << " = " << join(types, " | ");
+    }
+
     /** Obtains a reference to the list element types */
     const std::vector<AstTypeIdentifier>& getTypes() const {
         return types;
@@ -214,17 +201,12 @@ public:
         types.push_back(type);
     }
 
+    /** Set variant type */ 
     void setVariantType(size_t idx, const AstTypeIdentifier& type) {
         assert(idx < types.size() && "union variant index out of bounds");
         types[idx] = type;
     }
 
-    /** Prints a summary of this type to the given stream */
-    void print(std::ostream& os) const override {
-        os << ".type " << getName() << " = " << join(types, " | ");
-    }
-
-    /** Creates a clone of this AST sub-structure */
     AstUnionType* clone() const override {
         auto res = new AstUnionType();
         res->setSrcLoc(getSrcLoc());
@@ -234,7 +216,6 @@ public:
     }
 
 protected:
-    /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstUnionType*>(&node));
         const auto& other = static_cast<const AstUnionType&>(node);
@@ -264,25 +245,6 @@ public:
         }
     };
 
-    /** Creates a new record type */
-    AstRecordType() = default;
-
-    /** Adds a new field to this record type */
-    void add(const std::string& name, const AstTypeIdentifier& type) {
-        fields.push_back(Field({name, type}));
-    }
-
-    /** Obtains the list of field constituting this record type */
-    const std::vector<Field>& getFields() const {
-        return fields;
-    }
-
-    void setFieldType(size_t idx, const AstTypeIdentifier& type) {
-        assert(idx < fields.size() && "record field index out of bounds");
-        fields[idx].type = type;
-    }
-
-    /** Prints a summary of this type to the given stream */
     void print(std::ostream& os) const override {
         os << ".type " << getName() << " = "
            << "[";
@@ -297,7 +259,25 @@ public:
         os << "]";
     }
 
-    /** Creates a clone of this AST sub-structure */
+    /** Creates a new record type */
+    AstRecordType() = default;
+
+    /** Adds a new field to this record type */
+    void add(const std::string& name, const AstTypeIdentifier& type) {
+        fields.push_back(Field({name, type}));
+    }
+
+    /** Obtains the list of field constituting this record type */
+    const std::vector<Field>& getFields() const {
+        return fields;
+    }
+
+    /** set field type */ 
+    void setFieldType(size_t idx, const AstTypeIdentifier& type) {
+        assert(idx < fields.size() && "record field index out of bounds");
+        fields[idx].type = type;
+    }
+
     AstRecordType* clone() const override {
         auto res = new AstRecordType();
         res->setSrcLoc(getSrcLoc());
@@ -307,7 +287,6 @@ public:
     }
 
 protected:
-    /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstRecordType*>(&node));
         const auto& other = static_cast<const AstRecordType&>(node);

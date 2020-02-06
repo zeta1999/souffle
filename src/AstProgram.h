@@ -46,7 +46,7 @@ class AstRelation;
 /**
  *  Intermediate representation of a datalog program
  *          that consists of relations, clauses and types
- *  TODO (b-scholz): there are a lot of dependencies (pareser etc); 
+ *  TODO (b-scholz): there are a lot of dependencies (pareser etc);
  *       we need to simplify the interface / class
  */
 class AstProgram : public AstNode {

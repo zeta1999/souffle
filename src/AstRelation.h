@@ -200,7 +200,6 @@ public:
         return false;
     }
 
-
     /** Return i-th clause associated with this relation */
     AstClause* getClause(size_t idx) const {
         return clauses[idx].get();
@@ -236,24 +235,24 @@ public:
         return clauses.size();
     }
 
-    /** add store */ 
+    /** add store */
     void addStore(std::unique_ptr<AstStore> directive) {
         assert(directive && "Undefined directive");
         stores.push_back(std::move(directive));
     }
 
-    /** add load */ 
+    /** add load */
     void addLoad(std::unique_ptr<AstLoad> directive) {
         assert(directive && "Undefined directive");
         loads.push_back(std::move(directive));
     }
 
-    /** get stores */ 
+    /** get stores */
     std::vector<AstStore*> getStores() const {
         return toPtrVector(stores);
     }
 
-    /** get loads */ 
+    /** get loads */
     std::vector<AstLoad*> getLoads() const {
         return toPtrVector(loads);
     }
@@ -340,7 +339,6 @@ protected:
 
     /** Datastructure to use for this relation */
     RelationRepresentation representation{RelationRepresentation::DEFAULT};
-
 };
 
 struct AstNameComparison {

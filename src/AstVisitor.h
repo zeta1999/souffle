@@ -146,9 +146,11 @@ protected:
     LINK(NilConstant, Constant)
     LINK(Constant, Argument)
 
-    LINK(IntrinsicFunctor, Term)
-    LINK(UserDefinedFunctor, Term)
+    LINK(IntrinsicFunctor, Functor)
+    LINK(UserDefinedFunctor, Functor)
+
     LINK(RecordInit, Term)
+    LINK(Functor, Term)
 
     LINK(Term, Argument)
 

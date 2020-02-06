@@ -29,10 +29,9 @@ namespace souffle {
  * @brief Intermediate representation of IO operations.
  */
 class AstIO : public AstNode {
-protected:
-    AstIO(const AstIO& io) : names(io.names), kvps(io.kvps) {}
-    AstIO() = default; 
 public:
+    AstIO(const AstIO& io) : names(io.names), kvps(io.kvps) {}
+    AstIO() = default;
     void print(std::ostream& os) const override {
         bool first = true;
         for (auto& relationName : getNames()) {
@@ -79,12 +78,12 @@ public:
         names.insert(name);
     }
 
-    /** Add kvp */ 
+    /** Add kvp */
     void addKVP(const std::string& key, const std::string& value) {
         kvps[key] = unescape(value);
     }
 
-    /** Get IO directive map */ 
+    /** Get IO directive map */
     const std::map<std::string, std::string>& getIODirectiveMap() const {
         return kvps;
     }
@@ -116,7 +115,7 @@ public:
         return result;
     }
 
-protected: 
+protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstIO*>(&node));
         const auto& other = static_cast<const AstIO&>(node);

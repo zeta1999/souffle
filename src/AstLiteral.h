@@ -30,8 +30,8 @@
 #include <utility>
 #include <vector>
 
-#include "AstNode.h"
 #include "AstAbstract.h"
+#include "AstNode.h"
 
 namespace souffle {
 
@@ -237,6 +237,7 @@ public:
     std::vector<const AstNode*> getChildNodes() const override {
         return {atom.get()};
     }
+
 protected:
     bool equal(const AstNode& node) const override {
         assert(dynamic_cast<const AstProvenanceNegation*>(&node));
@@ -299,7 +300,7 @@ protected:
         return truthValue == other.truthValue;
     }
 
-    /** Truth value */ 
+    /** Truth value */
     bool truthValue;
 };
 

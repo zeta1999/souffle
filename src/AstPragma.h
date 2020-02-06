@@ -34,7 +34,6 @@ class AstTranslationUnit;
  */
 class AstPragma : public AstNode {
 public:
-
     AstPragma() = default;
 
     AstPragma(std::string k, std::string v) : key(std::move(k)), value(std::move(v)) {}
@@ -51,7 +50,7 @@ public:
         return res;
     }
 
-    /* Get kvp */ 
+    /* Get kvp */
     std::pair<std::string, std::string> getkvp() const {
         return std::pair<std::string, std::string>(key, value);
     }
@@ -71,7 +70,7 @@ protected:
     std::string value;
 };
 
-/** TODO (b-scholz): this should not be here */ 
+/** TODO (b-scholz): this should not be here */
 class AstPragmaChecker : public AstTransformer {
 public:
     std::string getName() const override {

@@ -123,7 +123,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // -- check grounded variables and records --
     visitDepthFirst(nodes, [&](const AstClause& clause) {
         // only interested in rules
-        if (clause.isFact()) {
+        if (isFact(clause)) {
             return;
         }
 
@@ -611,7 +611,7 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
 
 /* Check if facts contain only constants */
 void AstSemanticChecker::checkFact(ErrorReport& report, const AstProgram& program, const AstClause& fact) {
-    assert(fact.isFact());
+    assert(isFact(fact));
 
     AstAtom* head = fact.getHead();
     if (head == nullptr) {
@@ -651,7 +651,7 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
     }
 
     // check facts
-    if (clause.isFact()) {
+    if (isFact(clause)) {
         checkFact(report, program, clause);
     }
 

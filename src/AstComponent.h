@@ -53,22 +53,22 @@ public:
         }
     }
 
-    /** get name */ 
+    /** get name */
     const std::string& getName() const {
         return name;
     }
 
-    /** set name */ 
+    /** set name */
     void setName(const std::string& n) {
         name = n;
     }
 
-    /** get type parameters */ 
+    /** get type parameters */
     const std::vector<AstTypeIdentifier>& getTypeParameters() const {
         return typeParams;
     }
 
-    /** set type parameters */ 
+    /** set type parameters */
     void setTypeParameters(const std::vector<AstTypeIdentifier>& params) {
         typeParams = params;
     }
@@ -105,22 +105,22 @@ public:
         componentType->print(os);
     }
 
-    /** get instance name */ 
+    /** get instance name */
     const std::string& getInstanceName() const {
         return instanceName;
     }
 
-    /** set instance name */ 
+    /** set instance name */
     void setInstanceName(const std::string& name) {
         instanceName = name;
     }
 
-    /** get component type */ 
+    /** get component type */
     const AstComponentType* getComponentType() const {
         return componentType.get();
     }
 
-    /** set component type */ 
+    /** set component type */
     void setComponentType(std::unique_ptr<AstComponentType> type) {
         componentType = std::move(type);
     }
@@ -148,7 +148,7 @@ protected:
         const auto& other = static_cast<const AstComponentInit&>(node);
         return instanceName == other.instanceName && *componentType == *other.componentType;
     }
-    
+
     /** The name of the resulting component instance. */
     std::string instanceName;
 
@@ -161,7 +161,6 @@ protected:
  */
 class AstComponent : public AstNode {
 public:
-
     void print(std::ostream& os) const override {
         os << ".comp " << *getComponentType() << " ";
 
@@ -201,37 +200,37 @@ public:
         os << "}\n";
     }
 
-    /** get component type */ 
+    /** get component type */
     const AstComponentType* getComponentType() const {
         return type.get();
     }
 
-    /** set component type */ 
+    /** set component type */
     void setComponentType(std::unique_ptr<AstComponentType> other) {
         type = std::move(other);
     }
 
-    /** get base components */ 
+    /** get base components */
     const std::vector<AstComponentType*> getBaseComponents() const {
         return toPtrVector(baseComponents);
     }
 
-    /** add base components */ 
+    /** add base components */
     void addBaseComponent(std::unique_ptr<AstComponentType> component) {
         baseComponents.push_back(std::move(component));
     }
 
-    /** add type */ 
+    /** add type */
     void addType(std::unique_ptr<AstType> t) {
         types.push_back(std::move(t));
     }
 
-    /** get types */ 
+    /** get types */
     std::vector<AstType*> getTypes() const {
         return toPtrVector(types);
     }
 
-    /** copy base components */ 
+    /** copy base components */
     void copyBaseComponents(const AstComponent* other) {
         baseComponents.clear();
         for (const auto& baseComponent : other->getBaseComponents()) {
@@ -239,82 +238,82 @@ public:
         }
     }
 
-    /** add relation */ 
+    /** add relation */
     void addRelation(std::unique_ptr<AstRelation> r) {
         relations.push_back(std::move(r));
     }
 
-    /** get relations */ 
+    /** get relations */
     std::vector<AstRelation*> getRelations() const {
         return toPtrVector(relations);
     }
 
-    /** add clause */ 
+    /** add clause */
     void addClause(std::unique_ptr<AstClause> c) {
         clauses.push_back(std::move(c));
     }
 
-    /** get clauses */ 
+    /** get clauses */
     std::vector<AstClause*> getClauses() const {
         return toPtrVector(clauses);
     }
 
-    /** add load */ 
+    /** add load */
     void addLoad(std::unique_ptr<AstLoad> load) {
         loads.push_back(std::move(load));
     }
 
-    /** add print size */ 
+    /** add print size */
     void addPrintSize(std::unique_ptr<AstPrintSize> printSize) {
         printSizes.push_back(std::move(printSize));
     }
 
-    /** add store */ 
+    /** add store */
     void addStore(std::unique_ptr<AstStore> store) {
         stores.push_back(std::move(store));
     }
 
-    /** get loads */ 
+    /** get loads */
     std::vector<AstLoad*> getLoads() const {
         return toPtrVector(loads);
     }
 
-    /** get print sizes */ 
+    /** get print sizes */
     std::vector<AstPrintSize*> getPrintSizes() const {
         return toPtrVector(printSizes);
     }
 
-    /** get stores */ 
+    /** get stores */
     std::vector<AstStore*> getStores() const {
         return toPtrVector(stores);
     }
 
-    /** add components */ 
+    /** add components */
     void addComponent(std::unique_ptr<AstComponent> c) {
         components.push_back(std::move(c));
     }
 
-    /** get components */ 
+    /** get components */
     std::vector<AstComponent*> getComponents() const {
         return toPtrVector(components);
     }
 
-    /** add instantiation */ 
+    /** add instantiation */
     void addInstantiation(std::unique_ptr<AstComponentInit> i) {
         instantiations.push_back(std::move(i));
     }
 
-    /** get instantiation */ 
+    /** get instantiation */
     std::vector<AstComponentInit*> getInstantiations() const {
         return toPtrVector(instantiations);
     }
 
-    /** add override */ 
+    /** add override */
     void addOverride(const std::string& name) {
         overrideRules.insert(name);
     }
 
-    /** get override */ 
+    /** get override */
     const std::set<std::string>& getOverridden() const {
         return overrideRules;
     }
@@ -422,7 +421,6 @@ public:
 
         return res;
     }
-
 
 protected:
     bool equal(const AstNode& node) const override {

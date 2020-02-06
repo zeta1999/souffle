@@ -46,17 +46,17 @@ public:
         os << name << ":" << typeName;
     }
 
-    /** get attribute name */ 
+    /** get attribute name */
     const std::string& getAttributeName() const {
         return name;
     }
 
-    /** get type name */ 
+    /** get type name */
     const AstTypeIdentifier& getTypeName() const {
         return typeName;
     }
 
-    /** set type name */ 
+    /** set type name */
     void setTypeName(const AstTypeIdentifier& name) {
         typeName = name;
     }

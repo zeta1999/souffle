@@ -56,12 +56,12 @@ public:
         out << "):" << convert(type[type.length() - 1]) << std::endl;
     }
 
-    /** get name */ 
+    /** get name */
     const std::string& getName() const {
         return name;
     }
 
-    /** get type */ 
+    /** get type */
     const std::string& getType() const {
         return type;
     }

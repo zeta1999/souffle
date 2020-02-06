@@ -18,9 +18,9 @@
 #pragma once
 
 #include "AstAbstract.h"
+#include "AstArgument.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
-#include "AstArgument.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -236,7 +236,7 @@ private:
  *       clauses, such as rules, queries and facts. This solution was to quickly
  *       overcome issues related to bottom-up construction of IR. In future,
  *       Clause should be  made abstract and have 2 subclasses: Rule and Fact.
- *       Tidy-up interface.
+ *       Tidy-up interface/classes: this is a mess...
  */
 class AstClause : public AstNode {
 public:
@@ -352,33 +352,6 @@ public:
             }
         }
         return result;
-    }
-
-    /** Return @p true if the clause is a rule */
-    bool isRule() const {
-        return head && !isFact();
-    }
-
-    /** Return @p true if the clause is a fact */
-    // TODO: push this to an analysis 
-    bool isFact() const {
-        // there must be a head
-        if (head == nullptr) {
-            return false;
-        }
-        // there must not be any body clauses
-        if (getBodySize() != 0) {
-            return false;
-        }
-
-        // and there are no aggregates
-#if 0
-        bool hasAggregates = false;
-        visitDepthFirst(*head, [&](const AstAggregator& cur) { hasAggregates = true; });
-        return !hasAggregates;
-#else 
-        return false; 
-#endif  
     }
 
     /** Updates the fixed execution order flag */

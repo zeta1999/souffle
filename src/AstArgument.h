@@ -158,7 +158,7 @@ private:
     // Don't use numbers to store strings in AST
     AstStringConstant(SymbolTable& symTable, size_t index) : AstConstant(index), symTable(symTable) {}
 
-    /** Symbol table */ 
+    /** Symbol table */
     SymbolTable& symTable;
 };
 
@@ -192,7 +192,7 @@ using AstFloatConstant = AstNumericConstant<RamFloat>;
 using AstUnsignedConstant = AstNumericConstant<RamUnsigned>;
 
 /**
- * Nil Constant 
+ * Nil Constant
  */
 class AstNilConstant : public AstConstant {
 public:
@@ -210,7 +210,7 @@ public:
 };
 
 /**
- * Abstract Term 
+ * Abstract Term
  */
 class AstTerm : public AstArgument {
 protected:
@@ -218,7 +218,7 @@ protected:
     AstTerm(std::vector<std::unique_ptr<AstArgument>> operands) : args(std::move(operands)){};
 
 public:
-    /** get arguments */ 
+    /** get arguments */
     std::vector<AstArgument*> getArguments() const {
         return toPtrVector(args);
     }
@@ -259,32 +259,45 @@ public:
         }
     }
 
-protected: 
+protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstTerm*>(&node));
         const auto& other = static_cast<const AstTerm&>(node);
         return equal_targets(args, other.args);
     }
 
-    /** Arguments */ 
+    /** Arguments */
     std::vector<std::unique_ptr<AstArgument>> args;
+};
+
+/**
+ * Functor class
+ */
+
+class AstFunctor : public AstTerm {
+protected:
+    AstFunctor() = default;
+    AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
 };
 
 /**
  * Intrinsic Functor
  */
-class AstIntrinsicFunctor : public AstTerm {
+class AstIntrinsicFunctor : public AstFunctor {
 public:
     template <typename... Operands>
-    AstIntrinsicFunctor(FunctorOp function, Operands... operands) : AstTerm({std::move(operands)...}),
-    function(function) { 
+    AstIntrinsicFunctor(FunctorOp function, Operands... operands) : function(function) {
+        std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
+        for (auto& cur : tmp) {
+            add(std::move(cur));
+        }
         assert(isValidFunctorOpArity(function, args.size()) && "invalid number of arguments for functor");
     }
 
     AstIntrinsicFunctor(FunctorOp function, std::vector<std::unique_ptr<AstArgument>> operands)
-            : AstTerm(std::move(operands)), function(function) {
+            : AstFunctor(std::move(operands)), function(function) {
         assert(isValidFunctorOpArity(function, args.size()) && "invalid number of arguments for functor");
-    }     
+    }
 
     void print(std::ostream& os) const override {
         if (isInfixFunctorOp(function)) {
@@ -299,12 +312,12 @@ public:
         }
     }
 
-    /** get function */ 
+    /** get function */
     FunctorOp getFunction() const {
         return function;
     }
 
-    /** set function */ 
+    /** set function */
     void setFunction(const FunctorOp functor) {
         function = functor;
     }
@@ -334,21 +347,21 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstIntrinsicFunctor*>(&node));
         const auto& other = static_cast<const AstIntrinsicFunctor&>(node);
-        return function == other.function && AstTerm::equal(node);
+        return function == other.function && AstFunctor::equal(node);
     }
 
-    /** Function */ 
+    /** Function */
     FunctorOp function;
 };
 
 /**
  * User-Defined Functor
  */
-class AstUserDefinedFunctor : public AstTerm {
+class AstUserDefinedFunctor : public AstFunctor {
 public:
-    AstUserDefinedFunctor() = default; 
+    AstUserDefinedFunctor() = default;
     AstUserDefinedFunctor(std::string name, std::vector<std::unique_ptr<AstArgument>> args)
-            : AstTerm(std::move(args)), name(std::move(name)){};
+            : AstFunctor(std::move(args)), name(std::move(name)){};
 
     /** print user-defined functor */
     void print(std::ostream& os) const override {
@@ -379,7 +392,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstUserDefinedFunctor*>(&node));
         const auto& other = static_cast<const AstUserDefinedFunctor&>(node);
-        return name == other.name && AstTerm::equal(node);
+        return name == other.name && AstFunctor::equal(node);
     }
 
     /** name of user-defined functor */
@@ -417,17 +430,17 @@ public:
         os << "as(" << *value << "," << type << ")";
     }
 
-    /** Get value */ 
+    /** Get value */
     AstArgument* getValue() const {
         return value.get();
     }
-  
-    /** Get type */ 
+
+    /** Get type */
     const AstTypeIdentifier& getType() const {
         return type;
     }
 
-    /** Set type */ 
+    /** Set type */
     void setType(const AstTypeIdentifier& type) {
         this->type = type;
     }
@@ -452,7 +465,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstTypeCast*>(&node));
         const auto& other = static_cast<const AstTypeCast&>(node);
-        return type == other.type && equal_ptr(value,other.value);
+        return type == other.type && equal_ptr(value, other.value);
     }
 
     /** The value to be casted */
@@ -464,8 +477,8 @@ protected:
 
 /**
  * An argument aggregating a value from a sub-query.
- * TODO (b-scholz): fix body literal interface; 
- * remove getters/setters for individual literals  
+ * TODO (b-scholz): fix body literal interface;
+ * remove getters/setters for individual literals
  */
 class AstAggregator : public AstArgument {
 public:
@@ -509,32 +522,32 @@ public:
         }
     }
 
-    /** Get aggregate operator */ 
+    /** Get aggregate operator */
     Op getOperator() const {
         return fun;
     }
 
-    /** Set target expression */ 
+    /** Set target expression */
     void setTargetExpression(std::unique_ptr<AstArgument> arg) {
         expression = std::move(arg);
     }
 
-    /** Get target expression */ 
+    /** Get target expression */
     const AstArgument* getTargetExpression() const {
         return expression.get();
     }
 
-    /** Get body literals */ 
+    /** Get body literals */
     std::vector<AstLiteral*> getBodyLiterals() const {
         return toPtrVector(body);
     }
 
-    /** Clear body literals */ 
+    /** Clear body literals */
     void clearBodyLiterals() {
         body.clear();
     }
 
-    /** Add body literal */ 
+    /** Add body literal */
     void addBodyLiteral(std::unique_ptr<AstLiteral> lit) {
         body.push_back(std::move(lit));
     }
@@ -588,7 +601,7 @@ private:
 };
 
 /**
- * Subroutine Argument 
+ * Subroutine Argument
  */
 class AstSubroutineArgument : public AstArgument {
 public:

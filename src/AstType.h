@@ -32,7 +32,7 @@ namespace souffle {
  * name identifiers are hierarchically qualified names, e.g.
  *
  *          problem.graph.edge
- * 
+ *
  * TODO (b-scholz): merge with AstNameIdentifier??
  *                  put it into own header file
  *
@@ -119,6 +119,7 @@ inline AstTypeIdentifier operator+(const std::string& name, const AstTypeIdentif
  *  @class Type
  *  @brief An abstract base class for types within the AST.
  *
+ *  TODO (b-scholz): Move to AstAbstract.h
  */
 class AstType : public AstNode {
 public:
@@ -134,8 +135,10 @@ public:
         this->name = name;
     }
 
-private: 
-    /** type name */ 
+    AstType* clone() const override = 0;
+
+private:
+    /** type name */
     AstTypeIdentifier name;
 };
 
@@ -169,6 +172,7 @@ public:
         res->setSrcLoc(getSrcLoc());
         return res;
     }
+
 protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstPrimitiveType*>(&node));
@@ -177,7 +181,7 @@ protected:
     }
 
 private:
-    /** type attribute */ 
+    /** type attribute */
     RamTypeAttribute type;
 };
 
@@ -202,7 +206,7 @@ public:
         types.push_back(type);
     }
 
-    /** Set variant type */ 
+    /** Set variant type */
     void setVariantType(size_t idx, const AstTypeIdentifier& type) {
         assert(idx < types.size() && "union variant index out of bounds");
         types[idx] = type;
@@ -265,12 +269,12 @@ public:
         fields.push_back(Field({name, type}));
     }
 
-    /** get fields of record */ 
+    /** get fields of record */
     const std::vector<Field>& getFields() const {
         return fields;
     }
 
-    /** set field type */ 
+    /** set field type */
     void setFieldType(size_t idx, const AstTypeIdentifier& type) {
         assert(idx < fields.size() && "record field index out of bounds");
         fields[idx].type = type;

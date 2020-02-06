@@ -349,7 +349,7 @@ public:
     }
 
     /** Get the return type of the functor. */
-    RamTypeAttribute checkReturnType() const {
+    RamTypeAttribute getReturnType() const {
         return functorReturnType(function);
     }
 

@@ -62,7 +62,7 @@ protected:
 
     virtual void writeNullary() = 0;
     virtual void writeNextTuple(const RamDomain* tuple) = 0;
-    virtual void writeSize(std::size_t size) {
+    virtual void writeSize(std::size_t) {
         assert(false && "attempting to print size of a write operation");
     }
     template <typename Tuple>
@@ -84,7 +84,7 @@ protected:
                 destination << ramBitCast<RamFloat>(value);
                 break;
             case RamTypeAttribute::Record:
-                assert(false && "Record not suported here");  // What should happen here?
+                assert(false && "Record writing is not supported");
         }
     }
 };

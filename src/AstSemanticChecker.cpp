@@ -165,7 +165,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // all singed constants are used as numbers
+    // all signed constants are used as numbers
     visitDepthFirst(nodes, [&](const AstNumberConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isNumberType(types)) {
@@ -173,7 +173,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // all float constants are used as numbers
+    // all float constants are used as floats
     visitDepthFirst(nodes, [&](const AstFloatConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isFloatType(types)) {
@@ -181,7 +181,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // all unsigned constants are used as numbers
+    // all unsigned constants are used as unsigned
     visitDepthFirst(nodes, [&](const AstUnsignedConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
         if (!isUnsignedType(types)) {
@@ -223,8 +223,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
-        if (!eqTypeRamTypeAttribute(fun.checkReturnType(), resultType)) {
-            switch (fun.checkReturnType()) {
+        if (!eqTypeRamTypeAttribute(fun.getReturnType(), resultType)) {
+            switch (fun.getReturnType()) {
                 case RamTypeAttribute::Signed:
                     report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
                     break;
@@ -298,8 +298,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             if (i < funDecl->getArity()) {
                 if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
                     report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-                }
-                if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
+                } else if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
                     report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
                 }
             }
@@ -573,7 +572,7 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     // TODO (darth_tytus): Can/should user-defined functors be added here?
     if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
         // Check return type.
-        if (!isNumericType(functor->checkReturnType())) {
+        if (!isNumericType(functor->getReturnType())) {
             return false;
         }
         // Check arguments

@@ -146,9 +146,7 @@ inline RamUnsigned RamUnsignedFromString(
     return static_cast<RamUnsigned>(val);
 }
 
-// TODO (darth_tytus): This should be removed.
-// When used in parser it silently converts (overflows) larger numbers.
-// (but the change can probably wait until new typesystem)
+
 #if RAM_DOMAIN_SIZE == 64
 inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
     return static_cast<RamDomain>(std::stoull(str, pos, base));

@@ -437,8 +437,8 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         void visitIntrinsicFunctor(const AstIntrinsicFunctor& fun) override {
             auto functorVar = getVar(fun);
 
-            // Currently we take very simple approach toward polymorphic function.
-            // We require are argument and return type to be of the same type.
+            // Currently we take a very simple approach toward polymorphic function.
+            // We require argument and return type to be of the same type.
             if (isOverloadedFunctor(fun.getFunction())) {
                 for (auto* argument : fun.getArguments()) {
                     auto argumentVar = getVar(argument);
@@ -449,7 +449,7 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             }
 
             // add a constraint for the return type of the functor
-            switch (fun.checkReturnType()) {
+            switch (fun.getReturnType()) {
                 case RamTypeAttribute::Signed:
                     addConstraint(isSubtypeOf(functorVar, env.getNumberType()));
                     break;

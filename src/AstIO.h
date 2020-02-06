@@ -29,6 +29,9 @@ namespace souffle {
  * @brief Intermediate representation of IO operations.
  */
 class AstIO : public AstNode {
+protected:
+    AstIO(const AstIO& io) : names(io.names), kvps(io.kvps) {}
+    AstIO() = default; 
 public:
     void print(std::ostream& os) const override {
         bool first = true;
@@ -94,16 +97,6 @@ public:
         return res;
     }
 
-protected:
-    // TODO (b-scholz): do we need this 
-    AstIO(const AstIO& io) : names(io.names), kvps(io.kvps) {}
-
-    bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstIO*>(&node));
-        const auto& other = static_cast<const AstIO&>(node);
-        return other.names == names && other.kvps == kvps;
-    }
-
     std::string unescape(const std::string& inputString) const {
         std::string unescaped = unescape(inputString, "\\\"", "\"");
         unescaped = unescape(unescaped, "\\t", "\t");
@@ -125,8 +118,8 @@ protected:
 
 protected: 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstStore*>(&node));
-        const auto& other = static_cast<const AstStore&>(node);
+        assert(nullptr != dynamic_cast<const AstIO*>(&node));
+        const auto& other = static_cast<const AstIO&>(node);
         return other.names == names && other.kvps == kvps;
     }
 

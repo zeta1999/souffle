@@ -17,8 +17,11 @@
 
 #pragma once
 
+#include "AstAbstract.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
+#include "AstArgument.h"
+#include "AstVisitor.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -32,10 +35,20 @@ namespace souffle {
 
 /**
  * An execution order for atoms within a clause.
+ * TODO (b-scholz): simplify interface / does it need to be an AstNode/
+ *                  confused array interface
  */
 class AstExecutionOrder : public AstNode {
 public:
     using const_iterator = typename std::vector<unsigned int>::const_iterator;
+
+    void print(std::ostream& out) const override {
+        out << "(" << order[0];
+        for (size_t i = 1; i < order.size(); i++) {
+            out << "," << order[i];
+        }
+        out << ")";
+    }
 
     /** The length of this order */
     std::size_t size() const {
@@ -83,22 +96,7 @@ public:
         return res;
     }
 
-    void apply(const AstNodeMapper& /*mapper*/) override {}
-
-    std::vector<const AstNode*> getChildNodes() const override {
-        return {};
-    }
-
-    void print(std::ostream& out) const override {
-        out << "(" << order[0];
-        for (size_t i = 1; i < order.size(); i++) {
-            out << "," << order[i];
-        }
-        out << ")";
-    }
-
 protected:
-    /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstExecutionOrder*>(&node));
         const auto& other = static_cast<const AstExecutionOrder&>(node);
@@ -113,12 +111,28 @@ private:
 /**
  * The class utilized to model user-defined execution plans for various
  * versions of clauses.
+ * TODO (b-scholz): confused array interface -- simplify;
+ *                  does it need to be an AstNode?
  */
 class AstExecutionPlan : public AstNode {
 public:
     using const_iterator = typename std::map<int, AstExecutionOrder>::const_iterator;
 
-    AstExecutionPlan() = default;
+    void print(std::ostream& out) const override {
+        if (!plans.empty()) {
+            out << "\n\n   .plan ";
+            bool first = true;
+            for (const auto& plan : plans) {
+                if (first) {
+                    first = false;
+                } else {
+                    out << ",";
+                }
+                out << plan.first << ":";
+                plan.second->print(out);
+            }
+        }
+    }
 
     /** Updates the execution order for a special version of a rule */
     void setOrderFor(int version, std::unique_ptr<AstExecutionOrder> plan) {
@@ -149,28 +163,13 @@ public:
         return plans.empty();
     }
 
+    /** Get orders */
     std::map<int, const AstExecutionOrder*> getOrders() const {
         std::map<int, const AstExecutionOrder*> result;
         for (auto& plan : plans) {
             result.insert(std::make_pair(plan.first, plan.second.get()));
         }
         return result;
-    }
-
-    void print(std::ostream& out) const override {
-        if (!plans.empty()) {
-            out << "\n\n   .plan ";
-            bool first = true;
-            for (const auto& plan : plans) {
-                if (first) {
-                    first = false;
-                } else {
-                    out << ",";
-                }
-                out << plan.first << ":";
-                plan.second->print(out);
-            }
-        }
     }
 
     AstExecutionPlan* clone() const override {
@@ -188,7 +187,6 @@ public:
         }
     }
 
-    /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> childNodes;
         for (auto& plan : plans) {
@@ -198,7 +196,6 @@ public:
     }
 
 protected:
-    /** Implements the node comparison for this node type */
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstExecutionPlan*>(&node));
         const auto& other = static_cast<const AstExecutionPlan&>(node);
@@ -222,7 +219,7 @@ protected:
     }
 
 private:
-    /** Mapping versions of clauses to execution plans */
+    /** mapping versions of clauses to execution plans */
     std::map<int, std::unique_ptr<AstExecutionOrder>> plans;
 
     /** remember maximal version number */
@@ -240,6 +237,7 @@ private:
  *       clauses, such as rules, queries and facts. This solution was to quickly
  *       overcome issues related to bottom-up construction of IR. In future,
  *       Clause should be  made abstract and have 2 subclasses: Rule and Fact.
+ *       Tidy-up interface.
  */
 class AstClause : public AstNode {
 public:
@@ -247,13 +245,26 @@ public:
         its head set to NULL */
     AstClause() : head(nullptr), plan(nullptr) {}
 
-    ~AstClause() override = default;
-
     /** Add a Literal to the body of the clause */
-    void addToBody(std::unique_ptr<AstLiteral> l);
+    void addToBody(std::unique_ptr<AstLiteral> l) {
+        if (dynamic_cast<AstAtom*>(l.get()) != nullptr) {
+            atoms.emplace_back(static_cast<AstAtom*>(l.release()));
+        } else if (dynamic_cast<AstNegation*>(l.get()) != nullptr) {
+            negations.emplace_back(static_cast<AstNegation*>(l.release()));
+        } else if (dynamic_cast<AstProvenanceNegation*>(l.get()) != nullptr) {
+            provNegations.emplace_back(static_cast<AstProvenanceNegation*>(l.release()));
+        } else if (dynamic_cast<AstConstraint*>(l.get()) != nullptr) {
+            constraints.emplace_back(static_cast<AstConstraint*>(l.release()));
+        } else {
+            assert(false && "Unsupported literal type!");
+        }
+    }
 
     /** Set the head of clause to @p h */
-    void setHead(std::unique_ptr<AstAtom> h);
+    void setHead(std::unique_ptr<AstAtom> h) {
+        assert(!head && "Head is already set");
+        head = std::move(h);
+    }
 
     /** Return the atom that represents the head of the clause */
     AstAtom* getHead() const {
@@ -266,13 +277,57 @@ public:
     }
 
     /** Return the i-th Literal in body of the clause */
-    AstLiteral* getBodyLiteral(size_t idx) const;
+    AstLiteral* getBodyLiteral(size_t idx) const {
+        if (idx < atoms.size()) {
+            return atoms[idx].get();
+        }
+        idx -= atoms.size();
+        if (idx < negations.size()) {
+            return negations[idx].get();
+        }
+        idx -= negations.size();
+        if (idx < provNegations.size()) {
+            return provNegations[idx].get();
+        }
+        idx -= provNegations.size();
+        return constraints[idx].get();
+    }
 
     /** Obtains a copy of the internally maintained body literals */
-    std::vector<AstLiteral*> getBodyLiterals() const;
+    std::vector<AstLiteral*> getBodyLiterals() const {
+        std::vector<AstLiteral*> res;
+        for (auto& cur : atoms) {
+            res.push_back(cur.get());
+        }
+        for (auto& cur : negations) {
+            res.push_back(cur.get());
+        }
+        for (auto& cur : provNegations) {
+            res.push_back(cur.get());
+        }
+        for (auto& cur : constraints) {
+            res.push_back(cur.get());
+        }
+        return res;
+    }
 
     /** Re-orders atoms to be in the given order. */
-    void reorderAtoms(const std::vector<unsigned int>& newOrder);
+    void reorderAtoms(const std::vector<unsigned int>& newOrder) {
+        // Validate given order
+        assert(newOrder.size() == atoms.size());
+        std::vector<unsigned int> nopOrder;
+        for (unsigned int i = 0; i < atoms.size(); i++) {
+            nopOrder.push_back(i);
+        }
+        assert(std::is_permutation(nopOrder.begin(), nopOrder.end(), newOrder.begin()));
+
+        // Reorder atoms
+        std::vector<std::unique_ptr<AstAtom>> oldAtoms(atoms.size());
+        atoms.swap(oldAtoms);
+        for (unsigned int i = 0; i < newOrder.size(); i++) {
+            atoms[i].swap(oldAtoms[newOrder[i]]);
+        }
+    }
 
     /** Obtains a list of contained body-atoms. */
     std::vector<AstAtom*> getAtoms() const {
@@ -306,7 +361,20 @@ public:
     }
 
     /** Return @p true if the clause is a fact */
-    bool isFact() const;
+    bool isFact() const {
+        // there must be a head
+        if (head == nullptr) {
+            return false;
+        }
+        // there must not be any body clauses
+        if (getBodySize() != 0) {
+            return false;
+        }
+        // and there are no aggregates
+        bool hasAggregates = false;
+        visitDepthFirst(*head, [&](const AstAggregator& cur) { hasAggregates = true; });
+        return !hasAggregates;
+    }
 
     /** Updates the fixed execution order flag */
     void setFixedExecutionPlan(bool value = true) {
@@ -353,10 +421,20 @@ public:
         clauseNum = num;
     }
 
-    /** Print this clause to a given stream */
-    void print(std::ostream& os) const override;
+    void print(std::ostream& os) const override {
+        if (head != nullptr) {
+            head->print(os);
+        }
+        if (getBodySize() > 0) {
+            os << " :- \n   ";
+            os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
+        }
+        os << ".";
+        if (getExecutionPlan() != nullptr) {
+            getExecutionPlan()->print(os);
+        }
+    }
 
-    /** Creates a clone of this AST sub-structure */
     AstClause* clone() const override {
         auto res = new AstClause();
         res->setSrcLoc(getSrcLoc());
@@ -381,7 +459,6 @@ public:
         return res;
     }
 
-    /** Mutates this node */
     void apply(const AstNodeMapper& map) override {
         head = map(std::move(head));
         for (auto& lit : atoms) {
@@ -398,7 +475,6 @@ public:
         }
     }
 
-    /** clone head generates a new clause with the same head but empty body */
     AstClause* cloneHead() const {
         auto* clone = new AstClause();
         clone->setSrcLoc(getSrcLoc());
@@ -410,7 +486,6 @@ public:
         return clone;
     }
 
-    /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res = {head.get()};
         for (auto& cur : atoms) {
@@ -429,6 +504,13 @@ public:
     }
 
 protected:
+    bool equal(const AstNode& node) const override {
+        assert(nullptr != dynamic_cast<const AstClause*>(&node));
+        const auto& other = static_cast<const AstClause&>(node);
+        return *head == *other.head && equal_targets(atoms, other.atoms) &&
+               equal_targets(negations, other.negations) && equal_targets(constraints, other.constraints);
+    }
+
     /** The head of the clause */
     std::unique_ptr<AstAtom> head;
 
@@ -456,14 +538,6 @@ protected:
     /** Stores a unique number for each clause in a relation,
         used for provenance */
     size_t clauseNum = 0;
-
-    /** Implements the node comparison for this node type */
-    bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstClause*>(&node));
-        const auto& other = static_cast<const AstClause&>(node);
-        return *head == *other.head && equal_targets(atoms, other.atoms) &&
-               equal_targets(negations, other.negations) && equal_targets(constraints, other.constraints);
-    }
 };
 
 }  // end of namespace souffle

@@ -172,7 +172,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     });
 
     // all null constants are used as records
-    visitDepthFirst(nodes, [&](const AstNullConstant& cnst) {
+    visitDepthFirst(nodes, [&](const AstNilConstant& cnst) {
         TypeSet types = typeAnalysis.getTypes(&cnst);
         if (!isRecordType(types)) {
             report.addError("Null constant used as a non-record", cnst.getSrcLoc());

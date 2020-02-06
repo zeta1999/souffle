@@ -82,7 +82,7 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(Counter)
         FORWARD(NumberConstant)
         FORWARD(StringConstant)
-        FORWARD(NullConstant)
+        FORWARD(NilConstant)
         FORWARD(TypeCast)
         FORWARD(RecordInit)
         FORWARD(Aggregator)
@@ -140,7 +140,7 @@ protected:
 
     LINK(NumberConstant, Constant)
     LINK(StringConstant, Constant)
-    LINK(NullConstant, Constant)
+    LINK(NilConstant, Constant)
     LINK(Constant, Argument)
 
     LINK(IntrinsicFunctor, Functor)

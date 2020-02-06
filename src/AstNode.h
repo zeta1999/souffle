@@ -75,10 +75,13 @@ public:
     virtual AstNode* clone() const = 0;
 
     /** Apply the mapper to all child nodes */
-    virtual void apply(const AstNodeMapper& mapper) = 0;
+    virtual void apply(const AstNodeMapper& mapper) {
+    }
 
     /** Obtain a list of all embedded AST child nodes */
-    virtual std::vector<const AstNode*> getChildNodes() const = 0;
+    virtual std::vector<const AstNode*> getChildNodes() const {
+        return std::vector<const AstNode*>();  // type is just cached, not essential
+    }
 
     /** Output to a given output stream */
     virtual void print(std::ostream& os) const = 0;
@@ -91,7 +94,9 @@ public:
 
 protected:
     /** Abstract equality check for two AST nodes */
-    virtual bool equal(const AstNode& other) const = 0;
+    virtual bool equal(const AstNode& other) const {
+        return true; 
+    }
 
 private:
     /** Source location of a syntactic element */

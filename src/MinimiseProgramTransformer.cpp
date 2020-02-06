@@ -233,8 +233,8 @@ bool isValidPermutation(
                 }
             } else if (isConstant(leftArg) && isConstant(rightArg)) {
                 // check if its the same constant
-                auto leftCst = dynamic_cast<AstConstant*>(leftArg)->getIndex();
-                auto rightCst = dynamic_cast<AstConstant*>(rightArg)->getIndex();
+                auto leftCst = dynamic_cast<AstConstant*>(leftArg)->getRamRepresentation();
+                auto rightCst = dynamic_cast<AstConstant*>(rightArg)->getRamRepresentation();
 
                 if (leftCst != rightCst) {
                     // constants don't match, failed!

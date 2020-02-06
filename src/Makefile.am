@@ -133,6 +133,7 @@ souffle_sources = \
         RamTransformer.cpp    RamTransformer.h    \
         RamTransforms.cpp     RamTransforms.h     \
         RamTranslationUnit.h                      \
+        RamTypes.h                                \
         RamExpression.h                           \
         RamUtils.h                                \
         RamVisitor.h                              \
@@ -401,6 +402,11 @@ check_PROGRAMS += test/ram_arithmetic_test
 test_ram_arithmetic_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
 test_ram_arithmetic_test_SOURCES = test/ram_arithmetic_test.cpp
 test_ram_arithmetic_test_LDADD = libsouffle.la
+
+check_PROGRAMS += test/ram_type_conversion_test
+test_ram_type_conversion_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_ram_type_conversion_test_SOURCES = test/ram_type_conversion_test.cpp
+test_ram_type_conversion_test_LDADD = libsouffle.la
 
 # make all check-programs tests
 TESTS = $(check_PROGRAMS)

@@ -17,8 +17,8 @@
 #include "souffle/SouffleInterface.h"
 #include <array>
 #include <string>
-#include <vector>
 #include <typeinfo>
+#include <vector>
 
 using namespace souffle;
 
@@ -41,35 +41,34 @@ int main(int argc, char** argv) {
 
     // create instance of program "get_symboltabletype"
     if (SouffleProgram* prog = ProgramFactory::newInstance("get_symboltabletype")) {
-        
         // load all input relations from current directory
         prog->loadAll(argv[1]);
-        
+
         // run program
         prog->run();
-                
-        // this test is to check the structure of symbol table, and the type of the elements in the relation "people"
+
+        // this test is to check the structure of symbol table, and the type of the elements in the relation
+        // "people"
         if (Relation* people = prog->getRelation("people")) {
-            
             // Output the type of symbol table
-            std::cout << people->getSignature() << "\n" << "\n";
-            
+            std::cout << people->getSignature() << "\n"
+                      << "\n";
+
             // Output the symbol table
             std::cout << people->getSymbolTable() << "\n";
-        
+
         } else {
             error("cannot find relation people");
         }
-        
+
         prog->printAll();
-    
+
         // free program
         delete prog;
 
     } else {
         error("cannot find program get_symboltabletype");
     }
-    
-    return 0;    
-}
 
+    return 0;
+}

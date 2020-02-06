@@ -25,20 +25,6 @@
 
 namespace souffle {
 
-const size_t AuxiliaryArity::getEvaluationArity(const AstAtom* atom) const {
-    if (atom->getName().getName().find("@delta_") == 0) {
-        const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(7));
-        return getArity(program->getRelation(originalRel));
-    } else if (atom->getName().getName().find("@new_") == 0) {
-        const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(5));
-        return getArity(program->getRelation(originalRel));
-    } else if (atom->getName().getName().find("@info_") == 0) {
-        return 0;
-    } else {
-        return getArity(atom);
-    }
-}
-
 const size_t AuxiliaryArity::computeArity(const AstRelation* relation) const {
     if (Global::config().has("provenance")) {
         if (Global::config().get("provenance") == "subtreeHeights") {

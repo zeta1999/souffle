@@ -53,14 +53,6 @@ public:
         return computeArity(relation);
     }
 
-    /**
-     * Returns the number of auxiliary parameters of relations
-     * taking delta/info/new types into account.
-     * @param atom the atom to report on
-     * @return number of auxiliary attributes
-     */
-    const size_t getEvaluationArity(const AstAtom* atom) const;
-
 private:
     /**
      * Returns the number of auxiliary parameters of a relation

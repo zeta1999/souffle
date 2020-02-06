@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AstNode.h"
+#include "RamTypes.h"
 
 #include <iostream>
 #include <set>
@@ -31,6 +32,9 @@ namespace souffle {
  * name identifiers are hierarchically qualified names, e.g.
  *
  *          problem.graph.edge
+ * 
+ * TODO (b-scholz): merge with AstNameIdentifier??
+ *                  put it into own header file
  *
  */
 class AstTypeIdentifier {
@@ -118,21 +122,20 @@ inline AstTypeIdentifier operator+(const std::string& name, const AstTypeIdentif
  */
 class AstType : public AstNode {
 public:
-    /** Creates a new type */
     AstType(AstTypeIdentifier name = {""}) : name(std::move(name)) {}
 
-    /** Obtains the name of this type */
+    /** get type name */
     const AstTypeIdentifier& getName() const {
         return name;
     }
 
-    /** Updates the name of this type */
+    /** set type name */
     void setName(const AstTypeIdentifier& name) {
         this->name = name;
     }
 
 private: 
-    /** In the AST each type has to have a name forming a unique identifier */
+    /** type name */ 
     AstTypeIdentifier name;
 };
 
@@ -144,37 +147,38 @@ private:
 class AstPrimitiveType : public AstType {
 public:
     /** Creates a new primitive type */
-    AstPrimitiveType(const AstTypeIdentifier& name, bool num = false) : AstType(name), num(num) {}
+    AstPrimitiveType(const AstTypeIdentifier& name, RamTypeAttribute type) : AstType(name), type(type) {}
 
+    /** Prints a summary of this type to the given stream */
     void print(std::ostream& os) const override {
-        os << ".type " << getName() << (num ? "= number" : "");
+        os << ".type " << getName() << (type == RamTypeAttribute::Signed ? "= number" : "");
     }
 
     /** Tests whether this type is a numeric type */
     bool isNumeric() const {
-        return num;
+        return isNumericType(type);
     }
 
     /** Tests whether this type is a symbolic type */
     bool isSymbolic() const {
-        return !num;
+        return type == RamTypeAttribute::Symbol;
     }
 
     AstPrimitiveType* clone() const override {
-        auto res = new AstPrimitiveType(getName(), num);
+        auto res = new AstPrimitiveType(getName(), type);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
-
 protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstPrimitiveType*>(&node));
         const auto& other = static_cast<const AstPrimitiveType&>(node);
-        return getName() == other.getName() && num == other.num;
+        return getName() == other.getName() && type == other.type;
     }
 
-    /** Indicates whether it is a number (true) or a symbol (false) */
-    bool num;
+private:
+    /** type attribute */ 
+    RamTypeAttribute type;
 };
 
 /**
@@ -184,9 +188,6 @@ protected:
  */
 class AstUnionType : public AstType {
 public:
-    /** Creates a new union type */
-    AstUnionType() = default;
-
     void print(std::ostream& os) const override {
         os << ".type " << getName() << " = " << join(types, " | ");
     }
@@ -235,7 +236,7 @@ private:
  */
 class AstRecordType : public AstType {
 public:
-    /** The type utilized to model a field */
+    /** record field */
     struct Field {
         std::string name;        // < the field name
         AstTypeIdentifier type;  // < the field type
@@ -259,15 +260,12 @@ public:
         os << "]";
     }
 
-    /** Creates a new record type */
-    AstRecordType() = default;
-
-    /** Adds a new field to this record type */
+    /** add field to record type */
     void add(const std::string& name, const AstTypeIdentifier& type) {
         fields.push_back(Field({name, type}));
     }
 
-    /** Obtains the list of field constituting this record type */
+    /** get fields of record */ 
     const std::vector<Field>& getFields() const {
         return fields;
     }
@@ -294,7 +292,7 @@ protected:
     }
 
 private:
-    /** The list of fields constituting this record type */
+    /** record fields */
     std::vector<Field> fields;
 };
 

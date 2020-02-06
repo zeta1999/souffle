@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "AstTransforms.h"
+#include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstGroundAnalysis.h"
@@ -28,8 +29,10 @@
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
+#include "FunctorOps.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
+#include "RamTypes.h"
 #include "TypeSystem.h"
 #include <cstddef>
 #include <functional>
@@ -1139,7 +1142,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                RamDomain constantValue = numberConstant->getIndex();
+                RamDomain constantValue = numberConstant->getRamRepresentation();
                 std::stringstream newVariableName;
                 newVariableName << boundPrefix << changeCount << "_" << constantValue << "_n";
 
@@ -1214,6 +1217,78 @@ bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) 
     TypecastRemover update;
     translationUnit.getProgram()->apply(update);
 
+    return update.changed;
+}
+
+bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationUnit) {
+    struct TypeRewriter : public AstNodeMapper {
+        mutable bool changed{false};
+        const TypeAnalysis& typeAnalysis;
+        ErrorReport& report;
+
+        TypeRewriter(const TypeAnalysis& typeAnalysis, ErrorReport& report)
+                : typeAnalysis(typeAnalysis), report(report) {}
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            // Utility lambdas to determine if all args are of the same type.
+            auto isFloat = [&](const AstArgument* argument) {
+                return isFloatType(typeAnalysis.getTypes(argument));
+            };
+            auto isUnsigned = [&](const AstArgument* argument) {
+                return isUnsignedType(typeAnalysis.getTypes(argument));
+            };
+
+            // rewrite sub-expressions first
+            node->apply(*this);
+
+            // Handle functor
+            if (auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
+                if (isOverloadedFunctor(functor->getFunction())) {
+                    // All args must be of the same type.
+                    if (all_of(functor->getArguments(), isFloat)) {
+                        FunctorOp convertedFunctor =
+                                convertOverloadedFunctor(functor->getFunction(), RamTypeAttribute::Float);
+                        functor->setFunction(convertedFunctor);
+                        changed = true;
+
+                    } else if (all_of(functor->getArguments(), isUnsigned)) {
+                        FunctorOp convertedFunctor =
+                                convertOverloadedFunctor(functor->getFunction(), RamTypeAttribute::Unsigned);
+                        functor->setFunction(convertedFunctor);
+                        changed = true;
+                    }
+                }
+            }
+
+            // Handle binary constraint
+            if (auto* binaryConstraint = dynamic_cast<AstBinaryConstraint*>(node.get())) {
+                if (isOverloaded(binaryConstraint->getOperator())) {
+                    // Get arguments
+                    auto* leftArg = binaryConstraint->getLHS();
+                    auto* rightArg = binaryConstraint->getRHS();
+
+                    // Both args must be of the same type
+                    if (isFloat(leftArg) && isFloat(rightArg)) {
+                        BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
+                                binaryConstraint->getOperator(), RamTypeAttribute::Float);
+                        binaryConstraint->setOperator(convertedConstraint);
+                        changed = true;
+
+                    } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
+                        BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
+                                binaryConstraint->getOperator(), RamTypeAttribute::Unsigned);
+                        binaryConstraint->setOperator(convertedConstraint);
+                        changed = true;
+                    }
+                }
+            }
+            // otherwise, return the original node
+            return node;
+        }
+    };
+    const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
+    TypeRewriter update(typeAnalysis, translationUnit.getErrorReport());
+    translationUnit.getProgram()->apply(update);
     return update.changed;
 }
 

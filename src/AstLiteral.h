@@ -343,12 +343,12 @@ public:
     }
 
     /** Check whether constraint is a numeric constraint */
-    const bool isNumerical() const {
+    bool isNumerical() const {
         return isNumericBinaryConstraintOp(operation);
     }
 
     /** Check whether constraint is a symbolic constraint */
-    const bool isSymbolic() const {
+    bool isSymbolic() const {
         return isSymbolicBinaryConstraintOp(operation);
     }
 

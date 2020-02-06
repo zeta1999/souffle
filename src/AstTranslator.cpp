@@ -217,8 +217,8 @@ std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const Ast
     if (const auto rel = getAtomRelation(atom, program)) {
         return translateRelation(rel);
     } else {
-        return createRelationReference(getRelationName(atom->getName()), atom->getArity(),
-                getEvaluationArity(atom));
+        return createRelationReference(
+                getRelationName(atom->getName()), atom->getArity(), getEvaluationArity(atom));
     }
 }
 

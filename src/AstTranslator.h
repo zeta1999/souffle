@@ -62,6 +62,7 @@ public:
 
     /** determine the auxiliary for relations */
     const size_t getEvaluationArity(const AstAtom* atom) const;
+
 private:
     /** AST program */
     const AstProgram* program = nullptr;

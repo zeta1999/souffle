@@ -113,7 +113,15 @@ public:
     }
 
 private:
-    RecordMap& getForArity(size_t arity);
+    RecordMap& getForArity(size_t arity) {
+        static std::unordered_map<size_t, RecordMap> maps;
+        auto pos = maps.find(arity);
+        if (pos == maps.end()) {
+            maps.emplace(arity, arity);
+        }
+
+        return maps.find(arity)->second;
+    }
 };
 
 }  // namespace souffle

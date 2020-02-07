@@ -10,7 +10,7 @@
  *
  * @file RamNode.h
  *
- * Declaration of RAM node and mappers for RAMNode
+ * Declaration of RAM node and mappers for RAM nodes
  *
  ***********************************************************************/
 

@@ -96,8 +96,6 @@ private:
  */
 class RecordTable {
 public:
-    static void createRecordMap(size_t arity);
-
     static RamDomain pack(RamDomain* tuple, size_t arity);
     static RamDomain* unpack(RamDomain ref, size_t arity);
 

@@ -45,8 +45,4 @@ RamDomain* RecordTable::unpack(RamDomain ref, size_t arity) {
     return getForArity(arity).unpack(ref);
 }
 
-void RecordTable::createRecordMap(size_t arity) {
-    getForArity(arity);
-}
-
 }  // namespace souffle

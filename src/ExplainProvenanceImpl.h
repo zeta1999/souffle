@@ -393,25 +393,29 @@ public:
         prog.executeSubroutine(
                 relName + "_" + std::to_string(ruleNum) + "_negation_subproof", args, ret, err);
 
+        // ensure the subroutine returns the correct number of results
+        assert(ret.size() == atoms.size() - 1);
+
         // construct tree nodes
         std::stringstream joinedArgsStr;
         joinedArgsStr << join(tuple, ",");
         auto internalNode = std::make_unique<InnerNode>(
                 relName + "(" + joinedArgsStr.str() + ")", "(R" + std::to_string(ruleNum) + ")");
 
+        // store the head tuple in bodyVariables so we can print
+        // TODO (taipan-snake): handle the case where the head contains constants (i.e., headVariables is smaller than tuple)
+        for (size_t i = 0; i < headVariables.size(); i++) {
+            bodyVariables[headVariables[i]] = tuple[i];
+        }
+
         // traverse return vector and construct child nodes
         // making sure we display existent and non-existent tuples correctly
         int literalCounter = 1;
         for (size_t returnCounter = 0; returnCounter < ret.size(); returnCounter++) {
             // check what the next contained atom is
-            bool atomExists;
-            if (err[returnCounter]) {
+            bool atomExists = true;
+            if (ret[returnCounter] == 0) {
                 atomExists = false;
-                returnCounter++;
-            } else {
-                atomExists = true;
-                assert(err[returnCounter + 1] && "there should be a separator for literals in return");
-                returnCounter += 2;
             }
 
             // get the relation of the current atom
@@ -428,6 +432,7 @@ public:
                 bodyRelAtomName = bodyRel.substr(1);
             }
 
+            /*
             // traverse subroutine return
             size_t arity;
             size_t auxiliaryArity;
@@ -467,6 +472,23 @@ public:
                 childLabel << join(numsToArgs(bodyRelAtomName, atomValues, &atomErrs), ", ");
                 childLabel << ")";
             }
+            */
+
+            std::stringstream childLabel;
+            if (isConstraint) {
+                assert(atomRepresentation.size() == 3 && "not a binary constraint");
+
+                childLabel << bodyVariables[atomRepresentation[1]] << " " << bodyRel << " " << bodyVariables[atomRepresentation[2]];
+            } else {
+                childLabel << bodyRel << "(";
+                for (size_t i = 1; i < atomRepresentation.size(); i++) {
+                    childLabel << bodyVariables[atomRepresentation[i]];
+                    if (i < atomRepresentation.size() - 1) {
+                        childLabel << ", ";
+                    }
+                }
+                childLabel << ")";
+            }
 
             if (atomExists) {
                 childLabel << " ✓";
@@ -477,7 +499,7 @@ public:
             internalNode->add_child(std::make_unique<LeafNode>(childLabel.str()));
             internalNode->setSize(internalNode->getSize() + 1);
 
-            returnCounter = j - 1;
+            // returnCounter = j - 1;
             literalCounter++;
         }
 

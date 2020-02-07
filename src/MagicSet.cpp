@@ -23,6 +23,7 @@
 #include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
 #include "BinaryConstraintOps.h"
 #include "Global.h"
 #include "IODirectives.h"
@@ -739,7 +740,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
         // check whether edb or idb
         bool is_edb = true;
         for (AstClause* clause : rel->getClauses()) {
-            if (!clause->isFact()) {
+            if (!isFact(*clause)) {
                 is_edb = false;
                 break;
             }
@@ -809,7 +810,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
             // go through and adorn all IDB clauses defining the relation
             AstRelation* rel = program->getRelation(currPredicate.getName());
             for (AstClause* clause : rel->getClauses()) {
-                if (clause->isFact()) {
+                if (isFact(*clause)) {
                     continue;
                 }
 
@@ -924,7 +925,7 @@ void separateDBs(AstProgram* program) {
         bool is_idb = false;
 
         for (AstClause* clause : relation->getClauses()) {
-            if (clause->isFact()) {
+            if (isFact(*clause)) {
                 is_edb = true;
             } else {
                 is_idb = true;
@@ -944,7 +945,7 @@ void separateDBs(AstProgram* program) {
 
             // find all facts for the relation
             for (AstClause* clause : relation->getClauses()) {
-                if (clause->isFact()) {
+                if (isFact(*clause)) {
                     // clause is fact - add it to the new EDB relation
                     AstClause* newEdbClause = clause->clone();
                     newEdbClause->getHead()->setName(newEdbName);

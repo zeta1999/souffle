@@ -124,4 +124,15 @@ bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelat
  */
 bool isRecursiveClause(const AstClause& clause);
 
+/**
+ * Returns whether the given clause is a fact
+ * @return true iff the clause is a fact
+ */
+bool isFact(const AstClause& clause);
+
+/**
+ * Returns whether the given clause is a rule
+ * @return true iff the clause is a rule
+ */
+bool isRule(const AstClause& clause);
 }  // end of namespace souffle

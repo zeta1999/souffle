@@ -23,6 +23,7 @@
 #include "InterpreterRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
+#include "RecordTable.h"
 #include <deque>
 #include <map>
 #include <memory>
@@ -68,6 +69,8 @@ private:
     RelationHandle& getRelationHandle(const size_t idx);
     /** @brief Return the string symbol table */
     SymbolTable& getSymbolTable();
+    /** @brief Return the record table */
+    RecordTable& getRecordTable();
     /** @brief Return the RamTranslationUnit */
     RamTranslationUnit& getTranslationUnit();
     /** @brief Execute the program */

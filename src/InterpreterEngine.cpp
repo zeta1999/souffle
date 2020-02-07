@@ -45,6 +45,10 @@ SymbolTable& InterpreterEngine::getSymbolTable() {
     return tUnit.getSymbolTable();
 }
 
+RecordTable& InterpreterEngine::getRecordTable() {
+    return tUnit.getRecordTable();
+}
+
 RamTranslationUnit& InterpreterEngine::getTranslationUnit() {
     return tUnit;
 }

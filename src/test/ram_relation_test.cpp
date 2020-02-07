@@ -63,10 +63,11 @@ const std::string testInterpreterStore(std::vector<std::string> attribs, std::ve
             std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
 
     SymbolTable symTab;
+    RecordTable recordTable;
     ErrorReport errReport;
     DebugReport debugReport;
 
-    RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
+    RamTranslationUnit translationUnit(std::move(prog), symTab, recordTable, errReport, debugReport);
 
     // configure and execute interpreter
     std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);
@@ -251,10 +252,11 @@ TEST(IO_store, SignedChangedDelimeter) {
             std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
 
     SymbolTable symTab;
+    RecordTable recordTable;
     ErrorReport errReport;
     DebugReport debugReport;
 
-    RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
+    RamTranslationUnit translationUnit(std::move(prog), symTab, recordTable, errReport, debugReport);
 
     // configure and execute interpreter
     std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);
@@ -306,6 +308,7 @@ TEST(IO_store, MixedTypes) {
     ioDirs.push_back(IODirectives(dirs));
 
     SymbolTable symbolTable;
+    RecordTable recordTable;
     ErrorReport errReport;
     DebugReport debugReport;
 
@@ -325,7 +328,7 @@ TEST(IO_store, MixedTypes) {
     std::unique_ptr<RamProgram> prog =
             std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
 
-    RamTranslationUnit translationUnit(std::move(prog), symbolTable, errReport, debugReport);
+    RamTranslationUnit translationUnit(std::move(prog), symbolTable, recordTable, errReport, debugReport);
 
     // configure and execute interpreter
     std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);
@@ -390,10 +393,11 @@ TEST(IO_load, Signed) {
             std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
 
     SymbolTable symTab;
+    RecordTable recordTable;
     ErrorReport errReport;
     DebugReport debugReport;
 
-    RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
+    RamTranslationUnit translationUnit(std::move(prog), symTab, recordTable, errReport, debugReport);
 
     // configure and execute interpreter
     std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);
@@ -453,10 +457,11 @@ TEST(IO_load, Float) {
             std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
 
     SymbolTable symTab;
+    RecordTable recordTable;
     ErrorReport errReport;
     DebugReport debugReport;
 
-    RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
+    RamTranslationUnit translationUnit(std::move(prog), symTab, recordTable, errReport, debugReport);
 
     // configure and execute interpreter
     std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);
@@ -516,10 +521,11 @@ TEST(IO_load, Unsigned) {
             std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
 
     SymbolTable symTab;
+    RecordTable recordTable;
     ErrorReport errReport;
     DebugReport debugReport;
 
-    RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
+    RamTranslationUnit translationUnit(std::move(prog), symTab, recordTable, errReport, debugReport);
 
     // configure and execute interpreter
     std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);
@@ -579,10 +585,11 @@ TEST(IO_load, MixedTypesLoad) {
             std::make_unique<RamProgram>(std::move(rels), std::move(main), std::move(subs));
 
     SymbolTable symTab;
+    RecordTable recordTable;
     ErrorReport errReport;
     DebugReport debugReport;
 
-    RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
+    RamTranslationUnit translationUnit(std::move(prog), symTab, recordTable, errReport, debugReport);
 
     // configure and execute interpreter
     std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);

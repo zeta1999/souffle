@@ -43,6 +43,7 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
+#include "RecordTable.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
@@ -1627,6 +1628,7 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     program = tu.getProgram();
     translateProgram(tu);
     SymbolTable& symTab = tu.getSymbolTable();
+    RecordTable recordTable;
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
     std::vector<std::unique_ptr<RamRelation>> rels;
@@ -1649,7 +1651,8 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
                     "ram-program", "RAM Program " + runtimeStr, ramProgStr.str()));
         }
     }
-    return std::make_unique<RamTranslationUnit>(std::move(ramProg), symTab, errReport, debugReport);
+    return std::make_unique<RamTranslationUnit>(
+            std::move(ramProg), symTab, recordTable, errReport, debugReport);
 }
 
 }  // end of namespace souffle

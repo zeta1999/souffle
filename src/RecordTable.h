@@ -96,16 +96,24 @@ private:
  */
 class RecordTable {
 public:
-    static RamDomain pack(RamDomain* tuple, size_t arity);
-    static RamDomain* unpack(RamDomain ref, size_t arity);
+    RamDomain pack(RamDomain* tuple, size_t arity) {
+        return getForArity(arity).pack(tuple);
+    }
 
-    static RamDomain getNull() {
+    RamDomain* unpack(RamDomain ref, size_t arity) {
+        return getForArity(arity).unpack(ref);
+    }
+
+    RamDomain getNull() {
         return 0;
     }
 
-    static bool isNull(RamDomain ref) {
+    bool isNull(RamDomain ref) {
         return ref == getNull();
     }
+
+private:
+    RecordMap& getForArity(size_t arity);
 };
 
 }  // namespace souffle

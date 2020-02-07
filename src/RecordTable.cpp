@@ -19,11 +19,10 @@
 
 namespace souffle {
 
-namespace {
 /**
  * The static access function for record maps of certain arities.
  */
-RecordMap& getForArity(size_t arity) {
+RecordMap& RecordTable::getForArity(size_t arity) {
     // the static container -- filled on demand
     static std::unordered_map<size_t, RecordMap> maps;
     auto pos = maps.find(arity);
@@ -32,17 +31,6 @@ RecordMap& getForArity(size_t arity) {
     }
 
     return maps.find(arity)->second;
-}
-}  // namespace
-
-RamDomain RecordTable::pack(RamDomain* tuple, size_t arity) {
-    // conduct the packing
-    return getForArity(arity).pack(tuple);
-}
-
-RamDomain* RecordTable::unpack(RamDomain ref, size_t arity) {
-    // conduct the unpacking
-    return getForArity(arity).unpack(ref);
 }
 
 }  // namespace souffle

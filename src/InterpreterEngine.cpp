@@ -990,7 +990,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             RamDomain ref = execute(node->getChild(0), ctxt);
 
             // check for null
-            if (RecordTable::isNull(ref)) {
+            if (getRecordTable().isNull(ref)) {
                 return true;
             }
 

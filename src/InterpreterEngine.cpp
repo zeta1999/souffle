@@ -573,7 +573,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (size_t i = 0; i < arity; ++i) {
                 data[i] = execute(node->getChild(i), ctxt);
             }
-            return RecordTable::pack(data, arity);
+            return getRecordTable().pack(data, arity);
         ESAC(PackRecord)
 
         CASE(SubroutineArgument)
@@ -996,7 +996,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             // update environment variable
             size_t arity = cur.getArity();
-            const RamDomain* tuple = RecordTable::unpack(ref, arity);
+            const RamDomain* tuple = getRecordTable().unpack(ref, arity);
 
             // save reference to temporary value
             ctxt[cur.getTupleId()] = tuple;

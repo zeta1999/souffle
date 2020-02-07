@@ -31,14 +31,14 @@ namespace souffle {
  */
 class RecordMap {
 public:
-    explicit RecordMap(int arity) : arity(arity), i2r(1){};  // note: index 0 element left free
+    explicit RecordMap(size_t arity) : arity(arity), i2r(1){};  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
      */
     RamDomain pack(const RamDomain* tuple) {
         std::vector<RamDomain> tmp(arity);
-        for (int i = 0; i < arity; i++) {
+        for (size_t i = 0; i < arity; i++) {
             tmp[i] = tuple[i];
         }
 
@@ -78,7 +78,7 @@ public:
 
 private:
     /** The arity of the stored tuples */
-    int arity;
+    size_t arity;
 
     /** The mapping from tuples to references/indices */
     std::map<std::vector<RamDomain>, RamDomain> r2i;
@@ -96,10 +96,10 @@ private:
  */
 class RecordTable {
 public:
-    static void createRecordMap(int arity);
+    static void createRecordMap(size_t arity);
 
-    static RamDomain pack(RamDomain* tuple, int arity);
-    static RamDomain* unpack(RamDomain ref, int arity);
+    static RamDomain pack(RamDomain* tuple, size_t arity);
+    static RamDomain* unpack(RamDomain ref, size_t arity);
 
     static RamDomain getNull() {
         return 0;

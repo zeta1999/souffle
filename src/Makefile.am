@@ -323,6 +323,12 @@ test_constraints_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/tes
 test_constraints_test_SOURCES = test/constraints_test.cpp
 test_constraints_test_LDADD = libsouffle.la
 
+# ast print test
+check_PROGRAMS += test/ast_print_test
+test_ast_print_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
+test_ast_print_test_SOURCES = test/ast_print_test.cpp
+test_ast_print_test_LDADD = libsouffle.la
+
 # ast program test
 check_PROGRAMS += test/ast_program_test
 test_ast_program_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test

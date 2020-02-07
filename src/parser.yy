@@ -891,7 +891,7 @@ arg
 
     /* record constructor */
   | NIL {
-        $$ = new AstNullConstant();
+        $$ = new AstNilConstant();
         $$->setSrcLoc(@$);
     }
   /* TODO (azreika): in next version: prepend records with identifiers */

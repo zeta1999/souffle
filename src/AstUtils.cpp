@@ -110,4 +110,24 @@ bool isRecursiveClause(const AstClause& clause) {
     return recursive;
 }
 
+bool isFact(const AstClause& clause) {
+    // there must be a head
+    if (clause.getHead() == nullptr) {
+        return false;
+    }
+    // there must not be any body clauses
+    if (clause.getBodySize() != 0) {
+        return false;
+    }
+
+    // and there are no aggregates
+    bool hasAggregates = false;
+    visitDepthFirst(*clause.getHead(), [&](const AstAggregator& cur) { hasAggregates = true; });
+    return !hasAggregates;
+}
+
+bool isRule(const AstClause& clause) {
+    return (clause.getHead() != nullptr) && !isFact(clause);
+}
+
 }  // end of namespace souffle

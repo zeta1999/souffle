@@ -120,7 +120,7 @@ souffle_sources = \
         InterpreterNode.h		          \
         InterpreterProgInterface.h                \
         InterpreterPreamble.h			  \
-        InterpreterRecords.h         InterpreterRecords.cpp     \
+        RecordTable.h         RecordTable.cpp     \
         RamComplexityAnalysis.cpp  RamComplexityAnalysis.h  \
         RamLevelAnalysis.cpp  RamLevelAnalysis.h  \
         RamCondition.h                            \

@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2019, The Souffle Developers. All rights reserved.
+ * Copyright (c) 2020, The Souffle Developers. All rights reserved.
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -8,13 +8,16 @@
 
 /************************************************************************
  *
- * @file InterpreterRecords.cpp
+ * @file RecordTable.h
  *
- * Utilities for handling records in Interpreter
+ * Data container to store Records of the Datalog program.
  *
  ***********************************************************************/
 
-#include "InterpreterRecords.h"
+#pragma once
+
+#include "ParallelUtils.h"
+#include "RamTypes.h"
 #include <cassert>
 #include <limits>
 #include <map>
@@ -23,31 +26,18 @@
 
 namespace souffle {
 
-namespace {
-
-using namespace std;
-
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
-class InterpreterRecordMap {
-    /** The arity of the stored tuples */
-    int arity;
-
-    /** The mapping from tuples to references/indices */
-    map<vector<RamDomain>, RamDomain> r2i;
-
-    /** The mapping from indices to tuples */
-    vector<vector<RamDomain>> i2r;
-
+class RecordMap {
 public:
-    InterpreterRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    explicit RecordMap(int arity) : arity(arity), i2r(1){};  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
      */
     RamDomain pack(const RamDomain* tuple) {
-        vector<RamDomain> tmp(arity);
+        std::vector<RamDomain> tmp(arity);
         for (int i = 0; i < arity; i++) {
             tmp[i] = tuple[i];
         }
@@ -85,43 +75,39 @@ public:
 
         return res;
     }
+
+private:
+    /** The arity of the stored tuples */
+    int arity;
+
+    /** The mapping from tuples to references/indices */
+    std::map<std::vector<RamDomain>, RamDomain> r2i;
+
+    /** The mapping from indices to tuples */
+    std::vector<std::vector<RamDomain>> i2r;
 };
 
 /**
- * The static access function for record maps of certain arities.
+ * @class RecordTable
+ *
+ * Global pool of re-usable strings
+ *
+ * RecordTable stores Datalog records and converts them to numbers and vice versa.
  */
-InterpreterRecordMap& getForArity(int arity) {
-    // the static container -- filled on demand
-    static unordered_map<int, InterpreterRecordMap> maps;
-    auto pos = maps.find(arity);
-    if (pos == maps.end()) {
-        maps.emplace(arity, arity);
+class RecordTable {
+public:
+    static void createRecordMap(int arity);
+
+    static RamDomain pack(RamDomain* tuple, int arity);
+    static RamDomain* unpack(RamDomain ref, int arity);
+
+    static RamDomain getNull() {
+        return 0;
     }
 
-    return maps.find(arity)->second;
-}
-}  // namespace
+    static bool isNull(RamDomain ref) {
+        return ref == getNull();
+    }
+};
 
-RamDomain packInterpreter(RamDomain* tuple, int arity) {
-    // conduct the packing
-    return getForArity(arity).pack(tuple);
-}
-
-RamDomain* unpackInterpreter(RamDomain ref, int arity) {
-    // conduct the unpacking
-    return getForArity(arity).unpack(ref);
-}
-
-RamDomain getNullInterpreter() {
-    return 0;
-}
-
-bool isNullInterpreter(RamDomain ref) {
-    return ref == 0;
-}
-
-void createRecordMap(int arity) {
-    getForArity(arity);
-}
-
-}  // end of namespace souffle
+}  // namespace souffle

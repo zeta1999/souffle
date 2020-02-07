@@ -10,8 +10,7 @@
  *
  * @file RamNode.h
  *
- * Top level syntactic element of intermediate representation,
- * i.e., a node of the RAM machine code.
+ * Declaration of RAM node and mappers for RAM nodes
  *
  ***********************************************************************/
 
@@ -57,8 +56,6 @@ public:
     }
 };
 
-namespace detail {
-
 /**
  * @class LambdaRamNodeMapper
  * @brief A special RamNodeMapper wrapping a lambda conducting node transformations.
@@ -77,18 +74,18 @@ public:
      * @brief Applies lambda
      */
     std::unique_ptr<RamNode> operator()(std::unique_ptr<RamNode> node) const override {
-        return lambda(std::move(node));
+        std::unique_ptr<RamNode> result = lambda(std::move(node));
+        assert(result != nullptr && "null-pointer in lambda ram-node mapper");
+        return result;
     }
 };
-
-}  // namespace detail
 
 /**
  * @brief Creates a node mapper based on a corresponding lambda expression.
  */
 template <typename Lambda>
-detail::LambdaRamNodeMapper<Lambda> makeLambdaRamMapper(const Lambda& lambda) {
-    return detail::LambdaRamNodeMapper<Lambda>(lambda);
+LambdaRamNodeMapper<Lambda> makeLambdaRamMapper(const Lambda& lambda) {
+    return LambdaRamNodeMapper<Lambda>(lambda);
 }
 
 /**
@@ -130,6 +127,8 @@ public:
      * @brief Rewrite a child node
      */
     virtual void rewrite(const RamNode* oldNode, std::unique_ptr<RamNode> newNode) {
+        assert(oldNode != nullptr && "old node is a null-pointer");
+        assert(newNode != nullptr && "new node is a null-pointer");
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> rewriter =
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (oldNode == node.get()) {

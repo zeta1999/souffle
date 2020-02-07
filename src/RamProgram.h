@@ -135,20 +135,16 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         main = map(std::move(main));
-        assert(main != nullptr && "Main program is a null-pointer");
         for (auto& rel : relations) {
             rel = map(std::move(rel));
-            assert(rel != nullptr && "Relation is a null-pointer");
         }
         for (auto& sub : subroutines) {
             sub.second = map(std::move(sub.second));
-            assert(sub.second != nullptr && "Subroutine is a null-pointer");
         }
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamProgram*>(&node));
         const auto& other = static_cast<const RamProgram&>(node);
         if (relations.size() != other.relations.size() || subroutines.size() != other.subroutines.size()) {
             return false;

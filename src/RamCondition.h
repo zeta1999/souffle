@@ -123,13 +123,10 @@ public:
     void apply(const RamNodeMapper& map) override {
         lhs = map(std::move(lhs));
         rhs = map(std::move(rhs));
-        assert(lhs != nullptr && "left-hand side of conjunction is a nullptr");
-        assert(rhs != nullptr && "right-hand side of conjunction is a nullptr");
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamConjunction*>(&node));
         const auto& other = static_cast<const RamConjunction&>(node);
         return getLHS() == other.getLHS() && getRHS() == other.getRHS();
     }
@@ -175,12 +172,10 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         operand = map(std::move(operand));
-        assert(nullptr != operand && "operand of negation is a null-pointer");
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamNegation*>(&node));
         const auto& other = static_cast<const RamNegation&>(node);
         return getOperand() == other.getOperand();
     }
@@ -243,14 +238,10 @@ public:
     void apply(const RamNodeMapper& map) override {
         lhs = map(std::move(lhs));
         rhs = map(std::move(rhs));
-        assert(lhs != nullptr && "left-hand side of constraint is a null-pointer");
-        assert(rhs != nullptr && "right-hand side of constraint is a null-pointer");
     }
 
 protected:
-    /** Operator */
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamConstraint*>(&node));
         const auto& other = static_cast<const RamConstraint&>(node);
         return getOperator() == other.getOperator() && getLHS() == other.getLHS() &&
                getRHS() == other.getRHS();
@@ -320,14 +311,11 @@ public:
         relationRef = map(std::move(relationRef));
         for (auto& val : values) {
             val = map(std::move(val));
-            assert(val != nullptr && "value is a nullptr");
         }
-        assert(relationRef != nullptr && "Relation reference is a nullptr");
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamAbstractExistenceCheck*>(&node));
         const auto& other = static_cast<const RamAbstractExistenceCheck&>(node);
         return getRelation() == other.getRelation() && equal_targets(values, other.values);
     }
@@ -428,12 +416,10 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         relationRef = map(std::move(relationRef));
-        assert(relationRef != nullptr && "Relation reference is a nullptr");
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamEmptinessCheck*>(&node));
         const auto& other = static_cast<const RamEmptinessCheck&>(node);
         return getRelation() == other.getRelation();
     }

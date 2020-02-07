@@ -69,13 +69,11 @@ public:
     void apply(const RamNodeMapper& map) override {
         for (auto& arg : arguments) {
             arg = map(std::move(arg));
-            assert(arg != nullptr && "argument is null-pointer");
         }
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamAbstractOperator*>(&node));
         const auto& other = static_cast<const RamAbstractOperator&>(node);
         return equal_targets(arguments, other.arguments);
     }
@@ -216,7 +214,6 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamTupleElement*>(&node));
         const auto& other = static_cast<const RamTupleElement&>(node);
         return getTupleId() == other.getTupleId() && getElement() == other.getElement();
     }
@@ -241,7 +238,12 @@ public:
     }
 
 protected:
-    explicit RamConstant(RamDomain val) : constant(val) {}
+    explicit RamConstant(RamDomain constant) : constant(constant) {}
+
+    bool equal(const RamNode& node) const override {
+        const auto& other = static_cast<const RamConstant&>(node);
+        return constant == other.constant;
+    }
 
     /** Constant value */
     const RamDomain constant;
@@ -273,13 +275,6 @@ public:
     RamSignedConstant* clone() const override {
         return new RamSignedConstant(constant);
     }
-
-protected:
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamSignedConstant*>(&node));
-        const auto& other = static_cast<const RamSignedConstant&>(node);
-        return getConstant() == other.getConstant();
-    }
 };
 
 /**
@@ -308,13 +303,6 @@ public:
     RamUnsignedConstant* clone() const override {
         return new RamUnsignedConstant(constant);
     }
-
-protected:
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamUnsignedConstant*>(&node));
-        const auto& other = static_cast<const RamUnsignedConstant&>(node);
-        return getConstant() == other.getConstant();
-    }
 };
 
 /**
@@ -330,25 +318,18 @@ class RamFloatConstant : public RamConstant {
 public:
     explicit RamFloatConstant(RamDomain val) : RamConstant(val) {}
 
+    void print(std::ostream& os) const override {
+        os << "float(" << getValue() << ")";
+    }
+
     /** @brief Get value of the constant. */
     RamFloat getValue() const {
         return ramBitCast<RamFloat>(constant);
     }
 
-    void print(std::ostream& os) const override {
-        os << "float(" << getValue() << ")";
-    }
-
     /** Create clone */
     RamFloatConstant* clone() const override {
         return new RamFloatConstant(constant);
-    }
-
-protected:
-    bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamFloatConstant*>(&node));
-        const auto& other = static_cast<const RamFloatConstant&>(node);
-        return getConstant() == other.getConstant();
     }
 };
 
@@ -428,13 +409,11 @@ public:
     void apply(const RamNodeMapper& map) override {
         for (auto& arg : arguments) {
             arg = map(std::move(arg));
-            assert(arg != nullptr && "argument is a null-pointer");
         }
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamPackRecord*>(&node));
         const auto& other = static_cast<const RamPackRecord&>(node);
         return equal_targets(arguments, other.arguments);
     }
@@ -470,7 +449,6 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamSubroutineArgument*>(&node));
         const auto& other = static_cast<const RamSubroutineArgument&>(node);
         return getArgument() == other.getArgument();
     }

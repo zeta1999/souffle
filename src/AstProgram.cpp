@@ -21,6 +21,7 @@
 #include "AstFunctorDeclaration.h"
 #include "AstLiteral.h"
 #include "AstRelation.h"
+#include "AstType.h"
 #include "ErrorReport.h"
 #include "Util.h"
 #include <sstream>

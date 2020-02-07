@@ -1,7 +1,7 @@
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 34
 NumberRelation("1").                   // error
 ---------------^--------------------------------
-Error: Null constant used as a non-record in file type_system1.dl at line 35
+Error: Nil constant used as a non-record in file type_system1.dl at line 35
 NumberRelation(nil).                   // error
 ---------------^--------------------------------
 Error: Number constant (type mismatch) in file type_system1.dl at line 37
@@ -172,7 +172,7 @@ SymbolRelation(1+1).                   // error
 Error: Number constant (type mismatch) in file type_system1.dl at line 58
 SymbolRelation(1+1).                   // error
 -----------------^------------------------------
-Error: Null constant used as a non-record in file type_system1.dl at line 60
+Error: Nil constant used as a non-record in file type_system1.dl at line 60
 SymbolRelation(nil).                   // error
 ---------------^--------------------------------
 Error: Number constant (type mismatch) in file type_system1.dl at line 62

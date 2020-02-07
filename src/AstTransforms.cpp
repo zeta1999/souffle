@@ -96,7 +96,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
         if (!ioType->isIO(rel) && rel->getClauses().size() == 1u) {
             // .. of shape r(x,y,..) :- s(x,y,..)
             AstClause* cl = rel->getClause(0);
-            if (!cl->isFact() && cl->getBodySize() == 1u && cl->getAtoms().size() == 1u) {
+            if (!isFact(*cl) && cl->getBodySize() == 1u && cl->getAtoms().size() == 1u) {
                 AstAtom* atom = cl->getAtoms()[0];
                 if (equal_targets(cl->getHead()->getArguments(), atom->getArguments())) {
                     // we have a match but have to check that all arguments are either
@@ -1175,7 +1175,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
     // apply the change to all clauses in the program
     for (AstRelation* rel : program.getRelations()) {
         for (AstClause* clause : rel->getClauses()) {
-            if (clause->isFact()) {
+            if (isFact(*clause)) {
                 continue;  // don't normalise facts
             }
 

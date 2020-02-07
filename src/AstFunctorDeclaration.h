@@ -30,23 +30,38 @@ namespace souffle {
  */
 
 class AstFunctorDeclaration : public AstNode {
-private:
-    /** name of functor */
-    const std::string name;
-
-    /** name of type */
-    const std::string type;
-
 public:
     AstFunctorDeclaration(const std::string& name, const std::string& type) : name(name), type(type) {
         assert(name.length() > 0 && "functor name is empty");
         assert(type.length() > 0 && "type is empty");
     }
 
+    void print(std::ostream& out) const override {
+        auto convert = [&](char type) {
+            switch (type) {
+                case 'N':
+                    return "number";
+                case 'S':
+                    return "symbol";
+                default:
+                    abort();
+            }
+        };
+        out << ".declfun " << name << "(";
+        std::vector<std::string> args;
+        for (size_t i = 0; i < type.length() - 1; i++) {
+            args.push_back(convert(type[i]));
+        }
+        out << join(args, ",");
+        out << "):" << convert(type[type.length() - 1]) << std::endl;
+    }
+
+    /** get name */
     const std::string& getName() const {
         return name;
     }
 
+    /** get type */
     const std::string& getType() const {
         return type;
     }
@@ -81,38 +96,6 @@ public:
         return (type[idx] == 'N');
     }
 
-    /** print */
-    void print(std::ostream& out) const override {
-        auto convert = [&](char type) {
-            switch (type) {
-                case 'N':
-                    return "number";
-                case 'S':
-                    return "symbol";
-                default:
-                    abort();
-            }
-        };
-        out << ".declfun " << name << "(";
-        std::vector<std::string> args;
-        for (size_t i = 0; i < type.length() - 1; i++) {
-            args.push_back(convert(type[i]));
-        }
-        out << join(args, ",");
-        out << "):" << convert(type[type.length() - 1]) << std::endl;
-    }
-
-    /** get children */
-    std::vector<const AstNode*> getChildNodes() const override {
-        std::vector<const AstNode*> res;
-        return res;  // no child nodes
-    }
-
-    /** apply */
-    void apply(const AstNodeMapper& /*mapper*/) override {
-        // nothing to do
-    }
-
     /** clone */
     AstFunctorDeclaration* clone() const override {
         auto* res = new AstFunctorDeclaration(name, type);
@@ -126,6 +109,12 @@ protected:
         const auto& other = static_cast<const AstFunctorDeclaration&>(node);
         return name == other.name && type == other.type;
     }
+
+    /** name of functor */
+    const std::string name;
+
+    /** name of type */
+    const std::string type;
 };
 
 }  // end of namespace souffle

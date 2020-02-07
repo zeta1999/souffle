@@ -286,7 +286,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             return std::make_unique<RamSignedConstant>(c.getRamRepresentation());
         }
 
-        std::unique_ptr<RamExpression> visitNullConstant(const AstNullConstant& c) override {
+        std::unique_ptr<RamExpression> visitNilConstant(const AstNilConstant& c) override {
             return std::make_unique<RamSignedConstant>(c.getRamRepresentation());
         }
 
@@ -630,7 +630,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
     const AstAtom* head = clause.getHead();
 
     // handle facts
-    if (clause.isFact()) {
+    if (isFact(clause)) {
         // translate arguments
         std::vector<std::unique_ptr<RamExpression>> values;
         for (auto& arg : head->getArguments()) {
@@ -643,7 +643,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
     }
 
     // the rest should be rules
-    assert(clause.isRule());
+    assert(isRule(clause));
 
     createValueIndex(clause);
 

@@ -42,11 +42,7 @@ public:
     using const_iterator = typename std::vector<unsigned int>::const_iterator;
 
     void print(std::ostream& out) const override {
-        out << "(" << order[0];
-        for (size_t i = 1; i < order.size(); i++) {
-            out << "," << order[i];
-        }
-        out << ")";
+        out << "(" << join(order) << ")";
     }
 
     /** The length of this order */

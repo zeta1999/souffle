@@ -80,7 +80,7 @@ public:
 
     /** Obtain a list of all embedded AST child nodes */
     virtual std::vector<const AstNode*> getChildNodes() const {
-        return std::vector<const AstNode*>();  // type is just cached, not essential
+        return {};
     }
 
     /** Output to a given output stream */

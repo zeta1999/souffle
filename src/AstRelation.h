@@ -212,8 +212,8 @@ public:
 
     /** Add a clause to the relation */
     void addClause(std::unique_ptr<AstClause> clause) {
-        assert(clause && "Undefined clause");
-        assert(clause->getHead() && "Undefined head of the clause");
+        assert(clause != nullptr && "Undefined clause");
+        assert(clause->getHead() != nullptr && "Undefined head of the clause");
         assert(clause->getHead()->getName() == name &&
                 "Name of the atom in the head of the clause and the relation do not match");
         clauses.push_back(std::move(clause));

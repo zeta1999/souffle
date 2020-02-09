@@ -914,14 +914,12 @@ arg
 
     /* user-defined functor */
   | AT IDENT LPAREN RPAREN {
-        auto functor = new AstUserDefinedFunctor();
-        functor->setName($IDENT);
+        auto functor = new AstUserDefinedFunctor($IDENT);
         $$ = functor;
         $$->setSrcLoc(@$);
     }
   | AT IDENT LPAREN non_empty_arg_list RPAREN {
-        auto functor = new AstUserDefinedFunctor();
-        functor->setName($IDENT);
+        auto functor = new AstUserDefinedFunctor($IDENT);
 
         for (auto* arg : $non_empty_arg_list) {
             functor->add(std::unique_ptr<AstArgument>(arg));

@@ -277,7 +277,7 @@ protected:
 class AstFunctor : public AstTerm {
 protected:
     AstFunctor() = default;
-    AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
+    explicit AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
 };
 
 /**
@@ -359,7 +359,7 @@ protected:
  */
 class AstUserDefinedFunctor : public AstFunctor {
 public:
-    AstUserDefinedFunctor() = default;
+    explicit AstUserDefinedFunctor(std::string name) : AstFunctor(), name(std::move(name)){};
     AstUserDefinedFunctor(std::string name, std::vector<std::unique_ptr<AstArgument>> args)
             : AstFunctor(std::move(args)), name(std::move(name)){};
 
@@ -373,18 +373,12 @@ public:
         return name;
     }
 
-    /** set name */
-    void setName(const std::string& name) {
-        this->name = name;
-    }
-
     AstUserDefinedFunctor* clone() const override {
-        auto res = new AstUserDefinedFunctor();
+        auto res = new AstUserDefinedFunctor(name);
         for (auto& cur : args) {
             res->args.emplace_back(cur->clone());
         }
         res->setSrcLoc(getSrcLoc());
-        res->setName(getName());
         return res;
     }
 
@@ -396,7 +390,7 @@ protected:
     }
 
     /** name of user-defined functor */
-    std::string name;
+    const std::string name;
 };
 
 /**

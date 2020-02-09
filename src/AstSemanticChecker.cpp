@@ -217,10 +217,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // TODO (darth_tytus): Add support for float/unsigned to User functors. Preferably by unifying the
-    // analysis of intr/extr functor's types.
     // - intrinsic functors -
-    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
+    visitDepthFirst(nodes, [&](const AstFunctor& fun) {
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
         if (!eqTypeRamTypeAttribute(fun.getReturnType(), resultType)) {
@@ -242,11 +240,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             }
         }
 
-        // check types of arguments
-        if (fun.getFunction() == FunctorOp::ORD) {
-            return;
-        }
-
+        // Check argument types.
         for (size_t i = 0; i < fun.getArity(); i++) {
             auto arg = fun.getArg(i);
             if (!eqTypeRamTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
@@ -269,42 +263,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             }
         }
     });
-
-    // - user-defined functors -
-    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
-        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-
-        // handle degenerate case first.
-        if (funDecl == nullptr) {
-            report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
-            return;
-        }
-
-        // Check arity.
-        if (funDecl->getArity() != fun.getArity()) {
-            report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
-        }
-
-        // check return values of user-defined functor
-        if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-        } else if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-        }
-
-        // Check argument types.
-        for (size_t i = 0; i < fun.getArity(); i++) {
-            const AstArgument* arg = fun.getArg(i);
-            if (i < funDecl->getArity()) {
-                if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                    report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-                } else if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                    report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
-                }
-            }
-        }
-    });
-
+    
     // - binary relation -
     visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
         // only interested in non-equal constraints

@@ -177,7 +177,7 @@
 %type <AstExecutionPlan *>                  exec_plan_list
 %type <AstClause *>                         fact
 %type <AstFunctorDeclaration *>             functor_decl
-%type <std::string>                         functor_type
+%type <RamTypeAttribute>                    functor_type
 %type <std::vector<AstAtom *>>              head
 %type <std::vector<std::string>>            identifier
 %type <std::vector<AstIO *>>                io_directive_list
@@ -187,7 +187,7 @@
 %type <std::vector<AstArgument *>>          non_empty_arg_list
 %type <std::vector<AstAttribute *>>         non_empty_attributes
 %type <AstExecutionOrder *>                 non_empty_exec_order_list
-%type <std::string>                         non_empty_functor_arg_type_list
+%type <std::vector<RamTypeAttribute>>       non_empty_functor_arg_type_list
 %type <std::vector<std::pair
             <std::string, std::string>>>    non_empty_key_value_pairs
 %type <AstRecordType *>                     non_empty_record_type_list
@@ -1493,24 +1493,36 @@ comp_init
 /* Functor declaration */
 functor_decl
   : FUNCTOR IDENT LPAREN RPAREN COLON functor_type {
-        auto typesig = $functor_type;
-        $$ = new AstFunctorDeclaration($IDENT, typesig);
+        $$ = new AstFunctorDeclaration($IDENT, {}, $functor_type);
         $$->setSrcLoc(@$);
     }
   | FUNCTOR IDENT LPAREN non_empty_functor_arg_type_list RPAREN COLON functor_type {
-        auto typesig = $non_empty_functor_arg_type_list + $functor_type;
-        $$ = new AstFunctorDeclaration($IDENT, typesig);
+        auto typesig = $non_empty_functor_arg_type_list;
+        $$ = new AstFunctorDeclaration($IDENT, typesig, $functor_type);
         $$->setSrcLoc(@$);
     }
   ;
 
+// arg[first] COMMA non_empty_arg_list[rest]
+
 /* Functor argument list types */
 non_empty_functor_arg_type_list
   : functor_type {
-        $$ = $functor_type;
+        std::vector<RamTypeAttribute> args;
+        args.push_back($functor_type);
+
+        $$ = args;
     }
   | non_empty_functor_arg_type_list[curr_list] COMMA functor_type {
-        $$ = $curr_list + $functor_type;
+        std::vector<RamTypeAttribute> args;
+
+        for (auto arg : $curr_list) {
+            args.push_back(arg);
+        }
+
+        args.push_back($functor_type);
+
+        $$ = args;
     }
   ;
 
@@ -1518,13 +1530,13 @@ non_empty_functor_arg_type_list
 functor_type
   : IDENT {
         if ($IDENT == "number") {
-            $$ = "N";
+            $$ = RamTypeAttribute::Signed;
         } else if ($IDENT == "symbol") {
-            $$ = "S";
+            $$ = RamTypeAttribute::Symbol;
         } else if ($IDENT == "float") {
-            $$ = "F";
+            $$ = RamTypeAttribute::Float;
         } else if ($IDENT == "unsigned") {
-            $$ = "U";
+            $$ = RamTypeAttribute::Unsigned;
         } else {
             driver.error(@IDENT, "number or symbol identifier expected");
         }

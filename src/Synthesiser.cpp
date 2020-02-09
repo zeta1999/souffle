@@ -1604,31 +1604,46 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitUserDefinedOperator(const RamUserDefinedOperator& op, std::ostream& out) override {
             const std::string& name = op.getName();
-            const std::string& type = op.getType();
-            size_t arity = type.length() - 1;
+
+            const std::vector<RamTypeAttribute>& argTypes = op.getArgsTypes();
             auto args = op.getArguments();
 
-            if (type[arity] == 'S') {
+            if (op.getReturnType() == RamTypeAttribute::Symbol) {
                 out << "symTable.lookup(";
             }
             out << name << "(";
 
-            for (size_t i = 0; i < arity; i++) {
+            for (size_t i = 0; i < args.size(); i++) {
                 if (i > 0) {
                     out << ",";
                 }
-                if (type[i] == 'N') {
-                    out << "((RamDomain)";
-                    visit(args[i], out);
-                    out << ")";
-                } else {
-                    out << "symTable.resolve((RamDomain)";
-                    visit(args[i], out);
-                    out << ").c_str()";
+                switch (argTypes[i]) {
+                    case RamTypeAttribute::Signed:
+                        out << "((RamDomain)";
+                        visit(args[i], out);
+                        out << ")";
+                        break;
+                    case RamTypeAttribute::Unsigned:
+                        out << "((RamUnsigned)";
+                        visit(args[i], out);
+                        out << ")";
+                        break;
+                    case RamTypeAttribute::Float:
+                        out << "((RamFloat)";
+                        visit(args[i], out);
+                        out << ")";
+                        break;
+                    case RamTypeAttribute::Symbol:
+                        out << "symTable.resolve((RamDomain)";
+                        visit(args[i], out);
+                        out << ").c_str()";
+                        break;
+                    case RamTypeAttribute::Record:
+                        assert(false);
                 }
             }
             out << ")";
-            if (type[arity] == 'S') {
+            if (op.getReturnType() == RamTypeAttribute::Symbol) {
                 out << ")";
             }
         }
@@ -1712,30 +1727,57 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
     os << "\n";
     // produce external definitions for user-defined functors
-    std::map<std::string, std::string> functors;
+    std::map<std::string, std::pair<RamTypeAttribute, std::vector<RamTypeAttribute>>> functors;
     visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
         if (functors.find(op.getName()) == functors.end()) {
-            functors.insert(std::make_pair(op.getName(), op.getType()));
+            functors[op.getName()] = std::make_pair(op.getReturnType(), op.getArgsTypes());
         }
         withSharedLibrary = true;
     });
     os << "extern \"C\" {\n";
     for (const auto& f : functors) {
-        size_t arity = f.second.length() - 1;
-        const std::string& type = f.second;
+//        size_t arity = f.second.length() - 1;
         const std::string& name = f.first;
-        if (type[arity] == 'N') {
-            os << "souffle::RamDomain ";
-        } else if (type[arity] == 'S') {
-            os << "const char * ";
+        
+        const auto& functorTypes = f.second;
+        const auto& returnType = functorTypes.first;
+        const auto& argsTypes = functorTypes.second;
+
+        switch (returnType) {
+            case RamTypeAttribute::Signed:
+                os << "souffle::RamSigned ";
+                break;
+            case RamTypeAttribute::Unsigned:
+                os << "souffle::RamUnsigned ";
+                break;
+            case RamTypeAttribute::Float:
+                os << "souffle::RamFloat ";
+                break;
+            case RamTypeAttribute::Symbol:
+                os << "const char * ";
+                break;
+            case RamTypeAttribute::Record:
+                abort();
         }
+        
         os << name << "(";
         std::vector<std::string> args;
-        for (size_t i = 0; i < arity; i++) {
-            if (type[i] == 'N') {
-                args.push_back("souffle::RamDomain");
-            } else {
-                args.push_back("const char *");
+        for (const RamTypeAttribute typeAttribute : argsTypes) {
+            switch (typeAttribute) {
+                case RamTypeAttribute::Signed:
+                    args.push_back("souffle::RamDomain");
+                    break;
+                case RamTypeAttribute::Unsigned:
+                    args.push_back("souffle::RamUnsigned");
+                    break;
+                case RamTypeAttribute::Float:
+                    args.push_back("souffle::RamFloat");
+                    break;
+                case RamTypeAttribute::Symbol:
+                    args.push_back("const char *");
+                    break;
+                case RamTypeAttribute::Record:
+                    abort();
             }
         }
         os << join(args, ",");

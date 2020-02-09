@@ -18,6 +18,7 @@
 
 #include "AstNode.h"
 #include "Util.h"
+#include "RamTypes.h"
 
 #include <algorithm>
 #include <string>
@@ -31,29 +32,32 @@ namespace souffle {
 
 class AstFunctorDeclaration : public AstNode {
 public:
-    AstFunctorDeclaration(const std::string& name, const std::string& type) : name(name), type(type) {
+    AstFunctorDeclaration(const std::string& name, const std::vector<RamTypeAttribute>& argsTypes, RamTypeAttribute returnType) : name(name), argsTypes(argsTypes), returnType(returnType) {
         assert(name.length() > 0 && "functor name is empty");
-        assert(type.length() > 0 && "type is empty");
     }
 
     void print(std::ostream& out) const override {
-        auto convert = [&](char type) {
+        auto convert = [&](RamTypeAttribute type) {
             switch (type) {
-                case 'N':
+                case RamTypeAttribute::Signed:
                     return "number";
-                case 'S':
+                case RamTypeAttribute::Symbol:
                     return "symbol";
+                case RamTypeAttribute::Float:
+                    return "float";
+                case RamTypeAttribute::Unsigned:
+                    return "unsigned";
                 default:
                     abort();
             }
         };
         out << ".declfun " << name << "(";
         std::vector<std::string> args;
-        for (size_t i = 0; i < type.length() - 1; i++) {
-            args.push_back(convert(type[i]));
+        for (auto argType : argsTypes) {
+            args.push_back(convert(argType));
         }
         out << join(args, ",");
-        out << "):" << convert(type[type.length() - 1]) << std::endl;
+        out << "):" << convert(returnType) << std::endl;
     }
 
     /** get name */
@@ -62,43 +66,44 @@ public:
     }
 
     /** get type */
-    const std::string& getType() const {
-        return type;
+    const std::vector<RamTypeAttribute>& getArgsTypes() const {
+        return argsTypes;
     }
 
+    RamTypeAttribute getReturnType() const {
+        return returnType;
+    }
+    
     /** get number of arguments */
     size_t getArity() const {
-        assert(type.length() > 0 && "wrong type declaration for user-defined functor");
-        return type.length() - 1;
+        return argsTypes.size();
     }
 
-    /** is return type a symbolic value */
-    bool isSymbolic() const {
-        assert(type.length() > 0 && "wrong type declaration for user-defined functor");
-        return (type[type.length() - 1] == 'S');
-    }
+    // /** is return type a symbolic value */
+    // bool isSymbolic() const {
+    //     return (type[type.length() - 1] == 'S');
+    // }
 
-    /** is return type a number value */
-    bool isNumerical() const {
-        assert(type.length() > 0 && "wrong type declaration for user-defined functor");
-        return (type[type.length() - 1] == 'N');
-    }
+    // /** is return type a number value */
+    // bool isNumerical() const {
+    //     return (type[type.length() - 1] == 'N');
+    // }
 
-    /** accepts the i-th argument as a symbolic value */
-    bool acceptsSymbols(size_t idx) const {
-        assert(idx <= getArity() && "argument index out of bound");
-        return (type[idx] == 'S');
-    }
+    // /** accepts the i-th argument as a symbolic value */
+    // bool acceptsSymbols(size_t idx) const {
+    //     assert(idx <= getArity() && "argument index out of bound");
+    //     return (type[idx] == 'S');
+    // }
 
-    /** accepts the i-th argument as a number value */
-    bool acceptsNumbers(size_t idx) const {
-        assert(idx <= getArity() && "argument index out of bound");
-        return (type[idx] == 'N');
-    }
+    // /** accepts the i-th argument as a number value */
+    // bool acceptsNumbers(size_t idx) const {
+    //     assert(idx <= getArity() && "argument index out of bound");
+    //     return (type[idx] == 'N');
+    // }
 
     /** clone */
     AstFunctorDeclaration* clone() const override {
-        auto* res = new AstFunctorDeclaration(name, type);
+        auto* res = new AstFunctorDeclaration(name, argsTypes, returnType);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -107,14 +112,17 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstFunctorDeclaration*>(&node));
         const auto& other = static_cast<const AstFunctorDeclaration&>(node);
-        return name == other.name && type == other.type;
+        return name == other.name && argsTypes == other.argsTypes && returnType == other.returnType;
     }
 
     /** name of functor */
     const std::string name;
+    
+    /** Types of arguments */
+    const std::vector<RamTypeAttribute> argsTypes;
 
-    /** name of type */
-    const std::string type;
+    /** Type of the return value */
+    const RamTypeAttribute returnType;
 };
 
 }  // end of namespace souffle

@@ -303,9 +303,8 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             for (const auto& cur : udf.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
-            const AstFunctorDeclaration* decl = translator.program->getFunctorDeclaration(udf.getName());
-            std::string type = decl->getType();
-            return std::make_unique<RamUserDefinedOperator>(udf.getName(), type, std::move(values));
+            
+            return std::make_unique<RamUserDefinedOperator>(udf.getName(), udf.getArgsTypes(), udf.getReturnType(), std::move(values));
         }
 
         std::unique_ptr<RamExpression> visitCounter(const AstCounter&) override {

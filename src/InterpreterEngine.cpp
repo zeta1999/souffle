@@ -506,7 +506,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(UserDefinedOperator)
             // get name and type
             const std::string& name = cur.getName();
-            const std::string& type = cur.getType();
+            const std::vector<RamTypeAttribute>& type = cur.getArgsTypes();
 
             auto fn = reinterpret_cast<void (*)()>(getMethodHandle(name));
             if (fn == nullptr) {
@@ -525,40 +525,70 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             /* Initialize arguments for ffi-call */
             for (size_t i = 0; i < arity; i++) {
                 RamDomain arg = execute(node->getChild(i), ctxt);
-                if (type[i] == 'S') {
-                    args[i] = &ffi_type_pointer;
-                    strVal[i] = getSymbolTable().resolve(arg).c_str();
-                    values[i] = &strVal[i];
-                } else {
-                    args[i] = &ffi_type_uint32;
-                    intVal[i] = arg;
-                    values[i] = &intVal[i];
+                switch (type[i]) {
+                    case RamTypeAttribute::Symbol:
+                        args[i] = &ffi_type_pointer;
+                        strVal[i] = getSymbolTable().resolve(arg).c_str();
+                        values[i] = &strVal[i];
+                        break;
+                    default:
+                        args[i] = &ffi_type_uint32;
+                        intVal[i] = arg;
+                        values[i] = &intVal[i];
+                        break;
                 }
             }
 
             // call external function
-            if (type[arity] == 'N') {
-                // Initialize for numerical return value
-                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_uint32, args) != FFI_OK) {
-                    std::cerr << "Failed to prepare CIF for user-defined operator ";
-                    std::cerr << name << std::endl;
-                    exit(1);
-                }
-            } else {
-                // Initialize for string return value
-                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
-                    std::cerr << "Failed to prepare CIF for user-defined operator ";
-                    std::cerr << name << std::endl;
-                    exit(1);
-                }
+            switch (cur.getReturnType()) {
+                // initialize for string value.
+                case RamTypeAttribute::Symbol:
+                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
+                        std::cerr << "Failed to prepare CIF for user-defined operator ";
+                        std::cerr << name << std::endl;
+                        exit(1);
+                    }
+                    break;
+                default:
+                    // Initialize for numeric value.
+                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
+                        std::cerr << "Failed to prepare CIF for user-defined operator ";
+                        std::cerr << name << std::endl;
+                        exit(1);
+                    }  
             }
+            // if (type[arity] == 'N') {
+            //     // Initialize for numerical return value
+            //     if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_uint32, args) != FFI_OK) {
+            //         std::cerr << "Failed to prepare CIF for user-defined operator ";
+            //         std::cerr << name << std::endl;
+            //         exit(1);
+            //     }
+            // } else {
+            //     // Initialize for string return value
+            //     if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
+            //         std::cerr << "Failed to prepare CIF for user-defined operator ";
+            //         std::cerr << name << std::endl;
+            //         exit(1);
+            //     }
+            // }
             ffi_call(&cif, fn, &rc, values);
             RamDomain result;
-            if (type[arity] == 'N') {
-                result = ((RamDomain)rc);
-            } else {
-                result = getSymbolTable().lookup(((const char*)rc));
+            switch (cur.getReturnType()) {
+                case RamTypeAttribute::Signed:
+                    result = ((RamDomain)rc);
+                    break;
+                case RamTypeAttribute::Symbol:
+                    result = getSymbolTable().lookup(((const char*)rc));
+                    break;
+                default:
+                    abort();
             }
+            // if (type[arity] == 'N') {
+            //     result = ((RamDomain)rc);
+            // } else {
+            //     result = getSymbolTable().lookup(((const char*)rc));
+            // }
             return result;
         ESAC(UserDefinedOperator)
 

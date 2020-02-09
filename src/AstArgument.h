@@ -275,9 +275,18 @@ protected:
  */
 
 class AstFunctor : public AstTerm {
+public:
+    virtual bool isOverloaded() const {
+        return false;
+    }
+    virtual RamTypeAttribute getReturnType() const = 0;
+    virtual RamTypeAttribute getArgType(const size_t arg) const = 0;
+    
+    
 protected:
     AstFunctor() = default;
     explicit AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
+
 };
 
 /**
@@ -322,13 +331,17 @@ public:
         function = functor;
     }
 
+    virtual bool isOverloaded() const override {
+        return isOverloadedFunctor(function);
+    }
+    
     /** get the return type of the functor. */
-    RamTypeAttribute getReturnType() const {
+    virtual RamTypeAttribute getReturnType() const override {
         return functorReturnType(function);
     }
 
     /** get type of the functor argument*/
-    RamTypeAttribute getArgType(const size_t arg) const {
+    virtual RamTypeAttribute getArgType(const size_t arg) const override {
         return functorOpArgType(arg, function);
     }
 
@@ -373,6 +386,29 @@ public:
         return name;
     }
 
+    /** get type of the functor argument*/
+    RamTypeAttribute getArgType(const size_t arg) const override {
+        return argTypes.at(arg);
+    }
+
+    /** get type of the functor argument*/
+    RamTypeAttribute getReturnType() const override {
+        return returnType;
+    }
+
+    void setArgsTypes(const std::vector<RamTypeAttribute>& types) {
+        argTypes = types;
+    }
+
+    const std::vector<RamTypeAttribute>& getArgsTypes(void) const {
+        return argTypes;
+    }
+
+    void setReturnType(RamTypeAttribute type) {
+        returnType = type;
+    }
+
+
     AstUserDefinedFunctor* clone() const override {
         auto res = new AstUserDefinedFunctor(name);
         for (auto& cur : args) {
@@ -389,6 +425,10 @@ protected:
         return name == other.name && AstFunctor::equal(node);
     }
 
+    std::vector<RamTypeAttribute> argTypes;
+    RamTypeAttribute returnType;
+    
+    
     /** name of user-defined functor */
     const std::string name;
 };

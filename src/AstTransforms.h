@@ -571,4 +571,20 @@ private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
 
+/**
+ * Transformation that passes the information from user functors 
+ * declaration to functors instances
+ */
+class AstUserDefinedFunctorsTransformer : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "AstUserDefinedFunctorsTransformer";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+};
+
+
+
 }  // end of namespace souffle

@@ -434,12 +434,12 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         }
 
         // intrinsic functor
-        void visitIntrinsicFunctor(const AstIntrinsicFunctor& fun) override {
+        void visitFunctor(const AstFunctor& fun) override {
             auto functorVar = getVar(fun);
 
             // Currently we take a very simple approach toward polymorphic function.
             // We require argument and return type to be of the same type.
-            if (isOverloadedFunctor(fun.getFunction())) {
+            if (fun.isOverloaded()) {
                 for (auto* argument : fun.getArguments()) {
                     auto argumentVar = getVar(argument);
                     addConstraint(isSubtypeOf(functorVar, argumentVar));
@@ -466,11 +466,6 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                     assert(false && "Invalid return type");
             }
 
-            // add a constraint for each argument of the functor
-            if (fun.getFunction() == FunctorOp::ORD) {
-                return;
-            }
-
             for (size_t i = 0; i < fun.getArity(); i++) {
                 auto argumentVar = getVar(fun.getArg(i));
                 switch (fun.getArgType(i)) {
@@ -488,41 +483,6 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                         break;
                     default:
                         assert(false && "Invalid argument type");
-                }
-            }
-        }
-
-        // user-defined functors
-        void visitUserDefinedFunctor(const AstUserDefinedFunctor& fun) override {
-            auto cur = getVar(fun);
-
-            // get functor declaration
-            const AstFunctorDeclaration* funDecl = program->getFunctorDeclaration(fun.getName());
-            // check whether functor declaration exists
-            if (funDecl != nullptr) {
-                // add a constraint for the return type
-                if (funDecl->isNumerical()) {
-                    addConstraint(isSubtypeOf(cur, env.getNumberType()));
-                }
-                if (funDecl->isSymbolic()) {
-                    addConstraint(isSubtypeOf(cur, env.getSymbolType()));
-                }
-
-                // add constraints for arguments
-                for (size_t i = 0; i < fun.getArity(); i++) {
-                    auto arg = getVar(fun.getArg(i));
-
-                    // check that usage does not exceed
-                    // number of arguments in declaration
-                    if (i < funDecl->getArity()) {
-                        // add constraints for the i-th argument
-                        if (funDecl->acceptsNumbers(i)) {
-                            addConstraint(isSubtypeOf(arg, env.getNumberType()));
-                        }
-                        if (funDecl->acceptsSymbols(i)) {
-                            addConstraint(isSubtypeOf(arg, env.getSymbolType()));
-                        }
-                    }
                 }
             }
         }

@@ -219,6 +219,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
     // - intrinsic functors -
     visitDepthFirst(nodes, [&](const AstFunctor& fun) {
+        
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
         if (!eqTypeRamTypeAttribute(fun.getReturnType(), resultType)) {
@@ -240,6 +241,14 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             }
         }
 
+        // Special case
+        if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
+            if (intrFun->getFunction() == FunctorOp::ORD) {
+                return;
+            }
+        }
+        
+        
         // Check argument types.
         for (size_t i = 0; i < fun.getArity(); i++) {
             auto arg = fun.getArg(i);

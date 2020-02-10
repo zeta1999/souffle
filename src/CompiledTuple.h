@@ -32,12 +32,17 @@ namespace ram {
  */
 template <typename Domain, std::size_t _arity>
 struct Tuple {
+
     // some features for template meta programming
     using value_type = Domain;
     static constexpr size_t arity = _arity;
 
     // the stored data
     Domain data[arity];
+
+    Tuple() = default; 
+    Tuple(std::initializer_list<Domain> l) : data(l) {
+    }
 
     // constructores, destructors and assignment are default
 

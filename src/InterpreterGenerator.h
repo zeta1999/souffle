@@ -275,7 +275,6 @@ public:
         NodePtrVec children;
         children.push_back(visit(lookup.getExpression()));
         children.push_back(visitTupleOperation(lookup));
-        createRecordMap(lookup.getArity());
         return std::make_unique<InterpreterNode>(I_UnpackRecord, &lookup, std::move(children));
     }
 

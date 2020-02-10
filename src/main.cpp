@@ -369,6 +369,7 @@ int main(int argc, char** argv) {
                   << std::endl;
         exit(1);
     }
+    
 
     // ------- rewriting / optimizations -------------
 
@@ -406,8 +407,8 @@ int main(int argc, char** argv) {
     auto pipeline = std::make_unique<PipelineTransformer>(std::make_unique<AstComponentChecker>(),
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(),
-            std::make_unique<PolymorphicOperatorsTransformer>(),
                                                           std::make_unique<AstUserDefinedFunctorsTransformer>(),
+                                                          std::make_unique<PolymorphicOperatorsTransformer>(),
                                                           std::make_unique<AstSemanticChecker>(),
             std::make_unique<RemoveTypecastsTransformer>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),

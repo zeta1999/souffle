@@ -1503,28 +1503,20 @@ functor_decl
     }
   ;
 
-// arg[first] COMMA non_empty_arg_list[rest]
 
-/* Functor argument list types */
+// Functor argument list type
 non_empty_functor_arg_type_list
   : functor_type {
-        std::vector<RamTypeAttribute> args;
-        args.push_back($functor_type);
-
-        $$ = args;
+        $$.push_back($functor_type);
     }
   | non_empty_functor_arg_type_list[curr_list] COMMA functor_type {
-        std::vector<RamTypeAttribute> args;
-
-        for (auto arg : $curr_list) {
-            args.push_back(arg);
-        }
-
-        args.push_back($functor_type);
-
-        $$ = args;
+        $$ = $curr_list;
+        $$.push_back($functor_type);
+        $curr_list.clear();
     }
   ;
+
+
 
 /* Functor type */
 functor_type

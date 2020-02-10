@@ -474,7 +474,7 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 }
             }
             
-
+            // Add types constraints of arguments
             for (size_t i = 0; i < fun.getArity(); i++) {
                 auto argumentVar = getVar(fun.getArg(i));
                 switch (fun.getArgType(i)) {

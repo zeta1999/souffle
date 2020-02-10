@@ -1323,7 +1323,7 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
                 
                 changed = true;
             }
-            
+            node->apply(*this);
             return node;
         }  
     };

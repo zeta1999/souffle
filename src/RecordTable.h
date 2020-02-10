@@ -27,20 +27,16 @@
 
 namespace souffle {
 
-class RecordTable {
-private:
-    mutable Lock access;
-
-    /**
-     * A bidirectional mapping between tuples and reference indices.
-     */
-    class InterpreterRecordMap {
-        /** The arity of the stored tuples */
-        int arity;
-
-        /** The mapping from tuples to references/indices */
+/**
+ * A bidirectional mapping between tuples and reference indices.
+ */
+class InterpreterRecordMap {
+    /** The arity of the stored tuples */
+    int arity;
+    
+    /** The mapping from tuples to references/indices */
         std::map<std::vector<RamDomain>, RamDomain> r2i;
-
+    
         /** The mapping from indices to tuples */
         std::vector<std::vector<RamDomain>> i2r;
 
@@ -89,21 +85,10 @@ private:
 
             return res;
         }
-    };
+};
 
-    std::unordered_map<int, InterpreterRecordMap> maps;
 
-    InterpreterRecordMap& getForArity(int arity) {
-        auto lease = access.acquire();
-        (void)lease;  // avoid warning;
-        auto pos = maps.find(arity);
-        if (pos == maps.end()) {
-            maps.emplace(arity, arity);
-        }
-
-        return maps.find(arity)->second;
-    }
-
+class RecordTable {
 public:
     RecordTable() = default;
     virtual ~RecordTable() = default;
@@ -128,6 +113,21 @@ public:
      */
     bool isNull(RamDomain ref) {
         return ref == 0;
+    }
+
+private:
+    mutable Lock access;
+    std::unordered_map<int, InterpreterRecordMap> maps;
+
+    InterpreterRecordMap& getForArity(int arity) {
+        auto lease = access.acquire();
+        (void)lease;  // avoid warning;
+        auto pos = maps.find(arity);
+        if (pos == maps.end()) {
+            maps.emplace(arity, arity);
+        }
+
+        return maps.find(arity)->second;
     }
 };
 

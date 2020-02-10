@@ -820,7 +820,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << ";\n";
 
             out << "if (isNull<" << tuple_type << ">(ref)) continue;\n";
-            out << tuple_type << " env" << lookup.getTupleId() << "(recordTable.unpack(ref));\n";
+            out << tuple_type << " env" << lookup.getTupleId() << " = unpack<" << tuple_type << ">(ref);\n";
 
             out << "{\n";
 
@@ -1637,7 +1637,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitPackRecord(const RamPackRecord& pack, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "recordTable.pack(&" 
+            out << "pack("
                 << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">({"
                 << join(pack.getArguments(), ",", rec) << "})"
                 << ")";
@@ -1809,7 +1809,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "}";
     }
     os << ";";
-    os << "RecordTable recordTable;\n";
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;

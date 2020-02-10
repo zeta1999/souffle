@@ -23,7 +23,7 @@
 #include "InterpreterRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
-#include "InterpreterRecords.h"
+#include "RecordTable.h"
 #include <deque>
 #include <map>
 #include <memory>
@@ -110,8 +110,6 @@ private:
     RamIndexAnalysis* isa;
     /** Interpreter program generator */
     NodeGenerator generator;
-    /** Record table */ 
-    RecordTable recordTable; 
 };
 
 }  // namespace souffle

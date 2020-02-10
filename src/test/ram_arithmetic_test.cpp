@@ -63,9 +63,8 @@ RamDomain evalExpression(std::unique_ptr<RamExpression> expression) {
 
     std::string name("test");
     std::vector<RamDomain> ret;
-    std::vector<bool> errs;
 
-    interpreter->executeSubroutine(name, {}, ret, errs);
+    interpreter->executeSubroutine(name, {}, ret);
 
     return ret.at(0);
 }
